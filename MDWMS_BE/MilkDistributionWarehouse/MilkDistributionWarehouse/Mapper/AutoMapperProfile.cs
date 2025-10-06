@@ -33,6 +33,22 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(src => DateTime.Now))
                 .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
 
+            // Map Category
+            CreateMap<Category, CategoryDto>();
+            CreateMap<CategoryCreate, Category>()
+                .ForMember(dest => dest.CategoryId, opt => opt.Ignore())
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => CommonStatus.Active))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now))
+                .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => (DateTime?)null))
+                .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.CategoryName.Trim()))
+                .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description.Trim()));
+            CreateMap<CategoryUpdate, Category>()
+                .ForMember(dest => dest.CategoryId, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => DateTime.Now))
+                .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.CategoryName.Trim()))
+                .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description != null ? src.Description.Trim() : null))
+                .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
         }
     }
 }
