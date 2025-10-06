@@ -1,4 +1,4 @@
-
+using MilkDistributionWarehouse.Mapper;
 using Microsoft.EntityFrameworkCore;
 using MilkDistributionWarehouse.Configurations;
 using MilkDistributionWarehouse.Models.Entities;
@@ -20,6 +20,7 @@ namespace MilkDistributionWarehouse
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
             builder.Services.AddCors();
+            builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
             // Add dependency injection configuration
             builder.Services.AddDependencyInjection();
