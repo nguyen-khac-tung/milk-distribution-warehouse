@@ -14,6 +14,10 @@ namespace MilkDistributionWarehouse.Configurations
 
             //Email
             services.AddSingleton<EmailUtility>();
+
+            //Category
+            services.AddScoped<ICategoryRepository, CategoryRepository>();
+            services.AddScoped<ICategoryService, CategoryService>();
         }
     }
 }
