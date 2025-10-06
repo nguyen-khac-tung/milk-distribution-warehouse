@@ -31,7 +31,8 @@ namespace MilkDistributionWarehouse.Controllers
             string msg = _storageConditionService.GetStorageConditionById(id, out StorageConditionDto.StorageConditionResponseDto? storageCondition);
             if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
 
-            return ApiResponse<StorageConditionDto.StorageConditionResponseDto>.ToResultOk(storageCondition)        }
+            return ApiResponse<StorageConditionDto.StorageConditionResponseDto>.ToResultOk(storageCondition);
+        }
 
         [HttpPost]
         public IResult CreateStorageCondition([FromBody] StorageConditionDto.StorageConditionRequestDto dto)
