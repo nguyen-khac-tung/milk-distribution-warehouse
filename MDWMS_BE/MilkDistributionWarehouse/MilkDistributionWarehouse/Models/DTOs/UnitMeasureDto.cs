@@ -1,4 +1,6 @@
-﻿namespace MilkDistributionWarehouse.Models.DTOs
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace MilkDistributionWarehouse.Models.DTOs
 {
     public class UnitMeasureDto
     {
@@ -10,5 +12,14 @@
     {
         public string? Search { get; set; }
         public int? Status { get; set; }
+    }
+
+    public class UnitMeasureCreate
+    {
+        [Required]
+        [MaxLength(100)]
+        public string Name { get; set; }
+        [MaxLength(100)]
+        public string Description { get; set; }
     }
 }

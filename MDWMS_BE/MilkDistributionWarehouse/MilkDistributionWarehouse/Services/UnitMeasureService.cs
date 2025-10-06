@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
+using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
 using System.Threading.Tasks;
 
@@ -8,6 +10,7 @@ namespace MilkDistributionWarehouse.Services
     public interface IUnitMeasureService
     {
         Task<(string, List<UnitMeasureDto>)> GetUnitMeasure(Filter filter);
+        Task<string> CreateUnitMeasure(UnitMeasureCreate unitMeasureCreate);
     }
     public class UnitMeasureService : IUnitMeasureService
     {
@@ -43,6 +46,36 @@ namespace MilkDistributionWarehouse.Services
             return ("", resultUnitMeasures);
         }
 
+        public async Task<string> CreateUnitMeasure(UnitMeasureCreate unitMeasureCreate)
+        {
+            if (unitMeasureCreate == null)
+                return "Unit measure is null.";
+            
+            if (await _unitMeasureRepository.IsDuplicationUnitMeasureName(unitMeasureCreate.Name))
+                return "Unit measure name is existed";
 
+            if (ContainsSpecialCharacters(unitMeasureCreate.Name))
+                return "Unit measure name is invalid";
+
+            var unitMeasure = new UnitMeasure
+            {
+                Name = unitMeasureCreate.Name,
+                Description = unitMeasureCreate.Description,
+                Status = CommonStatus.Active,
+                CreatedAt = DateTime.Now,
+                UpdateAt = null
+            };
+
+            var createResult = await _unitMeasureRepository.CreateUnitMeasures(unitMeasure);
+            if (createResult == 0)
+                return "Create unit measure is failed";
+
+            return "";
+
+        }
+        private bool ContainsSpecialCharacters(string input)
+        {
+            return input.Any(ch => !char.IsLetterOrDigit(ch) && !char.IsWhiteSpace(ch));
+        }
     }
 }

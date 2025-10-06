@@ -23,8 +23,16 @@ namespace MilkDistributionWarehouse.Controllers
             var (msg, unitMeasures) = await _unitMeasureService.GetUnitMeasure(filter);
             if (!string.IsNullOrEmpty(msg))
                 return BadRequest(ApiResponse<List<UnitMeasureDto>>.ErrorResponse(msg));
-            return Ok(unitMeasures);
+            return Ok(ApiResponse<List<UnitMeasureDto>>.SuccessResponse(unitMeasures));
         }
 
+        [HttpPost("Create")]
+        public async Task<IActionResult> CreateUnitMeasure([FromBody]UnitMeasureCreate create)
+        {
+            string msg = await _unitMeasureService.CreateUnitMeasure(create);
+            if (!string.IsNullOrEmpty(msg))
+                return BadRequest(ApiResponse<UnitMeasureCreate>.ErrorResponse(msg));
+            return Ok(ApiResponse<UnitMeasureCreate>.SuccessResponse(create));
+        }
     }
 }
