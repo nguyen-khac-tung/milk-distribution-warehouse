@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using MilkDistributionWarehouse.Models.Common;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Services;
+using MilkDistributionWarehouse.Utilities;
 
 namespace MilkDistributionWarehouse.Controllers
 {
@@ -14,12 +14,12 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpGet("Profile/{id}")]
-        public IActionResult GetUserProfile(int id)
+        public IResult GetUserProfile(int id)
         {
             string msg = _userService.GetUserProfile(id, out UserProfileDto userProfile);
-            if (msg.Length > 0) return BadRequest(ApiResponse<string>.ErrorResponse(msg));
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
 
-            return Ok(ApiResponse<UserProfileDto>.SuccessResponse(userProfile));
+            return ApiResponse<UserProfileDto>.ToResultOk(userProfile);
         }
     }
 }

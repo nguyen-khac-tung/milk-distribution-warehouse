@@ -1,11 +1,9 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
-using MilkDistributionWarehouse.Models.Common;
+using MilkDistributionWarehouse.Utilities;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Services;
-using System.Threading.Tasks;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace MilkDistributionWarehouse.Controllers
 {
@@ -20,39 +18,39 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("UnitMeasures")]
-        public async Task<IActionResult> GetUnitMeasures(Filter filter)
+        public async Task<IResult> GetUnitMeasures(Filter filter)
         {
             var (msg, unitMeasures) = await _unitMeasureService.GetUnitMeasure(filter);
             if (!string.IsNullOrEmpty(msg))
-                return BadRequest(ApiResponse<string>.ErrorResponse(msg));
-            return Ok(ApiResponse<List<UnitMeasureDto>>.SuccessResponse(unitMeasures));
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<List<UnitMeasureDto>>.ToResultOk(unitMeasures);
         }
 
         [HttpPost("Create")]
-        public async Task<IActionResult> CreateUnitMeasure([FromBody]UnitMeasureCreate create)
+        public async Task<IResult> CreateUnitMeasure([FromBody]UnitMeasureCreate create)
         {
             var(msg, unitMeasure) = await _unitMeasureService.CreateUnitMeasure(create);
             if (!string.IsNullOrEmpty(msg))
-                return BadRequest(ApiResponse<string>.ErrorResponse(msg));
-            return Ok(ApiResponse<UnitMeasureDto>.SuccessResponse(unitMeasure));
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<UnitMeasureDto>.ToResultOk(unitMeasure);
         }
 
         [HttpPut("Update")]
-        public async Task<IActionResult> UpdateUnitMeasure([FromBody] UnitMeasureUpdate update)
+        public async Task<IResult> UpdateUnitMeasure([FromBody] UnitMeasureUpdate update)
         {
             var (msg, unitMeasure) = await _unitMeasureService.UpdateUnitMeasure(update);
             if(!string.IsNullOrEmpty(msg))
-                return BadRequest(ApiResponse<string>.ErrorResponse(msg));
-            return Ok(ApiResponse<UnitMeasureDto>.SuccessResponse(unitMeasure));
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<UnitMeasureDto>.ToResultOk(unitMeasure);
         }
 
         [HttpDelete("Delete/{unitMeasureId}")]
-        public async Task<IActionResult> DeleteUnitMeasure(int unitMeasureId)
+        public async Task<IResult> DeleteUnitMeasure(int unitMeasureId)
         {
             var (msg, unitMeasure) = await _unitMeasureService.DeleteUnitMeasure(unitMeasureId);
             if(!string.IsNullOrEmpty(msg))
-                return BadRequest(ApiResponse<string>.ErrorResponse(msg));
-            return Ok(ApiResponse<UnitMeasureDto>.SuccessResponse(unitMeasure));
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<UnitMeasureDto>.ToResultOk(unitMeasure);
         }
     }
 }
