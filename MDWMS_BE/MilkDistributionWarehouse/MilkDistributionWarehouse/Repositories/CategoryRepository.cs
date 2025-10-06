@@ -13,7 +13,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<Category?> IsCategoryExist(int categoryId);
         Task<bool> IsDuplicationByIdAndName(int categoryId, string categoryName);
         Task<int> UpdateCategory(Category category);
-        Task<bool> IsCategoryContainingProductsAsync(int categoryId);
+        Task<bool> IsCategoryContainingGoodsAsync(int categoryId);
 
     }
     public class CategoryRepository : ICategoryRepository
@@ -58,7 +58,7 @@ namespace MilkDistributionWarehouse.Repositories
                             && c.Status != CommonStatus.Deleted);
         }
 
-        public async Task<bool> IsCategoryContainingProductsAsync(int categoryId)
+        public async Task<bool> IsCategoryContainingGoodsAsync(int categoryId)
         {
             return await _warehouseContext.Goods.AnyAsync(g => g.CategoryId == categoryId && g.Status != CommonStatus.Deleted);
         }

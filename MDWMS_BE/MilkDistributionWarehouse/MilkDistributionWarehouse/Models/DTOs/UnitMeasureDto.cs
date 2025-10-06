@@ -22,4 +22,11 @@ namespace MilkDistributionWarehouse.Models.DTOs
         [MaxLength(100)]
         public string Description { get; set; }
     }
+
+    public class UnitMeasureUpdate : UnitMeasureCreate
+    {
+        [Required]
+        public int UnitMeasureId { get; set; }
+        public int Status { get; set; }
+    }
 }

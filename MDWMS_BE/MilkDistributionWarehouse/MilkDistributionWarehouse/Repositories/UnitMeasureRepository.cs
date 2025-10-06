@@ -14,6 +14,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<UnitMeasure?> GetUnitMeasureById(int unitMeasureId);
         Task<bool> IsDuplicatioByIdAndName(int unitMeasureId, string name);
         Task<bool> IsDuplicationUnitMeasureName(string name);
+        Task<bool> IsUnitMeasureContainingGoods(int unitMeasureId);
     }
     public class UnitMeasureRepository : IUnitMeasureRepository
     {
@@ -55,6 +56,11 @@ namespace MilkDistributionWarehouse.Repositories
         public async Task<bool> IsDuplicationUnitMeasureName(string name)
         {
             return await _warehouseContext.UnitMeasures.AnyAsync(um => um.Name.ToLower().Trim().Equals(name.ToLower().Trim()) && um.Status != CommonStatus.Deleted);
+        }
+
+        public async Task<bool> IsUnitMeasureContainingGoods(int unitMeasureId)
+        {
+            return await _warehouseContext.Goods.AnyAsync(g => g.UnitMeasureId == unitMeasureId && g.Status != CommonStatus.Deleted);
         }
 
     }

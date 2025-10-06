@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using MilkDistributionWarehouse.Models.Common;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Services;
 using System.Threading.Tasks;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace MilkDistributionWarehouse.Controllers
 {
@@ -33,6 +35,24 @@ namespace MilkDistributionWarehouse.Controllers
             if (!string.IsNullOrEmpty(msg))
                 return BadRequest(ApiResponse<UnitMeasureCreate>.ErrorResponse(msg));
             return Ok(ApiResponse<UnitMeasureCreate>.SuccessResponse(create));
+        }
+
+        [HttpPut("Update")]
+        public async Task<IActionResult> UpdateUnitMeasure([FromBody] UnitMeasureUpdate update)
+        {
+            string msg = await _unitMeasureService.UpdateUnitMeasure(update);
+            if(!string.IsNullOrEmpty(msg))
+                return BadRequest(ApiResponse<UnitMeasureUpdate>.ErrorResponse(msg));
+            return Ok(ApiResponse<UnitMeasureUpdate>.SuccessResponse(update));
+        }
+
+        [HttpDelete("Delete/{unitMeasureId}")]
+        public async Task<IActionResult> DeleteUnitMeasure(int unitMeasureId)
+        {
+            string msg = await _unitMeasureService.DeleteUnitMeasure(unitMeasureId);
+            if(!string.IsNullOrEmpty(msg))
+                return BadRequest(ApiResponse<int>.ErrorResponse(msg));
+            return Ok(ApiResponse<int>.SuccessResponse(unitMeasureId));
         }
     }
 }

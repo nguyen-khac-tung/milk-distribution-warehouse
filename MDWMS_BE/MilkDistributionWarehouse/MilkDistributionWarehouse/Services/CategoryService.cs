@@ -108,7 +108,7 @@ namespace MilkDistributionWarehouse.Services
             if (categoryExist == null)
                 return "Category is not exist";
 
-            if (await _categoryRepository.IsCategoryContainingProductsAsync(categoryId))
+            if (await _categoryRepository.IsCategoryContainingGoodsAsync(categoryId))
                 return "Cannot delete, category is in use";
 
             categoryExist.Status = CommonStatus.Deleted;

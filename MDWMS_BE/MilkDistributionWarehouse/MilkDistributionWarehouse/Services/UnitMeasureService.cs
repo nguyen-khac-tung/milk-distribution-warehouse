@@ -11,6 +11,8 @@ namespace MilkDistributionWarehouse.Services
     {
         Task<(string, List<UnitMeasureDto>)> GetUnitMeasure(Filter filter);
         Task<string> CreateUnitMeasure(UnitMeasureCreate unitMeasureCreate);
+        Task<string> UpdateUnitMeasure(UnitMeasureUpdate unitMeasureUpdate);
+        Task<string> DeleteUnitMeasure(int unitMeasureId);
     }
     public class UnitMeasureService : IUnitMeasureService
     {
@@ -73,6 +75,55 @@ namespace MilkDistributionWarehouse.Services
             return "";
 
         }
+
+        public async Task<string> UpdateUnitMeasure(UnitMeasureUpdate unitMeasureUpdate)
+        {
+            if (unitMeasureUpdate == null) return "Unit Measure update is null";
+            var unitMeasureExist = await _unitMeasureRepository.GetUnitMeasureById(unitMeasureUpdate.UnitMeasureId);
+            if (unitMeasureExist == null)
+                return "Unit Measure is not exist";
+
+            if (await _unitMeasureRepository.IsDuplicatioByIdAndName(unitMeasureUpdate.UnitMeasureId, unitMeasureUpdate.Name))
+                return "Unit Measure name is exist";
+
+            if (ContainsSpecialCharacters(unitMeasureUpdate.Name))
+                return "Unit Measure name is invalid";
+
+            unitMeasureExist.Name = unitMeasureUpdate.Name;
+            unitMeasureExist.Description = unitMeasureUpdate.Description;
+            unitMeasureExist.Status = unitMeasureUpdate.Status;
+            unitMeasureExist.UpdateAt = DateTime.Now;
+
+            var updateResult = await _unitMeasureRepository.UpdateUnitMeasure(unitMeasureExist);
+            if (updateResult == 0) return "Update unit measure is failed";
+
+            return "";
+        }
+
+        public async Task<string> DeleteUnitMeasure(int unitMeasureId)
+        {
+            if (unitMeasureId == 0)
+                return "UnitMeasureId is invalid";
+
+            var unitMeasureExist = await _unitMeasureRepository.GetUnitMeasureById(unitMeasureId);
+
+            if (unitMeasureExist == null)
+                return "Unit measure is not exist";
+
+            if (await _unitMeasureRepository.IsUnitMeasureContainingGoods(unitMeasureId))
+                return "Cannot delete, unit measure is in use";
+
+            unitMeasureExist.Status = CommonStatus.Deleted;
+            unitMeasureExist.UpdateAt = DateTime.Now;
+
+            var deleteResult = await _unitMeasureRepository.UpdateUnitMeasure(unitMeasureExist);
+            if (deleteResult == 0)
+                return "Delete unit measure is failed";
+
+            return "";
+        }
+
+
         private bool ContainsSpecialCharacters(string input)
         {
             return input.Any(ch => !char.IsLetterOrDigit(ch) && !char.IsWhiteSpace(ch));
