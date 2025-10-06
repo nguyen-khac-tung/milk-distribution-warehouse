@@ -12,6 +12,10 @@ namespace MilkDistributionWarehouse.Configurations
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IUserService, UserService>();
 
+            //StorageConditionm
+            services.AddScoped<IStorageConditionRepository, StorageConditionRepository>();
+            services.AddScoped<IStorageConditionService, StorageConditionService>();
+
             //Email
             services.AddSingleton<EmailUtility>();
         }
