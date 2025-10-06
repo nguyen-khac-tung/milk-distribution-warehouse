@@ -9,8 +9,8 @@ namespace MilkDistributionWarehouse.Repositories
     public interface IUnitMeasureRepository
     {
         Task<List<UnitMeasure>> GetUnitMeasures();
-        Task<int> CreateUnitMeasures(UnitMeasure unitMeasure);
-        Task<int> UpdateUnitMeasure(UnitMeasure unitMeasure);
+        Task<UnitMeasure?> CreateUnitMeasures(UnitMeasure unitMeasure);
+        Task<UnitMeasure?> UpdateUnitMeasure(UnitMeasure unitMeasure);
         Task<UnitMeasure?> GetUnitMeasureById(int unitMeasureId);
         Task<bool> IsDuplicatioByIdAndName(int unitMeasureId, string name);
         Task<bool> IsDuplicationUnitMeasureName(string name);
@@ -29,16 +29,32 @@ namespace MilkDistributionWarehouse.Repositories
             return await _warehouseContext.UnitMeasures.ToListAsync();
         }
 
-        public async Task<int> CreateUnitMeasures(UnitMeasure unitMeasure)
+        public async Task<UnitMeasure?> CreateUnitMeasures(UnitMeasure unitMeasure)
         {
-            _warehouseContext.UnitMeasures.Add(unitMeasure);
-            return await _warehouseContext.SaveChangesAsync();
+            try
+            {
+                _warehouseContext.UnitMeasures.Add(unitMeasure);
+                await _warehouseContext.SaveChangesAsync();
+                return unitMeasure;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
-        public async Task<int> UpdateUnitMeasure(UnitMeasure unitMeasure)
+        public async Task<UnitMeasure?> UpdateUnitMeasure(UnitMeasure unitMeasure)
         {
-            _warehouseContext.UnitMeasures.Update(unitMeasure);
-            return await _warehouseContext.SaveChangesAsync();
+            try
+            {
+                _warehouseContext.UnitMeasures.Update(unitMeasure);
+                await _warehouseContext.SaveChangesAsync();
+                return unitMeasure;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         public async Task<UnitMeasure?> GetUnitMeasureById(int unitMeasureId)

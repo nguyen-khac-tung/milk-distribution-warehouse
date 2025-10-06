@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 
@@ -16,6 +17,22 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.Status, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
                 .ForMember(dest => dest.UpdateAt, opt => opt.Ignore());
+
+            // Map UnitMeasure
+            CreateMap<UnitMeasure, UnitMeasureDto>();
+            CreateMap<UnitMeasureCreate, UnitMeasure>()
+                .ForMember(dest => dest.UnitMeasureId, opt => opt.Ignore())
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => CommonStatus.Active))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now))
+                .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => (DateTime?)null))
+                .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name.Trim()))
+                .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description != null ? src.Description.Trim() : null));
+            CreateMap<UnitMeasureUpdate, UnitMeasure>()
+                .ForMember(dest => dest.UnitMeasureId, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(src => DateTime.Now))
+                .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
+
         }
     }
 }
