@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MilkDistributionWarehouse.Models.Common;
 using MilkDistributionWarehouse.Models.DTOs;
+using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Services;
 using System.Threading.Tasks;
 
@@ -22,38 +23,34 @@ namespace MilkDistributionWarehouse.Controllers
         {
             var(msg, categories) = await _categoryService.GetCategories(categoryFilter);
             if(msg.Length > 0) 
-                return BadRequest(ApiResponse<string>.ErrorResponse(msg));
+                return BadRequest(ApiResponse<(string, CategoryDto)>.ErrorResponse(msg));
             return Ok(ApiResponse<List<CategoryDto>>.SuccessResponse(categories));
         }
 
         [HttpPost("Create")]
         public async Task<IActionResult> CreateCategory([FromBody]CategoryCreate categoryCreate)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ApiResponse<string>.ErrorResponse("Invalid data"));
-            string msg = await _categoryService.CreateCategory(categoryCreate);
+            var (msg, category) = await _categoryService.CreateCategory(categoryCreate);
             if (!string.IsNullOrEmpty(msg))
-                return BadRequest(ApiResponse<string>.ErrorResponse(msg));
-            return Ok(ApiResponse<CategoryCreate>.SuccessResponse(categoryCreate));
+                return BadRequest(ApiResponse<(string, CategoryDto)>.ErrorResponse(msg));
+            return Ok(ApiResponse<CategoryDto>.SuccessResponse(category));
         }
 
         [HttpPut("Update")]
         public async Task<IActionResult> UpdateCategory([FromBody]CategoryUpdate categoryUpdate)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ApiResponse<string>.ErrorResponse("Invalid data"));
-            string msg = await _categoryService.UpdateCategory(categoryUpdate);
+            var(msg,category) = await _categoryService.UpdateCategory(categoryUpdate);
             if (!string.IsNullOrEmpty(msg))
-                return BadRequest(ApiResponse<string>.ErrorResponse(msg));
-            return Ok(ApiResponse<CategoryUpdate>.SuccessResponse(categoryUpdate));
+                return BadRequest(ApiResponse<(string, CategoryDto)>.ErrorResponse(msg));
+            return Ok(ApiResponse<CategoryDto>.SuccessResponse(category));
         }
 
         [HttpDelete("Delete/{categoryId}")]
         public async Task<IActionResult> DeleteCategory(int categoryId)
         {
-            string msg = await _categoryService.DeleteCategory(categoryId);
+            var (msg, category) = await _categoryService.DeleteCategory(categoryId);
             if(!string.IsNullOrEmpty(msg)) 
-                return BadRequest(ApiResponse<string>.ErrorResponse(msg));
+                return BadRequest(ApiResponse<(string, CategoryDto)>.ErrorResponse(msg));
             return Ok(ApiResponse<int>.SuccessResponse(categoryId));
         }
 
