@@ -49,6 +49,18 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.CategoryName.Trim()))
                 .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description != null ? src.Description.Trim() : null))
                 .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
+
+            // Map Location
+            CreateMap<Location, LocationDto.LocationResponseDto>();
+
+            CreateMap<LocationDto.LocationRequestDto, Location>()
+                .ForMember(dest => dest.LocationId, opt => opt.Ignore())
+                .ForMember(dest => dest.Status, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdateAt, opt => opt.Ignore())
+                .ForMember(dest => dest.LocationCode, opt => opt.MapFrom(src => src.LocationCode.Trim()))
+                .ForMember(dest => dest.Rack, opt => opt.MapFrom(src => src.Rack.Trim()))
+                .ForMember(dest => dest.IsAvailable, opt => opt.MapFrom(src => src.IsAvailable ?? true));
         }
     }
 }

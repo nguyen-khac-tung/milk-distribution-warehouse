@@ -26,6 +26,10 @@ namespace MilkDistributionWarehouse.Configurations
             //UnitMeasure
             services.AddScoped<IUnitMeasureRepository, UnitMeasureRepository>();
             services.AddScoped<IUnitMeasureService, UnitMeasureService>();
+
+            //Location
+            services.AddScoped<ILocationRepository, LocationRepository>();
+            services.AddScoped<ILocationService,  LocationService>();
         }
     }
 }
