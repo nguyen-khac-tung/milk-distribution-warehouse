@@ -9,11 +9,6 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public string Description { get; set; }
         public int Status { get; set; }
     }
-    public class Filter
-    {
-        public string? Search { get; set; }
-        public int? Status { get; set; }
-    }
 
     public class UnitMeasureCreate
     {

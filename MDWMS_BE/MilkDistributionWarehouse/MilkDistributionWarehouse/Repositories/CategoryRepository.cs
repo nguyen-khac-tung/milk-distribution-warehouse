@@ -7,7 +7,7 @@ namespace MilkDistributionWarehouse.Repositories
 {
     public interface ICategoryRepository
     {
-        Task<List<Category>>? GetCategories();
+        IQueryable<Category>? GetCategories();
         Task<Category?> CreateCategory(Category category);
         Task<bool> IsDuplicateCategoryName(string categoryName);
         Task<Category?> GetCategoryByCategoryId(int categoryId);
@@ -24,9 +24,9 @@ namespace MilkDistributionWarehouse.Repositories
             _warehouseContext = warehouseContext;
         }
 
-        public async Task<List<Category>>? GetCategories()
+        public IQueryable<Category>? GetCategories()
         {
-            return await _warehouseContext.Categories.ToListAsync();
+            return _warehouseContext.Categories.AsNoTracking();
         }
 
         public async Task<Category?> CreateCategory(Category category)
@@ -60,7 +60,6 @@ namespace MilkDistributionWarehouse.Repositories
             {
                 return null;
             }
-
         }
 
         public async Task<Category?> GetCategoryByCategoryId(int categoryId)

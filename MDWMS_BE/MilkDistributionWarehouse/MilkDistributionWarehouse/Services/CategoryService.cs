@@ -1,14 +1,17 @@
 ﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using Microsoft.EntityFrameworkCore;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
+using MilkDistributionWarehouse.Utilities;
 
 namespace MilkDistributionWarehouse.Services
 {
     public interface ICategoryService
     {
-        Task<(string, List<CategoryDto>)> GetCategories(CategoryFilter categoryFilter);
+        Task<(string, PageResult<CategoryDto>)> GetCategories(Filter filter);
         Task<(string, CategoryDto)> CreateCategory(CategoryCreate category);
         Task<(string, CategoryDto)> UpdateCategory(CategoryUpdate categoryUpdate);
         Task<(string, CategoryDto)> DeleteCategory(int categoryId);
@@ -23,22 +26,24 @@ namespace MilkDistributionWarehouse.Services
             _mapper = mapper;
         }
 
-        public async Task<(string, List<CategoryDto>)> GetCategories(CategoryFilter categoryFilter)
+        public async Task<(string, PageResult<CategoryDto>)> GetCategories(Filter filter)
         {
-            var categories = await _categoryRepository.GetCategories();
+            var categories = _categoryRepository.GetCategories();
 
-            if(!string.IsNullOrEmpty(categoryFilter.CategorySearch))
-                categories = categories.Where(c => c.CategoryName.Contains(categoryFilter.CategorySearch) || c.Description.Contains(categoryFilter.CategorySearch)).ToList();
+            if (categories == null || !categories.Any())
+                return ("The list category is null", new PageResult<CategoryDto>());
+
+            if (!string.IsNullOrEmpty(filter.Search))
+                categories = categories.Where(c => c.CategoryName.Contains(filter.Search) || c.Description.Contains(filter.Search));
             
-            if(categoryFilter.Status != null)
-                categories = categories.Where(c => c.Status ==  categoryFilter.Status).ToList();
+            if(filter.Status != null)
+                categories = categories.Where(c => c.Status == filter.Status);
 
-            if(categories == null || !categories.Any()) 
-                return ("The list category is null", new List<CategoryDto>());
+            var categoryDtos = categories.ProjectTo<CategoryDto>(_mapper.ConfigurationProvider);
 
-            var categoryDtos = _mapper.Map<List<CategoryDto>>(categories);
+            var items = await categoryDtos.ToPagedResultAsync(filter.PageNumber, filter.PageSize);
 
-            return ("", categoryDtos);
+            return ("", items);
         }
 
         public async Task<(string, CategoryDto)> CreateCategory(CategoryCreate categoryCreate)
