@@ -49,6 +49,43 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.CategoryName.Trim()))
                 .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description != null ? src.Description.Trim() : null))
                 .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
+
+            // Map Location
+            CreateMap<Location, LocationDto.LocationResponseDto>();
+
+            CreateMap<LocationDto.LocationRequestDto, Location>()
+                .ForMember(dest => dest.LocationId, opt => opt.Ignore())
+                .ForMember(dest => dest.Status, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdateAt, opt => opt.Ignore())
+                .ForMember(dest => dest.LocationCode, opt => opt.MapFrom(src => src.LocationCode.Trim()))
+                .ForMember(dest => dest.Rack, opt => opt.MapFrom(src => src.Rack.Trim()))
+                .ForMember(dest => dest.IsAvailable, opt => opt.MapFrom(src => src.IsAvailable ?? true));
+
+            // Map Area
+            CreateMap<Area, AreaDto.AreaResponseDto>();
+
+            CreateMap<AreaDto.AreaRequestDto, Area>()
+                .ForMember(dest => dest.AreaId, opt => opt.Ignore())
+                .ForMember(dest => dest.Status, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdateAt, opt => opt.Ignore())
+                .ForMember(dest => dest.AreaName, opt => opt.MapFrom(src => src.AreaName.Trim()))
+                .ForMember(dest => dest.AreaCode, opt => opt.MapFrom(src => src.AreaCode.Trim()))
+                .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description != null ? src.Description.Trim() : null));
+
+            // Map Goods
+            CreateMap<Good, GoodsDto>();
+            CreateMap<GoodsCreate, Good>()
+                .ForMember(dest => dest.GoodsId, opt => opt.Ignore())
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => CommonStatus.Active))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now))
+                .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => (DateTime?)null));
+            CreateMap<GoodsUpdate, Good>()
+                .ForMember(dest => dest.GoodsId, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => DateTime.Now))
+                .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
         }
     }
 }
