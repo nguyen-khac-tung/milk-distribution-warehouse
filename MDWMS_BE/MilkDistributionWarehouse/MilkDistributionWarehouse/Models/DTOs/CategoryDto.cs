@@ -11,12 +11,6 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int Status { get; set; }
     }
 
-    public class CategoryFilter
-    {
-        public string? CategorySearch { get; set; }
-        public int? Status { get; set; }
-    }
-
     public class CategoryCreate
     {
         [Required(ErrorMessage = "Category Name is require")]

@@ -34,6 +34,11 @@ namespace MilkDistributionWarehouse.Configurations
             //Area
             services.AddScoped<IAreaRepository, AreaRepository>();
             services.AddScoped<IAreaService, AreaService>();
+
+            //Goods
+            services.AddScoped<IGoodsRepository, GoodsRepository>();
+            services.AddScoped<IGoodsService, GoodsService>();
+
         }
     }
 }

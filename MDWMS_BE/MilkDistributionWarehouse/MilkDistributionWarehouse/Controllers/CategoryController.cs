@@ -16,12 +16,12 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("Categories")]
-        public async Task<IResult> GetCategories(CategoryFilter categoryFilter)
+        public async Task<IResult> GetCategories(PagedRequest request)
         {
-            var(msg, categories) = await _categoryService.GetCategories(categoryFilter);
+            var(msg, categories) = await _categoryService.GetCategories(request);
             if(msg.Length > 0) 
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<List<CategoryDto>>.ToResultOk(categories);
+            return ApiResponse<PageResult<CategoryDto>>.ToResultOk(categories);
         }
 
         [HttpPost("Create")]
