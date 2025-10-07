@@ -1,26 +1,27 @@
 ﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
+using MilkDistributionWarehouse.Utilities;
 
 namespace MilkDistributionWarehouse.Services
 {
     public interface ILocationService
     {
-        string GetLocations(out List<LocationDto.LocationResponseDto> locations);
-        string GetLocationById(int locationId, out LocationDto.LocationResponseDto? location);
-        string CreateLocation(LocationDto.LocationRequestDto dto, out LocationDto.LocationResponseDto? createdLocation);
-        string UpdateLocation(int locationId, LocationDto.LocationRequestDto dto, out LocationDto.LocationResponseDto? updatedLocation);
-        string DeleteLocation(int locationId, out bool deleted);
+        Task<(string, PageResult<LocationDto.LocationResponseDto>)> GetLocations(PagedRequest request);
+        Task<(string, LocationDto.LocationResponseDto)> CreateLocation(LocationDto.LocationRequestDto dto);
+        Task<(string, LocationDto.LocationResponseDto)> UpdateLocation(int locationId, LocationDto.LocationRequestDto dto);
+        Task<(string, LocationDto.LocationResponseDto)> DeleteLocation(int locationId);
     }
 
     public class LocationService : ILocationService
     {
         private readonly ILocationRepository _locationRepository;
         private readonly IMapper _mapper;
-        private readonly WarehouseContext _context; 
+        private readonly WarehouseContext _context;  // For FK validation
 
         public LocationService(ILocationRepository locationRepository, IMapper mapper, WarehouseContext context)
         {
@@ -29,165 +30,126 @@ namespace MilkDistributionWarehouse.Services
             _context = context;
         }
 
-        public string GetLocations(out List<LocationDto.LocationResponseDto> locations)
+        public async Task<(string, PageResult<LocationDto.LocationResponseDto>)> GetLocations(PagedRequest request)
         {
-            locations = new List<LocationDto.LocationResponseDto>();
+            var locations = _locationRepository.GetLocations();
 
-            var result = _locationRepository.GetLocations();
-            if (result == null || !result.Any())
-            {
-                return "No locations found.";
-            }
+            if (locations == null)
+                return ("No locations available", new PageResult<LocationDto.LocationResponseDto>());
 
-            locations = _mapper.Map<List<LocationDto.LocationResponseDto>>(result);
-            return "";
+            var locationDtos = locations.ProjectTo<LocationDto.LocationResponseDto>(_mapper.ConfigurationProvider);
+
+            var pagedResult = await locationDtos.ToPagedResultAsync(request);
+
+            return ("", pagedResult);
         }
 
-        public string GetLocationById(int locationId, out LocationDto.LocationResponseDto? location)
+        public async Task<(string, LocationDto.LocationResponseDto)> CreateLocation(LocationDto.LocationRequestDto dto)
         {
-            location = null;
+            if (dto == null) return ("Location create is null", new LocationDto.LocationResponseDto());
 
-            var result = _locationRepository.GetLocationById(locationId);
-            if (result == null)
-            {
-                return "Location not found.";
-            }
+            if (await _locationRepository.IsDuplicateLocationCode(dto.LocationCode))
+                return ("LocationCode already exists", new LocationDto.LocationResponseDto());
 
-            location = _mapper.Map<LocationDto.LocationResponseDto>(result);
-            return "";
-        }
+            if (ContainsSpecialCharacters(dto.LocationCode))
+                return ("LocationCode is invalid", new LocationDto.LocationResponseDto());
 
-        public string CreateLocation(LocationDto.LocationRequestDto dto, out LocationDto.LocationResponseDto? createdLocation)
-        {
-            createdLocation = null;
+            if (string.IsNullOrWhiteSpace(dto.Rack))
+                return ("Rack is required", new LocationDto.LocationResponseDto());
 
             if (dto.AreaId <= 0)
-            {
-                return "Valid AreaId is required.";
-            }
-            if (string.IsNullOrWhiteSpace(dto.LocationCode))
-            {
-                return "LocationCode is required.";
-            }
-            if (string.IsNullOrWhiteSpace(dto.Rack))
-            {
-                return "Rack is required.";
-            }
+                return ("Valid AreaId is required", new LocationDto.LocationResponseDto());
+
+            // Validate Area FK async
+            var areaExists = await _context.Areas.AnyAsync(a => a.AreaId == dto.AreaId && a.Status != CommonStatus.Deleted);
+            if (!areaExists)
+                return ("Invalid AreaId", new LocationDto.LocationResponseDto());
+
             if (dto.Row.HasValue && dto.Row < 1)
-            {
-                return "Row must be a positive integer.";
-            }
+                return ("Row must be a positive integer", new LocationDto.LocationResponseDto());
+
             if (dto.Column.HasValue && dto.Column < 1)
-            {
-                return "Column must be a positive integer.";
-            }
-
-            var existingLocation = _locationRepository.GetLocations().FirstOrDefault(l => l.LocationCode == dto.LocationCode.Trim());
-            if (existingLocation != null)
-            {
-                return "LocationCode already exists.";
-            }
-
-            var area = _context.Areas.FirstOrDefault(a => a.AreaId == dto.AreaId && a.Status != CommonStatus.Inactive);
-            if (area == null)
-            {
-                return "Invalid AreaId.";
-            }
+                return ("Column must be a positive integer", new LocationDto.LocationResponseDto());
 
             var entity = _mapper.Map<Location>(dto);
             entity.AreaId = dto.AreaId;
             entity.CreatedAt = DateTime.UtcNow;
             entity.Status = (int)CommonStatus.Active;
 
-            var createdEntity = _locationRepository.CreateLocation(entity);
+            var createdEntity = await _locationRepository.CreateLocation(entity);
             if (createdEntity == null)
-            {
-                return "Failed to create location.";
-            }
+                return ("Create location failed", new LocationDto.LocationResponseDto());
 
-            createdLocation = _mapper.Map<LocationDto.LocationResponseDto>(createdEntity);
-            return "";
+            return ("", _mapper.Map<LocationDto.LocationResponseDto>(createdEntity));
         }
 
-        public string UpdateLocation(int locationId, LocationDto.LocationRequestDto dto, out LocationDto.LocationResponseDto? updatedLocation)
+        public async Task<(string, LocationDto.LocationResponseDto)> UpdateLocation(int locationId, LocationDto.LocationRequestDto dto)
         {
-            updatedLocation = null;
+            if (dto == null) return ("Location update is null", new LocationDto.LocationResponseDto());
+
+            var locationExists = await _locationRepository.GetLocationById(locationId);
+            if (locationExists == null)
+                return ("Location not found", new LocationDto.LocationResponseDto());
+
+            if (await _locationRepository.IsDuplicationByIdAndCode(locationId, dto.LocationCode))
+                return ("LocationCode already exists", new LocationDto.LocationResponseDto());
+
+            if (ContainsSpecialCharacters(dto.LocationCode))
+                return ("LocationCode is invalid", new LocationDto.LocationResponseDto());
+
+            if (string.IsNullOrWhiteSpace(dto.Rack))
+                return ("Rack is required", new LocationDto.LocationResponseDto());
 
             if (dto.AreaId <= 0)
-            {
-                return "Valid AreaId is required.";
-            }
-            if (string.IsNullOrWhiteSpace(dto.LocationCode))
-            {
-                return "LocationCode is required.";
-            }
-            if (string.IsNullOrWhiteSpace(dto.Rack))
-            {
-                return "Rack is required.";
-            }
+                return ("Valid AreaId is required", new LocationDto.LocationResponseDto());
+
+            // Validate Area FK async
+            var areaExists = await _context.Areas.AnyAsync(a => a.AreaId == dto.AreaId && a.Status != CommonStatus.Deleted);
+            if (!areaExists)
+                return ("Invalid AreaId", new LocationDto.LocationResponseDto());
+
             if (dto.Row.HasValue && dto.Row < 1)
-            {
-                return "Row must be a positive integer.";
-            }
+                return ("Row must be a positive integer", new LocationDto.LocationResponseDto());
+
             if (dto.Column.HasValue && dto.Column < 1)
-            {
-                return "Column must be a positive integer.";
-            }
+                return ("Column must be a positive integer", new LocationDto.LocationResponseDto());
 
-            var entity = _locationRepository.GetLocationById(locationId);
-            if (entity == null)
-            {
-                return "Location not found.";
-            }
+            _mapper.Map(dto, locationExists);
+            locationExists.AreaId = dto.AreaId;
+            locationExists.UpdateAt = DateTime.UtcNow;
 
-            var existingLocation = _locationRepository.GetLocations().FirstOrDefault(l => l.LocationCode == dto.LocationCode.Trim() && l.LocationId != locationId);
-            if (existingLocation != null)
-            {
-                return "LocationCode already exists.";
-            }
-
-            var area = _context.Areas.FirstOrDefault(a => a.AreaId == dto.AreaId && a.Status != CommonStatus.Inactive);
-            if (area == null)
-            {
-                return "Invalid AreaId.";
-            }
-
-            _mapper.Map(dto, entity);
-            entity.AreaId = dto.AreaId;
-            entity.UpdateAt = DateTime.UtcNow;
-
-            var updatedEntity = _locationRepository.UpdateLocation(entity);
+            var updatedEntity = await _locationRepository.UpdateLocation(locationExists);
             if (updatedEntity == null)
-            {
-                return "Failed to update location.";
-            }
+                return ("Update location failed", new LocationDto.LocationResponseDto());
 
-            updatedLocation = _mapper.Map<LocationDto.LocationResponseDto>(updatedEntity);
-            return "";
+            return ("", _mapper.Map<LocationDto.LocationResponseDto>(updatedEntity));
         }
 
-        public string DeleteLocation(int locationId, out bool deleted)
+        public async Task<(string, LocationDto.LocationResponseDto)> DeleteLocation(int locationId)
         {
-            deleted = false;
+            if (locationId <= 0)
+                return ("Invalid LocationId", new LocationDto.LocationResponseDto());
 
-            var entity = _locationRepository.GetLocationById(locationId);
-            if (entity == null)
-            {
-                return "Location not found.";
-            }
+            var locationExists = await _locationRepository.GetLocationById(locationId);
+            if (locationExists == null)
+                return ("Location not found", new LocationDto.LocationResponseDto());
 
-            if (_context.Pallets.Any(p => p.LocationId == locationId) || _context.StocktakingLocations.Any(sl => sl.LocationId == locationId))
-            {
-                return "Cannot delete location with existing pallets or stocktakings.";
-            }
+            if (await _locationRepository.HasDependentPalletsOrStocktakingsAsync(locationId))
+                return ("Cannot delete, location is in use by pallets or stocktakings", new LocationDto.LocationResponseDto());
 
-            deleted = _locationRepository.DeleteLocation(locationId);
-            if (!deleted)
-            {
-                return "Failed to delete location.";
-            }
+            locationExists.Status = CommonStatus.Deleted;
+            locationExists.UpdateAt = DateTime.UtcNow;
 
-            return "";
+            var deletedEntity = await _locationRepository.UpdateLocation(locationExists);
+            if (deletedEntity == null)
+                return ("Delete location failed", new LocationDto.LocationResponseDto());
+
+            return ("", _mapper.Map<LocationDto.LocationResponseDto>(deletedEntity));
+        }
+
+        private bool ContainsSpecialCharacters(string input)
+        {
+            return input.Any(ch => !char.IsLetterOrDigit(ch) && !char.IsWhiteSpace(ch));
         }
     }
 }
