@@ -10,6 +10,8 @@ namespace MilkDistributionWarehouse.Repositories
         public User? GetUserById(int userId);
 
         public User? GetUserByEmail(string email);
+
+        public void UpdateUser(User user);
     }
 
     public class UserRepository: IUserRepository
@@ -35,6 +37,12 @@ namespace MilkDistributionWarehouse.Repositories
             return _context.Users
                 .Where(u => u.UserId == userId && u.Status != CommonStatus.Deleted)
                 .FirstOrDefault();
+        }
+
+        public void UpdateUser(User user)
+        {
+            _context.Users.Update(user);
+            _context.SaveChanges();
         }
     }
 }

@@ -35,6 +35,33 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<JwtTokenDto>.ToResultOk(jwtDto);
         }
 
+        [HttpPost("ForgotPassword")]
+        public IResult ForgotPassword(ForgotPasswordDto forgotPasswordDto)
+        {
+            string msg = _iAuthService.RequestForgotPassword(forgotPasswordDto.Email);
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<string>.ToResultOk();
+        }
+
+        [HttpPost("VerifyOtp")]
+        public IResult VerifyOtp(VerifyOtpDto verifyOtpDto)
+        {
+            string msg = _iAuthService.VerifyForgotPasswordOtp(verifyOtpDto);
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<string>.ToResultOk();
+        }
+
+        [HttpPost("ResetPassword")]
+        public IResult ResetPassword(ResetPasswordDto resetPasswordDto)
+        {
+            string msg = _iAuthService.ResetPassword(resetPasswordDto, out AuthenticationDto authenDto);
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<AuthenticationDto>.ToResultOk(authenDto);
+        }
+
         [HttpGet("Logout")]
         public IResult DoLogout()
         {

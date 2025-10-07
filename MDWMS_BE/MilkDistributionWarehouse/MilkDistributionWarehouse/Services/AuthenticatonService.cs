@@ -1,10 +1,12 @@
 ﻿using BCrypt.Net;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.IdentityModel.Tokens;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
 using MilkDistributionWarehouse.Utilities;
+using Online_Learning.Services.Ultilities;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -15,6 +17,9 @@ namespace MilkDistributionWarehouse.Services
     {
         public string Dologin(LoginDto loginDto, out AuthenticationDto authen);
         public string GetNewJwtToken(RefreshTokenDto refreshTokenDto, out JwtTokenDto jwtDto);
+        public string RequestForgotPassword(string email);
+        public string VerifyForgotPasswordOtp(VerifyOtpDto verifyOtp);
+        public string ResetPassword(ResetPasswordDto resetPasswordDto, out AuthenticationDto authenDto);
         public string DoLogout(int? userId);
     }
 
@@ -23,14 +28,20 @@ namespace MilkDistributionWarehouse.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly IRefreshTokenRepository _refreshTokenRepository;
+        private readonly IUserOtpRepository _userOtpRepository;
+        private readonly EmailUtility _emailUtility;
         private readonly IConfiguration _iConfig;
 
         public AuthenticatonService(IUserRepository userRepository,
                                     IRefreshTokenRepository refreshTokenRepository,
+                                    IUserOtpRepository userOtpRepository,
+                                    EmailUtility emailUtility,
                                     IConfiguration configuration)
         {
             _userRepository = userRepository;
             _refreshTokenRepository = refreshTokenRepository;
+            _userOtpRepository = userOtpRepository;
+            _emailUtility = emailUtility;
             _iConfig = configuration;
         }
 
@@ -59,6 +70,48 @@ namespace MilkDistributionWarehouse.Services
             return "";
         }
 
+        public string RequestForgotPassword(string email)
+        {
+            var user = _userRepository.GetUserByEmail(email);
+            if (user == null) return "Email không tồn tại trong hệ thống!".ToMessageForUser();
+            if (user.Status == CommonStatus.Inactive) return "Tài khoản này đã bị vô hiệu".ToMessageForUser();
+
+            try
+            {
+                var otp = GenerateOtp(email);
+                SendOtpByEmail(email, otp);
+            }
+            catch (Exception ex)
+            {
+                return "Có lỗi xảy ra trong quá trình gửi OTP. Vui lòng thử lại".ToMessageForUser();
+            }
+            return "";
+        }
+
+        public string VerifyForgotPasswordOtp(VerifyOtpDto verifyOtp)
+        {
+            var userOtp = _userOtpRepository.GetUserOtpByEmail(verifyOtp.Email);
+            if (userOtp == null || userOtp.OtpCode != verifyOtp.OtpCode || userOtp.UsedAt != null)
+                return "Mã OTP không hợp lệ. Vui lòng thử lại!".ToMessageForUser();
+            if (userOtp.ExpiresAt < DateTime.Now)
+                return "Mã OTP đã hết hạn. Vui lòng thử lại!".ToMessageForUser();
+
+            return "";
+        }
+
+        public string ResetPassword(ResetPasswordDto resetPasswordDto, out AuthenticationDto authenDto)
+        {
+            authenDto = new AuthenticationDto();
+            var user = _userRepository.GetUserByEmail(resetPasswordDto.Email);
+            if (user == null) return "User not found";
+
+            user.Password = BCrypt.Net.BCrypt.HashPassword(resetPasswordDto.NewPassword);
+            _userRepository.UpdateUser(user);
+
+            authenDto = GetAuthResponse(user);
+            return "";
+        }
+
         public string DoLogout(int? userId)
         {
             if (userId == null) return "Error is the UserId is null";
@@ -70,6 +123,33 @@ namespace MilkDistributionWarehouse.Services
             }
             return "";
         }
+
+        private string GenerateOtp(string email)
+        {
+            var otpCode = new Random().Next(000000, 999999).ToString();
+            var otpExpires = DateTime.Now.AddMinutes(double.Parse(_iConfig["OtpCode:ExpireMinutes"]));
+            var oldUserOtp = _userOtpRepository.GetUserOtpByEmail(email);
+            if (oldUserOtp == null)
+            {
+                var userOtp = new UserOtp()
+                {
+                    Email = email,
+                    OtpCode = otpCode,
+                    ExpiresAt = otpExpires,
+                    CreatedAt = DateTime.Now,
+                };
+                _userOtpRepository.CreateUserOtp(userOtp);
+            }
+            else
+            {
+                oldUserOtp.OtpCode = otpCode;
+                oldUserOtp.ExpiresAt = otpExpires;
+                oldUserOtp.UsedAt = null;
+                _userOtpRepository.UpdateUserOtp(oldUserOtp);
+            }
+            return otpCode;
+        }
+
         private AuthenticationDto GetAuthResponse(User user)
         {
             var auth = new AuthenticationDto()
@@ -142,6 +222,12 @@ namespace MilkDistributionWarehouse.Services
                 );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        private void SendOtpByEmail(string toEmail, string otpCode)
+        {
+            string emailBody = $"Your verification code is: <h2>{otpCode}</h2>This code will expire in 5 minutes.";
+            _emailUtility.SendMail(toEmail, "Account Verification OTP", emailBody);
         }
     }
 }

@@ -12,6 +12,35 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public string Password { get; set; }
     }
 
+    public class ForgotPasswordDto
+    {
+        [Required(ErrorMessage = "Email không được để trống!")]
+        [EmailAddress(ErrorMessage = "Email không hợp lệ!")]
+        public string Email { get; set; }
+    }
+
+    public class VerifyOtpDto
+    {
+        [Required(ErrorMessage = "Email không được để trống!")]
+        public string Email { get; set; }
+
+        [Required(ErrorMessage = "Otp không được để trống!")]
+        public string OtpCode { get; set; }
+    }
+
+    public class ResetPasswordDto
+    {
+        [Required(ErrorMessage = "Email không được để trống!")]
+        public string Email { get; set; }
+
+        [Required(ErrorMessage = "Mật khẩu không được để trống!")]
+        public string NewPassword { get; set; }
+
+        [Required(ErrorMessage = "Mật khẩu xác nhận không được để trống!")]
+        [Compare("NewPassword", ErrorMessage = "Mật khẩu xác nhận không trùng!")]
+        public string ConfirmNewPassword { get; set; }
+    }
+
     public class AuthenticationDto
     {
         public string JwtToken { get; set; }
@@ -31,4 +60,5 @@ namespace MilkDistributionWarehouse.Models.DTOs
     {
         public string Token { get; set; }
     }
+
 }
