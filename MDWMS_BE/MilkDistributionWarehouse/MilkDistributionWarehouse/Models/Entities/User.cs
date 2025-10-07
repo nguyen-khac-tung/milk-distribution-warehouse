@@ -45,6 +45,8 @@ public partial class User
 
     public virtual ICollection<PurchaseOrder> PurchaseOrders { get; set; } = new List<PurchaseOrder>();
 
+    public virtual RefreshToken RefreshToken { get; set; }
+
     public virtual ICollection<SalesOrder> SalesOrders { get; set; } = new List<SalesOrder>();
 
     public virtual ICollection<StocktakingArea> StocktakingAreas { get; set; } = new List<StocktakingArea>();

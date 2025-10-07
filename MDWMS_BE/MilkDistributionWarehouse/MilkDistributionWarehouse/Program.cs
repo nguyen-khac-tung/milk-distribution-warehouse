@@ -1,7 +1,10 @@
-using MilkDistributionWarehouse.Mapper;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using MilkDistributionWarehouse.Configurations;
+using MilkDistributionWarehouse.Mapper;
 using MilkDistributionWarehouse.Models.Entities;
+using System.Text;
 
 namespace MilkDistributionWarehouse
 {
@@ -21,6 +24,28 @@ namespace MilkDistributionWarehouse
             builder.Services.AddSwaggerGen();
             builder.Services.AddCors();
             builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
+
+            builder.Services.AddAuthentication(option =>
+            {
+                option.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+                option.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                option.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(option =>
+            {
+                option.SaveToken = true;
+
+                option.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+
+                    ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                    ValidAudience = builder.Configuration["Jwt:Audience"],
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+                };
+            });
 
             // Add dependency injection configuration
             builder.Services.AddDependencyInjection();
@@ -43,6 +68,8 @@ namespace MilkDistributionWarehouse
             });
 
             app.UseHttpsRedirection();
+
+            app.UseAuthentication();
 
             app.UseAuthorization();
 

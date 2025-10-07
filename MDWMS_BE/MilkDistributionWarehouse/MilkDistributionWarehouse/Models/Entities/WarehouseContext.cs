@@ -43,6 +43,8 @@ public partial class WarehouseContext : DbContext
 
     public virtual DbSet<PurchaseOrder> PurchaseOrders { get; set; }
 
+    public virtual DbSet<RefreshToken> RefreshTokens { get; set; }
+
     public virtual DbSet<Retailer> Retailers { get; set; }
 
     public virtual DbSet<Role> Roles { get; set; }
@@ -241,11 +243,11 @@ public partial class WarehouseContext : DbContext
 
             entity.HasOne(d => d.ReceivedByNavigation).WithMany(p => p.NotificationReceivedByNavigations)
                 .HasForeignKey(d => d.ReceivedBy)
-                .HasConstraintName("FK_Notifications_Users1");
+                .HasConstraintName("FK_Notifications_Users");
 
             entity.HasOne(d => d.SendByNavigation).WithMany(p => p.NotificationSendByNavigations)
                 .HasForeignKey(d => d.SendBy)
-                .HasConstraintName("FK_Notifications_Users");
+                .HasConstraintName("FK_Notifications_Users1");
         });
 
         modelBuilder.Entity<Pallet>(entity =>
@@ -300,6 +302,21 @@ public partial class WarehouseContext : DbContext
             entity.HasOne(d => d.Supplier).WithMany(p => p.PurchaseOrders)
                 .HasForeignKey(d => d.SupplierId)
                 .HasConstraintName("FK_ImportOrders_Suppliers");
+        });
+
+        modelBuilder.Entity<RefreshToken>(entity =>
+        {
+            entity.ToTable("RefreshToken");
+
+            entity.HasIndex(e => e.UserId, "IX_RefreshToken").IsUnique();
+
+            entity.Property(e => e.Token)
+                .HasMaxLength(100)
+                .IsUnicode(false);
+
+            entity.HasOne(d => d.User).WithOne(p => p.RefreshToken)
+                .HasForeignKey<RefreshToken>(d => d.UserId)
+                .HasConstraintName("FK_RefreshToken_Users");
         });
 
         modelBuilder.Entity<Retailer>(entity =>

@@ -8,6 +8,12 @@ namespace MilkDistributionWarehouse.Configurations
     {
         public static void AddDependencyInjection(this IServiceCollection services)
         {
+            //Authentication
+            services.AddScoped<IAuthenticatonService, AuthenticatonService>();
+
+            //RefreshToken
+            services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+
             //User
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IUserService, UserService>();
