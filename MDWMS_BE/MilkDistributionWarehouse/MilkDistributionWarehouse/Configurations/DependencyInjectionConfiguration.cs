@@ -30,6 +30,10 @@ namespace MilkDistributionWarehouse.Configurations
             //Location
             services.AddScoped<ILocationRepository, LocationRepository>();
             services.AddScoped<ILocationService,  LocationService>();
+
+            //Area
+            services.AddScoped<IAreaRepository, AreaRepository>();
+            services.AddScoped<IAreaService, AreaService>();
         }
     }
 }
