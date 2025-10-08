@@ -65,7 +65,7 @@ namespace MilkDistributionWarehouse.Controllers
         [HttpGet("Logout")]
         public IResult DoLogout()
         {
-            string msg = _iAuthService.DoLogout(1);
+            string msg = _iAuthService.DoLogout(User.GetUserId());
             if(msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
 
             return ApiResponse<string>.ToResultOk();
