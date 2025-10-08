@@ -31,5 +31,10 @@
 
             public int StorageConditionId { get; set; }
         }
+
+        public class AreaNameDto
+        {
+            public string AreaName { get; set; }
+        }
     }
 }

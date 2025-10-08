@@ -27,6 +27,7 @@ namespace MilkDistributionWarehouse.Repositories
         public IQueryable<Location>? GetLocations()
         {
             return _context.Locations
+                .Include(l => l.Area)
                 .Where(l => l.Status != CommonStatus.Inactive)
                 .AsNoTracking();
         }

@@ -1,4 +1,6 @@
-﻿namespace MilkDistributionWarehouse.Models.DTOs
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace MilkDistributionWarehouse.Models.DTOs
 {
     public class LocationDto
     {
@@ -6,7 +8,7 @@
         {
             public int LocationId { get; set; }
 
-            public int? AreaId { get; set; }
+            public AreaDto.AreaNameDto AreaNameDto { get; set; }
 
             public string LocationCode { get; set; }
 
@@ -27,10 +29,13 @@
 
         public class LocationRequestDto
         {
+            [Required(ErrorMessage = "Chưa chọn khu vực!")]
             public int AreaId { get; set; }
 
+            [Required(ErrorMessage = "Mã vị trí không được để trống")]
             public string LocationCode { get; set; }
 
+            [Required(ErrorMessage = "Rack không được để trống")]
             public string Rack { get; set; }
 
             public int? Row { get; set; }
@@ -38,6 +43,8 @@
             public int? Column { get; set; }
 
             public bool? IsAvailable { get; set; }
+
+            public int? Status { get; set; }
         }
     }
 }
