@@ -67,8 +67,22 @@ namespace MilkDistributionWarehouse.Services
             if (unitMeasureExist == null)
                 return ("Unit Measure is not exist", new UnitMeasureDto());
 
+            if (unitMeasureExist.Status == CommonStatus.Deleted || unitMeasureUpdate.Status == CommonStatus.Deleted)
+                return ("Đơn vị đã bị xoá hoặc không thể trạng thái xoá đơn vị".ToMessageForUser(), new UnitMeasureDto());
+
             if (await _unitMeasureRepository.IsDuplicationUnitMeasureName(unitMeasureUpdate.UnitMeasureId, unitMeasureUpdate.Name))
                 return ("Tên đơn vị đã tồn tại trong hệ thống".ToMessageForUser(), new UnitMeasureDto());
+
+            bool isChangingToInactive = unitMeasureExist.Status == CommonStatus.Active 
+                && unitMeasureUpdate.Status == CommonStatus.Inactive;
+
+            if (isChangingToInactive)
+            {
+                var allGoodsInactive = await _unitMeasureRepository.IsUnitMeasureContainGooddAllInActice(unitMeasureUpdate.UnitMeasureId);
+
+                if (!allGoodsInactive)
+                    return ("Đơn vị không thể vô hiệu hoá vì có sản phẩm đang liên kết với đơn vị.".ToMessageForUser(), new UnitMeasureDto());
+            }    
 
             _mapper.Map(unitMeasureUpdate, unitMeasureExist);
 

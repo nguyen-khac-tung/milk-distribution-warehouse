@@ -72,7 +72,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
         [Required(ErrorMessage = "Tên sản phẩm không được để trống")]
         [MaxLength(255, ErrorMessage = "Độ dài tên sản phẩm không được vượt quá 255 ký tự")]
-        [RegularExpression(@"^[a-zA-Z0-9\s_-]+$", ErrorMessage = "Tên sản phẩm không được chứa các ký tự đặc biệt")]
+        [RegularExpression(@"^[\p{L}0-9\s_\-.,]+$", ErrorMessage = "Tên sản phẩm không được chứa các ký tự đặc biệt")]
         public string GoodsName { get; set; }
         [Required(ErrorMessage = "Loại sản phẩm không được để trống")]
         public int CategoryId { get; set; }

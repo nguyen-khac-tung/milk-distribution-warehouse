@@ -12,7 +12,8 @@ namespace MilkDistributionWarehouse.Repositories
         Task<Category?> GetCategoryByCategoryId(int categoryId);
         Task<bool> IsDuplicationByName(int? categoryId, string categoryName);
         Task<Category?> UpdateCategory(Category category);
-        Task<bool> IsCategoryContainingGoodsAsync(int categoryId);
+        Task<bool> IsCategoryContainingGoodsAsync(int categoryId); 
+        Task<bool> IsCategoryContainingGoodsInActive(int categoryId);
 
     }
     public class CategoryRepository : ICategoryRepository
@@ -25,7 +26,7 @@ namespace MilkDistributionWarehouse.Repositories
 
         public IQueryable<Category>? GetCategories()
         {
-            return _warehouseContext.Categories.Where(c => c.Status != CommonStatus.Deleted).AsNoTracking();
+            return _warehouseContext.Categories.Where(c => c.Status != CommonStatus.Deleted).OrderByDescending(c => c.CreatedAt).AsNoTracking();
         }
 
         public async Task<Category?> CreateCategory(Category category)
@@ -71,6 +72,13 @@ namespace MilkDistributionWarehouse.Repositories
         public async Task<bool> IsCategoryContainingGoodsAsync(int categoryId)
         {
             return await _warehouseContext.Goods.AnyAsync(g => g.CategoryId == categoryId && g.Status != CommonStatus.Deleted);
+        }
+
+        public async Task<bool> IsCategoryContainingGoodsInActive(int categoryId)
+        {
+            IQueryable<Good> goods = _warehouseContext.Goods.Where(g => g.CategoryId == categoryId && g.Status != CommonStatus.Deleted);
+
+            return !(await goods.AnyAsync(g => g.Status != CommonStatus.Inactive));
         }
     }
 }
