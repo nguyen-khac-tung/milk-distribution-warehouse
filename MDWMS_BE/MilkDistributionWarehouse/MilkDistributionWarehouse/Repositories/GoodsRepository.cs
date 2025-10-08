@@ -69,7 +69,5 @@ namespace MilkDistributionWarehouse.Repositories
                 (goodsId == null || g.GoodsId != goodsId));
         }
 
-
-
     }
 }

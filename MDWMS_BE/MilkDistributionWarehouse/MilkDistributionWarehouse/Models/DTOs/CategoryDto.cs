@@ -13,16 +13,17 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
     public class CategoryCreate
     {
-        [Required(ErrorMessage = "Category Name is require")]
+        [Required(ErrorMessage = "Tên danh mục không được để trống")]
         [MaxLength(100)]
+        [RegularExpression(@"^[a-zA-Z0-9\s_-]+$", ErrorMessage = "Tên danh mục không được chứa các ký tự đặc biệt")]
         public string CategoryName { get; set; }
-        [MaxLength(255)]
+        [MaxLength(100, ErrorMessage = "Độ dài của mô tả không được vượt quá 100 ký tự")]
         public string Description { get; set; }
     }
 
     public class CategoryUpdate : CategoryCreate
     {
-        [Required]
+        [Required(ErrorMessage = "Cần phải chọn danh mục để cập nhật")]
         public int CategoryId { get; set; }
 
         public int Status { get; set; }

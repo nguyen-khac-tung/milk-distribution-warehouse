@@ -12,9 +12,8 @@ namespace MilkDistributionWarehouse.Repositories
         Task<UnitMeasure?> CreateUnitMeasures(UnitMeasure unitMeasure);
         Task<UnitMeasure?> UpdateUnitMeasure(UnitMeasure unitMeasure);
         Task<UnitMeasure?> GetUnitMeasureById(int unitMeasureId);
-        Task<bool> IsDuplicatioByIdAndName(int unitMeasureId, string name);
-        Task<bool> IsDuplicationUnitMeasureName(string name);
         Task<bool> IsUnitMeasureContainingGoods(int unitMeasureId);
+        Task<bool> IsDuplicationUnitMeasureName(int? unitMeasureId, string name);
     }
     public class UnitMeasureRepository : IUnitMeasureRepository
     {
@@ -62,16 +61,11 @@ namespace MilkDistributionWarehouse.Repositories
             return await _warehouseContext.UnitMeasures.FirstOrDefaultAsync(um => um.UnitMeasureId == unitMeasureId && um.Status != CommonStatus.Deleted);
         }
 
-        public async Task<bool> IsDuplicatioByIdAndName(int unitMeasureId, string name)
+        public async Task<bool> IsDuplicationUnitMeasureName(int? unitMeasureId, string name)
         {
-            return await _warehouseContext.UnitMeasures.AnyAsync(um => um.UnitMeasureId !=  unitMeasureId 
-                    && um.Name.ToLower().Trim().Equals(name.ToLower().Trim()) 
-                    && um.Status != CommonStatus.Deleted);
-        }
-
-        public async Task<bool> IsDuplicationUnitMeasureName(string name)
-        {
-            return await _warehouseContext.UnitMeasures.AnyAsync(um => um.Name.ToLower().Trim().Equals(name.ToLower().Trim()) && um.Status != CommonStatus.Deleted);
+            return await _warehouseContext.UnitMeasures.AnyAsync(um => um.Name.ToLower().Trim().Equals(name.ToLower().Trim()) 
+                                                                && um.Status != CommonStatus.Deleted 
+                                                                && (unitMeasureId == null || um.UnitMeasureId != unitMeasureId));
         }
 
         public async Task<bool> IsUnitMeasureContainingGoods(int unitMeasureId)

@@ -16,23 +16,28 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
     public class GoodsCreate
     {
-        [Required, MaxLength(255)]
+        [Required(ErrorMessage = "Mã sản phẩm không được để trống")]
+        [MaxLength(255, ErrorMessage = "Độ dài mã sản phẩm không được vượt quá 255 ký tự")]
+        [RegularExpression(@"^[a-zA-Z0-9\s_-]+$", ErrorMessage = "Mã sản phẩm không được chứa các ký tự đặc biệt")]
         public string GoodsCode { get; set; }
-        [Required, MaxLength(255)]
+
+        [Required(ErrorMessage = "Tên sản phẩm không được để trống")]
+        [MaxLength(255, ErrorMessage = "Độ dài tên sản phẩm không được vượt quá 255 ký tự")]
+        [RegularExpression(@"^[a-zA-Z0-9\s_-]+$", ErrorMessage = "Tên sản phẩm không được chứa các ký tự đặc biệt")]
         public string GoodsName { get; set; }
-        [Required]
+        [Required(ErrorMessage = "Loại sản phẩm không được để trống")]
         public int CategoryId { get; set; }
-        [Required]
+        [Required(ErrorMessage = "Nhà cung cấp không được để trống")]
         public int SupplierId { get; set; }
-        [Required]
+        [Required(ErrorMessage = "Điều kiện lưu trữ không được để trống")]
         public int StorageConditionId { get; set; }
-        [Required]
+        [Required(ErrorMessage = "Đơn vị sản phẩm không được để trống")]
         public int UnitMeasureId { get; set; }
     }
 
     public class GoodsUpdate : GoodsCreate
     {
-        [Required]
+        [Required(ErrorMessage = "Cần phải chọn sản phẩm để cập nhật")]
         public int GoodsId { get; set; }    
         public int Status { get; set; }
     }

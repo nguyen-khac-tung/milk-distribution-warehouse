@@ -29,13 +29,16 @@ namespace MilkDistributionWarehouse.Services
 
         public async Task<(string, PageResult<UnitMeasureDto>)> GetUnitMeasure(PagedRequest request)
         {
-            var query = _unitMeasureRepository.GetUnitMeasures();
+            var unitMeasures = _unitMeasureRepository.GetUnitMeasures();
 
-            var unitMeasureDtos = query.ProjectTo<UnitMeasureDto>(_mapper.ConfigurationProvider);
+            var unitMeasureDtos = unitMeasures.ProjectTo<UnitMeasureDto>(_mapper.ConfigurationProvider);
 
-            var pageResult = await unitMeasureDtos.ToPagedResultAsync(request);
+            var items  = await unitMeasureDtos.ToPagedResultAsync(request);
 
-            return ("", pageResult);
+            if(!items.Items.Any()) 
+                return ("Danh sách đơn vị trống.".ToMessageForUser(), new PageResult<UnitMeasureDto> { });
+
+            return ("", items);
         }
 
         public async Task<(string, UnitMeasureDto)> CreateUnitMeasure(UnitMeasureCreate unitMeasureCreate)
@@ -43,20 +46,16 @@ namespace MilkDistributionWarehouse.Services
             if (unitMeasureCreate == null)
                 return ("Unit measure is null.", new UnitMeasureDto());
             
-            if (await _unitMeasureRepository.IsDuplicationUnitMeasureName(unitMeasureCreate.Name))
-                return ("Unit measure name is existed", new UnitMeasureDto());
-
-            if (ContainsSpecialCharacters(unitMeasureCreate.Name))
-                return ("Unit measure name is invalid", new UnitMeasureDto());
+            if (await _unitMeasureRepository.IsDuplicationUnitMeasureName(null, unitMeasureCreate.Name))
+                return ("Tên đơn vị đã tồn tại trong hệ thống".ToMessageForUser(), new UnitMeasureDto());
 
             var unitMeasure = _mapper.Map<UnitMeasure>(unitMeasureCreate);
 
             var createResult = await _unitMeasureRepository.CreateUnitMeasures(unitMeasure);
             if (createResult == null)
-                return ("Create unit measure is failed", new UnitMeasureDto());
+                return ("Thêm đơn vị mới thất bại".ToMessageForUser(), new UnitMeasureDto());
 
             return ("", _mapper.Map<UnitMeasureDto>(unitMeasure));
-
         }
 
         public async Task<(string, UnitMeasureDto)> UpdateUnitMeasure(UnitMeasureUpdate unitMeasureUpdate)
@@ -68,18 +67,15 @@ namespace MilkDistributionWarehouse.Services
             if (unitMeasureExist == null)
                 return ("Unit Measure is not exist", new UnitMeasureDto());
 
-            if (await _unitMeasureRepository.IsDuplicatioByIdAndName(unitMeasureUpdate.UnitMeasureId, unitMeasureUpdate.Name))
-                return ("Unit Measure name is exist", new UnitMeasureDto());
-
-            if (ContainsSpecialCharacters(unitMeasureUpdate.Name))
-                return ("Unit Measure name is invalid", new UnitMeasureDto());
+            if (await _unitMeasureRepository.IsDuplicationUnitMeasureName(unitMeasureUpdate.UnitMeasureId, unitMeasureUpdate.Name))
+                return ("Tên đơn vị đã tồn tại trong hệ thống".ToMessageForUser(), new UnitMeasureDto());
 
             _mapper.Map(unitMeasureUpdate, unitMeasureExist);
 
             var updateResult = await _unitMeasureRepository.UpdateUnitMeasure(unitMeasureExist);
 
             if (updateResult == null) 
-                return ("Update unit measure is failed", new UnitMeasureDto());
+                return ("Cập nhật đơn vị thất bại".ToMessageForUser(), new UnitMeasureDto());
 
             return ("", _mapper.Map<UnitMeasureDto>(unitMeasureExist));
         }
@@ -94,23 +90,21 @@ namespace MilkDistributionWarehouse.Services
             if (unitMeasureExist == null)
                 return ("Unit measure is not exist", new UnitMeasureDto());
 
+            if (unitMeasureExist.Status == CommonStatus.Deleted)
+                return ("Đơn vị đã được xoá trước đó".ToMessageForUser(), new UnitMeasureDto());          
+
             if (await _unitMeasureRepository.IsUnitMeasureContainingGoods(unitMeasureId))
-                return ("Cannot delete, unit measure is in use", new UnitMeasureDto());
+                return ("Không thể xoá đơn vị này vì đang được liên kết với sản phẩm được sử dụng".ToMessageForUser(), new UnitMeasureDto());
 
             unitMeasureExist.Status = CommonStatus.Deleted;
             unitMeasureExist.UpdateAt = DateTime.Now;
 
             var deleteResult = await _unitMeasureRepository.UpdateUnitMeasure(unitMeasureExist);
             if (deleteResult == null)
-                return ("Delete unit measure is failed", new UnitMeasureDto());
+                return ("Xoá đơn vị thất bại".ToMessageForUser(), new UnitMeasureDto());
 
             return ("", _mapper.Map<UnitMeasureDto>(deleteResult));
         }
 
-
-        private bool ContainsSpecialCharacters(string input)
-        {
-            return input.Any(ch => !char.IsLetterOrDigit(ch) && !char.IsWhiteSpace(ch));
-        }
     }
 }

@@ -9,9 +9,8 @@ namespace MilkDistributionWarehouse.Repositories
     {
         IQueryable<Category>? GetCategories();
         Task<Category?> CreateCategory(Category category);
-        Task<bool> IsDuplicateCategoryName(string categoryName);
         Task<Category?> GetCategoryByCategoryId(int categoryId);
-        Task<bool> IsDuplicationByIdAndName(int categoryId, string categoryName);
+        Task<bool> IsDuplicationByName(int? categoryId, string categoryName);
         Task<Category?> UpdateCategory(Category category);
         Task<bool> IsCategoryContainingGoodsAsync(int categoryId);
 
@@ -43,11 +42,6 @@ namespace MilkDistributionWarehouse.Repositories
             }
         }
 
-        public async Task<bool> IsDuplicateCategoryName(string categoryName)
-        {
-            return await _warehouseContext.Categories.AnyAsync(c => c.CategoryName.ToLower().Trim().Equals(categoryName.ToLower().Trim()) && c.Status != CommonStatus.Deleted);
-        }
-
         public async Task<Category?> UpdateCategory(Category category)
         {
             try
@@ -67,9 +61,9 @@ namespace MilkDistributionWarehouse.Repositories
             return await _warehouseContext.Categories.FirstOrDefaultAsync(c => c.CategoryId == categoryId && c.Status != CommonStatus.Deleted);
         }
 
-        public async Task<bool> IsDuplicationByIdAndName(int categoryId, string categoryName)
+        public async Task<bool> IsDuplicationByName(int? categoryId, string categoryName)
         {
-            return await _warehouseContext.Categories.AnyAsync(c => c.CategoryId != categoryId
+            return await _warehouseContext.Categories.AnyAsync(c => (c.CategoryId != categoryId || categoryId == null)
                             && c.CategoryName.ToLower().Trim().Equals(categoryName.ToLower().Trim())
                             && c.Status != CommonStatus.Deleted);
         }
@@ -78,7 +72,5 @@ namespace MilkDistributionWarehouse.Repositories
         {
             return await _warehouseContext.Goods.AnyAsync(g => g.CategoryId == categoryId && g.Status != CommonStatus.Deleted);
         }
-
-
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using MilkDistributionWarehouse.Utilities;
+using System.ComponentModel.DataAnnotations;
 
 namespace MilkDistributionWarehouse.Models.DTOs
 {
@@ -12,16 +13,17 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
     public class UnitMeasureCreate
     {
-        [Required]
-        [MaxLength(100)]
+        [Required(ErrorMessage ="Tên đơn vị không được để trống")]
+        [MaxLength(100, ErrorMessage ="Độ dài của tên đơn vị không được quá 100 ký tự")]
+        [RegularExpression(@"^[a-zA-Z0-9\s_-]+$", ErrorMessage = "Tên đơn vị không được chứa các ký tự đặc biệt")]
         public string Name { get; set; }
-        [MaxLength(100)]
+        [MaxLength(100, ErrorMessage ="Độ dài của mô tả không được vượt quá 100 ký tự")]
         public string Description { get; set; }
     }
 
     public class UnitMeasureUpdate : UnitMeasureCreate
     {
-        [Required]
+        [Required(ErrorMessage = "Cần phải chọn đơn vị để cập nhật")]
         public int UnitMeasureId { get; set; }
         public int Status { get; set; }
     }

@@ -11,7 +11,6 @@ namespace MilkDistributionWarehouse.Services
 {
     public interface ICategoryService
     {
-        Task<(string, PageResult<CategoryDto>)> GetCategories(Filter filter);
         Task<(string, PageResult<CategoryDto>)> GetCategories(PagedRequest request);
         Task<(string, CategoryDto)> CreateCategory(CategoryCreate category);
         Task<(string, CategoryDto)> UpdateCategory(CategoryUpdate categoryUpdate);
@@ -27,26 +26,6 @@ namespace MilkDistributionWarehouse.Services
             _mapper = mapper;
         }
 
-        public async Task<(string, PageResult<CategoryDto>)> GetCategories(Filter filter)
-        {
-            var categories = _categoryRepository.GetCategories();
-
-            if (categories == null || !categories.Any())
-                return ("The list category is null", new PageResult<CategoryDto>());
-
-            if (!string.IsNullOrEmpty(filter.Search))
-                categories = categories.Where(c => c.CategoryName.Contains(filter.Search) || c.Description.Contains(filter.Search));
-            
-            if(filter.Status != null)
-                categories = categories.Where(c => c.Status == filter.Status);
-
-            var categoryDtos = categories.ProjectTo<CategoryDto>(_mapper.ConfigurationProvider);
-
-            var items = await categoryDtos.ToPagedResultAsync(filter.PageNumber, filter.PageSize);
-
-            return ("", items);
-        }
-
         public async Task<(string, PageResult<CategoryDto>)> GetCategories(PagedRequest request)
         {
             var categories = _categoryRepository.GetCategories();
@@ -55,6 +34,9 @@ namespace MilkDistributionWarehouse.Services
 
             var items = await categoryDtos.ToPagedResultAsync(request);
 
+            if(!items.Items.Any()) 
+                return ("Danh sách danh mục trống.".ToMessageForUser(), new PageResult<CategoryDto> { });
+
             return ("", items);
         }
 
@@ -62,18 +44,15 @@ namespace MilkDistributionWarehouse.Services
         {
             if (categoryCreate == null) return ("Category create is null", new CategoryDto());
 
-            if (await _categoryRepository.IsDuplicateCategoryName(categoryCreate.CategoryName))
-                return ("Category Name is exist", new CategoryDto());
-
-            if (ContainsSpecialCharacters(categoryCreate.CategoryName))
-                return ("Category Name is invalid", new CategoryDto());
+            if (await _categoryRepository.IsDuplicationByName(null, categoryCreate.CategoryName))
+                return ("Tên loại sản phẩm đã tồn tại trong hệ thống".ToMessageForUser(), new CategoryDto());
 
             var category = _mapper.Map<Category>(categoryCreate);
 
             var createResult = await _categoryRepository.CreateCategory(category);
 
             if (createResult == null)
-                return ("Create category is failed", new CategoryDto());
+                return ("Tạo loại sản phẩm thất bại".ToMessageForUser(), new CategoryDto());
 
             return ("", _mapper.Map<CategoryDto>(category));
         }
@@ -87,17 +66,17 @@ namespace MilkDistributionWarehouse.Services
             if (categoryExist == null)
                 return ("Category is not exist", new CategoryDto());
 
-            if (await _categoryRepository.IsDuplicationByIdAndName(categoryUpdate.CategoryId, categoryUpdate.CategoryName))
-                return ("Category Name is exist", new CategoryDto());
+            if (await _categoryRepository.IsDuplicationByName(categoryUpdate.CategoryId, categoryUpdate.CategoryName))
+                return ("Tên danh mục đã tồn tại trong hệ thống".ToMessageForUser(), new CategoryDto());
 
-            if (ContainsSpecialCharacters(categoryUpdate.CategoryName))
-                return ("Category Name is invalid", new CategoryDto());
+            //if (await _categoryRepository.IsCategoryContainingGoodsAsync(categoryUpdate.CategoryId))
+            //    return ("Danh mục không thể xoá vì có sản phẩm đang liên kết với danh mục", new CategoryDto());
 
             _mapper.Map(categoryUpdate, categoryExist);
 
             var updateResult = await _categoryRepository.UpdateCategory(categoryExist);
             if (updateResult == null)
-                return ("Update category is fail", new CategoryDto());
+                return ("Cập nhật danh mục thất bại".ToMessageForUser(), new CategoryDto());
 
             return ("", _mapper.Map<CategoryDto>(categoryExist));
         }
@@ -113,21 +92,16 @@ namespace MilkDistributionWarehouse.Services
                 return ("Category is not exist", new CategoryDto());
 
             if (await _categoryRepository.IsCategoryContainingGoodsAsync(categoryId))
-                return ("Cannot delete, category is in use", new CategoryDto());
+                return ("Không thể xoá danh mục, danh mục đang được liên kết với sản phẩm".ToMessageForUser(), new CategoryDto());
 
             categoryExist.Status = CommonStatus.Deleted;
             categoryExist.UpdateAt = DateTime.Now;
 
             var resultDelete = await _categoryRepository.UpdateCategory(categoryExist);
             if (resultDelete == null) 
-                return ("Delete category is fail", new CategoryDto());
+                return ("Xoá danh mục thất bại".ToMessageForUser(), new CategoryDto());
 
             return ("", _mapper.Map<CategoryDto>(resultDelete));
-        }
-
-        private bool ContainsSpecialCharacters(string input)
-        {
-            return input.Any(ch => !char.IsLetterOrDigit(ch) && !char.IsWhiteSpace(ch));
         }
 
     }
