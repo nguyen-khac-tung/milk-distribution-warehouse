@@ -14,6 +14,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<UnitMeasure?> GetUnitMeasureById(int unitMeasureId);
         Task<bool> IsUnitMeasureContainingGoods(int unitMeasureId);
         Task<bool> IsDuplicationUnitMeasureName(int? unitMeasureId, string name);
+        Task<bool> IsUnitMeasureContainGooddAllInActice(int unitMeasureId);
     }
     public class UnitMeasureRepository : IUnitMeasureRepository
     {
@@ -25,7 +26,8 @@ namespace MilkDistributionWarehouse.Repositories
 
         public IQueryable<UnitMeasure> GetUnitMeasures()
         {
-            return _warehouseContext.UnitMeasures.Where(um => um.Status != CommonStatus.Deleted).AsNoTracking();
+            return _warehouseContext.UnitMeasures.Where(um => um.Status != CommonStatus.Deleted)
+                .OrderByDescending(um => um.CreatedAt).AsNoTracking();
         }
 
         public async Task<UnitMeasure?> CreateUnitMeasures(UnitMeasure unitMeasure)
@@ -71,6 +73,13 @@ namespace MilkDistributionWarehouse.Repositories
         public async Task<bool> IsUnitMeasureContainingGoods(int unitMeasureId)
         {
             return await _warehouseContext.Goods.AnyAsync(g => g.UnitMeasureId == unitMeasureId && g.Status != CommonStatus.Deleted);
+        }
+
+        public async Task<bool> IsUnitMeasureContainGooddAllInActice(int unitMeasureId)
+        {
+            IQueryable<Good> goods = _warehouseContext.Goods.Where(g => g.UnitMeasureId == unitMeasureId && g.Status != CommonStatus.Deleted);
+
+            return !(await goods.AnyAsync(g => g.Status != CommonStatus.Inactive));
         }
 
     }
