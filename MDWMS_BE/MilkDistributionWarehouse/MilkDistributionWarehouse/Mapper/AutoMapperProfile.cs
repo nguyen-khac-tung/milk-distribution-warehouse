@@ -51,7 +51,8 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
 
             // Map Location
-            CreateMap<Location, LocationDto.LocationResponseDto>();
+            CreateMap<Location, LocationDto.LocationResponseDto>()
+                .ForMember(dest => dest.AreaNameDto, opt => opt.MapFrom(src => src.Area));
 
             CreateMap<LocationDto.LocationRequestDto, Location>()
                 .ForMember(dest => dest.LocationId, opt => opt.Ignore())
@@ -64,7 +65,7 @@ namespace MilkDistributionWarehouse.Mapper
 
             // Map Area
             CreateMap<Area, AreaDto.AreaResponseDto>();
-
+            CreateMap<Area, AreaDto.AreaNameDto>();
             CreateMap<AreaDto.AreaRequestDto, Area>()
                 .ForMember(dest => dest.AreaId, opt => opt.Ignore())
                 .ForMember(dest => dest.Status, opt => opt.Ignore())

@@ -1,15 +1,18 @@
-﻿using MilkDistributionWarehouse.Constants;
+﻿using Microsoft.EntityFrameworkCore;
+using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.Entities;
 
 namespace MilkDistributionWarehouse.Repositories
 {
     public interface ILocationRepository
     {
-        List<Location> GetLocations();
-        Location? GetLocationById(int locationId);
-        Location? CreateLocation(Location entity);
-        Location? UpdateLocation(Location entity);
-        bool DeleteLocation(int locationId);
+        IQueryable<Location>? GetLocations();
+        Task<Location?> CreateLocation(Location entity);
+        Task<bool> IsDuplicateLocationCode(string locationCode);
+        Task<Location?> GetLocationById(int locationId);
+        Task<bool> IsDuplicationByIdAndCode(int locationId, string locationCode);
+        Task<Location?> UpdateLocation(Location entity);
+        Task<bool> HasDependentPalletsOrStocktakingsAsync(int locationId);
     }
 
     public class LocationRepository : ILocationRepository
@@ -21,26 +24,20 @@ namespace MilkDistributionWarehouse.Repositories
             _context = context;
         }
 
-        public List<Location> GetLocations()
+        public IQueryable<Location>? GetLocations()
         {
             return _context.Locations
+                .Include(l => l.Area)
                 .Where(l => l.Status != CommonStatus.Inactive)
-                .ToList();
+                .AsNoTracking();
         }
 
-        public Location? GetLocationById(int locationId)
-        {
-            return _context.Locations
-                .Where(l => l.LocationId == locationId && l.Status != CommonStatus.Inactive)
-                .FirstOrDefault();
-        }
-
-        public Location? CreateLocation(Location entity)
+        public async Task<Location?> CreateLocation(Location entity)
         {
             try
             {
-                _context.Locations.Add(entity);
-                _context.SaveChanges();
+                await _context.Locations.AddAsync(entity);
+                await _context.SaveChangesAsync();
                 return entity;
             }
             catch
@@ -49,12 +46,19 @@ namespace MilkDistributionWarehouse.Repositories
             }
         }
 
-        public Location? UpdateLocation(Location entity)
+        public async Task<bool> IsDuplicateLocationCode(string locationCode)
+        {
+            return await _context.Locations.AnyAsync(l =>
+                l.LocationCode.ToLower().Trim() == locationCode.ToLower().Trim() &&
+                l.Status != CommonStatus.Inactive);
+        }
+
+        public async Task<Location?> UpdateLocation(Location entity)
         {
             try
             {
                 _context.Locations.Update(entity);
-                _context.SaveChanges();
+                await _context.SaveChangesAsync();
                 return entity;
             }
             catch
@@ -63,24 +67,24 @@ namespace MilkDistributionWarehouse.Repositories
             }
         }
 
-        public bool DeleteLocation(int locationId)
+        public async Task<Location?> GetLocationById(int locationId)
         {
-            try
-            {
-                var entity = _context.Locations
-                    .Where(l => l.LocationId == locationId && l.Status != CommonStatus.Inactive)
-                    .FirstOrDefault();
+            return await _context.Locations
+                .FirstOrDefaultAsync(l => l.LocationId == locationId && l.Status != CommonStatus.Inactive);
+        }
 
-                if (entity == null) return false;
+        public async Task<bool> IsDuplicationByIdAndCode(int locationId, string locationCode)
+        {
+            return await _context.Locations.AnyAsync(l =>
+                l.LocationId != locationId &&
+                l.LocationCode.ToLower().Trim() == locationCode.ToLower().Trim() &&
+                l.Status != CommonStatus.Inactive);
+        }
 
-                entity.Status = CommonStatus.Inactive;
-                _context.SaveChanges();
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
+        public async Task<bool> HasDependentPalletsOrStocktakingsAsync(int locationId)
+        {
+            return await _context.Pallets.AnyAsync(p => p.LocationId == locationId && p.Status != CommonStatus.Inactive) ||
+                   await _context.StocktakingLocations.AnyAsync(sl => sl.LocationId == locationId && sl.Status != CommonStatus.Inactive);
         }
     }
 }
