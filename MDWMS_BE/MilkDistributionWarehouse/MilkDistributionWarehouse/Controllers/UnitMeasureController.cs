@@ -18,12 +18,12 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("UnitMeasures")]
-        public async Task<IResult> GetUnitMeasures(Filter filter)
+        public async Task<IResult> GetUnitMeasures([FromBody]PagedRequest request)
         {
-            var (msg, unitMeasures) = await _unitMeasureService.GetUnitMeasure(filter);
+            var (msg, unitMeasures) = await _unitMeasureService.GetUnitMeasure(request);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<List<UnitMeasureDto>>.ToResultOk(unitMeasures);
+            return ApiResponse<PageResult<UnitMeasureDto>>.ToResultOk(unitMeasures);
         }
 
         [HttpPost("Create")]

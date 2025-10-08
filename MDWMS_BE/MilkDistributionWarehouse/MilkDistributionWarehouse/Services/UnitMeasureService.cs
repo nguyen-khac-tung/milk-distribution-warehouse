@@ -1,16 +1,18 @@
 ﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
+using MilkDistributionWarehouse.Utilities;
 using System.Threading.Tasks;
 
 namespace MilkDistributionWarehouse.Services
 {
     public interface IUnitMeasureService
     {
-        Task<(string, List<UnitMeasureDto>)> GetUnitMeasure(Filter filter);
+        Task<(string, PageResult<UnitMeasureDto>)> GetUnitMeasure(PagedRequest request);
         Task<(string, UnitMeasureDto)> CreateUnitMeasure(UnitMeasureCreate unitMeasureCreate);
         Task<(string, UnitMeasureDto)> UpdateUnitMeasure(UnitMeasureUpdate unitMeasureUpdate);
         Task<(string, UnitMeasureDto)> DeleteUnitMeasure(int unitMeasureId);
@@ -25,26 +27,15 @@ namespace MilkDistributionWarehouse.Services
             _mapper = mapper;
         }
 
-        public async Task<(string, List<UnitMeasureDto>)> GetUnitMeasure(Filter filter)
+        public async Task<(string, PageResult<UnitMeasureDto>)> GetUnitMeasure(PagedRequest request)
         {
-            var unitMeasures = await _unitMeasureRepository.GetUnitMeasures();
+            var query = _unitMeasureRepository.GetUnitMeasures();
 
-            if (unitMeasures == null || !unitMeasures.Any())
-                return ("The list unit measure is null", new List<UnitMeasureDto>());
+            var unitMeasureDtos = query.ProjectTo<UnitMeasureDto>(_mapper.ConfigurationProvider);
 
-            var search = filter?.Search?.Trim().ToLower();
+            var pageResult = await unitMeasureDtos.ToPagedResultAsync(request);
 
-            if (!string.IsNullOrEmpty(search))
-                unitMeasures = unitMeasures.Where(um => um.Name.ToLower().Trim().Contains(search)
-                                                || um.Description.ToLower().Trim().Contains(search)).ToList();
-            if (filter?.Status != null)
-                unitMeasures = unitMeasures.Where(um => um.Status == filter.Status).ToList();
-
-
-            var resultUnitMeasures = _mapper.Map<List<UnitMeasureDto>>(unitMeasures);
-
-
-            return ("", resultUnitMeasures);
+            return ("", pageResult);
         }
 
         public async Task<(string, UnitMeasureDto)> CreateUnitMeasure(UnitMeasureCreate unitMeasureCreate)
@@ -71,7 +62,9 @@ namespace MilkDistributionWarehouse.Services
         public async Task<(string, UnitMeasureDto)> UpdateUnitMeasure(UnitMeasureUpdate unitMeasureUpdate)
         {
             if (unitMeasureUpdate == null) return ("Unit Measure update is null", new UnitMeasureDto());
+
             var unitMeasureExist = await _unitMeasureRepository.GetUnitMeasureById(unitMeasureUpdate.UnitMeasureId);
+
             if (unitMeasureExist == null)
                 return ("Unit Measure is not exist", new UnitMeasureDto());
 
@@ -84,6 +77,7 @@ namespace MilkDistributionWarehouse.Services
             _mapper.Map(unitMeasureUpdate, unitMeasureExist);
 
             var updateResult = await _unitMeasureRepository.UpdateUnitMeasure(unitMeasureExist);
+
             if (updateResult == null) 
                 return ("Update unit measure is failed", new UnitMeasureDto());
 

@@ -8,7 +8,7 @@ namespace MilkDistributionWarehouse.Repositories
 {
     public interface IUnitMeasureRepository
     {
-        Task<List<UnitMeasure>> GetUnitMeasures();
+        IQueryable<UnitMeasure> GetUnitMeasures();
         Task<UnitMeasure?> CreateUnitMeasures(UnitMeasure unitMeasure);
         Task<UnitMeasure?> UpdateUnitMeasure(UnitMeasure unitMeasure);
         Task<UnitMeasure?> GetUnitMeasureById(int unitMeasureId);
@@ -24,9 +24,9 @@ namespace MilkDistributionWarehouse.Repositories
             _warehouseContext = warehouseContext;
         }
 
-        public async Task<List<UnitMeasure>> GetUnitMeasures()
+        public IQueryable<UnitMeasure> GetUnitMeasures()
         {
-            return await _warehouseContext.UnitMeasures.ToListAsync();
+            return _warehouseContext.UnitMeasures.Where(um => um.Status != CommonStatus.Deleted).AsNoTracking();
         }
 
         public async Task<UnitMeasure?> CreateUnitMeasures(UnitMeasure unitMeasure)
