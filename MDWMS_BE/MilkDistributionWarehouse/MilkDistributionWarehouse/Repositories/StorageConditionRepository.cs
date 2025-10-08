@@ -1,15 +1,16 @@
-﻿using MilkDistributionWarehouse.Constants;
+﻿using Microsoft.EntityFrameworkCore;
+using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.Entities;
 
 namespace MilkDistributionWarehouse.Repositories
 {
     public interface IStorageConditionRepository
     {
-        List<StorageCondition> GetStorageConditions();
-        StorageCondition? GetStorageConditionById(int storageConditionId);
-        StorageCondition? CreateStorageCondition(StorageCondition entity);
-        StorageCondition? UpdateStorageCondition(StorageCondition entity);
-        bool DeleteStorageCondition(int storageConditionId);
+        IQueryable<StorageCondition> GetStorageConditions();
+        Task<StorageCondition?> GetStorageConditionById(int storageConditionId);
+        Task<StorageCondition?> CreateStorageCondition(StorageCondition entity);
+        Task<StorageCondition?> UpdateStorageCondition(StorageCondition entity);
+        Task<bool> DeleteStorageCondition(int storageConditionId);
     }
 
     public class StorageConditionRepository : IStorageConditionRepository
@@ -21,26 +22,26 @@ namespace MilkDistributionWarehouse.Repositories
             _context = context;
         }
 
-        public List<StorageCondition> GetStorageConditions()
+        public IQueryable<StorageCondition> GetStorageConditions()
         {
             return _context.StorageConditions
                 .Where(sc => sc.Status != CommonStatus.Inactive)
-                .ToList();
+                .AsNoTracking();
         }
 
-        public StorageCondition? GetStorageConditionById(int storageConditionId)
+        public async Task<StorageCondition?> GetStorageConditionById(int storageConditionId)
         {
-            return _context.StorageConditions
+            return await _context.StorageConditions
                 .Where(sc => sc.StorageConditionId == storageConditionId && sc.Status != CommonStatus.Inactive)
-                .FirstOrDefault();
+                .FirstOrDefaultAsync();
         }
 
-        public StorageCondition? CreateStorageCondition(StorageCondition entity)
+        public async Task<StorageCondition?> CreateStorageCondition(StorageCondition entity)
         {
             try
             {
-                _context.StorageConditions.Add(entity);
-                _context.SaveChanges();
+                await _context.StorageConditions.AddAsync(entity);
+                await _context.SaveChangesAsync();
                 return entity;
             }
             catch
@@ -49,12 +50,12 @@ namespace MilkDistributionWarehouse.Repositories
             }
         }
 
-        public StorageCondition? UpdateStorageCondition(StorageCondition entity)
+        public async Task<StorageCondition?> UpdateStorageCondition(StorageCondition entity)
         {
             try
             {
                 _context.StorageConditions.Update(entity);
-                _context.SaveChanges();
+                await _context.SaveChangesAsync();
                 return entity;
             }
             catch
@@ -63,18 +64,18 @@ namespace MilkDistributionWarehouse.Repositories
             }
         }
 
-        public bool DeleteStorageCondition(int storageConditionId)
+        public async Task<bool> DeleteStorageCondition(int storageConditionId)
         {
             try
             {
-                var entity = _context.StorageConditions
+                var entity = await _context.StorageConditions
                     .Where(sc => sc.StorageConditionId == storageConditionId && sc.Status != CommonStatus.Inactive)
-                    .FirstOrDefault();
+                    .FirstOrDefaultAsync();
 
                 if (entity == null) return false;
 
                 entity.Status = CommonStatus.Inactive;
-                _context.SaveChanges();
+                await _context.SaveChangesAsync();
                 return true;
             }
             catch

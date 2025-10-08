@@ -82,10 +82,10 @@ namespace MilkDistributionWarehouse.Services
             }
 
             var storageCondition = _storageConditionRepository.GetStorageConditionById(dto.StorageConditionId);
-            if (storageCondition == null || storageCondition.Status == CommonStatus.Inactive)
-            {
-                return "Invalid StorageConditionId.";
-            }
+            //if (storageCondition == null || storageCondition.Status == CommonStatus.Inactive)
+            //{
+            //    return "Invalid StorageConditionId.";
+            //}
 
             var entity = _mapper.Map<Area>(dto);
             entity.CreatedAt = DateTime.UtcNow;
@@ -132,11 +132,11 @@ namespace MilkDistributionWarehouse.Services
             }
 
             // Validate FK
-            var storageCondition = _storageConditionRepository.GetStorageConditionById(dto.StorageConditionId);
-            if (storageCondition == null || storageCondition.Status == CommonStatus.Inactive)
-            {
-                return "Invalid StorageConditionId.";
-            }
+            //var storageCondition = _storageConditionRepository.GetStorageConditionById(dto.StorageConditionId);
+            //if (storageCondition == null || storageCondition.Status == CommonStatus.Inactive)
+            //{
+            //    return "Invalid StorageConditionId.";
+            //}
 
             _mapper.Map(dto, entity);
             entity.UpdateAt = DateTime.UtcNow;
