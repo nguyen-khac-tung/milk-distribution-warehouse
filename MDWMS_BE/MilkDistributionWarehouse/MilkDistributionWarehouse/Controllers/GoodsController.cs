@@ -26,5 +26,23 @@ namespace MilkDistributionWarehouse.Controllers
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<PageResult<GoodsDto>>.ToResultOk(goodss);
         }
+
+        [HttpGet("GoodsByGoodsId/{goodsId}")]
+        public  async Task<IResult> GoodsByGoodsId(int goodsId)
+        {
+            var(msg, goodsDetail) = await _goodsService.GetGoodsByGoodsId(goodsId);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<GoodsDetail>.ToResultOk(goodsDetail);
+        }
+
+        [HttpPost("Create")]
+        public async Task<IResult> CreateGoods([FromBody]GoodsCreate create)
+        {
+            var(msg, goods) = await _goodsService.CreateGoods(create);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<GoodsDto>.ToResultOk(goods);
+        }
     }
 }

@@ -10,7 +10,8 @@ namespace MilkDistributionWarehouse.Repositories
         IQueryable<Good> GetGoods();
         Task<Good> CreateGoods(Good good);
         Task<Good> UpdateGoods(Good good);
-        Task<Good> GetGoodsById(int goodsId);
+        IQueryable<Good?> GetGoodsById(int goodsId);
+        Task<Good?> GetGoodsByGoodsId(int goodsId);
         Task<bool> IsDuplicationCode(int? goodIds, string goodsCode);
     }
     public class GoodsRepository : IGoodsRepository
@@ -24,6 +25,15 @@ namespace MilkDistributionWarehouse.Repositories
         public IQueryable<Good> GetGoods()
         {
             return _warehouseContext.Goods.AsNoTracking();
+        }
+        public IQueryable<Good?> GetGoodsById(int goodsId)
+        {
+            return _warehouseContext.Goods.Where(g =>g.GoodsId == goodsId || g.Status != CommonStatus.Deleted).AsNoTracking();
+        }
+
+        public async Task<Good?> GetGoodsByGoodsId(int goodsId)
+        {
+            return await _warehouseContext.Goods.FirstOrDefaultAsync(g => g.GoodsId == goodsId || g.Status != CommonStatus.Deleted);
         }
 
         public async Task<Good> CreateGoods(Good good)
@@ -54,11 +64,6 @@ namespace MilkDistributionWarehouse.Repositories
             }
         }
 
-        public async Task<Good> GetGoodsById(int goodsId)
-        {
-            return await _warehouseContext.Goods.FirstOrDefaultAsync(g => g.GoodsId == goodsId || g.Status != CommonStatus.Deleted);
-        }
-
         public async Task<bool> IsDuplicationCode(int? goodsId, string goodsCode)
         {
             goodsCode = goodsCode.ToLower().Trim();
@@ -69,7 +74,13 @@ namespace MilkDistributionWarehouse.Repositories
                 (goodsId == null || g.GoodsId != goodsId));
         }
 
-
+        //public async Task<bool> IsGoodInUse(int goodsId, string goodsCode)
+        //{
+        //    //Batch
+        //    var checkBatch = await _warehouseContext.Batchs.AnyAsync(b => b.GoodsId == goodsId);
+        //    //Purchase order
+        //    var checkPurchaseOrder = 
+        //}
 
     }
 }
