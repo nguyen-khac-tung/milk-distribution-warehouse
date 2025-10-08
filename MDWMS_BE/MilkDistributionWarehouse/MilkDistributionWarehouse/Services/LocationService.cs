@@ -116,6 +116,7 @@ namespace MilkDistributionWarehouse.Services
 
             _mapper.Map(dto, locationExists);
             locationExists.AreaId = dto.AreaId;
+            locationExists.Status = dto.Status ?? locationExists.Status;
             locationExists.UpdateAt = DateTime.UtcNow;
 
             var updatedEntity = await _locationRepository.UpdateLocation(locationExists);
