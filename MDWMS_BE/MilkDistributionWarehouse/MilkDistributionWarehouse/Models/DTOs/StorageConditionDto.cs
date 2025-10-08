@@ -1,4 +1,6 @@
-﻿namespace MilkDistributionWarehouse.Models.DTOs
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace MilkDistributionWarehouse.Models.DTOs
 {
     public class StorageConditionDto
     {
@@ -34,6 +36,7 @@
 
             public decimal? HumidityMax { get; set; }
 
+            [Required(ErrorMessage = "Mức độ sáng không được để trống!")]
             public string LightLevel { get; set; }
         }
     }
