@@ -26,7 +26,7 @@ namespace MilkDistributionWarehouse.Repositories
 
         public IQueryable<Category>? GetCategories()
         {
-            return _warehouseContext.Categories.AsNoTracking();
+            return _warehouseContext.Categories.Where(c => c.Status != CommonStatus.Deleted).AsNoTracking();
         }
 
         public async Task<Category?> CreateCategory(Category category)

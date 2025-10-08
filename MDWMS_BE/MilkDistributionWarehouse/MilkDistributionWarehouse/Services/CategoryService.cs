@@ -12,6 +12,7 @@ namespace MilkDistributionWarehouse.Services
     public interface ICategoryService
     {
         Task<(string, PageResult<CategoryDto>)> GetCategories(Filter filter);
+        Task<(string, PageResult<CategoryDto>)> GetCategories(PagedRequest request);
         Task<(string, CategoryDto)> CreateCategory(CategoryCreate category);
         Task<(string, CategoryDto)> UpdateCategory(CategoryUpdate categoryUpdate);
         Task<(string, CategoryDto)> DeleteCategory(int categoryId);
@@ -42,6 +43,17 @@ namespace MilkDistributionWarehouse.Services
             var categoryDtos = categories.ProjectTo<CategoryDto>(_mapper.ConfigurationProvider);
 
             var items = await categoryDtos.ToPagedResultAsync(filter.PageNumber, filter.PageSize);
+
+            return ("", items);
+        }
+
+        public async Task<(string, PageResult<CategoryDto>)> GetCategories(PagedRequest request)
+        {
+            var categories = _categoryRepository.GetCategories();
+
+            var categoryDtos = categories.ProjectTo<CategoryDto>(_mapper.ConfigurationProvider);
+
+            var items = await categoryDtos.ToPagedResultAsync(request);
 
             return ("", items);
         }
