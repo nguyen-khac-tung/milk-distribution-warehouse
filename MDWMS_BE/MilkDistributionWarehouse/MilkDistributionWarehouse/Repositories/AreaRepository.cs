@@ -10,6 +10,7 @@ namespace MilkDistributionWarehouse.Repositories
         Area? CreateArea(Area entity);
         Area? UpdateArea(Area entity);
         bool DeleteArea(int areaId);
+        Task<bool> VerifyStorageConditionUsage(int storageConditionId);
     }
 
     public class AreaRepository : IAreaRepository
@@ -82,5 +83,13 @@ namespace MilkDistributionWarehouse.Repositories
                 return false;
             }
         }
+
+        public async Task<bool> VerifyStorageConditionUsage(int storageConditionId)
+        {
+            return _context.Areas.Any(a =>
+                a.StorageConditionId == storageConditionId &&
+                a.Status != CommonStatus.Deleted);
+        }
+
     }
 }

@@ -13,6 +13,7 @@ namespace MilkDistributionWarehouse.Repositories
         IQueryable<Good?> GetGoodsById(int goodsId);
         Task<Good?> GetGoodsByGoodsId(int goodsId);
         Task<bool> IsDuplicationCode(int? goodIds, string goodsCode);
+        Task<bool> VerifyStorageConditionUsage(int storageConditionId);
     }
     public class GoodsRepository : IGoodsRepository
     {
@@ -82,6 +83,11 @@ namespace MilkDistributionWarehouse.Repositories
         //    var checkPurchaseOrder = 
         //}
 
+        public async Task<bool> VerifyStorageConditionUsage(int storageConditionId)
+        {
+            return await _warehouseContext.Goods
+                .AnyAsync(g => g.StorageConditionId == storageConditionId && g.Status != CommonStatus.Deleted);
+        }
 
     }
 }

@@ -21,13 +21,15 @@ namespace MilkDistributionWarehouse.Services
     {
         private readonly IStorageConditionRepository _storageConditionRepository;
         private readonly IMapper _mapper;
-        private readonly WarehouseContext _context;
+        private readonly IAreaRepository _areaRepository;
+        private readonly IGoodsRepository _goodReposotory;
 
-        public StorageConditionService(IStorageConditionRepository storageConditionRepository, IMapper mapper, WarehouseContext context)
+        public StorageConditionService(IStorageConditionRepository storageConditionRepository, IMapper mapper, IAreaRepository areaRepository, IGoodsRepository goodReposotory)
         {
             _storageConditionRepository = storageConditionRepository;
             _mapper = mapper;
-            _context = context;
+            _areaRepository = areaRepository;
+            _goodReposotory = goodReposotory;
         }
 
         public async Task<(string, PageResult<StorageConditionDto.StorageConditionResponseDto>)> GetStorageConditions(PagedRequest request)
@@ -68,7 +70,7 @@ namespace MilkDistributionWarehouse.Services
 
             // Kiểm tra trùng lặp toàn bộ điều kiện
             var isDuplicate = await _storageConditionRepository.IsDuplicateStorageConditionAsync(
-                null, // Không cần storageConditionId khi tạo mới
+                null,
                 dto.TemperatureMin,
                 dto.TemperatureMax,
                 dto.HumidityMin,
@@ -145,14 +147,14 @@ namespace MilkDistributionWarehouse.Services
             if (entity == null)
                 return ("Không tìm thấy điều kiện lưu trữ để xoá.".ToMessageForUser(), false);
 
-            if (await _context.Areas.AnyAsync(a => a.StorageConditionId == storageConditionId && a.Status != CommonStatus.Inactive) ||
-                await _context.Goods.AnyAsync(g => g.StorageConditionId == storageConditionId && g.Status != CommonStatus.Inactive))
-            {
-                return ("Không thể xoá vì điều kiện lưu trữ này đang được sử dụng.".ToMessageForUser(), false);
-            }
+            var isUsedInArea = await _areaRepository.VerifyStorageConditionUsage(storageConditionId);
+            var isUsedInGoods = await _goodReposotory.VerifyStorageConditionUsage(storageConditionId);
 
-            var deleted = await Task.FromResult(_storageConditionRepository.DeleteStorageCondition(storageConditionId));
-            if (!await deleted)
+            if (isUsedInArea || isUsedInGoods)
+                return ("Không thể xoá vì điều kiện lưu trữ này đang được sử dụng.".ToMessageForUser(), false);
+
+            var deleted = await _storageConditionRepository.DeleteStorageCondition(storageConditionId);
+            if (!deleted)
                 return ("Xoá điều kiện lưu trữ thất bại.".ToMessageForUser(), false);
 
             return ("", true);
