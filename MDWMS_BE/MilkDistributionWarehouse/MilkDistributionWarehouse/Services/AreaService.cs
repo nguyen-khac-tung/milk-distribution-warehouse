@@ -1,19 +1,21 @@
 ﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
+using MilkDistributionWarehouse.Utilities;
 
 namespace MilkDistributionWarehouse.Services
 {
     public interface IAreaService
     {
-        string GetAreas(out List<AreaDto.AreaResponseDto> areas);
-        string GetAreaById(int areaId, out AreaDto.AreaResponseDto? area);
-        string CreateArea(AreaDto.AreaRequestDto dto, out AreaDto.AreaResponseDto? createdArea);
-        string UpdateArea(int areaId, AreaDto.AreaRequestDto dto, out AreaDto.AreaResponseDto? updatedArea);
-        string DeleteArea(int areaId, out bool deleted);
+        Task<(string, PageResult<AreaDto.AreaResponseDto>)> GetAreas(PagedRequest request);
+        Task<(string, AreaDto.AreaResponseDto)> GetAreaById(int areaId);
+        Task<(string, AreaDto.AreaResponseDto)> CreateArea(AreaDto.AreaRequestDto dto);
+        Task<(string, AreaDto.AreaResponseDto)> UpdateArea(int areaId, AreaDto.AreaRequestDto dto);
+        Task<(string, AreaDto.AreaResponseDto)> DeleteArea(int areaId);
     }
 
     public class AreaService : IAreaService
@@ -21,159 +23,142 @@ namespace MilkDistributionWarehouse.Services
         private readonly IAreaRepository _areaRepository;
         private readonly IStorageConditionRepository _storageConditionRepository;
         private readonly IMapper _mapper;
+        private readonly WarehouseContext _context;
 
-        public AreaService(IAreaRepository areaRepository, IStorageConditionRepository storageConditionRepository, IMapper mapper)
+        public AreaService(IAreaRepository areaRepository, IStorageConditionRepository storageConditionRepository, IMapper mapper, WarehouseContext context)
         {
-            _storageConditionRepository = storageConditionRepository;
             _areaRepository = areaRepository;
+            _storageConditionRepository = storageConditionRepository;
             _mapper = mapper;
+            _context = context;
         }
 
-        public string GetAreas(out List<AreaDto.AreaResponseDto> areas)
+        public async Task<(string, PageResult<AreaDto.AreaResponseDto>)> GetAreas(PagedRequest request)
         {
-            areas = new List<AreaDto.AreaResponseDto>();
+            var areas = _areaRepository.GetAreas();
+            if (areas == null)
+                return ("Không có khu vực nào trong hệ thống.".ToMessageForUser(), new PageResult<AreaDto.AreaResponseDto>());
 
-            var result = _areaRepository.GetAreas();
-            if (result == null || !result.Any())
-            {
-                return "No areas found.";
-            }
+            var areaDtos = areas.ProjectTo<AreaDto.AreaResponseDto>(_mapper.ConfigurationProvider);
+            var pagedResult = await areaDtos.ToPagedResultAsync(request);
 
-            areas = _mapper.Map<List<AreaDto.AreaResponseDto>>(result);
-            return "";
+            return ("", pagedResult);
         }
 
-        public string GetAreaById(int areaId, out AreaDto.AreaResponseDto? area)
+        public async Task<(string, AreaDto.AreaResponseDto)> GetAreaById(int areaId)
         {
-            area = null;
+            if (areaId <= 0)
+                return ("Mã khu vực không hợp lệ.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
-            var result = _areaRepository.GetAreaById(areaId);
-            if (result == null)
-            {
-                return "Area not found.";
-            }
+            var area = await _areaRepository.GetAreaById(areaId);
+            if (area == null)
+                return ("Không tìm thấy khu vực.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
-            area = _mapper.Map<AreaDto.AreaResponseDto>(result);
-            return "";
+            return ("", _mapper.Map<AreaDto.AreaResponseDto>(area));
         }
 
-        public string CreateArea(AreaDto.AreaRequestDto dto, out AreaDto.AreaResponseDto? createdArea)
+        public async Task<(string, AreaDto.AreaResponseDto)> CreateArea(AreaDto.AreaRequestDto dto)
         {
-            createdArea = null;
+            if (dto == null)
+                return ("Dữ liệu khu vực không hợp lệ.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
             if (string.IsNullOrWhiteSpace(dto.AreaName))
-            {
-                return "AreaName is required.";
-            }
+                return ("Tên khu vực không được để trống.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
             if (string.IsNullOrWhiteSpace(dto.AreaCode))
-            {
-                return "AreaCode is required.";
-            }
+                return ("Mã khu vực không được để trống.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
+            if (ContainsSpecialCharacters(dto.AreaCode))
+                return ("Mã khu vực không hợp lệ, không được chứa ký tự đặc biệt.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
             if (dto.StorageConditionId <= 0)
-            {
-                return "Valid StorageConditionId is required.";
-            }
+                return ("StorageConditionId không hợp lệ.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
-            // Check if AreaCode already exists
-            var existingArea = _areaRepository.GetAreas().FirstOrDefault(a => a.AreaCode == dto.AreaCode.Trim());
-            if (existingArea != null)
-            {
-                return "AreaCode already exists.";
-            }
+            if (await _areaRepository.IsDuplicateAreaCode(dto.AreaCode))
+                return ("Mã khu vực đã tồn tại.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
-            var storageCondition = _storageConditionRepository.GetStorageConditionById(dto.StorageConditionId);
-            //if (storageCondition == null || storageCondition.Status == CommonStatus.Inactive)
-            //{
-            //    return "Invalid StorageConditionId.";
-            //}
+            var storageConditionExists = await _context.StorageConditions.AnyAsync(sc => sc.StorageConditionId == dto.StorageConditionId && sc.Status != CommonStatus.Inactive);
+            if (!storageConditionExists)
+                return ("Điều kiện bảo quản không tồn tại hoặc đã bị xoá.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
             var entity = _mapper.Map<Area>(dto);
             entity.CreatedAt = DateTime.UtcNow;
-            entity.Status = (int)CommonStatus.Active;
+            entity.Status = dto.Status ?? entity.Status;
 
-            var createdEntity = _areaRepository.CreateArea(entity);
+            var createdEntity = await _areaRepository.CreateArea(entity);
             if (createdEntity == null)
-            {
-                return "Failed to create area.";
-            }
+                return ("Tạo khu vực thất bại.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
-            createdArea = _mapper.Map<AreaDto.AreaResponseDto>(createdEntity);
-            return "";
+            return ("", _mapper.Map<AreaDto.AreaResponseDto>(createdEntity));
         }
 
-        public string UpdateArea(int areaId, AreaDto.AreaRequestDto dto, out AreaDto.AreaResponseDto? updatedArea)
+        public async Task<(string, AreaDto.AreaResponseDto)> UpdateArea(int areaId, AreaDto.AreaRequestDto dto)
         {
-            updatedArea = null;
+            if (dto == null)
+                return ("Dữ liệu cập nhật khu vực không hợp lệ.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
+            if (areaId <= 0)
+                return ("Mã khu vực không hợp lệ.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
+            var area = await _areaRepository.GetAreaById(areaId);
+            if (area == null)
+                return ("Không tìm thấy khu vực để cập nhật.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
             if (string.IsNullOrWhiteSpace(dto.AreaName))
-            {
-                return "AreaName is required.";
-            }
+                return ("Tên khu vực không được để trống.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
             if (string.IsNullOrWhiteSpace(dto.AreaCode))
-            {
-                return "AreaCode is required.";
-            }
+                return ("Mã khu vực không được để trống.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
+            if (ContainsSpecialCharacters(dto.AreaCode))
+                return ("Mã khu vực không hợp lệ, không được chứa ký tự đặc biệt.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
             if (dto.StorageConditionId <= 0)
-            {
-                return "Valid StorageConditionId is required.";
-            }
+                return ("StorageConditionId không hợp lệ.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
-            var entity = _areaRepository.GetAreaById(areaId);
-            if (entity == null)
-            {
-                return "Area not found.";
-            }
+            if (await _areaRepository.IsDuplicationByIdAndCode(areaId, dto.AreaCode))
+                return ("Mã khu vực đã tồn tại.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
-            // Check for duplicate AreaCode (excluding current)
-            var existingArea = _areaRepository.GetAreas().FirstOrDefault(a => a.AreaCode == dto.AreaCode.Trim() && a.AreaId != areaId);
-            if (existingArea != null)
-            {
-                return "AreaCode already exists.";
-            }
+            var storageConditionExists = await _context.StorageConditions.AnyAsync(sc => sc.StorageConditionId == dto.StorageConditionId && sc.Status != CommonStatus.Inactive);
+            if (!storageConditionExists)
+                return ("Điều kiện bảo quản không tồn tại hoặc đã bị xoá.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
-            // Validate FK
-            //var storageCondition = _storageConditionRepository.GetStorageConditionById(dto.StorageConditionId);
-            //if (storageCondition == null || storageCondition.Status == CommonStatus.Inactive)
-            //{
-            //    return "Invalid StorageConditionId.";
-            //}
+            _mapper.Map(dto, area);
+            area.Status = dto.Status ?? area.Status;
+            area.UpdateAt = DateTime.UtcNow;
 
-            _mapper.Map(dto, entity);
-            entity.UpdateAt = DateTime.UtcNow;
-
-            var updatedEntity = _areaRepository.UpdateArea(entity);
+            var updatedEntity = await _areaRepository.UpdateArea(area);
             if (updatedEntity == null)
-            {
-                return "Failed to update area.";
-            }
+                return ("Cập nhật khu vực thất bại.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
-            updatedArea = _mapper.Map<AreaDto.AreaResponseDto>(updatedEntity);
-            return "";
+            return ("", _mapper.Map<AreaDto.AreaResponseDto>(updatedEntity));
         }
 
-        public string DeleteArea(int areaId, out bool deleted)
+        public async Task<(string, AreaDto.AreaResponseDto)> DeleteArea(int areaId)
         {
-            deleted = false;
+            if (areaId <= 0)
+                return ("Mã khu vực không hợp lệ.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
-            var entity = _areaRepository.GetAreaById(areaId);
-            if (entity == null)
-            {
-                return "Area not found.";
-            }
+            var area = await _areaRepository.GetAreaById(areaId);
+            if (area == null)
+                return ("Không tìm thấy khu vực để xoá.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
-            //Check if Area has dependent Locations or StocktakingAreas
-            //if (_context.Locations.Any(l => l.AreaId == areaId) || _context.StocktakingAreas.Any(sa => sa.AreaId == areaId))
-            //{
-            //    return "Cannot delete area with existing locations or stocktakings.";
-            //}
+            if (await _areaRepository.HasDependentLocationsOrStocktakingsAsync(areaId))
+                return ("Không thể xoá khu vực vì đang được sử dụng trong vị trí hoặc kiểm kê.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
-            deleted = _areaRepository.DeleteArea(areaId);
-            if (!deleted)
-            {
-                return "Failed to delete area.";
-            }
+            area.Status = CommonStatus.Inactive;
+            area.UpdateAt = DateTime.UtcNow;
 
-            return "";
+            var deletedEntity = await _areaRepository.UpdateArea(area);
+            if (deletedEntity == null)
+                return ("Xoá khu vực thất bại.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
+            return ("", _mapper.Map<AreaDto.AreaResponseDto>(deletedEntity));
+        }
+
+        private bool ContainsSpecialCharacters(string input)
+        {
+            return input.Any(ch => !char.IsLetterOrDigit(ch) && !char.IsWhiteSpace(ch));
         }
     }
 }

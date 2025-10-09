@@ -16,49 +16,55 @@ namespace MilkDistributionWarehouse.Controllers
             _areaService = areaService;
         }
 
-        [HttpGet]
-        public IResult GetAreas()
+        [HttpPost("Areas")]
+        public async Task<IResult> GetAreas([FromBody] PagedRequest request)
         {
-            string msg = _areaService.GetAreas(out List<AreaDto.AreaResponseDto> areas);
-            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
-
-            return ApiResponse<List<AreaDto.AreaResponseDto>>.ToResultOk(areas);
+            var (msg, areas) = await _areaService.GetAreas(request);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<PageResult<AreaDto.AreaResponseDto>>.ToResultOk(areas);
         }
 
         [HttpGet("{id}")]
-        public IResult GetArea(int id)
+        public async Task<IResult> GetArea(int id)
         {
-            string msg = _areaService.GetAreaById(id, out AreaDto.AreaResponseDto? area);
-            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
-
+            var (msg, area) = await _areaService.GetAreaById(id);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<AreaDto.AreaResponseDto>.ToResultOk(area);
         }
 
-        [HttpPost]
-        public IResult CreateArea([FromBody] AreaDto.AreaRequestDto dto)
+        [HttpPost("Create")]
+        public async Task<IResult> CreateArea([FromBody] AreaDto.AreaRequestDto dto)
         {
-            string msg = _areaService.CreateArea(dto, out AreaDto.AreaResponseDto? createdArea);
-            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+            if (!ModelState.IsValid)
+                return ApiResponse<string>.ToResultError("Dữ liệu không hợp lệ.");
 
+            var (msg, createdArea) = await _areaService.CreateArea(dto);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<AreaDto.AreaResponseDto>.ToResultOk(createdArea);
         }
 
-        [HttpPut("{id}")]
-        public IResult UpdateArea(int id, [FromBody] AreaDto.AreaRequestDto dto)
+        [HttpPut("Update/{id}")]
+        public async Task<IResult> UpdateArea(int id, [FromBody] AreaDto.AreaRequestDto dto)
         {
-            string msg = _areaService.UpdateArea(id, dto, out AreaDto.AreaResponseDto? updatedArea);
-            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+            if (!ModelState.IsValid)
+                return ApiResponse<string>.ToResultError("Dữ liệu không hợp lệ.");
 
+            var (msg, updatedArea) = await _areaService.UpdateArea(id, dto);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<AreaDto.AreaResponseDto>.ToResultOk(updatedArea);
         }
 
-        [HttpDelete("{id}")]
-        public IResult DeleteArea(int id)
+        [HttpDelete("Delete/{id}")]
+        public async Task<IResult> DeleteArea(int id)
         {
-            string msg = _areaService.DeleteArea(id, out bool deleted);
-            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
-
-            return ApiResponse<string>.ToResultOk();
+            var (msg, area) = await _areaService.DeleteArea(id);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<AreaDto.AreaResponseDto>.ToResultOk(area);
         }
     }
 }
