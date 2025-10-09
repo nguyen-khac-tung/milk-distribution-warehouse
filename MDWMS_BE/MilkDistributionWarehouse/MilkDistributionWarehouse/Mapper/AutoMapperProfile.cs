@@ -11,9 +11,15 @@ namespace MilkDistributionWarehouse.Mapper
         {
             // Map StorageCondition
             CreateMap<StorageCondition, StorageConditionDto.StorageConditionResponseDto>();
-            CreateMap<StorageConditionDto.StorageConditionRequestDto, StorageCondition>()
+
+            CreateMap<StorageConditionDto.StorageConditionCreateDto, StorageCondition>()
                 .ForMember(dest => dest.StorageConditionId, opt => opt.Ignore())
                 .ForMember(dest => dest.Status, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdateAt, opt => opt.Ignore());
+
+            CreateMap<StorageConditionDto.StorageConditionUpdateDto, StorageCondition>()
+                .ForMember(dest => dest.StorageConditionId, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
                 .ForMember(dest => dest.UpdateAt, opt => opt.Ignore());
 

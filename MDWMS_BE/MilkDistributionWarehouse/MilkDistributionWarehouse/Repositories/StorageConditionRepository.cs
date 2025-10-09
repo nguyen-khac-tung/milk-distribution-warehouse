@@ -34,7 +34,7 @@ namespace MilkDistributionWarehouse.Repositories
         public async Task<StorageCondition?> GetStorageConditionById(int storageConditionId)
         {
             return await _context.StorageConditions
-                .Where(sc => sc.StorageConditionId == storageConditionId && sc.Status != CommonStatus.Inactive)
+                .Where(sc => sc.StorageConditionId == storageConditionId && sc.Status != CommonStatus.Deleted)
                 .FirstOrDefaultAsync();
         }
 
@@ -76,7 +76,8 @@ namespace MilkDistributionWarehouse.Repositories
 
                 if (entity == null) return false;
 
-                entity.Status = CommonStatus.Inactive;
+                entity.Status = CommonStatus.Deleted;
+                entity.UpdateAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
                 return true;
             }
