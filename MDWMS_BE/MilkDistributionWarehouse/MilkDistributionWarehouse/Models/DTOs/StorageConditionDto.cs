@@ -1,10 +1,10 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using MilkDistributionWarehouse.Constants;
 
 namespace MilkDistributionWarehouse.Models.DTOs
 {
     public class StorageConditionDto
     {
-
         public class StorageConditionResponseDto
         {
             public int StorageConditionId { get; set; }
@@ -22,35 +22,63 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public int? Status { get; set; }
         }
 
-        public class StorageConditionCreateDto
+        public class StorageConditionCreateDto : IValidatableObject
         {
+            [Range(-50, 100, ErrorMessage = "Nhiệt độ tối thiểu phải nằm trong khoảng -50 đến 100°C!")]
             public decimal? TemperatureMin { get; set; }
 
+            [Range(-50, 100, ErrorMessage = "Nhiệt độ tối đa phải nằm trong khoảng -50 đến 100°C!")]
             public decimal? TemperatureMax { get; set; }
 
+            [Range(0, 100, ErrorMessage = "Độ ẩm tối thiểu phải nằm trong khoảng 0% đến 100%!")]
             public decimal? HumidityMin { get; set; }
 
+            [Range(0, 100, ErrorMessage = "Độ ẩm tối đa phải nằm trong khoảng 0% đến 100%!")]
             public decimal? HumidityMax { get; set; }
 
             [Required(ErrorMessage = "Mức độ sáng không được để trống!")]
+            [RegularExpression("^(Low|Normal|High)$", ErrorMessage = "Mức độ sáng chỉ có thể là: Low, Normal hoặc High!")]
             public string LightLevel { get; set; }
 
+            public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+            {
+                if (TemperatureMin.HasValue && TemperatureMax.HasValue && TemperatureMin > TemperatureMax)
+                    yield return new ValidationResult("Nhiệt độ tối thiểu không được lớn hơn nhiệt độ tối đa!", new[] { nameof(TemperatureMin), nameof(TemperatureMax) });
+
+                if (HumidityMin.HasValue && HumidityMax.HasValue && HumidityMin > HumidityMax)
+                    yield return new ValidationResult("Độ ẩm tối thiểu không được lớn hơn độ ẩm tối đa!", new[] { nameof(HumidityMin), nameof(HumidityMax) });
+            }
         }
 
-        public class StorageConditionUpdateDto
+        public class StorageConditionUpdateDto : IValidatableObject
         {
+            [Range(-50, 100, ErrorMessage = "Nhiệt độ tối thiểu phải nằm trong khoảng -50 đến 100°C!")]
             public decimal? TemperatureMin { get; set; }
 
+            [Range(-50, 100, ErrorMessage = "Nhiệt độ tối đa phải nằm trong khoảng -50 đến 100°C!")]
             public decimal? TemperatureMax { get; set; }
 
+            [Range(0, 100, ErrorMessage = "Độ ẩm tối thiểu phải nằm trong khoảng 0% đến 100%!")]
             public decimal? HumidityMin { get; set; }
 
+            [Range(0, 100, ErrorMessage = "Độ ẩm tối đa phải nằm trong khoảng 0% đến 100%!")]
             public decimal? HumidityMax { get; set; }
 
             [Required(ErrorMessage = "Mức độ sáng không được để trống!")]
+            [RegularExpression("^(Low|Normal|High)$", ErrorMessage = "Mức độ sáng chỉ có thể là: Low, Normal hoặc High!")]
             public string LightLevel { get; set; }
 
+            [Range(CommonStatus.Active, CommonStatus.Deleted, ErrorMessage = "Trạng thái không hợp lệ (chỉ chấp nhận Active, Inactive, Deleted)!")]
             public int? Status { get; set; }
+
+            public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+            {
+                if (TemperatureMin.HasValue && TemperatureMax.HasValue && TemperatureMin > TemperatureMax)
+                    yield return new ValidationResult("Nhiệt độ tối thiểu không được lớn hơn nhiệt độ tối đa!", new[] { nameof(TemperatureMin), nameof(TemperatureMax) });
+
+                if (HumidityMin.HasValue && HumidityMax.HasValue && HumidityMin > HumidityMax)
+                    yield return new ValidationResult("Độ ẩm tối thiểu không được lớn hơn độ ẩm tối đa!", new[] { nameof(HumidityMin), nameof(HumidityMax) });
+            }
         }
     }
 }

@@ -49,25 +49,6 @@ namespace MilkDistributionWarehouse.Services
         {
             if (dto == null) return ("Dữ liệu tạo điều kiện lưu trữ không hợp lệ.".ToMessageForUser(), null);
 
-            if (dto.TemperatureMin.HasValue && dto.TemperatureMax.HasValue && dto.TemperatureMin >= dto.TemperatureMax)
-                return ("Nhiệt độ tối thiểu không thể lớn hơn hoặc bằng nhiệt độ tối đa.".ToMessageForUser(), null);
-
-            if (dto.HumidityMin.HasValue && dto.HumidityMax.HasValue && dto.HumidityMin >= dto.HumidityMax)
-                return ("Độ ẩm tối thiểu không thể lớn hơn hoặc bằng độ ẩm tối đa.".ToMessageForUser(), null);
-
-            if (string.IsNullOrWhiteSpace(dto.LightLevel))
-                return ("Mức độ ánh sáng không được để trống.".ToMessageForUser(), null);
-
-            var validLightLevels = new[]
-            {
-                LightStorageConditionStatus.Low,
-                LightStorageConditionStatus.Normal,
-                LightStorageConditionStatus.High
-            };
-
-            if (!validLightLevels.Contains(dto.LightLevel))
-                return ($"Mức độ ánh sáng phải thuộc: {string.Join(", ", validLightLevels)}".ToMessageForUser(), null);
-
             // Kiểm tra trùng lặp toàn bộ điều kiện
             var isDuplicate = await _storageConditionRepository.IsDuplicateStorageConditionAsync(
                 null,
@@ -94,25 +75,6 @@ namespace MilkDistributionWarehouse.Services
         public async Task<(string, StorageConditionDto.StorageConditionResponseDto)> UpdateStorageCondition(int storageConditionId, StorageConditionDto.StorageConditionUpdateDto dto)
         {
             if (dto == null) return ("Không có dữ liệu để cập nhật điều kiện lưu trữ.".ToMessageForUser(), null);
-
-            if (dto.TemperatureMin.HasValue && dto.TemperatureMax.HasValue && dto.TemperatureMin >= dto.TemperatureMax)
-                return ("Nhiệt độ tối thiểu không thể lớn hơn hoặc bằng nhiệt độ tối đa.".ToMessageForUser(), null);
-
-            if (dto.HumidityMin.HasValue && dto.HumidityMax.HasValue && dto.HumidityMin >= dto.HumidityMax)
-                return ("Độ ẩm tối thiểu không thể lớn hơn hoặc bằng độ ẩm tối đa.".ToMessageForUser(), null);
-
-            if (string.IsNullOrWhiteSpace(dto.LightLevel))
-                return ("Mức độ ánh sáng không được để trống.".ToMessageForUser(), null);
-
-            var validLightLevels = new[]
-            {
-                LightStorageConditionStatus.Low,
-                LightStorageConditionStatus.Normal,
-                LightStorageConditionStatus.High
-            };
-
-            if (!validLightLevels.Contains(dto.LightLevel))
-                return ($"Mức độ ánh sáng phải thuộc: {string.Join(", ", validLightLevels)}".ToMessageForUser(), null);
 
             var entity = await _storageConditionRepository.GetStorageConditionById(storageConditionId);
             if (entity == null)
