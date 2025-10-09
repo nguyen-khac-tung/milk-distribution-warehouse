@@ -59,14 +59,22 @@ namespace MilkDistributionWarehouse.Mapper
             CreateMap<Location, LocationDto.LocationResponseDto>()
                 .ForMember(dest => dest.AreaNameDto, opt => opt.MapFrom(src => src.Area));
 
-            CreateMap<LocationDto.LocationRequestDto, Location>()
+            CreateMap<LocationDto.LocationCreateDto, Location>()
                 .ForMember(dest => dest.LocationId, opt => opt.Ignore())
                 .ForMember(dest => dest.Status, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
                 .ForMember(dest => dest.UpdateAt, opt => opt.Ignore())
-                .ForMember(dest => dest.LocationCode, opt => opt.MapFrom(src => src.LocationCode.Trim()))
-                .ForMember(dest => dest.Rack, opt => opt.MapFrom(src => src.Rack.Trim()))
-                .ForMember(dest => dest.IsAvailable, opt => opt.MapFrom(src => src.IsAvailable ?? true));
+                .ForMember(dest => dest.Area, opt => opt.Ignore())
+                .ForMember(dest => dest.Pallets, opt => opt.Ignore())
+                .ForMember(dest => dest.StocktakingLocations, opt => opt.Ignore());
+
+            CreateMap<LocationDto.LocationUpdateDto, Location>()
+                .ForMember(dest => dest.LocationId, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdateAt, opt => opt.Ignore())
+                .ForMember(dest => dest.Area, opt => opt.Ignore())
+                .ForMember(dest => dest.Pallets, opt => opt.Ignore())
+                .ForMember(dest => dest.StocktakingLocations, opt => opt.Ignore());
 
             // Map Area
             CreateMap<Area, AreaDto.AreaResponseDto>();
