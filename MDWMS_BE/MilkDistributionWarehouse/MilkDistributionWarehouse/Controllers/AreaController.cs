@@ -35,7 +35,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("Create")]
-        public async Task<IResult> CreateArea([FromBody] AreaDto.AreaRequestDto dto)
+        public async Task<IResult> CreateArea([FromBody] AreaDto.AreaCreateDto dto)
         {
             if (!ModelState.IsValid)
                 return ApiResponse<string>.ToResultError("Dữ liệu không hợp lệ.");
@@ -47,7 +47,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPut("Update/{id}")]
-        public async Task<IResult> UpdateArea(int id, [FromBody] AreaDto.AreaRequestDto dto)
+        public async Task<IResult> UpdateArea(int id, [FromBody] AreaDto.AreaUpdateDto dto)
         {
             if (!ModelState.IsValid)
                 return ApiResponse<string>.ToResultError("Dữ liệu không hợp lệ.");
