@@ -79,7 +79,7 @@ namespace MilkDistributionWarehouse.Mapper
             // Map Area
             CreateMap<Area, AreaDto.AreaResponseDto>();
             CreateMap<Area, AreaDto.AreaNameDto>();
-            CreateMap<AreaDto.AreaRequestDto, Area>()
+            CreateMap<AreaDto.AreaCreateDto, Area>()
                 .ForMember(dest => dest.AreaId, opt => opt.Ignore())
                 .ForMember(dest => dest.Status, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
@@ -87,7 +87,13 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.AreaName, opt => opt.MapFrom(src => src.AreaName.Trim()))
                 .ForMember(dest => dest.AreaCode, opt => opt.MapFrom(src => src.AreaCode.Trim()))
                 .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description != null ? src.Description.Trim() : null));
-
+            CreateMap<AreaDto.AreaUpdateDto, Area>()
+                .ForMember(dest => dest.AreaId, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdateAt, opt => opt.Ignore())
+                .ForMember(dest => dest.AreaName, opt => opt.MapFrom(src => src.AreaName.Trim()))
+                .ForMember(dest => dest.AreaCode, opt => opt.MapFrom(src => src.AreaCode.Trim()))
+                .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description != null ? src.Description.Trim() : null));
             // Map Goods
             CreateMap<Good, GoodsDto>()
                 .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.CategoryName.Trim()))

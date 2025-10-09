@@ -13,8 +13,8 @@ namespace MilkDistributionWarehouse.Services
     {
         Task<(string, PageResult<AreaDto.AreaResponseDto>)> GetAreas(PagedRequest request);
         Task<(string, AreaDto.AreaResponseDto)> GetAreaById(int areaId);
-        Task<(string, AreaDto.AreaResponseDto)> CreateArea(AreaDto.AreaRequestDto dto);
-        Task<(string, AreaDto.AreaResponseDto)> UpdateArea(int areaId, AreaDto.AreaRequestDto dto);
+        Task<(string, AreaDto.AreaResponseDto)> CreateArea(AreaDto.AreaCreateDto dto);
+        Task<(string, AreaDto.AreaResponseDto)> UpdateArea(int areaId, AreaDto.AreaUpdateDto dto);
         Task<(string, AreaDto.AreaResponseDto)> DeleteArea(int areaId);
     }
 
@@ -57,22 +57,10 @@ namespace MilkDistributionWarehouse.Services
             return ("", _mapper.Map<AreaDto.AreaResponseDto>(area));
         }
 
-        public async Task<(string, AreaDto.AreaResponseDto)> CreateArea(AreaDto.AreaRequestDto dto)
+        public async Task<(string, AreaDto.AreaResponseDto)> CreateArea(AreaDto.AreaCreateDto dto)
         {
             if (dto == null)
                 return ("Dữ liệu khu vực không hợp lệ.".ToMessageForUser(), new AreaDto.AreaResponseDto());
-
-            if (string.IsNullOrWhiteSpace(dto.AreaName))
-                return ("Tên khu vực không được để trống.".ToMessageForUser(), new AreaDto.AreaResponseDto());
-
-            if (string.IsNullOrWhiteSpace(dto.AreaCode))
-                return ("Mã khu vực không được để trống.".ToMessageForUser(), new AreaDto.AreaResponseDto());
-
-            if (ContainsSpecialCharacters(dto.AreaCode))
-                return ("Mã khu vực không hợp lệ, không được chứa ký tự đặc biệt.".ToMessageForUser(), new AreaDto.AreaResponseDto());
-
-            if (dto.StorageConditionId <= 0)
-                return ("StorageConditionId không hợp lệ.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
             if (await _areaRepository.IsDuplicateAreaCode(dto.AreaCode))
                 return ("Mã khu vực đã tồn tại.".ToMessageForUser(), new AreaDto.AreaResponseDto());
@@ -83,7 +71,7 @@ namespace MilkDistributionWarehouse.Services
 
             var entity = _mapper.Map<Area>(dto);
             entity.CreatedAt = DateTime.UtcNow;
-            entity.Status = dto.Status ?? entity.Status;
+            entity.Status = CommonStatus.Active;
 
             var createdEntity = await _areaRepository.CreateArea(entity);
             if (createdEntity == null)
@@ -92,7 +80,7 @@ namespace MilkDistributionWarehouse.Services
             return ("", _mapper.Map<AreaDto.AreaResponseDto>(createdEntity));
         }
 
-        public async Task<(string, AreaDto.AreaResponseDto)> UpdateArea(int areaId, AreaDto.AreaRequestDto dto)
+        public async Task<(string, AreaDto.AreaResponseDto)> UpdateArea(int areaId, AreaDto.AreaUpdateDto dto)
         {
             if (dto == null)
                 return ("Dữ liệu cập nhật khu vực không hợp lệ.".ToMessageForUser(), new AreaDto.AreaResponseDto());
@@ -103,18 +91,6 @@ namespace MilkDistributionWarehouse.Services
             var area = await _areaRepository.GetAreaById(areaId);
             if (area == null)
                 return ("Không tìm thấy khu vực để cập nhật.".ToMessageForUser(), new AreaDto.AreaResponseDto());
-
-            if (string.IsNullOrWhiteSpace(dto.AreaName))
-                return ("Tên khu vực không được để trống.".ToMessageForUser(), new AreaDto.AreaResponseDto());
-
-            if (string.IsNullOrWhiteSpace(dto.AreaCode))
-                return ("Mã khu vực không được để trống.".ToMessageForUser(), new AreaDto.AreaResponseDto());
-
-            if (ContainsSpecialCharacters(dto.AreaCode))
-                return ("Mã khu vực không hợp lệ, không được chứa ký tự đặc biệt.".ToMessageForUser(), new AreaDto.AreaResponseDto());
-
-            if (dto.StorageConditionId <= 0)
-                return ("StorageConditionId không hợp lệ.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
             if (await _areaRepository.IsDuplicationByIdAndCode(areaId, dto.AreaCode))
                 return ("Mã khu vực đã tồn tại.".ToMessageForUser(), new AreaDto.AreaResponseDto());
@@ -146,7 +122,7 @@ namespace MilkDistributionWarehouse.Services
             if (await _areaRepository.HasDependentLocationsOrStocktakingsAsync(areaId))
                 return ("Không thể xoá khu vực vì đang được sử dụng trong vị trí hoặc kiểm kê.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
-            area.Status = CommonStatus.Inactive;
+            area.Status = CommonStatus.Deleted;
             area.UpdateAt = DateTime.UtcNow;
 
             var deletedEntity = await _areaRepository.UpdateArea(area);
@@ -154,11 +130,6 @@ namespace MilkDistributionWarehouse.Services
                 return ("Xoá khu vực thất bại.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
             return ("", _mapper.Map<AreaDto.AreaResponseDto>(deletedEntity));
-        }
-
-        private bool ContainsSpecialCharacters(string input)
-        {
-            return input.Any(ch => !char.IsLetterOrDigit(ch) && !char.IsWhiteSpace(ch));
         }
     }
 }
