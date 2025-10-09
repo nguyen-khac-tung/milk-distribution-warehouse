@@ -28,7 +28,8 @@ namespace MilkDistributionWarehouse.Repositories
         {
             return _context.Locations
                 .Include(l => l.Area)
-                .Where(l => l.Status != CommonStatus.Inactive)
+                .Where(l => l.Status == CommonStatus.Inactive || l.Status == CommonStatus.Active)
+                .OrderByDescending(l => l.CreatedAt)
                 .AsNoTracking();
         }
 
