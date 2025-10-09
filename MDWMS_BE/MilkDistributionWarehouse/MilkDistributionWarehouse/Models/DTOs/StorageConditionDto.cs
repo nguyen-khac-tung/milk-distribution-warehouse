@@ -20,10 +20,6 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public string LightLevel { get; set; }
 
             public int? Status { get; set; }
-
-            public DateTime? CreatedAt { get; set; }
-
-            public DateTime? UpdateAt { get; set; }
         }
 
         public class StorageConditionRequestDto
@@ -38,6 +34,8 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
             [Required(ErrorMessage = "Mức độ sáng không được để trống!")]
             public string LightLevel { get; set; }
+
+            public int? Status { get; set; }
         }
     }
 }
