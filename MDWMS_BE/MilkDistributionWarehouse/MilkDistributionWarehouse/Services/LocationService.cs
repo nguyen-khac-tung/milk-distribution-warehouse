@@ -80,6 +80,9 @@ namespace MilkDistributionWarehouse.Services
             if (locationExists == null)
                 return ("Không tìm thấy vị trí cần cập nhật.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
+            if(locationExists.Status == CommonStatus.Deleted)
+                return ("Vị trí này đã bị xóa, không thể cập nhật thông tin.".ToMessageForUser(),new LocationDto.LocationResponseDto());
+
             if (await _locationRepository.IsDuplicationByIdAndCode(locationId, dto.LocationCode))
                 return ("Mã vị trí đã tồn tại.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
