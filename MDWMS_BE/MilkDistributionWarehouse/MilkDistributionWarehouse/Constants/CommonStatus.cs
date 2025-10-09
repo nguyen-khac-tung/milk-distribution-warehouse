@@ -85,7 +85,7 @@
     public static class LightStorageConditionStatus
     {
         public const string Low = "Low";
-        public const string Nomal = "Nomal";
+        public const string Normal = "Normal";
         public const string High = "High";
     }
 }

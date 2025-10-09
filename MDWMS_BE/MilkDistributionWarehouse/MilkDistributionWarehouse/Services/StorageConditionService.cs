@@ -61,7 +61,7 @@ namespace MilkDistributionWarehouse.Services
             var validLightLevels = new[]
             {
                 LightStorageConditionStatus.Low,
-                LightStorageConditionStatus.Nomal,
+                LightStorageConditionStatus.Normal,
                 LightStorageConditionStatus.High
             };
 
@@ -107,7 +107,7 @@ namespace MilkDistributionWarehouse.Services
             var validLightLevels = new[]
             {
                 LightStorageConditionStatus.Low,
-                LightStorageConditionStatus.Nomal,
+                LightStorageConditionStatus.Normal,
                 LightStorageConditionStatus.High
             };
 
