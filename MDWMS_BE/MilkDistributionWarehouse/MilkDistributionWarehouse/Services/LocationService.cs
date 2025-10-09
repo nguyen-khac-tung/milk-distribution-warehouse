@@ -21,13 +21,13 @@ namespace MilkDistributionWarehouse.Services
     {
         private readonly ILocationRepository _locationRepository;
         private readonly IMapper _mapper;
-        private readonly WarehouseContext _context;  // For FK validation
+        private readonly IAreaRepository _areaRepository;
 
-        public LocationService(ILocationRepository locationRepository, IMapper mapper, WarehouseContext context)
+        public LocationService(ILocationRepository locationRepository, IMapper mapper, IAreaRepository areaRepository)
         {
             _locationRepository = locationRepository;
             _mapper = mapper;
-            _context = context;
+            _areaRepository = areaRepository;
         }
 
         public async Task<(string, PageResult<LocationDto.LocationResponseDto>)> GetLocations(PagedRequest request)
@@ -55,23 +55,10 @@ namespace MilkDistributionWarehouse.Services
 
             if (ContainsSpecialCharacters(dto.LocationCode))
                 return ("Mã vị trí không hợp lệ, không được chứa ký tự đặc biệt.".ToMessageForUser(), new LocationDto.LocationResponseDto());
-
-            if (string.IsNullOrWhiteSpace(dto.Rack))
-                return ("Trường 'Rack' không được để trống.".ToMessageForUser(), new LocationDto.LocationResponseDto());
-
-            if (dto.AreaId <= 0)
-                return ("Khu vực (AreaId) không hợp lệ.".ToMessageForUser(), new LocationDto.LocationResponseDto());
-
             // Validate Area FK async
-            var areaExists = await _context.Areas.AnyAsync(a => a.AreaId == dto.AreaId && a.Status != CommonStatus.Deleted);
-            if (!areaExists)
+            var areaExists = await _areaRepository.GetAreaById(dto.AreaId);
+            if (areaExists == null)
                 return ("Khu vực được chọn không tồn tại hoặc đã bị xoá.".ToMessageForUser(), new LocationDto.LocationResponseDto());
-
-            if (dto.Row.HasValue && dto.Row < 1)
-                return ("Giá trị 'Row' phải là số nguyên dương.".ToMessageForUser(), new LocationDto.LocationResponseDto());
-
-            if (dto.Column.HasValue && dto.Column < 1)
-                return ("Giá trị 'Column' phải là số nguyên dương.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
             var entity = _mapper.Map<Location>(dto);
             entity.AreaId = dto.AreaId;
@@ -102,22 +89,10 @@ namespace MilkDistributionWarehouse.Services
             if (ContainsSpecialCharacters(dto.LocationCode))
                 return ("Mã vị trí không hợp lệ, không được chứa ký tự đặc biệt.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
-            if (string.IsNullOrWhiteSpace(dto.Rack))
-                return ("Trường 'Rack' không được để trống.".ToMessageForUser(), new LocationDto.LocationResponseDto());
-
-            if (dto.AreaId <= 0)
-                return ("Khu vực (AreaId) không hợp lệ.".ToMessageForUser(), new LocationDto.LocationResponseDto());
-
             // Validate Area FK async
-            var areaExists = await _context.Areas.AnyAsync(a => a.AreaId == dto.AreaId && a.Status != CommonStatus.Deleted);
-            if (!areaExists)
+            var areaExists = await _areaRepository.GetAreaById(dto.AreaId);
+            if (areaExists == null)
                 return ("Khu vực được chọn không tồn tại hoặc đã bị xoá.".ToMessageForUser(), new LocationDto.LocationResponseDto());
-
-            if (dto.Row.HasValue && dto.Row < 1)
-                return ("Giá trị 'Row' phải là số nguyên dương.".ToMessageForUser(), new LocationDto.LocationResponseDto());
-
-            if (dto.Column.HasValue && dto.Column < 1)
-                return ("Giá trị 'Column' phải là số nguyên dương.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
             _mapper.Map(dto, locationExists);
             locationExists.AreaId = dto.AreaId;
