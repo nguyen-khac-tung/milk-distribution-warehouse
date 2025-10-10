@@ -63,13 +63,8 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public string? LightLevel { get; set; }
     }
 
-    public class GoodsCreate
+    public class GoodsCommonChange
     {
-        [Required(ErrorMessage = "Mã sản phẩm không được để trống")]
-        [MaxLength(255, ErrorMessage = "Độ dài mã sản phẩm không được vượt quá 255 ký tự")]
-        [RegularExpression(@"^[a-zA-Z0-9\s_-]+$", ErrorMessage = "Mã sản phẩm không được chứa các ký tự đặc biệt")]
-        public string GoodsCode { get; set; }
-
         [Required(ErrorMessage = "Tên sản phẩm không được để trống")]
         [MaxLength(255, ErrorMessage = "Độ dài tên sản phẩm không được vượt quá 255 ký tự")]
         [RegularExpression(@"^[\p{L}0-9\s_\-.,]+$", ErrorMessage = "Tên sản phẩm không được chứa các ký tự đặc biệt")]
@@ -84,7 +79,15 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int UnitMeasureId { get; set; }
     }
 
-    public class GoodsUpdate : GoodsCreate
+    public class GoodsCreate : GoodsCommonChange
+    {
+        [Required(ErrorMessage = "Mã sản phẩm không được để trống")]
+        [MaxLength(255, ErrorMessage = "Độ dài mã sản phẩm không được vượt quá 255 ký tự")]
+        [RegularExpression(@"^[a-zA-Z0-9\s_-]+$", ErrorMessage = "Mã sản phẩm không được chứa các ký tự đặc biệt")]
+        public string GoodsCode { get; set; }
+    }
+
+    public class GoodsUpdate : GoodsCommonChange
     {
         [Required(ErrorMessage = "Cần phải chọn sản phẩm để cập nhật")]
         public int GoodsId { get; set; }    
