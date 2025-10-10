@@ -124,6 +124,9 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.UnitMeasure, opt => opt.Ignore())
                 .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => DateTime.Now));
 
+            //Map Supplier
+            CreateMap<Supplier, SupplierDto>();
+
         }
     }
 }

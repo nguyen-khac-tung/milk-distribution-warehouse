@@ -47,6 +47,10 @@ namespace MilkDistributionWarehouse.Configurations
 
             //UserOtp
             services.AddScoped<IUserOtpRepository, UserOtpRepository>();
+
+            //Supplier
+            services.AddScoped<ISupplierRepository, SupplierRepository>();
+            services.AddScoped<ISupplierService, SupplierService>();
         }
     }
 }
