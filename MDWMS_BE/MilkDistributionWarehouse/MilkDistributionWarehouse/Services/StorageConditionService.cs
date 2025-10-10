@@ -12,8 +12,8 @@ namespace MilkDistributionWarehouse.Services
     public interface IStorageConditionService
     {
         Task<(string, PageResult<StorageConditionDto.StorageConditionResponseDto>)> GetStorageConditions(PagedRequest request);
-        Task<(string, StorageConditionDto.StorageConditionResponseDto)> CreateStorageCondition(StorageConditionDto.StorageConditionRequestDto dto);
-        Task<(string, StorageConditionDto.StorageConditionResponseDto)> UpdateStorageCondition(int storageConditionId, StorageConditionDto.StorageConditionRequestDto dto);
+        Task<(string, StorageConditionDto.StorageConditionResponseDto)> CreateStorageCondition(StorageConditionDto.StorageConditionCreateDto dto);
+        Task<(string, StorageConditionDto.StorageConditionResponseDto)> UpdateStorageCondition(int storageConditionId, StorageConditionDto.StorageConditionUpdateDto dto);
         Task<(string, bool)> DeleteStorageCondition(int storageConditionId);
     }
 
@@ -21,13 +21,15 @@ namespace MilkDistributionWarehouse.Services
     {
         private readonly IStorageConditionRepository _storageConditionRepository;
         private readonly IMapper _mapper;
-        private readonly WarehouseContext _context;  // Added for potential FK validation if needed
+        private readonly IAreaRepository _areaRepository;
+        private readonly IGoodsRepository _goodReposotory;
 
-        public StorageConditionService(IStorageConditionRepository storageConditionRepository, IMapper mapper, WarehouseContext context)
+        public StorageConditionService(IStorageConditionRepository storageConditionRepository, IMapper mapper, IAreaRepository areaRepository, IGoodsRepository goodReposotory)
         {
             _storageConditionRepository = storageConditionRepository;
             _mapper = mapper;
-            _context = context;
+            _areaRepository = areaRepository;
+            _goodReposotory = goodReposotory;
         }
 
         public async Task<(string, PageResult<StorageConditionDto.StorageConditionResponseDto>)> GetStorageConditions(PagedRequest request)
@@ -35,62 +37,68 @@ namespace MilkDistributionWarehouse.Services
             var conditions = _storageConditionRepository.GetStorageConditions();
 
             if (conditions == null)
-                return ("No storage conditions available", new PageResult<StorageConditionDto.StorageConditionResponseDto>());
+                return ("Không có dữ liệu điều kiện lưu trữ nào.".ToMessageForUser(), new PageResult<StorageConditionDto.StorageConditionResponseDto>());
 
             var conditionDtos = conditions.ProjectTo<StorageConditionDto.StorageConditionResponseDto>(_mapper.ConfigurationProvider);
-
             var pagedResult = await conditionDtos.ToPagedResultAsync(request);
 
             return ("", pagedResult);
         }
 
-        public async Task<(string, StorageConditionDto.StorageConditionResponseDto)> CreateStorageCondition(StorageConditionDto.StorageConditionRequestDto dto)
+        public async Task<(string, StorageConditionDto.StorageConditionResponseDto)> CreateStorageCondition(StorageConditionDto.StorageConditionCreateDto dto)
         {
-            if (dto == null) return ("Storage condition create is null", null);
+            if (dto == null) return ("Dữ liệu tạo điều kiện lưu trữ không hợp lệ.".ToMessageForUser(), null);
 
-            if (dto.TemperatureMin.HasValue && dto.TemperatureMax.HasValue && dto.TemperatureMin > dto.TemperatureMax)
-                return ("TemperatureMin cannot be greater than TemperatureMax", null);
+            // Kiểm tra trùng lặp toàn bộ điều kiện
+            var isDuplicate = await _storageConditionRepository.IsDuplicateStorageConditionAsync(
+                null,
+                dto.TemperatureMin,
+                dto.TemperatureMax,
+                dto.HumidityMin,
+                dto.HumidityMax,
+                dto.LightLevel);
 
-            if (dto.HumidityMin.HasValue && dto.HumidityMax.HasValue && dto.HumidityMin > dto.HumidityMax)
-                return ("HumidityMin cannot be greater than HumidityMax", null);
-
-            if (string.IsNullOrWhiteSpace(dto.LightLevel))
-                return ("LightLevel is required", null);
+            if (isDuplicate)
+                return ("Điều kiện lưu trữ này đã tồn tại.".ToMessageForUser(), null);
 
             var entity = _mapper.Map<StorageCondition>(dto);
             entity.CreatedAt = DateTime.UtcNow;
-            entity.Status = (int)CommonStatus.Active;  // Changed from 1 to enum for clarity
+            entity.Status = (int)CommonStatus.Active;
 
             var createdEntity = await _storageConditionRepository.CreateStorageCondition(entity);
             if (createdEntity == null)
-                return ("Failed to create storage condition", null);
+                return ("Tạo điều kiện lưu trữ thất bại.".ToMessageForUser(), null);
 
             return ("", _mapper.Map<StorageConditionDto.StorageConditionResponseDto>(createdEntity));
         }
 
-        public async Task<(string, StorageConditionDto.StorageConditionResponseDto)> UpdateStorageCondition(int storageConditionId, StorageConditionDto.StorageConditionRequestDto dto)
+        public async Task<(string, StorageConditionDto.StorageConditionResponseDto)> UpdateStorageCondition(int storageConditionId, StorageConditionDto.StorageConditionUpdateDto dto)
         {
-            if (dto == null) return ("Storage condition update is null", null);
-
-            if (dto.TemperatureMin.HasValue && dto.TemperatureMax.HasValue && dto.TemperatureMin > dto.TemperatureMax)
-                return ("TemperatureMin cannot be greater than TemperatureMax", null);
-
-            if (dto.HumidityMin.HasValue && dto.HumidityMax.HasValue && dto.HumidityMin > dto.HumidityMax)
-                return ("HumidityMin cannot be greater than HumidityMax", null);
-
-            if (string.IsNullOrWhiteSpace(dto.LightLevel))
-                return ("LightLevel is required", null);
+            if (dto == null) return ("Không có dữ liệu để cập nhật điều kiện lưu trữ.".ToMessageForUser(), null);
 
             var entity = await _storageConditionRepository.GetStorageConditionById(storageConditionId);
             if (entity == null)
-                return ("Storage condition not found", null);
+                return ("Không tìm thấy điều kiện lưu trữ cần cập nhật.".ToMessageForUser(), null);
+
+            // Kiểm tra trùng lặp toàn bộ điều kiện, ngoại trừ bản ghi hiện tại
+            var isDuplicate = await _storageConditionRepository.IsDuplicateStorageConditionAsync(
+                storageConditionId,
+                dto.TemperatureMin,
+                dto.TemperatureMax,
+                dto.HumidityMin,
+                dto.HumidityMax,
+                dto.LightLevel);
+
+            if (isDuplicate)
+                return ("Điều kiện lưu trữ này đã tồn tại.".ToMessageForUser(), null);
 
             _mapper.Map(dto, entity);
+            entity.Status = dto.Status ?? entity.Status;
             entity.UpdateAt = DateTime.UtcNow;
 
             var updatedEntity = await _storageConditionRepository.UpdateStorageCondition(entity);
             if (updatedEntity == null)
-                return ("Failed to update storage condition", null);
+                return ("Cập nhật điều kiện lưu trữ thất bại.".ToMessageForUser(), null);
 
             return ("", _mapper.Map<StorageConditionDto.StorageConditionResponseDto>(updatedEntity));
         }
@@ -99,18 +107,17 @@ namespace MilkDistributionWarehouse.Services
         {
             var entity = await _storageConditionRepository.GetStorageConditionById(storageConditionId);
             if (entity == null)
-                return ("Storage condition not found", false);
+                return ("Không tìm thấy điều kiện lưu trữ để xoá.".ToMessageForUser(), false);
 
-            // Check for dependent Areas or Goods (assuming FK relationships)
-            if (await _context.Areas.AnyAsync(a => a.StorageConditionId == storageConditionId && a.Status != CommonStatus.Inactive) ||
-                await _context.Goods.AnyAsync(g => g.StorageConditionId == storageConditionId && g.Status != CommonStatus.Inactive))
-            {
-                return ("Cannot delete, storage condition is in use", false);
-            }
+            var isUsedInArea = await _areaRepository.VerifyStorageConditionUsage(storageConditionId);
+            var isUsedInGoods = await _goodReposotory.VerifyStorageConditionUsage(storageConditionId);
 
-            var deleted = await Task.FromResult(_storageConditionRepository.DeleteStorageCondition(storageConditionId));
-            if (!await deleted)
-            return ("Failed to delete storage condition", false);
+            if (isUsedInArea || isUsedInGoods)
+                return ("Không thể xoá vì điều kiện lưu trữ này đang được sử dụng.".ToMessageForUser(), false);
+
+            var deleted = await _storageConditionRepository.DeleteStorageCondition(storageConditionId);
+            if (!deleted)
+                return ("Xoá điều kiện lưu trữ thất bại.".ToMessageForUser(), false);
 
             return ("", true);
         }

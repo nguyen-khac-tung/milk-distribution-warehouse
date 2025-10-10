@@ -26,7 +26,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("Create")]
-        public async Task<IResult> CreateStorageCondition([FromBody] StorageConditionDto.StorageConditionRequestDto dto)
+        public async Task<IResult> CreateStorageCondition([FromBody] StorageConditionDto.StorageConditionCreateDto dto)
         {
             var (msg, createdStorageCondition) = await _storageConditionService.CreateStorageCondition(dto);
             if (!string.IsNullOrEmpty(msg))
@@ -35,7 +35,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPut("Update/{id}")]
-        public async Task<IResult> UpdateStorageCondition(int id, [FromBody] StorageConditionDto.StorageConditionRequestDto dto)
+        public async Task<IResult> UpdateStorageCondition(int id, [FromBody] StorageConditionDto.StorageConditionUpdateDto dto)
         {
             var (msg, updatedStorageCondition) = await _storageConditionService.UpdateStorageCondition(id, dto);
             if (!string.IsNullOrEmpty(msg))

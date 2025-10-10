@@ -1,15 +1,19 @@
-﻿using MilkDistributionWarehouse.Constants;
+﻿using Microsoft.EntityFrameworkCore;
+using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.Entities;
 
 namespace MilkDistributionWarehouse.Repositories
 {
     public interface IAreaRepository
     {
-        List<Area> GetAreas();
-        Area? GetAreaById(int areaId);
-        Area? CreateArea(Area entity);
-        Area? UpdateArea(Area entity);
-        bool DeleteArea(int areaId);
+        IQueryable<Area>? GetAreas();
+        Task<Area?> GetAreaById(int areaId);
+        Task<Area?> CreateArea(Area entity);
+        Task<Area?> UpdateArea(Area entity);
+        Task<bool> IsDuplicateAreaCode(string areaCode);
+        Task<bool> IsDuplicationByIdAndCode(int areaId, string areaCode);
+        Task<bool> HasDependentLocationsOrStocktakingsAsync(int areaId);
+        Task<bool> VerifyStorageConditionUsage(int storageConditionId);
     }
 
     public class AreaRepository : IAreaRepository
@@ -21,66 +25,77 @@ namespace MilkDistributionWarehouse.Repositories
             _context = context;
         }
 
-        public List<Area> GetAreas()
+        public IQueryable<Area>? GetAreas()
         {
             return _context.Areas
-                .Where(a => a.Status != CommonStatus.Inactive)
-                .ToList();
+                .Where(a => a.Status == CommonStatus.Active || a.Status == CommonStatus.Inactive)
+                .OrderByDescending(a => a.CreatedAt)
+                .AsNoTracking();
         }
 
-        public Area? GetAreaById(int areaId)
+        public async Task<Area?> GetAreaById(int areaId)
         {
-            return _context.Areas
-                .Where(a => a.AreaId == areaId && a.Status != CommonStatus.Inactive)
-                .FirstOrDefault();
+            return await _context.Areas
+                .Where(a => a.AreaId == areaId && a.Status != CommonStatus.Deleted)
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
         }
 
-        public Area? CreateArea(Area entity)
+        public async Task<Area?> CreateArea(Area entity)
         {
             try
             {
-                _context.Areas.Add(entity);
-                _context.SaveChanges();
+                await _context.Areas.AddAsync(entity);
+                await _context.SaveChangesAsync();
                 return entity;
             }
-            catch
+            catch (Exception ex)
             {
-                return null;
+                throw new InvalidOperationException("Không thể tạo khu vực.", ex);
             }
         }
 
-        public Area? UpdateArea(Area entity)
+        public async Task<Area?> UpdateArea(Area entity)
         {
             try
             {
                 _context.Areas.Update(entity);
-                _context.SaveChanges();
+                await _context.SaveChangesAsync();
                 return entity;
             }
-            catch
+            catch (Exception ex)
             {
-                return null;
+                throw new InvalidOperationException("Không thể cập nhật khu vực.", ex);
             }
         }
 
-        public bool DeleteArea(int areaId)
+        public async Task<bool> IsDuplicateAreaCode(string areaCode)
         {
-            try
-            {
-                var entity = _context.Areas
-                    .Where(a => a.AreaId == areaId && a.Status != CommonStatus.Inactive)
-                    .FirstOrDefault();
-
-                if (entity == null) return false;
-
-                entity.Status = CommonStatus.Inactive;
-                _context.SaveChanges();
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
+            return await _context.Areas.AnyAsync(a =>
+                a.AreaCode.ToLower().Trim() == areaCode.ToLower().Trim() &&
+                a.Status != CommonStatus.Deleted);
         }
+
+        public async Task<bool> IsDuplicationByIdAndCode(int areaId, string areaCode)
+        {
+            return await _context.Areas.AnyAsync(a =>
+                a.AreaId != areaId &&
+                a.AreaCode.ToLower().Trim() == areaCode.ToLower().Trim() &&
+                a.Status != CommonStatus.Deleted);
+        }
+
+        public async Task<bool> HasDependentLocationsOrStocktakingsAsync(int areaId)
+        {
+            return await _context.Locations.AnyAsync(l => l.AreaId == areaId && l.Status != CommonStatus.Deleted) ||
+                   await _context.StocktakingAreas.AnyAsync(sa => sa.AreaId == areaId);
+        }
+
+        public async Task<bool> VerifyStorageConditionUsage(int storageConditionId)
+        {
+            return _context.Areas.Any(a =>
+                a.StorageConditionId == storageConditionId &&
+                a.Status != CommonStatus.Deleted);
+        }
+
     }
 }

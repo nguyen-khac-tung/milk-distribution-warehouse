@@ -78,4 +78,14 @@
         public const int PendingApproval = 3;
         public const int Completed = 4;
     }
+
+    /// <summary>
+    /// Các trạng thái ánh sáng của kho (StorageCondition)
+    /// </summary>
+    public static class LightStorageConditionStatus
+    {
+        public const string Low = "Low";
+        public const string Normal = "Normal";
+        public const string High = "High";
+    }
 }

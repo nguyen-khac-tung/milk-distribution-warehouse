@@ -10,6 +10,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<StorageCondition?> GetStorageConditionById(int storageConditionId);
         Task<StorageCondition?> CreateStorageCondition(StorageCondition entity);
         Task<StorageCondition?> UpdateStorageCondition(StorageCondition entity);
+        Task<bool> IsDuplicateStorageConditionAsync(int? storageConditionId, decimal? temperatureMin, decimal? temperatureMax, decimal? humidityMin, decimal? humidityMax, string lightLevel);
         Task<bool> DeleteStorageCondition(int storageConditionId);
     }
 
@@ -25,14 +26,15 @@ namespace MilkDistributionWarehouse.Repositories
         public IQueryable<StorageCondition> GetStorageConditions()
         {
             return _context.StorageConditions
-                .Where(sc => sc.Status != CommonStatus.Inactive)
+                .Where(sc => sc.Status == CommonStatus.Active || sc.Status == CommonStatus.Inactive)
+                .OrderByDescending(sc => sc.CreatedAt)
                 .AsNoTracking();
         }
 
         public async Task<StorageCondition?> GetStorageConditionById(int storageConditionId)
         {
             return await _context.StorageConditions
-                .Where(sc => sc.StorageConditionId == storageConditionId && sc.Status != CommonStatus.Inactive)
+                .Where(sc => sc.StorageConditionId == storageConditionId && sc.Status != CommonStatus.Deleted)
                 .FirstOrDefaultAsync();
         }
 
@@ -74,7 +76,8 @@ namespace MilkDistributionWarehouse.Repositories
 
                 if (entity == null) return false;
 
-                entity.Status = CommonStatus.Inactive;
+                entity.Status = CommonStatus.Deleted;
+                entity.UpdateAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
                 return true;
             }
@@ -82,6 +85,19 @@ namespace MilkDistributionWarehouse.Repositories
             {
                 return false;
             }
+        }
+
+        public async Task<bool> IsDuplicateStorageConditionAsync(int? storageConditionId, decimal? temperatureMin, decimal? temperatureMax, decimal? humidityMin, decimal? humidityMax, string lightLevel)
+        {
+            return await _context.StorageConditions
+                .AnyAsync(sc =>
+                    sc.Status != CommonStatus.Deleted &&
+                    (!storageConditionId.HasValue || sc.StorageConditionId != storageConditionId) &&
+                    sc.TemperatureMin == temperatureMin &&
+                    sc.TemperatureMax == temperatureMax &&
+                    sc.HumidityMin == humidityMin &&
+                    sc.HumidityMax == humidityMax &&
+                    sc.LightLevel == lightLevel);
         }
     }
 }
