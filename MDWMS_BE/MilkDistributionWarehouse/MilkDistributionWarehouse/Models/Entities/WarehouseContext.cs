@@ -126,8 +126,8 @@ public partial class WarehouseContext : DbContext
         {
             entity.HasKey(e => e.GoodsId).HasName("PK_Products");
 
-            entity.Property(e => e.GoodsId).ValueGeneratedNever();
-            entity.Property(e => e.CategoryId).ValueGeneratedOnAdd();
+            entity.Property(e => e.GoodsId).ValueGeneratedOnAdd();
+            entity.Property(e => e.CategoryId).ValueGeneratedNever();
             entity.Property(e => e.GoodsCode)
                 .HasMaxLength(255)
                 .IsUnicode(false);
