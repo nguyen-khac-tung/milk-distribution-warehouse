@@ -96,9 +96,14 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => (DateTime?)null));
             CreateMap<GoodsUpdate, Good>()
                 .ForMember(dest => dest.GoodsId, opt => opt.Ignore())
+                .ForMember(dest => dest.GoodsCode, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
-                .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => DateTime.Now))
-                .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
+                .ForMember(dest => dest.Category, opt => opt.Ignore())
+                .ForMember(dest => dest.Supplier, opt => opt.Ignore())
+                .ForMember(dest => dest.StorageCondition, opt => opt.Ignore())
+                .ForMember(dest => dest.UnitMeasure, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => DateTime.Now));
+
         }
     }
 }
