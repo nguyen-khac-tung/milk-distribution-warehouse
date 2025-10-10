@@ -99,8 +99,8 @@ namespace MilkDistributionWarehouse.Services
             if (goodsExist.Status == CommonStatus.Deleted || update.Status == CommonStatus.Deleted)
                 return ("Sản phẩm đã bị xoá hoặc không thể chuyển sang trạng thái đã xoá.".ToMessageForUser(), new GoodsDto());
 
-            if (await _goodRepository.IsDuplicationCode(update.GoodsId, update.GoodsCode))
-                return ("Mã sản phẩm đã tồn tại trong hệ thống", new GoodsDto());
+            //if (await _goodRepository.IsDuplicationCode(update.GoodsId, update.GoodsCode))
+            //    return ("Mã sản phẩm đã tồn tại trong hệ thống", new GoodsDto());
 
             
             bool isChangeStatus = goodsExist.Status != update.Status;
@@ -126,7 +126,7 @@ namespace MilkDistributionWarehouse.Services
                 {
                     bool hasChanges =
                         !goodsExist.GoodsName.Equals(update.GoodsName) ||
-                        !goodsExist.GoodsCode.Equals(update.GoodsCode) ||
+                        //!goodsExist.GoodsCode.Equals(update.GoodsCode) ||
                         goodsExist.CategoryId != update.CategoryId ||
                         goodsExist.UnitMeasureId != update.UnitMeasureId ||
                         goodsExist.StorageConditionId != update.StorageConditionId ||
@@ -160,8 +160,8 @@ namespace MilkDistributionWarehouse.Services
             if (goodsExist.Status == CommonStatus.Deleted || update.Status == CommonStatus.Deleted)
                 return ("Sản phẩm đã bị xoá hoặc không thể chuyển sang trạng thái đã xoá.".ToMessageForUser(), new GoodsDto());
 
-            if (await _goodRepository.IsDuplicationCode(update.GoodsId, update.GoodsCode))
-                return ("Mã sản phẩm đã tồn tại trong hệ thống".ToMessageForUser(), new GoodsDto());
+            //if (await _goodRepository.IsDuplicationCode(update.GoodsId, update.GoodsCode))
+            //    return ("Mã sản phẩm đã tồn tại trong hệ thống".ToMessageForUser(), new GoodsDto());
 
 
             bool isChangeStatus = goodsExist.Status != update.Status;
@@ -187,7 +187,7 @@ namespace MilkDistributionWarehouse.Services
                 {
                     bool hasChanges =
                         !goodsExist.GoodsName.Equals(update.GoodsName) ||
-                        !goodsExist.GoodsCode.Equals(update.GoodsCode) ||
+                        //!goodsExist.GoodsCode.Equals(update.GoodsCode) ||
                         goodsExist.CategoryId != update.CategoryId ||
                         goodsExist.UnitMeasureId != update.UnitMeasureId ||
                         goodsExist.StorageConditionId != update.StorageConditionId ||

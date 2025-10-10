@@ -54,7 +54,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<GoodsDto>.ToResultOk(goods);
         }
 
-        [HttpDelete("Delete{goodsId}")]
+        [HttpDelete("Delete/{goodsId}")]
         public async Task<IResult> DeleteGoods(int goodsId)
         {
             var (msg, goods) = await _goodsService.DeleteGoods(goodsId);
