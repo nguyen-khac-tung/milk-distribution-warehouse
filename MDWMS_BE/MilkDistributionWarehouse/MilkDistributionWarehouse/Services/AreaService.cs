@@ -23,14 +23,12 @@ namespace MilkDistributionWarehouse.Services
         private readonly IAreaRepository _areaRepository;
         private readonly IStorageConditionRepository _storageConditionRepository;
         private readonly IMapper _mapper;
-        private readonly WarehouseContext _context;
 
-        public AreaService(IAreaRepository areaRepository, IStorageConditionRepository storageConditionRepository, IMapper mapper, WarehouseContext context)
+        public AreaService(IAreaRepository areaRepository, IStorageConditionRepository storageConditionRepository, IMapper mapper)
         {
             _areaRepository = areaRepository;
             _storageConditionRepository = storageConditionRepository;
             _mapper = mapper;
-            _context = context;
         }
 
         public async Task<(string, PageResult<AreaDto.AreaResponseDto>)> GetAreas(PagedRequest request)
@@ -60,13 +58,13 @@ namespace MilkDistributionWarehouse.Services
         public async Task<(string, AreaDto.AreaResponseDto)> CreateArea(AreaDto.AreaCreateDto dto)
         {
             if (dto == null)
-                return ("Dữ liệu khu vực không hợp lệ.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+                return ("Don't have input data.", new AreaDto.AreaResponseDto());
 
             if (await _areaRepository.IsDuplicateAreaCode(dto.AreaCode))
                 return ("Mã khu vực đã tồn tại.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
-            var storageConditionExists = await _context.StorageConditions.AnyAsync(sc => sc.StorageConditionId == dto.StorageConditionId && sc.Status != CommonStatus.Inactive);
-            if (!storageConditionExists)
+            var storageConditionExists = await _storageConditionRepository.GetStorageConditionById(dto.StorageConditionId);
+            if (storageConditionExists == null)
                 return ("Điều kiện bảo quản không tồn tại hoặc đã bị xoá.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
             var entity = _mapper.Map<Area>(dto);
@@ -83,7 +81,7 @@ namespace MilkDistributionWarehouse.Services
         public async Task<(string, AreaDto.AreaResponseDto)> UpdateArea(int areaId, AreaDto.AreaUpdateDto dto)
         {
             if (dto == null)
-                return ("Dữ liệu cập nhật khu vực không hợp lệ.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+                return ("Don't have input data.", new AreaDto.AreaResponseDto());
 
             if (areaId <= 0)
                 return ("Mã khu vực không hợp lệ.".ToMessageForUser(), new AreaDto.AreaResponseDto());
@@ -95,8 +93,8 @@ namespace MilkDistributionWarehouse.Services
             if (await _areaRepository.IsDuplicationByIdAndCode(areaId, dto.AreaCode))
                 return ("Mã khu vực đã tồn tại.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
-            var storageConditionExists = await _context.StorageConditions.AnyAsync(sc => sc.StorageConditionId == dto.StorageConditionId && sc.Status != CommonStatus.Inactive);
-            if (!storageConditionExists)
+            var storageConditionExists = await _storageConditionRepository.GetStorageConditionById(dto.StorageConditionId);
+            if (storageConditionExists == null)
                 return ("Điều kiện bảo quản không tồn tại hoặc đã bị xoá.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
             _mapper.Map(dto, area);
