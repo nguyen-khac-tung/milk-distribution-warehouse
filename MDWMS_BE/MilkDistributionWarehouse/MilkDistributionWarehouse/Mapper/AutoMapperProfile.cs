@@ -127,6 +127,10 @@ namespace MilkDistributionWarehouse.Mapper
             //Map Supplier
             CreateMap<Supplier, SupplierDto>();
 
+            //Map Retailer
+            CreateMap<Retailer, RetailerDto>();
+            CreateMap<Retailer, RetailerDetail>();
+
         }
     }
 }

@@ -51,6 +51,11 @@ namespace MilkDistributionWarehouse.Configurations
             //Supplier
             services.AddScoped<ISupplierRepository, SupplierRepository>();
             services.AddScoped<ISupplierService, SupplierService>();
+
+            //Retailer
+            services.AddScoped<IRetailerRepository, RetailerRepository>();
+            services.AddScoped<IRetailerService, RetailerService>();
+
         }
     }
 }
