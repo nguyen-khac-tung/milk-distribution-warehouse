@@ -28,6 +28,8 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> IsGoodsUsedInPurchaseOrderWithExcludedStatusesAsync(int goodsId, params int[] excludedStatuses);
         Task<bool> IsGoodsUsedInSalesOrderWithExcludedStatusesAsync(int goodsId, params int[] excludedStatuses);
         Task<bool> VerifyStorageConditionUsage(int storageConditionId);
+        Task<bool> HasActiveGoods(int supplierId);
+        Task<bool> IsGoodsActiveOrInActive(int supplierId);
     }
     public class GoodsRepository : IGoodsRepository
     {
@@ -174,6 +176,18 @@ namespace MilkDistributionWarehouse.Repositories
         public Task<bool> VerifyStorageConditionUsage(int storageConditionId)
         {
             return _warehouseContext.Goods.AnyAsync(g => g.StorageConditionId == storageConditionId && g.Status != CommonStatus.Deleted);
+        }
+
+        public async Task<bool> HasActiveGoods(int supplierId)
+        {
+            return await _warehouseContext.Goods
+                .AnyAsync(g => g.SupplierId == supplierId && g.Status == CommonStatus.Active);
+        }
+
+        public async Task<bool> IsGoodsActiveOrInActive(int supplierId)
+        {
+            return await _warehouseContext.Goods
+                .AnyAsync(g => g.SupplierId == supplierId && (g.Status == CommonStatus.Active || g.Status == CommonStatus.Inactive));
         }
     }
 }
