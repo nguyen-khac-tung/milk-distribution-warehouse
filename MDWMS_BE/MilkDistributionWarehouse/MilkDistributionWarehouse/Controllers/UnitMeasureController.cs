@@ -18,7 +18,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("UnitMeasures")]
-        public async Task<IResult> GetUnitMeasures([FromBody]PagedRequest request)
+        public async Task<IActionResult> GetUnitMeasures([FromBody]PagedRequest request)
         {
             var (msg, unitMeasures) = await _unitMeasureService.GetUnitMeasure(request);
             if (!string.IsNullOrEmpty(msg))
@@ -27,7 +27,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("Create")]
-        public async Task<IResult> CreateUnitMeasure([FromBody]UnitMeasureCreate create)
+        public async Task<IActionResult> CreateUnitMeasure([FromBody]UnitMeasureCreate create)
         {
             var(msg, unitMeasure) = await _unitMeasureService.CreateUnitMeasure(create);
             if (!string.IsNullOrEmpty(msg))
@@ -36,7 +36,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPut("Update")]
-        public async Task<IResult> UpdateUnitMeasure([FromBody] UnitMeasureUpdate update)
+        public async Task<IActionResult> UpdateUnitMeasure([FromBody] UnitMeasureUpdate update)
         {
             var (msg, unitMeasure) = await _unitMeasureService.UpdateUnitMeasure(update);
             if(!string.IsNullOrEmpty(msg))
@@ -45,7 +45,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpDelete("Delete/{unitMeasureId}")]
-        public async Task<IResult> DeleteUnitMeasure(int unitMeasureId)
+        public async Task<IActionResult> DeleteUnitMeasure(int unitMeasureId)
         {
             var (msg, unitMeasure) = await _unitMeasureService.DeleteUnitMeasure(unitMeasureId);
             if(!string.IsNullOrEmpty(msg))

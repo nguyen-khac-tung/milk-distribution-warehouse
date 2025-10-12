@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using MilkDistributionWarehouse.Configurations;
 using MilkDistributionWarehouse.Mapper;
 using MilkDistributionWarehouse.Models.Entities;
+using MilkDistributionWarehouse.Utilities;
 using System.Text;
 
 namespace MilkDistributionWarehouse
@@ -19,10 +20,15 @@ namespace MilkDistributionWarehouse
                 option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
             );
 
-            builder.Services.AddControllers();
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
-            builder.Services.AddCors();
+            builder.Services.AddControllers(option =>
+            {
+                option.Filters.Add(new ValidationFilter());
+            })
+            .ConfigureApiBehaviorOptions(option =>
+            {
+                option.SuppressModelStateInvalidFilter = true;
+            });
+
             builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
             builder.Services.AddAuthentication(option =>
@@ -46,6 +52,10 @@ namespace MilkDistributionWarehouse
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
                 };
             });
+
+            builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddSwaggerGen();
+            builder.Services.AddCors();
 
             // Add dependency injection configuration
             builder.Services.AddDependencyInjection();

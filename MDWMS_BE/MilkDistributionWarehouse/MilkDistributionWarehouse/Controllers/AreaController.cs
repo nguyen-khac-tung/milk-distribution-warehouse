@@ -17,7 +17,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("Areas")]
-        public async Task<IResult> GetAreas([FromBody] PagedRequest request)
+        public async Task<IActionResult> GetAreas([FromBody] PagedRequest request)
         {
             var (msg, areas) = await _areaService.GetAreas(request);
             if (!string.IsNullOrEmpty(msg))
@@ -26,7 +26,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<IResult> GetArea(int id)
+        public async Task<IActionResult> GetArea(int id)
         {
             var (msg, area) = await _areaService.GetAreaById(id);
             if (!string.IsNullOrEmpty(msg))
@@ -35,7 +35,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("Create")]
-        public async Task<IResult> CreateArea([FromBody] AreaDto.AreaCreateDto dto)
+        public async Task<IActionResult> CreateArea([FromBody] AreaDto.AreaCreateDto dto)
         {
             if (!ModelState.IsValid)
                 return ApiResponse<string>.ToResultError("Dữ liệu không hợp lệ.");
@@ -47,7 +47,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPut("Update/{id}")]
-        public async Task<IResult> UpdateArea(int id, [FromBody] AreaDto.AreaUpdateDto dto)
+        public async Task<IActionResult> UpdateArea(int id, [FromBody] AreaDto.AreaUpdateDto dto)
         {
             if (!ModelState.IsValid)
                 return ApiResponse<string>.ToResultError("Dữ liệu không hợp lệ.");
@@ -59,7 +59,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpDelete("Delete/{id}")]
-        public async Task<IResult> DeleteArea(int id)
+        public async Task<IActionResult> DeleteArea(int id)
         {
             var (msg, area) = await _areaService.DeleteArea(id);
             if (!string.IsNullOrEmpty(msg))

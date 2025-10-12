@@ -18,7 +18,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("Suppliers")]
-        public async Task<IResult> GetSuppliers([FromBody]PagedRequest request)
+        public async Task<IActionResult> GetSuppliers([FromBody]PagedRequest request)
         {
             var (msg, suppliers) = await _supplierService.GetSuppliers(request);
             if(!string.IsNullOrEmpty(msg)) 

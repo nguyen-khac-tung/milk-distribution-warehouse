@@ -19,7 +19,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("Goods")]
-        public async Task<IResult> GetGoodss([FromBody]PagedRequest request)
+        public async Task<IActionResult> GetGoodss([FromBody]PagedRequest request)
         {
             var(msg, goodss) = await _goodsService.GetGoods(request);
             if(!string.IsNullOrEmpty(msg)) 
@@ -28,7 +28,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpGet("GoodsByGoodsId/{goodsId}")]
-        public  async Task<IResult> GoodsByGoodsId(int goodsId)
+        public  async Task<IActionResult> GoodsByGoodsId(int goodsId)
         {
             var(msg, goodsDetail) = await _goodsService.GetGoodsByGoodsId(goodsId);
             if (!string.IsNullOrEmpty(msg))
@@ -37,7 +37,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("Create")]
-        public async Task<IResult> CreateGoods([FromBody]GoodsCreate create)
+        public async Task<IActionResult> CreateGoods([FromBody]GoodsCreate create)
         {
             var(msg, goods) = await _goodsService.CreateGoods(create);
             if (!string.IsNullOrEmpty(msg))
@@ -46,7 +46,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPut("Update")]
-        public async Task<IResult> UpdateGoods([FromBody] GoodsUpdate update)
+        public async Task<IActionResult> UpdateGoods([FromBody] GoodsUpdate update)
         {
             var(msg, goods) = await _goodsService.UpdateGoods_1(update);
             if (!string.IsNullOrEmpty(msg))
@@ -55,7 +55,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpDelete("Delete/{goodsId}")]
-        public async Task<IResult> DeleteGoods(int goodsId)
+        public async Task<IActionResult> DeleteGoods(int goodsId)
         {
             var (msg, goods) = await _goodsService.DeleteGoods(goodsId);
             if (!string.IsNullOrEmpty(msg))
