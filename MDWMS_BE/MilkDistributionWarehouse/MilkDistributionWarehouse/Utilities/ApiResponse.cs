@@ -16,19 +16,19 @@ namespace MilkDistributionWarehouse.Utilities
         public ApiResponse() { }
 
 
-        public static IResult ToResultOk(string message = "Success", int statusCode = 200)
+        public static IActionResult ToResultOkMessage(string message = "", int statusCode = 200)
         {
-            return Results.Ok(new ApiResponse<T> { Message = message, Status = statusCode });
+            return new OkObjectResult(new ApiResponse<T> { Message = message, Status = statusCode });
         }
 
-        public static IResult ToResultOk(T data, string message = "Success", int statusCode = 200)
+        public static IActionResult ToResultOk(T data, string message = "", int statusCode = 200)
         {
-            return Results.Ok(new ApiResponse<T> { Data = data, Message = message, Status = statusCode });
+            return new OkObjectResult(new ApiResponse<T> { Data = data, Message = message, Status = statusCode });
         }
 
-        public static IResult ToResultError(string message, int statusCode = 400, T? data = default)
+        public static IActionResult ToResultError(string message, int statusCode = 400, T? data = default)
         {
-            return Results.BadRequest(new ApiResponse<T> { Data = data, Message = message, Status = statusCode });
+            return new OkObjectResult(new ApiResponse<T> { Data = data, Message = message, Status = statusCode });
         }
     }
 }
