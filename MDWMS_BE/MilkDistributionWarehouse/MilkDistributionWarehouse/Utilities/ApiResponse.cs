@@ -28,7 +28,7 @@ namespace MilkDistributionWarehouse.Utilities
 
         public static IActionResult ToResultError(string message, int statusCode = 400, T? data = default)
         {
-            return new OkObjectResult(new ApiResponse<T> { Data = data, Message = message, Status = statusCode });
+            return new BadRequestObjectResult(new ApiResponse<T> { Data = data, Message = message, Status = statusCode });
         }
     }
 }
