@@ -27,7 +27,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpGet("GetSupplierBySupplierId/{supplierId}")]
-        public async Task<IResult> GetSupplierBySupplierId(int supplierId)
+        public async Task<IActionResult> GetSupplierBySupplierId(int supplierId)
         {
             var(msg, supplierDetail) = await _supplierService.GetSupplierBySupplierId(supplierId);
             if (!string.IsNullOrEmpty(msg))
@@ -36,7 +36,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("Create")]
-        public async Task<IResult> CreateSupplier([FromBody]SupplierCreate create)
+        public async Task<IActionResult> CreateSupplier([FromBody]SupplierCreate create)
         {
             var(msg, supplierDetail) = await _supplierService.CreateSupplier(create);
             if (!string.IsNullOrEmpty(msg))
@@ -45,7 +45,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPut("Update")]
-        public async Task<IResult> UpdateSupplier([FromBody]SupplierUpdate update)
+        public async Task<IActionResult> UpdateSupplier([FromBody]SupplierUpdate update)
         {
             var(msg, supplierDetail) = await _supplierService.UpdateSupplier(update);
             if (!string.IsNullOrEmpty(msg))
@@ -54,7 +54,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpDelete("Delete/{supplierId}")]
-        public async Task<IResult> DeleteSupplier(int supplierId)
+        public async Task<IActionResult> DeleteSupplier(int supplierId)
         {
             var(msg, supplierDetail) = await _supplierService.DeleteSupplier(supplierId);
             if (!string.IsNullOrEmpty(msg))
