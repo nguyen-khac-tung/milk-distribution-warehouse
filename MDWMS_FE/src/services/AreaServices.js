@@ -88,6 +88,21 @@ export const updateArea = async (areaId, data) => {
     }
 };
 
+// Lấy chi tiết Area theo ID
+export const getAreaDetail = async (areaId) => {
+    try {
+        const res = await api.get(`/Area/GetById/${areaId}`);
+        console.log("Area Detail API response:", res.data);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching Area detail:", error);
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
+        throw error;
+    }
+};
+
 // Xóa Area
 export const deleteArea = async (AreaId) => {
     try {

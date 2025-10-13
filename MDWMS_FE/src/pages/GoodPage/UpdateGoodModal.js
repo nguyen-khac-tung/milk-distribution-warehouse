@@ -66,7 +66,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
     try {
       setLoadingData(true)
       const [categoriesRes, suppliersRes, storageConditionsRes, unitMeasuresRes] = await Promise.all([
-        getCategory({ pageNumber: 1, pageSize: 10}),
+        getCategory({ pageNumber: 1, pageSize: 10 }),
         getSuppliersDropdown(),
         getStorageCondition({ pageNumber: 1, pageSize: 10 }),
         getUnitMeasure({ pageNumber: 1, pageSize: 10 })

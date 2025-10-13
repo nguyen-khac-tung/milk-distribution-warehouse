@@ -406,15 +406,15 @@ export default function GoodsPage() {
                           <div className="flex flex-col">
                             <ChevronDown
                               className={`h-3 w-3 transition-colors ${sortField === "goodsName" && sortAscending
-                                  ? 'text-white'
-                                  : 'text-white/50'
+                                ? 'text-white'
+                                : 'text-white/50'
                                 }`}
                               style={{ transform: 'translateY(1px)' }}
                             />
                             <ChevronDown
                               className={`h-3 w-3 transition-colors ${sortField === "goodsName" && !sortAscending
-                                  ? 'text-white'
-                                  : 'text-white/50'
+                                ? 'text-white'
+                                : 'text-white/50'
                                 }`}
                               style={{ transform: 'translateY(-1px) rotate(180deg)' }}
                             />
@@ -498,8 +498,8 @@ export default function GoodsPage() {
                           <TableCell className="text-slate-700 px-4 py-3 first:pl-6 last:pr-6 border-0 w-24 text-center">{good?.unitMeasureName || ''}</TableCell>
                           <TableCell className="text-slate-700 px-4 py-3 first:pl-6 last:pr-6 border-0 w-40 text-center">
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${good?.status === 1
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-red-100 text-red-800'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800'
                               }`}>
                               {good?.status === 1 ? 'Hoạt động' : 'Ngừng hoạt động'}
                             </span>

@@ -98,6 +98,21 @@ export const updateLocation = async (data) => {
     }
 };
 
+// Lấy chi tiết Location theo ID
+export const getLocationDetail = async (locationId) => {
+    try {
+        const res = await api.get(`/Location/GetById/${locationId}`);
+        console.log("Location Detail API response:", res.data);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching Location detail:", error);
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
+        throw error;
+    }
+};
+
 // Xóa Location
 export const deleteLocation = async (locationId) => {
     try {
