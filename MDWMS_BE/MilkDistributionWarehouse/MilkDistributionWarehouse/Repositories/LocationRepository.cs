@@ -85,8 +85,8 @@ namespace MilkDistributionWarehouse.Repositories
 
         public async Task<bool> HasDependentPalletsOrStocktakingsAsync(int locationId)
         {
-            return await _context.Pallets.AnyAsync(p => p.LocationId == locationId && p.Status != CommonStatus.Inactive) ||
-                   await _context.StocktakingLocations.AnyAsync(sl => sl.LocationId == locationId && sl.Status != CommonStatus.Inactive);
+            return await _context.Pallets.AnyAsync(p => p.LocationId == locationId && p.Status != CommonStatus.Deleted) ||
+                   await _context.StocktakingLocations.AnyAsync(sl => sl.LocationId == locationId && sl.Status != CommonStatus.Deleted);
         }
 
         public async Task<bool> IsDuplicateLocationAsync(string locationCode, int? row, int? column, int areaId, int? excludeId = null)

@@ -73,8 +73,8 @@ namespace MilkDistributionWarehouse.Services
         public string RequestForgotPassword(string email)
         {
             var user = _userRepository.GetUserByEmail(email);
-            if (user == null) return "Email không tồn tại trong hệ thống!".ToMessageForUser();
-            if (user.Status == CommonStatus.Inactive) return "Tài khoản này đã bị vô hiệu".ToMessageForUser();
+            if (user == null) return "Email không hợp lệ!".ToMessageForUser();
+            if (user.Status == CommonStatus.Inactive) return "Tài khoản này đã bị vô hiệu hóa!".ToMessageForUser();
 
             try
             {
@@ -83,7 +83,7 @@ namespace MilkDistributionWarehouse.Services
             }
             catch (Exception ex)
             {
-                return "Có lỗi xảy ra trong quá trình gửi OTP. Vui lòng thử lại".ToMessageForUser();
+                return "Có lỗi xảy ra trong quá trình gửi OTP. Vui lòng thử lại!".ToMessageForUser();
             }
             return "";
         }
@@ -226,8 +226,20 @@ namespace MilkDistributionWarehouse.Services
 
         private void SendOtpByEmail(string toEmail, string otpCode)
         {
-            string emailBody = $"Your verification code is: <h2>{otpCode}</h2>This code will expire in 5 minutes.";
-            _emailUtility.SendMail(toEmail, "Account Verification OTP", emailBody);
+            string uniqueId = DateTime.Now.Ticks.ToString();
+            string emailBody = $@"
+                <table cellpadding=""0"" cellspacing=""0"" border=""0"">
+                    <tr>
+                        <td>
+                            Xin chào, <br><br>
+                            Vui lòng sử dụng mã xác thực dưới đây để hoàn tất việc xác minh tài khoản của bạn. <br><br>
+                            Mã xác thực của bạn là: <h2>{otpCode}</h2>
+                            Lưu ý: Mã này chỉ có hiệu lực trong <strong>5 phút</strong>.
+                            <span style='color:white; font-size:1px; display:none;'>{uniqueId}</span>
+                        </td>
+                    </tr>
+                </table>";
+            _emailUtility.SendMail(toEmail, "Mã OTP xác minh tài khoản của bạn", emailBody);
         }
     }
 }

@@ -18,13 +18,13 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
             public string Rack { get; set; }
 
-            public int? Row { get; set; }
+            public int Row { get; set; }
 
-            public int? Column { get; set; }
+            public int Column { get; set; }
 
-            public bool? IsAvailable { get; set; }
+            public bool IsAvailable { get; set; }
 
-            public int? Status { get; set; }
+            public int Status { get; set; }
 
             public DateTime? CreatedAt { get; set; }
 
@@ -45,11 +45,13 @@ namespace MilkDistributionWarehouse.Models.DTOs
             [StringLength(20, ErrorMessage = "Rack không được vượt quá 20 ký tự!")]
             public string Rack { get; set; }
 
+            [Required(ErrorMessage = "Hàng không được để trống")]
             [Range(1, 1000, ErrorMessage = "Số hàng (Row) phải >= 1 và < 1000")]
-            public int? Row { get; set; }
+            public int Row { get; set; }
 
+            [Required(ErrorMessage = "Cột không được để trống")]
             [Range(1, 1000, ErrorMessage = "Số cột (Column) phải >= 1 và < 1000")]
-            public int? Column { get; set; }
+            public int Column { get; set; }
 
             public bool? IsAvailable { get; set; } = true;
         }
@@ -68,11 +70,13 @@ namespace MilkDistributionWarehouse.Models.DTOs
             [StringLength(20, ErrorMessage = "Rack không được vượt quá 20 ký tự!")]
             public string Rack { get; set; }
 
+            [Required(ErrorMessage = "Sô hàng không được để trống")]
             [Range(1, 1000, ErrorMessage = "Số hàng (Row) phải >= 1 và < 1000")]
-            public int? Row { get; set; }
+            public int Row { get; set; }
 
+            [Required(ErrorMessage = "Số cột không được để trống")]
             [Range(1, 1000, ErrorMessage = "Số cột (Column) phải >= 1 và < 1000")]
-            public int? Column { get; set; }
+            public int Column { get; set; }
 
             public bool? IsAvailable { get; set; } = true;
 

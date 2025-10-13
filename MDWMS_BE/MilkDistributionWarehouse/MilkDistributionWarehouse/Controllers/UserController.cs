@@ -14,7 +14,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpGet("Profile/{id}")]
-        public IResult GetUserProfile(int id)
+        public IActionResult GetUserProfile(int id)
         {
             string msg = _userService.GetUserProfile(id, out UserProfileDto userProfile);
             if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);

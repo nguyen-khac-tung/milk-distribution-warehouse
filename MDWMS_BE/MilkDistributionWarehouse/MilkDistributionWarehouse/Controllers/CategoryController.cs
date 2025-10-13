@@ -16,7 +16,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("Categories")]
-        public async Task<IResult> GetCategories(PagedRequest request)
+        public async Task<IActionResult> GetCategories(PagedRequest request)
         {
             var(msg, categories) = await _categoryService.GetCategories(request);
             if(msg.Length > 0) 
@@ -25,7 +25,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("Create")]
-        public async Task<IResult> CreateCategory([FromBody]CategoryCreate categoryCreate)
+        public async Task<IActionResult> CreateCategory([FromBody]CategoryCreate categoryCreate)
         {
             var (msg, category) = await _categoryService.CreateCategory(categoryCreate);
             if (!string.IsNullOrEmpty(msg))
@@ -34,7 +34,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPut("Update")]
-        public async Task<IResult> UpdateCategory([FromBody]CategoryUpdate categoryUpdate)
+        public async Task<IActionResult> UpdateCategory([FromBody]CategoryUpdate categoryUpdate)
         {
             var(msg,category) = await _categoryService.UpdateCategory(categoryUpdate);
             if (!string.IsNullOrEmpty(msg))
@@ -43,7 +43,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpDelete("Delete/{categoryId}")]
-        public async Task<IResult> DeleteCategory(int categoryId)
+        public async Task<IActionResult> DeleteCategory(int categoryId)
         {
             var (msg, category) = await _categoryService.DeleteCategory(categoryId);
             if(!string.IsNullOrEmpty(msg)) 
