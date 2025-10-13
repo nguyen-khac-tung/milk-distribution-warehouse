@@ -19,7 +19,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("Retailers")]
-        public async Task<IResult> GetRetailer(PagedRequest request)
+        public async Task<IActionResult> GetRetailer(PagedRequest request)
         {
             var (msg, retailers) = await _retailerSevice.GetRetailers(request);
             if (!string.IsNullOrEmpty(msg))
@@ -28,7 +28,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpGet("GetRetailerByRetailerId/{retailerId}")]
-        public async Task<IResult> GetRetailerByRetailerId(int retailerId)
+        public async Task<IActionResult> GetRetailerByRetailerId(int retailerId)
         {
             var (msg, retailerDetail) = await _retailerSevice.GetRetailerByRetailerId(retailerId);
             if (!string.IsNullOrEmpty(msg))

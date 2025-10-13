@@ -17,7 +17,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("Locations")]
-        public async Task<IResult> GetLocations([FromBody] PagedRequest request)
+        public async Task<IActionResult> GetLocations([FromBody] PagedRequest request)
         {
             var (msg, locations) = await _locationService.GetLocations(request);
             if (msg.Length > 0)
@@ -26,7 +26,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("Create")]
-        public async Task<IResult> CreateLocation([FromBody] LocationDto.LocationCreateDto dto)
+        public async Task<IActionResult> CreateLocation([FromBody] LocationDto.LocationCreateDto dto)
         {
             var (msg, location) = await _locationService.CreateLocation(dto);
             if (!string.IsNullOrEmpty(msg))
@@ -35,7 +35,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPut("Update/{locationId}")]
-        public async Task<IResult> UpdateLocation(int locationId, [FromBody] LocationDto.LocationUpdateDto dto)
+        public async Task<IActionResult> UpdateLocation(int locationId, [FromBody] LocationDto.LocationUpdateDto dto)
         {
             var (msg, location) = await _locationService.UpdateLocation(locationId, dto);
             if (!string.IsNullOrEmpty(msg))
@@ -44,7 +44,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpDelete("Delete/{locationId}")]
-        public async Task<IResult> DeleteLocation(int locationId)
+        public async Task<IActionResult> DeleteLocation(int locationId)
         {
             var (msg, location) = await _locationService.DeleteLocation(locationId);
             if (!string.IsNullOrEmpty(msg))

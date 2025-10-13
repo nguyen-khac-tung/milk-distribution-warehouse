@@ -17,7 +17,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("StorageConditions")]
-        public async Task<IResult> GetStorageConditions([FromBody] PagedRequest request)
+        public async Task<IActionResult> GetStorageConditions([FromBody] PagedRequest request)
         {
             var (msg, conditions) = await _storageConditionService.GetStorageConditions(request);
             if (!string.IsNullOrEmpty(msg))
@@ -26,7 +26,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("Create")]
-        public async Task<IResult> CreateStorageCondition([FromBody] StorageConditionDto.StorageConditionCreateDto dto)
+        public async Task<IActionResult> CreateStorageCondition([FromBody] StorageConditionDto.StorageConditionCreateDto dto)
         {
             var (msg, createdStorageCondition) = await _storageConditionService.CreateStorageCondition(dto);
             if (!string.IsNullOrEmpty(msg))
@@ -35,7 +35,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPut("Update/{id}")]
-        public async Task<IResult> UpdateStorageCondition(int id, [FromBody] StorageConditionDto.StorageConditionUpdateDto dto)
+        public async Task<IActionResult> UpdateStorageCondition(int id, [FromBody] StorageConditionDto.StorageConditionUpdateDto dto)
         {
             var (msg, updatedStorageCondition) = await _storageConditionService.UpdateStorageCondition(id, dto);
             if (!string.IsNullOrEmpty(msg))
@@ -44,12 +44,12 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpDelete("Delete/{id}")]
-        public async Task<IResult> DeleteStorageCondition(int id)
+        public async Task<IActionResult> DeleteStorageCondition(int id)
         {
             var (msg, deleted) = await _storageConditionService.DeleteStorageCondition(id);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<string>.ToResultOk();
+            return ApiResponse<string>.ToResultOkMessage();
         }
     }
 }
