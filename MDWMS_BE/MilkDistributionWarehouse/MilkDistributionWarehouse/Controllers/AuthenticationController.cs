@@ -71,5 +71,14 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<string>.ToResultOkMessage();
         }
 
+        [Authorize]
+        [HttpPost("ChangePassword")]
+        public async Task<IActionResult> ChangePassword(ChangePasswordDto changePasswordDto)
+        {
+            var (msg, authenDto) = await _iAuthService.ChangePassword(User.GetUserId(), changePasswordDto);
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<AuthenticationDto>.ToResultOk(authenDto, "Đổi mật khẩu thành công.");
+        }
     }
 }

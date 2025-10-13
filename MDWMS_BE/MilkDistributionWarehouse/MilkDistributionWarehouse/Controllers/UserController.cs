@@ -25,5 +25,23 @@ namespace MilkDistributionWarehouse.Controllers
 
             return ApiResponse<UserDto>.ToResultOk(userProfile);
         }
+
+        [HttpGet("UserDetail/{id}")]
+        public async Task<IActionResult> GetUserDetail(int? id)
+        {
+            var (msg, userDetail) = await _userService.GetUserDetail(id);
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<UserDetailDto>.ToResultOk(userDetail);
+        }
+
+        [HttpDelete("DeleteUser/{id}")]
+        public async Task<IActionResult> DeleteUser(int? id)
+        {
+            var msg = await _userService.DeleteUser(id);
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<string>.ToResultOkMessage();
+        }
     }
 }

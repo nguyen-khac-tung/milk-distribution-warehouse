@@ -8,8 +8,10 @@ namespace MilkDistributionWarehouse.Repositories
     public interface IUserRepository
     {
         Task<User?> GetUserById(int? userId);
+        Task<User?> GetUserByIdWithAssociations(int? userId);
         Task<User?> GetUserByEmail(string email);
         Task<string> UpdateUser(User user);
+
     }
 
     public class UserRepository : IUserRepository
@@ -38,6 +40,20 @@ namespace MilkDistributionWarehouse.Repositories
                 .FirstOrDefaultAsync();
         }
 
+        public async Task<User?> GetUserByIdWithAssociations(int? userId)
+        {
+            return await _context.Users
+                .Include(u => u.Batches)
+                .Include(u => u.Pallets)
+                .Include(u => u.GoodsIssueNotes)
+                .Include(u => u.GoodsReceiptNotes)
+                .Include(u => u.PurchaseOrders)
+                .Include(u => u.SalesOrders)
+                .Include(u => u.StocktakingSheets)
+                .Where(u => u.UserId == userId && u.Status != CommonStatus.Deleted)
+                .FirstOrDefaultAsync();
+        }
+
         public async Task<string> UpdateUser(User user)
         {
             try
@@ -51,5 +67,6 @@ namespace MilkDistributionWarehouse.Repositories
                 return ex.Message;
             }
         }
+
     }
 }
