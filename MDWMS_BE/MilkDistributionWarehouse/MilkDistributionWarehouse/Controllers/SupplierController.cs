@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Azure.Core;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Services;
@@ -15,6 +16,15 @@ namespace MilkDistributionWarehouse.Controllers
         public SupplierController(ISupplierService supplierService)
         {
             _supplierService = supplierService;
+        }
+
+        [HttpGet("GetSupplierDropDown")]
+        public async Task<IActionResult> GetSupplierDropDownAsync()
+        {
+            var (msg, suppliersDropDown) = await _supplierService.GetSupplierDropDown();
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<List<SupplierDropDown>>.ToResultOk(suppliersDropDown);
         }
 
         [HttpPost("Suppliers")]
@@ -51,6 +61,14 @@ namespace MilkDistributionWarehouse.Controllers
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<SupplierDetail>.ToResultOk(supplierDetail);
+        }
+        [HttpPut("UpdateStatus")]
+        public async Task<IActionResult> UpdateSupplierStatus([FromBody] SupplierUpdateStatusDto update)
+        {
+            var (msg, supplierUpdateStatusDto) = await _supplierService.UpdateSupplierStatus(update);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<SupplierUpdateStatusDto>.ToResultOk(supplierUpdateStatusDto);
         }
 
         [HttpDelete("Delete/{supplierId}")]
