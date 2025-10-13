@@ -92,8 +92,8 @@ namespace MilkDistributionWarehouse.Repositories
         public async Task<bool> IsDuplicationEmail(int? supplierId, string email)
         {
             return await _context.Suppliers
-                .AnyAsync(s => (supplierId == null || s.SupplierId != supplierId
-                && s.Email.ToLower().Trim().Equals(email.ToLower().Trim())));
+                .AnyAsync(s => (supplierId == null || s.SupplierId != supplierId)
+                && s.Email.ToLower().Trim().Equals(email.ToLower().Trim()));
         }
 
         public async Task<bool> IsDuplicationPhone(int? supplierId, string phone)

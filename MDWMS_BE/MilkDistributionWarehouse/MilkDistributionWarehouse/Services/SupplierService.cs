@@ -106,10 +106,6 @@ namespace MilkDistributionWarehouse.Services
                 if (!string.IsNullOrEmpty(checkChangeStatus))
                     return (checkChangeStatus.ToMessageForUser(), new SupplierDetail());
             }
-            else
-            {
-                supplierExist.Status = update.Status;
-            }
 
             //Check update
             var canUpdateAllFields = await _purchaseOrderRepository.IsAllPurchaseOrderDraftOrEmpty(update.SupplierId);
@@ -129,7 +125,7 @@ namespace MilkDistributionWarehouse.Services
                 supplierExist.Email = update.Email;
                 supplierExist.Phone = update.Phone;
             }
-
+            supplierExist.Status = update.Status;
             supplierExist.UpdatedAt = DateTime.Now;
 
             var updateResult = await _supplierRepository.UpdateSupplier(supplierExist);

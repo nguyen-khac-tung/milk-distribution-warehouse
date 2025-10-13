@@ -93,10 +93,6 @@ namespace MilkDistributionWarehouse.Services
                 if (!string.IsNullOrEmpty(checkChangeStatus))
                     return (("Không thể cập nhật nhà bán lẻ. " + checkChangeStatus).ToMessageForUser(), new RetailerDetail());
             }
-            else
-            {
-                retailerExist.Status = update.Status;
-            }
 
             var canUpdate = await _salesOrderRepository.IsAllSalesOrderDraffOrEmpty(update.RetailerId);
             if (canUpdate)
@@ -113,7 +109,7 @@ namespace MilkDistributionWarehouse.Services
                 retailerExist.Phone = update.Phone;
             }
 
-
+            retailerExist.Status = update.Status;
             retailerExist.UpdatedAt = DateTime.Now;
 
             var updateResult = await _retailerRepository.UpdateRetailer(retailerExist);
