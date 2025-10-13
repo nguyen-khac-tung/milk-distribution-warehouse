@@ -41,6 +41,7 @@ namespace MilkDistributionWarehouse.Mapper
 
             // Map Category
             CreateMap<Category, CategoryDto>();
+            CreateMap<Category, CategoryDropDown>();
             CreateMap<CategoryCreate, Category>()
                 .ForMember(dest => dest.CategoryId, opt => opt.Ignore())
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => CommonStatus.Active))
