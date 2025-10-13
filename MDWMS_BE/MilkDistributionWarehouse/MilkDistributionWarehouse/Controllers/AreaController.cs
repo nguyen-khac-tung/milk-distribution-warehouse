@@ -25,13 +25,13 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<PageResult<AreaDto.AreaResponseDto>>.ToResultOk(areas);
         }
 
-        [HttpGet("AreaDetail/{id}")]
+        [HttpGet("{id}")]
         public async Task<IActionResult> GetArea(int id)
         {
             var (msg, area) = await _areaService.GetAreaById(id);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<AreaDto.AreaDetailDto>.ToResultOk(area);
+            return ApiResponse<AreaDto.AreaResponseDto>.ToResultOk(area);
         }
 
         [HttpPost("Create")]

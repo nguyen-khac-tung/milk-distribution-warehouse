@@ -12,7 +12,7 @@ namespace MilkDistributionWarehouse.Services
     public interface IAreaService
     {
         Task<(string, PageResult<AreaDto.AreaResponseDto>)> GetAreas(PagedRequest request);
-        Task<(string, AreaDto.AreaDetailDto)> GetAreaById(int areaId);
+        Task<(string, AreaDto.AreaResponseDto)> GetAreaById(int areaId);
         Task<(string, AreaDto.AreaResponseDto)> CreateArea(AreaDto.AreaCreateDto dto);
         Task<(string, AreaDto.AreaResponseDto)> UpdateArea(int areaId, AreaDto.AreaUpdateDto dto);
         Task<(string, AreaDto.AreaResponseDto)> DeleteArea(int areaId);
@@ -43,13 +43,16 @@ namespace MilkDistributionWarehouse.Services
             return ("", pagedResult);
         }
 
-        public async Task<(string, AreaDto.AreaDetailDto)> GetAreaById(int areaId)
+        public async Task<(string, AreaDto.AreaResponseDto)> GetAreaById(int areaId)
         {
+            if (areaId <= 0)
+                return ("Mã khu vực không hợp lệ.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
             var area = await _areaRepository.GetAreaById(areaId);
             if (area == null)
-                return ("Không tìm thấy khu vực.".ToMessageForUser(), new AreaDto.AreaDetailDto());
+                return ("Không tìm thấy khu vực.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
-            return ("", _mapper.Map<AreaDto.AreaDetailDto>(area));
+            return ("", _mapper.Map<AreaDto.AreaResponseDto>(area));
         }
 
         public async Task<(string, AreaDto.AreaResponseDto)> CreateArea(AreaDto.AreaCreateDto dto)
