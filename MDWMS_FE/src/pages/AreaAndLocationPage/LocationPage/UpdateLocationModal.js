@@ -45,7 +45,11 @@ const UpdateLocationModal = ({
                     <Col span={12}>
                         <Form.Item
                             name="areaId"
-                            label="Khu vực"
+                            label={
+                                <span>
+                                    Tên khu vực <span style={{ color: "red" }}>*</span>
+                                </span>
+                            }
                             rules={[{ required: true, message: "Vui lòng chọn khu vực" }]}
                         >
                             <Select
@@ -70,7 +74,11 @@ const UpdateLocationModal = ({
                     <Col span={12}>
                         <Form.Item
                             name="locationCode"
-                            label="Mã vị trí"
+                            label={
+                                <span>
+                                    Mã vị trí <span style={{ color: "red" }}>*</span>
+                                </span>
+                            }
                             rules={[{ required: true, message: "Vui lòng nhập mã vị trí" }]}
                         >
                             <AntInput
@@ -85,7 +93,11 @@ const UpdateLocationModal = ({
                     <Col span={12}>
                         <Form.Item
                             name="rack"
-                            label="Kệ"
+                            label={
+                                <span>
+                                    Kệ <span style={{ color: "red" }}>*</span>
+                                </span>
+                            }
                             rules={[{ required: true, message: "Vui lòng nhập tên kệ" }]}
                         >
                             <AntInput
@@ -98,7 +110,11 @@ const UpdateLocationModal = ({
                     <Col span={6}>
                         <Form.Item
                             name="row"
-                            label="Hàng (Row)"
+                            label={
+                                <span>
+                                    Hàng <span style={{ color: "red" }}>*</span>
+                                </span>
+                            }
                             rules={[{ required: true, message: "Vui lòng nhập hàng" }]}
                         >
                             <InputNumber
@@ -112,7 +128,11 @@ const UpdateLocationModal = ({
                     <Col span={6}>
                         <Form.Item
                             name="column"
-                            label="Cột (Column)"
+                            label={
+                                <span>
+                                    Cột <span style={{ color: "red" }}>*</span>
+                                </span>
+                            }
                             rules={[{ required: true, message: "Vui lòng nhập cột" }]}
                         >
                             <InputNumber
@@ -130,7 +150,11 @@ const UpdateLocationModal = ({
                     <Col span={12}>
                         <Form.Item
                             name="status"
-                            label="Trạng thái hoạt động"
+                            label={
+                                <span>
+                                    Trạng thái hoạt động <span style={{ color: "red" }}>*</span>
+                                </span>
+                            }
                             rules={[{ required: true, message: "Vui lòng chọn trạng thái" }]}
                         >
                             <Select
@@ -138,8 +162,7 @@ const UpdateLocationModal = ({
                                 suffixIcon={<ThunderboltOutlined />}
                             >
                                 <Option value={1}>Hoạt động</Option>
-                                <Option value={2}>Không hoạt động</Option>
-                                <Option value={3}>Đã xóa</Option>
+                                <Option value={2}>Ngừng hoạt động</Option>
                             </Select>
                         </Form.Item>
                     </Col>
@@ -147,7 +170,11 @@ const UpdateLocationModal = ({
                     <Col span={12}>
                         <Form.Item
                             name="isAvailable"
-                            label="Tình trạng sử dụng"
+                            label={
+                                <span>
+                                    Tình trạng sử dụng <span style={{ color: "red" }}>*</span>
+                                </span>
+                            }
                             rules={[{ required: true, message: "Vui lòng chọn tình trạng" }]}
                         >
                             <Select

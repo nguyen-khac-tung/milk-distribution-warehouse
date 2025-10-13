@@ -24,6 +24,7 @@ const LocationList = () => {
         pageSize: 10,
         total: 0,
     });
+    const [globalStats, setGlobalStats] = useState({ total: 0, available: 0, unavailable: 0 });
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [itemToDelete, setItemToDelete] = useState(null);
@@ -75,8 +76,47 @@ const LocationList = () => {
         }
     };
 
+    const fetchStats = async () => {
+        try {
+            const res = await getLocations({ pageNumber: 1, pageSize: 1 });
+            const payload = res ?? {};
+            const total = (payload.totalCount ?? payload.data?.totalCount) || 0;
+
+            let available = 0;
+            let unavailable = 0;
+
+            // If total is reasonable (<=1000) fetch all and compute counts client-side.
+            if (total <= 1000 && total > 0) {
+                const allRes = await getLocations({ pageNumber: 1, pageSize: total });
+                const items = Array.isArray(allRes.items)
+                    ? allRes.items
+                    : Array.isArray(allRes.data?.items)
+                        ? allRes.data.items
+                        : Array.isArray(allRes.data)
+                            ? allRes.data
+                            : [];
+                available = items.filter((l) => l.isAvailable === true).length;
+                unavailable = items.filter((l) => l.isAvailable === false).length;
+            } else {
+                // Fallback: request counts via filtered calls which return totalCount for each filter
+                const availRes = await getLocations({ pageNumber: 1, pageSize: 1, isAvailable: true });
+                const availTotal = (availRes.totalCount ?? availRes.data?.totalCount) || 0;
+                const unavailRes = await getLocations({ pageNumber: 1, pageSize: 1, isAvailable: false });
+                const unavailTotal = (unavailRes.totalCount ?? unavailRes.data?.totalCount) || 0;
+                available = availTotal;
+                unavailable = unavailTotal;
+            }
+
+            setGlobalStats({ total, available, unavailable });
+        } catch (err) {
+            console.error("Error fetching global stats:", err);
+        }
+    };
+
     useEffect(() => {
         fetchLocations(1, 10);
+        // Also fetch global stats once on mount
+        fetchStats();
     }, []);
 
     useEffect(() => {
@@ -107,7 +147,7 @@ const LocationList = () => {
         const timeoutId = setTimeout(() => {
             handleFilterChange({
                 search: searchQuery,
-                filters: { 
+                filters: {
                     isAvailable: statusFilter ? statusFilter === "true" : undefined,
                     status: statusTypeFilter ? Number(statusTypeFilter) : undefined
                 }
@@ -121,7 +161,7 @@ const LocationList = () => {
         setStatusFilter(status);
         handleFilterChange({
             search: searchQuery,
-            filters: { 
+            filters: {
                 isAvailable: status ? status === "true" : undefined,
                 status: statusTypeFilter ? Number(statusTypeFilter) : undefined
             }
@@ -132,7 +172,7 @@ const LocationList = () => {
         setStatusFilter("");
         handleFilterChange({
             search: searchQuery,
-            filters: { 
+            filters: {
                 isAvailable: undefined,
                 status: statusTypeFilter ? Number(statusTypeFilter) : undefined
             }
@@ -143,7 +183,7 @@ const LocationList = () => {
         setStatusTypeFilter(status);
         handleFilterChange({
             search: searchQuery,
-            filters: { 
+            filters: {
                 isAvailable: statusFilter ? statusFilter === "true" : undefined,
                 status: status ? Number(status) : undefined
             }
@@ -154,7 +194,7 @@ const LocationList = () => {
         setStatusTypeFilter("");
         handleFilterChange({
             search: searchQuery,
-            filters: { 
+            filters: {
                 isAvailable: statusFilter ? statusFilter === "true" : undefined,
                 status: undefined
             }
@@ -165,7 +205,7 @@ const LocationList = () => {
         setPagination(prev => ({ ...prev, current: newPage }));
         fetchLocations(newPage, pagination.pageSize, {
             search: searchQuery,
-            filters: { 
+            filters: {
                 isAvailable: statusFilter ? statusFilter === "true" : undefined,
                 status: statusTypeFilter ? Number(statusTypeFilter) : undefined
             }
@@ -176,7 +216,7 @@ const LocationList = () => {
         setPagination(prev => ({ ...prev, pageSize: newPageSize, current: 1 }));
         fetchLocations(1, newPageSize, {
             search: searchQuery,
-            filters: { 
+            filters: {
                 isAvailable: statusFilter ? statusFilter === "true" : undefined,
                 status: statusTypeFilter ? Number(statusTypeFilter) : undefined
             }
@@ -195,6 +235,7 @@ const LocationList = () => {
     // Open modal for create
     const handleOpenCreate = () => {
         form.resetFields();
+        form.setFieldsValue({ status: 1, isAvailable: true });
         setShowCreateModal(true);
     };
 
@@ -228,7 +269,7 @@ const LocationList = () => {
                 Rack: values.rack,
                 Row: values.row,
                 Column: values.column,
-                IsAvailable: values.isAvailable,
+                IsAvailable: true,
                 Status: 1,
             };
 
@@ -243,11 +284,13 @@ const LocationList = () => {
             setShowCreateModal(false);
             fetchLocations(pagination.current, pagination.pageSize, {
                 search: searchQuery,
-                filters: { 
+                filters: {
                     isAvailable: statusFilter ? statusFilter === "true" : undefined,
                     status: statusTypeFilter ? Number(statusTypeFilter) : undefined
                 }
             });
+            // refresh global stats
+            fetchStats();
         } catch (error) {
             console.error("Error creating location:", error);
             const cleanMsg = extractErrorMessage(error);
@@ -276,20 +319,22 @@ const LocationList = () => {
 
             console.log("Sending update request:", payload);
 
-                await updateLocation(payload);
-                window.showToast(
-                    `Đã cập nhật vị trí: ${payload.LocationCode || ''}`,
-                    "success"
-                );
+            await updateLocation(payload);
+            window.showToast(
+                `Đã cập nhật vị trí: ${payload.LocationCode || ''}`,
+                "success"
+            );
 
             setShowUpdateModal(false);
             fetchLocations(pagination.current, pagination.pageSize, {
                 search: searchQuery,
-                filters: { 
+                filters: {
                     isAvailable: statusFilter ? statusFilter === "true" : undefined,
                     status: statusTypeFilter ? Number(statusTypeFilter) : undefined
                 }
             });
+            // refresh global stats
+            fetchStats();
         } catch (error) {
             console.error("Error updating location:", error);
             const cleanMsg = extractErrorMessage(error);
@@ -308,11 +353,13 @@ const LocationList = () => {
             setItemToDelete(null);
             fetchLocations(pagination.current, pagination.pageSize, {
                 search: searchQuery,
-                filters: { 
+                filters: {
                     isAvailable: statusFilter ? statusFilter === "true" : undefined,
                     status: statusTypeFilter ? Number(statusTypeFilter) : undefined
                 }
             });
+            // refresh global stats
+            fetchStats();
         } catch (error) {
             window.showToast("Có lỗi xảy ra khi xóa vị trí", "error");
         }
@@ -362,7 +409,7 @@ const LocationList = () => {
             ],
             onFilter: (value, record) => record.status === value,
             render: (status) => {
-                const map = { 1: "Hoạt động", 2: "Không hoạt động",};
+                const map = { 1: "Hoạt động", 2: "Không hoạt động", };
                 const color = status === 1 ? "green" : status === 2 ? "orange" : "red";
                 return <Tag color={color}>{map[status]}</Tag>;
             },
@@ -388,10 +435,6 @@ const LocationList = () => {
             ),
         },
     ];
-
-    // Calculate stats
-    const availableCount = Array.isArray(locations) ? locations.filter((l) => l.isAvailable === true).length : 0;
-    const unavailableCount = Array.isArray(locations) ? locations.filter((l) => l.isAvailable === false).length : 0;
 
     return (
         <div style={{ minHeight: "100vh", background: "linear-gradient(to bottom right, #f8fafc, #e2e8f0)", padding: "24px" }}>
@@ -425,27 +468,27 @@ const LocationList = () => {
                     <Card style={{ borderLeft: "4px solid #237486" }}>
                         <CardContent style={{ paddingTop: "24px" }}>
                             <div style={{ fontSize: "14px", fontWeight: "500", color: "#64748b" }}>Tổng vị trí</div>
-                            <div style={{ fontSize: "30px", fontWeight: "bold", color: "#0f172a", marginTop: "8px" }}>{pagination.total}</div>
+                            <div style={{ fontSize: "30px", fontWeight: "bold", color: "#0f172a", marginTop: "8px" }}>{globalStats.total}</div>
                         </CardContent>
                     </Card>
                     <Card style={{ borderLeft: "4px solid #237486" }}>
                         <CardContent style={{ paddingTop: "24px" }}>
                             <div style={{ fontSize: "14px", fontWeight: "500", color: "#64748b" }}>Trống</div>
-                            <div style={{ fontSize: "30px", fontWeight: "bold", color: "#237486", marginTop: "8px" }}>{availableCount}</div>
+                            <div style={{ fontSize: "30px", fontWeight: "bold", color: "#237486", marginTop: "8px" }}>{globalStats.available}</div>
                         </CardContent>
                     </Card>
                     <Card style={{ borderLeft: "4px solid #237486" }}>
                         <CardContent style={{ paddingTop: "24px" }}>
                             <div style={{ fontSize: "14px", fontWeight: "500", color: "#64748b" }}>Đang sử dụng</div>
-                            <div style={{ fontSize: "30px", fontWeight: "bold", color: "#64748b", marginTop: "8px" }}>{unavailableCount}</div>
+                            <div style={{ fontSize: "30px", fontWeight: "bold", color: "#64748b", marginTop: "8px" }}>{globalStats.unavailable}</div>
                         </CardContent>
                     </Card>
                 </div>
 
                 {/* Search Bar */}
                 <SearchBar
-                            placeholder="Tìm kiếm theo mã vị trí..."
-                            value={searchQuery}
+                    placeholder="Tìm kiếm theo mã vị trí..."
+                    value={searchQuery}
                     onChange={handleSearchInputChange}
                 />
 
@@ -513,7 +556,7 @@ const LocationList = () => {
                                                         ]}
                                                         placeholder="Tất cả"
                                                         className="status-filter-dropdown"
-                                                            title="Lọc theo tình trạng"
+                                                        title="Lọc theo tình trạng"
                                                     />
                                                 </div>
                                             </TableHead>
@@ -531,7 +574,7 @@ const LocationList = () => {
                                                         ]}
                                                         placeholder="Tất cả"
                                                         className="status-type-filter-dropdown"
-                                                            title="Lọc theo trạng thái"
+                                                        title="Lọc theo trạng thái"
                                                     />
                                                 </div>
                                             </TableHead>
@@ -649,7 +692,7 @@ const LocationList = () => {
                 isVisible={showCreateModal}
                 onCancel={() => setShowCreateModal(false)}
                 onSubmit={handleCreateSubmit}
-                    form={form}
+                form={form}
                 areas={areas}
                 loading={loading}
             />
