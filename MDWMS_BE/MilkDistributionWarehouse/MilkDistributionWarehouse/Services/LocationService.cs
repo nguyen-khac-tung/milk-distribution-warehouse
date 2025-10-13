@@ -12,8 +12,8 @@ namespace MilkDistributionWarehouse.Services
     public interface ILocationService
     {
         Task<(string, PageResult<LocationDto.LocationResponseDto>)> GetLocations(PagedRequest request);
-        Task<(string, LocationDto.LocationResponseDto)> CreateLocation(LocationDto.LocationCreateDto dto);
-        Task<(string, LocationDto.LocationResponseDto)> UpdateLocation(int locationId, LocationDto.LocationUpdateDto dto);
+        Task<(string, LocationDto.LocationResponseDto)> CreateLocation(LocationDto.LocationRequestDto dto);
+        Task<(string, LocationDto.LocationResponseDto)> UpdateLocation(int locationId, LocationDto.LocationRequestDto dto);
         Task<(string, LocationDto.LocationResponseDto)> DeleteLocation(int locationId);
     }
 
@@ -43,7 +43,7 @@ namespace MilkDistributionWarehouse.Services
             return ("", pagedResult);
         }
 
-        public async Task<(string, LocationDto.LocationResponseDto)> CreateLocation(LocationDto.LocationCreateDto dto)
+        public async Task<(string, LocationDto.LocationResponseDto)> CreateLocation(LocationDto.LocationRequestDto dto)
         {
             if (dto == null) return ("Dữ liệu vị trí không hợp lệ.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
@@ -72,7 +72,7 @@ namespace MilkDistributionWarehouse.Services
             return ("", _mapper.Map<LocationDto.LocationResponseDto>(createdEntity));
         }
 
-        public async Task<(string, LocationDto.LocationResponseDto)> UpdateLocation(int locationId, LocationDto.LocationUpdateDto dto)
+        public async Task<(string, LocationDto.LocationResponseDto)> UpdateLocation(int locationId, LocationDto.LocationRequestDto dto)
         {
             if (dto == null) return ("Dữ liệu cập nhật vị trí không hợp lệ.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
@@ -97,11 +97,7 @@ namespace MilkDistributionWarehouse.Services
             if (areaExists == null)
                 return ("Khu vực được chọn không tồn tại hoặc đã bị xoá.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
-            if (await _locationRepository.HasDependentPalletsOrStocktakingsAsync(locationId))
-                return ("Không thể xoá vì vị trí này đang được sử dụng cho pallet hoặc kiểm kê hàng.".ToMessageForUser(), new LocationDto.LocationResponseDto());
-
             _mapper.Map(dto, locationExists);
-            locationExists.Status = dto.Status ?? locationExists.Status;
             locationExists.UpdateAt = DateTime.UtcNow;
 
             var updatedEntity = await _locationRepository.UpdateLocation(locationExists);

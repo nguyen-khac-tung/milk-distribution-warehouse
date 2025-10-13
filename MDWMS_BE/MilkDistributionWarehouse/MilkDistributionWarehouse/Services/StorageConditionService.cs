@@ -12,8 +12,8 @@ namespace MilkDistributionWarehouse.Services
     public interface IStorageConditionService
     {
         Task<(string, PageResult<StorageConditionDto.StorageConditionResponseDto>)> GetStorageConditions(PagedRequest request);
-        Task<(string, StorageConditionDto.StorageConditionResponseDto)> CreateStorageCondition(StorageConditionDto.StorageConditionCreateDto dto);
-        Task<(string, StorageConditionDto.StorageConditionResponseDto)> UpdateStorageCondition(int storageConditionId, StorageConditionDto.StorageConditionUpdateDto dto);
+        Task<(string, StorageConditionDto.StorageConditionResponseDto)> CreateStorageCondition(StorageConditionDto.StorageConditionRequestDto dto);
+        Task<(string, StorageConditionDto.StorageConditionResponseDto)> UpdateStorageCondition(int storageConditionId, StorageConditionDto.StorageConditionRequestDto dto);
         Task<(string, bool)> DeleteStorageCondition(int storageConditionId);
     }
 
@@ -45,7 +45,7 @@ namespace MilkDistributionWarehouse.Services
             return ("", pagedResult);
         }
 
-        public async Task<(string, StorageConditionDto.StorageConditionResponseDto)> CreateStorageCondition(StorageConditionDto.StorageConditionCreateDto dto)
+        public async Task<(string, StorageConditionDto.StorageConditionResponseDto)> CreateStorageCondition(StorageConditionDto.StorageConditionRequestDto dto)
         {
             if (dto == null) return ("Dữ liệu tạo điều kiện lưu trữ không hợp lệ.".ToMessageForUser(), null);
 
@@ -72,7 +72,7 @@ namespace MilkDistributionWarehouse.Services
             return ("", _mapper.Map<StorageConditionDto.StorageConditionResponseDto>(createdEntity));
         }
 
-        public async Task<(string, StorageConditionDto.StorageConditionResponseDto)> UpdateStorageCondition(int storageConditionId, StorageConditionDto.StorageConditionUpdateDto dto)
+        public async Task<(string, StorageConditionDto.StorageConditionResponseDto)> UpdateStorageCondition(int storageConditionId, StorageConditionDto.StorageConditionRequestDto dto)
         {
             if (dto == null) return ("Không có dữ liệu để cập nhật điều kiện lưu trữ.".ToMessageForUser(), null);
 
@@ -92,14 +92,7 @@ namespace MilkDistributionWarehouse.Services
             if (isDuplicate)
                 return ("Điều kiện lưu trữ này đã tồn tại.".ToMessageForUser(), null);
 
-            var isUsedInArea = await _areaRepository.VerifyStorageConditionUsage(storageConditionId);
-            var isUsedInGoods = await _goodReposotory.VerifyStorageConditionUsage(storageConditionId);
-
-            if (isUsedInArea || isUsedInGoods)
-                return ("Không thể cập nhật trạng thái vì điều kiện lưu trữ này đang được sử dụng.".ToMessageForUser(), null);
-
             _mapper.Map(dto, entity);
-            entity.Status = dto.Status ?? entity.Status;
             entity.UpdateAt = DateTime.UtcNow;
 
             var updatedEntity = await _storageConditionRepository.UpdateStorageCondition(entity);

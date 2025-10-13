@@ -26,7 +26,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("Create")]
-        public async Task<IActionResult> CreateLocation([FromBody] LocationDto.LocationCreateDto dto)
+        public async Task<IActionResult> CreateLocation([FromBody] LocationDto.LocationRequestDto dto)
         {
             var (msg, location) = await _locationService.CreateLocation(dto);
             if (!string.IsNullOrEmpty(msg))
@@ -35,7 +35,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPut("Update/{locationId}")]
-        public async Task<IActionResult> UpdateLocation(int locationId, [FromBody] LocationDto.LocationUpdateDto dto)
+        public async Task<IActionResult> UpdateLocation(int locationId, [FromBody] LocationDto.LocationRequestDto dto)
         {
             var (msg, location) = await _locationService.UpdateLocation(locationId, dto);
             if (!string.IsNullOrEmpty(msg))

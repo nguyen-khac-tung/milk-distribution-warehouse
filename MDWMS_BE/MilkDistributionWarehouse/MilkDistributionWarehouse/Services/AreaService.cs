@@ -13,8 +13,8 @@ namespace MilkDistributionWarehouse.Services
     {
         Task<(string, PageResult<AreaDto.AreaResponseDto>)> GetAreas(PagedRequest request);
         Task<(string, AreaDto.AreaDetailDto)> GetAreaById(int areaId);
-        Task<(string, AreaDto.AreaResponseDto)> CreateArea(AreaDto.AreaCreateDto dto);
-        Task<(string, AreaDto.AreaResponseDto)> UpdateArea(int areaId, AreaDto.AreaUpdateDto dto);
+        Task<(string, AreaDto.AreaResponseDto)> CreateArea(AreaDto.AreaRequestDto dto);
+        Task<(string, AreaDto.AreaResponseDto)> UpdateArea(int areaId, AreaDto.AreaRequestDto dto);
         Task<(string, AreaDto.AreaResponseDto)> DeleteArea(int areaId);
     }
 
@@ -52,7 +52,7 @@ namespace MilkDistributionWarehouse.Services
             return ("", _mapper.Map<AreaDto.AreaDetailDto>(area));
         }
 
-        public async Task<(string, AreaDto.AreaResponseDto)> CreateArea(AreaDto.AreaCreateDto dto)
+        public async Task<(string, AreaDto.AreaResponseDto)> CreateArea(AreaDto.AreaRequestDto dto)
         {
             if (dto == null)
                 return ("Don't have input data.", new AreaDto.AreaResponseDto());
@@ -75,7 +75,7 @@ namespace MilkDistributionWarehouse.Services
             return ("", _mapper.Map<AreaDto.AreaResponseDto>(createdEntity));
         }
 
-        public async Task<(string, AreaDto.AreaResponseDto)> UpdateArea(int areaId, AreaDto.AreaUpdateDto dto)
+        public async Task<(string, AreaDto.AreaResponseDto)> UpdateArea(int areaId, AreaDto.AreaRequestDto dto)
         {
             if (dto == null)
                 return ("Don't have input data.", new AreaDto.AreaResponseDto());
@@ -94,11 +94,7 @@ namespace MilkDistributionWarehouse.Services
             if (storageConditionExists == null)
                 return ("Điều kiện bảo quản không tồn tại hoặc đã bị xoá.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
-            if (await _areaRepository.HasDependentLocationsOrStocktakingsAsync(areaId))
-                return ("Không thể xoá khu vực vì đang được sử dụng trong vị trí hoặc kiểm kê.".ToMessageForUser(), new AreaDto.AreaResponseDto());
-
             _mapper.Map(dto, area);
-            area.Status = dto.Status ?? area.Status;
             area.UpdateAt = DateTime.UtcNow;
 
             var updatedEntity = await _areaRepository.UpdateArea(area);
