@@ -43,6 +43,17 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<LocationDto.LocationResponseDto>.ToResultOk(location);
         }
 
+        [HttpPut("UpdateStatus/{locationId}")]
+        public async Task<IActionResult> UpdateStatusLocation(int locationId, int status)
+        {
+            var (msg, location) = await _locationService.UpdateStatus(locationId, status);
+
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<LocationDto.LocationResponseDto>.ToResultOk(location);
+        }
+
         [HttpDelete("Delete/{locationId}")]
         public async Task<IActionResult> DeleteLocation(int locationId)
         {

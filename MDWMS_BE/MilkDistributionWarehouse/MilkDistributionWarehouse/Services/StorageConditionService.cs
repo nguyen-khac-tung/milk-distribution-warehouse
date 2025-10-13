@@ -15,6 +15,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, StorageConditionDto.StorageConditionResponseDto)> CreateStorageCondition(StorageConditionDto.StorageConditionRequestDto dto);
         Task<(string, StorageConditionDto.StorageConditionResponseDto)> UpdateStorageCondition(int storageConditionId, StorageConditionDto.StorageConditionRequestDto dto);
         Task<(string, bool)> DeleteStorageCondition(int storageConditionId);
+        Task<(string, StorageConditionDto.StorageConditionResponseDto)> UpdateStatus(int storageConditionId, int status);
     }
 
     public class StorageConditionService : IStorageConditionService
@@ -120,5 +121,34 @@ namespace MilkDistributionWarehouse.Services
 
             return ("", true);
         }
+
+        public async Task<(string, StorageConditionDto.StorageConditionResponseDto)> UpdateStatus(int storageConditionId, int status)
+        {
+            var entity = await _storageConditionRepository.GetStorageConditionById(storageConditionId);
+            if (entity == null)
+                return ("Không tìm thấy điều kiện lưu trữ cần cập nhật.".ToMessageForUser(), new StorageConditionDto.StorageConditionResponseDto());
+
+            if (entity.Status == CommonStatus.Deleted)
+                return ("Điều kiện lưu trữ này đã bị xoá, không thể cập nhật trạng thái.".ToMessageForUser(), new StorageConditionDto.StorageConditionResponseDto());
+
+            if (status != CommonStatus.Active && status != CommonStatus.Inactive && status != CommonStatus.Deleted)
+                return ("Trạng thái không hợp lệ.".ToMessageForUser(), new StorageConditionDto.StorageConditionResponseDto());
+
+            var isUsedInArea = await _areaRepository.VerifyStorageConditionUsage(storageConditionId);
+            var isUsedInGoods = await _goodReposotory.VerifyStorageConditionUsage(storageConditionId);
+
+            if (isUsedInArea || isUsedInGoods)
+                return ("Không thể cập nhật trạng thái vì điều kiện lưu trữ này đang được sử dụng.".ToMessageForUser(), new StorageConditionDto.StorageConditionResponseDto());
+
+            entity.Status = status;
+            entity.UpdateAt = DateTime.UtcNow;
+
+            var updated = await _storageConditionRepository.UpdateStorageCondition(entity);
+            if (updated == null)
+                return ("Cập nhật trạng thái thất bại.".ToMessageForUser(), new StorageConditionDto.StorageConditionResponseDto());
+
+            return ("", _mapper.Map<StorageConditionDto.StorageConditionResponseDto>(updated));
+        }
+
     }
 }

@@ -58,6 +58,18 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<AreaDto.AreaResponseDto>.ToResultOk(updatedArea);
         }
 
+        [HttpPut("UpdateStatus/{areaId}")]
+        public async Task<IActionResult> UpdateStatusArea(int areaId, [FromQuery] int status)
+        {
+            var (msg, area) = await _areaService.UpdateStatus(areaId, status);
+
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<AreaDto.AreaResponseDto>.ToResultOk(area);
+        }
+
+
         [HttpDelete("Delete/{id}")]
         public async Task<IActionResult> DeleteArea(int id)
         {

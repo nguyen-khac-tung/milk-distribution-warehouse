@@ -43,6 +43,17 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<StorageConditionDto.StorageConditionResponseDto>.ToResultOk(updatedStorageCondition);
         }
 
+        [HttpPut("UpdateStatus/{storageConditionId}")]
+        public async Task<IActionResult> UpdateStatus(int storageConditionId, [FromQuery] int status)
+        {
+            var (msg, result) = await _storageConditionService.UpdateStatus(storageConditionId, status);
+
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<StorageConditionDto.StorageConditionResponseDto>.ToResultOk(result);
+        }
+
         [HttpDelete("Delete/{id}")]
         public async Task<IActionResult> DeleteStorageCondition(int id)
         {

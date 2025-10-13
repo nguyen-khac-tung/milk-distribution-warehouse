@@ -16,6 +16,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, AreaDto.AreaResponseDto)> CreateArea(AreaDto.AreaRequestDto dto);
         Task<(string, AreaDto.AreaResponseDto)> UpdateArea(int areaId, AreaDto.AreaRequestDto dto);
         Task<(string, AreaDto.AreaResponseDto)> DeleteArea(int areaId);
+        Task<(string, AreaDto.AreaResponseDto)> UpdateStatus(int areaId, int status);
     }
 
     public class AreaService : IAreaService
@@ -125,5 +126,37 @@ namespace MilkDistributionWarehouse.Services
 
             return ("", _mapper.Map<AreaDto.AreaResponseDto>(deletedEntity));
         }
+
+        public async Task<(string, AreaDto.AreaResponseDto)> UpdateStatus(int areaId, int status)
+        {
+            var area = await _areaRepository.GetAreaById(areaId);
+            if (area == null)
+                return ("Không tìm thấy khu vực để cập nhật trạng thái.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
+            if (area.Status == CommonStatus.Deleted)
+                return ("Khu vực này đã bị xoá, không thể cập nhật trạng thái.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
+            if (status != CommonStatus.Active && status != CommonStatus.Inactive && status != CommonStatus.Deleted)
+                return ("Trạng thái không hợp lệ.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
+            bool isUsed = await _areaRepository.HasDependentLocationsOrStocktakingsAsync(areaId);
+
+            if (isUsed && (status == CommonStatus.Inactive || status == CommonStatus.Deleted))
+                return ("Không thể cập nhật trạng thái vì khu vực đang được sử dụng trong vị trí hoặc kiểm kê.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
+            if (area.Status == status)
+                return ("Trạng thái khu vực đã ở trạng thái này.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
+            area.Status = status;
+            area.UpdateAt = DateTime.UtcNow;
+
+            var updated = await _areaRepository.UpdateArea(area);
+            if (updated == null)
+                return ("Cập nhật trạng thái khu vực thất bại.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
+            return ("", _mapper.Map<AreaDto.AreaResponseDto>(updated));
+        }
+
+
     }
 }

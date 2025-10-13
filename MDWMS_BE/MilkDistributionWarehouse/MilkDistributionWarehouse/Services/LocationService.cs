@@ -15,6 +15,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, LocationDto.LocationResponseDto)> CreateLocation(LocationDto.LocationRequestDto dto);
         Task<(string, LocationDto.LocationResponseDto)> UpdateLocation(int locationId, LocationDto.LocationRequestDto dto);
         Task<(string, LocationDto.LocationResponseDto)> DeleteLocation(int locationId);
+        Task<(string, LocationDto.LocationResponseDto)> UpdateStatus(int locationId, int status);
     }
 
     public class LocationService : ILocationService
@@ -133,5 +134,34 @@ namespace MilkDistributionWarehouse.Services
         {
             return input.Any(ch => !char.IsLetterOrDigit(ch) && !char.IsWhiteSpace(ch));
         }
+
+        public async Task<(string, LocationDto.LocationResponseDto)> UpdateStatus(int locationId, int status)
+        {
+            if (locationId <= 0)
+                return ("Mã vị trí không hợp lệ.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+
+            var location = await _locationRepository.GetLocationById(locationId);
+            if (location == null)
+                return ("Không tìm thấy vị trí cần cập nhật trạng thái.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+
+            if (location.Status == CommonStatus.Deleted)
+                return ("Vị trí này đã bị xóa, không thể cập nhật trạng thái.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+
+            if (status != CommonStatus.Active && status != CommonStatus.Inactive && status != CommonStatus.Deleted)
+                return ("Trạng thái không hợp lệ.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+
+            if (await _locationRepository.HasDependentPalletsOrStocktakingsAsync(locationId))
+                return ("Không thể cập nhật trạng thái vì vị trí này đang được sử dụng cho pallet hoặc kiểm kê hàng.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+
+            location.Status = status;
+            location.UpdateAt = DateTime.UtcNow;
+
+            var updatedEntity = await _locationRepository.UpdateLocation(location);
+            if (updatedEntity == null)
+                return ("Cập nhật trạng thái thất bại.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+
+            return ("", _mapper.Map<LocationDto.LocationResponseDto>(updatedEntity));
+        }
+
     }
 }
