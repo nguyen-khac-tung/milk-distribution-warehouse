@@ -1,4 +1,5 @@
-﻿using MilkDistributionWarehouse.Models.DTOs;
+﻿using AutoMapper;
+using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
 using System.Security.Claims;
@@ -7,40 +8,27 @@ namespace MilkDistributionWarehouse.Services
 {
     public interface IUserService
     {
-        public string GetUserProfile(int userId, out UserProfileDto userProfile);
+        Task<(string, UserDto? userProfile)> GetUserProfile(int? userId);
     }
 
     public class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
+        private readonly IMapper _mapper;
 
-        public UserService(IUserRepository userRepository)
+        public UserService(IUserRepository userRepository, IMapper mapper)
         {
             _userRepository = userRepository;
+            _mapper = mapper;
         }
 
-        public string GetUserProfile(int userId, out UserProfileDto userProfile)
+        public async Task<(string, UserDto? userProfile)> GetUserProfile(int? userId)
         {
-            userProfile = null;
+            if (userId == null) return ("UserId is invalid.", null);
+            var user = await _userRepository.GetUserById(userId);
+            if (user == null) return ("User not found.", null);
 
-            var user = _userRepository.GetUserById(userId);
-            if (user == null)
-            {
-                return "User not found.";
-            }
-
-            userProfile = new UserProfileDto
-            {
-                UserId = user.UserId,
-                Email = user.Email,
-                FullName = user.FullName,
-                DoB = user.DoB,
-                Gender = user.Gender,
-                Phone = user.Phone,
-                Address = user.Address,
-            };
-
-            return "";
+            return ("", _mapper.Map<UserDto>(user));
         }
     }
 }

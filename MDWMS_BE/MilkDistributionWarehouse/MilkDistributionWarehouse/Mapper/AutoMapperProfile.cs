@@ -9,6 +9,10 @@ namespace MilkDistributionWarehouse.Mapper
     {
         public AutoMapperProfile()
         {
+            //Map User
+            CreateMap<User, UserDto>();
+            CreateMap<User, UserDetailDto>();
+
             // Map StorageCondition
             CreateMap<StorageCondition, StorageConditionDto.StorageConditionResponseDto>();
 

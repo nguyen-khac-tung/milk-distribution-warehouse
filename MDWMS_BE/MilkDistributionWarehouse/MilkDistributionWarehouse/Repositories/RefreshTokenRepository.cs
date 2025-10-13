@@ -1,17 +1,18 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 
 namespace MilkDistributionWarehouse.Repositories
 {
     public interface IRefreshTokenRepository
     {
-        public RefreshToken? GetRefreshTokenByUserId(int? userId);
+        Task<RefreshToken?> GetRefreshTokenByUserId(int? userId);
 
-        public RefreshToken? GetRefreshTokenByToken(string token);
+        Task<RefreshToken?> GetRefreshTokenByToken(string token);
 
-        public void CreateRefreshToken(RefreshToken refreshToken);
+        Task<string> CreateRefreshToken(RefreshToken refreshToken);
 
-        public void UpdateRefreshToken(RefreshToken refreshToken);
+        Task<string> UpdateRefreshToken(RefreshToken refreshToken);
     }
 
     public class RefreshTokenRepository: IRefreshTokenRepository
@@ -23,29 +24,45 @@ namespace MilkDistributionWarehouse.Repositories
             _context = context;
         }
 
-        public RefreshToken? GetRefreshTokenByUserId(int? userId)
+        public async Task<RefreshToken?> GetRefreshTokenByUserId(int? userId)
         {
-            return _context.RefreshTokens.Where(r => r.UserId == userId).FirstOrDefault();
+            return await _context.RefreshTokens.Where(r => r.UserId == userId).FirstOrDefaultAsync();
         }
 
-        public RefreshToken? GetRefreshTokenByToken(string token)
+        public async Task<RefreshToken?> GetRefreshTokenByToken(string token)
         {
-            return _context.RefreshTokens
+            return await _context.RefreshTokens
                 .Include(r => r.User)
                 .Where(r => r.Token == token)
-                .FirstOrDefault();
+                .FirstOrDefaultAsync();
         }
 
-        public void CreateRefreshToken(RefreshToken refreshToken)
+        public async Task<string> CreateRefreshToken(RefreshToken refreshToken)
         {
-            _context.RefreshTokens.Add(refreshToken);
-            _context.SaveChanges();
+            try
+            {
+                await _context.RefreshTokens.AddAsync(refreshToken);
+                await _context.SaveChangesAsync();
+                return "";
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
         }
 
-        public void UpdateRefreshToken(RefreshToken refreshToken)
+        public async Task<string> UpdateRefreshToken(RefreshToken refreshToken)
         {
-            _context.RefreshTokens.Update(refreshToken);
-            _context.SaveChanges();
+            try
+            {
+                _context.RefreshTokens.Update(refreshToken);
+                await _context.SaveChangesAsync();
+                return "";
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
         }
 
     }
