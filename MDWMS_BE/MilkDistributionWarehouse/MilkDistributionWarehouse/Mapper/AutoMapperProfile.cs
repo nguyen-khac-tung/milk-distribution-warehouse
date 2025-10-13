@@ -25,6 +25,7 @@ namespace MilkDistributionWarehouse.Mapper
 
             // Map UnitMeasure
             CreateMap<UnitMeasure, UnitMeasureDto>();
+            CreateMap<UnitMeasure, UnitMeasureDropDown>();
             CreateMap<UnitMeasureCreate, UnitMeasure>()
                 .ForMember(dest => dest.UnitMeasureId, opt => opt.Ignore())
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => CommonStatus.Active))
