@@ -70,7 +70,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
     public class SupplierDropDown
     {
         public int SupplierId { get; set; } 
-        public int Status { get; set; }
+        public string CompanyName { get; set; }
     }
 
     public class SupplierUpdateStatusDto
