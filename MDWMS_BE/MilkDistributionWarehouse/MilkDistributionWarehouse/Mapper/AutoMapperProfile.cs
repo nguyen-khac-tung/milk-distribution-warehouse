@@ -20,6 +20,7 @@ namespace MilkDistributionWarehouse.Mapper
 
             CreateMap<StorageConditionDto.StorageConditionUpdateDto, StorageCondition>()
                 .ForMember(dest => dest.StorageConditionId, opt => opt.Ignore())
+                .ForMember(dest => dest.Status, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
                 .ForMember(dest => dest.UpdateAt, opt => opt.Ignore());
 

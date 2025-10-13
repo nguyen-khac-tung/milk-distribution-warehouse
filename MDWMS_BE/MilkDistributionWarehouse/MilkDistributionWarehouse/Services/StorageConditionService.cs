@@ -92,6 +92,12 @@ namespace MilkDistributionWarehouse.Services
             if (isDuplicate)
                 return ("Điều kiện lưu trữ này đã tồn tại.".ToMessageForUser(), null);
 
+            var isUsedInArea = await _areaRepository.VerifyStorageConditionUsage(storageConditionId);
+            var isUsedInGoods = await _goodReposotory.VerifyStorageConditionUsage(storageConditionId);
+
+            if (isUsedInArea || isUsedInGoods)
+                return ("Không thể cập nhật trạng thái vì điều kiện lưu trữ này đang được sử dụng.".ToMessageForUser(), null);
+
             _mapper.Map(dto, entity);
             entity.Status = dto.Status ?? entity.Status;
             entity.UpdateAt = DateTime.UtcNow;

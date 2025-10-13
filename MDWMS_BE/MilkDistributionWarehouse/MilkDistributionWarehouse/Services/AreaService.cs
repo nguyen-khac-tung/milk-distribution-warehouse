@@ -94,6 +94,9 @@ namespace MilkDistributionWarehouse.Services
             if (storageConditionExists == null)
                 return ("Điều kiện bảo quản không tồn tại hoặc đã bị xoá.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
+            if (await _areaRepository.HasDependentLocationsOrStocktakingsAsync(areaId))
+                return ("Không thể xoá khu vực vì đang được sử dụng trong vị trí hoặc kiểm kê.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
             _mapper.Map(dto, area);
             area.Status = dto.Status ?? area.Status;
             area.UpdateAt = DateTime.UtcNow;

@@ -97,8 +97,10 @@ namespace MilkDistributionWarehouse.Services
             if (areaExists == null)
                 return ("Khu vực được chọn không tồn tại hoặc đã bị xoá.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
+            if (await _locationRepository.HasDependentPalletsOrStocktakingsAsync(locationId))
+                return ("Không thể xoá vì vị trí này đang được sử dụng cho pallet hoặc kiểm kê hàng.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+
             _mapper.Map(dto, locationExists);
-            locationExists.AreaId = dto.AreaId;
             locationExists.Status = dto.Status ?? locationExists.Status;
             locationExists.UpdateAt = DateTime.UtcNow;
 
