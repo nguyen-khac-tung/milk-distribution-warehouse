@@ -46,11 +46,11 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
             public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
             {
-                if (TemperatureMin > TemperatureMax)
-                    yield return new ValidationResult("Nhiệt độ tối thiểu không được lớn hơn nhiệt độ tối đa!", new[] { nameof(TemperatureMin), nameof(TemperatureMax) });
+                if (TemperatureMin >= TemperatureMax)
+                    yield return new ValidationResult("Nhiệt độ tối thiểu không được lớn hơn hoặc bằng nhiệt độ tối đa!", new[] { nameof(TemperatureMin), nameof(TemperatureMax) });
 
-                if (HumidityMin > HumidityMax)
-                    yield return new ValidationResult("Độ ẩm tối thiểu không được lớn hơn độ ẩm tối đa!", new[] { nameof(HumidityMin), nameof(HumidityMax) });
+                if (HumidityMin >= HumidityMax)
+                    yield return new ValidationResult("Độ ẩm tối thiểu không được lớn hơn hoặc bằng độ ẩm tối đa!", new[] { nameof(HumidityMin), nameof(HumidityMax) });
             }
         }
 
@@ -82,10 +82,10 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
             {
                 if (TemperatureMin >= TemperatureMax)
-                    yield return new ValidationResult("Nhiệt độ tối thiểu không được lớn hơn nhiệt độ tối đa!", new[] { nameof(TemperatureMin), nameof(TemperatureMax) });
+                    yield return new ValidationResult("Nhiệt độ tối thiểu không được lớn hơn hoặc bằng nhiệt độ tối đa!", new[] { nameof(TemperatureMin), nameof(TemperatureMax) });
 
                 if (HumidityMin >= HumidityMax)
-                    yield return new ValidationResult("Độ ẩm tối thiểu không được lớn hơn độ ẩm tối đa!", new[] { nameof(HumidityMin), nameof(HumidityMax) });
+                    yield return new ValidationResult("Độ ẩm tối thiểu không được lớn hơn hoặc bằng độ ẩm tối đa!", new[] { nameof(HumidityMin), nameof(HumidityMax) });
             }
         }
     }
