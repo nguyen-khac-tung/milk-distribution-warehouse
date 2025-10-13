@@ -9,6 +9,7 @@ import { RetailerDetail } from "./ViewRetailerModal";
 import DeleteModal from "../../../components/Common/DeleteModal";
 import CreateRetailer from "./CreateRetailerModal";
 import UpdateRetailerModal from "./UpdateRetailerModal";
+import StatsCards from "../../../components/Common/StatsCards";
 import { extractErrorMessage } from "../../../utils/Validation";
 
 // Type definition for Retailer
@@ -46,6 +47,44 @@ export default function RetailersPage() {
     totalCount: 0
   })
   const [showPageSizeFilter, setShowPageSizeFilter] = useState(false)
+  
+  // Thống kê tổng (không thay đổi khi search/filter)
+  const [totalStats, setTotalStats] = useState({
+    totalCount: 0,
+    activeCount: 0,
+    inactiveCount: 0
+  })
+
+  // Fetch tổng thống kê (không có search/filter)
+  const fetchTotalStats = async () => {
+    try {
+      const response = await getRetailers({
+        pageNumber: 1,
+        pageSize: 1000, // Lấy tất cả để đếm
+        search: "",
+        sortField: "",
+        sortAscending: true,
+        status: "" // Không filter theo status
+      })
+
+      if (response && response.data) {
+        // API returns response.data.items (array) and response.data.totalCount
+        const dataArray = Array.isArray(response.data.items) ? response.data.items : []
+        const totalCount = response.data.totalCount || dataArray.length
+
+        const activeCount = dataArray.filter((r) => r.status === 1).length
+        const inactiveCount = dataArray.filter((r) => r.status === 2).length
+        
+        setTotalStats({
+          totalCount: totalCount,
+          activeCount: activeCount,
+          inactiveCount: inactiveCount
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching total stats:", error)
+    }
+  }
 
   // Fetch data from API
   const fetchData = async (searchParams = {}) => {
@@ -85,6 +124,10 @@ export default function RetailersPage() {
 
   // Initial load
   useEffect(() => {
+    // Fetch tổng thống kê khi component mount
+    fetchTotalStats()
+    
+    // Fetch dữ liệu hiển thị
     fetchData({
       pageNumber: 1,
       pageSize: 10,
@@ -165,6 +208,9 @@ export default function RetailersPage() {
   const inactiveCount = Array.isArray(retailers) ? retailers.filter((r) => r.status === 2).length : 0
 
   const handleCreateSuccess = () => {
+    // Refresh tổng thống kê
+    fetchTotalStats()
+    
     // Set sort to retailerName descending to show new record at top
     setSortField("retailerName")
     setSortAscending(false)
@@ -238,6 +284,9 @@ export default function RetailersPage() {
         setPagination(prev => ({ ...prev, pageNumber: targetPage }))
       }
 
+      // Refresh tổng thống kê
+      fetchTotalStats()
+      
       // Refresh data after deletion, keeping current page or going to previous page if needed
       fetchData({
         pageNumber: targetPage,
@@ -340,26 +389,14 @@ export default function RetailersPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="border-l-4 border-l-[#237486]">
-            <CardContent className="pt-6">
-              <div className="text-sm font-medium text-slate-600">Tổng nhà bán lẻ</div>
-              <div className="text-3xl font-bold text-slate-900 mt-2">{pagination.totalCount}</div>
-            </CardContent>
-          </Card>
-          <Card className="border-l-4 border-l-[#237486]">
-            <CardContent className="pt-6">
-              <div className="text-sm font-medium text-slate-600">Đang hoạt động</div>
-              <div className="text-3xl font-bold text-[#237486] mt-2">{activeCount}</div>
-            </CardContent>
-          </Card>
-          <Card className="border-l-4 border-l-[#237486]">
-            <CardContent className="pt-6">
-              <div className="text-sm font-medium text-slate-600">Không hoạt động</div>
-              <div className="text-3xl font-bold text-slate-600 mt-2">{inactiveCount}</div>
-            </CardContent>
-          </Card>
-        </div>
+        <StatsCards
+          totalCount={totalStats.totalCount}
+          activeCount={totalStats.activeCount}
+          inactiveCount={totalStats.inactiveCount}
+          totalLabel="Tổng nhà bán lẻ"
+          activeLabel="Đang hoạt động"
+          inactiveLabel="Không hoạt động"
+        />
 
         {/* Search Bar */}
         <Card>

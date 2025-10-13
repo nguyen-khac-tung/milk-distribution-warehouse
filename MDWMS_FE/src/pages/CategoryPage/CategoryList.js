@@ -8,6 +8,7 @@ import { Search, Plus, Edit, Trash2, Filter, ChevronDown } from "lucide-react";
 import CreateCategory from "./CreateCategoryModal";
 import UpdateCategory from "./UpdateCategoryModal";
 import DeleteModal from "../../components/Common/DeleteModal";
+import StatsCards from "../../components/Common/StatsCards";
 import { extractErrorMessage } from "../../utils/Validation";
 
 // Type definition for Category
@@ -39,6 +40,41 @@ export default function CategoriesPage() {
     totalCount: 0
   })
   const [showPageSizeFilter, setShowPageSizeFilter] = useState(false)
+  
+  // Thống kê tổng (không thay đổi khi search/filter)
+  const [totalStats, setTotalStats] = useState({
+    totalCount: 0,
+    activeCount: 0,
+    inactiveCount: 0
+  })
+
+  // Fetch tổng thống kê (không có search/filter)
+  const fetchTotalStats = async () => {
+    try {
+      const response = await getCategory({
+        pageNumber: 1,
+        pageSize: 1000, // Lấy tất cả để đếm
+        search: "",
+        sortField: "",
+        sortAscending: true,
+        status: "" // Không filter theo status
+      })
+
+      if (response && response.data) {
+        const allCategories = Array.isArray(response.data.items) ? response.data.items : []
+        const activeCount = allCategories.filter((c) => c.status === 1).length
+        const inactiveCount = allCategories.filter((c) => c.status === 2).length
+        
+        setTotalStats({
+          totalCount: response.data.totalCount || allCategories.length,
+          activeCount: activeCount,
+          inactiveCount: inactiveCount
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching total stats:", error)
+    }
+  }
 
   // Fetch data from API
   const fetchData = async (searchParams = {}) => {
@@ -78,6 +114,10 @@ export default function CategoriesPage() {
 
   // Initial load
   useEffect(() => {
+    // Fetch tổng thống kê khi component mount
+    fetchTotalStats()
+    
+    // Fetch dữ liệu hiển thị
     fetchData({
       pageNumber: 1,
       pageSize: 10,
@@ -158,6 +198,9 @@ export default function CategoriesPage() {
   const inactiveCount = Array.isArray(categories) ? categories.filter((c) => c.status === 2).length : 0
 
   const handleCreateSuccess = () => {
+    // Refresh tổng thống kê
+    fetchTotalStats()
+    
     // Set sort to categoryName descending to show new record at top
     setSortField("categoryName")
     setSortAscending(false)
@@ -202,6 +245,9 @@ export default function CategoriesPage() {
         setPagination(prev => ({ ...prev, pageNumber: targetPage }))
       }
 
+      // Refresh tổng thống kê
+      fetchTotalStats()
+      
       // Refresh data after deletion, keeping current page or going to previous page if needed
       fetchData({
         pageNumber: targetPage,
@@ -283,26 +329,14 @@ export default function CategoriesPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="border-l-4 border-l-[#237486]">
-            <CardContent className="pt-6">
-              <div className="text-sm font-medium text-slate-600">Tổng danh mục</div>
-              <div className="text-3xl font-bold text-slate-900 mt-2">{pagination.totalCount}</div>
-            </CardContent>
-          </Card>
-          <Card className="border-l-4 border-l-[#237486]">
-            <CardContent className="pt-6">
-              <div className="text-sm font-medium text-slate-600">Đang hoạt động</div>
-              <div className="text-3xl font-bold text-[#237486] mt-2">{activeCount}</div>
-            </CardContent>
-          </Card>
-          <Card className="border-l-4 border-l-[#237486]">
-            <CardContent className="pt-6">
-              <div className="text-sm font-medium text-slate-600">Không hoạt động</div>
-              <div className="text-3xl font-bold text-slate-600 mt-2">{inactiveCount}</div>
-            </CardContent>
-          </Card>
-        </div>
+        <StatsCards
+          totalCount={totalStats.totalCount}
+          activeCount={totalStats.activeCount}
+          inactiveCount={totalStats.inactiveCount}
+          totalLabel="Tổng danh mục"
+          activeLabel="Đang hoạt động"
+          inactiveLabel="Không hoạt động"
+        />
 
         {/* Search Bar */}
         <Card>

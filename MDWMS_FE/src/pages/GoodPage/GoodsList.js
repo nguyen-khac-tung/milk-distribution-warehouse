@@ -9,6 +9,7 @@ import CreateGood from "./CreateGoodModal";
 import UpdateGoodModal from "./UpdateGoodModal";
 import DeleteModal from "../../components/Common/DeleteModal";
 import { ProductDetail } from "./ViewGoodModal";
+import StatsCards from "../../components/Common/StatsCards";
 import { extractErrorMessage } from "../../utils/Validation";
 
 // Type definition for Good
@@ -48,6 +49,41 @@ export default function GoodsPage() {
     totalCount: 0
   })
   const [showPageSizeFilter, setShowPageSizeFilter] = useState(false)
+  
+  // Thống kê tổng (không thay đổi khi search/filter)
+  const [totalStats, setTotalStats] = useState({
+    totalCount: 0,
+    activeCount: 0,
+    inactiveCount: 0
+  })
+
+  // Fetch tổng thống kê (không có search/filter)
+  const fetchTotalStats = async () => {
+    try {
+      const response = await getGoods({
+        pageNumber: 1,
+        pageSize: 1000, // Lấy tất cả để đếm
+        search: "",
+        sortField: "",
+        sortAscending: true,
+        status: "" // Không filter theo status
+      })
+
+      if (response && response.data) {
+        const allGoods = Array.isArray(response.data.items) ? response.data.items : []
+        const activeCount = allGoods.filter((g) => g.status === 1).length
+        const inactiveCount = allGoods.filter((g) => g.status === 2).length
+        
+        setTotalStats({
+          totalCount: response.data.totalCount || allGoods.length,
+          activeCount: activeCount,
+          inactiveCount: inactiveCount
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching total stats:", error)
+    }
+  }
 
   // Fetch data from API
   const fetchData = async (searchParams = {}) => {
@@ -88,6 +124,10 @@ export default function GoodsPage() {
 
   // Initial load
   useEffect(() => {
+    // Fetch tổng thống kê khi component mount
+    fetchTotalStats()
+    
+    // Fetch dữ liệu hiển thị
     fetchData({
       pageNumber: 1,
       pageSize: 10,
@@ -164,12 +204,16 @@ export default function GoodsPage() {
     return Array.isArray(goods) ? goods : []
   }, [goods])
 
-  const activeCount = Array.isArray(goods) ? goods.filter((g) => g.status === 1).length : 0
-  const inactiveCount = Array.isArray(goods) ? goods.filter((g) => g.status === 2).length : 0
+  // Thống kê hiện tại (có thể thay đổi khi search/filter)
+  const currentActiveCount = Array.isArray(goods) ? goods.filter((g) => g.status === 1).length : 0
+  const currentInactiveCount = Array.isArray(goods) ? goods.filter((g) => g.status === 2).length : 0
 
   const handleCreateSuccess = () => {
     // Add small delay to ensure API has processed the new record
     setTimeout(() => {
+      // Refresh tổng thống kê
+      fetchTotalStats()
+      
       // Refresh data after successful creation
       fetchData({
         pageNumber: 1,
@@ -241,6 +285,9 @@ export default function GoodsPage() {
         setPagination(prev => ({ ...prev, pageNumber: targetPage }))
       }
 
+      // Refresh tổng thống kê
+      fetchTotalStats()
+      
       // Refresh data after deletion, keeping current page or going to previous page if needed
       fetchData({
         pageNumber: targetPage,
@@ -266,6 +313,9 @@ export default function GoodsPage() {
   }
 
   const handleUpdateSuccess = () => {
+    // Refresh tổng thống kê
+    fetchTotalStats()
+    
     // Refresh data after successful update
     fetchData({
       pageNumber: pagination.pageNumber,
@@ -346,26 +396,14 @@ export default function GoodsPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="border-l-4 border-l-[#237486]">
-            <CardContent className="pt-6">
-              <div className="text-sm font-medium text-slate-600">Tổng hàng hóa</div>
-              <div className="text-3xl font-bold text-slate-900 mt-2">{pagination.totalCount}</div>
-            </CardContent>
-          </Card>
-          <Card className="border-l-4 border-l-[#237486]">
-            <CardContent className="pt-6">
-              <div className="text-sm font-medium text-slate-600">Đang hoạt động</div>
-              <div className="text-3xl font-bold text-[#237486] mt-2">{activeCount}</div>
-            </CardContent>
-          </Card>
-          <Card className="border-l-4 border-l-[#237486]">
-            <CardContent className="pt-6">
-              <div className="text-sm font-medium text-slate-600">Không hoạt động</div>
-              <div className="text-3xl font-bold text-slate-600 mt-2">{inactiveCount}</div>
-            </CardContent>
-          </Card>
-        </div>
+        <StatsCards
+          totalCount={totalStats.totalCount}
+          activeCount={totalStats.activeCount}
+          inactiveCount={totalStats.inactiveCount}
+          totalLabel="Tổng hàng hóa"
+          activeLabel="Đang hoạt động"
+          inactiveLabel="Không hoạt động"
+        />
 
         {/* Search Bar */}
         <Card>
@@ -406,15 +444,15 @@ export default function GoodsPage() {
                           <div className="flex flex-col">
                             <ChevronDown
                               className={`h-3 w-3 transition-colors ${sortField === "goodsName" && sortAscending
-                                  ? 'text-white'
-                                  : 'text-white/50'
+                                ? 'text-white'
+                                : 'text-white/50'
                                 }`}
                               style={{ transform: 'translateY(1px)' }}
                             />
                             <ChevronDown
                               className={`h-3 w-3 transition-colors ${sortField === "goodsName" && !sortAscending
-                                  ? 'text-white'
-                                  : 'text-white/50'
+                                ? 'text-white'
+                                : 'text-white/50'
                                 }`}
                               style={{ transform: 'translateY(-1px) rotate(180deg)' }}
                             />
@@ -498,8 +536,8 @@ export default function GoodsPage() {
                           <TableCell className="text-slate-700 px-4 py-3 first:pl-6 last:pr-6 border-0 w-24 text-center">{good?.unitMeasureName || ''}</TableCell>
                           <TableCell className="text-slate-700 px-4 py-3 first:pl-6 last:pr-6 border-0 w-40 text-center">
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${good?.status === 1
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-red-100 text-red-800'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800'
                               }`}>
                               {good?.status === 1 ? 'Hoạt động' : 'Ngừng hoạt động'}
                             </span>

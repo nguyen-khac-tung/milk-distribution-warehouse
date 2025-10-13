@@ -10,6 +10,7 @@ import { SupplierDetail } from "./ViewSupplierModal";
 import UpdateSupplier from "./UpdateSupplierModal";
 import DeleteModal from "../../../components/Common/DeleteModal";
 import { StatusToggle } from "../../../components/Common/SwitchToggle/StatusToggle";
+import StatsCards from "../../../components/Common/StatsCards";
 import { extractErrorMessage } from "../../../utils/Validation";
 
 // Type definition for Supplier
@@ -44,6 +45,44 @@ export default function SuppliersPage() {
     totalCount: 0
   })
   const [showPageSizeFilter, setShowPageSizeFilter] = useState(false)
+  
+  // Thống kê tổng (không thay đổi khi search/filter)
+  const [totalStats, setTotalStats] = useState({
+    totalCount: 0,
+    activeCount: 0,
+    inactiveCount: 0
+  })
+
+  // Fetch tổng thống kê (không có search/filter)
+  const fetchTotalStats = async () => {
+    try {
+      const response = await getSuppliers({
+        pageNumber: 1,
+        pageSize: 1000, // Lấy tất cả để đếm
+        search: "",
+        sortField: "",
+        sortAscending: true,
+        status: "" // Không filter theo status
+      })
+
+      if (response && response.data) {
+        // API returns response.data.items (array) and response.data.totalCount
+        const dataArray = Array.isArray(response.data.items) ? response.data.items : []
+        const totalCount = response.data.totalCount || dataArray.length
+
+        const activeCount = dataArray.filter((s) => s.status === 1).length
+        const inactiveCount = dataArray.filter((s) => s.status === 2).length
+        
+        setTotalStats({
+          totalCount: totalCount,
+          activeCount: activeCount,
+          inactiveCount: inactiveCount
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching total stats:", error)
+    }
+  }
 
   // Fetch data from API
   const fetchData = async (searchParams = {}) => {
@@ -83,6 +122,10 @@ export default function SuppliersPage() {
 
   // Initial load
   useEffect(() => {
+    // Fetch tổng thống kê khi component mount
+    fetchTotalStats()
+    
+    // Fetch dữ liệu hiển thị
     fetchData({
       pageNumber: 1,
       pageSize: 10,
@@ -163,6 +206,9 @@ export default function SuppliersPage() {
   const inactiveCount = Array.isArray(suppliers) ? suppliers.filter((s) => s.status === 2).length : 0
 
   const handleCreateSuccess = () => {
+    // Refresh tổng thống kê
+    fetchTotalStats()
+    
     // Set sort to companyName descending to show new record at top
     setSortField("companyName")
     setSortAscending(false)
@@ -228,11 +274,16 @@ export default function SuppliersPage() {
         setPagination(prev => ({ ...prev, pageNumber: targetPage }))
       }
 
+      // Refresh tổng thống kê
+      fetchTotalStats()
+      
       // Refresh data after deletion, keeping current page or going to previous page if needed
       await fetchData({
         pageNumber: targetPage,
         pageSize: pagination.pageSize,
-        searchQuery: searchQuery,
+        search: searchQuery || "",
+        sortField: sortField,
+        sortAscending: sortAscending,
         status: statusFilter
       })
     } catch (error) {
@@ -326,26 +377,14 @@ export default function SuppliersPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="border-l-4 border-l-[#237486]">
-            <CardContent className="pt-6">
-              <div className="text-sm font-medium text-slate-600">Tổng nhà cung cấp</div>
-              <div className="text-3xl font-bold text-slate-900 mt-2">{pagination.totalCount}</div>
-            </CardContent>
-          </Card>
-          <Card className="border-l-4 border-l-[#237486]">
-            <CardContent className="pt-6">
-              <div className="text-sm font-medium text-slate-600">Đang hoạt động</div>
-              <div className="text-3xl font-bold text-[#237486] mt-2">{activeCount}</div>
-            </CardContent>
-          </Card>
-          <Card className="border-l-4 border-l-[#237486]">
-            <CardContent className="pt-6">
-              <div className="text-sm font-medium text-slate-600">Không hoạt động</div>
-              <div className="text-3xl font-bold text-slate-600 mt-2">{inactiveCount}</div>
-            </CardContent>
-          </Card>
-        </div>
+        <StatsCards
+          totalCount={totalStats.totalCount}
+          activeCount={totalStats.activeCount}
+          inactiveCount={totalStats.inactiveCount}
+          totalLabel="Tổng nhà cung cấp"
+          activeLabel="Đang hoạt động"
+          inactiveLabel="Không hoạt động"
+        />
 
         {/* Search Bar */}
         <Card>

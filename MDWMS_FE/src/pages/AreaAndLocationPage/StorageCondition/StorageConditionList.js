@@ -8,6 +8,7 @@ import { Search, Plus, Edit, Trash2, Filter, ChevronDown } from "lucide-react";
 import CreateStorageCondition from "./CreateStorageConditionModal";
 import UpdateStorageCondition from "./UpdateStorageConditionModal";
 import DeleteModal from "../../../components/Common/DeleteModal";
+import StatsCards from "../../../components/Common/StatsCards";
 import { extractErrorMessage } from "../../../utils/Validation";
 
 // Type definition for StorageCondition
@@ -43,6 +44,55 @@ export default function StorageConditionPage() {
     totalCount: 0
   })
   const [showPageSizeFilter, setShowPageSizeFilter] = useState(false)
+  
+  // Thống kê tổng (không thay đổi khi search/filter)
+  const [totalStats, setTotalStats] = useState({
+    totalCount: 0,
+    activeCount: 0,
+    inactiveCount: 0
+  })
+
+  // Fetch tổng thống kê (không có search/filter)
+  const fetchTotalStats = async () => {
+    try {
+      const response = await getStorageCondition({
+        pageNumber: 1,
+        pageSize: 1000, // Lấy tất cả để đếm
+        search: "",
+        sortField: "",
+        sortAscending: true,
+        status: "" // Không filter theo status
+      })
+
+      if (response && response.data) {
+        // Xử lý cấu trúc response tương tự như fetchData
+        let allStorageConditions = [];
+        let totalCount = 0;
+
+        if (Array.isArray(response.data.items)) {
+          allStorageConditions = response.data.items;
+          totalCount = response.data.totalCount || allStorageConditions.length;
+        } else if (Array.isArray(response.data)) {
+          allStorageConditions = response.data;
+          totalCount = allStorageConditions.length;
+        } else if (response.data.data && Array.isArray(response.data.data)) {
+          allStorageConditions = response.data.data;
+          totalCount = response.data.totalCount || allStorageConditions.length;
+        }
+
+        const activeCount = allStorageConditions.filter((s) => s.status === 1).length
+        const inactiveCount = allStorageConditions.filter((s) => s.status === 2).length
+        
+        setTotalStats({
+          totalCount: totalCount,
+          activeCount: activeCount,
+          inactiveCount: inactiveCount
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching total stats:", error)
+    }
+  }
 
   // Fetch data from API
   const fetchData = async (searchParams = {}) => {
@@ -103,6 +153,10 @@ export default function StorageConditionPage() {
 
   // Initial load
   useEffect(() => {
+    // Fetch tổng thống kê khi component mount
+    fetchTotalStats()
+    
+    // Fetch dữ liệu hiển thị
     fetchData({
       pageNumber: 1,
       pageSize: 10,
@@ -183,6 +237,9 @@ export default function StorageConditionPage() {
   const inactiveCount = Array.isArray(storageConditions) ? storageConditions.filter((c) => c.status === 2).length : 0
 
   const handleCreateSuccess = () => {
+    // Refresh tổng thống kê
+    fetchTotalStats()
+    
     // Set sort to name descending to show new record at top
     setSortField("Name")
     setSortAscending(false)
@@ -233,6 +290,9 @@ export default function StorageConditionPage() {
         targetPage = pagination.pageNumber - 1
         setPagination(prev => ({ ...prev, pageNumber: targetPage }))
       }
+      
+      // Refresh tổng thống kê
+      fetchTotalStats()
       
       // Refresh data after deletion, keeping current page or going to previous page if needed
       fetchData({
@@ -315,26 +375,14 @@ export default function StorageConditionPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="border-l-4 border-l-[#237486]">
-            <CardContent className="pt-6">
-              <div className="text-sm font-medium text-slate-600">Tổng điều kiện bảo quản</div>
-              <div className="text-3xl font-bold text-slate-900 mt-2">{pagination.totalCount}</div>
-            </CardContent>
-          </Card>
-          <Card className="border-l-4 border-l-[#237486]">
-            <CardContent className="pt-6">
-              <div className="text-sm font-medium text-slate-600">Đang hoạt động</div>
-              <div className="text-3xl font-bold text-[#237486] mt-2">{activeCount}</div>
-            </CardContent>
-          </Card>
-          <Card className="border-l-4 border-l-[#237486]">
-            <CardContent className="pt-6">
-              <div className="text-sm font-medium text-slate-600">Không hoạt động</div>
-              <div className="text-3xl font-bold text-slate-600 mt-2">{inactiveCount}</div>
-            </CardContent>
-          </Card>
-        </div>
+        <StatsCards
+          totalCount={totalStats.totalCount}
+          activeCount={totalStats.activeCount}
+          inactiveCount={totalStats.inactiveCount}
+          totalLabel="Tổng điều kiện bảo quản"
+          activeLabel="Đang hoạt động"
+          inactiveLabel="Không hoạt động"
+        />
 
         {/* Search Bar */}
         <Card>
