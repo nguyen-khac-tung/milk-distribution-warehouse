@@ -95,7 +95,7 @@ namespace MilkDistributionWarehouse.Services
             var validation = await ValidationSupplier(update.SupplierId, supplierValidation);
 
             if (!string.IsNullOrEmpty(validation))
-                return (validation.ToMessageForUser(), new SupplierDetail());
+                return (("Cập nhật thất bại. " + validation.ToMessageForUser()), new SupplierDetail());
 
             // Check chuyen trang thai Active => InActive
             var changeStatus = supplierExist.Status == CommonStatus.Active && update.Status == CommonStatus.Inactive;
@@ -105,6 +105,10 @@ namespace MilkDistributionWarehouse.Services
                 var checkChangeStatus = await CheckChangeStatus(update.SupplierId);
                 if (!string.IsNullOrEmpty(checkChangeStatus))
                     return (checkChangeStatus.ToMessageForUser(), new SupplierDetail());
+            }
+            else
+            {
+                supplierExist.Status = update.Status;
             }
 
             //Check update
@@ -118,15 +122,14 @@ namespace MilkDistributionWarehouse.Services
                 supplierExist.Address = update.Address;
                 supplierExist.Email = update.Email;
                 supplierExist.Phone = update.Phone;
-                supplierExist.Status = update.Status;
             }
             else
             {
                 supplierExist.BrandName = update.BrandName;
-                supplierExist.Email = update.Email; 
+                supplierExist.Email = update.Email;
                 supplierExist.Phone = update.Phone;
-                supplierExist.Status = update.Status;
             }
+
             supplierExist.UpdatedAt = DateTime.Now;
 
             var updateResult = await _supplierRepository.UpdateSupplier(supplierExist);
@@ -139,7 +142,7 @@ namespace MilkDistributionWarehouse.Services
 
         public async Task<(string, SupplierDetail)> DeleteSupplier(int supplierId)
         {
-            if(supplierId <= 0) return ("SupplierId is invalid.", new SupplierDetail());
+            if (supplierId <= 0) return ("SupplierId is invalid.", new SupplierDetail());
 
             var supplierExist = await _supplierRepository.GetSupplierBySupplierId(supplierId);
 

@@ -88,4 +88,13 @@
         public const string Normal = "Normal";
         public const string High = "High";
     }
+
+    /// <summary>
+    /// Các trạng thái của phiếu bổ sung (BackOrder)
+    /// </summary>
+    public static class BackOrderStatus
+    {
+        public const int Available = 1;
+        public const int Unavailable = 2;
+    }
 }

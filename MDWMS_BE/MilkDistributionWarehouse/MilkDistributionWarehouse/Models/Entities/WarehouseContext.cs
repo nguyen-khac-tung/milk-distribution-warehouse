@@ -321,7 +321,7 @@ public partial class WarehouseContext : DbContext
 
         modelBuilder.Entity<Retailer>(entity =>
         {
-            entity.Property(e => e.RetailerId).ValueGeneratedNever();
+            entity.Property(e => e.RetailerId).ValueGeneratedOnAdd();
             entity.Property(e => e.Address).HasMaxLength(255);
             entity.Property(e => e.Email)
                 .HasMaxLength(50)
