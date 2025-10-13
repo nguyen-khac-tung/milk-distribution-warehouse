@@ -37,6 +37,7 @@ namespace MilkDistributionWarehouse.Repositories
         {
             return await _context.Areas
                 .Where(a => a.AreaId == areaId && a.Status != CommonStatus.Deleted)
+                .Include(a => a.StorageCondition)
                 .AsNoTracking()
                 .FirstOrDefaultAsync();
         }
