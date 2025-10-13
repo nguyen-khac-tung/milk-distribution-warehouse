@@ -127,6 +127,7 @@ namespace MilkDistributionWarehouse.Mapper
             //Map Supplier
             CreateMap<Supplier, SupplierDto>();
             CreateMap<Supplier, SupplierDetail>();
+            CreateMap<Supplier, SupplierDropDown>();
             CreateMap<SupplierCreate, Supplier>()
                 .ForMember(dest => dest.SupplierId, opt => opt.Ignore())
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => CommonStatus.Active))
