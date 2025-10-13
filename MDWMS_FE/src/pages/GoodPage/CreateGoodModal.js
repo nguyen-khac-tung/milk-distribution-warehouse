@@ -5,6 +5,7 @@ import { Input } from "../../components/ui/input"
 import { Label } from "../../components/ui/label"
 import { Card } from "../../components/ui/card"
 import { X } from "lucide-react"
+import CustomDropdown from "../../components/Common/CustomDropdown"
 import { createGood } from "../../services/GoodService"
 import { getCategory } from "../../services/CategoryService/CategoryServices"
 import { getSuppliersDropdown } from "../../services/SupplierService"
@@ -156,48 +157,38 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
                 <Label htmlFor="categoryId" className="text-sm font-medium text-slate-700">
                   Danh mục *
                 </Label>
-                <select
-                  id="categoryId"
+                <CustomDropdown
                   value={formData.categoryId}
-                  onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                  className="h-12 w-full px-3 py-2 border border-slate-300 rounded-md focus:border-[#237486] focus:ring-[#237486] focus:outline-none bg-white"
-                  required
-                >
-                  <option value="">Chọn danh mục...</option>
-                  {loadingData ? (
-                    <option disabled>Đang tải...</option>
-                  ) : (
-                    categories.map((category) => (
-                      <option key={category.categoryId} value={category.categoryId.toString()}>
-                        {category.categoryName}
-                      </option>
-                    ))
-                  )}
-                </select>
+                  onChange={(value) => setFormData({ ...formData, categoryId: value })}
+                  options={[
+                    { value: "", label: "Chọn danh mục..." },
+                    ...categories.map((category) => ({
+                      value: category.categoryId.toString(),
+                      label: category.categoryName
+                    }))
+                  ]}
+                  placeholder="Chọn danh mục..."
+                  loading={loadingData}
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="supplierId" className="text-sm font-medium text-slate-700">
                   Nhà cung cấp *
                 </Label>
-                <select
-                  id="supplierId"
+                <CustomDropdown
                   value={formData.supplierId}
-                  onChange={(e) => setFormData({ ...formData, supplierId: e.target.value })}
-                  className="h-12 w-full px-3 py-2 border border-slate-300 rounded-md focus:border-[#237486] focus:ring-[#237486] focus:outline-none bg-white"
-                  required
-                >
-                  <option value="">Chọn nhà cung cấp...</option>
-                  {loadingData ? (
-                    <option disabled>Đang tải...</option>
-                  ) : (
-                    suppliers.map((supplier) => (
-                      <option key={supplier.supplierId} value={supplier.supplierId.toString()}>
-                        {supplier.companyName}
-                      </option>
-                    ))
-                  )}
-                </select>
+                  onChange={(value) => setFormData({ ...formData, supplierId: value })}
+                  options={[
+                    { value: "", label: "Chọn nhà cung cấp..." },
+                    ...suppliers.map((supplier) => ({
+                      value: supplier.supplierId.toString(),
+                      label: supplier.companyName
+                    }))
+                  ]}
+                  placeholder="Chọn nhà cung cấp..."
+                  loading={loadingData}
+                />
               </div>
             </div>
 
@@ -207,54 +198,38 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
                 <Label htmlFor="storageConditionId" className="text-sm font-medium text-slate-700">
                   Điều kiện bảo quản *
                 </Label>
-                <select
-                  id="storageConditionId"
+                <CustomDropdown
                   value={formData.storageConditionId}
-                  onChange={(e) => setFormData({ ...formData, storageConditionId: e.target.value })}
-                  className="h-12 w-full px-3 py-2 border border-slate-300 rounded-md focus:border-[#237486] focus:ring-[#237486] focus:outline-none bg-white"
-                  required
-                >
-                  <option value="">Chọn điều kiện bảo quản...</option>
-                  {loadingData ? (
-                    <option disabled>Đang tải...</option>
-                  ) : (
-                    storageConditions.map((condition) => (
-                      <option
-                        key={condition.storageConditionId}
-                        value={condition.storageConditionId.toString()}
-                      >
-                        {condition.conditionName} - Nhiệt độ: {condition.temperatureMin}°C đến {condition.temperatureMax}°C - Độ ẩm: {condition.humidityMin}% đến {condition.humidityMax}%
-                      </option>
-                    ))
-                  )}
-                </select>
+                  onChange={(value) => setFormData({ ...formData, storageConditionId: value })}
+                  options={[
+                    { value: "", label: "Chọn điều kiện bảo quản..." },
+                    ...storageConditions.map((condition) => ({
+                      value: condition.storageConditionId.toString(),
+                      label: `- Nhiệt độ: ${condition.temperatureMin}°C đến ${condition.temperatureMax}°C - Độ ẩm: ${condition.humidityMin}% đến ${condition.humidityMax}%`
+                    }))
+                  ]}
+                  placeholder="Chọn điều kiện bảo quản..."
+                  loading={loadingData}
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="unitMeasureId" className="text-sm font-medium text-slate-700">
                   Đơn vị đo *
                 </Label>
-                <select
-                  id="unitMeasureId"
+                <CustomDropdown
                   value={formData.unitMeasureId}
-                  onChange={(e) => setFormData({ ...formData, unitMeasureId: e.target.value })}
-                  className="h-12 w-full px-3 py-2 border border-slate-300 rounded-md focus:border-[#237486] focus:ring-[#237486] focus:outline-none bg-white"
-                  required
-                >
-                  <option value="">Chọn đơn vị đo...</option>
-                  {loadingData ? (
-                    <option disabled>Đang tải...</option>
-                  ) : (
-                    unitMeasures.map((unit) => (
-                      <option
-                        key={unit.unitMeasureId}
-                        value={unit.unitMeasureId.toString()}
-                      >
-                        {unit.name}
-                      </option>
-                    ))
-                  )}
-                </select>
+                  onChange={(value) => setFormData({ ...formData, unitMeasureId: value })}
+                  options={[
+                    { value: "", label: "Chọn đơn vị đo..." },
+                    ...unitMeasures.map((unit) => ({
+                      value: unit.unitMeasureId.toString(),
+                      label: unit.name
+                    }))
+                  ]}
+                  placeholder="Chọn đơn vị đo..."
+                  loading={loadingData}
+                />
               </div>
             </div>
 

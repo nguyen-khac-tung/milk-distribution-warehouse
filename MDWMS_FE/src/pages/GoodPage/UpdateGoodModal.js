@@ -5,6 +5,7 @@ import { Input } from "../../components/ui/input"
 import { Label } from "../../components/ui/label"
 import { Card } from "../../components/ui/card"
 import { ComponentIcon } from "../../components/IconComponent/Icon"
+import CustomDropdown from "../../components/Common/CustomDropdown"
 import { updateGood, getGoodDetail } from "../../services/GoodService"
 import { getCategory } from "../../services/CategoryService/CategoryServices"
 import { getSuppliersDropdown } from "../../services/SupplierService"
@@ -32,18 +33,44 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
   // Load data for dropdowns and good details
   useEffect(() => {
     if (isOpen && goodId) {
-      loadGoodData()
-      loadDropdownData()
+      // Reset formData khi mở modal
+      setFormData({
+        goodsId: 0,
+        goodsName: "",
+        categoryId: 0,
+        supplierId: 0,
+        storageConditionId: 0,
+        unitMeasureId: 0,
+        status: 0,
+      })
+      
+      loadDropdownData().then(() => {
+        // Đợi một chút để đảm bảo state đã được update
+        setTimeout(() => {
+          loadGoodData()
+        }, 100)
+      })
     }
   }, [isOpen, goodId])
+
+  // Effect để đảm bảo formData được update khi dropdown data thay đổi
+  useEffect(() => {
+    if (categories.length > 0 && storageConditions.length > 0 && formData.categoryId === 0 && formData.storageConditionId === 0) {
+      // Nếu dropdown data đã load nhưng formData vẫn chưa được set, load lại good data
+      if (goodId) {
+        loadGoodData()
+      }
+    }
+  }, [categories, storageConditions])
 
   const loadGoodData = async () => {
     try {
       setLoadingData(true)
       const response = await getGoodDetail(goodId)
+      
       if (response && response.data) {
         const good = response.data
-        setFormData({
+        const newFormData = {
           goodsId: good.goodsId || 0,
           goodsName: good.goodsName || "",
           categoryId: good.categoryId || 0,
@@ -51,7 +78,8 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
           storageConditionId: good.storageConditionId || 0,
           unitMeasureId: good.unitMeasureId || 0,
           status: good.status || 0,
-        })
+        }
+        setFormData(newFormData)
       }
     } catch (error) {
       console.error("Error loading good data:", error)
@@ -66,7 +94,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
     try {
       setLoadingData(true)
       const [categoriesRes, suppliersRes, storageConditionsRes, unitMeasuresRes] = await Promise.all([
-        getCategory({ pageNumber: 1, pageSize: 10}),
+        getCategory({ pageNumber: 1, pageSize: 10 }),
         getSuppliersDropdown(),
         getStorageCondition({ pageNumber: 1, pageSize: 10 }),
         getUnitMeasure({ pageNumber: 1, pageSize: 10 })
@@ -127,6 +155,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
     onClose && onClose()
   }
 
+
   if (!isOpen) return null;
 
   return (
@@ -170,48 +199,38 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
                 <Label htmlFor="categoryId" className="text-sm font-medium text-slate-700">
                   Danh mục *
                 </Label>
-                <select
-                  id="categoryId"
+                <CustomDropdown
                   value={formData.categoryId}
-                  onChange={(e) => setFormData({ ...formData, categoryId: parseInt(e.target.value) })}
-                  className="h-12 w-full px-3 py-2 border border-slate-300 rounded-md focus:border-[#237486] focus:ring-[#237486] focus:outline-none bg-white"
-                  required
-                >
-                  <option value={0}>Chọn danh mục...</option>
-                  {loadingData ? (
-                    <option disabled>Đang tải...</option>
-                  ) : (
-                    categories.map((category) => (
-                      <option key={category.categoryId} value={category.categoryId}>
-                        {category.categoryName}
-                      </option>
-                    ))
-                  )}
-                </select>
+                  onChange={(value) => setFormData({ ...formData, categoryId: parseInt(value) })}
+                  options={[
+                    { value: 0, label: "Chọn danh mục..." },
+                    ...categories.map((category) => ({
+                      value: category.categoryId,
+                      label: category.categoryName
+                    }))
+                  ]}
+                  placeholder="Chọn danh mục..."
+                  loading={loadingData}
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="supplierId" className="text-sm font-medium text-slate-700">
                   Nhà cung cấp *
                 </Label>
-                <select
-                  id="supplierId"
+                <CustomDropdown
                   value={formData.supplierId}
-                  onChange={(e) => setFormData({ ...formData, supplierId: parseInt(e.target.value) })}
-                  className="h-12 w-full px-3 py-2 border border-slate-300 rounded-md focus:border-[#237486] focus:ring-[#237486] focus:outline-none bg-white"
-                  required
-                >
-                  <option value={0}>Chọn nhà cung cấp...</option>
-                  {loadingData ? (
-                    <option disabled>Đang tải...</option>
-                  ) : (
-                    suppliers.map((supplier) => (
-                      <option key={supplier.supplierId} value={supplier.supplierId}>
-                        {supplier.companyName}
-                      </option>
-                    ))
-                  )}
-                </select>
+                  onChange={(value) => setFormData({ ...formData, supplierId: parseInt(value) })}
+                  options={[
+                    { value: 0, label: "Chọn nhà cung cấp..." },
+                    ...suppliers.map((supplier) => ({
+                      value: supplier.supplierId,
+                      label: supplier.companyName
+                    }))
+                  ]}
+                  placeholder="Chọn nhà cung cấp..."
+                  loading={loadingData}
+                />
               </div>
             </div>
 
@@ -221,54 +240,38 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
                 <Label htmlFor="storageConditionId" className="text-sm font-medium text-slate-700">
                   Điều kiện bảo quản *
                 </Label>
-                <select
-                  id="storageConditionId"
+                <CustomDropdown
                   value={formData.storageConditionId}
-                  onChange={(e) => setFormData({ ...formData, storageConditionId: parseInt(e.target.value) })}
-                  className="h-12 w-full px-3 py-2 border border-slate-300 rounded-md focus:border-[#237486] focus:ring-[#237486] focus:outline-none bg-white"
-                  required
-                >
-                  <option value={0}>Chọn điều kiện bảo quản...</option>
-                  {loadingData ? (
-                    <option disabled>Đang tải...</option>
-                  ) : (
-                    storageConditions.map((condition) => (
-                      <option
-                        key={condition.storageConditionId}
-                        value={condition.storageConditionId}
-                      >
-                        {condition.conditionName} - Nhiệt độ: {condition.temperatureMin}°C đến {condition.temperatureMax}°C - Độ ẩm: {condition.humidityMin}% đến {condition.humidityMax}%
-                      </option>
-                    ))
-                  )}
-                </select>
+                  onChange={(value) => setFormData({ ...formData, storageConditionId: parseInt(value) })}
+                  options={[
+                    { value: 0, label: "Chọn điều kiện bảo quản..." },
+                    ...storageConditions.map((condition) => ({
+                      value: condition.storageConditionId,
+                      label: `- Nhiệt độ: ${condition.temperatureMin}°C đến ${condition.temperatureMax}°C - Độ ẩm: ${condition.humidityMin}% đến ${condition.humidityMax}%`
+                    }))
+                  ]}
+                  placeholder="Chọn điều kiện bảo quản..."
+                  loading={loadingData}
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="unitMeasureId" className="text-sm font-medium text-slate-700">
                   Đơn vị đo *
                 </Label>
-                <select
-                  id="unitMeasureId"
+                <CustomDropdown
                   value={formData.unitMeasureId}
-                  onChange={(e) => setFormData({ ...formData, unitMeasureId: parseInt(e.target.value) })}
-                  className="h-12 w-full px-3 py-2 border border-slate-300 rounded-md focus:border-[#237486] focus:ring-[#237486] focus:outline-none bg-white"
-                  required
-                >
-                  <option value={0}>Chọn đơn vị đo...</option>
-                  {loadingData ? (
-                    <option disabled>Đang tải...</option>
-                  ) : (
-                    unitMeasures.map((unit) => (
-                      <option
-                        key={unit.unitMeasureId}
-                        value={unit.unitMeasureId}
-                      >
-                        {unit.name}
-                      </option>
-                    ))
-                  )}
-                </select>
+                  onChange={(value) => setFormData({ ...formData, unitMeasureId: parseInt(value) })}
+                  options={[
+                    { value: 0, label: "Chọn đơn vị đo..." },
+                    ...unitMeasures.map((unit) => ({
+                      value: unit.unitMeasureId,
+                      label: unit.name
+                    }))
+                  ]}
+                  placeholder="Chọn đơn vị đo..."
+                  loading={loadingData}
+                />
               </div>
             </div>
 
@@ -278,17 +281,17 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
                 <Label htmlFor="status" className="text-sm font-medium text-slate-700">
                   Trạng thái *
                 </Label>
-                <select
-                  id="status"
+                <CustomDropdown
                   value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: parseInt(e.target.value) })}
-                  className="h-12 w-full px-3 py-2 border border-slate-300 rounded-md focus:border-[#237486] focus:ring-[#237486] focus:outline-none bg-white"
-                  required
-                >
-                  <option value={0}>Chọn trạng thái...</option>
-                  <option value={1}>Hoạt động</option>
-                  <option value={2}>Ngừng hoạt động</option>
-                </select>
+                  onChange={(value) => setFormData({ ...formData, status: parseInt(value) })}
+                  options={[
+                    { value: 0, label: "Chọn trạng thái..." },
+                    { value: 1, label: "Hoạt động" },
+                    { value: 2, label: "Ngừng hoạt động" }
+                  ]}
+                  placeholder="Chọn trạng thái..."
+                  loading={false}
+                />
               </div>
             </div>
 
