@@ -21,7 +21,7 @@ namespace MilkDistributionWarehouse.Utilities
             return new OkObjectResult(new ApiResponse<T> { Message = message, Status = statusCode });
         }
 
-        public static IActionResult ToResultOk(T data, string message = "", int statusCode = 200)
+        public static IActionResult ToResultOk(T? data, string message = "", int statusCode = 200)
         {
             return new OkObjectResult(new ApiResponse<T> { Data = data, Message = message, Status = statusCode });
         }

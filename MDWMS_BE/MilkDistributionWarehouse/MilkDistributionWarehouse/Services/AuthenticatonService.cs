@@ -15,12 +15,12 @@ namespace MilkDistributionWarehouse.Services
 {
     public interface IAuthenticatonService
     {
-        public string Dologin(LoginDto loginDto, out AuthenticationDto authen);
-        public string GetNewJwtToken(RefreshTokenDto refreshTokenDto, out JwtTokenDto jwtDto);
-        public string RequestForgotPassword(string email);
-        public string VerifyForgotPasswordOtp(VerifyOtpDto verifyOtp);
-        public string ResetPassword(ResetPasswordDto resetPasswordDto, out AuthenticationDto authenDto);
-        public string DoLogout(int? userId);
+        Task<(string, AuthenticationDto?)> Dologin(LoginDto loginDto);
+        Task<(string, JwtTokenDto?)> GetNewJwtToken(RefreshTokenDto refreshTokenDto);
+        Task<string> RequestForgotPassword(string email);
+        Task<string> VerifyForgotPasswordOtp(VerifyOtpDto verifyOtp);
+        Task<(string, AuthenticationDto?)> ResetPassword(ResetPasswordDto resetPasswordDto);
+        Task<string> DoLogout(int? userId);
     }
 
 
@@ -45,90 +45,101 @@ namespace MilkDistributionWarehouse.Services
             _iConfig = configuration;
         }
 
-        public string Dologin(LoginDto loginDto, out AuthenticationDto authen)
+        public async Task<(string, AuthenticationDto?)> Dologin(LoginDto loginDto)
         {
-            authen = new AuthenticationDto();
-            var user = _userRepository.GetUserByEmail(loginDto.Email);
-            if (user == null) return "Email hoặc mật khẩu không đúng!".ToMessageForUser();
-            if (user.Status == CommonStatus.Inactive) return "Tài khoản này đã bị vô hiệu".ToMessageForUser();
+            var user = await _userRepository.GetUserByEmail(loginDto.Email);
+            if (user == null) return ("Email hoặc mật khẩu không đúng!".ToMessageForUser(), null);
+            if (user.Status == CommonStatus.Inactive) return ("Tài khoản này đã bị vô hiệu".ToMessageForUser(), null);
 
             bool IsCorrectPassword = BCrypt.Net.BCrypt.Verify(loginDto.Password, user.Password);
-            if (!IsCorrectPassword) return "Email hoặc mật khẩu không đúng!".ToMessageForUser();
+            if (!IsCorrectPassword) return ("Email hoặc mật khẩu không đúng!".ToMessageForUser(), null);
 
-            authen = GetAuthResponse(user);
-            return "";
+            var (msg, authen) = await GetAuthResponse(user);
+            if (msg.Length > 0) return (msg, null);
+
+            return ("", authen);
         }
 
-        public string GetNewJwtToken(RefreshTokenDto refreshTokenDto, out JwtTokenDto jwtDto)
+        public async Task<(string, JwtTokenDto?)> GetNewJwtToken(RefreshTokenDto refreshTokenDto)
         {
-            jwtDto = new JwtTokenDto();
-            var refreshToken = _refreshTokenRepository.GetRefreshTokenByToken(refreshTokenDto.Token);
+            var refreshToken = await _refreshTokenRepository.GetRefreshTokenByToken(refreshTokenDto.Token);
             if (refreshToken == null || refreshToken.ExpiryDate < DateTime.Now || refreshToken.IsRevoked == true)
-                return "Refresh Token is not valid";
+                return ("Refresh Token is not valid", null);
 
-            jwtDto.Token = GenerateJwtToken(refreshToken.User);
-            return "";
+            var jwtDto = new JwtTokenDto
+            {
+                Token = GenerateJwtToken(refreshToken.User)
+            };
+            return ("", jwtDto);
         }
 
-        public string RequestForgotPassword(string email)
+        public async Task<string> RequestForgotPassword(string email)
         {
-            var user = _userRepository.GetUserByEmail(email);
+            var user = await _userRepository.GetUserByEmail(email);
             if (user == null) return "Email không hợp lệ!".ToMessageForUser();
             if (user.Status == CommonStatus.Inactive) return "Tài khoản này đã bị vô hiệu hóa!".ToMessageForUser();
 
             try
             {
-                var otp = GenerateOtp(email);
+                var otp = await GenerateOtp(email);
                 SendOtpByEmail(email, otp);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return "Có lỗi xảy ra trong quá trình gửi OTP. Vui lòng thử lại!".ToMessageForUser();
             }
             return "";
         }
 
-        public string VerifyForgotPasswordOtp(VerifyOtpDto verifyOtp)
+        public async Task<string> VerifyForgotPasswordOtp(VerifyOtpDto verifyOtp)
         {
-            var userOtp = _userOtpRepository.GetUserOtpByEmail(verifyOtp.Email);
+            var userOtp = await _userOtpRepository.GetUserOtpByEmail(verifyOtp.Email);
             if (userOtp == null || userOtp.OtpCode != verifyOtp.OtpCode || userOtp.UsedAt != null)
                 return "Mã OTP không hợp lệ. Vui lòng thử lại!".ToMessageForUser();
             if (userOtp.ExpiresAt < DateTime.Now)
                 return "Mã OTP đã hết hạn. Vui lòng thử lại!".ToMessageForUser();
+            
+            userOtp.UsedAt = DateTime.Now;
+            var msg = await _userOtpRepository.UpdateUserOtp(userOtp);
+            if (msg.Length > 0) return msg;
 
             return "";
         }
 
-        public string ResetPassword(ResetPasswordDto resetPasswordDto, out AuthenticationDto authenDto)
+        public async Task<(string, AuthenticationDto?)> ResetPassword(ResetPasswordDto resetPasswordDto)
         {
-            authenDto = new AuthenticationDto();
-            var user = _userRepository.GetUserByEmail(resetPasswordDto.Email);
-            if (user == null) return "User not found";
+            var user = await _userRepository.GetUserByEmail(resetPasswordDto.Email);
+            if (user == null) return ("User not found", null);
 
             user.Password = BCrypt.Net.BCrypt.HashPassword(resetPasswordDto.NewPassword);
-            _userRepository.UpdateUser(user);
+            var message = await _userRepository.UpdateUser(user);
+            if(message.Length > 0) return (message, null);
 
-            authenDto = GetAuthResponse(user);
-            return "";
+            var (msg, authenDto) = await GetAuthResponse(user);
+            if (msg.Length > 0) return (msg, null);
+
+            return ("", authenDto);
         }
 
-        public string DoLogout(int? userId)
+        public async Task<string> DoLogout(int? userId)
         {
             if (userId == null) return "Error is the UserId is null";
-            var refreshToken = _refreshTokenRepository.GetRefreshTokenByUserId(userId);
+            var refreshToken = await _refreshTokenRepository.GetRefreshTokenByUserId(userId);
             if (refreshToken != null)
             {
                 refreshToken.IsRevoked = true;
-                _refreshTokenRepository.UpdateRefreshToken(refreshToken);
+                var msg = await _refreshTokenRepository.UpdateRefreshToken(refreshToken);
+                if(msg.Length > 0) return msg;
             }
             return "";
         }
 
-        private string GenerateOtp(string email)
+        private async Task<string> GenerateOtp(string email)
         {
-            var otpCode = new Random().Next(000000, 999999).ToString();
+            var msg = string.Empty;
+            var otpCode = new Random().Next(000000, 999999).ToString("D6");
             var otpExpires = DateTime.Now.AddMinutes(double.Parse(_iConfig["OtpCode:ExpireMinutes"]));
-            var oldUserOtp = _userOtpRepository.GetUserOtpByEmail(email);
+            var oldUserOtp = await _userOtpRepository.GetUserOtpByEmail(email);
             if (oldUserOtp == null)
             {
                 var userOtp = new UserOtp()
@@ -138,36 +149,48 @@ namespace MilkDistributionWarehouse.Services
                     ExpiresAt = otpExpires,
                     CreatedAt = DateTime.Now,
                 };
-                _userOtpRepository.CreateUserOtp(userOtp);
+                msg = await _userOtpRepository.CreateUserOtp(userOtp);
             }
             else
             {
                 oldUserOtp.OtpCode = otpCode;
                 oldUserOtp.ExpiresAt = otpExpires;
                 oldUserOtp.UsedAt = null;
-                _userOtpRepository.UpdateUserOtp(oldUserOtp);
+                msg = await _userOtpRepository.UpdateUserOtp(oldUserOtp);
             }
+
+            if (msg.Length > 0) throw new Exception(msg);
+
             return otpCode;
         }
 
-        private AuthenticationDto GetAuthResponse(User user)
+        private async Task<(string, AuthenticationDto? auth)> GetAuthResponse(User user)
         {
-            var auth = new AuthenticationDto()
+            AuthenticationDto auth;
+            try
             {
-                UserId = user.UserId,
-                Email = user.Email,
-                FullName = user.FullName,
-                Roles = user.Roles.Select(u => u.RoleName).ToList(),
-                JwtToken = GenerateJwtToken(user),
-                RefreshToken = GenerateRefreshToken(user)
-            };
-            return auth;
+                auth = new AuthenticationDto()
+                {
+                    UserId = user.UserId,
+                    Email = user.Email,
+                    FullName = user.FullName,
+                    Roles = user.Roles.Select(u => u.RoleName).ToList(),
+                    JwtToken = GenerateJwtToken(user),
+                    RefreshToken = await GenerateRefreshToken(user)
+                };
+            }
+            catch (Exception ex)
+            {
+                return (ex.Message, null);
+            }
+            return ("", auth);
         }
 
-        private string GenerateRefreshToken(User user)
+        private async Task<string> GenerateRefreshToken(User user)
         {
+            var msg = string.Empty;
             var token = Guid.NewGuid().ToString();
-            var oldRefreshToken = _refreshTokenRepository.GetRefreshTokenByUserId(user.UserId);
+            var oldRefreshToken = await _refreshTokenRepository.GetRefreshTokenByUserId(user.UserId);
 
             if (oldRefreshToken == null)
             {
@@ -180,7 +203,7 @@ namespace MilkDistributionWarehouse.Services
                     UserId = user.UserId,
                     CreateAt = DateTime.Now
                 };
-                _refreshTokenRepository.CreateRefreshToken(newRefreshToken);
+                msg = await _refreshTokenRepository.CreateRefreshToken(newRefreshToken);
             }
             else
             {
@@ -188,8 +211,10 @@ namespace MilkDistributionWarehouse.Services
                 oldRefreshToken.ExpiryDate = DateTime.Now.AddDays(double.Parse(_iConfig["Refresh:ExpireDays"]));
                 oldRefreshToken.IsRevoked = false;
                 oldRefreshToken.UpdateAt = DateTime.Now;
-                _refreshTokenRepository.UpdateRefreshToken(oldRefreshToken);
+                msg = await _refreshTokenRepository.UpdateRefreshToken(oldRefreshToken);
             }
+
+            if (msg.Length > 0) throw new Exception(msg);
 
             return token;
         }
@@ -224,7 +249,7 @@ namespace MilkDistributionWarehouse.Services
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        private void SendOtpByEmail(string toEmail, string otpCode)
+        private async Task SendOtpByEmail(string toEmail, string otpCode)
         {
             string uniqueId = DateTime.Now.Ticks.ToString();
             string emailBody = $@"
@@ -239,7 +264,9 @@ namespace MilkDistributionWarehouse.Services
                         </td>
                     </tr>
                 </table>";
-            _emailUtility.SendMail(toEmail, "Mã OTP xác minh tài khoản của bạn", emailBody);
+            var msg = await _emailUtility.SendMail(toEmail, "Mã OTP xác minh tài khoản của bạn", emailBody);
+
+            if (msg.Length > 0) throw new Exception(msg);
         }
     }
 }
