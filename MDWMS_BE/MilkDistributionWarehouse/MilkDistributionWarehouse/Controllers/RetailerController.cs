@@ -37,7 +37,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("Create")]
-        public async Task<IResult> CreateRetailer(RetailerCreate create)
+        public async Task<IActionResult> CreateRetailer(RetailerCreate create)
         {
             var (msg, retailerDetail) = await _retailerSevice.CreateRetailer(create);
             if (!string.IsNullOrEmpty(msg))
@@ -46,7 +46,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPut("Update")]
-        public async Task<IResult> UpdateRetailer(RetailerUpdate update)
+        public async Task<IActionResult> UpdateRetailer(RetailerUpdate update)
         {
             var (msg, retailerDetail) = await _retailerSevice.UpdateRetailer(update); 
             if (!string.IsNullOrEmpty(msg))
@@ -55,7 +55,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpDelete("Delete/{retailerId}")]
-        public async Task<IResult> DeleteRetailer(int retailerId)
+        public async Task<IActionResult> DeleteRetailer(int retailerId)
         {
             var (msg, retailerDetail) = await _retailerSevice.DeleteRetailer(retailerId);
             if (!string.IsNullOrEmpty(msg))
