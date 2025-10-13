@@ -25,6 +25,7 @@ code {
   0% {
     transform: translateX(-100%) skewX(-12deg);
   }
+
   100% {
     transform: translateX(200%) skewX(-12deg);
   }
@@ -38,12 +39,15 @@ code {
 .sidebar-scroll {
   overflow-y: auto;
   /* Ẩn thanh cuộn nhưng vẫn có thể cuộn */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
 }
 
 .sidebar-scroll::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+  display: none;
+  /* Chrome, Safari, Opera */
 }
 
 /* Đảm bảo sidebar không bị thụt vào khi có thanh cuộn */

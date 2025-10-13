@@ -26,6 +26,7 @@ export const IconMap = [
   { keywords: ['qrcode'], icon: 'vaadin:qrcode' },
   { keywords: ['productVariant'], icon: 'fluent-mdl2:product-variant' },
   { keywords: ['streamlineplump'], icon: 'streamline-plump:graphic-template-website-ui-remix' },
+  { keywords: ['down'], icon: 'formkit:down' },
 
 
   // có thể thêm nhiều icon khác ở đây
@@ -58,11 +59,12 @@ export const ComponentIcon = ({ name, color = "white", size = 20, collapsed = fa
   const isTaxIcon = name === 'tax';
   const isCalendarIcon = name === 'calendar';
   const isStreamlineplumpIcon = name === 'streamlineplump';
+  const isFormkitdownIcon = name === 'down';
   const needsSpecialAlignment = isMilkIcon || isUnitMeasureIcon || isCategoryIcon || isStorageCondition ||
     isPartnerIcon || isRetailerIcon || isSupplierIcon || isThermometerIcon ||
     isPackageIcon || isBuildingIcon || isDropletsIcon || isSunIcon || isTagIcon ||
     isMapPinIcon || isBoxIcon || isCloseIcon || isQrcodeIcon || isProductVariantIcon ||
-    isPhoneIcon || isEmailIcon || isTaxIcon || isCalendarIcon || isStreamlineplumpIcon;
+    isPhoneIcon || isEmailIcon || isTaxIcon || isCalendarIcon || isStreamlineplumpIcon || isFormkitdownIcon;
 
   return (
     <Icon
