@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { Menu, Avatar } from "antd";
 import {
     DashboardOutlined,
@@ -23,6 +23,18 @@ const Sidebar = ({ collapsed, isMobile }) => {
         if (savedUser) setUser(JSON.parse(savedUser));
     }, []);
 
+    // Xác định submenu nào cần mở dựa trên path hiện tại
+    const getOpenKeysFromPath = useCallback((pathname) => {
+        const keys = [];
+        if (pathname.startsWith('/sales-manager/suppliers') || pathname.startsWith('/sales-manager/retailers')) {
+            keys.push('partner-management');
+        }
+        if (pathname.startsWith('/admin/areas') || pathname.startsWith('/admin/locations') || pathname.startsWith('/admin/storage-condition')) {
+            keys.push('location-management');
+        }
+        return keys;
+    }, []);
+
     const role = user?.roles?.[0] || "Guest";
 
     // màu trắng cho mũi tên dropdown
@@ -32,7 +44,7 @@ const Sidebar = ({ collapsed, isMobile }) => {
         }
     `;
 
-    const menuItems = [
+    const menuItems = useMemo(() => [
         {
             key: "/admin/accounts",
             icon: <UsergroupAddOutlined />,
@@ -107,7 +119,7 @@ const Sidebar = ({ collapsed, isMobile }) => {
             icon: <SettingOutlined />,
             label: "Cài đặt",
         },
-    ];
+    ], [collapsed]);
 
     // Hàm render icon có màu động (đen nếu được chọn)
     const renderIcon = (icon, active) => {
@@ -186,7 +198,7 @@ const Sidebar = ({ collapsed, isMobile }) => {
                     <Menu
                         mode="inline"
                         selectedKeys={[location.pathname]}
-                        items={menuItems.map((item) => {
+                        items={useMemo(() => menuItems.map((item) => {
                             // Kiểm tra active cho item
                             const isActive =
                                 location.pathname === item.key ||
@@ -235,12 +247,12 @@ const Sidebar = ({ collapsed, isMobile }) => {
                                     </Link>
                                 ),
                             };
-                        })}
+                        }), [menuItems, location.pathname, collapsed])}
                         style={{
                             borderRight: 0,
                             backgroundColor: "#237486",
                         }}
-                        defaultOpenKeys={collapsed ? [] : ["location-management"]}
+                        defaultOpenKeys={collapsed ? [] : getOpenKeysFromPath(location.pathname)}
                         inlineCollapsed={collapsed}
                     />
                 </div>
