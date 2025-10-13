@@ -77,12 +77,7 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.StocktakingLocations, opt => opt.Ignore());
 
             // Map Area
-            CreateMap<Area, AreaDto.AreaResponseDto>()
-                .ForMember(dest => dest.TemperatureMin, opt => opt.MapFrom(src => src.StorageCondition.TemperatureMin))
-                .ForMember(dest => dest.TemperatureMax, opt => opt.MapFrom(src => src.StorageCondition.TemperatureMax))
-                .ForMember(dest => dest.HumidityMin, opt => opt.MapFrom(src => src.StorageCondition.HumidityMin))
-                .ForMember(dest => dest.HumidityMax, opt => opt.MapFrom(src => src.StorageCondition.HumidityMax))
-                .ForMember(dest => dest.LightLevel, opt => opt.MapFrom(src => src.StorageCondition.LightLevel));
+            CreateMap<Area, AreaDto.AreaResponseDto>();
             CreateMap<Area, AreaDto.AreaNameDto>();
             CreateMap<AreaDto.AreaCreateDto, Area>()
                 .ForMember(dest => dest.AreaId, opt => opt.Ignore())
