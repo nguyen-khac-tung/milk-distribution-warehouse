@@ -7,14 +7,12 @@ namespace MilkDistributionWarehouse.Repositories
 {
     public interface IUserRepository
     {
-        public User? GetUserById(int userId);
-
-        public User? GetUserByEmail(string email);
-
-        public void UpdateUser(User user);
+        Task<User?> GetUserById(int? userId);
+        Task<User?> GetUserByEmail(string email);
+        Task<string> UpdateUser(User user);
     }
 
-    public class UserRepository: IUserRepository
+    public class UserRepository : IUserRepository
     {
         private readonly WarehouseContext _context;
 
@@ -23,26 +21,35 @@ namespace MilkDistributionWarehouse.Repositories
             _context = context;
         }
 
-        public User? GetUserByEmail(string email)
+        public async Task<User?> GetUserByEmail(string email)
         {
-            if(email.IsNullOrEmpty()) return null;
-            return _context.Users
+            if (email.IsNullOrEmpty()) return null;
+            return await _context.Users
                 .Include(u => u.Roles)
                 .Where(u => u.Email == email && u.Status != CommonStatus.Deleted)
-                .FirstOrDefault();
+                .FirstOrDefaultAsync();
         }
 
-        public User? GetUserById(int userId)
+        public async Task<User?> GetUserById(int? userId)
         {
-            return _context.Users
+            return await _context.Users
+                .Include(u => u.Roles)
                 .Where(u => u.UserId == userId && u.Status != CommonStatus.Deleted)
-                .FirstOrDefault();
+                .FirstOrDefaultAsync();
         }
 
-        public void UpdateUser(User user)
+        public async Task<string> UpdateUser(User user)
         {
-            _context.Users.Update(user);
-            _context.SaveChanges();
+            try
+            {
+                _context.Users.Update(user);
+                await _context.SaveChangesAsync();
+                return "";
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
         }
     }
 }
