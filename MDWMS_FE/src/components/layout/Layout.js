@@ -32,7 +32,7 @@ const AdminLayout = ({ children }) => {
     };
 
     return (
-        <div style={{ minHeight: "100vh", background: "#f8fafc", display: "flex", position: "relative" }}>
+        <div style={{ minHeight: "100vh", background: "#ffffff", display: "flex", position: "relative" }}>
             <Sidebar collapsed={sidebarCollapsed} isMobile={isMobile} />
 
             {isMobile && !sidebarCollapsed && (
@@ -69,7 +69,7 @@ const AdminLayout = ({ children }) => {
                         paddingTop: 16,
                         transition: 'padding 0.3s ease-in-out',
                         minHeight: 'calc(100vh - 64px)',
-                        backgroundColor: "#f8fafc",
+                        backgroundColor: "#ffffff",
                         flex: 1,
                         overflow: "auto"
                     }}

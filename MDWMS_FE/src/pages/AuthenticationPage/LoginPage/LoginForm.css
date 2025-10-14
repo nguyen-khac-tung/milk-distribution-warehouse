@@ -1,7 +1,7 @@
 /* CSS Variables for Login Page Theme */
 :root {
   /* Updated theme with warm orange (#FE9F43) as primary */
-  --background: oklch(0.98 0.005 85);
+  --background: #ffffff;
   --foreground: oklch(0.25 0.01 240);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.25 0.01 240);

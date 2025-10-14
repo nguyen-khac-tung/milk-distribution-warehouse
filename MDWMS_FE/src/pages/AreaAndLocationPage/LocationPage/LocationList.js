@@ -294,7 +294,7 @@ const LocationList = () => {
 
 
     return (
-        <div style={{ minHeight: "100vh", background: "linear-gradient(to bottom right, #f8fafc, #e2e8f0)", padding: "24px" }}>
+        <div style={{ minHeight: "100vh", background: "#ffffff", padding: "24px" }}>
             <div style={{ maxWidth: "1280px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "24px" }}>
                 {/* Header */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -446,7 +446,7 @@ const LocationList = () => {
                                                 <TableRow
                                                     key={location.locationId}
                                                     style={{
-                                                        backgroundColor: index % 2 === 0 ? "white" : "#f8fafc",
+                                                        backgroundColor: "white",
                                                         margin: 0,
                                                         width: "100%"
                                                     }}

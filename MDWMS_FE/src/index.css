@@ -51,22 +51,43 @@ code {
   box-sizing: border-box;
 }
 
-/* Menu item hover effects - Updated to match JavaScript logic */
+/* Menu item hover effects - Optimized for performance */
 .menu-item {
   transition: all 0.2s ease-in-out;
   color: #000000;
+  background-color: transparent;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.menu-item:not(.active) {
+  background-color: transparent !important;
+  color: #000000 !important;
+}
+
+.menu-item:not(.active) .anticon {
+  color: #000000 !important;
+}
+
+.menu-item:not(.active) svg {
+  color: #000000 !important;
 }
 
 .menu-item .anticon {
   color: #000000;
 }
 
-.menu-item:hover {
+.menu-item:hover:not(.active) {
   background-color: #fef3c7 !important;
   color: #d97706 !important;
 }
 
-.menu-item:hover .anticon {
+.menu-item:hover:not(.active) .anticon {
+  color: #d97706 !important;
+}
+
+.menu-item:hover:not(.active) svg {
   color: #d97706 !important;
 }
 
@@ -80,22 +101,43 @@ code {
   color: #d97706 !important;
 }
 
-/* Submenu item hover effects - Updated to match JavaScript logic */
+/* Submenu item hover effects - Optimized for performance */
 .submenu-item {
   transition: all 0.2s ease-in-out;
   color: #000000;
+  background-color: transparent;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.submenu-item:not(.active) {
+  background-color: transparent !important;
+  color: #000000 !important;
+}
+
+.submenu-item:not(.active) .anticon {
+  color: #000000 !important;
+}
+
+.submenu-item:not(.active) svg {
+  color: #000000 !important;
 }
 
 .submenu-item .anticon {
   color: #000000;
 }
 
-.submenu-item:hover {
+.submenu-item:hover:not(.active) {
   background-color: #fef3c7 !important;
   color: #d97706 !important;
 }
 
-.submenu-item:hover .anticon {
+.submenu-item:hover:not(.active) .anticon {
+  color: #d97706 !important;
+}
+
+.submenu-item:hover:not(.active) svg {
   color: #d97706 !important;
 }
 

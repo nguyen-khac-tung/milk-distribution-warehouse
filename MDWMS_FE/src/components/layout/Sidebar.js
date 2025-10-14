@@ -158,27 +158,10 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
                             backgroundColor: isActive ? '#fef3c7' : 'transparent',
                             borderRadius: '8px',
                             transition: 'all 0.2s ease',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
                         }}
-                        onMouseEnter={(e) => {
-                            if (!isActive) {
-                                e.target.style.backgroundColor = '#fef3c7';
-                                e.target.style.color = '#d97706';
-                                const icon = e.target.querySelector('svg');
-                                if (icon) icon.style.color = '#d97706';
-                                const arrow = e.target.querySelector('.anticon');
-                                if (arrow) arrow.style.color = '#d97706';
-                            }
-                        }}
-                        onMouseLeave={(e) => {
-                            if (!isActive) {
-                                e.target.style.backgroundColor = 'transparent';
-                                e.target.style.color = '#000000';
-                                const icon = e.target.querySelector('svg');
-                                if (icon) icon.style.color = '#000000';
-                                const arrow = e.target.querySelector('.anticon');
-                                if (arrow) arrow.style.color = '#000000';
-                            }
-                        }}
+                        /* Hover effects handled by CSS for better performance */
                     >
                         <div style={{ marginRight: 12, display: 'flex', alignItems: 'center' }}>
                             {React.cloneElement(item.icon, {
@@ -188,7 +171,13 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
                         </div>
                         {!collapsed && (
                             <>
-                                <span style={{ flex: 1, fontWeight: 500 }}>{item.label}</span>
+                                <span style={{ 
+                                    flex: 1, 
+                                    fontWeight: 500,
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis'
+                                }}>{item.label}</span>
                                 {isOpen ? <DownOutlined style={{ fontSize: 12, color: isActive ? '#d97706' : '#000000' }} /> : <RightOutlined style={{ fontSize: 12, color: isActive ? '#d97706' : '#000000' }} />}
                             </>
                         )}
@@ -214,23 +203,10 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
                                                 color: isChildActive ? '#d97706' : '#000000',
                                                 backgroundColor: 'transparent',
                                                 transition: 'all 0.2s ease',
+                                                whiteSpace: 'nowrap',
+                                                overflow: 'hidden',
                                             }}
-                                            onMouseEnter={(e) => {
-                                                if (!isChildActive) {
-                                                    e.target.style.backgroundColor = '#fef3c7';
-                                                    e.target.style.color = '#d97706';
-                                                    const icon = e.target.querySelector('svg');
-                                                    if (icon) icon.style.color = '#d97706';
-                                                }
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                if (!isChildActive) {
-                                                    e.target.style.backgroundColor = 'transparent';
-                                                    e.target.style.color = '#000000';
-                                                    const icon = e.target.querySelector('svg');
-                                                    if (icon) icon.style.color = '#000000';
-                                                }
-                                            }}
+                                            /* Hover effects handled by CSS for better performance */
                                         >
                                             <div style={{ marginRight: 8, display: 'flex', alignItems: 'center' }}>
                                                 {React.cloneElement(child.icon, {
@@ -238,7 +214,12 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
                                                     size: 14
                                                 })}
                                             </div>
-                                            <span style={{ fontWeight: 400 }}>{child.label}</span>
+                                            <span style={{ 
+                                                fontWeight: 400,
+                                                whiteSpace: 'nowrap',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis'
+                                            }}>{child.label}</span>
                                         </div>
                                     </Link>
                                 );
@@ -263,23 +244,10 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
                         backgroundColor: isActive ? '#fef3c7' : 'transparent',
                         borderRadius: '8px',
                         transition: 'all 0.2s ease',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
                     }}
-                    onMouseEnter={(e) => {
-                        if (!isActive) {
-                            e.target.style.backgroundColor = '#fef3c7';
-                            e.target.style.color = '#d97706';
-                            const icon = e.target.querySelector('svg');
-                            if (icon) icon.style.color = '#d97706';
-                        }
-                    }}
-                    onMouseLeave={(e) => {
-                        if (!isActive) {
-                            e.target.style.backgroundColor = 'transparent';
-                            e.target.style.color = '#000000';
-                            const icon = e.target.querySelector('svg');
-                            if (icon) icon.style.color = '#000000';
-                        }
-                    }}
+                    /* Hover effects handled by CSS for better performance */
                 >
                     <div style={{ marginRight: 12, display: 'flex', alignItems: 'center' }}>
                         {React.cloneElement(item.icon, {
@@ -288,7 +256,12 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
                         })}
                     </div>
                     {!collapsed && (
-                        <span style={{ fontWeight: 500 }}>{item.label}</span>
+                        <span style={{ 
+                            fontWeight: 500,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                        }}>{item.label}</span>
                     )}
                 </div>
             </Link>
