@@ -15,6 +15,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public int Status { get; set; }
             public DateTime? CreatedAt { get; set; }
             public DateTime? UpdateAt { get; set; }
+            public StorageConditionDto.StorageConditionResponseDto StorageCondition { get; set; }
         }
 
         public class AreaCreateDto
