@@ -35,9 +35,8 @@ namespace MilkDistributionWarehouse.Repositories
 
         public async Task<Area?> GetAreaById(int areaId)
         {
-            return await _context.Areas
+            return await _context.Areas.Include(a => a.StorageCondition)
                 .Where(a => a.AreaId == areaId && a.Status != CommonStatus.Deleted)
-                .Include(a => a.StorageCondition)
                 .AsNoTracking()
                 .FirstOrDefaultAsync();
         }

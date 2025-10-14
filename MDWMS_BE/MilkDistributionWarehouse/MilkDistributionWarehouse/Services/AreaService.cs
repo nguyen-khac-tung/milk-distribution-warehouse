@@ -46,7 +46,11 @@ namespace MilkDistributionWarehouse.Services
 
         public async Task<(string, AreaDto.AreaDetailDto)> GetAreaById(int areaId)
         {
+            if (areaId <= 0)
+                return ("Mã khu vực không hợp lệ.".ToMessageForUser(), new AreaDto.AreaDetailDto());
+
             var area = await _areaRepository.GetAreaById(areaId);
+
             if (area == null)
                 return ("Không tìm thấy khu vực.".ToMessageForUser(), new AreaDto.AreaDetailDto());
 

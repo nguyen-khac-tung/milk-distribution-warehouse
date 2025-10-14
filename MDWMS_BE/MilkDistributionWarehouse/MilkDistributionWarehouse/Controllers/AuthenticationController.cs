@@ -18,55 +18,55 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("Login")]
-        public IActionResult DoLogin(LoginDto loginDto)
+        public async Task<IActionResult> DoLogin(LoginDto loginDto)
         {
-            string msg = _iAuthService.Dologin(loginDto, out AuthenticationDto authen);
+            var (msg, authen) = await _iAuthService.Dologin(loginDto);
             if(msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
             
             return ApiResponse<AuthenticationDto>.ToResultOk(authen);
         }
 
         [HttpPost("RefreshToken")]
-        public IActionResult GetNewJwtToken(RefreshTokenDto refreshTokenDto)
+        public async Task<IActionResult> GetNewJwtToken(RefreshTokenDto refreshTokenDto)
         {
-            string msg = _iAuthService.GetNewJwtToken(refreshTokenDto, out JwtTokenDto jwtDto);
+            var (msg, jwtDto) = await _iAuthService.GetNewJwtToken(refreshTokenDto);
             if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
 
             return ApiResponse<JwtTokenDto>.ToResultOk(jwtDto);
         }
 
         [HttpPost("ForgotPassword")]
-        public IActionResult ForgotPassword(ForgotPasswordDto forgotPasswordDto)
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordDto forgotPasswordDto)
         {
-            string msg = _iAuthService.RequestForgotPassword(forgotPasswordDto.Email);
+            string msg = await _iAuthService.RequestForgotPassword(forgotPasswordDto.Email);
             if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
 
             return ApiResponse<string>.ToResultOkMessage("Mã OTP đã được gửi thành công!");
         }
 
         [HttpPost("VerifyOtp")]
-        public IActionResult VerifyOtp(VerifyOtpDto verifyOtpDto)
+        public async Task<IActionResult> VerifyOtp(VerifyOtpDto verifyOtpDto)
         {
-            string msg = _iAuthService.VerifyForgotPasswordOtp(verifyOtpDto);
+            string msg = await _iAuthService.VerifyForgotPasswordOtp(verifyOtpDto);
             if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
 
             return ApiResponse<string>.ToResultOkMessage("Xác minh OTP thành công!");
         }
 
         [HttpPost("ResetPassword")]
-        public IActionResult ResetPassword(ResetPasswordDto resetPasswordDto)
+        public async Task<IActionResult> ResetPassword(ResetPasswordDto resetPasswordDto)
         {
-            string msg = _iAuthService.ResetPassword(resetPasswordDto, out AuthenticationDto authenDto);
+            var (msg, authenDto) = await _iAuthService.ResetPassword(resetPasswordDto);
             if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
 
             return ApiResponse<AuthenticationDto>.ToResultOk(authenDto, "Đặt lại mật khẩu thành công.");
         }
 
-        [HttpGet("Logout")]
-        public IActionResult DoLogout()
+        [HttpPost("Logout")]
+        public async Task<IActionResult> DoLogout()
         {
-            string msg = _iAuthService.DoLogout(User.GetUserId());
-            if(msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+            string msg = await _iAuthService.DoLogout(User.GetUserId());
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
 
             return ApiResponse<string>.ToResultOkMessage();
         }

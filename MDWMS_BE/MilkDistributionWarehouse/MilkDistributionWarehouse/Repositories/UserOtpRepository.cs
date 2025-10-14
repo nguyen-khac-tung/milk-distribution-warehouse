@@ -1,11 +1,13 @@
-﻿using MilkDistributionWarehouse.Models.Entities;
+﻿using Microsoft.EntityFrameworkCore;
+using MilkDistributionWarehouse.Models.Entities;
 
 namespace MilkDistributionWarehouse.Repositories
 {
-    public interface IUserOtpRepository {
-        public UserOtp? GetUserOtpByEmail(string email);
-        public void CreateUserOtp(UserOtp userOtp);
-        public void UpdateUserOtp(UserOtp userOtp);
+    public interface IUserOtpRepository
+    {
+        Task<UserOtp?> GetUserOtpByEmail(string email);
+        Task<string> CreateUserOtp(UserOtp userOtp);
+        Task<string> UpdateUserOtp(UserOtp userOtp);
     }
 
 
@@ -18,21 +20,37 @@ namespace MilkDistributionWarehouse.Repositories
             _context = context;
         }
 
-        public UserOtp? GetUserOtpByEmail(string email)
+        public async Task<UserOtp?> GetUserOtpByEmail(string email)
         {
-            return _context.UserOtps.Where(u => u.Email == email).FirstOrDefault();
+            return await _context.UserOtps.Where(u => u.Email == email).FirstOrDefaultAsync();
         }
 
-        public void CreateUserOtp(UserOtp userOtp)
+        public async Task<string> CreateUserOtp(UserOtp userOtp)
         {
-            _context.UserOtps.Add(userOtp);
-            _context.SaveChanges();
+            try
+            {
+                await _context.UserOtps.AddAsync(userOtp);
+                await _context.SaveChangesAsync();
+                return "";
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
         }
 
-        public void UpdateUserOtp(UserOtp userOtp)
+        public async Task<string> UpdateUserOtp(UserOtp userOtp)
         {
-            _context.UserOtps.Update(userOtp);
-            _context.SaveChanges();
+            try
+            {
+                _context.UserOtps.Update(userOtp);
+                await _context.SaveChangesAsync();
+                return "";
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
         }
     }
 }

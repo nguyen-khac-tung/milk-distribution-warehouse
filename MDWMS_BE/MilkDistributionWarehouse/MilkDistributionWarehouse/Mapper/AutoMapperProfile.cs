@@ -9,6 +9,10 @@ namespace MilkDistributionWarehouse.Mapper
     {
         public AutoMapperProfile()
         {
+            //Map User
+            CreateMap<User, UserDto>();
+            CreateMap<User, UserDetailDto>();
+
             // Map StorageCondition
             CreateMap<StorageCondition, StorageConditionDto.StorageConditionResponseDto>();
             CreateMap<StorageConditionDto.StorageConditionRequestDto, StorageCondition>()
@@ -78,6 +82,12 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.HumidityMin, opt => opt.MapFrom(src => src.StorageCondition.HumidityMin))
                 .ForMember(dest => dest.HumidityMax, opt => opt.MapFrom(src => src.StorageCondition.HumidityMax))
                 .ForMember(dest => dest.LightLevel, opt => opt.MapFrom(src => src.StorageCondition.LightLevel));
+            CreateMap<Area, AreaDto.AreaDetailDto>()
+                .ForMember(dest => dest.TemperatureMin, opt => opt.MapFrom(src => src.StorageCondition.TemperatureMin))
+                .ForMember(dest => dest.TemperatureMax, opt => opt.MapFrom(src => src.StorageCondition.TemperatureMax))
+                .ForMember(dest => dest.HumidityMin, opt => opt.MapFrom(src => src.StorageCondition.HumidityMin))
+                .ForMember(dest => dest.HumidityMax, opt => opt.MapFrom(src => src.StorageCondition.HumidityMax))
+                .ForMember(dest => dest.LightLevel, opt => opt.MapFrom(src => src.StorageCondition.LightLevel));
 
             // Map Goods
             CreateMap<Good, GoodsDto>()
@@ -111,6 +121,7 @@ namespace MilkDistributionWarehouse.Mapper
             //Map Supplier
             CreateMap<Supplier, SupplierDto>();
             CreateMap<Supplier, SupplierDetail>();
+            CreateMap<Supplier, SupplierDropDown>();
             CreateMap<SupplierCreate, Supplier>()
                 .ForMember(dest => dest.SupplierId, opt => opt.Ignore())
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => CommonStatus.Active))
