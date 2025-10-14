@@ -6,6 +6,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
     {
         [Required(ErrorMessage = "Email không được để trống!")]
         [EmailAddress(ErrorMessage = "Email không hợp lệ!")]
+        [MaxLength(255, ErrorMessage = "Độ dài email không được vượt quá 255 ký tự.")]
         public string Email { get; set; }
 
         [Required(ErrorMessage = "Mật khẩu không được để trống!")]
@@ -16,15 +17,19 @@ namespace MilkDistributionWarehouse.Models.DTOs
     {
         [Required(ErrorMessage = "Email không được để trống!")]
         [EmailAddress(ErrorMessage = "Email không hợp lệ!")]
+        [MaxLength(255, ErrorMessage = "Độ dài email không được vượt quá 255 ký tự.")]
         public string Email { get; set; }
     }
 
     public class VerifyOtpDto
     {
-        [Required(ErrorMessage = "Email không được để trống!")]
+        [Required(ErrorMessage = "Email không được bỏ trống.")]
+        [EmailAddress(ErrorMessage = "Email không hợp lệ.")]
+        [MaxLength(255, ErrorMessage = "Độ dài email không được vượt quá 255 ký tự.")]
         public string Email { get; set; }
 
         [Required(ErrorMessage = "Otp không được để trống!")]
+        [MaxLength(255, ErrorMessage = "Độ dài OTP không được vượt quá 6 ký tự.")]
         public string OtpCode { get; set; }
     }
 

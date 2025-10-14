@@ -10,8 +10,23 @@ namespace MilkDistributionWarehouse.Mapper
         public AutoMapperProfile()
         {
             //Map User
-            CreateMap<User, UserDto>();
-            CreateMap<User, UserDetailDto>();
+            CreateMap<User, UserProfileDto>();
+            CreateMap<User, UserDto>()
+                .ForMember(dest => dest.Roles, opt => opt.MapFrom(src => src.Roles.Select(r => r.RoleName)));
+            CreateMap<User, UserDetailDto>()
+                .ForMember(dest => dest.Roles, opt => opt.MapFrom(src => src.Roles.Select(r => r.RoleName)));
+            CreateMap<UserCreateDto, User>()
+                .ForMember(dest => dest.UserId, opt => opt.Ignore())
+                .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.FullName.Trim()))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => CommonStatus.Active))
+                .ForMember(dest => dest.CreateAt, opt => opt.MapFrom(_ => DateTime.Now))
+                .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => (DateTime?)null));
+            CreateMap<UserUpdateDto, User>()
+                .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.FullName.Trim()))
+                .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => DateTime.Now));
+
+            //Map Role
+            CreateMap<Role, RoleDto>();
 
             // Map StorageCondition
             CreateMap<StorageCondition, StorageConditionDto.StorageConditionResponseDto>();

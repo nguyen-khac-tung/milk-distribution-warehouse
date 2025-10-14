@@ -1,5 +1,14 @@
 ﻿namespace MilkDistributionWarehouse.Models.DTOs
 {
+    public class PagedRequest
+    {
+        public int PageNumber { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
+        public string? Search { get; set; }
+        public string? SortField { get; set; }
+        public bool SortAscending { get; set; } = true;
+        public Dictionary<string, string>? Filters { get; set; }
+    }
 
     public class PageResult<T>
     {
@@ -17,16 +26,6 @@
         public int? Status { get; set; }
         public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 10;
-    }
-
-    public class PagedRequest
-    {
-        public int PageNumber { get; set; } = 1;
-        public int PageSize { get; set; } = 10;
-        public string? Search { get; set; }
-        public string? SortField { get; set; }
-        public bool SortAscending { get; set; } = true;
-        public Dictionary<string, string>? Filters { get; set; }
     }
 
 }

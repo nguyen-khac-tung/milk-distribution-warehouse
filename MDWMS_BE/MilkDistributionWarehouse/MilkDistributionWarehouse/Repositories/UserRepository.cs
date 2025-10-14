@@ -7,9 +7,11 @@ namespace MilkDistributionWarehouse.Repositories
 {
     public interface IUserRepository
     {
+        IQueryable<User> GetUsers();
         Task<User?> GetUserById(int? userId);
         Task<User?> GetUserByIdWithAssociations(int? userId);
         Task<User?> GetUserByEmail(string email);
+        Task<string> CreateUser(User user);
         Task<string> UpdateUser(User user);
 
     }
@@ -21,6 +23,15 @@ namespace MilkDistributionWarehouse.Repositories
         public UserRepository(WarehouseContext context)
         {
             _context = context;
+        }
+
+        public IQueryable<User> GetUsers()
+        {
+            return _context.Users
+                .Include(u => u.Roles)
+                .Where(u => u.Status != CommonStatus.Deleted)
+                .OrderByDescending(u => u.CreateAt)
+                .AsNoTracking();
         }
 
         public async Task<User?> GetUserByEmail(string email)
@@ -52,6 +63,20 @@ namespace MilkDistributionWarehouse.Repositories
                 .Include(u => u.StocktakingSheets)
                 .Where(u => u.UserId == userId && u.Status != CommonStatus.Deleted)
                 .FirstOrDefaultAsync();
+        }
+
+        public async Task<string> CreateUser(User user)
+        {
+            try
+            {
+                await _context.Users.AddAsync(user);
+                await _context.SaveChangesAsync();
+                return "";
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
         }
 
         public async Task<string> UpdateUser(User user)
