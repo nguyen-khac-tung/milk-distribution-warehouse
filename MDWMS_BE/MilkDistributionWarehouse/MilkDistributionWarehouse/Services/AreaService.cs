@@ -17,6 +17,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, AreaDto.AreaResponseDto)> UpdateArea(int areaId, AreaDto.AreaRequestDto dto);
         Task<(string, AreaDto.AreaResponseDto)> DeleteArea(int areaId);
         Task<(string, AreaDto.AreaResponseDto)> UpdateStatus(int areaId, int status);
+        Task<(string, List<AreaDto.AreaActiveDto>)> GetAreaDropdown();
     }
 
     public class AreaService : IAreaService
@@ -161,6 +162,15 @@ namespace MilkDistributionWarehouse.Services
             return ("", _mapper.Map<AreaDto.AreaResponseDto>(updated));
         }
 
+        public async Task<(string, List<AreaDto.AreaActiveDto>)> GetAreaDropdown()
+        {
+            var areas = await _areaRepository.GetActiveAreasAsync();
 
+            if (areas == null || !areas.Any())
+                return ("Không có khu vực nào đang hoạt động.".ToMessageForUser(), new List<AreaDto.AreaActiveDto>());
+
+            var areaDtos = _mapper.Map<List<AreaDto.AreaActiveDto>>(areas);
+            return ("", areaDtos);
+        }
     }
 }

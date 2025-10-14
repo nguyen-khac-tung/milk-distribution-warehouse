@@ -25,6 +25,15 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<PageResult<AreaDto.AreaResponseDto>>.ToResultOk(areas);
         }
 
+        [HttpGet("GetAreaDropdown")]
+        public async Task<IActionResult> GetAreaDropdown()
+        {
+            var (msg, areas) = await _areaService.GetAreaDropdown();
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<List<AreaDto.AreaActiveDto>>.ToResultOk(areas);
+        }
+
         [HttpGet("AreaDetail/{id}")]
         public async Task<IActionResult> GetArea(int id)
         {

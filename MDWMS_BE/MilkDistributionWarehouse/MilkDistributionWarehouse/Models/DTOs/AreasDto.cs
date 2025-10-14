@@ -57,5 +57,11 @@ namespace MilkDistributionWarehouse.Models.DTOs
         {
             public string AreaName { get; set; }
         }
+
+        public class AreaActiveDto
+        {
+            public int AreaId { get; set; }
+            public string AreaName { get; set; }
+        }
     }
 }

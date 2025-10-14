@@ -68,6 +68,7 @@ namespace MilkDistributionWarehouse.Mapper
             // Map Area
             CreateMap<Area, AreaDto.AreaResponseDto>();
             CreateMap<Area, AreaDto.AreaNameDto>();
+            CreateMap<Area, AreaDto.AreaActiveDto>();
             CreateMap<AreaDto.AreaRequestDto, Area>()
                 .ForMember(dest => dest.AreaId, opt => opt.Ignore())
                 .ForMember(dest => dest.Status, opt => opt.Ignore())
