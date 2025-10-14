@@ -147,7 +147,7 @@ export default function UpdateLocationModal({ isOpen, onClose, onSuccess, locati
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -163,17 +163,18 @@ export default function UpdateLocationModal({ isOpen, onClose, onSuccess, locati
         {/* Content */}
         <div className="p-6">
           <form className="space-y-6" onSubmit={handleSubmit}>
-            {/* Row 1: Area & Location Code */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Form Fields - 1 column layout */}
+            <div className="space-y-4">
+              {/* Area */}
               <div className="space-y-2">
                 <Label htmlFor="areaId" className="text-sm font-medium text-slate-700">
-                  Khu vực *
+                  Khu vực <span className="text-red-500">*</span>
                 </Label>
                 <select
                   id="areaId"
                   value={formData.areaId}
                   onChange={(e) => setFormData({ ...formData, areaId: e.target.value })}
-                  className="h-12 w-full px-3 py-2 border border-slate-300 rounded-md focus:border-[#237486] focus:ring-[#237486] focus:outline-none bg-white"
+                  className="h-8 w-full px-3 py-1 border border-slate-300 rounded-lg focus:border-orange-500 focus:ring-orange-500 focus:outline-none bg-white text-sm flex items-center"
                   required
                 >
                   <option value="">Chọn khu vực...</option>
@@ -189,113 +190,110 @@ export default function UpdateLocationModal({ isOpen, onClose, onSuccess, locati
                 </select>
               </div>
 
+              {/* Location Code */}
               <div className="space-y-2">
                 <Label htmlFor="locationCode" className="text-sm font-medium text-slate-700">
-                  Mã vị trí *
+                  Mã vị trí <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="locationCode"
-                  placeholder="VD: A1-01"
+                  placeholder="Nhập mã vị trí..."
                   value={formData.locationCode}
                   onChange={(e) => setFormData({ ...formData, locationCode: e.target.value })}
-                  className="h-12 border-slate-300 focus:border-[#237486] focus:ring-[#237486]"
+                  className="h-8 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                   maxLength={20}
                   required
                 />
               </div>
-            </div>
 
-            {/* Row 2: Rack, Row, Column */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Rack */}
               <div className="space-y-2">
                 <Label htmlFor="rack" className="text-sm font-medium text-slate-700">
-                  Kệ *
+                  Kệ <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="rack"
-                  placeholder="VD: Kệ A1"
+                  placeholder="Nhập tên kệ..."
                   value={formData.rack}
                   onChange={(e) => setFormData({ ...formData, rack: e.target.value })}
-                  className="h-12 border-slate-300 focus:border-[#237486] focus:ring-[#237486]"
+                  className="h-8 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                   maxLength={50}
                   required
                 />
               </div>
 
+              {/* Row */}
               <div className="space-y-2">
                 <Label htmlFor="row" className="text-sm font-medium text-slate-700">
-                  Hàng *
+                  Hàng <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="row"
                   type="number"
                   min="1"
-                  placeholder="VD: 1"
+                  placeholder="Nhập số hàng..."
                   value={formData.row}
                   onChange={(e) => setFormData({ ...formData, row: e.target.value })}
-                  className="h-12 border-slate-300 focus:border-[#237486] focus:ring-[#237486]"
+                  className="h-8 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                   required
                 />
               </div>
 
+              {/* Column */}
               <div className="space-y-2">
                 <Label htmlFor="column" className="text-sm font-medium text-slate-700">
-                  Cột *
+                  Cột <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="column"
                   type="number"
                   min="1"
-                  placeholder="VD: 3"
+                  placeholder="Nhập số cột..."
                   value={formData.column}
                   onChange={(e) => setFormData({ ...formData, column: e.target.value })}
-                  className="h-12 border-slate-300 focus:border-[#237486] focus:ring-[#237486]"
+                  className="h-8 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                   required
                 />
               </div>
             </div>
 
-            {/* Row 3: Status & Availability */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="status" className="text-sm font-medium text-slate-700">
-                  Trạng thái hoạt động *
-                </Label>
-                <select
-                  id="status"
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: parseInt(e.target.value) })}
-                  className="h-12 w-full px-3 py-2 border border-slate-300 rounded-md focus:border-[#237486] focus:ring-[#237486] focus:outline-none bg-white"
-                  required
-                >
-                  <option value={1}>Hoạt động</option>
-                  <option value={2}>Ngừng hoạt động</option>
-                </select>
-              </div>
+            {/* Status & Availability - Full width */}
+            <div className="space-y-2">
+              <Label htmlFor="status" className="text-sm font-medium text-slate-700">
+                Trạng thái <span className="text-red-500">*</span>
+              </Label>
+              <select
+                id="status"
+                value={formData.status || 1}
+                onChange={(e) => setFormData({ ...formData, status: parseInt(e.target.value) })}
+                className="h-8 w-full px-3 py-1 border border-slate-300 rounded-lg focus:border-orange-500 focus:ring-orange-500 focus:outline-none bg-white text-sm flex items-center"
+              >
+                <option value={1} className="text-sm">Hoạt động</option>
+                <option value={2} className="text-sm">Ngừng hoạt động</option>
+              </select>
+            </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="isAvailable" className="text-sm font-medium text-slate-700">
-                  Tình trạng sử dụng *
-                </Label>
-                <select
-                  id="isAvailable"
-                  value={formData.isAvailable.toString()}
-                  onChange={(e) => setFormData({ ...formData, isAvailable: e.target.value === "true" })}
-                  className="h-12 w-full px-3 py-2 border border-slate-300 rounded-md focus:border-[#237486] focus:ring-[#237486] focus:outline-none bg-white"
-                  required
-                >
-                  <option value="true">Trống</option>
-                  <option value="false">Đang sử dụng</option>
-                </select>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="isAvailable" className="text-sm font-medium text-slate-700">
+                Tình trạng sử dụng <span className="text-red-500">*</span>
+              </Label>
+              <select
+                id="isAvailable"
+                value={formData.isAvailable.toString()}
+                onChange={(e) => setFormData({ ...formData, isAvailable: e.target.value === "true" })}
+                className="h-8 w-full px-3 py-1 border border-slate-300 rounded-lg focus:border-orange-500 focus:ring-orange-500 focus:outline-none bg-white text-sm flex items-center"
+              >
+                <option value="true" className="text-sm">Trống</option>
+                <option value="false" className="text-sm">Đang sử dụng</option>
+              </select>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-4 justify-center pt-6">
+            <div className="flex gap-4 justify-end pt-6">
               <Button
                 type="button"
                 variant="outline"
-                className="w-40 h-12 border-2 border-slate-300 bg-white text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
+                className="h-8 px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
                 onClick={handleReset}
               >
                 Hủy
@@ -303,7 +301,7 @@ export default function UpdateLocationModal({ isOpen, onClose, onSuccess, locati
               <Button
                 type="submit"
                 disabled={loading || loadingData}
-                className="w-40 h-12 bg-[#237486] hover:bg-[#1e5f6b] text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                className="h-8 px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
               >
                 {loading ? "Đang cập nhật..." : loadingData ? "Đang tải..." : "Cập nhật"}
               </Button>

@@ -3,8 +3,7 @@ import { Button } from "antd";
 import { getAreas, deleteArea, getAreaDetail } from "../../../services/AreaServices";
 import { Edit, Trash2, ChevronDown, Plus, Eye } from "lucide-react";
 import DeleteModal from "../../../components/Common/DeleteModal";
-import SearchBar from "../../../components/Common/SearchBar";
-import FilterDropdown from "../../../components/Common/FilterDropdown";
+import SearchFilterToggle from "../../../components/Common/SearchFilterToggle";
 import Pagination from "../../../components/Common/Pagination";
 import Loading from "../../../components/Common/Loading";
 import CreateAreaModal from "./CreateAreaModal";
@@ -13,6 +12,7 @@ import { Card, CardContent } from "../../../components/ui/card";
 import { Table as CustomTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
 import { extractErrorMessage } from "../../../utils/Validation";
 import { ModalAreaDetail } from "./ViewAreaModal";
+import StatsCards from "../../../components/Common/StatsCards";
 
 const AreaLists = () => {
     const [areas, setAreas] = useState([]);
@@ -39,13 +39,15 @@ const AreaLists = () => {
     const [updateAreaId, setUpdateAreaId] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("");
+    const [showStatusFilter, setShowStatusFilter] = useState(false);
     const [sortField, setSortField] = useState("");
     const [sortAscending, setSortAscending] = useState(true);
     const searchQueryRef = useRef("");
     const [areaDetail, setAreaDetail] = useState(null);
     const [showViewModal, setShowViewModal] = useState(false);
     const [itemToView, setItemToView] = useState(null);
-    const [loadingDetail, setLoadingDetail] = useState(false)
+    const [loadingDetail, setLoadingDetail] = useState(false);
+    const [showPageSizeFilter, setShowPageSizeFilter] = useState(false);
 
     // Fetch total stats (không filter)
     const fetchTotalStats = async () => {
@@ -112,6 +114,23 @@ const AreaLists = () => {
         fetchAreas(pagination.current, pagination.pageSize);
         fetchTotalStats(); // Load tổng stats
     }, []);
+
+    // Close filters when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (showStatusFilter && !event.target.closest('.status-filter-dropdown')) {
+                setShowStatusFilter(false);
+            }
+            if (showPageSizeFilter && !event.target.closest('.page-size-filter-dropdown')) {
+                setShowPageSizeFilter(false);
+            }
+        }
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        }
+    }, [showStatusFilter, showPageSizeFilter]);
 
     // Search input change handler
     const handleSearchInputChange = (e) => {
@@ -316,124 +335,99 @@ const AreaLists = () => {
     const { total: totalCount, active: activeCount, inactive: inactiveCount } = totalStats;
 
     return (
-        <div style={{ minHeight: "100vh", background: "#ffffff", padding: "24px" }}>
-            <div style={{ maxWidth: "1280px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "24px" }}>
+        <div className="min-h-screen bg-white">
+            <div className="max-w-7xl mx-auto space-y-6">
                 {/* Header */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div className="flex items-center justify-between">
                     <div>
-                        <h1 style={{ fontSize: "30px", fontWeight: "bold", color: "#0f172a", margin: 0 }}>Quản lý Khu vực</h1>
-                        <p style={{ color: "#64748b", margin: "4px 0 0 0" }}>Quản lý các khu vực lưu trữ trong hệ thống</p>
+                        <h1 className="text-2xl font-bold text-slate-600">Quản lý Khu vực</h1>
+                        <p className="text-slate-600 mt-1">Quản lý các khu vực lưu trữ trong hệ thống</p>
                     </div>
                     <Button
-                        style={{
-                            backgroundColor: "#237486",
-                            borderColor: "#237486",
-                            height: "44px",
-                            padding: "0 24px",
-                            color: "white",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px"
-                        }}
+                        className="bg-orange-500 hover:bg-orange-600 h-8 px-6 text-white"
                         onClick={handleOpenCreate}
                     >
-                        <Plus style={{ marginRight: "8px", height: "16px", width: "16px" }} />
+                        <Plus className="mr-2 h-4 w-4 text-white" />
                         Thêm khu vực
                     </Button>
                 </div>
 
                 {/* Stats Cards */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
-                    <Card style={{ borderLeft: "4px solid #237486" }}>
-                        <CardContent style={{ paddingTop: "24px" }}>
-                            <div style={{ fontSize: "14px", fontWeight: "500", color: "#64748b" }}>Tổng khu vực</div>
-                            <div style={{ fontSize: "30px", fontWeight: "bold", color: "#0f172a", marginTop: "8px" }}>{totalCount}</div>
-                        </CardContent>
-                    </Card>
-                    <Card style={{ borderLeft: "4px solid #237486" }}>
-                        <CardContent style={{ paddingTop: "24px" }}>
-                            <div style={{ fontSize: "14px", fontWeight: "500", color: "#64748b" }}>Hoạt động</div>
-                            <div style={{ fontSize: "30px", fontWeight: "bold", color: "#237486", marginTop: "8px" }}>{activeCount}</div>
-                        </CardContent>
-                    </Card>
-                    <Card style={{ borderLeft: "4px solid #237486" }}>
-                        <CardContent style={{ paddingTop: "24px" }}>
-                            <div style={{ fontSize: "14px", fontWeight: "500", color: "#64748b" }}>Ngừng hoạt động</div>
-                            <div style={{ fontSize: "30px", fontWeight: "bold", color: "#64748b", marginTop: "8px" }}>{inactiveCount}</div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Search Bar */}
-                <SearchBar
-                    placeholder="Tìm kiếm theo mã khu vực..."
-                    value={searchQuery}
-                    onChange={handleSearchInputChange}
+                <StatsCards
+                    totalCount={totalCount}
+                    activeCount={activeCount}
+                    inactiveCount={inactiveCount}
+                    totalLabel="Tổng khu vực"
+                    activeLabel="Hoạt động"
+                    inactiveLabel="Ngừng hoạt động"
                 />
 
-                {/* Areas Table */}
-                <Card style={{ boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)", overflow: "hidden", padding: 0 }}>
-                    <div style={{ width: "100%" }}>
+                {/* Search and Table Combined */}
+                <Card className="shadow-sm border border-slate-200 overflow-hidden">
+                    <SearchFilterToggle
+                        searchQuery={searchQuery}
+                        setSearchQuery={setSearchQuery}
+                        searchPlaceholder="Tìm kiếm theo mã khu vực..."
+                        statusFilter={statusFilter}
+                        setStatusFilter={setStatusFilter}
+                        showStatusFilter={showStatusFilter}
+                        setShowStatusFilter={setShowStatusFilter}
+                        statusOptions={[
+                            { value: "", label: "Tất cả trạng thái" },
+                            { value: "1", label: "Hoạt động" },
+                            { value: "2", label: "Ngừng hoạt động" }
+                        ]}
+                        onStatusFilter={handleStatusFilter}
+                        clearStatusFilter={clearStatusFilter}
+                        onClearAll={() => {
+                            setSearchQuery("");
+                            setStatusFilter("");
+                            setShowStatusFilter(false);
+                        }}
+                        searchWidth="w-80"
+                        showToggle={true}
+                        defaultOpen={true}
+                        showClearButton={true}
+                    />
+
+                    {/* Table */}
+                    <div className="w-full">
                         {loading ? (
                             <Loading size="large" text="Đang tải dữ liệu..." />
                         ) : searchLoading ? (
                             <Loading size="medium" text="Đang tìm kiếm..." />
                         ) : (
-                            <div style={{ overflowX: "auto" }}>
-                                <CustomTable style={{ width: "100%" }}>
+                            <div className="overflow-x-auto">
+                                <CustomTable className="w-full">
                                     <TableHeader>
-                                        <TableRow style={{ backgroundColor: "#237486", margin: 0, width: "100%" }}>
-                                            <TableHead style={{ fontWeight: "600", color: "white", padding: "12px 16px", border: 0, width: "80px" }}>
+                                        <TableRow className="bg-slate-50 hover:bg-slate-50 border-b border-slate-200">
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-16">
                                                 STT
                                             </TableHead>
-                                            <TableHead style={{ fontWeight: "600", color: "white", padding: "12px 16px", border: 0, width: "160px" }}>
-                                                <div style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", padding: "4px", margin: "-4px", borderRadius: "4px" }} onClick={() => handleSort("areaCode")}>
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                                <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("areaCode")}>
                                                     <span>Mã khu vực</span>
-                                                    <div style={{ display: "flex", flexDirection: "column" }}>
+                                                    <div className="flex flex-col">
                                                         <ChevronDown
-                                                            style={{
-                                                                height: "12px",
-                                                                width: "12px",
-                                                                color: sortField === "areaCode" && sortAscending ? "white" : "rgba(255,255,255,0.5)",
-                                                                transform: "translateY(1px)"
-                                                            }}
+                                                            className={`h-3 w-3 ${sortField === "areaCode" && sortAscending ? "text-orange-500" : "text-slate-400"}`}
                                                         />
                                                         <ChevronDown
-                                                            style={{
-                                                                height: "12px",
-                                                                width: "12px",
-                                                                color: sortField === "areaCode" && !sortAscending ? "white" : "rgba(255,255,255,0.5)",
-                                                                transform: "translateY(-1px) rotate(180deg)"
-                                                            }}
+                                                            className={`h-3 w-3 ${sortField === "areaCode" && !sortAscending ? "text-orange-500" : "text-slate-400"}`}
+                                                            style={{ transform: "rotate(180deg)" }}
                                                         />
                                                     </div>
                                                 </div>
                                             </TableHead>
-                                            <TableHead style={{ fontWeight: "600", color: "white", padding: "12px 16px", border: 0 }}>
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                                                 Tên khu vực
                                             </TableHead>
-                                            <TableHead style={{ fontWeight: "600", color: "white", padding: "12px 16px", border: 0 }}>
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                                                 Mô tả
                                             </TableHead>
-                                            <TableHead style={{ fontWeight: "600", color: "white", padding: "12px 16px", border: 0, width: "160px" }}>
-                                                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
-                                                    <span>Trạng thái</span>
-                                                    <FilterDropdown
-                                                        type="status"
-                                                        value={statusFilter}
-                                                        onFilterChange={handleStatusFilter}
-                                                        onClearFilter={clearStatusFilter}
-                                                        options={[
-                                                            { value: "1", label: "Hoạt động" },
-                                                            { value: "2", label: "Ngừng hoạt động" }
-                                                        ]}
-                                                        placeholder="Tất cả"
-                                                        className="status-filter-dropdown"
-                                                        title="Lọc theo trạng thái"
-                                                    />
-                                                </div>
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-48">
+                                                Trạng thái
                                             </TableHead>
-                                            <TableHead style={{ fontWeight: "600", color: "white", padding: "12px 16px", border: 0, textAlign: "center" }}>
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
                                                 Hoạt động
                                             </TableHead>
                                         </TableRow>
@@ -443,73 +437,55 @@ const AreaLists = () => {
                                             areas.map((area, index) => (
                                                 <TableRow
                                                     key={area.areaId}
-                                                    style={{
-                                                        backgroundColor: "white",
-                                                        margin: 0,
-                                                        width: "100%"
-                                                    }}
+                                                    className="bg-white hover:bg-slate-50 transition-colors duration-150 border-b border-slate-100"
                                                 >
-                                                    <TableCell style={{ color: "#64748b", padding: "12px 16px", border: 0, width: "80px", textAlign: "center", fontWeight: "500" }}>
-                                                        {(pagination.current - 1) * pagination.pageSize + index + 1}
+                                                    <TableCell className="text-slate-600 px-6 py-3 text-left font-medium">
+                                                        {index + 1}
                                                     </TableCell>
-                                                    <TableCell style={{ fontWeight: "500", color: "#0f172a", padding: "12px 16px", border: 0, width: "160px" }}>
+                                                    <TableCell className="font-medium text-slate-900 px-6 py-3 text-left">
                                                         {area?.areaCode || ''}
                                                     </TableCell>
-                                                    <TableCell style={{ color: "#374151", padding: "12px 16px", border: 0 }}>
+                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">
                                                         {area?.areaName || "—"}
                                                     </TableCell>
-                                                    <TableCell style={{ color: "#374151", padding: "12px 16px", border: 0 }}>
-                                                        {area?.description?.length > 30 ? area.description.slice(0, 30) + "..." : area?.description || "—"}
+                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">
+                                                        {area?.description || "—"}
                                                     </TableCell>
-                                                    <TableCell style={{ color: "#374151", padding: "12px 16px", border: 0, textAlign: "center" }}>
-                                                        <span style={{
-                                                            padding: "4px 8px",
-                                                            borderRadius: "9999px",
-                                                            fontSize: "12px",
-                                                            fontWeight: "500",
-                                                            backgroundColor:
-                                                                area?.status === 1
-                                                                    ? "#dcfce7"
-                                                                    : area?.status === 2
-                                                                        ? "#fee2e2"
-                                                                        : "#fee2e2",
-
-                                                            color:
-                                                                area?.status === 1
-                                                                    ? "#166534"
-                                                                    : area?.status === 2
-                                                                        ? "#b91c1c"
-                                                                        : "#b91c1c",
-
-                                                        }}>
-                                                            {area?.status === 1 ? 'Hoạt động' : area?.status === 2 ? 'Ngừng hoạt động' : 'Đã xóa'}
+                                                    <TableCell className="px-6 py-3 text-center">
+                                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${area?.status === 1
+                                                            ? 'bg-green-100 text-green-800'
+                                                            : 'bg-red-100 text-red-800'
+                                                            }`}>
+                                                            <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${area?.status === 1 ? 'bg-green-400' : 'bg-red-400'
+                                                                }`}></span>
+                                                            {area?.status === 1 ? 'Hoạt động' : 'Ngừng hoạt động'}
                                                         </span>
                                                     </TableCell>
-                                                    <TableCell style={{ color: "#64748b", padding: "12px 16px", border: 0, textAlign: "center" }}>
-                                                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                                                    <TableCell className="px-6 py-3 text-center">
+                                                        <div className="flex items-center justify-center space-x-1">
                                                             <button
-                                                                className="p-1 hover:bg-slate-100 rounded transition-colors"
+                                                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                                                 title="Xem chi tiết"
                                                                 onClick={() => handleViewClick(area)}
                                                             >
-                                                                <Eye className="h-4 w-4 text-[#1a7b7b]" />
+                                                                <Eye className="h-4 w-4 text-[#d97706]" />
                                                             </button>
                                                             <button
-                                                                style={{ padding: "4px", background: "none", border: "none", cursor: "pointer", borderRadius: "4px" }}
+                                                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                                                 title="Chỉnh sửa"
                                                                 onClick={() => handleOpenEdit(area)}
                                                             >
-                                                                <Edit style={{ height: "16px", width: "16px", color: "#1a7b7b" }} />
+                                                                <Edit className="h-4 w-4 text-[#d97706]" />
                                                             </button>
                                                             <button
-                                                                style={{ padding: "4px", background: "none", border: "none", cursor: "pointer", borderRadius: "4px" }}
+                                                                className="p-1.5 hover:bg-red-50 rounded transition-colors"
                                                                 title="Xóa"
                                                                 onClick={() => {
                                                                     setItemToDelete(area);
                                                                     setShowDeleteModal(true);
                                                                 }}
                                                             >
-                                                                <Trash2 style={{ height: "16px", width: "16px", color: "#ef4444" }} />
+                                                                <Trash2 className="h-4 w-4 text-red-500" />
                                                             </button>
                                                         </div>
                                                     </TableCell>
@@ -517,7 +493,7 @@ const AreaLists = () => {
                                             ))
                                         ) : (
                                             <TableRow>
-                                                <TableCell colSpan={6} style={{ textAlign: "center", padding: "48px 0", color: "#64748b" }}>
+                                                <TableCell colSpan={6} className="text-center py-12 text-slate-500">
                                                     Không tìm thấy khu vực nào
                                                 </TableCell>
                                             </TableRow>
@@ -530,16 +506,83 @@ const AreaLists = () => {
                 </Card>
 
                 {/* Pagination */}
-                {!loading && !searchLoading && (
-                    <Pagination
-                        current={pagination.current}
-                        pageSize={pagination.pageSize}
-                        total={pagination.total}
-                        onPageChange={handlePageChange}
-                        onPageSizeChange={handlePageSizeChange}
-                        showPageSize={true}
-                        pageSizeOptions={[10, 20, 30, 40]}
-                    />
+                {!loading && !searchLoading && pagination.total > 0 && (
+                    <Card>
+                        <CardContent className="pt-6">
+                            <div className="flex items-center justify-between">
+                                <div className="text-sm text-slate-600">
+                                    Hiển thị {((pagination.current - 1) * pagination.pageSize) + 1} - {Math.min(pagination.current * pagination.pageSize, pagination.total)} trong tổng số {pagination.total} khu vực
+                                </div>
+
+                                <div className="flex items-center space-x-4">
+                                    <div className="flex items-center space-x-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-8"
+                                            onClick={() => {
+                                                if (pagination.current > 1) {
+                                                    handlePageChange(pagination.current - 1);
+                                                }
+                                            }}
+                                            disabled={pagination.current <= 1}
+                                        >
+                                            Trước
+                                        </Button>
+                                        <span className="text-sm text-slate-600">
+                                            Trang {pagination.current} / {Math.ceil(pagination.total / pagination.pageSize)}
+                                        </span>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-8"
+                                            onClick={() => {
+                                                if (pagination.current < Math.ceil(pagination.total / pagination.pageSize)) {
+                                                    handlePageChange(pagination.current + 1);
+                                                }
+                                            }}
+                                            disabled={pagination.current >= Math.ceil(pagination.total / pagination.pageSize)}
+                                        >
+                                            Sau
+                                        </Button>
+                                    </div>
+
+                                    {/* Page Size Selector */}
+                                    <div className="flex items-center space-x-2">
+                                        <span className="text-sm text-slate-600">Hiển thị:</span>
+                                        <div className="relative page-size-filter-dropdown">
+                                            <button
+                                                onClick={() => setShowPageSizeFilter(!showPageSizeFilter)}
+                                                className="flex items-center space-x-2 px-3 py-2 h-8 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                            >
+                                                <span>{pagination.pageSize}</span>
+                                                <ChevronDown className="h-4 w-4" />
+                                            </button>
+
+                                            {showPageSizeFilter && (
+                                                <div className="absolute bottom-full right-0 mb-1 w-20 bg-white rounded-md shadow-lg border z-10">
+                                                    <div className="py-1">
+                                                        {[10, 20, 30, 40].map((size) => (
+                                                            <button
+                                                                key={size}
+                                                                onClick={() => handlePageSizeChange(size)}
+                                                                className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 flex items-center justify-between ${pagination.pageSize === size ? 'bg-[#d97706] text-white' : 'text-slate-700'
+                                                                    }`}
+                                                            >
+                                                                {size}
+                                                                {pagination.pageSize === size && <span className="text-white">✓</span>}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <span className="text-sm text-slate-600">/ Trang</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
                 )}
             </div>
 
