@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { getUnitMeasure, deleteUnitMeasure, createUnitMeasure, updateUnitMeasure } from "../../services/UnitMeasureService";
+import { getUnitMeasure, deleteUnitMeasure, updateUnitMeasureStatus } from "../../services/UnitMeasureService";
 import { Card, CardContent } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
@@ -371,7 +371,7 @@ export default function UnitMeasuresPage() {
   const handleStatusChange = async (unitMeasureId, newStatus, unitMeasureName) => {
     try {
       // Update status via API
-      await updateUnitMeasure({
+      await updateUnitMeasureStatus({
         unitMeasureId: parseInt(unitMeasureId),
         status: newStatus
       })
