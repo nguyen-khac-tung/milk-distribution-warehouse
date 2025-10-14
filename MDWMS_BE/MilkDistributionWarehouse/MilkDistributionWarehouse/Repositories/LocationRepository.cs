@@ -13,7 +13,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> IsDuplicationByIdAndCode(int locationId, string locationCode);
         Task<Location?> UpdateLocation(Location entity);
         Task<bool> HasDependentPalletsOrStocktakingsAsync(int locationId);
-        Task<bool> IsDuplicateLocationAsync(string locationCode, int? row, int? column, int areaId, int? excludeId = null);
+        Task<bool> IsDuplicateLocationAsync(string rack, int? row, int? column, int areaId, int? excludeId = null);
     }
 
     public class LocationRepository : ILocationRepository
@@ -89,7 +89,7 @@ namespace MilkDistributionWarehouse.Repositories
                    await _context.StocktakingLocations.AnyAsync(sl => sl.LocationId == locationId && sl.Status != CommonStatus.Deleted);
         }
 
-        public async Task<bool> IsDuplicateLocationAsync(string locationCode, int? row, int? column, int areaId, int? excludeId = null)
+        public async Task<bool> IsDuplicateLocationAsync(string rack, int? row, int? column, int areaId, int? excludeId = null)
         {
             var query = _context.Locations
                 .Where(l => l.AreaId == areaId && l.Status != CommonStatus.Deleted);
@@ -98,7 +98,7 @@ namespace MilkDistributionWarehouse.Repositories
                 query = query.Where(l => l.LocationId != excludeId.Value);
 
             return await query.AnyAsync(l =>
-                l.LocationCode.ToLower().Trim() == locationCode.ToLower().Trim()
+                l.Rack.ToLower().Trim() == rack.ToLower().Trim()
                 || (l.Row == row && l.Column == column));
         }
     }
