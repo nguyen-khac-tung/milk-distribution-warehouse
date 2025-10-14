@@ -14,6 +14,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> IsDuplicationByIdAndCode(int areaId, string areaCode);
         Task<bool> HasDependentLocationsOrStocktakingsAsync(int areaId);
         Task<bool> VerifyStorageConditionUsage(int storageConditionId);
+        Task<List<Area>> GetActiveAreasAsync();
     }
 
     public class AreaRepository : IAreaRepository
@@ -96,6 +97,13 @@ namespace MilkDistributionWarehouse.Repositories
                 a.StorageConditionId == storageConditionId &&
                 a.Status != CommonStatus.Deleted);
         }
-
+        public async Task<List<Area>> GetActiveAreasAsync()
+        {
+            return await _context.Areas
+                .Where(a => a.Status == CommonStatus.Active)
+                .OrderBy(a => a.AreaName)
+                .AsNoTracking()
+                .ToListAsync();
+        }
     }
 }
