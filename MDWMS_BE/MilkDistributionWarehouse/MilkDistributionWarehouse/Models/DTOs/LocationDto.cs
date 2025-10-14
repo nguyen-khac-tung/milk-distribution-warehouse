@@ -37,10 +37,6 @@ namespace MilkDistributionWarehouse.Models.DTOs
             [Range(1, int.MaxValue, ErrorMessage = "Khu vực không hợp lệ!")]
             public int AreaId { get; set; }
 
-            [Required(ErrorMessage = "Mã vị trí không được để trống")]
-            [StringLength(50, MinimumLength = 2, ErrorMessage = "Mã vị trí phải từ 2 đến 50 ký tự!")]
-            public string LocationCode { get; set; }
-
             [Required(ErrorMessage = "Rack không được để trống")]
             [StringLength(20, ErrorMessage = "Rack không được vượt quá 20 ký tự!")]
             public string Rack { get; set; }
