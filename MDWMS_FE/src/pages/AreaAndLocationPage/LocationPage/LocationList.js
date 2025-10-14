@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Button, Space, Tag, Form, message } from "antd";
-import { getLocations, createLocation, updateLocation, deleteLocation } from "../../../services/LocationServices";
+import { Button } from "antd";
+import { getLocations, deleteLocation } from "../../../services/LocationServices";
 import { getAreas } from "../../../services/AreaServices";
 import { Edit, Trash2, ChevronDown, Plus } from "lucide-react";
 import DeleteModal from "../../../components/Common/DeleteModal";
@@ -16,9 +16,7 @@ import { extractErrorMessage } from "../../../utils/Validation";
 
 const LocationList = () => {
     const [locations, setLocations] = useState([]);
-    const [areas, setAreas] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [form] = Form.useForm();
     const [pagination, setPagination] = useState({
         current: 1,
         pageSize: 10,
@@ -31,6 +29,7 @@ const LocationList = () => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showUpdateModal, setShowUpdateModal] = useState(false);
     const [editingLocation, setEditingLocation] = useState(null);
+    const [updateLocationId, setUpdateLocationId] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("");
     const [statusTypeFilter, setStatusTypeFilter] = useState("");
@@ -70,7 +69,7 @@ const LocationList = () => {
             setPagination({ current: page, pageSize, total });
         } catch (err) {
             console.log("Không thể tải danh sách vị trí!", err);
-            message.error("Không thể tải danh sách vị trí!");
+            window.showToast("Không thể tải danh sách vị trí!", "error");
         } finally {
             setLoading(false);
         }
@@ -117,18 +116,6 @@ const LocationList = () => {
         fetchLocations(1, 10);
         // Also fetch global stats once on mount
         fetchStats();
-    }, []);
-
-    useEffect(() => {
-        const fetchAreas = async () => {
-            try {
-                const data = await getAreas();
-                setAreas(data.items || []);
-            } catch {
-                message.error("Không thể tải danh sách khu vực!");
-            }
-        };
-        fetchAreas();
     }, []);
 
     // Callback khi filter thay đổi
@@ -234,8 +221,6 @@ const LocationList = () => {
 
     // Open modal for create
     const handleOpenCreate = () => {
-        form.resetFields();
-        form.setFieldsValue({ status: 1, isAvailable: true });
         setShowCreateModal(true);
     };
 
@@ -243,105 +228,43 @@ const LocationList = () => {
     const handleOpenEdit = (record) => {
         console.log("Editing record:", record);
         setEditingLocation(record);
-        const selectedArea = areas.find(a => a.areaId === record.areaId);
-
-        form.setFieldsValue({
-            areaId: selectedArea?.areaId,
-            locationCode: record.locationCode,
-            rack: record.rack,
-            row: record.row,
-            column: record.column,
-            isAvailable: record.isAvailable,
-            status: record.status,
-        });
+        setUpdateLocationId(record.locationId);
         setShowUpdateModal(true);
     };
 
-    // Submit create
-    const handleCreateSubmit = async () => {
-        try {
-            const values = await form.validateFields();
-            console.log("Form values:", values);
-
-            const payload = {
-                AreaId: Number(values.areaId),
-                LocationCode: values.locationCode,
-                Rack: values.rack,
-                Row: values.row,
-                Column: values.column,
-                IsAvailable: true,
-                Status: 1,
-            };
-
-            console.log("Sending create request:", payload);
-
-            await createLocation(payload);
-            window.showToast(
-                `Đã tạo vị trí mới: ${payload.LocationCode || ''}`,
-                "success"
-            );
-
-            setShowCreateModal(false);
-            fetchLocations(pagination.current, pagination.pageSize, {
-                search: searchQuery,
-                filters: {
-                    isAvailable: statusFilter ? statusFilter === "true" : undefined,
-                    status: statusTypeFilter ? Number(statusTypeFilter) : undefined
-                }
-            });
-            // refresh global stats
-            fetchStats();
-        } catch (error) {
-            console.error("Error creating location:", error);
-            const cleanMsg = extractErrorMessage(error);
-
-            window.showToast(cleanMsg, "error");
-            message.error("Có lỗi xảy ra, vui lòng thử lại!");
-        }
+    // Handle create success
+    const handleCreateSuccess = () => {
+        setShowCreateModal(false);
+        fetchLocations(pagination.current, pagination.pageSize, {
+            search: searchQuery,
+            filters: {
+                isAvailable: statusFilter ? statusFilter === "true" : undefined,
+                status: statusTypeFilter ? Number(statusTypeFilter) : undefined
+            }
+        });
+        fetchStats(); // Cập nhật tổng stats
     };
 
-    // Submit update
-    const handleUpdateSubmit = async () => {
-        try {
-            const values = await form.validateFields();
-            console.log("Form values:", values);
+    // Handle update success
+    const handleUpdateSuccess = () => {
+        setShowUpdateModal(false);
+        setEditingLocation(null);
+        setUpdateLocationId(null);
+        fetchLocations(pagination.current, pagination.pageSize, {
+            search: searchQuery,
+            filters: {
+                isAvailable: statusFilter ? statusFilter === "true" : undefined,
+                status: statusTypeFilter ? Number(statusTypeFilter) : undefined
+            }
+        });
+        fetchStats(); // Cập nhật tổng stats
+    };
 
-            const payload = {
-                LocationId: editingLocation?.locationId,
-                AreaId: Number(values.areaId),
-                LocationCode: values.locationCode,
-                Rack: values.rack,
-                Row: values.row,
-                Column: values.column,
-                IsAvailable: values.isAvailable,
-                Status: Number(values.status),
-            };
-
-            console.log("Sending update request:", payload);
-
-            await updateLocation(payload);
-            window.showToast(
-                `Đã cập nhật vị trí: ${payload.LocationCode || ''}`,
-                "success"
-            );
-
-            setShowUpdateModal(false);
-            fetchLocations(pagination.current, pagination.pageSize, {
-                search: searchQuery,
-                filters: {
-                    isAvailable: statusFilter ? statusFilter === "true" : undefined,
-                    status: statusTypeFilter ? Number(statusTypeFilter) : undefined
-                }
-            });
-            // refresh global stats
-            fetchStats();
-        } catch (error) {
-            console.error("Error updating location:", error);
-            const cleanMsg = extractErrorMessage(error);
-
-            window.showToast(cleanMsg, "error");
-            message.error("Có lỗi xảy ra, vui lòng thử lại!");
-        }
+    // Handle update cancel
+    const handleUpdateCancel = () => {
+        setShowUpdateModal(false);
+        setEditingLocation(null);
+        setUpdateLocationId(null);
     };
 
     //Delete location
@@ -365,76 +288,6 @@ const LocationList = () => {
         }
     };
 
-    const columns = [
-        {
-            title: "STT",
-            key: "index",
-            width: 80,
-            align: "center",
-            render: (_, __, index) =>
-                (pagination.current - 1) * pagination.pageSize + index + 1,
-        },
-        {
-            title: "Mã vị trí",
-            dataIndex: "locationCode",
-            sorter: (a, b) => a.locationCode.localeCompare(b.locationCode),
-            render: (code) => <strong>{code}</strong>,
-        },
-        {
-            title: "Khu vực",
-            render: (_, record) => record?.areaNameDto?.areaName || "—",
-        },
-        { title: "Kệ", dataIndex: "rack" },
-        { title: "Hàng", dataIndex: "row" },
-        { title: "Cột", dataIndex: "column" },
-        {
-            title: "Tình trạng",
-            dataIndex: "isAvailable",
-            filters: [
-                { text: "Trống", value: true },
-                { text: "Đang sử dụng", value: false },
-            ],
-
-            onFilter: (value, record) => record.isAvailable === value,
-            render: (v) => (
-                <Tag color={v ? "green" : "red"}>{v ? "Trống" : "Đang sử dụng"}</Tag>
-            ),
-        },
-        {
-            title: "Trạng thái",
-            dataIndex: "status",
-            filters: [
-                { text: "Hoạt động", value: 1 },
-                { text: "Không hoạt động", value: 2 },
-            ],
-            onFilter: (value, record) => record.status === value,
-            render: (status) => {
-                const map = { 1: "Hoạt động", 2: "Không hoạt động", };
-                const color = status === 1 ? "green" : status === 2 ? "orange" : "red";
-                return <Tag color={color}>{map[status]}</Tag>;
-            },
-        },
-        {
-            title: "Hoạt động",
-            render: (_, record) => (
-                <Space>
-                    <Button type="link" onClick={() => handleOpenEdit(record)}>
-                        <Edit className="h-4 w-4 text-[#1a7b7b]" />
-                    </Button>
-                    <Button
-                        type="link"
-                        danger
-                        onClick={() => {
-                            setItemToDelete(record);
-                            setShowDeleteModal(true);
-                        }}
-                    >
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
-                </Space>
-            ),
-        },
-    ];
 
     return (
         <div style={{ minHeight: "100vh", background: "linear-gradient(to bottom right, #f8fafc, #e2e8f0)", padding: "24px" }}>
@@ -689,22 +542,18 @@ const LocationList = () => {
 
             {/* Create Location Modal */}
             <CreateLocationModal
-                isVisible={showCreateModal}
-                onCancel={() => setShowCreateModal(false)}
-                onSubmit={handleCreateSubmit}
-                form={form}
-                areas={areas}
-                loading={loading}
+                isOpen={showCreateModal}
+                onClose={() => setShowCreateModal(false)}
+                onSuccess={handleCreateSuccess}
             />
 
             {/* Update Location Modal */}
             <UpdateLocationModal
-                isVisible={showUpdateModal}
-                onCancel={() => setShowUpdateModal(false)}
-                onSubmit={handleUpdateSubmit}
-                form={form}
-                areas={areas}
-                loading={loading}
+                isOpen={showUpdateModal}
+                onClose={handleUpdateCancel}
+                onSuccess={handleUpdateSuccess}
+                locationId={updateLocationId}
+                locationData={editingLocation}
             />
 
             {/* Delete Confirmation Modal */}
