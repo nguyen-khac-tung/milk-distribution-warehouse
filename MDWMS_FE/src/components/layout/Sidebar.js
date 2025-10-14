@@ -15,6 +15,7 @@ import {
 } from "@ant-design/icons";
 import { Link, useLocation } from "react-router-dom";
 import { ComponentIcon } from "../../components/IconComponent/Icon";
+import Logo from "../../components/IconComponent/Logo";
 
 const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
     const location = useLocation();
@@ -303,47 +304,23 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
                 zIndex: 99,
             }}>
                 {!collapsed && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{ 
-                            width: 24, 
-                            height: 24, 
-                            background: "linear-gradient(45deg, #f59e0b, #d97706)",
-                            borderRadius: "4px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center"
-                        }}>
-                            <div style={{ 
-                                width: 8, 
-                                height: 8, 
-                                background: "white", 
-                                borderRadius: "50%",
-                                margin: "1px"
-                            }}></div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <Logo size={32} />
+                        <div>
+                            <div style={{ fontWeight: 700, fontSize: 16, color: "#1f2937", lineHeight: 1.2 }}>
+                                Kho Phân Phối Sữa
+                            </div>
                         </div>
-                        <span style={{ fontWeight: 700, fontSize: 18, color: "#1f2937" }}>
-                            Kho Phân Phối Sữa
-                        </span>
                     </div>
                 )}
                 {collapsed && (
                     <div style={{ 
-                        width: 24, 
-                        height: 24, 
-                        background: "linear-gradient(45deg, #f59e0b, #d97706)",
-                        borderRadius: "4px",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                         margin: "0 auto"
                     }}>
-                        <div style={{ 
-                            width: 8, 
-                            height: 8, 
-                            background: "white", 
-                            borderRadius: "50%",
-                            margin: "1px"
-                        }}></div>
+                        <Logo size={28} />
                     </div>
                 )}
             </div>

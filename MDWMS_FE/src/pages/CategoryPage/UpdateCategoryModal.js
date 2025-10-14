@@ -143,7 +143,7 @@ export default function UpdateCategory({ isOpen, onClose, onSuccess, categoryDat
             {/* Status - Full width */}
             <div className="space-y-2">
               <Label htmlFor="status" className="text-sm font-medium text-slate-700">
-                Trạng thái *
+                Trạng thái <span className="text-red-500">*</span>
               </Label>
               <select
                 id="status"
