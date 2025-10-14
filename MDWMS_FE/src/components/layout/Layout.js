@@ -50,9 +50,9 @@ const AdminLayout = ({ children }) => {
                 />
             )}
 
-            <div style={{ 
-                flex: 1, 
-                display: "flex", 
+            <div style={{
+                flex: 1,
+                display: "flex",
                 flexDirection: "column",
                 marginLeft: isMobile ? 0 : (sidebarCollapsed ? 80 : 280),
                 transition: 'margin-left 0.3s ease-in-out',
