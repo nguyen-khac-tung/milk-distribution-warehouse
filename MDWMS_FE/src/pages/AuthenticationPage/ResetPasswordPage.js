@@ -103,7 +103,7 @@ const ResetPasswordPage = () => {
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
-                background: "#fcf7f8",
+                background: "linear-gradient(135deg, #FFF3E0, #fcf7f8)",
                 padding: 20,
             }}
         >
@@ -119,11 +119,12 @@ const ResetPasswordPage = () => {
             >
                 {!done ? (
                     <>
-                        <Title level={3} style={{ color: "#237486", marginBottom: 8 }}>
+                        <Title level={3} style={{ color: "#FE9F43", marginBottom: 8 }}>
                             Đặt lại mật khẩu
                         </Title>
                         <Text type="secondary">
-                            Nhập mật khẩu mới cho tài khoản {email || "của bạn"}.
+                            Nhập mật khẩu mới cho tài khoản{" "}
+                            <strong style={{ color: "#000" }}>{email || "của bạn"}</strong>.
                         </Text>
 
                         <Form
@@ -133,7 +134,12 @@ const ResetPasswordPage = () => {
                             style={{ marginTop: 24 }}
                         >
                             <Form.Item
-                                label="Mật khẩu mới"
+                                label={
+                                    <>
+                                        Mật khẩu mới <span style={{ color: "red" }}> *</span>
+                                    </>
+                                }
+                                required={false}
                                 name="newPassword"
                                 rules={[
                                     { required: true, message: "Vui lòng nhập mật khẩu mới!" },
@@ -188,7 +194,12 @@ const ResetPasswordPage = () => {
                             </div>
 
                             <Form.Item
-                                label="Xác nhận mật khẩu"
+                                label={
+                                    <>
+                                        Xác nhận mật khẩu <span style={{ color: "red" }}>*</span>
+                                    </>
+                                }
+                                required={false}
                                 name="confirmNewPassword"
                                 dependencies={["newPassword"]}
                                 rules={[
@@ -222,11 +233,11 @@ const ResetPasswordPage = () => {
                                     backgroundColor:
                                         passwordStrength.score < 5
                                             ? "#ccc"
-                                            : "#237486",
+                                            : "#FE9F43",
                                     borderColor:
                                         passwordStrength.score < 5
                                             ? "#ccc"
-                                            : "#237486",
+                                            : "#FE9F43",
                                     borderRadius: 8,
                                     fontWeight: 500,
                                 }}
@@ -252,7 +263,7 @@ const ResetPasswordPage = () => {
                         <CheckCircleOutlined
                             style={{ fontSize: 60, color: "#28a745", marginBottom: 16 }}
                         />
-                        <Title level={3} style={{ color: "#237486", marginBottom: 8 }}>
+                        <Title level={3} style={{ color: "#FE9F43", marginBottom: 8 }}>
                             Thành công!
                         </Title>
                         <Text type="secondary">

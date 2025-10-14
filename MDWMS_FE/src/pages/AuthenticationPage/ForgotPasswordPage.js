@@ -7,6 +7,7 @@ import {
 } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
 import { forgotPassword } from "../../services/AuthenticationServices";
+import { extractErrorMessage } from "../../utils/Validation";
 
 const { Title, Text } = Typography;
 
@@ -25,7 +26,6 @@ const ForgotPasswordPage = () => {
         }
     }, []);
 
-    // Đếm ngược tg
     useEffect(() => {
         if (timer > 0) {
             const countdown = setTimeout(() => setTimer(timer - 1), 1000);
@@ -42,24 +42,18 @@ const ForgotPasswordPage = () => {
         setLoading(true);
         try {
             const res = await forgotPassword(values.email);
-            const successMsg =
-                res?.message || "Đã gửi email khôi phục mật khẩu!";
+            const successMsg = res?.message || "Đã gửi email khôi phục mật khẩu!";
             window.showToast(successMsg);
             setEmailSent(true);
             setTimer(60);
-
-            // Lưu thời gian gửi email để chống spam
             localStorage.setItem("lastForgotTime", Date.now().toString());
 
             setTimeout(() => {
                 navigate("/verify-otp", { state: { email: values.email } });
             }, 1500);
         } catch (err) {
-            const errorMsg =
-                err?.response?.data?.message?.replace(/^\[.*?\]\s*/, "") ||
-                err?.message ||
-                "Có lỗi xảy ra, vui lòng thử lại!";
-            window.showToast(errorMsg, "error");
+            const errorMessage = extractErrorMessage(err, "Có lỗi xảy ra vui lòng thử lại!")
+            window.showToast(errorMessage, "error");
         } finally {
             setLoading(false);
         }
@@ -72,7 +66,7 @@ const ForgotPasswordPage = () => {
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
-                background: "#fcf7f8",
+                background: "linear-gradient(135deg, #FFF3E0, #fcf7f8)",
                 padding: 20,
             }}
         >
@@ -92,7 +86,7 @@ const ForgotPasswordPage = () => {
                         <Title
                             level={2}
                             style={{
-                                color: "#237486",
+                                color: "#FE9F43",
                                 marginBottom: 12,
                                 fontWeight: 700,
                             }}
@@ -107,8 +101,7 @@ const ForgotPasswordPage = () => {
                                 color: "#666",
                             }}
                         >
-                            Nhập địa chỉ email và chúng tôi sẽ gửi cho bạn liên
-                            kết để đặt lại mật khẩu.
+                            Nhập địa chỉ email và chúng tôi sẽ gửi cho bạn liên kết để đặt lại mật khẩu.
                         </Text>
 
                         <Form
@@ -118,7 +111,12 @@ const ForgotPasswordPage = () => {
                             style={{ marginTop: 36, textAlign: "left" }}
                         >
                             <Form.Item
-                                label={<strong>Email</strong>}
+                                label={
+                                    <strong>
+                                        Email <span style={{ color: "red" }}>*</span>
+                                    </strong>
+                                }
+                                required={false}
                                 name="email"
                                 rules={[
                                     { required: true, message: "Vui lòng nhập email!" },
@@ -128,7 +126,7 @@ const ForgotPasswordPage = () => {
                                 <Input
                                     prefix={
                                         <MailOutlined
-                                            style={{ color: "#237486" }}
+                                            style={{ color: "#FE9F43" }}
                                         />
                                     }
                                     placeholder="vd: example@gmail.com"
@@ -149,9 +147,9 @@ const ForgotPasswordPage = () => {
                                 style={{
                                     height: 48,
                                     backgroundColor:
-                                        timer > 0 ? "#cccccc" : "#237486",
+                                        timer > 0 ? "#cccccc" : "#FE9F43",
                                     borderColor:
-                                        timer > 0 ? "#cccccc" : "#237486",
+                                        timer > 0 ? "#cccccc" : "#FE9F43",
                                     borderRadius: 10,
                                     fontWeight: 600,
                                     fontSize: 16,
@@ -167,7 +165,6 @@ const ForgotPasswordPage = () => {
                             <Link
                                 to="/login"
                                 style={{
-                                    color: "#237486",
                                     fontSize: 15,
                                     display: "inline-flex",
                                     alignItems: "center",
@@ -183,13 +180,13 @@ const ForgotPasswordPage = () => {
                         <CheckCircleOutlined
                             style={{
                                 fontSize: 72,
-                                color: "#28a745",
+                                color: "#4CAF50",
                                 marginBottom: 20,
                             }}
                         />
                         <Title
                             level={2}
-                            style={{ color: "#237486", marginBottom: 12 }}
+                            style={{ color: "#FE9F43", marginBottom: 12 }}
                         >
                             Email đã được gửi!
                         </Title>
@@ -210,9 +207,9 @@ const ForgotPasswordPage = () => {
                             style={{
                                 marginTop: 28,
                                 backgroundColor:
-                                    timer > 0 ? "#ccc" : "#237486",
+                                    timer > 0 ? "#ccc" : "#FE9F43",
                                 borderColor:
-                                    timer > 0 ? "#ccc" : "#237486",
+                                    timer > 0 ? "#ccc" : "#FE9F43",
                                 borderRadius: 10,
                                 height: 48,
                                 fontSize: 16,
@@ -233,7 +230,7 @@ const ForgotPasswordPage = () => {
                             <Link
                                 to="/login"
                                 style={{
-                                    color: "#237486",
+                                    color: "#FE9F43",
                                     textDecoration: "none",
                                     fontWeight: 500,
                                     fontSize: 15,

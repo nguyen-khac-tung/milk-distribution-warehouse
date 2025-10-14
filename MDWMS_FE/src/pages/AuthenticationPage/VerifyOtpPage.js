@@ -3,6 +3,7 @@ import { Card, Typography, Button, Input, message } from "antd";
 import { ArrowLeftOutlined, ReloadOutlined } from "@ant-design/icons";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { verifyOtp, forgotPassword } from "../../services/AuthenticationServices";
+import { extractErrorMessage } from "../../utils/Validation";
 
 const { Title, Text } = Typography;
 
@@ -71,11 +72,8 @@ const VerifyOtpPage = () => {
                 navigate("/reset-password", { state: { email } });
             }, 1000);
         } catch (err) {
-            const errorMsg =
-                err?.response?.data?.message?.replace(/^\[.*?\]\s*/, "") ||
-                err?.message ||
-                "Mã OTP không hợp lệ!";
-            window.showToast(errorMsg);
+            const errorMessage = extractErrorMessage(err, "Mã OTP không hợp lệ hoặc đã hết hạn!")
+            window.showToast(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -89,13 +87,9 @@ const VerifyOtpPage = () => {
             setExpired(false);
             setOtp(["", "", "", "", "", ""]);
         } catch (err) {
-            const errorMsg =
-                err?.response?.data?.message?.replace(/^\[.*?\]\s*/, "") ||
-                err?.message ||
-                "Không thể gửi lại mã OTP!";
-            const cleanMsg = errorMsg.replace(/^\[[^\]]*\]\s*/, "")
+            const errorMessage = extractErrorMessage(err, "Có lỗi xảy ra vui lòng thử lại!")
 
-            window.showToast(cleanMsg, "error");
+            window.showToast(errorMessage, "error");
         }
     };
 
@@ -106,7 +100,7 @@ const VerifyOtpPage = () => {
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
-                background: "#fcf7f8",
+                background: "linear-gradient(135deg, #FFF3E0, #fcf7f8)",
                 padding: 20,
             }}
         >
@@ -120,7 +114,7 @@ const VerifyOtpPage = () => {
                     padding: "48px 40px",
                 }}
             >
-                <Title level={3} style={{ color: "#237486", marginBottom: 8 }}>
+                <Title level={3} style={{ color: "#FE9F43", marginBottom: 8 }}>
                     Nhập mã OTP
                 </Title>
                 <Text type="secondary">
@@ -161,7 +155,7 @@ const VerifyOtpPage = () => {
                 {!expired ? (
                     <Text type="secondary" style={{ fontSize: 15 }}>
                         Mã OTP sẽ hết hạn sau{" "}
-                        <span style={{ color: "#237486", fontWeight: 600 }}>
+                        <span style={{ color: "#FE9F43", fontWeight: 600 }}>
                             {formatTime(timeLeft)}
                         </span>
                     </Text>
@@ -179,8 +173,8 @@ const VerifyOtpPage = () => {
                     disabled={expired}
                     style={{
                         height: 42,
-                        backgroundColor: "#237486",
-                        borderColor: "#237486",
+                        backgroundColor: "#FE9F43",
+                        borderColor: "#FE9F43",
                         borderRadius: 8,
                         fontWeight: 500,
                         marginTop: 24,
@@ -198,8 +192,8 @@ const VerifyOtpPage = () => {
                             marginTop: 12,
                             height: 42,
                             borderRadius: 8,
-                            borderColor: "#237486",
-                            color: "#237486",
+                            borderColor: "#FE9F43",
+                            color: "#FE9F43",
                             fontWeight: 500,
                         }}
                     >

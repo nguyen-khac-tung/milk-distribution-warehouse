@@ -77,12 +77,12 @@ export function LoginForm() {
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
                     <Label htmlFor="email" className="text-sm font-medium text-foreground">
-                        Email
+                        Email <span style={{color: "red"}}>*</span>
                     </Label>
                     <Input
                         id="email"
                         type="email"
-                        placeholder="ban@vidu.com"
+                        placeholder="example@gmai.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
@@ -93,7 +93,7 @@ export function LoginForm() {
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
                         <Label htmlFor="password" className="text-sm font-medium text-foreground">
-                            Mật khẩu
+                            Mật khẩu <span style={{ color: "red" }}>*</span>
                         </Label>
                         <Link
                             to="/forgot-password"
