@@ -56,4 +56,16 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int RetailerId { get; set; }
         public int? Status { get; set; }
     }
+
+    public class RetailerDropDown
+    {
+        public int RetailerId { get; set; }
+        public string RetailerName { get; set; }
+    }
+
+    public class RetailerUpdateStatus
+    {
+        public int RetailerId { get; set; }
+        public int Status { get; set; }
+    }
 }

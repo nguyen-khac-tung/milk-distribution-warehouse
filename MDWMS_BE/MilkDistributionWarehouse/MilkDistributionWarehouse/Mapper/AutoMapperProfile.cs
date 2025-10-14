@@ -142,6 +142,7 @@ namespace MilkDistributionWarehouse.Mapper
             //Map Retailer
             CreateMap<Retailer, RetailerDto>();
             CreateMap<Retailer, RetailerDetail>();
+            CreateMap<Retailer, RetailerDropDown>();
             CreateMap<RetailerCreate, Retailer>()
                 .ForMember(dest => dest.RetailerId, opt => opt.Ignore())
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => CommonStatus.Active))

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Azure.Core;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Services;
@@ -27,6 +28,15 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<PageResult<RetailerDto>>.ToResultOk(retailers);
         }
 
+        [HttpGet("GetRetailerDropDown")]
+        public async Task<IActionResult> GetRetailerDropDown()
+        {
+            var (msg, retailers) = await _retailerSevice.GetRetailerDropDown();
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<List<RetailerDropDown>>.ToResultOk(retailers);
+        }
+
         [HttpGet("GetRetailerByRetailerId/{retailerId}")]
         public async Task<IActionResult> GetRetailerByRetailerId(int retailerId)
         {
@@ -52,6 +62,15 @@ namespace MilkDistributionWarehouse.Controllers
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<RetailerDetail>.ToResultOk(retailerDetail);
+        }
+
+        [HttpPut("UpdateStatus")]
+        public async Task<IActionResult> UpdateRetailerStatus(RetailerUpdateStatus update)
+        {
+            var (msg, retailerStatus) = await _retailerSevice.UpdateRetailerStatus(update);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<RetailerUpdateStatus>.ToResultOk(retailerStatus);
         }
 
         [HttpDelete("Delete/{retailerId}")]
