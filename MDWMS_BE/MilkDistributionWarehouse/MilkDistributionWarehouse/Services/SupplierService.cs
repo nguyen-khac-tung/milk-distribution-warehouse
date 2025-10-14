@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
@@ -8,6 +9,7 @@ using MilkDistributionWarehouse.Repositories;
 using MilkDistributionWarehouse.Utilities;
 using System.ComponentModel.Design;
 using System.Threading.Tasks;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace MilkDistributionWarehouse.Services
 {
@@ -18,6 +20,8 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, SupplierDetail)> CreateSupplier(SupplierCreate create);
         Task<(string, SupplierDetail)> UpdateSupplier(SupplierUpdate update);
         Task<(string, SupplierDetail)> DeleteSupplier(int supplierId);
+        Task<(string, SupplierUpdateStatusDto)> UpdateSupplierStatus(SupplierUpdateStatusDto update);
+        Task<(string, List<SupplierDropDown>)> GetSupplierDropDown();
     }
     public class SupplierService : ISupplierService
     {
@@ -48,6 +52,18 @@ namespace MilkDistributionWarehouse.Services
             return ("", items);
         }
 
+        public async Task<(string, List<SupplierDropDown>)> GetSupplierDropDown()
+        {
+            var query = await _supplierRepository.GetSuppliers()
+                .Where(s => s.Status == CommonStatus.Active)
+                .ToListAsync();
+
+            var supplierDropDown = _mapper.Map<List<SupplierDropDown>>(query);
+
+            if (!supplierDropDown.Any()) return ("Danh sách nhà cung cấp trống.".ToMessageForUser(), new List<SupplierDropDown>());
+            return ("", supplierDropDown);
+        }
+
         public async Task<(string, SupplierDetail)> GetSupplierBySupplierId(int supplierId)
         {
             if (supplierId <= 0)
@@ -58,7 +74,13 @@ namespace MilkDistributionWarehouse.Services
             if (supplier == null)
                 return ("Không tìm thấy nhà cung cấp.".ToMessageForUser(), new SupplierDetail());
 
-            return ("", _mapper.Map<SupplierDetail>(supplier));
+            var canUpdateAllFields = await _purchaseOrderRepository.IsAllPurchaseOrderDraftOrEmpty(supplierId);
+
+            var supplierDetail = _mapper.Map<SupplierDetail>(supplier);
+
+            supplierDetail.IsDisable = true ? !canUpdateAllFields : false; 
+
+            return ("", supplierDetail);
         }
 
         public async Task<(string, SupplierDetail)> CreateSupplier(SupplierCreate create)
@@ -97,16 +119,6 @@ namespace MilkDistributionWarehouse.Services
             if (!string.IsNullOrEmpty(validation))
                 return (("Cập nhật thất bại. " + validation.ToMessageForUser()), new SupplierDetail());
 
-            // Check chuyen trang thai Active => InActive
-            var changeStatus = supplierExist.Status == CommonStatus.Active && update.Status == CommonStatus.Inactive;
-
-            if (changeStatus)
-            {
-                var checkChangeStatus = await CheckChangeStatus(update.SupplierId);
-                if (!string.IsNullOrEmpty(checkChangeStatus))
-                    return (checkChangeStatus.ToMessageForUser(), new SupplierDetail());
-            }
-
             //Check update
             var canUpdateAllFields = await _purchaseOrderRepository.IsAllPurchaseOrderDraftOrEmpty(update.SupplierId);
 
@@ -125,7 +137,6 @@ namespace MilkDistributionWarehouse.Services
                 supplierExist.Email = update.Email;
                 supplierExist.Phone = update.Phone;
             }
-            supplierExist.Status = update.Status;
             supplierExist.UpdatedAt = DateTime.Now;
 
             var updateResult = await _supplierRepository.UpdateSupplier(supplierExist);
@@ -134,6 +145,33 @@ namespace MilkDistributionWarehouse.Services
                 return ("Cập nhật nhà cung cập thất bại".ToMessageForUser(), new SupplierDetail());
 
             return ("", _mapper.Map<SupplierDetail>(updateResult));
+        }
+
+        public async Task<(string, SupplierUpdateStatusDto)> UpdateSupplierStatus(SupplierUpdateStatusDto update)
+        {
+            if (update.SupplierId <= 0) return ("SupplierId is invalid.", new SupplierUpdateStatusDto());
+
+            var supplierExist = await _supplierRepository.GetSupplierBySupplierId(update.SupplierId);
+            if (supplierExist == null) return ("Supplier is not exist.", new SupplierUpdateStatusDto());
+
+            // Check chuyen trang thai Active => InActive
+            var changeStatus = supplierExist.Status == CommonStatus.Active && update.Status == CommonStatus.Inactive;
+
+            if (changeStatus)
+            {
+                var checkChangeStatus = await CheckChangeStatus(update.SupplierId);
+                if (!string.IsNullOrEmpty(checkChangeStatus))
+                    return (checkChangeStatus.ToMessageForUser(), new SupplierUpdateStatusDto());
+            }
+
+            supplierExist.Status = update.Status;
+            supplierExist.UpdatedAt = DateTime.Now;
+
+            var updateStatusResult = await _supplierRepository.UpdateSupplier(supplierExist);
+            if (updateStatusResult == null) 
+                return ("Cập nhật trạng thái nhà cung cấp thất bại.".ToMessageForUser(), new SupplierUpdateStatusDto());
+
+            return ("", update);
         }
 
         public async Task<(string, SupplierDetail)> DeleteSupplier(int supplierId)
