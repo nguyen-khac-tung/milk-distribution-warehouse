@@ -92,7 +92,7 @@ export default function UpdateCategory({ isOpen, onClose, onSuccess, categoryDat
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -107,39 +107,40 @@ export default function UpdateCategory({ isOpen, onClose, onSuccess, categoryDat
 
         {/* Content */}
         <div className="p-6">
-
           <form className="space-y-6" onSubmit={handleSubmit}>
-            {/* Category Name */}
-            <div className="space-y-2">
-              <Label htmlFor="categoryName" className="text-sm font-medium text-slate-700">
-                Tên danh mục *
-              </Label>
-              <Input
-                id="categoryName"
-                placeholder="Nhập tên danh mục..."
-                value={formData.categoryName}
-                onChange={(e) => setFormData({ ...formData, categoryName: e.target.value })}
-                className="h-12 border-slate-300 focus:border-[#237486] focus:ring-[#237486]"
-                required
-              />
+            {/* Form Fields - 1 column layout */}
+            <div className="space-y-4">
+              {/* Category Name */}
+              <div className="space-y-2">
+                <Label htmlFor="categoryName" className="text-sm font-medium text-slate-700">
+                  Tên danh mục <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="categoryName"
+                  placeholder="Nhập tên danh mục..."
+                  value={formData.categoryName}
+                  onChange={(e) => setFormData({ ...formData, categoryName: e.target.value })}
+                  className="h-8 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                  required
+                />
+              </div>
+
+              {/* Description */}
+              <div className="space-y-2">
+                <Label htmlFor="description" className="text-sm font-medium text-slate-700">
+                  Mô tả
+                </Label>
+                <Input
+                  id="description"
+                  placeholder="Nhập mô tả danh mục..."
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="h-8 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                />
+              </div>
             </div>
 
-            {/* Description */}
-            <div className="space-y-2">
-              <Label htmlFor="description" className="text-sm font-medium text-slate-700">
-                Mô tả *
-              </Label>
-              <Input
-                id="description"
-                placeholder="Nhập mô tả danh mục..."
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="h-12 border-slate-300 focus:border-[#237486] focus:ring-[#237486]"
-                required
-              />
-            </div>
-
-            {/* Status */}
+            {/* Status - Full width */}
             <div className="space-y-2">
               <Label htmlFor="status" className="text-sm font-medium text-slate-700">
                 Trạng thái *
@@ -148,19 +149,19 @@ export default function UpdateCategory({ isOpen, onClose, onSuccess, categoryDat
                 id="status"
                 value={formData.status || 1}
                 onChange={(e) => setFormData({ ...formData, status: parseInt(e.target.value) })}
-                className="h-12 w-full px-3 py-2 border border-slate-300 rounded-md focus:border-[#237486] focus:ring-[#237486] focus:outline-none bg-white"
+                className="h-8 w-full px-3 py-1 border border-slate-300 rounded-lg focus:border-orange-500 focus:ring-orange-500 focus:outline-none bg-white text-sm flex items-center"
               >
-                <option value={1}>Hoạt động</option>
-                <option value={2}>Ngừng hoạt động</option>
+                <option value={1} className="text-sm">Hoạt động</option>
+                <option value={2} className="text-sm">Ngừng hoạt động</option>
               </select>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-4 justify-center pt-6">
+            <div className="flex gap-4 justify-end pt-6">
               <Button
                 type="button"
                 variant="outline"
-                className="w-40 h-12 border-2 border-slate-300 bg-white text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
+                className="h-8 px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
                 onClick={handleReset}
               >
                 Hủy
@@ -168,7 +169,7 @@ export default function UpdateCategory({ isOpen, onClose, onSuccess, categoryDat
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-40 h-12 bg-[#237486] hover:bg-[#1e5f6b] text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                className="h-8 px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
               >
                 {loading ? "Đang cập nhật..." : "Cập nhật"}
               </Button>

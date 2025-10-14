@@ -18,7 +18,7 @@ export default function DeleteModal({ isOpen, onClose, onConfirm, itemName }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="w-full max-w-md mx-4 bg-white rounded-lg shadow-2xl">
         {/* Header */}
         <div className="p-6 text-center">
@@ -41,13 +41,13 @@ export default function DeleteModal({ isOpen, onClose, onConfirm, itemName }) {
         </div>
 
         {/* Footer */}
-        <div className="flex gap-3 p-6 pt-0">
+        <div className="flex gap-4 p-6 pt-0 justify-end">
           <Button
             type="button"
             variant="outline"
             onClick={onClose}
             disabled={loading}
-            className="flex-1 h-11 border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            className="h-8 px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
           >
             Hủy
           </Button>
@@ -55,7 +55,7 @@ export default function DeleteModal({ isOpen, onClose, onConfirm, itemName }) {
             type="button" 
             onClick={handleConfirm}
             disabled={loading}
-            className="flex-1 h-11 bg-red-500 hover:bg-red-600 text-white disabled:opacity-50"
+            className="h-8 px-6 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
           >
             {loading ? "Đang xóa..." : "Xóa"}
           </Button>

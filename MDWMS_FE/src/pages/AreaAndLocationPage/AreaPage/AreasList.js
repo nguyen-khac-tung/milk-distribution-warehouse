@@ -6,6 +6,7 @@ import DeleteModal from "../../../components/Common/DeleteModal";
 import SearchBar from "../../../components/Common/SearchBar";
 import FilterDropdown from "../../../components/Common/FilterDropdown";
 import Pagination from "../../../components/Common/Pagination";
+import Loading from "../../../components/Common/Loading";
 import CreateAreaModal from "./CreateAreaModal";
 import UpdateAreaModal from "./UpdateAreaModal";
 import { Card, CardContent } from "../../../components/ui/card";
@@ -16,6 +17,7 @@ import { ModalAreaDetail } from "./ViewAreaModal";
 const AreaLists = () => {
     const [areas, setAreas] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [searchLoading, setSearchLoading] = useState(false);
     const [pagination, setPagination] = useState({
         current: 1,
         pageSize: 10,
@@ -102,6 +104,7 @@ const AreaLists = () => {
             window.showToast("Không thể tải danh sách khu vực!", "error");
         } finally {
             setLoading(false);
+            setSearchLoading(false);
         }
     };
 
@@ -120,6 +123,7 @@ const AreaLists = () => {
     // Debounced search effect
     useEffect(() => {
         const timeoutId = setTimeout(() => {
+            setSearchLoading(true);
             fetchAreas(1, pagination.pageSize, {
                 search: searchQuery || "",
                 filters: {
@@ -135,6 +139,7 @@ const AreaLists = () => {
     // Filter handlers
     const handleStatusFilter = (status) => {
         setStatusFilter(status);
+        setSearchLoading(true);
         fetchAreas(1, pagination.pageSize, {
             search: searchQuery,
             filters: {
@@ -146,6 +151,7 @@ const AreaLists = () => {
 
     const clearStatusFilter = () => {
         setStatusFilter("");
+        setSearchLoading(true);
         fetchAreas(1, pagination.pageSize, {
             search: searchQuery,
             filters: {
@@ -369,9 +375,9 @@ const AreaLists = () => {
                 <Card style={{ boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)", overflow: "hidden", padding: 0 }}>
                     <div style={{ width: "100%" }}>
                         {loading ? (
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 0" }}>
-                                <div style={{ color: "#64748b" }}>Đang tải dữ liệu...</div>
-                            </div>
+                            <Loading size="large" text="Đang tải dữ liệu..." />
+                        ) : searchLoading ? (
+                            <Loading size="medium" text="Đang tìm kiếm..." />
                         ) : (
                             <div style={{ overflowX: "auto" }}>
                                 <CustomTable style={{ width: "100%" }}>
@@ -461,15 +467,27 @@ const AreaLists = () => {
                                                             borderRadius: "9999px",
                                                             fontSize: "12px",
                                                             fontWeight: "500",
-                                                            backgroundColor: area?.status === 1 ? "#dcfce7" : area?.status === 2 ? "#fef3c7" : "#fef2f2",
-                                                            color: area?.status === 1 ? "#166534" : area?.status === 2 ? "#d97706" : "#dc2626"
+                                                            backgroundColor:
+                                                                area?.status === 1
+                                                                    ? "#dcfce7"
+                                                                    : area?.status === 2
+                                                                        ? "#fee2e2"
+                                                                        : "#fee2e2",
+
+                                                            color:
+                                                                area?.status === 1
+                                                                    ? "#166534"
+                                                                    : area?.status === 2
+                                                                        ? "#b91c1c"
+                                                                        : "#b91c1c",
+
                                                         }}>
-                                                            {area?.status === 1 ? 'Hoạt động' : area?.status === 2 ? 'Không hoạt động' : 'Đã xóa'}
+                                                            {area?.status === 1 ? 'Hoạt động' : area?.status === 2 ? 'Ngừng hoạt động' : 'Đã xóa'}
                                                         </span>
                                                     </TableCell>
                                                     <TableCell style={{ color: "#64748b", padding: "12px 16px", border: 0, textAlign: "center" }}>
                                                         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
-                                                        <button
+                                                            <button
                                                                 className="p-1 hover:bg-slate-100 rounded transition-colors"
                                                                 title="Xem chi tiết"
                                                                 onClick={() => handleViewClick(area)}
@@ -512,7 +530,7 @@ const AreaLists = () => {
                 </Card>
 
                 {/* Pagination */}
-                {!loading && (
+                {!loading && !searchLoading && (
                     <Pagination
                         current={pagination.current}
                         pageSize={pagination.pageSize}
@@ -549,11 +567,23 @@ const AreaLists = () => {
             />
 
             {/* View Area Detail Modal */}
-            {showViewModal && areaDetail && (
-                <ModalAreaDetail
-                    area={areaDetail}
-                    onClose={handleViewClose}
-                />
+            {showViewModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                        {loadingDetail ? (
+                            <Loading size="large" text="Đang tải chi tiết khu vực..." />
+                        ) : areaDetail ? (
+                            <ModalAreaDetail
+                                area={areaDetail}
+                                onClose={handleViewClose}
+                            />
+                        ) : (
+                            <div className="flex items-center justify-center py-12">
+                                <div className="text-slate-600">Không có dữ liệu để hiển thị</div>
+                            </div>
+                        )}
+                    </div>
+                </div>
             )}
         </div>
     );

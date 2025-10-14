@@ -32,7 +32,7 @@ export const IconMap = [
   // có thể thêm nhiều icon khác ở đây
 ];
 
-export const ComponentIcon = ({ name, color = "white", size = 20, collapsed = false }) => {
+export const ComponentIcon = ({ name, color = "#000000", size = 20, collapsed = false }) => {
   const found = IconMap.find(item => item.keywords.includes(name));
   if (!found) return null;
 

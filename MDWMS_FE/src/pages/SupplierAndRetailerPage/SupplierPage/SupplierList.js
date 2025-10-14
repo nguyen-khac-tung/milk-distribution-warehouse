@@ -11,6 +11,7 @@ import UpdateSupplier from "./UpdateSupplierModal";
 import DeleteModal from "../../../components/Common/DeleteModal";
 import { StatusToggle } from "../../../components/Common/SwitchToggle/StatusToggle";
 import StatsCards from "../../../components/Common/StatsCards";
+import Loading from "../../../components/Common/Loading";
 import { extractErrorMessage } from "../../../utils/Validation";
 
 // Type definition for Supplier
@@ -32,6 +33,7 @@ export default function SuppliersPage() {
   const [sortAscending, setSortAscending] = useState(true)
   const [suppliers, setSuppliers] = useState([])
   const [loading, setLoading] = useState(true)
+  const [searchLoading, setSearchLoading] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showUpdateModal, setShowUpdateModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -117,6 +119,7 @@ export default function SuppliersPage() {
       setPagination(prev => ({ ...prev, totalCount: 0 }))
     } finally {
       setLoading(false)
+      setSearchLoading(false)
     }
   }
 
@@ -156,6 +159,7 @@ export default function SuppliersPage() {
   // Search with debounce
   useEffect(() => {
     const timeoutId = setTimeout(() => {
+      setSearchLoading(true)
       fetchData({
         pageNumber: 1,
         pageSize: pagination.pageSize,
@@ -172,6 +176,7 @@ export default function SuppliersPage() {
 
   // Filter by status
   useEffect(() => {
+    setSearchLoading(true)
     fetchData({
       pageNumber: 1,
       pageSize: pagination.pageSize,
@@ -185,6 +190,7 @@ export default function SuppliersPage() {
 
   // Sort when sortField or sortAscending changes
   useEffect(() => {
+    setSearchLoading(true)
     fetchData({
       pageNumber: 1,
       pageSize: pagination.pageSize,
@@ -405,9 +411,9 @@ export default function SuppliersPage() {
         <Card className="shadow-lg overflow-hidden p-0">
           <div className="w-full">
             {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-slate-600">Đang tải dữ liệu...</div>
-              </div>
+              <Loading size="large" text="Đang tải dữ liệu..." />
+            ) : searchLoading ? (
+              <Loading size="medium" text="Đang tìm kiếm..." />
             ) : (
               <div className="overflow-x-auto">
                 <Table className="w-full">
@@ -555,7 +561,7 @@ export default function SuppliersPage() {
         </Card>
 
         {/* Pagination */}
-        {!loading && pagination.totalCount > 0 && (
+        {!loading && !searchLoading && pagination.totalCount > 0 && (
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">

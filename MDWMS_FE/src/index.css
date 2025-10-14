@@ -35,25 +35,164 @@ code {
   animation: shimmer 2s infinite;
 }
 
-/* Ẩn thanh cuộn sidebar - overlay lên background */
+/* Sidebar styles */
 .sidebar-scroll {
   overflow-y: auto;
-  /* Ẩn thanh cuộn nhưng vẫn có thể cuộn */
   scrollbar-width: none;
-  /* Firefox */
   -ms-overflow-style: none;
-  /* IE and Edge */
 }
 
 .sidebar-scroll::-webkit-scrollbar {
   display: none;
-  /* Chrome, Safari, Opera */
 }
 
-/* Đảm bảo sidebar không bị thụt vào khi có thanh cuộn */
 .sidebar-container {
-  /* Giữ nguyên width cố định */
   width: 280px !important;
-  /* Không cho thanh cuộn ảnh hưởng đến layout */
   box-sizing: border-box;
+}
+
+/* Menu item hover effects - Updated to match JavaScript logic */
+.menu-item {
+  transition: all 0.2s ease-in-out;
+  color: #000000;
+}
+
+.menu-item .anticon {
+  color: #000000;
+}
+
+.menu-item:hover {
+  background-color: #fef3c7 !important;
+  color: #d97706 !important;
+}
+
+.menu-item:hover .anticon {
+  color: #d97706 !important;
+}
+
+.menu-item.active {
+  background-color: #fef3c7 !important;
+  color: #d97706 !important;
+  border-radius: 8px !important;
+}
+
+.menu-item.active .anticon {
+  color: #d97706 !important;
+}
+
+/* Submenu item hover effects - Updated to match JavaScript logic */
+.submenu-item {
+  transition: all 0.2s ease-in-out;
+  color: #000000;
+}
+
+.submenu-item .anticon {
+  color: #000000;
+}
+
+.submenu-item:hover {
+  background-color: #fef3c7 !important;
+  color: #d97706 !important;
+}
+
+.submenu-item:hover .anticon {
+  color: #d97706 !important;
+}
+
+.submenu-item.active {
+  background-color: transparent !important;
+  color: #d97706 !important;
+}
+
+.submenu-item.active .anticon {
+  color: #d97706 !important;
+}
+
+/* Custom scrollbar for main content */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Smooth transitions for layout changes */
+* {
+  transition: padding-left 0.3s ease-in-out, margin-left 0.3s ease-in-out;
+}
+
+/* Focus styles for accessibility */
+button:focus,
+input:focus,
+.menu-item:focus {
+  outline: 2px solid #f59e0b;
+  outline-offset: 2px;
+}
+
+/* Loading animation */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Trend line animation */
+@keyframes drawLine {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-draw {
+  animation: drawLine 3s ease-in-out forwards;
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.animate-pulse {
+  animation: pulse 2s ease-in-out infinite;
 }

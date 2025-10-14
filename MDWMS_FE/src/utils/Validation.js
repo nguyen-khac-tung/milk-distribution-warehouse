@@ -44,11 +44,11 @@ export const validateCategoryName = (categoryName) => {
  * @returns {Object} - { isValid: boolean, message: string }
  */
 export const validateCategoryForm = (formData) => {
-  // Kiểm tra các trường bắt buộc
-  if (!formData.categoryName?.trim() || !formData.description?.trim()) {
+  // Kiểm tra trường bắt buộc (chỉ tên danh mục)
+  if (!formData.categoryName?.trim()) {
     return {
       isValid: false,
-      message: "Vui lòng điền đầy đủ thông tin"
+      message: "Tên danh mục là bắt buộc"
     }
   }
   
