@@ -7,6 +7,7 @@ import DeleteModal from "../../../components/Common/DeleteModal";
 import SearchBar from "../../../components/Common/SearchBar";
 import FilterDropdown from "../../../components/Common/FilterDropdown";
 import Pagination from "../../../components/Common/Pagination";
+import Loading from "../../../components/Common/Loading";
 import CreateLocationModal from "./CreateLocationModal";
 import UpdateLocationModal from "./UpdateLocationModal";
 import { Card, CardContent } from "../../../components/ui/card";
@@ -17,6 +18,7 @@ import { extractErrorMessage } from "../../../utils/Validation";
 const LocationList = () => {
     const [locations, setLocations] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [searchLoading, setSearchLoading] = useState(false);
     const [pagination, setPagination] = useState({
         current: 1,
         pageSize: 10,
@@ -72,6 +74,7 @@ const LocationList = () => {
             window.showToast("Không thể tải danh sách vị trí!", "error");
         } finally {
             setLoading(false);
+            setSearchLoading(false);
         }
     };
 
@@ -120,6 +123,7 @@ const LocationList = () => {
 
     // Callback khi filter thay đổi
     const handleFilterChange = useCallback((params) => {
+        setSearchLoading(true);
         setPagination((p) => ({ ...p, current: 1 }));
         fetchLocations(1, pagination.pageSize, params);
     }, [pagination.pageSize]);
@@ -349,9 +353,9 @@ const LocationList = () => {
                 <Card style={{ boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)", overflow: "hidden", padding: 0 }}>
                     <div style={{ width: "100%" }}>
                         {loading ? (
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 0" }}>
-                                <div style={{ color: "#64748b" }}>Đang tải dữ liệu...</div>
-                            </div>
+                            <Loading size="large" text="Đang tải dữ liệu..." />
+                        ) : searchLoading ? (
+                            <Loading size="medium" text="Đang tìm kiếm..." />
                         ) : (
                             <div style={{ overflowX: "auto" }}>
                                 <CustomTable style={{ width: "100%" }}>
@@ -527,7 +531,7 @@ const LocationList = () => {
                 </Card>
 
                 {/* Pagination */}
-                {!loading && (
+                {!loading && !searchLoading && (
                     <Pagination
                         current={pagination.current}
                         pageSize={pagination.pageSize}

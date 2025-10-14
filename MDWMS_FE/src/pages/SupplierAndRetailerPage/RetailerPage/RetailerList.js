@@ -10,6 +10,7 @@ import DeleteModal from "../../../components/Common/DeleteModal";
 import CreateRetailer from "./CreateRetailerModal";
 import UpdateRetailerModal from "./UpdateRetailerModal";
 import StatsCards from "../../../components/Common/StatsCards";
+import Loading from "../../../components/Common/Loading";
 import { extractErrorMessage } from "../../../utils/Validation";
 
 // Type definition for Retailer
@@ -31,6 +32,7 @@ export default function RetailersPage() {
   const [sortAscending, setSortAscending] = useState(true)
   const [retailers, setRetailers] = useState([])
   const [loading, setLoading] = useState(true)
+  const [searchLoading, setSearchLoading] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showUpdateModal, setShowUpdateModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -119,6 +121,7 @@ export default function RetailersPage() {
       setPagination(prev => ({ ...prev, totalCount: 0 }))
     } finally {
       setLoading(false)
+      setSearchLoading(false)
     }
   }
 
@@ -158,6 +161,7 @@ export default function RetailersPage() {
   // Search with debounce
   useEffect(() => {
     const timeoutId = setTimeout(() => {
+      setSearchLoading(true)
       fetchData({
         pageNumber: 1,
         pageSize: pagination.pageSize,
@@ -174,6 +178,7 @@ export default function RetailersPage() {
 
   // Filter by status
   useEffect(() => {
+    setSearchLoading(true)
     fetchData({
       pageNumber: 1,
       pageSize: pagination.pageSize,
@@ -187,6 +192,7 @@ export default function RetailersPage() {
 
   // Sort when sortField or sortAscending changes
   useEffect(() => {
+    setSearchLoading(true)
     fetchData({
       pageNumber: 1,
       pageSize: pagination.pageSize,
@@ -417,9 +423,9 @@ export default function RetailersPage() {
         <Card className="shadow-lg overflow-hidden p-0">
           <div className="w-full">
             {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-slate-600">Đang tải dữ liệu...</div>
-              </div>
+              <Loading size="large" text="Đang tải dữ liệu..." />
+            ) : searchLoading ? (
+              <Loading size="medium" text="Đang tìm kiếm..." />
             ) : (
               <div className="overflow-x-auto">
                 <Table className="w-full">
@@ -565,7 +571,7 @@ export default function RetailersPage() {
         </Card>
 
         {/* Pagination */}
-        {!loading && pagination.totalCount > 0 && (
+        {!loading && !searchLoading && pagination.totalCount > 0 && (
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
@@ -687,9 +693,7 @@ export default function RetailersPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             {loadingDetail ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-slate-600">Đang tải chi tiết nhà bán lẻ...</div>
-              </div>
+              <Loading size="large" text="Đang tải chi tiết nhà bán lẻ..." />
             ) : retailerDetail ? (
               <RetailerDetail
                 retailer={retailerDetail}

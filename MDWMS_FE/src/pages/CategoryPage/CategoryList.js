@@ -1,14 +1,15 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { getCategory, deleteCategory } from "../../services/CategoryService/CategoryServices";
 import { Card, CardContent } from "../../components/ui/card";
-import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
-import { Search, Plus, Edit, Trash2, Filter, ChevronDown } from "lucide-react";
+import { Plus, Edit, Trash2, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import CreateCategory from "./CreateCategoryModal";
 import UpdateCategory from "./UpdateCategoryModal";
 import DeleteModal from "../../components/Common/DeleteModal";
 import StatsCards from "../../components/Common/StatsCards";
+import Loading from "../../components/Common/Loading";
+import SearchFilterToggle from "../../components/Common/SearchFilterToggle";
 import { extractErrorMessage } from "../../utils/Validation";
 
 // Type definition for Category
@@ -25,10 +26,12 @@ export default function CategoriesPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("")
   const [showStatusFilter, setShowStatusFilter] = useState(false)
-  const [sortField, setSortField] = useState("")
+  const [sortField, setSortField] = useState("categoryName")
   const [sortAscending, setSortAscending] = useState(true)
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [isInitialMount, setIsInitialMount] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showUpdateModal, setShowUpdateModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -40,7 +43,7 @@ export default function CategoriesPage() {
     totalCount: 0
   })
   const [showPageSizeFilter, setShowPageSizeFilter] = useState(false)
-  
+
   // Thống kê tổng (không thay đổi khi search/filter)
   const [totalStats, setTotalStats] = useState({
     totalCount: 0,
@@ -64,7 +67,7 @@ export default function CategoriesPage() {
         const allCategories = Array.isArray(response.data.items) ? response.data.items : []
         const activeCount = allCategories.filter((c) => c.status === 1).length
         const inactiveCount = allCategories.filter((c) => c.status === 2).length
-        
+
         setTotalStats({
           totalCount: response.data.totalCount || allCategories.length,
           activeCount: activeCount,
@@ -109,6 +112,7 @@ export default function CategoriesPage() {
       setPagination(prev => ({ ...prev, totalCount: 0 }))
     } finally {
       setLoading(false)
+      setSearchLoading(false)
     }
   }
 
@@ -116,16 +120,19 @@ export default function CategoriesPage() {
   useEffect(() => {
     // Fetch tổng thống kê khi component mount
     fetchTotalStats()
-    
+
     // Fetch dữ liệu hiển thị
     fetchData({
       pageNumber: 1,
       pageSize: 10,
-      search: searchQuery || "",
-      sortField: sortField,
-      sortAscending: sortAscending,
-      status: statusFilter
+      search: "",
+      sortField: "categoryName",
+      sortAscending: true,
+      status: ""
     })
+
+    // Mark initial mount as complete
+    setIsInitialMount(false)
   }, [])
 
   // Close status filter dropdown when clicking outside
@@ -147,7 +154,13 @@ export default function CategoriesPage() {
 
   // Search with debounce
   useEffect(() => {
+    // Skip on initial mount
+    if (isInitialMount) {
+      return
+    }
+
     const timeoutId = setTimeout(() => {
+      setSearchLoading(true)
       fetchData({
         pageNumber: 1,
         pageSize: pagination.pageSize,
@@ -160,10 +173,11 @@ export default function CategoriesPage() {
     }, 500)
 
     return () => clearTimeout(timeoutId)
-  }, [searchQuery])
+  }, [searchQuery, isInitialMount])
 
   // Filter by status
   useEffect(() => {
+    setSearchLoading(true)
     fetchData({
       pageNumber: 1,
       pageSize: pagination.pageSize,
@@ -177,6 +191,7 @@ export default function CategoriesPage() {
 
   // Sort when sortField or sortAscending changes
   useEffect(() => {
+    setSearchLoading(true)
     fetchData({
       pageNumber: 1,
       pageSize: pagination.pageSize,
@@ -200,7 +215,7 @@ export default function CategoriesPage() {
   const handleCreateSuccess = () => {
     // Refresh tổng thống kê
     fetchTotalStats()
-    
+
     // Set sort to categoryName descending to show new record at top
     setSortField("categoryName")
     setSortAscending(false)
@@ -247,7 +262,7 @@ export default function CategoriesPage() {
 
       // Refresh tổng thống kê
       fetchTotalStats()
-      
+
       // Refresh data after deletion, keeping current page or going to previous page if needed
       fetchData({
         pageNumber: targetPage,
@@ -284,6 +299,12 @@ export default function CategoriesPage() {
     setShowStatusFilter(false)
   }
 
+  const handleClearAllFilters = () => {
+    setSearchQuery("")
+    setStatusFilter("")
+    setShowStatusFilter(false)
+  }
+
   const handlePageSizeChange = (newPageSize) => {
     setPagination(prev => ({ ...prev, pageSize: newPageSize, pageNumber: 1 }))
     setShowPageSizeFilter(false)
@@ -316,14 +337,14 @@ export default function CategoriesPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Quản lý Danh mục</h1>
+            <h1 className="text-2xl font-bold text-slate-600">Quản lý Danh mục</h1>
             <p className="text-slate-600 mt-1">Quản lý các danh mục sản phẩm trong hệ thống</p>
           </div>
           <Button
-            className="bg-[#237486] hover:bg-[#1e5f6b] h-11 px-6 text-white"
+            className="bg-orange-500 hover:bg-orange-600 h-8 px-6 text-white"
             onClick={() => setShowCreateModal(true)}
           >
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-2 h-4 w-4 text-white" />
             Thêm danh mục
           </Button>
         </div>
@@ -338,107 +359,65 @@ export default function CategoriesPage() {
           inactiveLabel="Không hoạt động"
         />
 
-        {/* Search Bar */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
-              <Input
-                placeholder="Tìm kiếm theo tên hoặc mô tả danh mục..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-12 text-base"
-              />
-            </div>
-          </CardContent>
-        </Card>
+        {/* Search and Table Combined */}
+        <Card className="shadow-sm border border-slate-200 overflow-hidden">
+          <SearchFilterToggle
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            searchPlaceholder="Tìm kiếm theo tên hoặc mô tả danh mục..."
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            showStatusFilter={showStatusFilter}
+            setShowStatusFilter={setShowStatusFilter}
+            statusOptions={[
+              { value: "", label: "Tất cả trạng thái" },
+              { value: "1", label: "Hoạt động" },
+              { value: "2", label: "Ngừng hoạt động" }
+            ]}
+            onStatusFilter={handleStatusFilter}
+            clearStatusFilter={clearStatusFilter}
+            onClearAll={handleClearAllFilters}
+            searchWidth="w-80"
+            showToggle={true}
+            defaultOpen={true}
+            showClearButton={true}
+          />
 
-        {/* Categories Table */}
-        <Card className="shadow-lg overflow-hidden p-0">
+          {/* Table */}
           <div className="w-full">
             {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-slate-600">Đang tải dữ liệu...</div>
-              </div>
+              <Loading size="large" text="Đang tải dữ liệu..." />
+            ) : searchLoading ? (
+              <Loading size="medium" text="Đang tìm kiếm..." />
             ) : (
               <div className="overflow-x-auto">
                 <Table className="w-full">
                   <TableHeader>
-                    <TableRow className="bg-[#237486] hover:bg-[#237486] m-0 w-full">
-                      <TableHead className="font-semibold text-white px-4 py-3 first:pl-6 last:pr-6 border-0 w-20">
+                    <TableRow className="bg-slate-50 hover:bg-slate-50 border-b border-slate-200">
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-16">
                         STT
                       </TableHead>
-                      <TableHead className="font-semibold text-white px-4 py-3 first:pl-6 last:pr-6 border-0 w-40">
-                        <div className="flex items-center space-x-2 cursor-pointer hover:bg-white/10 rounded p-1 -m-1" onClick={() => handleSort("categoryName")}>
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                        <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("categoryName")}>
                           <span>Tên danh mục</span>
-                          <div className="flex flex-col">
-                            <ChevronDown
-                              className={`h-3 w-3 transition-colors ${sortField === "categoryName" && sortAscending
-                                  ? 'text-white'
-                                  : 'text-white/50'
-                                }`}
-                              style={{ transform: 'translateY(1px)' }}
-                            />
-                            <ChevronDown
-                              className={`h-3 w-3 transition-colors ${sortField === "categoryName" && !sortAscending
-                                  ? 'text-white'
-                                  : 'text-white/50'
-                                }`}
-                              style={{ transform: 'translateY(-1px) rotate(180deg)' }}
-                            />
-                          </div>
+                          {sortField === "categoryName" ? (
+                            sortAscending ? (
+                              <ArrowUp className="h-4 w-4 text-orange-500" />
+                            ) : (
+                              <ArrowDown className="h-4 w-4 text-orange-500" />
+                            )
+                          ) : (
+                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                          )}
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-white px-4 py-3 first:pl-6 last:pr-6 border-0">
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                         Mô tả
                       </TableHead>
-                      <TableHead className="font-semibold text-white px-4 py-3 first:pl-6 last:pr-6 border-0 w-40">
-                        <div className="flex items-center justify-center space-x-2">
-                          <span>Trạng thái</span>
-                          <div className="relative status-filter-dropdown">
-                            <button
-                              onClick={() => setShowStatusFilter(!showStatusFilter)}
-                              className={`p-1 rounded hover:bg-white/20 transition-colors ${statusFilter ? 'bg-white/30' : ''
-                                }`}
-                              title="Lọc theo trạng thái"
-                            >
-                              <Filter className="h-4 w-4" />
-                            </button>
-
-                            {showStatusFilter && (
-                              <div className="absolute top-full right-0 mt-1 w-48 bg-white rounded-md shadow-lg border z-10">
-                                <div className="py-1">
-                                  <button
-                                    onClick={clearStatusFilter}
-                                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center justify-between"
-                                  >
-                                    Tất cả
-                                    {!statusFilter && <span className="text-[#237486]">✓</span>}
-                                  </button>
-                                  <button
-                                    onClick={() => handleStatusFilter("1")}
-                                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center justify-between"
-                                  >
-                                    Hoạt động
-                                    {statusFilter === "1" && <span className="text-[#237486]">✓</span>}
-                                  </button>
-                                  <button
-                                    onClick={() => handleStatusFilter("2")}
-                                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center justify-between"
-                                  >
-                                    Ngừng hoạt động
-                                    {statusFilter === "2" && <span className="text-[#237486]">✓</span>}
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-48">
+                        Trạng thái
                       </TableHead>
-                      <TableHead className="font-semibold text-white px-4 py-3 first:pl-6 last:pr-6 border-0 w-40">
-                        Ngày tạo
-                      </TableHead>
-                      <TableHead className="font-semibold text-white px-4 py-3 first:pl-6 last:pr-6 border-0 text-center">
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
                         Hoạt động
                       </TableHead>
                     </TableRow>
@@ -448,36 +427,38 @@ export default function CategoriesPage() {
                       filteredCategories.map((category, index) => (
                         <TableRow
                           key={index}
-                          className={`
-                            ${index % 2 === 0 ? "bg-white" : "bg-slate-50"}
-                            hover:bg-[#e6f4f4] transition-colors duration-150 m-0 w-full
-                          `}
+                          className="bg-white hover:bg-slate-50 transition-colors duration-150 border-b border-slate-100"
                         >
-                          <TableCell className="text-slate-600 px-4 py-3 first:pl-6 last:pr-6 border-0 w-20 text-center font-medium">
+                          <TableCell className="text-slate-600 px-6 py-3 text-left font-medium">
                             {index + 1}
                           </TableCell>
-                          <TableCell className="font-medium text-slate-900 px-4 py-3 first:pl-6 last:pr-6 border-0 w-40">{category?.categoryName || ''}</TableCell>
-                          <TableCell className="text-slate-700 px-4 py-3 first:pl-6 last:pr-6 border-0">{category?.description || ''}</TableCell>
-                          <TableCell className="text-slate-700 px-4 py-3 first:pl-6 last:pr-6 border-0 w-40 text-center">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${category?.status === 1
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-red-100 text-red-800'
+                          <TableCell className="font-medium text-slate-900 px-6 py-3 text-left">
+                            {category?.categoryName || ''}
+                          </TableCell>
+                          <TableCell className="text-slate-700 px-6 py-3 text-left">
+                            {category?.description || ''}
+                          </TableCell>
+                          <TableCell className="px-6 py-3 text-center">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${category?.status === 1
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800'
                               }`}>
+                              <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${category?.status === 1 ? 'bg-green-400' : 'bg-red-400'
+                                }`}></span>
                               {category?.status === 1 ? 'Hoạt động' : 'Ngừng hoạt động'}
                             </span>
                           </TableCell>
-                          <TableCell className="text-slate-600 px-4 py-3 first:pl-6 last:pr-6 border-0 w-40">{category?.createdAt || ''}</TableCell>
-                          <TableCell className="text-slate-600 px-4 py-3 first:pl-6 last:pr-6 border-0 text-center">
-                            <div className="flex items-center justify-center space-x-2">
+                          <TableCell className="px-6 py-3 text-center">
+                            <div className="flex items-center justify-center space-x-1">
                               <button
-                                className="p-1 hover:bg-slate-100 rounded transition-colors"
+                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                 title="Chỉnh sửa"
                                 onClick={() => handleUpdateClick(category)}
                               >
-                                <Edit className="h-4 w-4 text-[#1a7b7b]" />
+                                <Edit className="h-4 w-4 text-[#d97706]" />
                               </button>
                               <button
-                                className="p-1 hover:bg-slate-100 rounded transition-colors"
+                                className="p-1.5 hover:bg-red-50 rounded transition-colors"
                                 title="Xóa"
                                 onClick={() => handleDeleteClick(category)}
                               >
@@ -489,7 +470,7 @@ export default function CategoriesPage() {
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-12 text-slate-500">
+                        <TableCell colSpan={5} className="text-center py-12 text-slate-500">
                           Không tìm thấy danh mục nào
                         </TableCell>
                       </TableRow>
@@ -502,7 +483,7 @@ export default function CategoriesPage() {
         </Card>
 
         {/* Pagination */}
-        {!loading && pagination.totalCount > 0 && (
+        {!loading && !searchLoading && pagination.totalCount > 0 && (
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
@@ -515,6 +496,7 @@ export default function CategoriesPage() {
                     <Button
                       variant="outline"
                       size="sm"
+                      className="h-8"
                       onClick={() => {
                         if (pagination.pageNumber > 1) {
                           fetchData({
@@ -538,6 +520,7 @@ export default function CategoriesPage() {
                     <Button
                       variant="outline"
                       size="sm"
+                      className="h-8"
                       onClick={() => {
                         if (pagination.pageNumber < Math.ceil(pagination.totalCount / pagination.pageSize)) {
                           fetchData({
@@ -563,7 +546,7 @@ export default function CategoriesPage() {
                     <div className="relative page-size-filter-dropdown">
                       <button
                         onClick={() => setShowPageSizeFilter(!showPageSizeFilter)}
-                        className="flex items-center space-x-2 px-3 py-2 text-sm border border-slate-300 rounded-md hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#237486] focus:border-[#237486]"
+                        className="flex items-center space-x-2 px-3 py-2 h-8 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                       >
                         <span>{pagination.pageSize}</span>
                         <ChevronDown className="h-4 w-4" />
@@ -576,7 +559,7 @@ export default function CategoriesPage() {
                               <button
                                 key={size}
                                 onClick={() => handlePageSizeChange(size)}
-                                className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 flex items-center justify-between ${pagination.pageSize === size ? 'bg-[#237486] text-white' : 'text-slate-700'
+                                className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 flex items-center justify-between ${pagination.pageSize === size ? 'bg-[#d97706] text-white' : 'text-slate-700'
                                   }`}
                               >
                                 {size}

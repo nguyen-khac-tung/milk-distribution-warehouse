@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
-import { Menu, Avatar } from "antd";
+import { Menu } from "antd";
 import {
     DashboardOutlined,
     ShoppingOutlined,
@@ -10,13 +10,16 @@ import {
     UsergroupAddOutlined,
     ClusterOutlined,
     AppstoreOutlined,
+    DownOutlined,
+    RightOutlined,
 } from "@ant-design/icons";
 import { Link, useLocation } from "react-router-dom";
 import { ComponentIcon } from "../../components/IconComponent/Icon";
 
-const Sidebar = ({ collapsed, isMobile }) => {
+const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
     const location = useLocation();
     const [user, setUser] = useState(null);
+    const [openKeys, setOpenKeys] = useState([]);
 
     useEffect(() => {
         const savedUser = localStorage.getItem("userInfo");
@@ -35,229 +38,352 @@ const Sidebar = ({ collapsed, isMobile }) => {
         return keys;
     }, []);
 
-    const role = user?.roles?.[0] || "Guest";
-
-    // màu trắng cho mũi tên dropdown
-    const arrowWhiteStyle = `
-        .ant-menu-submenu-arrow {
-            color: white !important;
+    useEffect(() => {
+        if (!collapsed) {
+            setOpenKeys(getOpenKeysFromPath(location.pathname));
+        } else {
+            setOpenKeys([]);
         }
-    `;
+    }, [collapsed, location.pathname, getOpenKeysFromPath]);
+
+    const role = user?.roles?.[0] || "Guest";
 
     const menuItems = useMemo(() => [
         {
+            key: "/admin/dashboard",
+            icon: <DashboardOutlined style={{ color: '#000000' }} />,
+            label: "Dashboard",
+        },
+        {
             key: "/admin/accounts",
-            icon: <UsergroupAddOutlined />,
+            icon: <UsergroupAddOutlined style={{ color: '#000000' }} />,
             label: "Quản lý tài khoản",
         },
         {
             key: "/sales-manager/categorys",
-            icon: <ComponentIcon name="category" size={15} collapsed={collapsed} />,
+            icon: <ComponentIcon name="category" size={16} collapsed={collapsed} />,
             label: "Quản lý danh mục",
         },
         {
             key: "/sales-manager/unitMeasures",
-            icon: <ComponentIcon name="unitMeasure" size={15} collapsed={collapsed} />,
+            icon: <ComponentIcon name="unitMeasure" size={16} collapsed={collapsed} />,
             label: "Quản lý đơn vị",
         },
         {
             key: "/sales-manager/goods",
-            icon: <ComponentIcon name="milk" size={15} collapsed={collapsed} />,
+            icon: <ComponentIcon name="milk" size={16} collapsed={collapsed} />,
             label: "Quản lý hàng hóa",
         },
         {
             key: "partner-management",
-            icon: <ComponentIcon name="partner" size={15} collapsed={collapsed} />,
+            icon: <ComponentIcon name="partner" size={16} collapsed={collapsed} />,
             label: "Quản lý đối tác",
             children: [
                 {
                     key: "/sales-manager/suppliers",
-                    icon: <ComponentIcon name="supplier" size={15} collapsed={collapsed} />,
+                    icon: <ComponentIcon name="supplier" size={14} collapsed={collapsed} />,
                     label: "Quản lý nhà cung cấp",
                 },
                 {
                     key: "/sales-manager/retailers",
-                    icon: <ComponentIcon name="retailer" size={15} collapsed={collapsed} />,
+                    icon: <ComponentIcon name="retailer" size={14} collapsed={collapsed} />,
                     label: "Quản lý nhà bán lẻ",
                 },
             ],
         },
         {
             key: "location-management",
-            icon: <EnvironmentOutlined />,
+            icon: <EnvironmentOutlined style={{ color: '#000000' }} />,
             label: "Quản lý vị trí và khu vực",
             children: [
                 {
                     key: "/admin/areas",
-                    icon: <AppstoreOutlined />,
+                    icon: <AppstoreOutlined style={{ color: '#000000' }} />,
                     label: "Quản lý khu vực",
                 },
                 {
                     key: "/admin/locations",
-                    icon: <ClusterOutlined />,
+                    icon: <ClusterOutlined style={{ color: '#000000' }} />,
                     label: "Quản lý vị trí",
                 },
                 {
                     key: "/admin/storage-condition",
-                    icon: <ComponentIcon name="storageCondition" size={15} collapsed={collapsed} />,
+                    icon: <ComponentIcon name="storageCondition" size={14} collapsed={collapsed} />,
                     label: "Quản lý điều kiện bảo quản",
                 },
             ],
         },
         {
-            key: "/admin/dashboard",
-            icon: <DashboardOutlined />,
-            label: "Dashboard",
-        },
-        {
             key: "/admin/reports",
-            icon: <BarChartOutlined />,
+            icon: <BarChartOutlined style={{ color: '#000000' }} />,
             label: "Báo cáo",
         },
         {
             key: "/admin/settings",
-            icon: <SettingOutlined />,
+            icon: <SettingOutlined style={{ color: '#000000' }} />,
             label: "Cài đặt",
         },
     ], [collapsed]);
 
-    // Hàm render icon có màu động (đen nếu được chọn)
-    const renderIcon = (icon, active) => {
-        // nếu là ComponentIcon custom
-        if (icon?.type?.name === "ComponentIcon") {
-            return React.cloneElement(icon, { color: active ? "black" : "white" });
+
+    const handleMenuClick = ({ key }) => {
+        if (key.startsWith('/')) {
+            // Đây là menu item thông thường, không cần xử lý gì thêm
         }
-        // nếu là icon Ant Design
-        return React.cloneElement(icon, {
-            style: { color: active ? "black" : "white" },
-        });
     };
 
-    const getInitial = (name) => {
-        if (!name) return "?";
-        const words = name.trim().split(" ");
-        return words[words.length - 1][0].toUpperCase();
+    const handleSubMenuClick = ({ key }) => {
+        if (openKeys.includes(key)) {
+            setOpenKeys(openKeys.filter(k => k !== key));
+        } else {
+            setOpenKeys([...openKeys, key]);
+        }
     };
 
-    return (
-        <>
-            <style>{arrowWhiteStyle}</style>
-
-            <aside
-                className={collapsed ? "" : "sidebar-container"}
-                style={{
-                    position: "fixed",
-                    left: 0,
-                    top: 64,
-                    bottom: 0,
-                    width: collapsed ? 80 : 280,
-                    background: "#237486",
-                    display: "flex",
-                    flexDirection: "column",
-                    zIndex: 10,
-                    transition: "width 0.3s ease-in-out, transform 0.3s ease-in-out",
-                    overflow: "hidden",
-                    transform: isMobile && collapsed ? "translateX(-100%)" : "translateX(0)",
-                    boxShadow: isMobile ? "2px 0 8px rgba(0,0,0,0.15)" : "none",
-                }}
-            >
-                {/* Thông tin user */}
-                <div
-                    style={{
-                        padding: collapsed ? "20px 12px" : "20px 16px",
-                        borderBottom: "1px solid #e9ecef",
-                        display: "flex",
-                        justifyContent: collapsed ? "center" : "flex-start",
-                        alignItems: "center",
-                    }}
-                >
-                    <Avatar
-                        size={collapsed ? 40 : 50}
+    const renderMenuItem = (item, isActive) => {
+        if (item.children) {
+            const isOpen = openKeys.includes(item.key);
+            return (
+                <div key={item.key}>
+                    <div
+                        className={`menu-item ${isActive ? 'active' : ''}`}
+                        onClick={() => handleSubMenuClick({ key: item.key })}
                         style={{
-                            background: "#ffc107",
-                            color: "white",
-                            fontWeight: "bold",
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '12px 20px',
+                            margin: '4px 12px',
+                            cursor: 'pointer',
+                            color: isActive ? '#d97706' : '#000000',
+                            backgroundColor: isActive ? '#fef3c7' : 'transparent',
+                            borderRadius: '8px',
+                            transition: 'all 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                            if (!isActive) {
+                                e.target.style.backgroundColor = '#fef3c7';
+                                e.target.style.color = '#d97706';
+                                const icon = e.target.querySelector('svg');
+                                if (icon) icon.style.color = '#d97706';
+                                const arrow = e.target.querySelector('.anticon');
+                                if (arrow) arrow.style.color = '#d97706';
+                            }
+                        }}
+                        onMouseLeave={(e) => {
+                            if (!isActive) {
+                                e.target.style.backgroundColor = 'transparent';
+                                e.target.style.color = '#000000';
+                                const icon = e.target.querySelector('svg');
+                                if (icon) icon.style.color = '#000000';
+                                const arrow = e.target.querySelector('.anticon');
+                                if (arrow) arrow.style.color = '#000000';
+                            }
                         }}
                     >
-                        {getInitial(user?.fullName || "U")}
-                    </Avatar>
-                    {!collapsed && (
-                        <div style={{ marginLeft: 12, color: "white" }}>
-                            <div style={{ fontWeight: 600, fontSize: 16 }}>
-                                {user?.fullName || "Người dùng"}
-                            </div>
-                            <div style={{ fontSize: 12 }}>
-                                Chức vụ: {role}
-                            </div>
+                        <div style={{ marginRight: 12, display: 'flex', alignItems: 'center' }}>
+                            {React.cloneElement(item.icon, {
+                                color: isActive ? '#d97706' : '#000000',
+                                size: 16
+                            })}
+                        </div>
+                        {!collapsed && (
+                            <>
+                                <span style={{ flex: 1, fontWeight: 500 }}>{item.label}</span>
+                                {isOpen ? <DownOutlined style={{ fontSize: 12, color: isActive ? '#d97706' : '#000000' }} /> : <RightOutlined style={{ fontSize: 12, color: isActive ? '#d97706' : '#000000' }} />}
+                            </>
+                        )}
+                    </div>
+                    {isOpen && !collapsed && (
+                        <div style={{ backgroundColor: '#f9fafb' }}>
+                            {item.children.map(child => {
+                                const isChildActive = location.pathname === child.key;
+                                return (
+                                    <Link
+                                        key={child.key}
+                                        to={child.key}
+                                        style={{ textDecoration: 'none' }}
+                                    >
+                                        <div
+                                            className={`submenu-item ${isChildActive ? 'active' : ''}`}
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                padding: '10px 20px 10px 48px',
+                                                margin: '2px 12px',
+                                                cursor: 'pointer',
+                                                color: isChildActive ? '#d97706' : '#000000',
+                                                backgroundColor: 'transparent',
+                                                transition: 'all 0.2s ease',
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                if (!isChildActive) {
+                                                    e.target.style.backgroundColor = '#fef3c7';
+                                                    e.target.style.color = '#d97706';
+                                                    const icon = e.target.querySelector('svg');
+                                                    if (icon) icon.style.color = '#d97706';
+                                                }
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                if (!isChildActive) {
+                                                    e.target.style.backgroundColor = 'transparent';
+                                                    e.target.style.color = '#000000';
+                                                    const icon = e.target.querySelector('svg');
+                                                    if (icon) icon.style.color = '#000000';
+                                                }
+                                            }}
+                                        >
+                                            <div style={{ marginRight: 8, display: 'flex', alignItems: 'center' }}>
+                                                {React.cloneElement(child.icon, {
+                                                    color: isChildActive ? '#d97706' : '#000000',
+                                                    size: 14
+                                                })}
+                                            </div>
+                                            <span style={{ fontWeight: 400 }}>{child.label}</span>
+                                        </div>
+                                    </Link>
+                                );
+                            })}
                         </div>
                     )}
                 </div>
+            );
+        }
 
-                {/* Menu */}
-                <div className="sidebar-scroll" style={{ flex: 1, background: "#237486" }}>
-                    <Menu
-                        mode="inline"
-                        selectedKeys={[location.pathname]}
-                        items={useMemo(() => menuItems.map((item) => {
-                            // Kiểm tra active cho item
-                            const isActive =
-                                location.pathname === item.key ||
-                                item.children?.some((c) => c.key === location.pathname);
-
-                            // Nếu là submenu cha
-                            if (item.children) {
-                                return {
-                                    ...item,
-                                    icon: renderIcon(item.icon, isActive),
-                                    label: collapsed ? null : <span style={{ color: "white" }}>{item.label}</span>,
-                                    children: item.children.map((sub) => ({
-                                        ...sub,
-                                        icon: sub.icon
-                                            ? renderIcon(sub.icon, location.pathname === sub.key)
-                                            : null,
-                                        label: collapsed ? null : (
-                                            <Link
-                                                to={sub.key}
-                                                style={{
-                                                    color:
-                                                        location.pathname === sub.key
-                                                            ? "black"
-                                                            : "white",
-                                                }}
-                                            >
-                                                {sub.label}
-                                            </Link>
-                                        ),
-                                    })),
-                                };
-                            }
-
-                            // Nếu là menu con bình thường
-                            return {
-                                ...item,
-                                icon: renderIcon(item.icon, isActive),
-                                label: collapsed ? null : (
-                                    <Link
-                                        to={item.key}
-                                        style={{
-                                            color: isActive ? "black" : "white",
-                                        }}
-                                    >
-                                        {item.label}
-                                    </Link>
-                                ),
-                            };
-                        }), [menuItems, location.pathname, collapsed])}
-                        style={{
-                            borderRight: 0,
-                            backgroundColor: "#237486",
-                        }}
-                        defaultOpenKeys={collapsed ? [] : getOpenKeysFromPath(location.pathname)}
-                        inlineCollapsed={collapsed}
-                    />
+        return (
+            <Link key={item.key} to={item.key} style={{ textDecoration: 'none' }}>
+                <div
+                    className={`menu-item ${isActive ? 'active' : ''}`}
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '12px 20px',
+                        margin: '4px 12px',
+                        cursor: 'pointer',
+                        color: isActive ? '#d97706' : '#000000',
+                        backgroundColor: isActive ? '#fef3c7' : 'transparent',
+                        borderRadius: '8px',
+                        transition: 'all 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                        if (!isActive) {
+                            e.target.style.backgroundColor = '#fef3c7';
+                            e.target.style.color = '#d97706';
+                            const icon = e.target.querySelector('svg');
+                            if (icon) icon.style.color = '#d97706';
+                        }
+                    }}
+                    onMouseLeave={(e) => {
+                        if (!isActive) {
+                            e.target.style.backgroundColor = 'transparent';
+                            e.target.style.color = '#000000';
+                            const icon = e.target.querySelector('svg');
+                            if (icon) icon.style.color = '#000000';
+                        }
+                    }}
+                >
+                    <div style={{ marginRight: 12, display: 'flex', alignItems: 'center' }}>
+                        {React.cloneElement(item.icon, {
+                            color: isActive ? '#d97706' : '#000000',
+                            size: 16
+                        })}
+                    </div>
+                    {!collapsed && (
+                        <span style={{ fontWeight: 500 }}>{item.label}</span>
+                    )}
                 </div>
-            </aside>
-        </>
+            </Link>
+        );
+    };
+
+    return (
+        <aside
+            style={{
+                width: collapsed ? 80 : 280,
+                background: "#ffffff",
+                display: "flex",
+                flexDirection: "column",
+                transition: "width 0.3s ease-in-out, transform 0.3s ease-in-out",
+                overflow: "hidden",
+                transform: isMobile && collapsed ? "translateX(-100%)" : "translateX(0)",
+                boxShadow: "2px 0 8px rgba(0,0,0,0.1)",
+                borderRight: "1px solid #e5e7eb",
+                height: "100vh",
+                position: "fixed",
+                left: 0,
+                top: 0,
+                bottom: 0,
+                zIndex: isMobile ? 50 : 10,
+            }}
+        >
+            {/* Header với logo và nút toggle */}
+            <div style={{
+                height: 64,
+                background: "#ffffff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "0 20px",
+                borderBottom: "1px solid #e5e7eb",
+                flexShrink: 0,
+                position: "sticky",
+                top: 0,
+                zIndex: 99,
+            }}>
+                {!collapsed && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ 
+                            width: 24, 
+                            height: 24, 
+                            background: "linear-gradient(45deg, #f59e0b, #d97706)",
+                            borderRadius: "4px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center"
+                        }}>
+                            <div style={{ 
+                                width: 8, 
+                                height: 8, 
+                                background: "white", 
+                                borderRadius: "50%",
+                                margin: "1px"
+                            }}></div>
+                        </div>
+                        <span style={{ fontWeight: 700, fontSize: 18, color: "#1f2937" }}>
+                            Kho Phân Phối Sữa
+                        </span>
+                    </div>
+                )}
+                {collapsed && (
+                    <div style={{ 
+                        width: 24, 
+                        height: 24, 
+                        background: "linear-gradient(45deg, #f59e0b, #d97706)",
+                        borderRadius: "4px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        margin: "0 auto"
+                    }}>
+                        <div style={{ 
+                            width: 8, 
+                            height: 8, 
+                            background: "white", 
+                            borderRadius: "50%",
+                            margin: "1px"
+                        }}></div>
+                    </div>
+                )}
+            </div>
+
+            {/* Menu */}
+            <div style={{ flex: 1, overflowY: "auto", backgroundColor: "#ffffff" }}>
+                {menuItems.map((item) => {
+                    const isActive = location.pathname === item.key || 
+                        item.children?.some((c) => c.key === location.pathname);
+                    return renderMenuItem(item, isActive);
+                })}
+            </div>
+        </aside>
     );
 };
 
