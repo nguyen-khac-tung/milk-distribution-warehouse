@@ -1,11 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Services;
 using MilkDistributionWarehouse.Utilities;
 
 namespace MilkDistributionWarehouse.Controllers
 {
-    public class UserController : Controller
+    [Route("api/[controller]")]
+    [ApiController]
+    public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
 
@@ -13,13 +16,14 @@ namespace MilkDistributionWarehouse.Controllers
             _userService = userService;
         }
 
-        [HttpGet("Profile/{id}")]
-        public IActionResult GetUserProfile(int id)
+        [Authorize]
+        [HttpGet("Profile")]
+        public async Task<IActionResult> GetUserProfile()
         {
-            string msg = _userService.GetUserProfile(id, out UserProfileDto userProfile);
+            var (msg, userProfile) = await _userService.GetUserProfile(User.GetUserId());
             if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
 
-            return ApiResponse<UserProfileDto>.ToResultOk(userProfile);
+            return ApiResponse<UserDto>.ToResultOk(userProfile);
         }
     }
 }

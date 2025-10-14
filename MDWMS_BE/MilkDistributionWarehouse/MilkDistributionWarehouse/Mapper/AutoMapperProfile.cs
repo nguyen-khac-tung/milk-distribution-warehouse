@@ -9,6 +9,10 @@ namespace MilkDistributionWarehouse.Mapper
     {
         public AutoMapperProfile()
         {
+            //Map User
+            CreateMap<User, UserDto>();
+            CreateMap<User, UserDetailDto>();
+
             // Map StorageCondition
             CreateMap<StorageCondition, StorageConditionDto.StorageConditionResponseDto>();
 
@@ -79,7 +83,12 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.StocktakingLocations, opt => opt.Ignore());
 
             // Map Area
-            CreateMap<Area, AreaDto.AreaResponseDto>();
+            CreateMap<Area, AreaDto.AreaResponseDto>()
+                .ForMember(dest => dest.TemperatureMin, opt => opt.MapFrom(src => src.StorageCondition.TemperatureMin))
+                .ForMember(dest => dest.TemperatureMax, opt => opt.MapFrom(src => src.StorageCondition.TemperatureMax))
+                .ForMember(dest => dest.HumidityMin, opt => opt.MapFrom(src => src.StorageCondition.HumidityMin))
+                .ForMember(dest => dest.HumidityMax, opt => opt.MapFrom(src => src.StorageCondition.HumidityMax))
+                .ForMember(dest => dest.LightLevel, opt => opt.MapFrom(src => src.StorageCondition.LightLevel));
             CreateMap<Area, AreaDto.AreaNameDto>();
             CreateMap<AreaDto.AreaCreateDto, Area>()
                 .ForMember(dest => dest.AreaId, opt => opt.Ignore())
@@ -145,6 +154,7 @@ namespace MilkDistributionWarehouse.Mapper
             //Map Retailer
             CreateMap<Retailer, RetailerDto>();
             CreateMap<Retailer, RetailerDetail>();
+            CreateMap<Retailer, RetailerDropDown>();
             CreateMap<RetailerCreate, Retailer>()
                 .ForMember(dest => dest.RetailerId, opt => opt.Ignore())
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => CommonStatus.Active))

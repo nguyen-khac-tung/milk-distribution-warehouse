@@ -11,7 +11,7 @@ namespace MilkDistributionWarehouse.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class GoodsController : Controller
+    public class GoodsController : ControllerBase
     {
         private readonly IGoodsService _goodsService;
         public GoodsController(IGoodsService goodsService)

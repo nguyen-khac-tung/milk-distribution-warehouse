@@ -10,7 +10,7 @@ namespace MilkDistributionWarehouse.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class SupplierController : Controller
+    public class SupplierController : ControllerBase
     {
         private readonly ISupplierService _supplierService;
         public SupplierController(ISupplierService supplierService)

@@ -49,6 +49,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Mã khu vực không hợp lệ.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
             var area = await _areaRepository.GetAreaById(areaId);
+
             if (area == null)
                 return ("Không tìm thấy khu vực.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
