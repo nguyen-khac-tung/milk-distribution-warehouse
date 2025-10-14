@@ -419,7 +419,7 @@ const AreaLists = () => {
                                                         onClearFilter={clearStatusFilter}
                                                         options={[
                                                             { value: "1", label: "Hoạt động" },
-                                                            { value: "2", label: "Không hoạt động" }
+                                                            { value: "2", label: "Ngừng hoạt động" }
                                                         ]}
                                                         placeholder="Tất cả"
                                                         className="status-filter-dropdown"
@@ -464,12 +464,12 @@ const AreaLists = () => {
                                                             backgroundColor: area?.status === 1 ? "#dcfce7" : area?.status === 2 ? "#fef3c7" : "#fef2f2",
                                                             color: area?.status === 1 ? "#166534" : area?.status === 2 ? "#d97706" : "#dc2626"
                                                         }}>
-                                                            {area?.status === 1 ? 'Hoạt động' : area?.status === 2 ? 'Không hoạt động' : 'Đã xóa'}
+                                                            {area?.status === 1 ? 'Hoạt động' : area?.status === 2 ? 'Ngừng hoạt động' : ''}
                                                         </span>
                                                     </TableCell>
                                                     <TableCell style={{ color: "#64748b", padding: "12px 16px", border: 0, textAlign: "center" }}>
                                                         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
-                                                        <button
+                                                            <button
                                                                 className="p-1 hover:bg-slate-100 rounded transition-colors"
                                                                 title="Xem chi tiết"
                                                                 onClick={() => handleViewClick(area)}
