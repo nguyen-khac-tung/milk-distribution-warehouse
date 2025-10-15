@@ -66,32 +66,29 @@ export const createArea = async (data) => {
 // Cập nhật Area
 export const updateArea = async (areaId, data) => {
     const body = {
-        AreaName: data.areaName,
-        AreaCode: data.areaCode,
-        Description: data.description,
-        StorageConditionId: data.storageConditionId,
-        Status: data.status,
+        areaName: data.areaName,
+        areaCode: data.areaCode,
+        description: data.description,
+        storageConditionId: data.storageConditionId,
     };
 
     try {
         console.log("Sending update request:", body);
         const res = await api.put(`/Area/Update/${areaId}`, body);
-        console.log("Area Update API response:", res.data);
         return res.data;
     } catch (error) {
         console.error("Error updating Area:", error);
-        if (error.response && error.response.data && error.response.data.message) {
-            // Trả lại message lỗi từ BE
-            throw new Error(error.response.data.message);
-        }
-        throw error;
+        throw new Error(
+            error?.response?.data?.message || "Lỗi khi cập nhật khu vực"
+        );
     }
 };
 
 // Lấy chi tiết Area theo ID
 export const getAreaDetail = async (areaId) => {
     try {
-        const res = await api.get(`/Area/GetById/${areaId}`);
+        // Correct endpoint per backend: /Area/AreaDetail/{id}
+        const res = await api.get(`/Area/AreaDetail/${areaId}`);
         console.log("Area Detail API response:", res.data);
         return res.data;
     } catch (error) {
@@ -111,6 +108,31 @@ export const deleteArea = async (AreaId) => {
         return res.data;
     } catch (error) {
         console.error("Error deleting Area:", error);
+        throw error;
+    }
+};
+
+//get area dropdown by status = 1
+export const getAreaDropdown = async () => {
+    try {
+        const res = await api.get("/Area/GetAreaDropdown");
+        console.log("Area API response:", res.data);
+
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching areas:", error);
+        return { data: [], totalCount: 0 };
+    }
+};
+
+// Update areas status
+export const updateAreaStatus = async (areaId, status) => {
+    try {
+        const res = await api.put(`/Area/UpdateStatus/${areaId}?status=${status}`);
+        console.log("Update area status response:", res.data);
+        return res.data;
+    } catch (error) {
+        console.error("Error updating area status:", error);
         throw error;
     }
 };

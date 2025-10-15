@@ -1,14 +1,5 @@
 import React, { useState } from "react";
-import {
-    Form,
-    Input,
-    Button,
-    Typography,
-    Card,
-    Progress,
-    Row,
-    Col,
-} from "antd";
+import { Form, Input, Button, Typography, Card, Progress } from "antd";
 import {
     LockOutlined,
     ArrowLeftOutlined,
@@ -19,7 +10,7 @@ import { resetPassword } from "../../services/AuthenticationServices";
 
 const { Title, Text } = Typography;
 
-// 🧠 Hàm đánh giá độ mạnh mật khẩu
+// Hàm đánh giá độ mạnh mật khẩu
 const checkPasswordStrength = (password) => {
     let score = 0;
     const rules = {
@@ -110,19 +101,19 @@ const ResetPasswordPage = () => {
             <Card
                 style={{
                     width: "100%",
-                    maxWidth: 500,
+                    maxWidth: 540,
                     borderRadius: 16,
                     boxShadow: "0 4px 15px rgba(0,0,0,0.08)",
                     textAlign: "center",
-                    padding: "48px 40px",
+                    padding: "0px 40px",
                 }}
             >
                 {!done ? (
                     <>
-                        <Title level={3} style={{ color: "#FE9F43", marginBottom: 8 }}>
+                        <Title level={3} style={{ color: "#FE9F43", marginBottom: 8, fontSize: 32 }}>
                             Đặt lại mật khẩu
                         </Title>
-                        <Text type="secondary">
+                        <Text style={{ fontSize: 16 }} type="secondary">
                             Nhập mật khẩu mới cho tài khoản{" "}
                             <strong style={{ color: "#000" }}>{email || "của bạn"}</strong>.
                         </Text>
@@ -156,7 +147,7 @@ const ResetPasswordPage = () => {
                                 />
                             </Form.Item>
 
-                            {/* ✅ Thang đo độ mạnh */}
+                            {/* Thang đo độ mạnh */}
                             <Progress
                                 percent={(passwordStrength.score / 5) * 100}
                                 showInfo={false}
@@ -172,7 +163,7 @@ const ResetPasswordPage = () => {
                                 {passwordStrength.level}
                             </Text>
 
-                            {/* ✅ Danh sách yêu cầu hiển thị 2 cột, giống hình */}
+                            {/* Danh sách yêu cầu hiển thị 2 cột, giống hình */}
                             <div
                                 style={{
                                     marginTop: 10,

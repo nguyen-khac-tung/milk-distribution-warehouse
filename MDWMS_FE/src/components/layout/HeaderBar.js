@@ -8,7 +8,6 @@ const HeaderBar = ({ onToggleSidebar, sidebarCollapsed }) => {
     const [user, setUser] = useState(null);
     const [showUserMenu, setShowUserMenu] = useState(false);
 
-    console.log("55555", user);
     useEffect(() => {
         const savedUser = localStorage.getItem("userInfo");
         if (savedUser) {
@@ -109,7 +108,7 @@ const HeaderBar = ({ onToggleSidebar, sidebarCollapsed }) => {
                                 width: 40,
                                 height: 40,
                                 borderRadius: "50%",
-                                backgroundColor: "#f59e0b",
+                                backgroundColor: "#c7c7c7ff",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
@@ -121,10 +120,10 @@ const HeaderBar = ({ onToggleSidebar, sidebarCollapsed }) => {
                             <UserOutlined style={{ fontSize: 18, color: "white" }} />
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.1 }}>
-                            <span style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>
+                            <span style={{ fontSize: 16, fontWeight: 600, color: "#111827" }}>
                                 {user?.fullName || "Người dùng"}
                             </span>
-                            <span style={{ fontSize: 12, color: "#6b7280" }}>
+                            <span style={{ fontSize: 14, color: "#6b7280", marginTop: 2 }}>
                                 {user?.roles?.[0] || "Admin"}
                             </span>
                         </div>
@@ -149,21 +148,21 @@ const HeaderBar = ({ onToggleSidebar, sidebarCollapsed }) => {
                             {/* Dropdown Content */}
                             <div
                                 style={{
-                                    position: "absolute",
-                                    top: "100%",
+                                    position: "fixed",
+                                    top: "72px",
                                     right: 0,
-                                    marginTop: "8px",
+                                    marginTop: 3,
                                     backgroundColor: "#ffffff",
-                                    borderRadius: "8px",
+                                    borderRadius: "8px 0 0 8px",
                                     boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
                                     border: "1px solid #e5e7eb",
-                                    minWidth: "250px",
-                                    zIndex: 999,
+                                    width: "200px",
+                                    zIndex: 9999,
                                     overflow: "hidden"
                                 }}
                             >
                                 {/* User Info */}
-                                <div style={{
+                                {/* <div style={{
                                     padding: "16px",
                                     borderBottom: "1px solid #f3f4f6",
                                     display: "flex",
@@ -184,22 +183,23 @@ const HeaderBar = ({ onToggleSidebar, sidebarCollapsed }) => {
                                     <div>
                                         <div style={{
                                             fontWeight: 600,
-                                            fontSize: "14px",
+                                            fontSize: "16px",
                                             color: "#1f2937",
                                             lineHeight: 1.2
                                         }}>
                                             {user?.fullName || "Người dùng"}
                                         </div>
                                         <div style={{
+                                            marginTop: 2,
                                             fontWeight: 400,
-                                            fontSize: "12px",
+                                            fontSize: "14px",
                                             color: "#6b7280",
                                             lineHeight: 1.2
                                         }}>
                                             {user?.roles?.[0] || "Admin"}
                                         </div>
                                     </div>
-                                </div>
+                                </div> */}
 
                                 {/* Menu Items */}
                                 <div style={{ padding: "8px 0" }}>
