@@ -10,20 +10,29 @@ namespace MilkDistributionWarehouse.Mapper
         public AutoMapperProfile()
         {
             //Map User
-            CreateMap<User, UserDto>();
-            CreateMap<User, UserDetailDto>();
+            CreateMap<User, UserProfileDto>();
+            CreateMap<User, UserDto>()
+                .ForMember(dest => dest.Roles, opt => opt.MapFrom(src => src.Roles.Select(r => r.RoleName)));
+            CreateMap<User, UserDetailDto>()
+                .ForMember(dest => dest.Roles, opt => opt.MapFrom(src => src.Roles.Select(r => r.RoleName)));
+            CreateMap<UserCreateDto, User>()
+                .ForMember(dest => dest.UserId, opt => opt.Ignore())
+                .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.FullName.Trim()))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => CommonStatus.Active))
+                .ForMember(dest => dest.CreateAt, opt => opt.MapFrom(_ => DateTime.Now))
+                .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => (DateTime?)null));
+            CreateMap<UserUpdateDto, User>()
+                .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.FullName.Trim()))
+                .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => DateTime.Now));
+
+            //Map Role
+            CreateMap<Role, RoleDto>();
 
             // Map StorageCondition
             CreateMap<StorageCondition, StorageConditionDto.StorageConditionResponseDto>();
-
-            CreateMap<StorageConditionDto.StorageConditionCreateDto, StorageCondition>()
+            CreateMap<StorageConditionDto.StorageConditionRequestDto, StorageCondition>()
                 .ForMember(dest => dest.StorageConditionId, opt => opt.Ignore())
                 .ForMember(dest => dest.Status, opt => opt.Ignore())
-                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
-                .ForMember(dest => dest.UpdateAt, opt => opt.Ignore());
-
-            CreateMap<StorageConditionDto.StorageConditionUpdateDto, StorageCondition>()
-                .ForMember(dest => dest.StorageConditionId, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
                 .ForMember(dest => dest.UpdateAt, opt => opt.Ignore());
 
@@ -62,18 +71,9 @@ namespace MilkDistributionWarehouse.Mapper
             // Map Location
             CreateMap<Location, LocationDto.LocationResponseDto>()
                 .ForMember(dest => dest.AreaNameDto, opt => opt.MapFrom(src => src.Area));
-
-            CreateMap<LocationDto.LocationCreateDto, Location>()
+            CreateMap<LocationDto.LocationRequestDto, Location>()
                 .ForMember(dest => dest.LocationId, opt => opt.Ignore())
                 .ForMember(dest => dest.Status, opt => opt.Ignore())
-                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
-                .ForMember(dest => dest.UpdateAt, opt => opt.Ignore())
-                .ForMember(dest => dest.Area, opt => opt.Ignore())
-                .ForMember(dest => dest.Pallets, opt => opt.Ignore())
-                .ForMember(dest => dest.StocktakingLocations, opt => opt.Ignore());
-
-            CreateMap<LocationDto.LocationUpdateDto, Location>()
-                .ForMember(dest => dest.LocationId, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
                 .ForMember(dest => dest.UpdateAt, opt => opt.Ignore())
                 .ForMember(dest => dest.Area, opt => opt.Ignore())
@@ -81,14 +81,10 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.StocktakingLocations, opt => opt.Ignore());
 
             // Map Area
-            CreateMap<Area, AreaDto.AreaResponseDto>()
-                .ForMember(dest => dest.TemperatureMin, opt => opt.MapFrom(src => src.StorageCondition.TemperatureMin))
-                .ForMember(dest => dest.TemperatureMax, opt => opt.MapFrom(src => src.StorageCondition.TemperatureMax))
-                .ForMember(dest => dest.HumidityMin, opt => opt.MapFrom(src => src.StorageCondition.HumidityMin))
-                .ForMember(dest => dest.HumidityMax, opt => opt.MapFrom(src => src.StorageCondition.HumidityMax))
-                .ForMember(dest => dest.LightLevel, opt => opt.MapFrom(src => src.StorageCondition.LightLevel));
+            CreateMap<Area, AreaDto.AreaResponseDto>();
             CreateMap<Area, AreaDto.AreaNameDto>();
-            CreateMap<AreaDto.AreaCreateDto, Area>()
+            CreateMap<Area, AreaDto.AreaActiveDto>();
+            CreateMap<AreaDto.AreaRequestDto, Area>()
                 .ForMember(dest => dest.AreaId, opt => opt.Ignore())
                 .ForMember(dest => dest.Status, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
@@ -96,13 +92,18 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.AreaName, opt => opt.MapFrom(src => src.AreaName.Trim()))
                 .ForMember(dest => dest.AreaCode, opt => opt.MapFrom(src => src.AreaCode.Trim()))
                 .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description != null ? src.Description.Trim() : null));
-            CreateMap<AreaDto.AreaUpdateDto, Area>()
-                .ForMember(dest => dest.AreaId, opt => opt.Ignore())
-                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
-                .ForMember(dest => dest.UpdateAt, opt => opt.Ignore())
-                .ForMember(dest => dest.AreaName, opt => opt.MapFrom(src => src.AreaName.Trim()))
-                .ForMember(dest => dest.AreaCode, opt => opt.MapFrom(src => src.AreaCode.Trim()))
-                .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description != null ? src.Description.Trim() : null));
+            CreateMap<Area, AreaDto.AreaDetailDto>()
+                .ForMember(dest => dest.TemperatureMin, opt => opt.MapFrom(src => src.StorageCondition.TemperatureMin))
+                .ForMember(dest => dest.TemperatureMax, opt => opt.MapFrom(src => src.StorageCondition.TemperatureMax))
+                .ForMember(dest => dest.HumidityMin, opt => opt.MapFrom(src => src.StorageCondition.HumidityMin))
+                .ForMember(dest => dest.HumidityMax, opt => opt.MapFrom(src => src.StorageCondition.HumidityMax))
+                .ForMember(dest => dest.LightLevel, opt => opt.MapFrom(src => src.StorageCondition.LightLevel));
+            CreateMap<Area, AreaDto.AreaDetailDto>()
+                .ForMember(dest => dest.TemperatureMin, opt => opt.MapFrom(src => src.StorageCondition.TemperatureMin))
+                .ForMember(dest => dest.TemperatureMax, opt => opt.MapFrom(src => src.StorageCondition.TemperatureMax))
+                .ForMember(dest => dest.HumidityMin, opt => opt.MapFrom(src => src.StorageCondition.HumidityMin))
+                .ForMember(dest => dest.HumidityMax, opt => opt.MapFrom(src => src.StorageCondition.HumidityMax))
+                .ForMember(dest => dest.LightLevel, opt => opt.MapFrom(src => src.StorageCondition.LightLevel));
 
             // Map Goods
             CreateMap<Good, GoodsDto>()

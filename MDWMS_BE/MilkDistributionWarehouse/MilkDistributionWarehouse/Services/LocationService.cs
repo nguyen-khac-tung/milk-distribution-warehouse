@@ -12,9 +12,10 @@ namespace MilkDistributionWarehouse.Services
     public interface ILocationService
     {
         Task<(string, PageResult<LocationDto.LocationResponseDto>)> GetLocations(PagedRequest request);
-        Task<(string, LocationDto.LocationResponseDto)> CreateLocation(LocationDto.LocationCreateDto dto);
-        Task<(string, LocationDto.LocationResponseDto)> UpdateLocation(int locationId, LocationDto.LocationUpdateDto dto);
+        Task<(string, LocationDto.LocationResponseDto)> CreateLocation(LocationDto.LocationRequestDto dto);
+        Task<(string, LocationDto.LocationResponseDto)> UpdateLocation(int locationId, LocationDto.LocationRequestDto dto);
         Task<(string, LocationDto.LocationResponseDto)> DeleteLocation(int locationId);
+        Task<(string, LocationDto.LocationResponseDto)> UpdateStatus(int locationId, int status);
     }
 
     public class LocationService : ILocationService
@@ -43,24 +44,19 @@ namespace MilkDistributionWarehouse.Services
             return ("", pagedResult);
         }
 
-        public async Task<(string, LocationDto.LocationResponseDto)> CreateLocation(LocationDto.LocationCreateDto dto)
+        public async Task<(string, LocationDto.LocationResponseDto)> CreateLocation(LocationDto.LocationRequestDto dto)
         {
             if (dto == null) return ("Dữ liệu vị trí không hợp lệ.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
-            if (await _locationRepository.IsDuplicateLocationCode(dto.LocationCode))
-                return ("Mã vị trí đã tồn tại.".ToMessageForUser(), new LocationDto.LocationResponseDto());
-
-            if (await _locationRepository.IsDuplicateLocationAsync(dto.LocationCode, dto.Row, dto.Column, dto.AreaId))
+            if (await _locationRepository.IsDuplicateLocationAsync(dto.Rack, dto.Row, dto.Column, dto.AreaId))
                 return ("Đã tồn tại vị trí có cùng mã hoặc trùng hàng và cột trong khu vực này.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
-            if (ContainsSpecialCharacters(dto.LocationCode))
-                return ("Mã vị trí không hợp lệ, không được chứa ký tự đặc biệt.".ToMessageForUser(), new LocationDto.LocationResponseDto());
-            // Validate Area FK async
             var areaExists = await _areaRepository.GetAreaById(dto.AreaId);
             if (areaExists == null)
                 return ("Khu vực được chọn không tồn tại hoặc đã bị xoá.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
             var entity = _mapper.Map<Location>(dto);
+            entity.LocationCode = $"{dto.Rack}-R{dto.Row:D2}-C{dto.Column:D2}";
             entity.AreaId = dto.AreaId;
             entity.CreatedAt = DateTime.UtcNow;
             entity.Status = (int)CommonStatus.Active;
@@ -72,7 +68,7 @@ namespace MilkDistributionWarehouse.Services
             return ("", _mapper.Map<LocationDto.LocationResponseDto>(createdEntity));
         }
 
-        public async Task<(string, LocationDto.LocationResponseDto)> UpdateLocation(int locationId, LocationDto.LocationUpdateDto dto)
+        public async Task<(string, LocationDto.LocationResponseDto)> UpdateLocation(int locationId, LocationDto.LocationRequestDto dto)
         {
             if (dto == null) return ("Dữ liệu cập nhật vị trí không hợp lệ.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
@@ -83,14 +79,8 @@ namespace MilkDistributionWarehouse.Services
             if(locationExists.Status == CommonStatus.Deleted)
                 return ("Vị trí này đã bị xóa, không thể cập nhật thông tin.".ToMessageForUser(),new LocationDto.LocationResponseDto());
 
-            if (await _locationRepository.IsDuplicationByIdAndCode(locationId, dto.LocationCode))
-                return ("Mã vị trí đã tồn tại.".ToMessageForUser(), new LocationDto.LocationResponseDto());
-
-            if (await _locationRepository.IsDuplicateLocationAsync(dto.LocationCode, dto.Row, dto.Column, dto.AreaId, locationId))
+            if (await _locationRepository.IsDuplicateLocationAsync(dto.Rack, dto.Row, dto.Column, dto.AreaId, locationId))
                 return ("Đã tồn tại vị trí có cùng mã hoặc trùng hàng và cột trong khu vực này.".ToMessageForUser(), new LocationDto.LocationResponseDto());
-
-            if (ContainsSpecialCharacters(dto.LocationCode))
-                return ("Mã vị trí không hợp lệ, không được chứa ký tự đặc biệt.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
             // Validate Area FK async
             var areaExists = await _areaRepository.GetAreaById(dto.AreaId);
@@ -98,10 +88,8 @@ namespace MilkDistributionWarehouse.Services
                 return ("Khu vực được chọn không tồn tại hoặc đã bị xoá.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
             _mapper.Map(dto, locationExists);
-            locationExists.AreaId = dto.AreaId;
-            locationExists.Status = dto.Status ?? locationExists.Status;
+            locationExists.LocationCode = $"{dto.Rack}-R{dto.Row:D2}-C{dto.Column:D2}";
             locationExists.UpdateAt = DateTime.UtcNow;
-
             var updatedEntity = await _locationRepository.UpdateLocation(locationExists);
             if (updatedEntity == null)
                 return ("Cập nhật vị trí thất bại.".ToMessageForUser(), new LocationDto.LocationResponseDto());
@@ -131,9 +119,33 @@ namespace MilkDistributionWarehouse.Services
             return ("", _mapper.Map<LocationDto.LocationResponseDto>(deletedEntity));
         }
 
-        private bool ContainsSpecialCharacters(string input)
+        public async Task<(string, LocationDto.LocationResponseDto)> UpdateStatus(int locationId, int status)
         {
-            return input.Any(ch => !char.IsLetterOrDigit(ch) && !char.IsWhiteSpace(ch));
+            if (locationId <= 0)
+                return ("Mã vị trí không hợp lệ.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+
+            var location = await _locationRepository.GetLocationById(locationId);
+            if (location == null)
+                return ("Không tìm thấy vị trí cần cập nhật trạng thái.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+
+            if (location.Status == CommonStatus.Deleted)
+                return ("Vị trí này đã bị xóa, không thể cập nhật trạng thái.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+
+            if (status != CommonStatus.Active && status != CommonStatus.Inactive && status != CommonStatus.Deleted)
+                return ("Trạng thái không hợp lệ.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+
+            if (await _locationRepository.HasDependentPalletsOrStocktakingsAsync(locationId))
+                return ("Không thể cập nhật trạng thái vì vị trí này đang được sử dụng cho pallet hoặc kiểm kê hàng.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+
+            location.Status = status;
+            location.UpdateAt = DateTime.UtcNow;
+
+            var updatedEntity = await _locationRepository.UpdateLocation(location);
+            if (updatedEntity == null)
+                return ("Cập nhật trạng thái thất bại.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+
+            return ("", _mapper.Map<LocationDto.LocationResponseDto>(updatedEntity));
         }
+
     }
 }
