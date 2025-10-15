@@ -136,24 +136,23 @@ namespace MilkDistributionWarehouse.Services
                 return ("Goods is not exist", new GoodsUpdateStatus());
 
             if (goodsExist.Status == CommonStatus.Deleted || update.Status == CommonStatus.Deleted)
-                return ("Hàng hoá đã bị xoá hoặc không thể chuyển sang trạng thái đã xoá.".ToMessageForUser(), new GoodsUpdateStatus());
+                return ("Hàng hoá đã bị xoá trước đó".ToMessageForUser(), new GoodsUpdateStatus());
 
             bool isChangeStatus = goodsExist.Status != update.Status;
+            if (!isChangeStatus)
+                return ("Hàng hoá không bị thay đổi trạng thái.".ToMessageForUser(), new GoodsUpdateStatus());
 
-            if (isChangeStatus)
+            if (goodsExist.Status == CommonStatus.Active && update.Status == CommonStatus.Inactive)
             {
-                if (goodsExist.Status == CommonStatus.Active && update.Status == CommonStatus.Inactive)
-                {
-                    if (await IsGoodInUseAnyTransaction(update.GoodsId))
-                        return ("Không thể vô hiệu hoá hàng hoá vì đang được sử dụng.".ToMessageForUser(), new GoodsUpdateStatus());
-                }
+                if (await IsGoodInUseAnyTransaction(update.GoodsId))
+                    return ("Không thể vô hiệu hoá hàng hoá vì đang được sử dụng.".ToMessageForUser(), new GoodsUpdateStatus());
+            }
 
-                if (goodsExist.Status == CommonStatus.Inactive && update.Status == CommonStatus.Active)
-                {
-                    var activateError = await ActivateLinkedEntitiesAsync(update.GoodsId);
-                    if (!string.IsNullOrEmpty(activateError))
-                        return (activateError, new GoodsUpdateStatus());
-                }
+            if (goodsExist.Status == CommonStatus.Inactive && update.Status == CommonStatus.Active)
+            {
+                var activateError = await ActivateLinkedEntitiesAsync(update.GoodsId);
+                if (!string.IsNullOrEmpty(activateError))
+                    return (activateError, new GoodsUpdateStatus());
             }
 
             goodsExist.Status = update.Status;
@@ -192,8 +191,11 @@ namespace MilkDistributionWarehouse.Services
         private async Task<bool> CheckValidationDeleteGoods(int goodsId)
         {
             var checkBatch = await _goodRepository.IsGoodsUsedInBatch(goodsId);
+
             var checkPurchaseOrder = await _goodRepository.IsGoodUsedInPurchaseOrder(goodsId);
+
             var checkSaleOrder = await _goodRepository.IsGoodsUsedInSaleOrder(goodsId);
+
             return checkBatch || checkPurchaseOrder || checkSaleOrder;
         }
 
