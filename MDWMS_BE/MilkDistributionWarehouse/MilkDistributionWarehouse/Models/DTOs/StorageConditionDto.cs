@@ -53,5 +53,18 @@ namespace MilkDistributionWarehouse.Models.DTOs
                     yield return new ValidationResult("Độ ẩm tối thiểu không được lớn hơn hoặc bằng độ ẩm tối đa!", new[] { nameof(HumidityMin), nameof(HumidityMax) });
             }
         }
+
+        public class StorageConditionActiveDto
+        {
+            public int StorageConditionId { get; set; }
+
+            public decimal TemperatureMin { get; set; }
+
+            public decimal TemperatureMax { get; set; }
+
+            public decimal HumidityMin { get; set; }
+
+            public decimal HumidityMax { get; set; }
+        }
     }
 }

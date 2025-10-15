@@ -25,6 +25,17 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<PageResult<StorageConditionDto.StorageConditionResponseDto>>.ToResultOk(conditions);
         }
 
+        [HttpGet("StorageConditionsDropdown")]
+        public async Task<IActionResult> GetStorageConditionsActive()
+        {
+            var (msg, activeConditions) = await _storageConditionService.GetActiveStorageConditions();
+
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<List<StorageConditionDto.StorageConditionActiveDto>>.ToResultOk(activeConditions);
+        }
+
         [HttpPost("Create")]
         public async Task<IActionResult> CreateStorageCondition([FromBody] StorageConditionDto.StorageConditionRequestDto dto)
         {

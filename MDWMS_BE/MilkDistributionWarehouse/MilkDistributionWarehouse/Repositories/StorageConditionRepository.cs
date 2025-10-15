@@ -12,6 +12,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<StorageCondition?> UpdateStorageCondition(StorageCondition entity);
         Task<bool> IsDuplicateStorageConditionAsync(int? storageConditionId, decimal? temperatureMin, decimal? temperatureMax, decimal? humidityMin, decimal? humidityMax, string lightLevel);
         Task<bool> DeleteStorageCondition(int storageConditionId);
+        Task<List<StorageCondition>> GetActiveStorageConditionsAsync();
     }
 
     public class StorageConditionRepository : IStorageConditionRepository
@@ -98,6 +99,15 @@ namespace MilkDistributionWarehouse.Repositories
                     sc.HumidityMin == humidityMin &&
                     sc.HumidityMax == humidityMax &&
                     sc.LightLevel == lightLevel);
+        }
+
+        public async Task<List<StorageCondition>> GetActiveStorageConditionsAsync()
+        {
+            return await _context.StorageConditions
+                .Where(sc => sc.Status == CommonStatus.Active)
+                .OrderByDescending(sc => sc.CreatedAt)
+                .AsNoTracking()
+                .ToListAsync();
         }
     }
 }
