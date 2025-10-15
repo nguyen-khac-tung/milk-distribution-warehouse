@@ -27,8 +27,7 @@ export const IconMap = [
   { keywords: ['productVariant'], icon: 'fluent-mdl2:product-variant' },
   { keywords: ['streamlineplump'], icon: 'streamline-plump:graphic-template-website-ui-remix' },
   { keywords: ['down'], icon: 'formkit:down' },
-
-
+  { keywords: ['bell'], icon: 'noto:bell' },
   // có thể thêm nhiều icon khác ở đây
 ];
 
@@ -60,11 +59,12 @@ export const ComponentIcon = ({ name, color = "#000000", size = 20, collapsed = 
   const isCalendarIcon = name === 'calendar';
   const isStreamlineplumpIcon = name === 'streamlineplump';
   const isFormkitdownIcon = name === 'down';
+  const isBellIcon = name === 'bell';
   const needsSpecialAlignment = isMilkIcon || isUnitMeasureIcon || isCategoryIcon || isStorageCondition ||
     isPartnerIcon || isRetailerIcon || isSupplierIcon || isThermometerIcon ||
     isPackageIcon || isBuildingIcon || isDropletsIcon || isSunIcon || isTagIcon ||
     isMapPinIcon || isBoxIcon || isCloseIcon || isQrcodeIcon || isProductVariantIcon ||
-    isPhoneIcon || isEmailIcon || isTaxIcon || isCalendarIcon || isStreamlineplumpIcon || isFormkitdownIcon;
+    isPhoneIcon || isEmailIcon || isTaxIcon || isCalendarIcon || isStreamlineplumpIcon || isFormkitdownIcon || isBellIcon;
 
   return (
     <Icon

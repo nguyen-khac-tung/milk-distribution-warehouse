@@ -57,7 +57,7 @@ const getEmployeeStats = (employees) => {
 
   const totalUsers = employees.length
   const activeUsers = employees.filter(emp => emp.status === 1).length
-  const inactiveUsers = employees.filter(emp => emp.status === 0).length
+  const inactiveUsers = employees.filter(emp => emp.status === 2).length
   
   // Define all possible roles
   const allRoles = [
@@ -193,12 +193,24 @@ export default function AdminPage() {
           )
         )
         
+        // Show success toast
+        const statusText = newStatus === 1 ? "kích hoạt" : "ngừng hoạt động"
+        window.showToast(`Đã ${statusText} người dùng "${name}" thành công`, "success")
+        
         console.log(`Successfully updated user ${name} status to ${newStatus}`)
       } else {
         console.error(`Failed to update user ${name} status:`, response?.message)
+        
+        // Show error toast
+        const errorMessage = response?.message || "Có lỗi xảy ra khi cập nhật trạng thái người dùng"
+        window.showToast(errorMessage, "error")
       }
     } catch (error) {
       console.error("Error updating user status:", error)
+      
+      // Show error toast
+      const errorMessage = error?.response?.data?.message || "Có lỗi xảy ra khi cập nhật trạng thái người dùng"
+      window.showToast(errorMessage, "error")
     }
   }
 
@@ -306,8 +318,8 @@ export default function AdminPage() {
         if (statusFilter) {
           if (statusFilter === "1") {
             matchesStatus = employee.status === 1
-          } else if (statusFilter === "0") {
-            matchesStatus = employee.status === 0
+          } else if (statusFilter === "2") {
+            matchesStatus = employee.status === 2
           }
         }
 
@@ -511,7 +523,7 @@ export default function AdminPage() {
             statusOptions={[
               { value: "", label: "Tất cả trạng thái" },
               { value: "1", label: "Hoạt động" },
-              { value: "0", label: "Ngừng hoạt động" }
+              { value: "2", label: "Ngừng hoạt động" }
             ]}
             onStatusFilter={handleStatusFilter}
             clearStatusFilter={clearStatusFilter}

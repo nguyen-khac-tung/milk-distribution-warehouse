@@ -70,21 +70,75 @@ export default function AccountStatsChart({
     return roleData || { count: 0, percentage: 0 }
   }
 
-  // Helper function to get role color
-  const getRoleColor = (roleName) => {
+  // Helper function to get role color classes and styles
+  const getRoleColorClasses = (roleName) => {
     const roleColorMap = {
-      "Warehouse Manager": "blue",
-      "Warehouse Staff": "indigo",
-      "Administrator": "purple",
-      "Business Owner": "orange",
-      "Sales Representative": "teal",
-      "Sale Manager": "green"
+      "Warehouse Manager": {
+        dot: "bg-blue-500",
+        text: "text-blue-600",
+        gradient: "from-blue-400 to-blue-600",
+        dotStyle: { backgroundColor: "#3b82f6" },
+        textStyle: { color: "#2563eb" },
+        gradientStyle: { background: "linear-gradient(to right, #60a5fa, #2563eb)" }
+      },
+      "Warehouse Staff": {
+        dot: "bg-indigo-500",
+        text: "text-indigo-600",
+        gradient: "from-indigo-400 to-indigo-600",
+        dotStyle: { backgroundColor: "#6366f1" },
+        textStyle: { color: "#4f46e5" },
+        gradientStyle: { background: "linear-gradient(to right, #818cf8, #4f46e5)" }
+      },
+      "Administrator": {
+        dot: "bg-purple-500",
+        text: "text-purple-600",
+        gradient: "from-purple-400 to-purple-600",
+        dotStyle: { backgroundColor: "#8b5cf6" },
+        textStyle: { color: "#7c3aed" },
+        gradientStyle: { background: "linear-gradient(to right, #a78bfa, #7c3aed)" }
+      },
+      "Business Owner": {
+        dot: "bg-orange-500",
+        text: "text-orange-600",
+        gradient: "from-orange-400 to-orange-600",
+        dotStyle: { backgroundColor: "#f97316" },
+        textStyle: { color: "#ea580c" },
+        gradientStyle: { background: "linear-gradient(to right, #fb923c, #ea580c)" }
+      },
+      "Sales Representative": {
+        dot: "bg-emerald-500",
+        text: "text-emerald-600",
+        gradient: "from-emerald-400 to-emerald-600",
+        dotStyle: { backgroundColor: "#10b981" },
+        textStyle: { color: "#059669" },
+        gradientStyle: { background: "linear-gradient(to right, #34d399, #059669)" }
+      },
+      "Sale Manager": {
+        dot: "bg-teal-500",
+        text: "text-teal-600",
+        gradient: "from-teal-400 to-teal-600",
+        dotStyle: { backgroundColor: "#14b8a6" },
+        textStyle: { color: "#0d9488" },
+        gradientStyle: { background: "linear-gradient(to right, #5eead4, #0d9488)" }
+      }
     }
-    return roleColorMap[roleName] || "gray"
+    return roleColorMap[roleName] || {
+      dot: "bg-gray-500",
+      text: "text-gray-600",
+      gradient: "from-gray-400 to-gray-600",
+      dotStyle: { backgroundColor: "#6b7280" },
+      textStyle: { color: "#4b5563" },
+      gradientStyle: { background: "linear-gradient(to right, #9ca3af, #4b5563)" }
+    }
   }
 
   return (
     <div className={`${className}`}>
+      {/* Tailwind CSS classes for dynamic colors - ensure they are included in build */}
+      <div className="hidden bg-blue-500 bg-indigo-500 bg-purple-500 bg-orange-500 bg-emerald-500 bg-teal-500 bg-gray-500"></div>
+      <div className="hidden text-blue-600 text-indigo-600 text-purple-600 text-orange-600 text-emerald-600 text-teal-600 text-gray-600"></div>
+      <div className="hidden from-blue-400 to-blue-600 from-indigo-400 to-indigo-600 from-purple-400 to-purple-600 from-orange-400 to-orange-600 from-emerald-400 to-emerald-600 from-teal-400 to-teal-600 from-gray-400 to-gray-600"></div>
+      
       {/* Unified Statistics Card */}
       <Card className="bg-white border border-slate-200 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
         <CardHeader className="bg-gradient-to-r from-orange-50 to-orange-100 border-b border-orange-200">
@@ -285,24 +339,34 @@ export default function AccountStatsChart({
               </div>
                 ) : (
                   roles.map((role, index) => {
-                    const color = getRoleColor(role.roleName)
+                    const colorClasses = getRoleColorClasses(role.roleName)
                     const roleData = getRoleData(role.roleName)
                     const count = roleData.count || 0
                     const percentage = roleData.percentage || 0
                     const displayName = getRoleDisplayName(role.roleName)
                     
+                    
                     return (
                       <div key={role.roleId || index} className="flex items-center justify-between py-2 hover:bg-slate-50 rounded-lg transition-colors duration-200">
                         <div className="flex items-center space-x-3">
-                          <div className={`w-2 h-2 bg-${color}-500 rounded-full`}></div>
+                          <div 
+                            className="w-2 h-2 rounded-full"
+                            style={colorClasses.dotStyle}
+                          ></div>
                           <span className="text-slate-700 font-medium text-sm">{displayName}</span>
               </div>
                         <div className="flex items-center space-x-3">
-                          <span className={`text-2xl font-bold text-${color}-600`}>{count}</span>
+                          <span 
+                            className="text-2xl font-bold"
+                            style={colorClasses.textStyle}
+                          >{count}</span>
                           <div className="w-16 h-1 bg-slate-200 rounded-full overflow-hidden">
-                <div 
-                              className={`h-full bg-gradient-to-r from-${color}-400 to-${color}-600 rounded-full transition-all duration-1000 ease-out`}
-                              style={{ width: `${percentage}%` }}
+                            <div 
+                              className="h-full rounded-full transition-all duration-1000 ease-out"
+                              style={{ 
+                                width: `${percentage}%`,
+                                ...colorClasses.gradientStyle
+                              }}
                 ></div>
               </div>
                           <span className="text-slate-500 text-xs font-medium w-8 text-right">{percentage}%</span>
