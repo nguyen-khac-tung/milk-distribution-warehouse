@@ -141,7 +141,7 @@ namespace MilkDistributionWarehouse.Repositories
 
         public async Task<bool> HasGoodsUsedInBatchNotExpiry(int goodsId)
         {
-            return await _warehouseContext.Batchs.AnyAsync(b => b.GoodsId == goodsId && b.ExpiryDate > DateTime.Now);
+            return await _warehouseContext.Batchs.AnyAsync(b => b.GoodsId == goodsId && b.ExpiryDate > DateOnly.FromDateTime(DateTime.Now));
         }
 
         public async Task<bool> IsGoodsUsedInPurchaseOrderWithExcludedStatusesAsync(int goodsId, params int[] excludedStatuses)

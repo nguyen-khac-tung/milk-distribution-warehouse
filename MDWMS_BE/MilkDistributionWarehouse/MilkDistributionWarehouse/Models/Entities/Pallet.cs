@@ -9,8 +9,6 @@ public partial class Pallet
 {
     public Guid PalletId { get; set; }
 
-    public string PalletCode { get; set; }
-
     public Guid? PurchaseOrderId { get; set; }
 
     public int? PackageQuantity { get; set; }
