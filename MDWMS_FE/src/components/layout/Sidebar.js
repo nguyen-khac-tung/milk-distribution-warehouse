@@ -162,7 +162,7 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
                         }}
-                        /* Hover effects handled by CSS for better performance */
+                    /* Hover effects handled by CSS for better performance */
                     >
                         <div style={{ marginRight: 12, display: 'flex', alignItems: 'center' }}>
                             {React.cloneElement(item.icon, {
@@ -172,8 +172,8 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
                         </div>
                         {!collapsed && (
                             <>
-                                <span style={{ 
-                                    flex: 1, 
+                                <span style={{
+                                    flex: 1,
                                     fontWeight: 500,
                                     whiteSpace: 'nowrap',
                                     overflow: 'hidden',
@@ -207,7 +207,7 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
                                                 whiteSpace: 'nowrap',
                                                 overflow: 'hidden',
                                             }}
-                                            /* Hover effects handled by CSS for better performance */
+                                        /* Hover effects handled by CSS for better performance */
                                         >
                                             <div style={{ marginRight: 8, display: 'flex', alignItems: 'center' }}>
                                                 {React.cloneElement(child.icon, {
@@ -215,7 +215,7 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
                                                     size: 14
                                                 })}
                                             </div>
-                                            <span style={{ 
+                                            <span style={{
                                                 fontWeight: 400,
                                                 whiteSpace: 'nowrap',
                                                 overflow: 'hidden',
@@ -248,7 +248,7 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
                     }}
-                    /* Hover effects handled by CSS for better performance */
+                /* Hover effects handled by CSS for better performance */
                 >
                     <div style={{ marginRight: 12, display: 'flex', alignItems: 'center' }}>
                         {React.cloneElement(item.icon, {
@@ -257,7 +257,7 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
                         })}
                     </div>
                     {!collapsed && (
-                        <span style={{ 
+                        <span style={{
                             fontWeight: 500,
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
@@ -291,7 +291,7 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
         >
             {/* Header với logo và nút toggle */}
             <div style={{
-                height: 64,
+                height: 75,
                 background: "#ffffff",
                 display: "flex",
                 alignItems: "center",
@@ -314,7 +314,7 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
                     </div>
                 )}
                 {collapsed && (
-                    <div style={{ 
+                    <div style={{
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -328,7 +328,7 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
             {/* Menu */}
             <div style={{ flex: 1, overflowY: "auto", backgroundColor: "#ffffff" }}>
                 {menuItems.map((item) => {
-                    const isActive = location.pathname === item.key || 
+                    const isActive = location.pathname === item.key ||
                         item.children?.some((c) => c.key === location.pathname);
                     return renderMenuItem(item, isActive);
                 })}
