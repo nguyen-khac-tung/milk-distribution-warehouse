@@ -1,5 +1,8 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { getGoods, deleteGood, getGoodDetail, updateGoodStatus } from "../../services/GoodService";
+import { getCategoriesDropdown } from "../../services/CategoryService/CategoryServices";
+import { getSuppliersDropdown } from "../../services/SupplierService";
+import { getUnitMeasuresDropdown } from "../../services/UnitMeasureService";
 import { Card, CardContent } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
@@ -31,7 +34,13 @@ const Good = {
 export default function GoodsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("")
+  const [categoryFilter, setCategoryFilter] = useState("")
+  const [supplierFilter, setSupplierFilter] = useState("")
+  const [unitMeasureFilter, setUnitMeasureFilter] = useState("")
   const [showStatusFilter, setShowStatusFilter] = useState(false)
+  const [showCategoryFilter, setShowCategoryFilter] = useState(false)
+  const [showSupplierFilter, setShowSupplierFilter] = useState(false)
+  const [showUnitMeasureFilter, setShowUnitMeasureFilter] = useState(false)
   const [sortField, setSortField] = useState("goodsName")
   const [sortAscending, setSortAscending] = useState(true)
   const [goods, setGoods] = useState([])
@@ -54,12 +63,34 @@ export default function GoodsPage() {
   })
   const [showPageSizeFilter, setShowPageSizeFilter] = useState(false)
   
+  // Dropdown data for filters
+  const [categories, setCategories] = useState([])
+  const [suppliers, setSuppliers] = useState([])
+  const [unitMeasures, setUnitMeasures] = useState([])
+  
   // Thống kê tổng (không thay đổi khi search/filter)
   const [totalStats, setTotalStats] = useState({
     totalCount: 0,
     activeCount: 0,
     inactiveCount: 0
   })
+
+  // Load dropdown data for filters
+  const loadDropdownData = async () => {
+    try {
+      const [categoriesRes, suppliersRes, unitMeasuresRes] = await Promise.all([
+        getCategoriesDropdown(),
+        getSuppliersDropdown(),
+        getUnitMeasuresDropdown()
+      ])
+      
+      setCategories(categoriesRes?.data || [])
+      setSuppliers(suppliersRes?.data || [])
+      setUnitMeasures(unitMeasuresRes?.data || [])
+    } catch (error) {
+      console.error("Error loading dropdown data:", error)
+    }
+  }
 
   // Fetch tổng thống kê (không có search/filter)
   const fetchTotalStats = async () => {
@@ -70,7 +101,10 @@ export default function GoodsPage() {
         search: "",
         sortField: "",
         sortAscending: true,
-        status: "" // Không filter theo status
+        status: "",
+        categoryId: "",
+        supplierId: "",
+        unitMeasureId: ""
       })
 
       if (response && response.data) {
@@ -94,18 +128,29 @@ export default function GoodsPage() {
     try {
       setLoading(true)
 
-      const response = await getGoods({
+      const requestParams = {
         pageNumber: searchParams.pageNumber !== undefined ? searchParams.pageNumber : 1,
         pageSize: searchParams.pageSize !== undefined ? searchParams.pageSize : 10,
         search: searchParams.search !== undefined ? searchParams.search : "",
         sortField: searchParams.sortField || "",
         sortAscending: searchParams.sortAscending !== undefined ? searchParams.sortAscending : true,
-        status: searchParams.status
-      })
+        status: searchParams.status || "",
+        categoryId: searchParams.categoryId || "",
+        supplierId: searchParams.supplierId || "",
+        unitMeasureId: searchParams.unitMeasureId || ""
+      }
+
+      console.log("fetchData - searchParams received:", searchParams)
+      console.log("fetchData - requestParams built:", requestParams)
+      console.log("fetchData - current state:", { searchQuery, statusFilter, categoryFilter, supplierFilter, unitMeasureFilter })
+
+      const response = await getGoods(requestParams)
+      console.log("fetchData - Full response:", response)
 
       if (response && response.data) {
         // API returns response.data.items (array) and response.data.totalCount
         const dataArray = Array.isArray(response.data.items) ? response.data.items : []
+        console.log("fetchData - Data array from response:", dataArray)
         
         // Gọi API detail cho từng item để lấy isDisable
         const enrichedData = await Promise.all(
@@ -126,12 +171,14 @@ export default function GoodsPage() {
           })
         )
         
+        console.log("fetchData - Enriched data:", enrichedData)
         setGoods(enrichedData)
         setPagination(prev => ({
           ...prev,
           totalCount: response.data.totalCount || enrichedData.length
         }))
       } else {
+        console.log("fetchData - No data or success false")
         setGoods([])
         setPagination(prev => ({ ...prev, totalCount: 0 }))
       }
@@ -149,12 +196,18 @@ export default function GoodsPage() {
 
   // Initial load
   useEffect(() => {
+    // Load dropdown data for filters
+    loadDropdownData()
+    
     // Fetch tổng thống kê khi component mount
     fetchTotalStats()
     
     // Reset tất cả filter và sort về mặc định
     setSearchQuery("")
     setStatusFilter("")
+    setCategoryFilter("")
+    setSupplierFilter("")
+    setUnitMeasureFilter("")
     setSortField("")
     setSortAscending(true)
     setPagination({
@@ -170,15 +223,27 @@ export default function GoodsPage() {
       search: "",
       sortField: "",
       sortAscending: true,
-      status: ""
+      status: "",
+      categoryId: "",
+      supplierId: "",
+      unitMeasureId: ""
     })
   }, [])
 
-  // Close status filter dropdown when clicking outside
+  // Close filter dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (showStatusFilter && !event.target.closest('.status-filter-dropdown')) {
         setShowStatusFilter(false)
+      }
+      if (showCategoryFilter && !event.target.closest('.category-filter-dropdown')) {
+        setShowCategoryFilter(false)
+      }
+      if (showSupplierFilter && !event.target.closest('.supplier-filter-dropdown')) {
+        setShowSupplierFilter(false)
+      }
+      if (showUnitMeasureFilter && !event.target.closest('.unit-measure-filter-dropdown')) {
+        setShowUnitMeasureFilter(false)
       }
       if (showPageSizeFilter && !event.target.closest('.page-size-filter-dropdown')) {
         setShowPageSizeFilter(false)
@@ -189,7 +254,7 @@ export default function GoodsPage() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [showStatusFilter, showPageSizeFilter])
+  }, [showStatusFilter, showCategoryFilter, showSupplierFilter, showUnitMeasureFilter, showPageSizeFilter])
 
   // Search with debounce
   useEffect(() => {
@@ -201,7 +266,10 @@ export default function GoodsPage() {
         search: searchQuery || "",
         sortField: sortField,
         sortAscending: sortAscending,
-        status: statusFilter
+        status: statusFilter,
+        categoryId: categoryFilter,
+        supplierId: supplierFilter,
+        unitMeasureId: unitMeasureFilter
       })
       setPagination(prev => ({ ...prev, pageNumber: 1 }))
     }, 500)
@@ -218,10 +286,64 @@ export default function GoodsPage() {
       search: searchQuery || "",
       sortField: sortField,
       sortAscending: sortAscending,
-      status: statusFilter
+      status: statusFilter,
+      categoryId: categoryFilter,
+      supplierId: supplierFilter,
+      unitMeasureId: unitMeasureFilter
     })
     setPagination(prev => ({ ...prev, pageNumber: 1 }))
   }, [statusFilter])
+
+  // Filter by category
+  useEffect(() => {
+    setSearchLoading(true)
+    fetchData({
+      pageNumber: 1,
+      pageSize: pagination.pageSize,
+      search: searchQuery || "",
+      sortField: sortField,
+      sortAscending: sortAscending,
+      status: statusFilter,
+      categoryId: categoryFilter,
+      supplierId: supplierFilter,
+      unitMeasureId: unitMeasureFilter
+    })
+    setPagination(prev => ({ ...prev, pageNumber: 1 }))
+  }, [categoryFilter])
+
+  // Filter by supplier
+  useEffect(() => {
+    setSearchLoading(true)
+    fetchData({
+      pageNumber: 1,
+      pageSize: pagination.pageSize,
+      search: searchQuery || "",
+      sortField: sortField,
+      sortAscending: sortAscending,
+      status: statusFilter,
+      categoryId: categoryFilter,
+      supplierId: supplierFilter,
+      unitMeasureId: unitMeasureFilter
+    })
+    setPagination(prev => ({ ...prev, pageNumber: 1 }))
+  }, [supplierFilter])
+
+  // Filter by unit measure
+  useEffect(() => {
+    setSearchLoading(true)
+    fetchData({
+      pageNumber: 1,
+      pageSize: pagination.pageSize,
+      search: searchQuery || "",
+      sortField: sortField,
+      sortAscending: sortAscending,
+      status: statusFilter,
+      categoryId: categoryFilter,
+      supplierId: supplierFilter,
+      unitMeasureId: unitMeasureFilter
+    })
+    setPagination(prev => ({ ...prev, pageNumber: 1 }))
+  }, [unitMeasureFilter])
 
   // Sort when sortField or sortAscending changes
   useEffect(() => {
@@ -232,10 +354,14 @@ export default function GoodsPage() {
       search: searchQuery || "",
       sortField: sortField,
       sortAscending: sortAscending,
-      status: statusFilter
+      status: statusFilter,
+      categoryId: categoryFilter,
+      supplierId: supplierFilter,
+      unitMeasureId: unitMeasureFilter
     })
     setPagination(prev => ({ ...prev, pageNumber: 1 }))
   }, [sortField, sortAscending])
+
 
   // Remove client-side filtering since backend already handles search and filter
   const filteredGoods = useMemo(() => {
@@ -256,6 +382,9 @@ export default function GoodsPage() {
       // Reset về trang đầu và không có sort/filter để item mới hiển thị ở đầu
       setSearchQuery("")
       setStatusFilter("")
+      setCategoryFilter("")
+      setSupplierFilter("")
+      setUnitMeasureFilter("")
       setSortField("")
       setSortAscending(true)
       setPagination(prev => ({ ...prev, pageNumber: 1 }))
@@ -267,7 +396,10 @@ export default function GoodsPage() {
         search: "",
         sortField: "",
         sortAscending: true,
-        status: ""
+        status: "",
+        categoryId: "",
+        supplierId: "",
+        unitMeasureId: ""
       })
     }, 500)
   }
@@ -353,7 +485,10 @@ export default function GoodsPage() {
         search: searchQuery || "",
         sortField: sortField,
         sortAscending: sortAscending,
-        status: statusFilter
+        status: statusFilter,
+        categoryId: categoryFilter,
+        supplierId: supplierFilter,
+        unitMeasureId: unitMeasureFilter
       })
     } catch (error) {
       console.error("Error deleting good:", error)
@@ -381,7 +516,10 @@ export default function GoodsPage() {
       search: searchQuery || "",
       sortField: sortField,
       sortAscending: sortAscending,
-      status: statusFilter
+      status: statusFilter,
+      categoryId: categoryFilter,
+      supplierId: supplierFilter,
+      unitMeasureId: unitMeasureFilter
     })
     setShowUpdateModal(false)
     setItemToUpdate(null)
@@ -409,6 +547,48 @@ export default function GoodsPage() {
     setShowStatusFilter(false)
   }
 
+  const handleCategoryFilter = (categoryId) => {
+    setCategoryFilter(categoryId)
+    setShowCategoryFilter(false)
+  }
+
+  const clearCategoryFilter = () => {
+    setCategoryFilter("")
+    setShowCategoryFilter(false)
+  }
+
+  const handleSupplierFilter = (supplierId) => {
+    setSupplierFilter(supplierId)
+    setShowSupplierFilter(false)
+  }
+
+  const clearSupplierFilter = () => {
+    setSupplierFilter("")
+    setShowSupplierFilter(false)
+  }
+
+  const handleUnitMeasureFilter = (unitMeasureId) => {
+    setUnitMeasureFilter(unitMeasureId)
+    setShowUnitMeasureFilter(false)
+  }
+
+  const clearUnitMeasureFilter = () => {
+    setUnitMeasureFilter("")
+    setShowUnitMeasureFilter(false)
+  }
+
+  const clearAllFilters = () => {
+    setSearchQuery("")
+    setStatusFilter("")
+    setCategoryFilter("")
+    setSupplierFilter("")
+    setUnitMeasureFilter("")
+    setShowStatusFilter(false)
+    setShowCategoryFilter(false)
+    setShowSupplierFilter(false)
+    setShowUnitMeasureFilter(false)
+  }
+
   const handlePageSizeChange = (newPageSize) => {
     setPagination(prev => ({ ...prev, pageSize: newPageSize, pageNumber: 1 }))
     setShowPageSizeFilter(false)
@@ -420,7 +600,10 @@ export default function GoodsPage() {
       search: searchQuery || "",
       sortField: sortField,
       sortAscending: sortAscending,
-      status: statusFilter
+      status: statusFilter,
+      categoryId: categoryFilter,
+      supplierId: supplierFilter,
+      unitMeasureId: unitMeasureFilter
     })
   }
 
@@ -453,7 +636,10 @@ export default function GoodsPage() {
         search: searchQuery || "",
         sortField: sortField,
         sortAscending: sortAscending,
-        status: statusFilter
+        status: statusFilter,
+        categoryId: categoryFilter,
+        supplierId: supplierFilter,
+        unitMeasureId: unitMeasureFilter
       })
 
       // Refresh total stats
@@ -510,7 +696,33 @@ export default function GoodsPage() {
             ]}
             onStatusFilter={handleStatusFilter}
             clearStatusFilter={clearStatusFilter}
+            // Category Filter
+            categoryFilter={categoryFilter}
+            setCategoryFilter={setCategoryFilter}
+            showCategoryFilter={showCategoryFilter}
+            setShowCategoryFilter={setShowCategoryFilter}
+            categories={categories}
+            onCategoryFilter={handleCategoryFilter}
+            clearCategoryFilter={clearCategoryFilter}
+            // Supplier Filter
+            supplierFilter={supplierFilter}
+            setSupplierFilter={setSupplierFilter}
+            showSupplierFilter={showSupplierFilter}
+            setShowSupplierFilter={setShowSupplierFilter}
+            suppliers={suppliers}
+            onSupplierFilter={handleSupplierFilter}
+            clearSupplierFilter={clearSupplierFilter}
+            // Unit Measure Filter
+            unitMeasureFilter={unitMeasureFilter}
+            setUnitMeasureFilter={setUnitMeasureFilter}
+            showUnitMeasureFilter={showUnitMeasureFilter}
+            setShowUnitMeasureFilter={setShowUnitMeasureFilter}
+            unitMeasures={unitMeasures}
+            onUnitMeasureFilter={handleUnitMeasureFilter}
+            clearUnitMeasureFilter={clearUnitMeasureFilter}
+            onClearAll={clearAllFilters}
           />
+
 
           {/* Table */}
           <div className="w-full">
@@ -661,7 +873,10 @@ export default function GoodsPage() {
                             search: searchQuery || "",
                             sortField: sortField,
                             sortAscending: sortAscending,
-                            status: statusFilter
+                            status: statusFilter,
+                            categoryId: categoryFilter,
+                            supplierId: supplierFilter,
+                            unitMeasureId: unitMeasureFilter
                           })
                           setPagination(prev => ({ ...prev, pageNumber: prev.pageNumber - 1 }))
                         }
@@ -684,7 +899,10 @@ export default function GoodsPage() {
                             search: searchQuery || "",
                             sortField: sortField,
                             sortAscending: sortAscending,
-                            status: statusFilter
+                            status: statusFilter,
+                            categoryId: categoryFilter,
+                            supplierId: supplierFilter,
+                            unitMeasureId: unitMeasureFilter
                           })
                           setPagination(prev => ({ ...prev, pageNumber: prev.pageNumber + 1 }))
                         }
