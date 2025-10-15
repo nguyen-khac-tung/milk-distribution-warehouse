@@ -353,10 +353,10 @@ export default function CategoriesPage() {
         categoryId: parseInt(categoryId),
         status: newStatus
       })
-      
+
       // Show success message
       window.showToast(`Đã ${newStatus === 1 ? 'kích hoạt' : 'vô hiệu hóa'} danh mục: ${categoryName}`, "success")
-      
+
       // Refresh data
       fetchData({
         pageNumber: pagination.pageNumber,
@@ -366,7 +366,7 @@ export default function CategoriesPage() {
         sortAscending: sortAscending,
         status: statusFilter
       })
-      
+
       // Refresh total stats
       fetchTotalStats()
     } catch (error) {
