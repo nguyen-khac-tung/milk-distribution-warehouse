@@ -62,12 +62,12 @@ export default function GoodsPage() {
     totalCount: 0
   })
   const [showPageSizeFilter, setShowPageSizeFilter] = useState(false)
-  
+
   // Dropdown data for filters
   const [categories, setCategories] = useState([])
   const [suppliers, setSuppliers] = useState([])
   const [unitMeasures, setUnitMeasures] = useState([])
-  
+
   // Thống kê tổng (không thay đổi khi search/filter)
   const [totalStats, setTotalStats] = useState({
     totalCount: 0,
@@ -83,7 +83,7 @@ export default function GoodsPage() {
         getSuppliersDropdown(),
         getUnitMeasuresDropdown()
       ])
-      
+
       setCategories(categoriesRes?.data || [])
       setSuppliers(suppliersRes?.data || [])
       setUnitMeasures(unitMeasuresRes?.data || [])
@@ -111,7 +111,7 @@ export default function GoodsPage() {
         const allGoods = Array.isArray(response.data.items) ? response.data.items : []
         const activeCount = allGoods.filter((g) => g.status === 1).length
         const inactiveCount = allGoods.filter((g) => g.status === 2).length
-        
+
         setTotalStats({
           totalCount: response.data.totalCount || allGoods.length,
           activeCount: activeCount,
@@ -151,7 +151,7 @@ export default function GoodsPage() {
         // API returns response.data.items (array) and response.data.totalCount
         const dataArray = Array.isArray(response.data.items) ? response.data.items : []
         console.log("fetchData - Data array from response:", dataArray)
-        
+
         // Gọi API detail cho từng item để lấy isDisable
         const enrichedData = await Promise.all(
           dataArray.map(async (good) => {
@@ -170,7 +170,7 @@ export default function GoodsPage() {
             return good
           })
         )
-        
+
         console.log("fetchData - Enriched data:", enrichedData)
         setGoods(enrichedData)
         setPagination(prev => ({
@@ -198,10 +198,10 @@ export default function GoodsPage() {
   useEffect(() => {
     // Load dropdown data for filters
     loadDropdownData()
-    
+
     // Fetch tổng thống kê khi component mount
     fetchTotalStats()
-    
+
     // Reset tất cả filter và sort về mặc định
     setSearchQuery("")
     setStatusFilter("")
@@ -215,7 +215,7 @@ export default function GoodsPage() {
       pageSize: 10,
       totalCount: 0
     })
-    
+
     // Fetch dữ liệu hiển thị với không có sort/filter
     fetchData({
       pageNumber: 1,
@@ -378,7 +378,7 @@ export default function GoodsPage() {
     setTimeout(() => {
       // Refresh tổng thống kê
       fetchTotalStats()
-      
+
       // Reset về trang đầu và không có sort/filter để item mới hiển thị ở đầu
       setSearchQuery("")
       setStatusFilter("")
@@ -388,7 +388,7 @@ export default function GoodsPage() {
       setSortField("")
       setSortAscending(true)
       setPagination(prev => ({ ...prev, pageNumber: 1 }))
-      
+
       // Refresh data after successful creation
       fetchData({
         pageNumber: 1,
@@ -418,17 +418,17 @@ export default function GoodsPage() {
       if (response && response.status === 200 && response.data) {
         const goodDetail = response.data
         setGoodDetail(goodDetail)
-        
-        
+
+
         // Update isDisable status in the goods list
-        setGoods(prevGoods => 
-          prevGoods.map(item => 
-            item.goodsId === good.goodsId 
+        setGoods(prevGoods =>
+          prevGoods.map(item =>
+            item.goodsId === good.goodsId
               ? { ...item, isDisable: goodDetail.isDisable }
               : item
           )
         )
-        
+
         console.log("Good detail set:", goodDetail)
       } else {
         console.log("Invalid response structure:", response)
@@ -477,7 +477,7 @@ export default function GoodsPage() {
 
       // Refresh tổng thống kê
       fetchTotalStats()
-      
+
       // Refresh data after deletion, keeping current page or going to previous page if needed
       fetchData({
         pageNumber: targetPage,
@@ -508,7 +508,7 @@ export default function GoodsPage() {
   const handleUpdateSuccess = () => {
     // Refresh tổng thống kê
     fetchTotalStats()
-    
+
     // Refresh data after successful update
     fetchData({
       pageNumber: pagination.pageNumber,
@@ -967,7 +967,7 @@ export default function GoodsPage() {
 
       {/* View Good Detail Modal */}
       {showViewModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[99999] p-4" style={{zIndex: 99999}}>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[99999] p-4" style={{ zIndex: 99999 }}>
           <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             {loadingDetail ? (
               <Loading size="large" text="Đang tải chi tiết hàng hóa..." />
