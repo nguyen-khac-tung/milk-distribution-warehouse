@@ -26,7 +26,16 @@ namespace MilkDistributionWarehouse.Models.DTOs
     {
         [Required(ErrorMessage = "Cần phải chọn danh mục để cập nhật")]
         public int CategoryId { get; set; }
+    }
+    public class CategoryDropDown
+    {
+        public int CategoryId { get; set; }
+        public string CategoryName { get; set; }
+    }
 
-        public int? Status { get; set; }
+    public class CategoryUpdateStatus
+    {
+        public int CategoryId { get;set; }
+        public int Status { get; set; }
     }
 }

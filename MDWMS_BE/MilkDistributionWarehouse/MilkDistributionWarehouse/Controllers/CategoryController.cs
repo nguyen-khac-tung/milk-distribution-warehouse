@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using MilkDistributionWarehouse.Utilities;
+﻿using Azure.Core;
+using Microsoft.AspNetCore.Mvc;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Services;
+using MilkDistributionWarehouse.Utilities;
+using System.Threading.Tasks;
 
 namespace MilkDistributionWarehouse.Controllers
 {
@@ -13,6 +15,15 @@ namespace MilkDistributionWarehouse.Controllers
         public CategoryController(ICategoryService categoryService)
         {
             _categoryService = categoryService;
+        }
+
+        [HttpGet("GetCategoriesDropDown")]
+        public async Task<IActionResult> GetCategoriesDropDown()
+        {
+            var (msg, categoriesDropDown) = await _categoryService.GetCategoryDropDown();
+            if (msg.Length > 0)
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<List<CategoryDropDown>>.ToResultOk(categoriesDropDown);
         }
 
         [HttpPost("Categories")]
@@ -40,6 +51,15 @@ namespace MilkDistributionWarehouse.Controllers
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<CategoryDto>.ToResultOk(category);
+        }
+
+        [HttpPut("UpdateStatus")]
+        public async Task<IActionResult> UpdateCategoryStatus([FromBody] CategoryUpdateStatus update)
+        {
+            var (msg, categoryStatus) = await _categoryService.UpdateCategoryStatus(update);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<CategoryUpdateStatus>.ToResultOk(categoryStatus);
         }
 
         [HttpDelete("Delete/{categoryId}")]
