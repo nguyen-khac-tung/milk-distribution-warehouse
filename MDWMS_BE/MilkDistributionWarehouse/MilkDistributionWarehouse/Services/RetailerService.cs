@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
@@ -17,6 +18,8 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, RetailerDetail)> CreateRetailer(RetailerCreate create);
         Task<(string, RetailerDetail)> UpdateRetailer(RetailerUpdate update);
         Task<(string, RetailerDetail)> DeleteRetailer(int retailerId);
+        Task<(string, List<RetailerDropDown>)> GetRetailerDropDown();
+        Task<(string, RetailerUpdateStatus)> UpdateRetailerStatus(RetailerUpdateStatus update);
     }
     public class RetailerService : IRetailerService
     {
@@ -42,6 +45,20 @@ namespace MilkDistributionWarehouse.Services
                 return ("Danh sách nhà bán lẻ trống.".ToMessageForUser(), new PageResult<RetailerDto>());
 
             return ("", items);
+        }
+
+        public async Task<(string, List<RetailerDropDown>)> GetRetailerDropDown()
+        {
+            var retailerQuery = await _retailerRepository.GetRetailers()
+                .Where(r => r.Status == CommonStatus.Active)
+                .ToListAsync();
+
+            var retailsDropDown = _mapper.Map<List<RetailerDropDown>>(retailerQuery);
+
+            if (!retailsDropDown.Any())
+                return ("Danh sách nhà bán lẻ trống.", new List<RetailerDropDown>());
+
+            return ("", retailsDropDown);
         }
 
         public async Task<(string, RetailerDetail)> GetRetailerByRetailerId(int retailerId)
@@ -85,15 +102,6 @@ namespace MilkDistributionWarehouse.Services
             if (!string.IsNullOrEmpty(validationRetailer))
                 return (("Không thể cập nhật nhà bán lẻ. " + validationRetailer).ToMessageForUser(), new RetailerDetail());
 
-            var changeStatus = retailerExist.Status == CommonStatus.Active && update.Status == CommonStatus.Inactive;
-
-            if (changeStatus)
-            {
-                var checkChangeStatus = await CheckChangeStatus(update.RetailerId);
-                if (!string.IsNullOrEmpty(checkChangeStatus))
-                    return (("Không thể cập nhật nhà bán lẻ. " + checkChangeStatus).ToMessageForUser(), new RetailerDetail());
-            }
-
             var canUpdate = await _salesOrderRepository.IsAllSalesOrderDraffOrEmpty(update.RetailerId);
             if (canUpdate)
             {
@@ -103,20 +111,43 @@ namespace MilkDistributionWarehouse.Services
                 retailerExist.Address = update.Address;
                 retailerExist.Phone = update.Phone;
             }
-            else
-            {
-                retailerExist.Email = update.Email;
-                retailerExist.Phone = update.Phone;
-            }
+
+            retailerExist.Email = update.Email;
+            retailerExist.Phone = update.Phone;
+            retailerExist.UpdatedAt = DateTime.Now;
+
+            var updateResult = await _retailerRepository.UpdateRetailer(retailerExist);
+            if (updateResult == null)
+                return ("Cập nhật nhà bán lẻ thất bại.".ToMessageForUser(), new RetailerDetail());
+
+            return ("", _mapper.Map<RetailerDetail>(retailerExist));
+        }
+
+        public async Task<(string, RetailerUpdateStatus?)> UpdateRetailerStatus(RetailerUpdateStatus update)
+        {
+            if (update.RetailerId <= 0)
+                return ("RetailerId is not invalid", new RetailerUpdateStatus());
+
+            var retailerExist = await _retailerRepository.GetRetailerByRetailerId(update.RetailerId);
+            if (retailerExist == null) return ("Retailer is not exist.", new RetailerUpdateStatus());
+
+            if (retailerExist.Status == CommonStatus.Deleted && update.Status == CommonStatus.Deleted)
+                return ("Nhà bán lẻ đã bị xoá trước đó.".ToMessageForUser(), new RetailerUpdateStatus());
+
+            if (retailerExist.Status == update.Status)
+                return ("Trạng thái nhà bán lẻ không có gì thay đổi.".ToMessageForUser(), new RetailerUpdateStatus());
+
+            var validationMessage = await ValidationStatusChange(retailerExist, update.Status);
+            if (!string.IsNullOrEmpty(validationMessage))
+                return (validationMessage.ToMessageForUser(), new RetailerUpdateStatus());
 
             retailerExist.Status = update.Status;
             retailerExist.UpdatedAt = DateTime.Now;
 
             var updateResult = await _retailerRepository.UpdateRetailer(retailerExist);
-            if (updateResult == null)
-                return ("Cập nhật nhà bán lé thất bại.".ToMessageForUser(), new RetailerDetail());
+            if (updateResult == null) return ("Cập nhật trạng thái nhà bán lẻ thất bại.", new RetailerUpdateStatus());
 
-            return ("", _mapper.Map<RetailerDetail>(retailerExist));
+            return ("", update);
         }
 
         public async Task<(string, RetailerDetail)> DeleteRetailer(int retailerId)
@@ -162,6 +193,18 @@ namespace MilkDistributionWarehouse.Services
             if (checkSalesOrder) return "Tồn tại đơn mua đang xử lý trong hệ thống.";
 
             return "";
+        }
+
+        private async Task<string> ValidationStatusChange(Retailer retailer, int newStatus)
+        {
+            if (retailer.Status == CommonStatus.Active && newStatus == CommonStatus.Inactive)
+            {
+                var reason = await CheckChangeStatus(retailer.RetailerId);
+                if (!string.IsNullOrEmpty(reason))
+                    return $"Không thể cập nhật nhà bán lẻ. {reason}";
+            }
+
+            return string.Empty;
         }
 
     }

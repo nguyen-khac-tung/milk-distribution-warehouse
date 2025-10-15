@@ -7,7 +7,7 @@ namespace MilkDistributionWarehouse.Repositories
 {
     public interface ICategoryRepository
     {
-        IQueryable<Category>? GetCategories();
+        IQueryable<Category> GetCategories();
         Task<Category?> CreateCategory(Category category);
         Task<Category?> GetCategoryByCategoryId(int categoryId);
         Task<bool> IsDuplicationByName(int? categoryId, string categoryName);
@@ -24,7 +24,7 @@ namespace MilkDistributionWarehouse.Repositories
             _warehouseContext = warehouseContext;
         }
 
-        public IQueryable<Category>? GetCategories()
+        public IQueryable<Category> GetCategories()
         {
             return _warehouseContext.Categories.Where(c => c.Status != CommonStatus.Deleted).OrderByDescending(c => c.CreatedAt).AsNoTracking();
         }

@@ -16,9 +16,10 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, PageResult<GoodsDto>)> GetGoods(PagedRequest request);
         Task<(string, GoodsDetail)> GetGoodsByGoodsId(int goodsId);
         Task<(string, GoodsDto)> CreateGoods(GoodsCreate goodsCreate);
-        Task<(string, GoodsDto)> UpdateGoods(GoodsUpdate update);
         Task<(string, GoodsDto)> DeleteGoods(int goodsId);
         Task<(string, GoodsDto)> UpdateGoods_1(GoodsUpdate update);
+        Task<(string, List<GoodsDropDown>)> GetGoodsDropDown();
+        Task<(string, GoodsUpdateStatus)> UpdateGoodsStatus(GoodsUpdateStatus update);
     }
     public class GoodsService : IGoodsService
     {
@@ -27,7 +28,7 @@ namespace MilkDistributionWarehouse.Services
         private readonly IUnitMeasureRepository _unitMeasureRepository;
         private readonly IStorageConditionRepository _storageConditionRepository;
         private readonly IMapper _mapper;
-        public GoodsService(IGoodsRepository goodRepository, IMapper mapper, ICategoryRepository categoryRepository, 
+        public GoodsService(IGoodsRepository goodRepository, IMapper mapper, ICategoryRepository categoryRepository,
             IUnitMeasureRepository unitMeasureRepository, IStorageConditionRepository storageConditionRepository)
         {
             _goodRepository = goodRepository;
@@ -51,6 +52,19 @@ namespace MilkDistributionWarehouse.Services
             return ("", goodsDtos);
         }
 
+        public async Task<(string, List<GoodsDropDown>)> GetGoodsDropDown()
+        {
+            var goodsQuery = await _goodRepository.GetGoods()
+                .Where(g => g.Status == CommonStatus.Active).ToListAsync();
+
+            var goodsDropDown = _mapper.Map<List<GoodsDropDown>>(goodsQuery);
+
+            if (!goodsDropDown.Any())
+                return ("Danh sách sản phẩm trống.".ToMessageForUser(), new List<GoodsDropDown>());
+
+            return ("", goodsDropDown);
+        }
+
         public async Task<(string, GoodsDetail)> GetGoodsByGoodsId(int goodsId)
         {
             if (goodsId <= 0)
@@ -64,6 +78,8 @@ namespace MilkDistributionWarehouse.Services
 
             if (goodsDetail == null)
                 return ("Danh sách sản phấm không tồn tại trong hệ thống".ToMessageForUser(), new GoodsDetail());
+
+            goodsDetail.IsDisable = (await IsGoodInUseAnyTransactionToUpdate(goodsId));
 
             return ("", goodsDetail);
         }
@@ -86,67 +102,6 @@ namespace MilkDistributionWarehouse.Services
             return ("", _mapper.Map<GoodsDto>(createResult));
         }
 
-        public async Task<(string, GoodsDto)> UpdateGoods(GoodsUpdate update)
-        {
-            if (update == null)
-                return ("Goods update data is invalid", new GoodsDto());
-
-            var goodsExist = await _goodRepository.GetGoodsByGoodsId(update.GoodsId);
-
-            if (goodsExist == null)
-                return ("Goods is not exist", new GoodsDto());
-
-            if (goodsExist.Status == CommonStatus.Deleted || update.Status == CommonStatus.Deleted)
-                return ("Sản phẩm đã bị xoá hoặc không thể chuyển sang trạng thái đã xoá.".ToMessageForUser(), new GoodsDto());
-
-            //if (await _goodRepository.IsDuplicationCode(update.GoodsId, update.GoodsCode))
-            //    return ("Mã sản phẩm đã tồn tại trong hệ thống", new GoodsDto());
-
-            
-            bool isChangeStatus = goodsExist.Status != update.Status;
-
-            if (isChangeStatus)
-            {
-                if (goodsExist.Status == CommonStatus.Active && update.Status == CommonStatus.Inactive)
-                {
-                    if (await IsGoodInUseAnyTransaction(update.GoodsId))
-                        return ("Không thể vô hiệu hoá sản phẩm vì đang được sử dụng.", new GoodsDto());
-                }
-
-                if (goodsExist.Status == CommonStatus.Inactive && update.Status == CommonStatus.Active)
-                {
-                    var activateError = await ActivateLinkedEntitiesAsync(update.GoodsId);
-                    if (!string.IsNullOrEmpty(activateError))
-                        return (activateError, new GoodsDto());
-                }
-            }
-            else
-            {
-                if (await IsGoodInUseAnyTransactionToUpdate(update.GoodsId))
-                {
-                    bool hasChanges =
-                        !goodsExist.GoodsName.Equals(update.GoodsName) ||
-                        //!goodsExist.GoodsCode.Equals(update.GoodsCode) ||
-                        goodsExist.CategoryId != update.CategoryId ||
-                        goodsExist.UnitMeasureId != update.UnitMeasureId ||
-                        goodsExist.StorageConditionId != update.StorageConditionId ||
-                        goodsExist.SupplierId != update.SupplierId;
-
-                    if (hasChanges)
-                        return ("Sản phẩm đang được sử dụng. Không được phép thay đổi thông tin khác ngoài trạng thái.", new GoodsDto());
-                }
-            }
-
-            _mapper.Map(update, goodsExist);
-
-            var updateResult = await _goodRepository.UpdateGoods(goodsExist);
-
-            if (updateResult == null)
-                return ("Cập nhật sản phẩm thất bại.".ToMessageForUser(), new GoodsDto());
-
-            return ("", _mapper.Map<GoodsDto>(goodsExist));
-        }
-
         public async Task<(string, GoodsDto)> UpdateGoods_1(GoodsUpdate update)
         {
             if (update == null)
@@ -157,90 +112,57 @@ namespace MilkDistributionWarehouse.Services
             if (goodsExist == null)
                 return ("Goods is not exist", new GoodsDto());
 
-            if (goodsExist.Status == CommonStatus.Deleted || update.Status == CommonStatus.Deleted)
-                return ("Sản phẩm đã bị xoá hoặc không thể chuyển sang trạng thái đã xoá.".ToMessageForUser(), new GoodsDto());
+            if (await IsGoodInUseAnyTransactionToUpdate(update.GoodsId))
+                return ("Không thể cập nhật thông tin hàng hoá vì hàng hoá đang được sử dụng.".ToMessageForUser(), new GoodsDto());
 
-            //if (await _goodRepository.IsDuplicationCode(update.GoodsId, update.GoodsCode))
-            //    return ("Mã sản phẩm đã tồn tại trong hệ thống".ToMessageForUser(), new GoodsDto());
-
-
-            bool isChangeStatus = goodsExist.Status != update.Status;
-
-            if (isChangeStatus)
-            {
-                if (goodsExist.Status == CommonStatus.Active && update.Status == CommonStatus.Inactive)
-                {
-                    if (await IsGoodInUseAnyTransaction(update.GoodsId))
-                        return ("Không thể vô hiệu hoá sản phẩm vì đang được sử dụng.".ToMessageForUser(), new GoodsDto());
-                }
-
-                if (goodsExist.Status == CommonStatus.Inactive && update.Status == CommonStatus.Active)
-                {
-                    var activateError = await ActivateLinkedEntitiesAsync(update.GoodsId);
-                    if (!string.IsNullOrEmpty(activateError))
-                        return (activateError, new GoodsDto());
-                }
-            }
-            else
-            {
-                if (await IsGoodInUseAnyTransactionToUpdate(update.GoodsId))
-                {
-                    bool hasChanges =
-                        !goodsExist.GoodsName.Equals(update.GoodsName) ||
-                        //!goodsExist.GoodsCode.Equals(update.GoodsCode) ||
-                        goodsExist.CategoryId != update.CategoryId ||
-                        goodsExist.UnitMeasureId != update.UnitMeasureId ||
-                        goodsExist.StorageConditionId != update.StorageConditionId ||
-                        goodsExist.SupplierId != update.SupplierId;
-
-                    if (hasChanges)
-                        return ("Không thể cập nhật thông tin sản phẩm vì sản phẩm đang được sử dụng.".ToMessageForUser(), new GoodsDto());
-                }
-            }
-
-            goodsExist.GoodsName = update.GoodsName;
-            goodsExist.CategoryId = update.CategoryId;
-            goodsExist.SupplierId = update.SupplierId;
-            goodsExist.UnitMeasureId = update.UnitMeasureId;
-            goodsExist.StorageConditionId = update.StorageConditionId;
-            goodsExist.Status = update.Status;
-            goodsExist.UpdateAt = DateTime.Now;
+            _mapper.Map(update, goodsExist);
 
             var updateResult = await _goodRepository.UpdateGoods(goodsExist);
 
             if (updateResult == null)
-                return ("Cập nhật sản phẩm thất bại.".ToMessageForUser(), new GoodsDto());
+                return ("Cập nhật hàng hoá thất bại.".ToMessageForUser(), new GoodsDto());
 
             return ("", _mapper.Map<GoodsDto>(goodsExist));
         }
 
-        private async Task<string> ActivateLinkedEntitiesAsync(int goodsId)
+        public async Task<(string, GoodsUpdateStatus)> UpdateGoodsStatus(GoodsUpdateStatus update)
         {
-            var category = await _goodRepository.GetInactiveCategoryByGoodsIdAsync(goodsId);
-            if (category != null)
+            if (update.GoodsId <= 0)
+                return ("GoodsId is invalid.", new GoodsUpdateStatus());
+
+            var goodsExist = await _goodRepository.GetGoodsByGoodsId(update.GoodsId);
+
+            if (goodsExist == null)
+                return ("Goods is not exist", new GoodsUpdateStatus());
+
+            if (goodsExist.Status == CommonStatus.Deleted || update.Status == CommonStatus.Deleted)
+                return ("Hàng hoá đã bị xoá trước đó".ToMessageForUser(), new GoodsUpdateStatus());
+
+            bool isChangeStatus = goodsExist.Status != update.Status;
+            if (!isChangeStatus)
+                return ("Hàng hoá không bị thay đổi trạng thái.".ToMessageForUser(), new GoodsUpdateStatus());
+
+            if (goodsExist.Status == CommonStatus.Active && update.Status == CommonStatus.Inactive)
             {
-                category.Status = CommonStatus.Active;
-                if (await _categoryRepository.UpdateCategory(category) == null)
-                    return "Không thể kích hoạt danh mục liên kết với sản phẩm.".ToMessageForUser();
+                if (await IsGoodInUseAnyTransaction(update.GoodsId))
+                    return ("Không thể vô hiệu hoá hàng hoá vì đang được sử dụng.".ToMessageForUser(), new GoodsUpdateStatus());
             }
 
-            var unitMeasure = await _goodRepository.GetInactiveUnitMeasureByGoodsIdAsync(goodsId);
-            if (unitMeasure != null)
+            if (goodsExist.Status == CommonStatus.Inactive && update.Status == CommonStatus.Active)
             {
-                unitMeasure.Status = CommonStatus.Active;
-                if (await _unitMeasureRepository.UpdateUnitMeasure(unitMeasure) == null)
-                    return "Không thể kích hoạt đơn vị đo liên kết với sản phẩm.".ToMessageForUser();
+                var activateError = await ActivateLinkedEntitiesAsync(update.GoodsId);
+                if (!string.IsNullOrEmpty(activateError))
+                    return (activateError, new GoodsUpdateStatus());
             }
 
-            var storageCondition = await _goodRepository.GetInactiveStorageConditionByGoodsIdAsync(goodsId);
-            if (storageCondition != null)
-            {
-                storageCondition.Status = CommonStatus.Active;
-                if (_storageConditionRepository.UpdateStorageCondition(storageCondition) == null)
-                    return "Không thể kích hoạt điều kiện lưu kho liên kết với sản phẩm.".ToMessageForUser();
-            }
+            goodsExist.Status = update.Status;
+            goodsExist.UpdateAt = DateTime.Now;
 
-            return string.Empty;
+            var updateResult = await _goodRepository.UpdateGoods(goodsExist);
+            if (updateResult == null)
+                return ("Cập nhật hàng hoá thất bại.".ToMessageForUser(), new GoodsUpdateStatus());
+
+            return ("", update);
         }
 
         public async Task<(string, GoodsDto)> DeleteGoods(int goodsId)
@@ -254,14 +176,14 @@ namespace MilkDistributionWarehouse.Services
                 return ("Goods is not found", new GoodsDto());
 
             if (await CheckValidationDeleteGoods(goodsId))
-                return ("Không thể xoá sản phẩm vì đang được sử dụng trong lô hàng, đơn nhập hoặc đơn mua hàng đang hoạt động.".ToMessageForUser(), new GoodsDto());
+                return ("Không thể xoá hàng hoá vì đang được sử dụng trong lô hàng, đơn nhập hoặc đơn mua hàng đang hoạt động.".ToMessageForUser(), new GoodsDto());
 
             goodsExist.Status = CommonStatus.Deleted;
             goodsExist.UpdateAt = DateTime.Now;
 
             var resultDelete = await _goodRepository.UpdateGoods(goodsExist);
             if (resultDelete == null)
-                return ("Xoá sản phẩm thất bại.".ToMessageForUser(), new GoodsDto());
+                return ("Xoá hàng hoá thất bại.".ToMessageForUser(), new GoodsDto());
 
             return ("", _mapper.Map<GoodsDto>(goodsExist));
         }
@@ -269,8 +191,11 @@ namespace MilkDistributionWarehouse.Services
         private async Task<bool> CheckValidationDeleteGoods(int goodsId)
         {
             var checkBatch = await _goodRepository.IsGoodsUsedInBatch(goodsId);
+
             var checkPurchaseOrder = await _goodRepository.IsGoodUsedInPurchaseOrder(goodsId);
+
             var checkSaleOrder = await _goodRepository.IsGoodsUsedInSaleOrder(goodsId);
+
             return checkBatch || checkPurchaseOrder || checkSaleOrder;
         }
 
@@ -295,5 +220,35 @@ namespace MilkDistributionWarehouse.Services
 
             return checkBatch || checkPurchaseOrder || checkSalesOrder;
         }
+
+        private async Task<string> ActivateLinkedEntitiesAsync(int goodsId)
+        {
+            var category = await _goodRepository.GetInactiveCategoryByGoodsIdAsync(goodsId);
+            if (category != null)
+            {
+                category.Status = CommonStatus.Active;
+                if (await _categoryRepository.UpdateCategory(category) == null)
+                    return "Không thể kích hoạt danh mục liên kết với hàng hoá.".ToMessageForUser();
+            }
+
+            var unitMeasure = await _goodRepository.GetInactiveUnitMeasureByGoodsIdAsync(goodsId);
+            if (unitMeasure != null)
+            {
+                unitMeasure.Status = CommonStatus.Active;
+                if (await _unitMeasureRepository.UpdateUnitMeasure(unitMeasure) == null)
+                    return "Không thể kích hoạt đơn vị đo liên kết với hàng hoá.".ToMessageForUser();
+            }
+
+            var storageCondition = await _goodRepository.GetInactiveStorageConditionByGoodsIdAsync(goodsId);
+            if (storageCondition != null)
+            {
+                storageCondition.Status = CommonStatus.Active;
+                if (_storageConditionRepository.UpdateStorageCondition(storageCondition) == null)
+                    return "Không thể kích hoạt điều kiện lưu kho liên kết với hàng hoá.".ToMessageForUser();
+            }
+
+            return string.Empty;
+        }
+
     }
 }
