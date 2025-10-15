@@ -12,10 +12,12 @@ namespace MilkDistributionWarehouse.Services
     public interface ILocationService
     {
         Task<(string, PageResult<LocationDto.LocationResponseDto>)> GetLocations(PagedRequest request);
+        Task<(string, LocationDto.LocationResponseDto)> GetLocationDetail(int locationId);
         Task<(string, LocationDto.LocationResponseDto)> CreateLocation(LocationDto.LocationRequestDto dto);
         Task<(string, LocationDto.LocationResponseDto)> UpdateLocation(int locationId, LocationDto.LocationRequestDto dto);
         Task<(string, LocationDto.LocationResponseDto)> DeleteLocation(int locationId);
         Task<(string, LocationDto.LocationResponseDto)> UpdateStatus(int locationId, int status);
+        Task<(string, List<LocationDto.LocationActiveDto>)> GetActiveLocations();
     }
 
     public class LocationService : ILocationService
@@ -42,6 +44,19 @@ namespace MilkDistributionWarehouse.Services
             var pagedResult = await locationDtos.ToPagedResultAsync(request);
 
             return ("", pagedResult);
+        }
+
+        public async Task<(string, LocationDto.LocationResponseDto)> GetLocationDetail(int locationId)
+        {
+            if (locationId <= 0)
+                return ("Mã vị trí không hợp lệ.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+
+            var location = await _locationRepository.GetLocationById(locationId);
+            if (location == null || location.Status == CommonStatus.Deleted)
+                return ("Không tìm thấy vị trí hoặc vị trí đã bị xóa.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+
+            var dto = _mapper.Map<LocationDto.LocationResponseDto>(location);
+            return ("", dto);
         }
 
         public async Task<(string, LocationDto.LocationResponseDto)> CreateLocation(LocationDto.LocationRequestDto dto)
@@ -147,5 +162,15 @@ namespace MilkDistributionWarehouse.Services
             return ("", _mapper.Map<LocationDto.LocationResponseDto>(updatedWithArea));
         }
 
+        public async Task<(string, List<LocationDto.LocationActiveDto>)> GetActiveLocations()
+        {
+            var locations = await _locationRepository.GetActiveLocationsAsync();
+
+            if (locations == null || !locations.Any())
+                return ("Không có vị trí nào đang hoạt động.".ToMessageForUser(), new List<LocationDto.LocationActiveDto>());
+
+            var dtoList = _mapper.Map<List<LocationDto.LocationActiveDto>>(locations);
+            return ("", dtoList);
+        }
     }
 }
