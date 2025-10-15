@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Button } from "antd";
 import { getLocations, deleteLocation, updateLocationStatus } from "../../../services/LocationServices";
-import { Edit, Trash2, ChevronDown, Plus } from "lucide-react";
+import { Edit, Trash2, ChevronDown, Plus, Eye } from "lucide-react";
 import DeleteModal from "../../../components/Common/DeleteModal";
 import SearchFilterToggle from "../../../components/Common/SearchFilterToggle";
 import StatsCards from "../../../components/Common/StatsCards";
