@@ -335,7 +335,7 @@ const AreaLists = () => {
     const { total: totalCount, active: activeCount, inactive: inactiveCount } = totalStats;
 
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screen">
             <div className="max-w-7xl mx-auto space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
@@ -363,7 +363,7 @@ const AreaLists = () => {
                 />
 
                 {/* Search and Table Combined */}
-                <Card className="shadow-sm border border-slate-200 overflow-hidden">
+                <Card className="shadow-sm border border-slate-200 overflow-hidden bg-gray-50">
                     <SearchFilterToggle
                         searchQuery={searchQuery}
                         setSearchQuery={setSearchQuery}
@@ -400,7 +400,7 @@ const AreaLists = () => {
                             <div className="overflow-x-auto">
                                 <CustomTable className="w-full">
                                     <TableHeader>
-                                        <TableRow className="bg-slate-50 hover:bg-slate-50 border-b border-slate-200">
+                                        <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-16">
                                                 STT
                                             </TableHead>
@@ -437,7 +437,7 @@ const AreaLists = () => {
                                             areas.map((area, index) => (
                                                 <TableRow
                                                     key={area.areaId}
-                                                    className="bg-white hover:bg-slate-50 transition-colors duration-150 border-b border-slate-100"
+                                                    className="bg-gray-50 hover:bg-gray-100 transition-colors duration-150 border-b border-slate-100"
                                                 >
                                                     <TableCell className="text-slate-600 px-6 py-3 text-left font-medium">
                                                         {index + 1}
@@ -507,7 +507,7 @@ const AreaLists = () => {
 
                 {/* Pagination */}
                 {!loading && !searchLoading && pagination.total > 0 && (
-                    <Card>
+                    <Card className="bg-gray-50">
                         <CardContent className="pt-6">
                             <div className="flex items-center justify-between">
                                 <div className="text-sm text-slate-600">
@@ -560,7 +560,7 @@ const AreaLists = () => {
                                             </button>
 
                                             {showPageSizeFilter && (
-                                                <div className="absolute bottom-full right-0 mb-1 w-20 bg-white rounded-md shadow-lg border z-10">
+                                                <div className="absolute bottom-full right-0 mb-1 w-20 bg-gray-50 rounded-md shadow-lg border z-10">
                                                     <div className="py-1">
                                                         {[10, 20, 30, 40].map((size) => (
                                                             <button

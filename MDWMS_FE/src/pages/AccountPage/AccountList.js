@@ -182,7 +182,7 @@ export default function AdminPage() {
   }
 
   const EmployeeTable = ({ employees, title }) => (
-    <Card className="bg-card border-border shadow-lg">
+    <Card className="bg-card border-border shadow-lg bg-gray-50">
       <CardHeader className="border-b border-border/50 bg-gradient-to-r from-primary/5 to-transparent">
         <div className="flex items-center justify-between">
           <div>
@@ -199,7 +199,7 @@ export default function AdminPage() {
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent hover:from-primary/10 hover:via-primary/5 hover:to-transparent border-b-2 border-primary/20">
+              <TableRow className="bg-gray-100 hover:bg-gray-100 border-b-2 border-primary/20">
                 <TableHead
                   className="text-foreground font-bold text-sm h-12 cursor-pointer hover:bg-primary/10 transition-colors"
                   onClick={() => handleSort("email")}
@@ -259,7 +259,7 @@ export default function AdminPage() {
                     transition-all 
                     duration-200 
                     hover:shadow-sm
-                    ${index % 2 === 0 ? "bg-muted/20" : "bg-card"}
+                    ${index % 2 === 0 ? "bg-gray-50" : "bg-gray-100"}
                   `}
                 >
                   <TableCell className="font-medium text-foreground py-4">{employee.email}</TableCell>
@@ -317,7 +317,7 @@ export default function AdminPage() {
   )
 
   return (
-    <div className="min-h-screen bg-muted/30 p-6">
+    <div className="min-h-screen p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -331,7 +331,7 @@ export default function AdminPage() {
           </Button>
         </div>
 
-        <Card className="bg-card border-border/50">
+        <Card className="bg-card border-border/50 bg-gray-50">
           <CardContent className="pt-6">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -348,14 +348,14 @@ export default function AdminPage() {
         {/* Stats and Actions */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* Chart Card - Takes 2/3 of the width */}
-          <Card className="xl:col-span-2 bg-card border-border/50">
+          <Card className="xl:col-span-2 bg-card border-border/50 bg-gray-50">
             <CardContent className="p-0">
               <UserStatsChart />
             </CardContent>
           </Card>
 
           {/* Action Buttons - Takes 1/3 of the width */}
-          <Card className="bg-card border-border/50">
+          <Card className="bg-card border-border/50 bg-gray-50">
             <CardHeader className="pb-4">
               <CardTitle className="text-lg font-bold text-foreground">Tổng người dùng: {allEmployees.length}</CardTitle>
             </CardHeader>

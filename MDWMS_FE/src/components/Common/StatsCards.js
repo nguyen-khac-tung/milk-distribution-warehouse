@@ -14,7 +14,7 @@ export default function StatsCards({
   return (
     <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 ${className}`}>
       {/* Total Count Card */}
-      <Card className="bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+      <Card className="bg-gray-50 border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div className="flex-1">
@@ -73,7 +73,7 @@ export default function StatsCards({
       </Card>
 
       {/* Active Count Card */}
-      <Card className="bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+      <Card className="bg-gray-50 border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div className="flex-1">
@@ -132,7 +132,7 @@ export default function StatsCards({
       </Card>
 
       {/* Inactive Count Card */}
-      <Card className="bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+      <Card className="bg-gray-50 border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div className="flex-1">
