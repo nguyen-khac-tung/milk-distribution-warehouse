@@ -65,3 +65,25 @@ export const getGoodDetail = async (goodId) => {
         throw error;
     }
 };
+
+// Update goods status
+export const updateGoodStatus = async (data) => {
+    try {
+        const body = {
+            goodsId: data.goodsId,
+            status: data.status
+        };
+
+        console.log("Sending status update request:", body);
+        const res = await api.put("/Goods/UpdateStatus", body);
+        console.log("Goods status update API response:", res.data);
+        return res.data;
+    } catch (error) {
+        console.error("Error updating goods status:", error);
+        if (error.response) {
+            console.error("Error response data:", error.response.data);
+            console.error("Error response status:", error.response.status);
+        }
+        throw error;
+    }
+};

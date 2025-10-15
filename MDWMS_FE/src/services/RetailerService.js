@@ -67,3 +67,37 @@ export const deleteRetailer = async (retailerId) => {
         throw error;
     }
 };
+
+// Update retailer status
+export const updateRetailerStatus = async (data) => {
+    try {
+        const body = {
+            retailerId: data.retailerId,
+            status: data.status
+        };
+
+        console.log("Sending status update request:", body);
+        const res = await api.put("/Retailer/UpdateStatus", body);
+        console.log("Retailer status update API response:", res.data);
+        return res.data;
+    } catch (error) {
+        console.error("Error updating retailer status:", error);
+        if (error.response) {
+            console.error("Error response data:", error.response.data);
+            console.error("Error response status:", error.response.status);
+        }
+        throw error;
+    }
+};
+
+// Get retailers for dropdown
+export const getRetailersDropdown = async () => {
+    try {
+        const res = await api.get("/Retailer/GetRetailersDropDown");
+        console.log("Retailers dropdown API response:", res.data);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching retailers dropdown:", error);
+        return { status: 500, message: "Error fetching retailers", data: [] };
+    }
+};

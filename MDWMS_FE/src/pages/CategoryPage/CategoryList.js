@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { getCategory, deleteCategory } from "../../services/CategoryService/CategoryServices";
+import { getCategory, deleteCategory, updateCategoryStatus } from "../../services/CategoryService/CategoryServices";
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
@@ -10,6 +10,7 @@ import DeleteModal from "../../components/Common/DeleteModal";
 import StatsCards from "../../components/Common/StatsCards";
 import Loading from "../../components/Common/Loading";
 import SearchFilterToggle from "../../components/Common/SearchFilterToggle";
+import { StatusToggle } from "../../components/Common/SwitchToggle/StatusToggle";
 import { extractErrorMessage } from "../../utils/Validation";
 
 // Type definition for Category
@@ -121,12 +122,23 @@ export default function CategoriesPage() {
     // Fetch tổng thống kê khi component mount
     fetchTotalStats()
 
-    // Fetch dữ liệu hiển thị
+    // Reset tất cả filter và sort về mặc định
+    setSearchQuery("")
+    setStatusFilter("")
+    setSortField("")
+    setSortAscending(true)
+    setPagination({
+      pageNumber: 1,
+      pageSize: 10,
+      totalCount: 0
+    })
+
+    // Fetch dữ liệu hiển thị với không có sort/filter
     fetchData({
       pageNumber: 1,
       pageSize: 10,
       search: "",
-      sortField: "categoryName",
+      sortField: "",
       sortAscending: true,
       status: ""
     })
@@ -216,18 +228,21 @@ export default function CategoriesPage() {
     // Refresh tổng thống kê
     fetchTotalStats()
 
-    // Set sort to categoryName descending to show new record at top
-    setSortField("categoryName")
-    setSortAscending(false)
+    // Reset về trang đầu và không có sort/filter để item mới hiển thị ở đầu
+    setSearchQuery("")
+    setStatusFilter("")
+    setSortField("")
+    setSortAscending(true)
+    setPagination(prev => ({ ...prev, pageNumber: 1 }))
 
-    // Refresh data after successful creation with new sort
+    // Refresh data after successful creation
     fetchData({
       pageNumber: 1,
       pageSize: pagination.pageSize,
-      search: searchQuery || "",
-      sortField: "categoryName",
-      sortAscending: false,
-      status: statusFilter
+      search: "",
+      sortField: "",
+      sortAscending: true,
+      status: ""
     })
   }
 
@@ -328,6 +343,36 @@ export default function CategoriesPage() {
       // Nếu chưa sort field này, set field mới và mặc định ascending
       setSortField(field)
       setSortAscending(true)
+    }
+  }
+
+  const handleStatusChange = async (categoryId, newStatus, categoryName) => {
+    try {
+      // Update status via API
+      await updateCategoryStatus({
+        categoryId: parseInt(categoryId),
+        status: newStatus
+      })
+      
+      // Show success message
+      window.showToast(`Đã ${newStatus === 1 ? 'kích hoạt' : 'vô hiệu hóa'} danh mục: ${categoryName}`, "success")
+      
+      // Refresh data
+      fetchData({
+        pageNumber: pagination.pageNumber,
+        pageSize: pagination.pageSize,
+        search: searchQuery || "",
+        sortField: sortField,
+        sortAscending: sortAscending,
+        status: statusFilter
+      })
+      
+      // Refresh total stats
+      fetchTotalStats()
+    } catch (error) {
+      console.error("Error updating category status:", error)
+      const cleanMsg = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật trạng thái danh mục")
+      window.showToast(`Lỗi: ${cleanMsg}`, "error")
     }
   }
 
@@ -439,14 +484,15 @@ export default function CategoriesPage() {
                             {category?.description || ''}
                           </TableCell>
                           <TableCell className="px-6 py-3 text-center">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${category?.status === 1
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                              }`}>
-                              <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${category?.status === 1 ? 'bg-green-400' : 'bg-red-400'
-                                }`}></span>
-                              {category?.status === 1 ? 'Hoạt động' : 'Ngừng hoạt động'}
-                            </span>
+                            <div className="flex justify-center">
+                              <StatusToggle
+                                status={category?.status}
+                                onStatusChange={handleStatusChange}
+                                supplierId={category?.categoryId}
+                                supplierName={category?.categoryName}
+                                entityType="danh mục"
+                              />
+                            </div>
                           </TableCell>
                           <TableCell className="px-6 py-3 text-center">
                             <div className="flex items-center justify-center space-x-1">

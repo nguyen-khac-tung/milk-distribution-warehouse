@@ -100,3 +100,15 @@ export const updateStorageCondition = async (id, data) => {
     }
 };
 
+// Get storage conditions for dropdown
+export const getStorageConditionsDropdown = async () => {
+    try {
+        const res = await api.get("/StorageCondition/GetStorageConditionsDropDown");
+        console.log("Storage conditions dropdown API response:", res.data);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching storage conditions dropdown:", error);
+        return { status: 500, message: "Error fetching storage conditions", data: [] };
+    }
+};
+

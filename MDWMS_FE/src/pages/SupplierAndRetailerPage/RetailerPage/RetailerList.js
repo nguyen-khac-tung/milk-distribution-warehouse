@@ -1,16 +1,17 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { getRetailers, getRetailerDetail, deleteRetailer } from "../../../services/RetailerService";
+import { getRetailers, getRetailerDetail, deleteRetailer, updateRetailerStatus } from "../../../services/RetailerService";
 import { Card, CardContent } from "../../../components/ui/card";
-import { Input } from "../../../components/ui/input";
 import { Button } from "../../../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
-import { Search, Plus, Edit, Trash2, Filter, ChevronDown, Eye } from "lucide-react";
+import { Plus, Edit, Trash2, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Eye } from "lucide-react";
 import { RetailerDetail } from "./ViewRetailerModal";
 import DeleteModal from "../../../components/Common/DeleteModal";
 import CreateRetailer from "./CreateRetailerModal";
 import UpdateRetailerModal from "./UpdateRetailerModal";
 import StatsCards from "../../../components/Common/StatsCards";
 import Loading from "../../../components/Common/Loading";
+import SearchFilterToggle from "../../../components/Common/SearchFilterToggle";
+import { StatusToggle } from "../../../components/Common/SwitchToggle/StatusToggle";
 import { extractErrorMessage } from "../../../utils/Validation";
 
 // Type definition for Retailer
@@ -28,7 +29,7 @@ export default function RetailersPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("")
   const [showStatusFilter, setShowStatusFilter] = useState(false)
-  const [sortField, setSortField] = useState("")
+  const [sortField, setSortField] = useState("retailerName")
   const [sortAscending, setSortAscending] = useState(true)
   const [retailers, setRetailers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -130,14 +131,25 @@ export default function RetailersPage() {
     // Fetch tổng thống kê khi component mount
     fetchTotalStats()
     
-    // Fetch dữ liệu hiển thị
+    // Reset tất cả filter và sort về mặc định
+    setSearchQuery("")
+    setStatusFilter("")
+    setSortField("")
+    setSortAscending(true)
+    setPagination({
+      pageNumber: 1,
+      pageSize: 10,
+      totalCount: 0
+    })
+    
+    // Fetch dữ liệu hiển thị với không có sort/filter
     fetchData({
       pageNumber: 1,
       pageSize: 10,
-      search: searchQuery || "",
-      sortField: sortField,
-      sortAscending: sortAscending,
-      status: statusFilter
+      search: "",
+      sortField: "",
+      sortAscending: true,
+      status: ""
     })
   }, [])
 
@@ -217,18 +229,21 @@ export default function RetailersPage() {
     // Refresh tổng thống kê
     fetchTotalStats()
     
-    // Set sort to retailerName descending to show new record at top
-    setSortField("retailerName")
-    setSortAscending(false)
-
-    // Refresh data after successful creation with new sort
+    // Reset về trang đầu và không có sort/filter để item mới hiển thị ở đầu
+    setSearchQuery("")
+    setStatusFilter("")
+    setSortField("")
+    setSortAscending(true)
+    setPagination(prev => ({ ...prev, pageNumber: 1 }))
+    
+    // Refresh data after successful creation
     fetchData({
       pageNumber: 1,
       pageSize: pagination.pageSize,
-      search: searchQuery || "",
-      sortField: "retailerName",
-      sortAscending: false,
-      status: statusFilter
+      search: "",
+      sortField: "",
+      sortAscending: true,
+      status: ""
     })
   }
 
@@ -376,20 +391,50 @@ export default function RetailersPage() {
     setRetailerDetail(null)
   }
 
+  const handleStatusChange = async (retailerId, newStatus, retailerName) => {
+    try {
+      // Update status via API
+      await updateRetailerStatus({
+        retailerId: parseInt(retailerId),
+        status: newStatus
+      })
+      
+      // Show success message
+      window.showToast(`Đã ${newStatus === 1 ? 'kích hoạt' : 'vô hiệu hóa'} nhà bán lẻ: ${retailerName}`, "success")
+      
+      // Refresh data
+      fetchData({
+        pageNumber: pagination.pageNumber,
+        pageSize: pagination.pageSize,
+        search: searchQuery || "",
+        sortField: sortField,
+        sortAscending: sortAscending,
+        status: statusFilter
+      })
+      
+      // Refresh total stats
+      fetchTotalStats()
+    } catch (error) {
+      console.error("Error updating retailer status:", error)
+      const cleanMsg = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật trạng thái nhà bán lẻ")
+      window.showToast(`Lỗi: ${cleanMsg}`, "error")
+    }
+  }
+
   return (
-    <div className="min-h-screen p-6">
+    <div className="min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Quản lý Nhà bán lẻ</h1>
+            <h1 className="text-2xl font-bold text-slate-600">Quản lý Nhà bán lẻ</h1>
             <p className="text-slate-600 mt-1">Quản lý các nhà bán lẻ trong hệ thống</p>
           </div>
           <Button
-            className="bg-[#237486] hover:bg-[#1e5f6b] h-11 px-6 text-white"
+            className="bg-orange-500 hover:bg-orange-600 h-8 px-6 text-white"
             onClick={() => setShowCreateModal(true)}
           >
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-2 h-4 w-4 text-white" />
             Thêm nhà bán lẻ
           </Button>
         </div>
@@ -404,23 +449,26 @@ export default function RetailersPage() {
           inactiveLabel="Không hoạt động"
         />
 
-        {/* Search Bar */}
-        <Card className="bg-gray-50">
-          <CardContent className="pt-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
-              <Input
-                placeholder="Tìm kiếm theo tên công ty hoặc thương hiệu..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-12 text-base"
-              />
-            </div>
-          </CardContent>
-        </Card>
+        {/* Search and Table Combined */}
+        <Card className="shadow-sm border border-slate-200 overflow-hidden bg-gray-50">
+          <SearchFilterToggle
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            searchPlaceholder="Tìm kiếm theo tên nhà bán lẻ..."
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            showStatusFilter={showStatusFilter}
+            setShowStatusFilter={setShowStatusFilter}
+            statusOptions={[
+              { value: "", label: "Tất cả trạng thái" },
+              { value: "1", label: "Hoạt động" },
+              { value: "2", label: "Ngừng hoạt động" }
+            ]}
+            onStatusFilter={handleStatusFilter}
+            clearStatusFilter={clearStatusFilter}
+          />
 
-        {/* Retailers Table */}
-        <Card className="shadow-lg overflow-hidden p-0 bg-gray-50">
+          {/* Table */}
           <div className="w-full">
             {loading ? (
               <Loading size="large" text="Đang tải dữ liệu..." />
@@ -430,78 +478,31 @@ export default function RetailersPage() {
               <div className="overflow-x-auto">
                 <Table className="w-full">
                   <TableHeader>
-                    <TableRow className="bg-[#237486] hover:bg-[#237486] m-0 w-full">
-                      <TableHead className="font-semibold text-white px-4 py-3 first:pl-6 last:pr-6 border-0 w-20">
+                    <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-16">
                         STT
                       </TableHead>
-                      <TableHead className="font-semibold text-white px-4 py-3 first:pl-6 last:pr-6 border-0 w-96">
-                        <div className="flex items-center space-x-2 cursor-pointer hover:bg-white/10 rounded p-1 -m-1" onClick={() => handleSort("retailerName")}>
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                        <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("retailerName")}>
                           <span>Tên nhà bán lẻ</span>
-                          <div className="flex flex-col">
-                            <ChevronDown
-                              className={`h-3 w-3 transition-colors ${sortField === "retailerName" && sortAscending
-                                  ? 'text-white'
-                                  : 'text-white/50'
-                                }`}
-                              style={{ transform: 'translateY(1px)' }}
-                            />
-                            <ChevronDown
-                              className={`h-3 w-3 transition-colors ${sortField === "retailerName" && !sortAscending
-                                  ? 'text-white'
-                                  : 'text-white/50'
-                                }`}
-                              style={{ transform: 'translateY(-1px) rotate(180deg)' }}
-                            />
-                          </div>
+                          {sortField === "retailerName" ? (
+                            sortAscending ? (
+                              <ArrowUp className="h-4 w-4 text-orange-500" />
+                            ) : (
+                              <ArrowDown className="h-4 w-4 text-orange-500" />
+                            )
+                          ) : (
+                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                          )}
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-white px-4 py-3 first:pl-6 last:pr-6 border-0 w-40">
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                         Số điện thoại
                       </TableHead>
-                      <TableHead className="font-semibold text-white px-4 py-3 first:pl-6 last:pr-6 border-0 w-40">
-                        <div className="flex items-center justify-center space-x-2">
-                          <span>Trạng thái</span>
-                          <div className="relative status-filter-dropdown">
-                            <button
-                              onClick={() => setShowStatusFilter(!showStatusFilter)}
-                              className={`p-1 rounded hover:bg-white/20 transition-colors ${statusFilter ? 'bg-white/30' : ''
-                                }`}
-                              title="Lọc theo trạng thái"
-                            >
-                              <Filter className="h-4 w-4" />
-                            </button>
-
-                            {showStatusFilter && (
-                              <div className="absolute top-full right-0 mt-1 w-48 bg-white rounded-md shadow-lg border z-10">
-                                <div className="py-1">
-                                  <button
-                                    onClick={clearStatusFilter}
-                                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center justify-between"
-                                  >
-                                    Tất cả
-                                    {!statusFilter && <span className="text-[#237486]">✓</span>}
-                                  </button>
-                                  <button
-                                    onClick={() => handleStatusFilter("1")}
-                                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center justify-between"
-                                  >
-                                    Hoạt động
-                                    {statusFilter === "1" && <span className="text-[#237486]">✓</span>}
-                                  </button>
-                                  <button
-                                    onClick={() => handleStatusFilter("2")}
-                                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center justify-between"
-                                  >
-                                    Ngừng hoạt động
-                                    {statusFilter === "2" && <span className="text-[#237486]">✓</span>}
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-48">
+                        Trạng thái
                       </TableHead>
-                      <TableHead className="font-semibold text-white px-4 py-3 first:pl-6 last:pr-6 border-0 text-center">
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
                         Hoạt động
                       </TableHead>
                     </TableRow>
@@ -511,42 +512,46 @@ export default function RetailersPage() {
                       filteredRetailers.map((retailer, index) => (
                         <TableRow
                           key={index}
-                          className={`
-                            ${index % 2 === 0 ? "bg-gray-50" : "bg-gray-100"}
-                            hover:bg-gray-200 transition-colors duration-150 m-0 w-full
-                          `}
+                          className="bg-gray-50 hover:bg-gray-100 transition-colors duration-150 border-b border-slate-100"
                         >
-                          <TableCell className="text-slate-600 px-4 py-3 first:pl-6 last:pr-6 border-0 w-20 text-center font-medium">
+                          <TableCell className="text-slate-600 px-6 py-3 text-left font-medium">
                             {index + 1}
                           </TableCell>
-                          <TableCell className="font-medium text-slate-900 px-4 py-3 first:pl-6 last:pr-6 border-0 w-96">{retailer?.retailerName || ''}</TableCell>
-                          <TableCell className="text-slate-700 px-4 py-3 first:pl-6 last:pr-6 border-0 w-40 text-center">{retailer?.phone || ''}</TableCell>
-                          <TableCell className="text-slate-700 px-4 py-3 first:pl-6 last:pr-6 border-0 w-40 text-center">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${retailer?.status === 1
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-red-100 text-red-800'
-                              }`}>
-                              {retailer?.status === 1 ? 'Hoạt động' : 'Ngừng hoạt động'}
-                            </span>
+                          <TableCell className="font-medium text-slate-900 px-6 py-3 text-left">
+                            {retailer?.retailerName || ''}
                           </TableCell>
-                          <TableCell className="text-slate-600 px-4 py-3 first:pl-6 last:pr-6 border-0 text-center">
-                            <div className="flex items-center justify-center space-x-2">
+                          <TableCell className="text-slate-700 px-6 py-3 text-left">
+                            {retailer?.phone || ''}
+                          </TableCell>
+                          <TableCell className="px-6 py-3 text-center">
+                            <div className="flex justify-center">
+                              <StatusToggle
+                                status={retailer?.status}
+                                onStatusChange={handleStatusChange}
+                                supplierId={retailer?.retailerId}
+                                supplierName={retailer?.retailerName}
+                                entityType="nhà bán lẻ"
+                              />
+                            </div>
+                          </TableCell>
+                          <TableCell className="px-6 py-3 text-center">
+                            <div className="flex items-center justify-center space-x-1">
                               <button
-                                className="p-1 hover:bg-slate-100 rounded transition-colors"
+                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                 title="Xem chi tiết"
                                 onClick={() => handleViewClick(retailer)}
                               >
-                                <Eye className="h-4 w-4 text-[#1a7b7b]" />
+                                <Eye className="h-4 w-4 text-orange-500" />
                               </button>
                               <button
-                                className="p-1 hover:bg-slate-100 rounded transition-colors"
+                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                 title="Chỉnh sửa"
                                 onClick={() => handleUpdateClick(retailer)}
                               >
-                                <Edit className="h-4 w-4 text-[#1a7b7b]" />
+                                <Edit className="h-4 w-4 text-orange-500" />
                               </button>
                               <button
-                                className="p-1 hover:bg-slate-100 rounded transition-colors"
+                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                 title="Xóa"
                                 onClick={() => handleDeleteClick(retailer)}
                               >
@@ -632,7 +637,7 @@ export default function RetailersPage() {
                     <div className="relative page-size-filter-dropdown">
                       <button
                         onClick={() => setShowPageSizeFilter(!showPageSizeFilter)}
-                        className="flex items-center space-x-2 px-3 py-2 text-sm border border-slate-300 rounded-md hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#237486] focus:border-[#237486]"
+                        className="flex items-center space-x-2 px-3 py-2 text-sm border border-slate-300 rounded-md hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                       >
                         <span>{pagination.pageSize}</span>
                         <ChevronDown className="h-4 w-4" />
@@ -645,7 +650,7 @@ export default function RetailersPage() {
                               <button
                                 key={size}
                                 onClick={() => handlePageSizeChange(size)}
-                                className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 flex items-center justify-between ${pagination.pageSize === size ? 'bg-[#237486] text-white' : 'text-slate-700'
+                                className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 flex items-center justify-between ${pagination.pageSize === size ? 'bg-orange-500 text-white' : 'text-slate-700'
                                   }`}
                               >
                                 {size}
@@ -690,7 +695,7 @@ export default function RetailersPage() {
 
       {/* View Retailer Detail Modal */}
       {showViewModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[99999] p-4" style={{zIndex: 99999}}>
           <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             {loadingDetail ? (
               <Loading size="large" text="Đang tải chi tiết nhà bán lẻ..." />

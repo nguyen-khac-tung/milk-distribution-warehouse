@@ -129,12 +129,23 @@ export default function SuppliersPage() {
     // Fetch tổng thống kê khi component mount
     fetchTotalStats()
     
-    // Fetch dữ liệu hiển thị
+    // Reset tất cả filter và sort về mặc định
+    setSearchQuery("")
+    setStatusFilter("")
+    setSortField("")
+    setSortAscending(true)
+    setPagination({
+      pageNumber: 1,
+      pageSize: 10,
+      totalCount: 0
+    })
+    
+    // Fetch dữ liệu hiển thị với không có sort/filter
     fetchData({
       pageNumber: 1,
       pageSize: 10,
       search: "",
-      sortField: "companyName",
+      sortField: "",
       sortAscending: true,
       status: ""
     })
@@ -224,18 +235,21 @@ export default function SuppliersPage() {
     // Refresh tổng thống kê
     fetchTotalStats()
     
-    // Set sort to companyName descending to show new record at top
-    setSortField("companyName")
-    setSortAscending(false)
-
-    // Refresh data after successful creation with new sort
+    // Reset về trang đầu và không có sort/filter để item mới hiển thị ở đầu
+    setSearchQuery("")
+    setStatusFilter("")
+    setSortField("")
+    setSortAscending(true)
+    setPagination(prev => ({ ...prev, pageNumber: 1 }))
+    
+    // Refresh data after successful creation
     fetchData({
       pageNumber: 1,
       pageSize: pagination.pageSize,
-      search: searchQuery || "",
-      sortField: "companyName",
-      sortAscending: false,
-      status: statusFilter
+      search: "",
+      sortField: "",
+      sortAscending: true,
+      status: ""
     })
   }
 

@@ -81,3 +81,36 @@ export const updateCategory = async (data) => {
     }
 };
 
+export const updateCategoryStatus = async (data) => {
+    try {
+        const body = {
+            categoryId: data.categoryId,
+            status: data.status
+        };
+
+        console.log("Sending status update request:", body);
+        const res = await api.put("/Category/UpdateStatus", body);
+        console.log("Category status update API response:", res.data);
+        return res.data;
+    } catch (error) {
+        console.error("Error updating category status:", error);
+        if (error.response) {
+            console.error("Error response data:", error.response.data);
+            console.error("Error response status:", error.response.status);
+        }
+        throw error;
+    }
+};
+
+// Get categories for dropdown
+export const getCategoriesDropdown = async () => {
+    try {
+        const res = await api.get("/Category/GetCategoriesDropDown");
+        console.log("Categories dropdown API response:", res.data);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching categories dropdown:", error);
+        return { status: 500, message: "Error fetching categories", data: [] };
+    }
+};
+

@@ -159,14 +159,25 @@ export default function StorageConditionPage() {
     // Fetch tổng thống kê khi component mount
     fetchTotalStats()
     
-    // Fetch dữ liệu hiển thị
+    // Reset tất cả filter và sort về mặc định
+    setSearchQuery("")
+    setStatusFilter("")
+    setSortField("")
+    setSortAscending(true)
+    setPagination({
+      pageNumber: 1,
+      pageSize: 10,
+      totalCount: 0
+    })
+    
+    // Fetch dữ liệu hiển thị với không có sort/filter
     fetchData({
       pageNumber: 1,
       pageSize: 10,
-      search: searchQuery || "",
-      sortField: sortField,
-      sortAscending: sortAscending,
-      status: statusFilter
+      search: "",
+      sortField: "",
+      sortAscending: true,
+      status: ""
     })
   }, [])
 
@@ -246,18 +257,21 @@ export default function StorageConditionPage() {
     // Refresh tổng thống kê
     fetchTotalStats()
     
-    // Set sort to name descending to show new record at top
-    setSortField("Name")
-    setSortAscending(false)
+    // Reset về trang đầu và không có sort/filter để item mới hiển thị ở đầu
+    setSearchQuery("")
+    setStatusFilter("")
+    setSortField("")
+    setSortAscending(true)
+    setPagination(prev => ({ ...prev, pageNumber: 1 }))
     
-    // Refresh data after successful creation with new sort
+    // Refresh data after successful creation
     fetchData({
       pageNumber: 1,
-      pageSize: 10,
-      search: searchQuery || "",
-      sortField: "Name",
-      sortAscending: false,
-      status: statusFilter
+      pageSize: pagination.pageSize,
+      search: "",
+      sortField: "",
+      sortAscending: true,
+      status: ""
     })
   }
 
