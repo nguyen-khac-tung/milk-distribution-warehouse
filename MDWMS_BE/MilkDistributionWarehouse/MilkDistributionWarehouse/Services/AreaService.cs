@@ -12,10 +12,12 @@ namespace MilkDistributionWarehouse.Services
     public interface IAreaService
     {
         Task<(string, PageResult<AreaDto.AreaResponseDto>)> GetAreas(PagedRequest request);
-        Task<(string, AreaDto.AreaResponseDto)> GetAreaById(int areaId);
-        Task<(string, AreaDto.AreaResponseDto)> CreateArea(AreaDto.AreaCreateDto dto);
-        Task<(string, AreaDto.AreaResponseDto)> UpdateArea(int areaId, AreaDto.AreaUpdateDto dto);
+        Task<(string, AreaDto.AreaDetailDto)> GetAreaById(int areaId);
+        Task<(string, AreaDto.AreaResponseDto)> CreateArea(AreaDto.AreaRequestDto dto);
+        Task<(string, AreaDto.AreaResponseDto)> UpdateArea(int areaId, AreaDto.AreaRequestDto dto);
         Task<(string, AreaDto.AreaResponseDto)> DeleteArea(int areaId);
+        Task<(string, AreaDto.AreaResponseDto)> UpdateStatus(int areaId, int status);
+        Task<(string, List<AreaDto.AreaActiveDto>)> GetAreaDropdown();
     }
 
     public class AreaService : IAreaService
@@ -43,20 +45,20 @@ namespace MilkDistributionWarehouse.Services
             return ("", pagedResult);
         }
 
-        public async Task<(string, AreaDto.AreaResponseDto)> GetAreaById(int areaId)
+        public async Task<(string, AreaDto.AreaDetailDto)> GetAreaById(int areaId)
         {
             if (areaId <= 0)
-                return ("Mã khu vực không hợp lệ.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+                return ("Mã khu vực không hợp lệ.".ToMessageForUser(), new AreaDto.AreaDetailDto());
 
             var area = await _areaRepository.GetAreaById(areaId);
 
             if (area == null)
-                return ("Không tìm thấy khu vực.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+                return ("Không tìm thấy khu vực.".ToMessageForUser(), new AreaDto.AreaDetailDto());
 
-            return ("", _mapper.Map<AreaDto.AreaResponseDto>(area));
+            return ("", _mapper.Map<AreaDto.AreaDetailDto>(area));
         }
 
-        public async Task<(string, AreaDto.AreaResponseDto)> CreateArea(AreaDto.AreaCreateDto dto)
+        public async Task<(string, AreaDto.AreaResponseDto)> CreateArea(AreaDto.AreaRequestDto dto)
         {
             if (dto == null)
                 return ("Don't have input data.", new AreaDto.AreaResponseDto());
@@ -79,7 +81,7 @@ namespace MilkDistributionWarehouse.Services
             return ("", _mapper.Map<AreaDto.AreaResponseDto>(createdEntity));
         }
 
-        public async Task<(string, AreaDto.AreaResponseDto)> UpdateArea(int areaId, AreaDto.AreaUpdateDto dto)
+        public async Task<(string, AreaDto.AreaResponseDto)> UpdateArea(int areaId, AreaDto.AreaRequestDto dto)
         {
             if (dto == null)
                 return ("Don't have input data.", new AreaDto.AreaResponseDto());
@@ -99,7 +101,6 @@ namespace MilkDistributionWarehouse.Services
                 return ("Điều kiện bảo quản không tồn tại hoặc đã bị xoá.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
             _mapper.Map(dto, area);
-            area.Status = dto.Status ?? area.Status;
             area.UpdateAt = DateTime.UtcNow;
 
             var updatedEntity = await _areaRepository.UpdateArea(area);
@@ -129,6 +130,47 @@ namespace MilkDistributionWarehouse.Services
                 return ("Xoá khu vực thất bại.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
             return ("", _mapper.Map<AreaDto.AreaResponseDto>(deletedEntity));
+        }
+
+        public async Task<(string, AreaDto.AreaResponseDto)> UpdateStatus(int areaId, int status)
+        {
+            var area = await _areaRepository.GetAreaById(areaId);
+            if (area == null)
+                return ("Không tìm thấy khu vực để cập nhật trạng thái.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
+            if (area.Status == CommonStatus.Deleted)
+                return ("Khu vực này đã bị xoá, không thể cập nhật trạng thái.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
+            if (status != CommonStatus.Active && status != CommonStatus.Inactive && status != CommonStatus.Deleted)
+                return ("Trạng thái không hợp lệ.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
+            bool isUsed = await _areaRepository.HasDependentLocationsOrStocktakingsAsync(areaId);
+
+            if (isUsed && (status == CommonStatus.Inactive || status == CommonStatus.Deleted))
+                return ("Không thể cập nhật trạng thái vì khu vực đang được sử dụng trong vị trí hoặc kiểm kê.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
+            if (area.Status == status)
+                return ("Trạng thái khu vực đã ở trạng thái này.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
+            area.Status = status;
+            area.UpdateAt = DateTime.UtcNow;
+
+            var updated = await _areaRepository.UpdateArea(area);
+            if (updated == null)
+                return ("Cập nhật trạng thái khu vực thất bại.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
+            return ("", _mapper.Map<AreaDto.AreaResponseDto>(updated));
+        }
+
+        public async Task<(string, List<AreaDto.AreaActiveDto>)> GetAreaDropdown()
+        {
+            var areas = await _areaRepository.GetActiveAreasAsync();
+
+            if (areas == null || !areas.Any())
+                return ("Không có khu vực nào đang hoạt động.".ToMessageForUser(), new List<AreaDto.AreaActiveDto>());
+
+            var areaDtos = _mapper.Map<List<AreaDto.AreaActiveDto>>(areas);
+            return ("", areaDtos);
         }
     }
 }

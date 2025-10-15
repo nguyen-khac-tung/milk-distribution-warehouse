@@ -26,7 +26,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("Create")]
-        public async Task<IActionResult> CreateStorageCondition([FromBody] StorageConditionDto.StorageConditionCreateDto dto)
+        public async Task<IActionResult> CreateStorageCondition([FromBody] StorageConditionDto.StorageConditionRequestDto dto)
         {
             var (msg, createdStorageCondition) = await _storageConditionService.CreateStorageCondition(dto);
             if (!string.IsNullOrEmpty(msg))
@@ -35,12 +35,23 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPut("Update/{id}")]
-        public async Task<IActionResult> UpdateStorageCondition(int id, [FromBody] StorageConditionDto.StorageConditionUpdateDto dto)
+        public async Task<IActionResult> UpdateStorageCondition(int id, [FromBody] StorageConditionDto.StorageConditionRequestDto dto)
         {
             var (msg, updatedStorageCondition) = await _storageConditionService.UpdateStorageCondition(id, dto);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<StorageConditionDto.StorageConditionResponseDto>.ToResultOk(updatedStorageCondition);
+        }
+
+        [HttpPut("UpdateStatus/{storageConditionId}")]
+        public async Task<IActionResult> UpdateStatus(int storageConditionId, [FromQuery] int status)
+        {
+            var (msg, result) = await _storageConditionService.UpdateStatus(storageConditionId, status);
+
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<StorageConditionDto.StorageConditionResponseDto>.ToResultOk(result);
         }
 
         [HttpDelete("Delete/{id}")]

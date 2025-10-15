@@ -6,6 +6,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
     {
         [Required(ErrorMessage = "Email không được để trống!")]
         [EmailAddress(ErrorMessage = "Email không hợp lệ!")]
+        [MaxLength(255, ErrorMessage = "Độ dài email không được vượt quá 255 ký tự.")]
         public string Email { get; set; }
 
         [Required(ErrorMessage = "Mật khẩu không được để trống!")]
@@ -16,15 +17,19 @@ namespace MilkDistributionWarehouse.Models.DTOs
     {
         [Required(ErrorMessage = "Email không được để trống!")]
         [EmailAddress(ErrorMessage = "Email không hợp lệ!")]
+        [MaxLength(255, ErrorMessage = "Độ dài email không được vượt quá 255 ký tự.")]
         public string Email { get; set; }
     }
 
     public class VerifyOtpDto
     {
-        [Required(ErrorMessage = "Email không được để trống!")]
+        [Required(ErrorMessage = "Email không được bỏ trống.")]
+        [EmailAddress(ErrorMessage = "Email không hợp lệ.")]
+        [MaxLength(255, ErrorMessage = "Độ dài email không được vượt quá 255 ký tự.")]
         public string Email { get; set; }
 
         [Required(ErrorMessage = "Otp không được để trống!")]
+        [MaxLength(255, ErrorMessage = "Độ dài OTP không được vượt quá 6 ký tự.")]
         public string OtpCode { get; set; }
     }
 
@@ -34,6 +39,23 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public string Email { get; set; }
 
         [Required(ErrorMessage = "Mật khẩu không được để trống!")]
+        [StringLength(20, MinimumLength = 6, ErrorMessage = "Mật khẩu có độ dài 6 đến 20 ký tự")]
+        [RegularExpression(@"^(?=.*[A-Z])(?=.*[!@#$%^&*()_\-+=<>?]).+$", ErrorMessage = "Mật khẩu chứa ít nhất một chữ hoa và một ký tự đặc biệt.")]
+        public string NewPassword { get; set; }
+
+        [Required(ErrorMessage = "Mật khẩu xác nhận không được để trống!")]
+        [Compare("NewPassword", ErrorMessage = "Mật khẩu xác nhận không trùng!")]
+        public string ConfirmNewPassword { get; set; }
+    }
+
+    public class ChangePasswordDto
+    {
+        [Required(ErrorMessage = "Mật khẩu không được để trống!")]
+        public string OldPassword { get; set; }
+
+        [Required(ErrorMessage = "Mật khẩu không được để trống!")]
+        [StringLength(20, MinimumLength = 6, ErrorMessage = "Mật khẩu có độ dài 6 đến 20 ký tự")]
+        [RegularExpression(@"^(?=.*[A-Z])(?=.*[!@#$%^&*()_\-+=<>?]).+$", ErrorMessage = "Mật khẩu chứa ít nhất một chữ hoa và một ký tự đặc biệt.")]
         public string NewPassword { get; set; }
 
         [Required(ErrorMessage = "Mật khẩu xác nhận không được để trống!")]

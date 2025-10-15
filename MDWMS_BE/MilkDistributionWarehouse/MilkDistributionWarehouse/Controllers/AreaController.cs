@@ -25,17 +25,26 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<PageResult<AreaDto.AreaResponseDto>>.ToResultOk(areas);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("GetAreaDropdown")]
+        public async Task<IActionResult> GetAreaDropdown()
+        {
+            var (msg, areas) = await _areaService.GetAreaDropdown();
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<List<AreaDto.AreaActiveDto>>.ToResultOk(areas);
+        }
+
+        [HttpGet("AreaDetail/{id}")]
         public async Task<IActionResult> GetArea(int id)
         {
             var (msg, area) = await _areaService.GetAreaById(id);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<AreaDto.AreaResponseDto>.ToResultOk(area);
+            return ApiResponse<AreaDto.AreaDetailDto>.ToResultOk(area);
         }
 
         [HttpPost("Create")]
-        public async Task<IActionResult> CreateArea([FromBody] AreaDto.AreaCreateDto dto)
+        public async Task<IActionResult> CreateArea([FromBody] AreaDto.AreaRequestDto dto)
         {
             if (!ModelState.IsValid)
                 return ApiResponse<string>.ToResultError("Dữ liệu không hợp lệ.");
@@ -47,7 +56,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPut("Update/{id}")]
-        public async Task<IActionResult> UpdateArea(int id, [FromBody] AreaDto.AreaUpdateDto dto)
+        public async Task<IActionResult> UpdateArea(int id, [FromBody] AreaDto.AreaRequestDto dto)
         {
             if (!ModelState.IsValid)
                 return ApiResponse<string>.ToResultError("Dữ liệu không hợp lệ.");
@@ -57,6 +66,18 @@ namespace MilkDistributionWarehouse.Controllers
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<AreaDto.AreaResponseDto>.ToResultOk(updatedArea);
         }
+
+        [HttpPut("UpdateStatus/{areaId}")]
+        public async Task<IActionResult> UpdateStatusArea(int areaId, [FromQuery] int status)
+        {
+            var (msg, area) = await _areaService.UpdateStatus(areaId, status);
+
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<AreaDto.AreaResponseDto>.ToResultOk(area);
+        }
+
 
         [HttpDelete("Delete/{id}")]
         public async Task<IActionResult> DeleteArea(int id)

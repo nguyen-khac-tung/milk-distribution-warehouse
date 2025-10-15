@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Azure.Core;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
@@ -16,6 +17,15 @@ namespace MilkDistributionWarehouse.Controllers
         public GoodsController(IGoodsService goodsService)
         {
             _goodsService = goodsService;
+        }
+
+        [HttpGet("GetGoodsDropDown")]
+        public async Task<IActionResult> GetGoodsDropDown()
+        {
+            var (msg, goodss) = await _goodsService.GetGoodsDropDown();
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<List<GoodsDropDown>>.ToResultOk(goodss);
         }
 
         [HttpPost("Goods")]
@@ -61,6 +71,15 @@ namespace MilkDistributionWarehouse.Controllers
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<GoodsDto>.ToResultOk(goods);
+        }
+
+        [HttpPut("UpdateStatus")]
+        public async Task<IActionResult> UpdateStatus(GoodsUpdateStatus update)
+        {
+            var (msg, goods) = await _goodsService.UpdateGoodsStatus(update);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<GoodsUpdateStatus>.ToResultOk(goods);
         }
     }
 }

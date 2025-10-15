@@ -16,6 +16,8 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, UnitMeasureDto)> CreateUnitMeasure(UnitMeasureCreate unitMeasureCreate);
         Task<(string, UnitMeasureDto)> UpdateUnitMeasure(UnitMeasureUpdate unitMeasureUpdate);
         Task<(string, UnitMeasureDto)> DeleteUnitMeasure(int unitMeasureId);
+        Task<(string, List<UnitMeasureDropDown>)> GetUnitMeasureDropDown();
+        Task<(string, UnitMeasureUpdateStatusDto)> UpdateUnitMeasureStatus(UnitMeasureUpdateStatusDto update);
     }
     public class UnitMeasureService : IUnitMeasureService
     {
@@ -25,6 +27,19 @@ namespace MilkDistributionWarehouse.Services
         {
             _unitMeasureRepository = unitMeasureRepository;
             _mapper = mapper;
+        }
+
+        public async Task<(string, List<UnitMeasureDropDown>)> GetUnitMeasureDropDown()
+        {
+            var unitMeasures = await _unitMeasureRepository.GetUnitMeasures()
+                .Where(u => u.Status == CommonStatus.Active).ToListAsync();
+
+            var unitMeasuresDropDown = _mapper.Map<List<UnitMeasureDropDown>>(unitMeasures);
+
+            if (!unitMeasures.Any())
+                return ("Danh sách đơn vị trống.".ToMessageForUser(), new List<UnitMeasureDropDown>());
+
+            return ("", unitMeasuresDropDown);
         }
 
         public async Task<(string, PageResult<UnitMeasureDto>)> GetUnitMeasure(PagedRequest request)
@@ -67,22 +82,8 @@ namespace MilkDistributionWarehouse.Services
             if (unitMeasureExist == null)
                 return ("Unit Measure is not exist", new UnitMeasureDto());
 
-            if (unitMeasureExist.Status == CommonStatus.Deleted || unitMeasureUpdate.Status == CommonStatus.Deleted)
-                return ("Đơn vị đã bị xoá hoặc không thể trạng thái xoá đơn vị".ToMessageForUser(), new UnitMeasureDto());
-
             if (await _unitMeasureRepository.IsDuplicationUnitMeasureName(unitMeasureUpdate.UnitMeasureId, unitMeasureUpdate.Name))
-                return ("Tên đơn vị đã tồn tại trong hệ thống".ToMessageForUser(), new UnitMeasureDto());
-
-            bool isChangingToInactive = unitMeasureExist.Status == CommonStatus.Active 
-                && unitMeasureUpdate.Status == CommonStatus.Inactive;
-
-            if (isChangingToInactive)
-            {
-                var allGoodsInactive = await _unitMeasureRepository.IsUnitMeasureContainGooddAllInActice(unitMeasureUpdate.UnitMeasureId);
-
-                if (!allGoodsInactive)
-                    return ("Đơn vị không thể vô hiệu hoá vì có sản phẩm đang liên kết với đơn vị.".ToMessageForUser(), new UnitMeasureDto());
-            }    
+                return ("Tên đơn vị đã tồn tại trong hệ thống".ToMessageForUser(), new UnitMeasureDto()); 
 
             _mapper.Map(unitMeasureUpdate, unitMeasureExist);
 
@@ -92,6 +93,41 @@ namespace MilkDistributionWarehouse.Services
                 return ("Cập nhật đơn vị thất bại".ToMessageForUser(), new UnitMeasureDto());
 
             return ("", _mapper.Map<UnitMeasureDto>(unitMeasureExist));
+        }
+
+        public async Task<(string, UnitMeasureUpdateStatusDto)> UpdateUnitMeasureStatus(UnitMeasureUpdateStatusDto update)
+        {
+            if(update.UnitMeasureId <= 0) 
+                return ("UnitMeasureId is invalid", new UnitMeasureUpdateStatusDto());
+
+            var unitMeasureExist = await _unitMeasureRepository.GetUnitMeasureById(update.UnitMeasureId);
+
+            if (unitMeasureExist == null)
+                return ("Unit Measure is not exist", new UnitMeasureUpdateStatusDto());
+
+            if (unitMeasureExist.Status == CommonStatus.Deleted || update.Status == CommonStatus.Deleted)
+                return ("Đơn vị đã bị xoá hoặc không thể trạng thái xoá đơn vị".ToMessageForUser(), new UnitMeasureUpdateStatusDto());
+
+            bool isChangingToInactive = unitMeasureExist.Status == CommonStatus.Active
+                                    && update.Status == CommonStatus.Inactive;
+
+            if (isChangingToInactive)
+            {
+                var allGoodsInactive = await _unitMeasureRepository.IsUnitMeasureContainGooddAllInActice(update.UnitMeasureId);
+
+                if (!allGoodsInactive)
+                    return ("Đơn vị không thể vô hiệu hoá vì có sản phẩm đang liên kết với đơn vị.".ToMessageForUser(), new UnitMeasureUpdateStatusDto());
+            }
+
+            unitMeasureExist.Status = update.Status;
+            unitMeasureExist.UpdateAt = DateTime.Now;
+            
+            var updateResult = await _unitMeasureRepository.UpdateUnitMeasure(unitMeasureExist);
+
+            if (updateResult == null)
+                return ("Cập nhật đơn vị thất bại.".ToMessageForUser(), new UnitMeasureUpdateStatusDto());
+
+            return ("", update);
         }
 
         public async Task<(string, UnitMeasureDto)> DeleteUnitMeasure(int unitMeasureId)
