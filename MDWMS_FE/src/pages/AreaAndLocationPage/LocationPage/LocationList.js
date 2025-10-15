@@ -1,22 +1,23 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Button } from "antd";
-import { getLocations, deleteLocation } from "../../../services/LocationServices";
-import { getAreas } from "../../../services/AreaServices";
-import { Edit, Trash2, ChevronDown, Plus } from "lucide-react";
+import { getLocations, deleteLocation, updateLocationStatus } from "../../../services/LocationServices";
+import { Edit, Trash2, ChevronDown, Plus, Eye } from "lucide-react";
 import DeleteModal from "../../../components/Common/DeleteModal";
-import SearchBar from "../../../components/Common/SearchBar";
-import FilterDropdown from "../../../components/Common/FilterDropdown";
-import Pagination from "../../../components/Common/Pagination";
+import SearchFilterToggle from "../../../components/Common/SearchFilterToggle";
+import StatsCards from "../../../components/Common/StatsCards";
+import Loading from "../../../components/Common/Loading";
 import CreateLocationModal from "./CreateLocationModal";
 import UpdateLocationModal from "./UpdateLocationModal";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Table as CustomTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
 import { extractErrorMessage } from "../../../utils/Validation";
+import { StatusToggle } from "../../../components/Common/SwitchToggle/StatusToggle";
 
 
 const LocationList = () => {
     const [locations, setLocations] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [searchLoading, setSearchLoading] = useState(false);
     const [pagination, setPagination] = useState({
         current: 1,
         pageSize: 10,
@@ -32,9 +33,12 @@ const LocationList = () => {
     const [updateLocationId, setUpdateLocationId] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("");
+    const [showStatusFilter, setShowStatusFilter] = useState(false);
     const [statusTypeFilter, setStatusTypeFilter] = useState("");
+    const [showStatusTypeFilter, setShowStatusTypeFilter] = useState(false);
     const [sortField, setSortField] = useState("");
     const [sortAscending, setSortAscending] = useState(true);
+    const [showPageSizeFilter, setShowPageSizeFilter] = useState(false);
 
     const fetchLocations = async (page = 1, pageSize = 10, params = {}) => {
         try {
@@ -72,6 +76,7 @@ const LocationList = () => {
             window.showToast("Không thể tải danh sách vị trí!", "error");
         } finally {
             setLoading(false);
+            setSearchLoading(false);
         }
     };
 
@@ -118,8 +123,29 @@ const LocationList = () => {
         fetchStats();
     }, []);
 
+    // Close filters when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (showStatusFilter && !event.target.closest('.status-filter-dropdown')) {
+                setShowStatusFilter(false);
+            }
+            if (showStatusTypeFilter && !event.target.closest('.status-type-filter-dropdown')) {
+                setShowStatusTypeFilter(false);
+            }
+            if (showPageSizeFilter && !event.target.closest('.page-size-filter-dropdown')) {
+                setShowPageSizeFilter(false);
+            }
+        }
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        }
+    }, [showStatusFilter, showStatusTypeFilter, showPageSizeFilter]);
+
     // Callback khi filter thay đổi
     const handleFilterChange = useCallback((params) => {
+        setSearchLoading(true);
         setPagination((p) => ({ ...p, current: 1 }));
         fetchLocations(1, pagination.pageSize, params);
     }, [pagination.pageSize]);
@@ -267,6 +293,29 @@ const LocationList = () => {
         setUpdateLocationId(null);
     };
 
+    const handleStatusChange = async (locationId, newStatus) => {
+        try {
+            await updateLocationStatus(locationId, newStatus)
+
+            // Update local state
+            setLocations(prevLocation =>
+                prevLocation.map(location =>
+                    location.locationId === locationId
+                        ? { ...location, status: newStatus }
+                        : location
+                )
+            )
+
+            const statusText = newStatus === 1 ? "kích hoạt" : "ngừng hoạt động"
+            window.showToast(`Đã ${statusText} nhà cung cấp thành công`, "success")
+        } catch (error) {
+            console.error("Error updating area status:", error)
+
+            const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật trạng thái")
+            window.showToast(errorMessage, "error")
+        }
+    }
+
     //Delete location
     const handleDeleteConfirm = async () => {
         try {
@@ -290,148 +339,110 @@ const LocationList = () => {
 
 
     return (
-        <div style={{ minHeight: "100vh", background: "linear-gradient(to bottom right, #f8fafc, #e2e8f0)", padding: "24px" }}>
-            <div style={{ maxWidth: "1280px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "24px" }}>
+        <div className="min-h-screen">
+            <div className="max-w-7xl mx-auto space-y-6">
                 {/* Header */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div className="flex items-center justify-between">
                     <div>
-                        <h1 style={{ fontSize: "30px", fontWeight: "bold", color: "#0f172a", margin: 0 }}>Quản lý Vị trí</h1>
-                        <p style={{ color: "#64748b", margin: "4px 0 0 0" }}>Quản lý các vị trí lưu trữ trong hệ thống</p>
+                        <h1 className="text-2xl font-bold text-slate-600">Quản lý Vị trí</h1>
+                        <p className="text-slate-600 mt-1">Quản lý các vị trí lưu trữ trong hệ thống</p>
                     </div>
                     <Button
-                        style={{
-                            backgroundColor: "#237486",
-                            borderColor: "#237486",
-                            height: "44px",
-                            padding: "0 24px",
-                            color: "white",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px"
-                        }}
+                        className="bg-orange-500 hover:bg-orange-600 h-8 px-6 text-white"
                         onClick={handleOpenCreate}
                     >
-                        <Plus style={{ marginRight: "8px", height: "16px", width: "16px" }} />
+                        <Plus className="mr-2 h-4 w-4 text-white" />
                         Thêm vị trí
                     </Button>
                 </div>
 
                 {/* Stats Cards */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
-                    <Card style={{ borderLeft: "4px solid #237486" }}>
-                        <CardContent style={{ paddingTop: "24px" }}>
-                            <div style={{ fontSize: "14px", fontWeight: "500", color: "#64748b" }}>Tổng vị trí</div>
-                            <div style={{ fontSize: "30px", fontWeight: "bold", color: "#0f172a", marginTop: "8px" }}>{globalStats.total}</div>
-                        </CardContent>
-                    </Card>
-                    <Card style={{ borderLeft: "4px solid #237486" }}>
-                        <CardContent style={{ paddingTop: "24px" }}>
-                            <div style={{ fontSize: "14px", fontWeight: "500", color: "#64748b" }}>Trống</div>
-                            <div style={{ fontSize: "30px", fontWeight: "bold", color: "#237486", marginTop: "8px" }}>{globalStats.available}</div>
-                        </CardContent>
-                    </Card>
-                    <Card style={{ borderLeft: "4px solid #237486" }}>
-                        <CardContent style={{ paddingTop: "24px" }}>
-                            <div style={{ fontSize: "14px", fontWeight: "500", color: "#64748b" }}>Đang sử dụng</div>
-                            <div style={{ fontSize: "30px", fontWeight: "bold", color: "#64748b", marginTop: "8px" }}>{globalStats.unavailable}</div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Search Bar */}
-                <SearchBar
-                    placeholder="Tìm kiếm theo mã vị trí..."
-                    value={searchQuery}
-                    onChange={handleSearchInputChange}
+                <StatsCards
+                    totalCount={globalStats.total}
+                    activeCount={globalStats.available}
+                    inactiveCount={globalStats.unavailable}
+                    totalLabel="Tổng vị trí"
+                    activeLabel="Trống"
+                    inactiveLabel="Đang sử dụng"
                 />
 
-                {/* Locations Table */}
-                <Card style={{ boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)", overflow: "hidden", padding: 0 }}>
-                    <div style={{ width: "100%" }}>
+                {/* Search and Table Combined */}
+                <Card className="shadow-sm border border-slate-200 overflow-hidden bg-gray-50">
+                    <SearchFilterToggle
+                        searchQuery={searchQuery}
+                        setSearchQuery={setSearchQuery}
+                        searchPlaceholder="Tìm kiếm theo mã vị trí..."
+                        statusFilter={statusFilter}
+                        setStatusFilter={setStatusFilter}
+                        showStatusFilter={showStatusFilter}
+                        setShowStatusFilter={setShowStatusFilter}
+                        statusOptions={[
+                            { value: "", label: "Tất cả tình trạng" },
+                            { value: "true", label: "Trống" },
+                            { value: "false", label: "Đang sử dụng" }
+                        ]}
+                        onStatusFilter={handleStatusFilter}
+                        clearStatusFilter={clearStatusFilter}
+                        onClearAll={() => {
+                            setSearchQuery("");
+                            setStatusFilter("");
+                            setStatusTypeFilter("");
+                            setShowStatusFilter(false);
+                            setShowStatusTypeFilter(false);
+                        }}
+                        searchWidth="w-80"
+                        showToggle={true}
+                        defaultOpen={true}
+                        showClearButton={true}
+                    />
+
+                    {/* Table */}
+                    <div className="w-full">
                         {loading ? (
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 0" }}>
-                                <div style={{ color: "#64748b" }}>Đang tải dữ liệu...</div>
-                            </div>
+                            <Loading size="large" text="Đang tải dữ liệu..." />
+                        ) : searchLoading ? (
+                            <Loading size="medium" text="Đang tìm kiếm..." />
                         ) : (
-                            <div style={{ overflowX: "auto" }}>
-                                <CustomTable style={{ width: "100%" }}>
+                            <div className="overflow-x-auto">
+                                <CustomTable className="w-full">
                                     <TableHeader>
-                                        <TableRow style={{ backgroundColor: "#237486", margin: 0, width: "100%" }}>
-                                            <TableHead style={{ fontWeight: "600", color: "white", padding: "12px 16px", border: 0, width: "80px" }}>
+                                        <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-16">
                                                 STT
                                             </TableHead>
-                                            <TableHead style={{ fontWeight: "600", color: "white", padding: "12px 16px", border: 0, width: "160px" }}>
-                                                <div style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", padding: "4px", margin: "-4px", borderRadius: "4px" }} onClick={() => handleSort("locationCode")}>
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                                <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("locationCode")}>
                                                     <span>Mã vị trí</span>
-                                                    <div style={{ display: "flex", flexDirection: "column" }}>
+                                                    <div className="flex flex-col">
                                                         <ChevronDown
-                                                            style={{
-                                                                height: "12px",
-                                                                width: "12px",
-                                                                color: sortField === "locationCode" && sortAscending ? "white" : "rgba(255,255,255,0.5)",
-                                                                transform: "translateY(1px)"
-                                                            }}
+                                                            className={`h-3 w-3 ${sortField === "locationCode" && sortAscending ? "text-orange-500" : "text-slate-400"}`}
                                                         />
                                                         <ChevronDown
-                                                            style={{
-                                                                height: "12px",
-                                                                width: "12px",
-                                                                color: sortField === "locationCode" && !sortAscending ? "white" : "rgba(255,255,255,0.5)",
-                                                                transform: "translateY(-1px) rotate(180deg)"
-                                                            }}
+                                                            className={`h-3 w-3 ${sortField === "locationCode" && !sortAscending ? "text-orange-500" : "text-slate-400"}`}
+                                                            style={{ transform: "rotate(180deg)" }}
                                                         />
                                                     </div>
                                                 </div>
                                             </TableHead>
-                                            <TableHead style={{ fontWeight: "600", color: "white", padding: "12px 16px", border: 0 }}>
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                                                 Khu vực
                                             </TableHead>
-                                            <TableHead style={{ fontWeight: "600", color: "white", padding: "12px 16px", border: 0 }}>
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                                                 Kệ
                                             </TableHead>
-                                            <TableHead style={{ fontWeight: "600", color: "white", padding: "12px 16px", border: 0 }}>
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                                                 Hàng
                                             </TableHead>
-                                            <TableHead style={{ fontWeight: "600", color: "white", padding: "12px 16px", border: 0 }}>
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                                                 Cột
                                             </TableHead>
-                                            <TableHead style={{ fontWeight: "600", color: "white", padding: "12px 16px", border: 0, width: "160px" }}>
-                                                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
-                                                    <span>Tình trạng</span>
-                                                    <FilterDropdown
-                                                        type="status"
-                                                        value={statusFilter}
-                                                        onFilterChange={handleStatusFilter}
-                                                        onClearFilter={clearStatusFilter}
-                                                        options={[
-                                                            { value: "true", label: "Trống" },
-                                                            { value: "false", label: "Đang sử dụng" }
-                                                        ]}
-                                                        placeholder="Tất cả"
-                                                        className="status-filter-dropdown"
-                                                        title="Lọc theo tình trạng"
-                                                    />
-                                                </div>
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-48">
+                                                Tình trạng
                                             </TableHead>
-                                            <TableHead style={{ fontWeight: "600", color: "white", padding: "12px 16px", border: 0, width: "160px" }}>
-                                                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
-                                                    <span>Trạng thái</span>
-                                                    <FilterDropdown
-                                                        type="statusType"
-                                                        value={statusTypeFilter}
-                                                        onFilterChange={handleStatusTypeFilter}
-                                                        onClearFilter={clearStatusTypeFilter}
-                                                        options={[
-                                                            { value: "1", label: "Hoạt động" },
-                                                            { value: "2", label: "Ngừng hoạt động" }
-                                                        ]}
-                                                        placeholder="Tất cả"
-                                                        className="status-type-filter-dropdown"
-                                                        title="Lọc theo trạng thái"
-                                                    />
-                                                </div>
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-48">
+                                                Trạng thái
                                             </TableHead>
-                                            <TableHead style={{ fontWeight: "600", color: "white", padding: "12px 16px", border: 0, textAlign: "center" }}>
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
                                                 Hoạt động
                                             </TableHead>
                                         </TableRow>
@@ -441,72 +452,71 @@ const LocationList = () => {
                                             locations.map((location, index) => (
                                                 <TableRow
                                                     key={location.locationId}
-                                                    style={{
-                                                        backgroundColor: index % 2 === 0 ? "white" : "#f8fafc",
-                                                        margin: 0,
-                                                        width: "100%"
-                                                    }}
+                                                    className="hover:bg-slate-50 border-b border-slate-200"
                                                 >
-                                                    <TableCell style={{ color: "#64748b", padding: "12px 16px", border: 0, width: "80px", textAlign: "center", fontWeight: "500" }}>
-                                                        {(pagination.current - 1) * pagination.pageSize + index + 1}
+                                                    <TableCell className="px-6 py-4 text-slate-600 font-medium">
+                                                        {index + 1}
                                                     </TableCell>
-                                                    <TableCell style={{ fontWeight: "500", color: "#0f172a", padding: "12px 16px", border: 0, width: "160px" }}>
+                                                    <TableCell className="font-medium text-slate-900 px-6 py-3 text-left">
                                                         {location?.locationCode || ''}
                                                     </TableCell>
-                                                    <TableCell style={{ color: "#374151", padding: "12px 16px", border: 0 }}>
-                                                        {location?.areaNameDto?.areaName || "—"}
+                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">
+                                                        {location?.areaName || "—"}
                                                     </TableCell>
-                                                    <TableCell style={{ color: "#374151", padding: "12px 16px", border: 0 }}>
+                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">
                                                         {location?.rack || ''}
                                                     </TableCell>
-                                                    <TableCell style={{ color: "#374151", padding: "12px 16px", border: 0 }}>
+                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">
                                                         {location?.row || ''}
                                                     </TableCell>
-                                                    <TableCell style={{ color: "#374151", padding: "12px 16px", border: 0 }}>
+                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">
                                                         {location?.column || ''}
                                                     </TableCell>
-                                                    <TableCell style={{ color: "#374151", padding: "12px 16px", border: 0, width: "160px", textAlign: "center" }}>
-                                                        <span style={{
-                                                            padding: "4px 8px",
-                                                            borderRadius: "9999px",
-                                                            fontSize: "12px",
-                                                            fontWeight: "500",
-                                                            backgroundColor: location?.isAvailable ? "#dcfce7" : "#fef2f2",
-                                                            color: location?.isAvailable ? "#166534" : "#dc2626"
-                                                        }}>
+                                                    <TableCell className="px-6 py-3 text-center">
+                                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${location?.isAvailable
+                                                            ? 'bg-green-100 text-green-800'
+                                                            : 'bg-red-100 text-red-800'
+                                                            }`}>
+                                                            <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${location?.isAvailable ? 'bg-green-400' : 'bg-red-400'
+                                                                }`}></span>
                                                             {location?.isAvailable ? 'Trống' : 'Đang sử dụng'}
                                                         </span>
                                                     </TableCell>
-                                                    <TableCell style={{ color: "#374151", padding: "12px 16px", border: 0, textAlign: "center" }}>
-                                                        <span style={{
-                                                            padding: "4px 8px",
-                                                            borderRadius: "9999px",
-                                                            fontSize: "12px",
-                                                            fontWeight: "500",
-                                                            backgroundColor: location?.status === 1 ? "#dcfce7" : location?.status === 2 ? "#fef3c7" : "#fef2f2",
-                                                            color: location?.status === 1 ? "#166534" : location?.status === 2 ? "#d97706" : "#dc2626"
-                                                        }}>
-                                                            {location?.status === 1 ? 'Hoạt động' : location?.status === 2 ? 'Ngừng hoạt động' : 'Đã xóa'}
-                                                        </span>
+                                                    <TableCell className="px-6 py-3 text-center">
+                                                        <div className="flex justify-center">
+                                                            <StatusToggle
+                                                                status={location?.status}
+                                                                onStatusChange={handleStatusChange}
+                                                                supplierId={location?.locationId}
+                                                                supplierName={location?.locationCode}
+                                                                entityType="Vị trí"
+                                                            />
+                                                        </div>
                                                     </TableCell>
-                                                    <TableCell style={{ color: "#64748b", padding: "12px 16px", border: 0, textAlign: "center" }}>
-                                                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                                                    <TableCell className="px-6 py-4 text-center">
+                                                        <div className="flex items-center justify-center space-x-1">
                                                             <button
-                                                                style={{ padding: "4px", background: "none", border: "none", cursor: "pointer", borderRadius: "4px" }}
+                                                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                                title="Xem chi tiết"
+                                                            >
+                                                                <Eye className="h-4 w-4 text-orange-500" />
+                                                            </button>
+                                                            <button
+                                                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                                                 title="Chỉnh sửa"
                                                                 onClick={() => handleOpenEdit(location)}
                                                             >
-                                                                <Edit style={{ height: "16px", width: "16px", color: "#1a7b7b" }} />
+                                                                <Edit className="h-4 w-4 text-orange-500" />
                                                             </button>
                                                             <button
-                                                                style={{ padding: "4px", background: "none", border: "none", cursor: "pointer", borderRadius: "4px" }}
+                                                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                                                 title="Xóa"
                                                                 onClick={() => {
                                                                     setItemToDelete(location);
                                                                     setShowDeleteModal(true);
                                                                 }}
                                                             >
-                                                                <Trash2 style={{ height: "16px", width: "16px", color: "#ef4444" }} />
+                                                                <Trash2 className="h-4 w-4 text-red-500" />
                                                             </button>
                                                         </div>
                                                     </TableCell>
@@ -514,7 +524,7 @@ const LocationList = () => {
                                             ))
                                         ) : (
                                             <TableRow>
-                                                <TableCell colSpan={9} style={{ textAlign: "center", padding: "48px 0", color: "#64748b" }}>
+                                                <TableCell colSpan={9} className="text-center py-12 text-slate-500">
                                                     Không tìm thấy vị trí nào
                                                 </TableCell>
                                             </TableRow>
@@ -527,16 +537,83 @@ const LocationList = () => {
                 </Card>
 
                 {/* Pagination */}
-                {!loading && (
-                    <Pagination
-                        current={pagination.current}
-                        pageSize={pagination.pageSize}
-                        total={pagination.total}
-                        onPageChange={handlePageChange}
-                        onPageSizeChange={handlePageSizeChange}
-                        showPageSize={true}
-                        pageSizeOptions={[10, 20, 30, 40]}
-                    />
+                {!loading && !searchLoading && pagination.total > 0 && (
+                    <Card className="bg-gray-50">
+                        <CardContent className="pt-6">
+                            <div className="flex items-center justify-between">
+                                <div className="text-sm text-slate-600">
+                                    Hiển thị {((pagination.current - 1) * pagination.pageSize) + 1} - {Math.min(pagination.current * pagination.pageSize, pagination.total)} trong tổng số {pagination.total} vị trí
+                                </div>
+
+                                <div className="flex items-center space-x-4">
+                                    <div className="flex items-center space-x-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-8"
+                                            onClick={() => {
+                                                if (pagination.current > 1) {
+                                                    handlePageChange(pagination.current - 1);
+                                                }
+                                            }}
+                                            disabled={pagination.current <= 1}
+                                        >
+                                            Trước
+                                        </Button>
+                                        <span className="text-sm text-slate-600">
+                                            Trang {pagination.current} / {Math.ceil(pagination.total / pagination.pageSize)}
+                                        </span>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-8"
+                                            onClick={() => {
+                                                if (pagination.current < Math.ceil(pagination.total / pagination.pageSize)) {
+                                                    handlePageChange(pagination.current + 1);
+                                                }
+                                            }}
+                                            disabled={pagination.current >= Math.ceil(pagination.total / pagination.pageSize)}
+                                        >
+                                            Sau
+                                        </Button>
+                                    </div>
+
+                                    {/* Page Size Selector */}
+                                    <div className="flex items-center space-x-2">
+                                        <span className="text-sm text-slate-600">Hiển thị:</span>
+                                        <div className="relative page-size-filter-dropdown">
+                                            <button
+                                                onClick={() => setShowPageSizeFilter(!showPageSizeFilter)}
+                                                className="flex items-center space-x-2 px-3 py-2 h-8 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                            >
+                                                <span>{pagination.pageSize}</span>
+                                                <ChevronDown className="h-4 w-4" />
+                                            </button>
+
+                                            {showPageSizeFilter && (
+                                                <div className="absolute bottom-full right-0 mb-1 w-20 bg-gray-50 rounded-md shadow-lg border z-10">
+                                                    <div className="py-1">
+                                                        {[10, 20, 30, 40].map((size) => (
+                                                            <button
+                                                                key={size}
+                                                                onClick={() => handlePageSizeChange(size)}
+                                                                className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 flex items-center justify-between ${pagination.pageSize === size ? 'bg-[#d97706] text-white' : 'text-slate-700'
+                                                                    }`}
+                                                            >
+                                                                {size}
+                                                                {pagination.pageSize === size && <span className="text-white">✓</span>}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <span className="text-sm text-slate-600">/ Trang</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
                 )}
             </div>
 

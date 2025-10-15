@@ -176,6 +176,18 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now))
                 .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(_ => (DateTime?)null));
 
+
+            //Map Batch
+            CreateMap<Batch, BatchDropDownDto>();
+            CreateMap<Batch, BatchDto>()
+                .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Goods.GoodsName));
+            CreateMap<BatchCreateDto, Batch>()
+                .ForMember(dest => dest.BatchId, opt => opt.MapFrom(_ => Guid.NewGuid()))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => CommonStatus.Active))
+                .ForMember(dest => dest.CreateAt, opt => opt.MapFrom(_ => DateTime.Now))
+                .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => (DateTime?)null));
+            CreateMap<BatchUpdateDto, Batch>()
+                .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => DateTime.Now));
         }
     }
 }

@@ -18,12 +18,12 @@ export default function DeleteModal({ isOpen, onClose, onConfirm, itemName }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-md mx-4 bg-white rounded-lg shadow-2xl">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="w-full max-w-lg mx-4 bg-white rounded-xl shadow-2xl border border-gray-100">
         {/* Header */}
-        <div className="p-6 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-            <svg className="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="p-8 text-center">
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-red-50 border-2 border-red-100">
+            <svg className="h-8 w-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -32,22 +32,22 @@ export default function DeleteModal({ isOpen, onClose, onConfirm, itemName }) {
               />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Xác nhận xóa</h2>
-          <p className="text-gray-600">
-            Bạn có chắc chắn muốn xóa <span className="font-semibold text-gray-900">"{itemName}"</span> không?
+          <h2 className="text-2xl font-bold text-gray-900 mb-3">Xác nhận xóa</h2>
+          <p className="text-gray-600 text-lg leading-relaxed">
+            Bạn có chắc chắn muốn xóa <span className="font-semibold text-red-600">"{itemName}"</span> không?
             <br />
-            Hành động này không thể hoàn tác.
+            <span className="text-sm text-gray-500 mt-2 block">Hành động này không thể hoàn tác.</span>
           </p>
         </div>
 
         {/* Footer */}
-        <div className="flex gap-3 p-6 pt-0">
+        <div className="flex gap-4 p-8 pt-0 justify-center">
           <Button
             type="button"
             variant="outline"
             onClick={onClose}
             disabled={loading}
-            className="flex-1 h-11 border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            className="h-[38px] px-8 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50"
           >
             Hủy
           </Button>
@@ -55,9 +55,16 @@ export default function DeleteModal({ isOpen, onClose, onConfirm, itemName }) {
             type="button" 
             onClick={handleConfirm}
             disabled={loading}
-            className="flex-1 h-11 bg-red-500 hover:bg-red-600 text-white disabled:opacity-50"
+            className="h-[38px] px-8 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50"
           >
-            {loading ? "Đang xóa..." : "Xóa"}
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Đang xóa...
+              </div>
+            ) : (
+              "Xóa"
+            )}
           </Button>
         </div>
       </div>

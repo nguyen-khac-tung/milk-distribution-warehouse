@@ -79,3 +79,42 @@ export const updateUnitMeasure = async (data) => {
     }
 };
 
+export const updateUnitMeasureStatus = async (data) => {
+    const body = {
+        unitMeasureId: data.unitMeasureId,
+        status: data.status
+    };
+
+    try {
+        console.log("Sending status update request:", body);
+        console.log("Data types:", {
+            unitMeasureId: typeof body.unitMeasureId,
+            status: typeof body.status
+        });
+
+        const res = await api.post("/UnitMeasure/UpdateUnitMeasureStatus", body);
+        console.log("UnitMeasure status update API response:", res.data);
+        return res.data;
+    } catch (error) {
+        console.error("Error updating unit measure status:", error);
+        console.error("Request body was:", body);
+        if (error.response) {
+            console.error("Error response data:", error.response.data);
+            console.error("Error response status:", error.response.status);
+        }
+        throw error;
+    }
+};
+
+// Get unit measures for dropdown
+export const getUnitMeasuresDropdown = async () => {
+    try {
+        const res = await api.get("/UnitMeasure/GetUnitMeasureDropDown");
+        console.log("Unit measures dropdown API response:", res.data);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching unit measures dropdown:", error);
+        return { status: 500, message: "Error fetching unit measures", data: [] };
+    }
+};
+

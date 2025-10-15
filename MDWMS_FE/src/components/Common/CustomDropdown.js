@@ -34,7 +34,7 @@ export default function CustomDropdown({
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
-        className={`h-12 w-full px-3 py-2 border border-slate-300 rounded-md focus:border-[#237486] focus:ring-[#237486] focus:outline-none bg-white hover:border-[#237486] hover:shadow-sm transition-all duration-200 text-left flex items-center justify-between ${
+        className={`h-[38px] w-full px-3 py-2 border border-slate-300 rounded-md focus:border-orange-500 focus:ring-orange-500 focus:outline-none bg-white hover:border-orange-500 hover:shadow-sm transition-all duration-200 text-left flex items-center justify-between text-sm ${
           disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
         }`}
       >
@@ -61,8 +61,8 @@ export default function CustomDropdown({
                   onChange(option.value)
                   setIsOpen(false)
                 }}
-                className={`w-full px-3 py-2 text-left hover:bg-[#237486] hover:text-white transition-colors duration-200 ${
-                  value === option.value ? "bg-[#237486] text-white" : "text-slate-900"
+                className={`w-full px-3 py-2 text-left hover:bg-orange-500 hover:text-white transition-colors duration-200 ${
+                  value === option.value ? "bg-orange-500 text-white" : "text-slate-900"
                 }`}
               >
                 {option.label}

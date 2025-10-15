@@ -3,6 +3,7 @@ import { Card, Typography, Button, Input, message } from "antd";
 import { ArrowLeftOutlined, ReloadOutlined } from "@ant-design/icons";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { verifyOtp, forgotPassword } from "../../services/AuthenticationServices";
+import { extractErrorMessage } from "../../utils/Validation";
 
 const { Title, Text } = Typography;
 
@@ -13,19 +14,17 @@ const VerifyOtpPage = () => {
 
     const [otp, setOtp] = useState(["", "", "", "", "", ""]);
     const [loading, setLoading] = useState(false);
-    const [timeLeft, setTimeLeft] = useState(90); // 1 phút 30 giây
-    const [expired, setExpired] = useState(false);
+
+    // FE chỉ đếm ngược để giới hạn "gửi lại mã" → không liên quan đến hết hạn thật
+    const [resendTimer, setResendTimer] = useState(60);
     const inputRefs = useRef([]);
 
-    // Đếm ngược
+    // Đếm ngược resend
     useEffect(() => {
-        if (timeLeft <= 0) {
-            setExpired(true);
-            return;
-        }
-        const timer = setTimeout(() => setTimeLeft((prev) => prev - 1), 1000);
+        if (resendTimer <= 0) return;
+        const timer = setTimeout(() => setResendTimer((prev) => prev - 1), 1000);
         return () => clearTimeout(timer);
-    }, [timeLeft]);
+    }, [resendTimer]);
 
     const formatTime = (seconds) => {
         const m = Math.floor(seconds / 60)
@@ -45,16 +44,12 @@ const VerifyOtpPage = () => {
     };
 
     const handleKeyDown = (e, index) => {
-        if (e.key === "Backspace" && !otp[index] && index > 0)
+        if (e.key === "Backspace" && !otp[index] && index > 0) {
             inputRefs.current[index - 1].focus();
+        }
     };
 
     const handleSubmit = async () => {
-        if (expired) {
-            message.warning("Mã OTP đã hết hạn, vui lòng gửi lại!");
-            return;
-        }
-
         const otpCode = otp.join("");
         if (otpCode.length < 6) {
             message.warning("Vui lòng nhập đủ 6 số OTP!");
@@ -65,17 +60,12 @@ const VerifyOtpPage = () => {
         try {
             const res = await verifyOtp(email, otpCode);
             window.showToast(res?.message || "Xác minh OTP thành công!", "success");
-
-            // Sau khi xác minh thành công → chuyển sang Reset Password
             setTimeout(() => {
                 navigate("/reset-password", { state: { email } });
             }, 1000);
         } catch (err) {
-            const errorMsg =
-                err?.response?.data?.message?.replace(/^\[.*?\]\s*/, "") ||
-                err?.message ||
-                "Mã OTP không hợp lệ!";
-            window.showToast(errorMsg);
+            const errorMessage = extractErrorMessage(err, "Mã OTP không hợp lệ hoặc đã hết hạn!");
+            window.showToast(errorMessage, "error");
         } finally {
             setLoading(false);
         }
@@ -85,17 +75,11 @@ const VerifyOtpPage = () => {
         try {
             await forgotPassword(email);
             window.showToast("Đã gửi lại mã OTP!", "success");
-            setTimeLeft(90);
-            setExpired(false);
+            setResendTimer(60);
             setOtp(["", "", "", "", "", ""]);
         } catch (err) {
-            const errorMsg =
-                err?.response?.data?.message?.replace(/^\[.*?\]\s*/, "") ||
-                err?.message ||
-                "Không thể gửi lại mã OTP!";
-            const cleanMsg = errorMsg.replace(/^\[[^\]]*\]\s*/, "")
-
-            window.showToast(cleanMsg, "error");
+            const errorMessage = extractErrorMessage(err, "Có lỗi xảy ra vui lòng thử lại!");
+            window.showToast(errorMessage, "error");
         }
     };
 
@@ -106,7 +90,7 @@ const VerifyOtpPage = () => {
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
-                background: "#fcf7f8",
+                background: "linear-gradient(135deg, #FFF3E0, #fcf7f8)",
                 padding: 20,
             }}
         >
@@ -120,13 +104,14 @@ const VerifyOtpPage = () => {
                     padding: "48px 40px",
                 }}
             >
-                <Title level={3} style={{ color: "#237486", marginBottom: 8 }}>
+                <Title level={3} style={{ color: "#FE9F43", marginBottom: 8, fontSize: 32 }}>
                     Nhập mã OTP
                 </Title>
                 <Text type="secondary">
                     Mã xác minh đã được gửi đến email: <b>{email}</b>
                 </Text>
 
+                {/* Ô nhập OTP */}
                 <div
                     style={{
                         display: "flex",
@@ -144,43 +129,42 @@ const VerifyOtpPage = () => {
                             onChange={(e) => handleChange(e.target.value, index)}
                             onKeyDown={(e) => handleKeyDown(e, index)}
                             maxLength={1}
-                            disabled={expired}
                             style={{
                                 width: 48,
                                 height: 48,
                                 textAlign: "center",
                                 fontSize: 22,
                                 borderRadius: 8,
-                                border: expired ? "1px solid #ccc" : "1px solid #d9d9d9",
-                                backgroundColor: expired ? "#f5f5f5" : "white",
+                                border: "1px solid #d9d9d9",
                             }}
                         />
                     ))}
                 </div>
 
-                {!expired ? (
+                {/* Thông báo thời gian gửi lại */}
+                {resendTimer > 0 ? (
                     <Text type="secondary" style={{ fontSize: 15 }}>
-                        Mã OTP sẽ hết hạn sau{" "}
-                        <span style={{ color: "#237486", fontWeight: 600 }}>
-                            {formatTime(timeLeft)}
+                        Bạn có thể gửi lại mã sau{" "}
+                        <span style={{ color: "#FE9F43", fontWeight: 600 }}>
+                            {formatTime(resendTimer)}
                         </span>
                     </Text>
                 ) : (
-                    <Text type="danger" style={{ fontSize: 15 }}>
-                        Mã OTP đã hết hạn!
+                    <Text type="secondary" style={{ fontSize: 15 }}>
+                        Bạn có thể gửi lại mã ngay bây giờ
                     </Text>
                 )}
 
+                {/* Nút xác minh */}
                 <Button
                     type="primary"
                     block
                     loading={loading}
                     onClick={handleSubmit}
-                    disabled={expired}
                     style={{
                         height: 42,
-                        backgroundColor: "#237486",
-                        borderColor: "#237486",
+                        backgroundColor: "#FE9F43",
+                        borderColor: "#FE9F43",
                         borderRadius: 8,
                         fontWeight: 500,
                         marginTop: 24,
@@ -189,24 +173,25 @@ const VerifyOtpPage = () => {
                     Xác minh OTP
                 </Button>
 
-                {expired && (
-                    <Button
-                        icon={<ReloadOutlined />}
-                        onClick={handleResendOtp}
-                        block
-                        style={{
-                            marginTop: 12,
-                            height: 42,
-                            borderRadius: 8,
-                            borderColor: "#237486",
-                            color: "#237486",
-                            fontWeight: 500,
-                        }}
-                    >
-                        Gửi lại mã OTP
-                    </Button>
-                )}
+                {/* Nút gửi lại mã OTP */}
+                <Button
+                    icon={<ReloadOutlined />}
+                    onClick={handleResendOtp}
+                    block
+                    disabled={resendTimer > 0}
+                    style={{
+                        marginTop: 12,
+                        height: 42,
+                        borderRadius: 8,
+                        borderColor: "#FE9F43",
+                        color: resendTimer > 0 ? "#999" : "#FE9F43",
+                        fontWeight: 500,
+                    }}
+                >
+                    Gửi lại mã OTP
+                </Button>
 
+                {/* Quay lại */}
                 <div style={{ marginTop: 20 }}>
                     <Link to="/forgot-password" style={{ color: "#333" }}>
                         <ArrowLeftOutlined /> Quay lại

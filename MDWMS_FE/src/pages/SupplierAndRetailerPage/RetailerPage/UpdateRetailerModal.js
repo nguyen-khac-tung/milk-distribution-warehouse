@@ -6,6 +6,7 @@ import { Card } from "../../../components/ui/card"
 import { X } from "lucide-react"
 import { updateRetailer, getRetailerDetail } from "../../../services/RetailerService"
 import { validateAndShowError, extractErrorMessage } from "../../../utils/Validation"
+import { DisableFieldWrapper } from "../../../components/Common/DisableFieldWrapper"
 
 export default function UpdateRetailerModal({ isOpen, onClose, onSuccess, retailerId }) {
   const [formData, setFormData] = useState({
@@ -15,7 +16,7 @@ export default function UpdateRetailerModal({ isOpen, onClose, onSuccess, retail
     email: "",
     address: "",
     phone: "",
-    status: 0,
+    isDisable: false,
   })
   const [loading, setLoading] = useState(false)
   const [loadingData, setLoadingData] = useState(false)
@@ -31,16 +32,21 @@ export default function UpdateRetailerModal({ isOpen, onClose, onSuccess, retail
     try {
       setLoadingData(true)
       const response = await getRetailerDetail(retailerId)
-      if (response && response.data) {
-        const retailer = response.data
+      console.log("API Response:", response);
+
+      // API trả về { data: {...}, message: "", status: 200, success: true }
+      const retailerInfo = response.data || response;
+      console.log("Retailer Info:", retailerInfo);
+
+      if (retailerInfo) {
         setFormData({
-          retailerId: retailer.retailerId || 0,
-          retailerName: retailer.retailerName || "",
-          taxCode: retailer.taxCode || "",
-          email: retailer.email || "",
-          address: retailer.address || "",
-          phone: retailer.phone || "",
-          status: retailer.status || 0,
+          retailerId: retailerInfo.retailerId || 0,
+          retailerName: retailerInfo.retailerName || "",
+          taxCode: retailerInfo.taxCode || "",
+          email: retailerInfo.email || "",
+          address: retailerInfo.address || "",
+          phone: retailerInfo.phone || "",
+          isDisable: retailerInfo.status === 2, // 2 = inactive
         })
       }
     } catch (error) {
@@ -76,11 +82,6 @@ export default function UpdateRetailerModal({ isOpen, onClose, onSuccess, retail
       return
     }
 
-    // Status validation
-    if (formData.status === 0) {
-      window.showToast("Vui lòng chọn trạng thái", "error")
-      return
-    }
 
     try {
       setLoading(true)
@@ -106,7 +107,7 @@ export default function UpdateRetailerModal({ isOpen, onClose, onSuccess, retail
       email: "",
       address: "",
       phone: "",
-      status: 0,
+      isDisable: false,
     })
     onClose && onClose()
   }
@@ -114,11 +115,11 @@ export default function UpdateRetailerModal({ isOpen, onClose, onSuccess, retail
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-slate-800">Cập nhật</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Cập nhật nhà bán lẻ</h1>
           <button
             onClick={onClose}
             className="p-1 hover:bg-gray-100 rounded-full transition-colors"
@@ -130,109 +131,85 @@ export default function UpdateRetailerModal({ isOpen, onClose, onSuccess, retail
         {/* Content */}
         <div className="p-6">
           <form className="space-y-6" onSubmit={handleSubmit}>
-            {/* Row 1: Retailer Name & Tax Code */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="retailerName" className="text-sm font-medium text-slate-700">
-                  Tên nhà bán lẻ *
-                </Label>
-                <Input
+            {/* Form Fields - 2 column layout */}
+            <div className="space-y-4">
+              {/* Row 1: Retailer Name & Tax Code */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <DisableFieldWrapper
+                  isDisabled={formData.isDisable}
+                  label="Tên nhà bán lẻ"
                   id="retailerName"
                   placeholder="Nhập tên nhà bán lẻ..."
                   value={formData.retailerName}
                   onChange={(e) => setFormData({ ...formData, retailerName: e.target.value })}
-                  className="h-12 border-slate-300 focus:border-[#237486] focus:ring-[#237486]"
                   required
                 />
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="taxCode" className="text-sm font-medium text-slate-700">
-                  Mã số thuế *
-                </Label>
-                <Input
+                <DisableFieldWrapper
+                  isDisabled={formData.isDisable}
+                  label="Mã số thuế"
                   id="taxCode"
                   placeholder="Nhập mã số thuế..."
                   value={formData.taxCode}
                   onChange={(e) => setFormData({ ...formData, taxCode: e.target.value })}
-                  className="h-12 border-slate-300 focus:border-[#237486] focus:ring-[#237486]"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Row 2: Email & Phone */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium text-slate-700">
-                  Email *
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Nhập email..."
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="h-12 border-slate-300 focus:border-[#237486] focus:ring-[#237486]"
                   required
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="phone" className="text-sm font-medium text-slate-700">
-                  Số điện thoại *
-                </Label>
-                <Input
-                  id="phone"
-                  placeholder="Nhập số điện thoại..."
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="h-12 border-slate-300 focus:border-[#237486] focus:ring-[#237486]"
-                  required
-                />
-              </div>
-            </div>
+              {/* Row 2: Email & Phone */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-medium text-slate-700">
+                    Email <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Nhập email..."
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                    required
+                  />
+                </div>
 
-            {/* Row 3: Address & Status */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-sm font-medium text-slate-700">
+                    Số điện thoại <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="phone"
+                    placeholder="Nhập số điện thoại..."
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Row 3: Address - Full width */}
               <div className="space-y-2">
                 <Label htmlFor="address" className="text-sm font-medium text-slate-700">
-                  Địa chỉ *
+                  Địa chỉ <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="address"
                   placeholder="Nhập địa chỉ..."
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  className="h-12 border-slate-300 focus:border-[#237486] focus:ring-[#237486]"
+                  className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                   required
                 />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="status" className="text-sm font-medium text-slate-700">
-                  Trạng thái *
-                </Label>
-                <select
-                  id="status"
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: parseInt(e.target.value) })}
-                  className="h-12 w-full px-3 py-2 border border-slate-300 rounded-md focus:border-[#237486] focus:ring-[#237486] focus:outline-none bg-white"
-                  required
-                >
-                  <option value={0}>Chọn trạng thái...</option>
-                  <option value={1}>Hoạt động</option>
-                  <option value={2}>Ngừng hoạt động</option>
-                </select>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-4 justify-center items-center pt-6">
+            <div className="flex gap-4 justify-end pt-6">
               <Button
                 type="button"
                 variant="outline"
-                className="w-40 h-12 border-2 border-slate-300 bg-white text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
+                className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
                 onClick={handleReset}
               >
                 Hủy
@@ -240,7 +217,7 @@ export default function UpdateRetailerModal({ isOpen, onClose, onSuccess, retail
               <Button
                 type="submit"
                 disabled={loading || loadingData}
-                className="w-40 h-12 bg-[#237486] hover:bg-[#1e5f6b] text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
               >
                 {loading ? "Đang cập nhật..." : loadingData ? "Đang tải..." : "Cập nhật"}
               </Button>

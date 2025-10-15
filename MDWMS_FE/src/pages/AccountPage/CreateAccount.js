@@ -19,7 +19,7 @@ export default function AdminPage() {
   })
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-white flex items-center justify-center p-6">
       <Card className="w-full max-w-3xl p-8 shadow-2xl">
         <h1 className="text-3xl font-bold text-center mb-8 text-slate-800">Thêm người dùng mới</h1>
 

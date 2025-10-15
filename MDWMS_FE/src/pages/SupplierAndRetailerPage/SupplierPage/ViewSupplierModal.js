@@ -36,17 +36,26 @@ export function SupplierDetail({ supplier, onClose }) {
   const getStatusBadge = (status) => {
     switch (status) {
       case 1:
-        return <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Đang hoạt động</span>
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          <span className="w-1.5 h-1.5 rounded-full mr-1.5 bg-green-400"></span>
+          Đang hoạt động
+        </span>
       case 2:
-        return <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">Ngừng hoạt động</span>
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+          <span className="w-1.5 h-1.5 rounded-full mr-1.5 bg-red-400"></span>
+          Ngừng hoạt động
+        </span>
       default:
-        return <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Không xác định</span>
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+          <span className="w-1.5 h-1.5 rounded-full mr-1.5 bg-gray-400"></span>
+          Không xác định
+        </span>
     }
   }
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
         <div className="w-full max-w-4xl mx-4 max-h-[75vh] overflow-y-auto bg-white rounded-lg shadow-2xl relative">
           <div className="flex items-center justify-center py-12">
             <div className="text-slate-600">Đang tải thông tin...</div>
@@ -57,18 +66,21 @@ export function SupplierDetail({ supplier, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="w-full max-w-4xl mx-4 max-h-[75vh] overflow-y-auto bg-white rounded-lg shadow-2xl relative">
-        {/* Close Button - Fixed at top right */}
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="fixed top-6 right-6 h-8 w-8 rounded-full hover:bg-gray-100 flex items-center justify-center z-20 bg-white shadow-lg border border-gray-200"
-            aria-label="Đóng"
-          >
-            <ComponentIcon name="close" size={16} color="#6b7280" />
-          </button>
-        )}
+        {/* Header with Close Button */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <h1 className="text-2xl font-bold text-slate-800">Chi tiết nhà cung cấp</h1>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+              aria-label="Đóng"
+            >
+              <ComponentIcon name="close" size={20} color="#6b7280" />
+            </button>
+          )}
+        </div>
 
         <div className="container mx-auto px-4 py-6 md:py-8 max-w-6xl">
           {/* Header Section */}
@@ -76,7 +88,7 @@ export function SupplierDetail({ supplier, onClose }) {
             <div className="space-y-3">
               <div className="flex items-center gap-3 flex-wrap">
                 <ComponentIcon name="building" size={40} color="#6b7280" />
-                <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-balance">{supplierData.companyName}</h1>
+                <h1 className="text-xl md:text-2xl font-bold tracking-tight text-balance">{supplierData.companyName}</h1>
                 {getStatusBadge(supplierData.status)}
               </div>
               <div className="text-lg text-slate-600 font-medium">{supplierData.brandName}</div>
@@ -125,12 +137,12 @@ export function SupplierDetail({ supplier, onClose }) {
 
         </div>
 
-        {/* Close Button at Bottom - Fixed */}
+        {/* Close Button at Bottom */}
         {onClose && (
           <div className="sticky bottom-0 bg-white border-t border-gray-200 px-4 py-3 flex justify-end">
             <button
               onClick={onClose}
-              className="px-6 py-2 bg-pink-50 border border-red-300 text-red-600 rounded-md hover:bg-pink-100 hover:border-red-400 transition-colors shadow-sm"
+              className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
             >
               Đóng
             </button>

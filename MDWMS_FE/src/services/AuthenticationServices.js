@@ -128,7 +128,7 @@ export const verifyOtp = async (email, otpCode) => {
 // Đặt lại mật khẩu
 export const resetPassword = async ({ email, newPassword, confirmNewPassword }) => {
     try {
-        const response = await api.post("/Authentication/ResetPassword", {
+        const response = await api.put("/Authentication/ResetPassword", {
             email,
             newPassword,
             confirmNewPassword,

@@ -123,7 +123,7 @@ export default function UpdateSupplierModal({ isOpen, onClose, onSuccess, suppli
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -139,91 +139,93 @@ export default function UpdateSupplierModal({ isOpen, onClose, onSuccess, suppli
         {/* Content */}
         <div className="p-6">
           <form className="space-y-6" onSubmit={handleSubmit}>
-            {/* Row 1: Company Name & Brand Name */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <DisableFieldWrapper
-                isDisabled={formData.isDisable}
-                label="Tên công ty"
-                id="companyName"
-                placeholder="Nhập tên công ty..."
-                value={formData.companyName}
-                onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                required
-              />
+            {/* Form Fields - 2 column layout */}
+            <div className="space-y-4">
+              {/* Row 1: Company Name & Brand Name */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <DisableFieldWrapper
+                  isDisabled={formData.isDisable}
+                  label="Tên công ty"
+                  id="companyName"
+                  placeholder="Nhập tên công ty..."
+                  value={formData.companyName}
+                  onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                  required
+                />
 
-              <DisableFieldWrapper
-                isDisabled={formData.isDisable}
-                label="Tên thương hiệu"
-                id="brandName"
-                placeholder="Nhập tên thương hiệu..."
-                value={formData.brandName}
-                onChange={(e) => setFormData({ ...formData, brandName: e.target.value })}
-                required
-              />
-            </div>
-
-            {/* Row 2: Tax Code & Address */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <DisableFieldWrapper
-                isDisabled={formData.isDisable}
-                label="Mã số thuế"
-                id="taxCode"
-                placeholder="Nhập mã số thuế..."
-                value={formData.taxCode}
-                onChange={(e) => setFormData({ ...formData, taxCode: e.target.value })}
-                required
-              />
-
-              <DisableFieldWrapper
-                isDisabled={formData.isDisable}
-                label="Địa chỉ"
-                id="address"
-                placeholder="Nhập địa chỉ..."
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                required
-              />
-            </div>
-
-            {/* Row 3: Email & Phone */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium text-slate-700">
-                  Email *
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Nhập email..."
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="h-12 border-slate-300 focus:border-[#237486] focus:ring-[#237486]"
+                <DisableFieldWrapper
+                  isDisabled={formData.isDisable}
+                  label="Tên thương hiệu"
+                  id="brandName"
+                  placeholder="Nhập tên thương hiệu..."
+                  value={formData.brandName}
+                  onChange={(e) => setFormData({ ...formData, brandName: e.target.value })}
                   required
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="phone" className="text-sm font-medium text-slate-700">
-                  Số điện thoại *
-                </Label>
-                <Input
-                  id="phone"
-                  placeholder="Nhập số điện thoại..."
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="h-12 border-slate-300 focus:border-[#237486] focus:ring-[#237486]"
+              {/* Row 2: Tax Code & Address */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <DisableFieldWrapper
+                  isDisabled={formData.isDisable}
+                  label="Mã số thuế"
+                  id="taxCode"
+                  placeholder="Nhập mã số thuế..."
+                  value={formData.taxCode}
+                  onChange={(e) => setFormData({ ...formData, taxCode: e.target.value })}
+                  required
+                />
+
+                <DisableFieldWrapper
+                  isDisabled={formData.isDisable}
+                  label="Địa chỉ"
+                  id="address"
+                  placeholder="Nhập địa chỉ..."
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   required
                 />
               </div>
-            </div>
 
+              {/* Row 3: Email & Phone */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-medium text-slate-700">
+                    Email <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Nhập email..."
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-sm font-medium text-slate-700">
+                    Số điện thoại <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="phone"
+                    placeholder="Nhập số điện thoại..."
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-4 justify-center items-center pt-6">
+            <div className="flex gap-4 justify-end pt-6">
               <Button
                 type="button"
                 variant="outline"
-                className="w-40 h-12 border-2 border-slate-300 bg-white text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
+                className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
                 onClick={handleReset}
               >
                 Hủy
@@ -231,7 +233,7 @@ export default function UpdateSupplierModal({ isOpen, onClose, onSuccess, suppli
               <Button
                 type="submit"
                 disabled={loading || loadingData}
-                className="w-40 h-12 bg-[#237486] hover:bg-[#1e5f6b] text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
               >
                 {loading ? "Đang cập nhật..." : loadingData ? "Đang tải..." : "Cập nhật"}
               </Button>

@@ -14,9 +14,12 @@
     "clsx": "^2.1.1",
     "lucide-react": "^0.544.0",
     "react": "^19.2.0",
+    "react-barcode": "^1.6.1",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.3",
-    "react-scripts": "5.0.1"
+    "react-scripts": "5.0.1",
+    "react-to-print": "^3.2.0",
+    "recharts": "^3.2.1"
   },
   "scripts": {
     "start": "react-scripts start",

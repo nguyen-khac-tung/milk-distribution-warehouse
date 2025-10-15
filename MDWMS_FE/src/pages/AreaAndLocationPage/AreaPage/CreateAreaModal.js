@@ -84,7 +84,7 @@ export default function CreateAreaModal({ isOpen, onClose, onSuccess }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -100,90 +100,92 @@ export default function CreateAreaModal({ isOpen, onClose, onSuccess }) {
         {/* Content */}
         <div className="p-6">
           <form className="space-y-6" onSubmit={handleSubmit}>
-            {/* Row 1: Area Name & Area Code */}
+            {/* Row 1: Area Name + Area Code */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Area Name */}
               <div className="space-y-2">
                 <Label htmlFor="areaName" className="text-sm font-medium text-slate-700">
-                  Tên khu vực *
+                  Tên khu vực <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="areaName"
-                  placeholder="VD: Khu A"
+                  placeholder="Nhập tên khu vực..."
                   value={formData.areaName}
                   onChange={(e) => setFormData({ ...formData, areaName: e.target.value })}
-                  className="h-12 border-slate-300 focus:border-[#237486] focus:ring-[#237486]"
+                  className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                   required
                 />
               </div>
 
+              {/* Area Code */}
               <div className="space-y-2">
                 <Label htmlFor="areaCode" className="text-sm font-medium text-slate-700">
-                  Mã khu vực *
+                  Mã khu vực <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="areaCode"
-                  placeholder="VD: A1"
+                  placeholder="Nhập mã khu vực..."
                   value={formData.areaCode}
                   onChange={(e) => setFormData({ ...formData, areaCode: e.target.value })}
-                  className="h-12 border-slate-300 focus:border-[#237486] focus:ring-[#237486]"
+                  className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                   required
                 />
               </div>
             </div>
 
             {/* Row 2: Storage Condition */}
-            <div className="grid grid-cols-1 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="storageConditionId" className="text-sm font-medium text-slate-700">
-                  Điều kiện bảo quản *
-                </Label>
-                <select
-                  id="storageConditionId"
-                  value={formData.storageConditionId}
-                  onChange={(e) => setFormData({ ...formData, storageConditionId: e.target.value })}
-                  className="h-12 w-full px-3 py-2 border border-slate-300 rounded-md focus:border-[#237486] focus:ring-[#237486] focus:outline-none bg-white"
-                  required
-                >
-                  <option value="">Chọn điều kiện bảo quản...</option>
-                  {loadingData ? (
-                    <option disabled>Đang tải...</option>
-                  ) : (
-                    storageConditions.map((condition) => (
-                      <option
-                        key={condition.storageConditionId}
-                        value={condition.storageConditionId.toString()}
-                      >
-                        {condition.conditionName} - Nhiệt độ: {condition.temperatureMin}°C đến {condition.temperatureMax}°C - Độ ẩm: {condition.humidityMin}% đến {condition.humidityMax}%
-                      </option>
-                    ))
-                  )}
-                </select>
-              </div>
+            <div className="space-y-2 md:w-1/2">
+              <Label htmlFor="storageConditionId" className="text-sm font-medium text-slate-700">
+                Điều kiện bảo quản <span className="text-red-500">*</span>
+              </Label>
+              <select
+                id="storageConditionId"
+                value={formData.storageConditionId}
+                onChange={(e) => setFormData({ ...formData, storageConditionId: e.target.value })}
+                className="h-8 w-full px-3 py-1 border border-slate-300 rounded-lg focus:border-orange-500 focus:ring-orange-500 focus:outline-none bg-white text-sm"
+                required
+              >
+                <option value="">Chọn điều kiện bảo quản...</option>
+                {loadingData ? (
+                  <option disabled>Đang tải...</option>
+                ) : (
+                  storageConditions.map((condition) => (
+                    <option
+                      key={condition.storageConditionId}
+                      value={condition.storageConditionId.toString()}
+                    >
+                      {condition.conditionName} - Nhiệt độ: {condition.temperatureMin}°C đến{" "}
+                      {condition.temperatureMax}°C - Độ ẩm: {condition.humidityMin}% đến{" "}
+                      {condition.humidityMax}%
+                    </option>
+                  ))
+                )}
+              </select>
             </div>
 
             {/* Row 3: Description */}
-            <div className="grid grid-cols-1 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="description" className="text-sm font-medium text-slate-700">
-                  Mô tả
-                </Label>
-                <textarea
-                  id="description"
-                  placeholder="Nhập mô tả khu vực..."
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="h-24 w-full px-3 py-2 border border-slate-300 rounded-md focus:border-[#237486] focus:ring-[#237486] focus:outline-none bg-white resize-none"
-                  rows={3}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="description" className="text-sm font-medium text-slate-700">
+                Mô tả
+              </Label>
+              <textarea
+                id="description"
+                placeholder="Nhập mô tả khu vực..."
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+                rows={3} // mặc định 3 dòng, tự cao hơn khi gõ
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-orange-500 focus:ring-orange-500 focus:outline-none text-sm resize-y"
+              />
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-4 justify-center pt-6">
+            <div className="flex gap-4 justify-end pt-6">
               <Button
                 type="button"
                 variant="outline"
-                className="w-40 h-12 border-2 border-slate-300 bg-white text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
+                className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
                 onClick={handleReset}
               >
                 Hủy
@@ -191,7 +193,7 @@ export default function CreateAreaModal({ isOpen, onClose, onSuccess }) {
               <Button
                 type="submit"
                 disabled={loading || loadingData}
-                className="w-40 h-12 bg-[#237486] hover:bg-[#1e5f6b] text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
               >
                 {loading ? "Đang thêm..." : loadingData ? "Đang tải..." : "Thêm"}
               </Button>

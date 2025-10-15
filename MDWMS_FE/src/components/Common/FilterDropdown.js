@@ -119,7 +119,7 @@ const FilterDropdown = ({
             return {
                 ...baseStyle,
                 padding: "8px 12px",
-                background: isSelected ? "#237486" : "white",
+                background: isSelected ? "#f97316" : "white",
                 color: isSelected ? "white" : "#374151"
             };
         }
@@ -154,7 +154,7 @@ const FilterDropdown = ({
                                 style={getOptionStyle(null)}
                             >
                                 {placeholder}
-                                {!value && <span style={{ color: "#237486" }}>✓</span>}
+                                {!value && <span style={{ color: "#f97316" }}>✓</span>}
                             </button>
                         )}
 
@@ -167,7 +167,7 @@ const FilterDropdown = ({
                             >
                                 {option.label}
                                 {value === option.value && (
-                                    <span style={{ color: type === "pageSize" ? "white" : "#237486" }}>✓</span>
+                                    <span style={{ color: type === "pageSize" ? "white" : "#f97316" }}>✓</span>
                                 )}
                             </button>
                         ))}

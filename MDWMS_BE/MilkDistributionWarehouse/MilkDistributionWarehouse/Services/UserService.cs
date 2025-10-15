@@ -7,6 +7,7 @@ using MilkDistributionWarehouse.Repositories;
 using MilkDistributionWarehouse.Utilities;
 using Online_Learning.Services.Ultilities;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using static System.Net.WebRequestMethods;
 
 namespace MilkDistributionWarehouse.Services
@@ -30,8 +31,8 @@ namespace MilkDistributionWarehouse.Services
         private readonly EmailUtility _emailUtility;
         private readonly IMapper _mapper;
 
-        public UserService(IUserRepository userRepository, 
-                           IRoleRepository roleRepository, 
+        public UserService(IUserRepository userRepository,
+                           IRoleRepository roleRepository,
                            EmailUtility emailUtility,
                            IMapper mapper)
         {
@@ -88,7 +89,7 @@ namespace MilkDistributionWarehouse.Services
             if (userRole == null) return ("Selected role is null.", null);
 
             var newUser = _mapper.Map<User>(userCreate);
-            newUser.Roles.Add(userRole);
+            await AddRoleToUser(newUser, userRole);
             var password = GenerateRandomPassword();
             newUser.Password = BCrypt.Net.BCrypt.HashPassword(password);
 
@@ -104,7 +105,7 @@ namespace MilkDistributionWarehouse.Services
         {
             var msg = string.Empty;
             var userDuplicatedEmail = await _userRepository.GetUserByEmail(userUpdate.Email);
-            if (userDuplicatedEmail != null && userUpdate.UserId != userDuplicatedEmail.UserId) 
+            if (userDuplicatedEmail != null && userUpdate.UserId != userDuplicatedEmail.UserId)
                 return ("Email này đã có người dùng khác sử dụng.".ToMessageForUser(), null);
 
             var userExist = await _userRepository.GetUserById(userUpdate.UserId);
@@ -114,8 +115,7 @@ namespace MilkDistributionWarehouse.Services
             if (userRole == null) return ("Selected role is null.", null);
 
             _mapper.Map(userUpdate, userExist);
-            userExist.Roles.Clear();
-            userExist.Roles.Add(userRole);
+            await AddRoleToUser(userExist, userRole);
 
             msg = await _userRepository.UpdateUser(userExist);
             if (msg.Length > 0) return ("Cập nhật người dùng thất bại.", null);
@@ -160,6 +160,19 @@ namespace MilkDistributionWarehouse.Services
 
             return "";
         }
+
+        private async Task AddRoleToUser(User? user, Role? role)
+        {
+            user.Roles.Clear();
+            user.Roles.Add(role);
+
+            if (role.RoleId == RoleType.BusinessOwner)
+            {
+                var roleAdministrator = await _roleRepository.GetRoleById(RoleType.Administrator);
+                user.Roles.Add(roleAdministrator);
+            }
+        }
+
 
         private string GenerateRandomPassword()
         {
