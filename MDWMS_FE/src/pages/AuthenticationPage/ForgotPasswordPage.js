@@ -75,7 +75,7 @@ const ForgotPasswordPage = () => {
                     width: "100%",
                     maxWidth: 560,
                     borderRadius: 20,
-                    boxShadow: "0 8px 30px rgba(0,0,0,0.1)",
+                    boxShadow: "0 4px 15px rgba(0,0,0,0.08)",
                     textAlign: "center",
                     padding: "60px 50px",
                     backgroundColor: "#fff",
@@ -88,7 +88,7 @@ const ForgotPasswordPage = () => {
                             style={{
                                 color: "#FE9F43",
                                 marginBottom: 12,
-                                fontWeight: 700,
+                                fontSize: 32,
                             }}
                         >
                             Quên mật khẩu
@@ -112,7 +112,7 @@ const ForgotPasswordPage = () => {
                         >
                             <Form.Item
                                 label={
-                                    <strong>
+                                    <strong style={{ fontSize: 18 }}>
                                         Email <span style={{ color: "red" }}>*</span>
                                     </strong>
                                 }
