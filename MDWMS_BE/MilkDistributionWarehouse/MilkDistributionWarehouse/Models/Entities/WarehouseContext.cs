@@ -126,8 +126,6 @@ public partial class WarehouseContext : DbContext
         {
             entity.HasKey(e => e.GoodsId).HasName("PK_Products");
 
-            entity.Property(e => e.GoodsId).ValueGeneratedOnAdd();
-            entity.Property(e => e.CategoryId).ValueGeneratedNever();
             entity.Property(e => e.GoodsCode)
                 .HasMaxLength(255)
                 .IsUnicode(false);
@@ -253,9 +251,6 @@ public partial class WarehouseContext : DbContext
         modelBuilder.Entity<Pallet>(entity =>
         {
             entity.Property(e => e.PalletId).ValueGeneratedNever();
-            entity.Property(e => e.PalletCode)
-                .HasMaxLength(50)
-                .IsUnicode(false);
 
             entity.HasOne(d => d.Batch).WithMany(p => p.Pallets)
                 .HasForeignKey(d => d.BatchId)
@@ -321,7 +316,6 @@ public partial class WarehouseContext : DbContext
 
         modelBuilder.Entity<Retailer>(entity =>
         {
-            entity.Property(e => e.RetailerId).ValueGeneratedOnAdd();
             entity.Property(e => e.Address).HasMaxLength(255);
             entity.Property(e => e.Email)
                 .HasMaxLength(50)
@@ -485,10 +479,11 @@ public partial class WarehouseContext : DbContext
             entity.Property(e => e.Phone)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+            entity.Property(e => e.Status).HasDefaultValue(1);
 
             entity.HasOne(d => d.EmailNavigation).WithMany(p => p.Users)
                 .HasForeignKey(d => d.Email)
-                .HasConstraintName("FK_Users_UserOtp1");
+                .HasConstraintName("FK_Users_UserOtp");
 
             entity.HasMany(d => d.Roles).WithMany(p => p.Users)
                 .UsingEntity<Dictionary<string, object>>(
