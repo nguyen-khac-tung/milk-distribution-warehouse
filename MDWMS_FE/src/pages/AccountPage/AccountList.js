@@ -1,127 +1,136 @@
 "use client"
 
-import { useState } from "react"
+// React imports
+import { useState, useEffect } from "react"
+
+// UI Components
 import { Button } from "../../components/ui/button"
-import { Input } from "../../components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
-import { UserStatsChart } from "../../components/AccountComponents/user-stats-chart"
-import { CreateAccountForm } from "../../components/AccountComponents/CreateAccountForm"
+import { Card } from "../../components/ui/card"
+
+// Custom Components
+import SearchFilterToggle from "../../components/Common/SearchFilterToggle"
+import Loading from "../../components/Common/Loading"
+import AccountStatsChart from "../../components/AccountComponents/AccountStatsChart"
+import Pagination from "../../components/Common/Pagination"
+
+// Services
+import { getUserList } from "../../services/AccountService"
+
+// Icons
 import {
-  Search,
   Plus,
   Eye,
-  Pencil,
-  Settings,
-  Download,
-  UserPlus,
-  Shield,
+  Edit,
+  Trash2,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-} from "../../components/ui/icons"
+} from "lucide-react"
 
-const allEmployees = [
-  // Quản lý kho (4 người)
-  {
-    id: 1,
-    email: "nguyen.van.a@example.com",
-    name: "Nguyễn Văn A",
-    role: "Quản lý kho",
-    department: "Quản lý",
-    status: "Active",
-    phone: "0987654321",
-    joinedDate: "13/09/2025",
-  },
-  {
-    id: 2,
-    email: "tran.thi.b@example.com",
-    name: "Trần Thị B",
-    role: "Quản lý kho",
-    department: "Quản lý",
-    status: "Active",
-    phone: "0976543210",
-    joinedDate: "12/09/2025",
-  },
-  {
-    id: 3,
-    email: "le.van.c@example.com",
-    name: "Lê Văn C",
-    role: "Quản lý kho",
-    department: "Quản lý",
-    status: "Active",
-    phone: "0965432109",
-    joinedDate: "10/09/2025",
-  },
-  {
-    id: 4,
-    email: "pham.thi.d@example.com",
-    name: "Phạm Thị D",
-    role: "Quản lý kho",
-    department: "Quản lý",
-    status: "Inactive",
-    phone: "0954321098",
-    joinedDate: "08/09/2025",
-  },
-  // Nhân viên kho (5 người)
-  {
-    id: 5,
-    email: "hoang.van.e@example.com",
-    name: "Hoàng Văn E",
-    role: "Nhân viên kho",
-    department: "Nhân viên kho",
-    status: "Active",
-    phone: "0901234567",
-    joinedDate: "01/08/2025",
-  },
-  {
-    id: 6,
-    email: "vo.thi.f@example.com",
-    name: "Võ Thị F",
-    role: "Nhân viên kho",
-    department: "Nhân viên kho",
-    status: "Active",
-    phone: "0912345678",
-    joinedDate: "15/07/2025",
-  },
-  {
-    id: 7,
-    email: "dang.van.g@example.com",
-    name: "Đặng Văn G",
-    role: "Nhân viên kho",
-    department: "Nhân viên kho",
-    status: "Active",
-    phone: "0923456789",
-    joinedDate: "20/06/2025",
-  },
-  {
-    id: 8,
-    email: "bui.thi.h@example.com",
-    name: "Bùi Thị H",
-    role: "Nhân viên kho",
-    department: "Nhân viên kho",
-    status: "Inactive",
-    phone: "0934567890",
-    joinedDate: "10/05/2025",
-  },
-  {
-    id: 9,
-    email: "ngo.van.i@example.com",
-    name: "Ngô Văn I",
-    role: "Nhân viên kho",
-    department: "Nhân viên kho",
-    status: "Active",
-    phone: "0945678901",
-    joinedDate: "25/08/2025",
-  },
-]
+// Constants
+const DEFAULT_PAGE_SIZE = 10
+const PAGE_SIZE_OPTIONS = [10, 20, 30, 40]
+
+// Helper Functions
+const SortIcon = ({ column, activeColumn, direction }) => {
+  if (activeColumn !== column) {
+    return <ArrowUpDown className="w-3.5 h-3.5 ml-1 opacity-40" />
+  }
+  return direction === "asc" ? (
+    <ArrowUp className="w-3.5 h-3.5 ml-1 text-primary" />
+  ) : (
+    <ArrowDown className="w-3.5 h-3.5 ml-1 text-primary" />
+  )
+}
+
+const getEmployeeStats = (employees) => {
+  if (!Array.isArray(employees)) return {
+    totalUsers: 0,
+    activeUsers: 0,
+    inactiveUsers: 0,
+    warehouseManagers: 0,
+    salesManagers: 0,
+    warehouseStaff: 0,
+    salesStaff: 0
+  }
+
+  const totalUsers = employees.length
+  const activeUsers = employees.filter(emp => emp.status === 1).length
+  const inactiveUsers = employees.filter(emp => emp.status === 0).length
+  
+  const warehouseManagers = employees.filter(emp => 
+    emp.roles && emp.roles.some(role => role.includes("Warehouse Manager"))
+  ).length
+  
+  const salesManagers = employees.filter(emp => 
+    emp.roles && emp.roles.some(role => role.includes("Sales Manager"))
+  ).length
+  
+  const warehouseStaff = employees.filter(emp => 
+    emp.roles && emp.roles.some(role => role.includes("Warehouse Staff"))
+  ).length
+  
+  const salesStaff = employees.filter(emp => 
+    emp.roles && emp.roles.some(role => role.includes("Sales Staff"))
+  ).length
+
+  return {
+    totalUsers,
+    activeUsers,
+    inactiveUsers,
+    warehouseManagers,
+    salesManagers,
+    warehouseStaff,
+    salesStaff
+  }
+}
 
 export default function AdminPage() {
+  // ===== STATE MANAGEMENT =====
+  
+  // Data states
+  const [allEmployees, setAllEmployees] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  // Search and filter states
   const [searchQuery, setSearchQuery] = useState("")
+  const [statusFilter, setStatusFilter] = useState("")
+  const [showStatusFilter, setShowStatusFilter] = useState(false)
+
+  // Sort states
   const [sortColumn, setSortColumn] = useState(null)
   const [sortDirection, setSortDirection] = useState("asc")
+
+  // Pagination states
+  const [pagination, setPagination] = useState({
+    pageNumber: 1,
+    pageSize: DEFAULT_PAGE_SIZE,
+    totalCount: 0
+  })
+
+  // Modal states
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
+  // ===== EVENT HANDLERS =====
+  
+  // Filter handlers
+  const handleStatusFilter = (value) => {
+    setStatusFilter(value)
+    setShowStatusFilter(false)
+  }
+
+  const clearStatusFilter = () => {
+    setStatusFilter("")
+  }
+
+  const clearAllFilters = () => {
+    setSearchQuery("")
+    setStatusFilter("")
+  }
+
+  // Sort handler
   const handleSort = (column) => {
     if (sortColumn === column) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc")
@@ -131,20 +140,99 @@ export default function AdminPage() {
     }
   }
 
-  const filterAndSortEmployees = (department) => {
+
+
+  // ===== DATA FETCHING =====
+  
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        
+        const response = await getUserList({
+          pageNumber: pagination.pageNumber,
+          pageSize: pagination.pageSize,
+          search: searchQuery,
+          sortField: sortColumn || "",
+          sortAscending: sortDirection === "asc"
+        })
+
+        if (response?.data?.items) {
+          setAllEmployees(response.data.items)
+          setPagination(prev => ({
+            ...prev,
+            totalCount: response.data.totalCount || 0
+          }))
+        } else {
+          setAllEmployees([])
+          setPagination(prev => ({
+            ...prev,
+            totalCount: 0
+          }))
+        }
+      } catch (err) {
+        console.error("Error fetching users:", err)
+        setError("Không thể tải danh sách người dùng")
+        setAllEmployees([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchUsers()
+  }, [searchQuery, sortColumn, sortDirection, statusFilter, pagination.pageNumber, pagination.pageSize])
+
+  // ===== DATA PROCESSING =====
+  
+  const filterAndSortEmployees = () => {
+    if (!Array.isArray(allEmployees)) return []
+
     return allEmployees
       .filter((employee) => {
-        const matchesDepartment = employee.department === department
+        // Search filter (backup for client-side filtering)
+        const roles = employee.roles || []
+        const rolesString = roles.join(" ").toLowerCase()
+        const fullName = employee.fullName || ""
+        const email = employee.email || ""
+
         const matchesSearch =
-          employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          employee.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          employee.role.toLowerCase().includes(searchQuery.toLowerCase())
-        return matchesDepartment && matchesSearch
+          fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          rolesString.includes(searchQuery.toLowerCase())
+
+        // Status filter
+        let matchesStatus = true
+        if (statusFilter) {
+          if (statusFilter === "1") {
+            matchesStatus = employee.status === 1
+          } else if (statusFilter === "0") {
+            matchesStatus = employee.status === 0
+          }
+        }
+
+        return matchesSearch && matchesStatus
       })
       .sort((a, b) => {
         if (!sortColumn) return 0
-        const aVal = a[sortColumn]
-        const bVal = b[sortColumn]
+
+        const fieldMap = {
+          email: 'email',
+          name: 'fullName',
+          role: 'roles',
+          status: 'status'
+        }
+
+        const field = fieldMap[sortColumn] || sortColumn
+        let aVal = a[field] || a[sortColumn] || ""
+        let bVal = b[field] || b[sortColumn] || ""
+
+        // Handle roles array sorting
+        if (field === 'roles') {
+          aVal = Array.isArray(aVal) ? aVal.join(", ") : aVal
+          bVal = Array.isArray(bVal) ? bVal.join(", ") : bVal
+        }
+
         if (sortDirection === "asc") {
           return aVal > bVal ? 1 : -1
         } else {
@@ -153,291 +241,220 @@ export default function AdminPage() {
       })
   }
 
-  const managementEmployees = filterAndSortEmployees("Quản lý")
-  const warehouseEmployees = filterAndSortEmployees("Nhân viên kho")
+  // ===== COMPUTED VALUES =====
   
-  // Count employees by category
-  const employeeCounts = {
-    sales: 0, // Nhân viên kinh doanh
-    salesManager: 0, // Quản lý kinh doanh
-    warehouse: warehouseEmployees.length, // Nhân viên kho
-    warehouseManager: managementEmployees.length, // Quản lý kho
-    enterprise: 0, // Cao doanh nghiệp
-    users: allEmployees.length // Tổng người sử dụng
-  }
+  const filteredEmployees = filterAndSortEmployees()
+  const employeeStats = getEmployeeStats(allEmployees)
 
-  const SortIcon = ({
-    column,
-    activeColumn,
-    direction,
-  }) => {
-    if (activeColumn !== column) {
-      return <ArrowUpDown className="w-3.5 h-3.5 ml-1 opacity-40" />
-    }
-    return direction === "asc" ? (
-      <ArrowUp className="w-3.5 h-3.5 ml-1 text-primary" />
-    ) : (
-      <ArrowDown className="w-3.5 h-3.5 ml-1 text-primary" />
-    )
-  }
 
-  const EmployeeTable = ({ employees, title }) => (
-    <Card className="bg-card border-border shadow-lg bg-gray-50">
-      <CardHeader className="border-b border-border/50 bg-gradient-to-r from-primary/5 to-transparent">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-xl font-semibold">{title}</CardTitle>
-          </div>
-          <div className="text-right">
-            <p className="text-sm text-muted-foreground">
-              <span className="font-semibold text-foreground">{employees.length}</span> người dùng
-            </p>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-gray-100 hover:bg-gray-100 border-b-2 border-primary/20">
-                <TableHead
-                  className="text-foreground font-bold text-sm h-12 cursor-pointer hover:bg-primary/10 transition-colors"
-                  onClick={() => handleSort("email")}
-                >
-                  <div className="flex items-center">
-                    Email
-                    <SortIcon column="email" activeColumn={sortColumn} direction={sortDirection} />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="text-foreground font-bold text-sm cursor-pointer hover:bg-primary/10 transition-colors"
-                  onClick={() => handleSort("name")}
-                >
-                  <div className="flex items-center">
-                    Tên nhân viên
-                    <SortIcon column="name" activeColumn={sortColumn} direction={sortDirection} />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="text-foreground font-bold text-sm cursor-pointer hover:bg-primary/10 transition-colors"
-                  onClick={() => handleSort("role")}
-                >
-                  <div className="flex items-center">
-                    Chức vụ
-                    <SortIcon column="role" activeColumn={sortColumn} direction={sortDirection} />
-                  </div>
-                </TableHead>
-                <TableHead className="text-foreground font-bold text-sm">Số điện thoại</TableHead>
-                <TableHead
-                  className="text-foreground font-bold text-sm cursor-pointer hover:bg-primary/10 transition-colors"
-                  onClick={() => handleSort("status")}
-                >
-                  <div className="flex items-center">
-                    Trạng thái
-                    <SortIcon column="status" activeColumn={sortColumn} direction={sortDirection} />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="text-foreground font-bold text-sm cursor-pointer hover:bg-primary/10 transition-colors"
-                  onClick={() => handleSort("joinedDate")}
-                >
-                  <div className="flex items-center">
-                    Ngày tạo
-                    <SortIcon column="joinedDate" activeColumn={sortColumn} direction={sortDirection} />
-                  </div>
-                </TableHead>
-                <TableHead className="text-foreground font-bold text-sm text-right">Hoạt động</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {employees.map((employee, index) => (
-                <TableRow
-                  key={employee.id}
-                  className={`
-                    border-border/30 
-                    hover:bg-primary/5 
-                    transition-all 
-                    duration-200 
-                    hover:shadow-sm
-                    ${index % 2 === 0 ? "bg-gray-50" : "bg-gray-100"}
-                  `}
-                >
-                  <TableCell className="font-medium text-foreground py-4">{employee.email}</TableCell>
-                  <TableCell className="font-medium">{employee.name}</TableCell>
-                  <TableCell>
-                    <span className="inline-flex items-center px-3 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary border border-primary/20">
-                      {employee.role}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{employee.phone}</TableCell>
-                  <TableCell>
-                    <span
-                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${
-                        employee.status === "Active"
-                          ? "bg-chart-1/20 text-chart-1 border border-chart-1/40"
-                          : "bg-muted text-muted-foreground border border-border"
-                      }`}
-                    >
-                      {employee.status}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{employee.joinedDate}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-9 w-9 text-primary hover:text-primary hover:bg-primary/15 transition-all duration-200 hover:scale-105"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-9 w-9 text-primary hover:text-primary hover:bg-primary/15 transition-all duration-200 hover:scale-105"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-200 hover:scale-105"
-                      >
-                        <Settings className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
-  )
-
-  return (
+  // ===== RENDER HELPERS =====
+  
+  const renderLoadingState = () => (
     <div className="min-h-screen p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Đang tải danh sách người dùng...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
+  const renderErrorState = () => (
+    <div className="min-h-screen p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <p className="text-red-500 mb-4">{error}</p>
+            <Button
+              onClick={() => window.location.reload()}
+              className="bg-primary hover:bg-primary/90"
+            >
+              Thử lại
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
+  const renderTableHeader = () => (
+    <TableHeader>
+      <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
+        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-16">
+          STT
+        </TableHead>
+        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+          <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("email")}>
+            <span>Email</span>
+            <SortIcon column="email" activeColumn={sortColumn} direction={sortDirection} />
+          </div>
+        </TableHead>
+        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+          <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("name")}>
+            <span>Tên nhân viên</span>
+            <SortIcon column="name" activeColumn={sortColumn} direction={sortDirection} />
+          </div>
+        </TableHead>
+        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+          <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("role")}>
+            <span>Chức vụ</span>
+            <SortIcon column="role" activeColumn={sortColumn} direction={sortDirection} />
+          </div>
+        </TableHead>
+        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+          <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("status")}>
+            <span>Trạng thái</span>
+            <SortIcon column="status" activeColumn={sortColumn} direction={sortDirection} />
+          </div>
+        </TableHead>
+        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+          Hoạt động
+        </TableHead>
+      </TableRow>
+    </TableHeader>
+  )
+
+  const renderTableRow = (employee, index) => (
+    <TableRow
+      key={employee.userId || employee.id}
+      className="hover:bg-slate-50 border-b border-slate-200"
+    >
+      <TableCell className="px-6 py-4 text-slate-600 font-medium">
+        {index + 1}
+      </TableCell>
+      <TableCell className="px-6 py-4 text-slate-700 font-medium">
+        {employee.email || "N/A"}
+      </TableCell>
+      <TableCell className="px-6 py-4 text-slate-700">
+        {employee.fullName || "N/A"}
+      </TableCell>
+      <TableCell className="px-6 py-4">
+        <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200">
+          {employee.roles && employee.roles.length > 0 ? employee.roles.join(", ") : "N/A"}
+        </span>
+      </TableCell>
+      <TableCell className="px-6 py-4">
+        <span
+          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${
+            employee.status === 1 || employee.status === "Active"
+              ? "bg-green-100 text-green-800 border border-green-200"
+              : "bg-red-100 text-red-800 border border-red-200"
+          }`}
+        >
+          {employee.status === 1 ? "Hoạt động" : "Ngừng hoạt động"}
+        </span>
+      </TableCell>
+      <TableCell className="px-6 py-4">
+        <div className="flex items-center justify-center space-x-1">
+          <button
+            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+            title="Xem chi tiết"
+          >
+            <Eye className="h-4 w-4 text-orange-500" />
+          </button>
+          <button
+            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+            title="Chỉnh sửa"
+          >
+            <Edit className="h-4 w-4 text-orange-500" />
+          </button>
+          <button
+            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+            title="Xóa"
+          >
+            <Trash2 className="h-4 w-4 text-red-500" />
+          </button>
+        </div>
+      </TableCell>
+    </TableRow>
+  )
+
+  // ===== MAIN RENDER =====
+  
+  if (loading) return renderLoadingState()
+  if (error) return renderErrorState()
+
+  return (
+    <div className="min-h-screen">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* ===== HEADER SECTION ===== */}
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-semibold text-foreground">Quản lý người dùng</h1>
-          <Button 
-            className="bg-[#237486] hover:bg-[#1e5f6b] h-11 px-6 text-white"
+          <div>
+            <h1 className="text-2xl font-bold text-slate-600">Quản lý người dùng</h1>
+            <p className="text-slate-600 mt-1">Quản lý các tài khoản người dùng trong hệ thống</p>
+          </div>
+          <Button
+            className="bg-orange-500 hover:bg-orange-600 h-8 px-6 text-white"
             onClick={() => setIsCreateModalOpen(true)}
           >
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-2 h-4 w-4 text-white" />
             Thêm người dùng
           </Button>
         </div>
 
-        <Card className="bg-card border-border/50 bg-gray-50">
-          <CardContent className="pt-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                placeholder="Tìm kiếm nhân viên (tên, email, chức vụ)..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-11 h-12 text-base"
-              />
+        {/* ===== STATISTICS SECTION ===== */}
+        <AccountStatsChart
+          totalUsers={employeeStats.totalUsers}
+          activeUsers={employeeStats.activeUsers}
+          inactiveUsers={employeeStats.inactiveUsers}
+          warehouseManagers={employeeStats.warehouseManagers}
+          salesManagers={employeeStats.salesManagers}
+          warehouseStaff={employeeStats.warehouseStaff}
+          salesStaff={employeeStats.salesStaff}
+        />
+
+        {/* ===== SEARCH AND TABLE SECTION ===== */}
+        <Card className="shadow-sm border border-slate-200 overflow-hidden bg-gray-50">
+          <SearchFilterToggle
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            searchPlaceholder="Tìm kiếm theo tên, email hoặc chức vụ..."
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            showStatusFilter={showStatusFilter}
+            setShowStatusFilter={setShowStatusFilter}
+            statusOptions={[
+              { value: "", label: "Tất cả trạng thái" },
+              { value: "1", label: "Hoạt động" },
+              { value: "0", label: "Ngừng hoạt động" }
+            ]}
+            onStatusFilter={handleStatusFilter}
+            clearStatusFilter={clearStatusFilter}
+            onClearAll={clearAllFilters}
+          />
+
+          {/* Table */}
+          <div className="w-full">
+            <div className="overflow-x-auto">
+              <Table className="w-full">
+                {renderTableHeader()}
+                <TableBody>
+                  {filteredEmployees.map((employee, index) => 
+                    renderTableRow(employee, index)
+                  )}
+                </TableBody>
+              </Table>
             </div>
-          </CardContent>
+          </div>
         </Card>
 
-        {/* Stats and Actions */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          {/* Chart Card - Takes 2/3 of the width */}
-          <Card className="xl:col-span-2 bg-card border-border/50 bg-gray-50">
-            <CardContent className="p-0">
-              <UserStatsChart />
-            </CardContent>
-          </Card>
-
-          {/* Action Buttons - Takes 1/3 of the width */}
-          <Card className="bg-card border-border/50 bg-gray-50">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg font-bold text-foreground">Tổng người dùng: {allEmployees.length}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex items-center justify-between p-3 hover:bg-muted/50 rounded-lg transition-colors cursor-pointer group">
-                <div className="flex items-center">
-                  <UserPlus className="w-4 h-4 mr-3 text-muted-foreground group-hover:text-primary transition-colors" />
-                  <span className="text-sm font-medium text-foreground">Nhân viên kinh doanh</span>
-                </div>
-                <span className="text-sm font-bold text-primary bg-primary/10 px-2 py-1 rounded-full">
-                  {employeeCounts.sales}
-                </span>
-              </div>
-              
-              <div className="flex items-center justify-between p-3 hover:bg-muted/50 rounded-lg transition-colors cursor-pointer group">
-                <div className="flex items-center">
-                  <Shield className="w-4 h-4 mr-3 text-muted-foreground group-hover:text-primary transition-colors" />
-                  <span className="text-sm font-medium text-foreground">Quản lý kinh doanh</span>
-                </div>
-                <span className="text-sm font-bold text-primary bg-primary/10 px-2 py-1 rounded-full">
-                  {employeeCounts.salesManager}
-                </span>
-              </div>
-              
-              <div className="flex items-center justify-between p-3 hover:bg-muted/50 rounded-lg transition-colors cursor-pointer group">
-                <div className="flex items-center">
-                  <Download className="w-4 h-4 mr-3 text-muted-foreground group-hover:text-primary transition-colors" />
-                  <span className="text-sm font-medium text-foreground">Nhân viên kho</span>
-                </div>
-                <span className="text-sm font-bold text-primary bg-primary/10 px-2 py-1 rounded-full">
-                  {employeeCounts.warehouse}
-                </span>
-              </div>
-              
-              <div className="flex items-center justify-between p-3 hover:bg-muted/50 rounded-lg transition-colors cursor-pointer group">
-                <div className="flex items-center">
-                  <Settings className="w-4 h-4 mr-3 text-muted-foreground group-hover:text-primary transition-colors" />
-                  <span className="text-sm font-medium text-foreground">Quản lý kho</span>
-                </div>
-                <span className="text-sm font-bold text-primary bg-primary/10 px-2 py-1 rounded-full">
-                  {employeeCounts.warehouseManager}
-                </span>
-              </div>
-              
-              <div className="flex items-center justify-between p-3 hover:bg-muted/50 rounded-lg transition-colors cursor-pointer group">
-                <div className="flex items-center">
-                  <Download className="w-4 h-4 mr-3 text-muted-foreground group-hover:text-primary transition-colors" />
-                  <span className="text-sm font-medium text-foreground">Chủ doanh nghiệp</span>
-                </div>
-                <span className="text-sm font-bold text-primary bg-primary/10 px-2 py-1 rounded-full">
-                  {employeeCounts.enterprise}
-                </span>
-              </div>
-              
-              <div className="flex items-center justify-between p-3 hover:bg-muted/50 rounded-lg transition-colors cursor-pointer group">
-                <div className="flex items-center">
-                  <Shield className="w-4 h-4 mr-3 text-muted-foreground group-hover:text-primary transition-colors" />
-                  <span className="text-sm font-medium text-foreground">Người sử dụng</span>
-                </div>
-                <span className="text-sm font-bold text-primary bg-primary/10 px-2 py-1 rounded-full">
-                  {employeeCounts.users}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <EmployeeTable employees={managementEmployees} title="Danh sách Quản lý" />
-        <EmployeeTable employees={warehouseEmployees} title="Danh sách Nhân viên kho" />
+        {/* ===== PAGINATION SECTION ===== */}
+        {!loading && pagination.totalCount > 0 && (
+          <Pagination
+            current={pagination.pageNumber}
+            pageSize={pagination.pageSize}
+            total={pagination.totalCount}
+            onPageChange={(page) => setPagination(prev => ({ ...prev, pageNumber: page }))}
+            onPageSizeChange={(size) => setPagination(prev => ({ ...prev, pageSize: size, pageNumber: 1 }))}
+            showPageSize={true}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            className="bg-gray-50"
+          />
+        )}
       </div>
-
-      {/* Create Account Modal */}
-      {isCreateModalOpen && (
-        <CreateAccountForm
-          isOpen={isCreateModalOpen}
-          onClose={() => setIsCreateModalOpen(false)}
-          onSuccess={() => {
-            // Có thể thêm logic refresh data ở đây
-            console.log("Account created successfully");
-          }}
-        />
-      )}
     </div>
   )
 }
