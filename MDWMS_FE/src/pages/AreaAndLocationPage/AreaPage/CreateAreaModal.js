@@ -112,7 +112,7 @@ export default function CreateAreaModal({ isOpen, onClose, onSuccess }) {
                   placeholder="Nhập tên khu vực..."
                   value={formData.areaName}
                   onChange={(e) => setFormData({ ...formData, areaName: e.target.value })}
-                  className="h-8 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                  className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                   required
                 />
               </div>
@@ -127,7 +127,7 @@ export default function CreateAreaModal({ isOpen, onClose, onSuccess }) {
                   placeholder="Nhập mã khu vực..."
                   value={formData.areaCode}
                   onChange={(e) => setFormData({ ...formData, areaCode: e.target.value })}
-                  className="h-8 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                  className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                   required
                 />
               </div>
@@ -141,7 +141,7 @@ export default function CreateAreaModal({ isOpen, onClose, onSuccess }) {
                   id="storageConditionId"
                   value={formData.storageConditionId}
                   onChange={(e) => setFormData({ ...formData, storageConditionId: e.target.value })}
-                  className="h-8 w-full px-3 py-1 border border-slate-300 rounded-lg focus:border-orange-500 focus:ring-orange-500 focus:outline-none bg-white text-sm flex items-center"
+                  className="h-[38px] w-full px-3 py-1 border border-slate-300 rounded-lg focus:border-orange-500 focus:ring-orange-500 focus:outline-none bg-white text-sm flex items-center"
                   required
                 >
                   <option value="">Chọn điều kiện bảo quản...</option>
@@ -170,7 +170,7 @@ export default function CreateAreaModal({ isOpen, onClose, onSuccess }) {
                   placeholder="Nhập mô tả khu vực..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="h-8 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                  className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                 />
               </div>
             </div>
@@ -180,7 +180,7 @@ export default function CreateAreaModal({ isOpen, onClose, onSuccess }) {
               <Button
                 type="button"
                 variant="outline"
-                className="h-8 px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
+                className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
                 onClick={handleReset}
               >
                 Hủy
@@ -188,7 +188,7 @@ export default function CreateAreaModal({ isOpen, onClose, onSuccess }) {
               <Button
                 type="submit"
                 disabled={loading || loadingData}
-                className="h-8 px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
               >
                 {loading ? "Đang thêm..." : loadingData ? "Đang tải..." : "Thêm"}
               </Button>

@@ -199,7 +199,7 @@ export default function UpdateSupplierModal({ isOpen, onClose, onSuccess, suppli
                     placeholder="Nhập email..."
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="h-8 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                    className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                     required
                   />
                 </div>
@@ -213,7 +213,7 @@ export default function UpdateSupplierModal({ isOpen, onClose, onSuccess, suppli
                     placeholder="Nhập số điện thoại..."
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="h-8 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                    className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                     required
                   />
                 </div>
@@ -225,7 +225,7 @@ export default function UpdateSupplierModal({ isOpen, onClose, onSuccess, suppli
               <Button
                 type="button"
                 variant="outline"
-                className="h-8 px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
+                className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
                 onClick={handleReset}
               >
                 Hủy
@@ -233,7 +233,7 @@ export default function UpdateSupplierModal({ isOpen, onClose, onSuccess, suppli
               <Button
                 type="submit"
                 disabled={loading || loadingData}
-                className="h-8 px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
               >
                 {loading ? "Đang cập nhật..." : loadingData ? "Đang tải..." : "Cập nhật"}
               </Button>

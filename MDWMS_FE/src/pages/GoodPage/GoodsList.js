@@ -661,7 +661,7 @@ export default function GoodsPage() {
             <p className="text-slate-600 mt-1">Quản lý các hàng hóa sản phẩm trong hệ thống</p>
           </div>
           <Button
-            className="bg-orange-500 hover:bg-orange-600 h-8 px-6 text-white"
+            className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
             onClick={() => setShowCreateModal(true)}
           >
             <Plus className="mr-2 h-4 w-4 text-white" />
@@ -855,6 +855,7 @@ export default function GoodsPage() {
                     <Button
                       variant="outline"
                       size="sm"
+                      className="h-[38px]"
                       onClick={() => {
                         if (pagination.pageNumber > 1) {
                           fetchData({
@@ -881,6 +882,7 @@ export default function GoodsPage() {
                     <Button
                       variant="outline"
                       size="sm"
+                      className="h-[38px]"
                       onClick={() => {
                         if (pagination.pageNumber < Math.ceil(pagination.totalCount / pagination.pageSize)) {
                           fetchData({
@@ -909,7 +911,7 @@ export default function GoodsPage() {
                     <div className="relative page-size-filter-dropdown">
                       <button
                         onClick={() => setShowPageSizeFilter(!showPageSizeFilter)}
-                        className="flex items-center space-x-2 px-3 py-2 text-sm border border-slate-300 rounded-md hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        className="flex items-center space-x-2 px-3 py-2 h-[38px] text-sm border border-slate-300 rounded-md hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                       >
                         <span>{pagination.pageSize}</span>
                         <ChevronDown className="h-4 w-4" />
@@ -922,7 +924,7 @@ export default function GoodsPage() {
                               <button
                                 key={size}
                                 onClick={() => handlePageSizeChange(size)}
-                                className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 flex items-center justify-between ${pagination.pageSize === size ? 'bg-orange-500 text-white' : 'text-slate-700'
+                                className={`w-full text-left px-3 py-2 h-[38px] text-sm hover:bg-slate-100 flex items-center justify-between ${pagination.pageSize === size ? 'bg-orange-500 text-white' : 'text-slate-700'
                                   }`}
                               >
                                 {size}

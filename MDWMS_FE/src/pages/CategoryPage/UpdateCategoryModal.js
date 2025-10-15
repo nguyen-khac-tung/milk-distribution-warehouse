@@ -120,7 +120,7 @@ export default function UpdateCategory({ isOpen, onClose, onSuccess, categoryDat
                   placeholder="Nhập tên danh mục..."
                   value={formData.categoryName}
                   onChange={(e) => setFormData({ ...formData, categoryName: e.target.value })}
-                  className="h-8 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                  className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                   required
                 />
               </div>
@@ -135,7 +135,7 @@ export default function UpdateCategory({ isOpen, onClose, onSuccess, categoryDat
                   placeholder="Nhập mô tả danh mục..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="h-8 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                  className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                 />
               </div>
             </div>
@@ -149,7 +149,7 @@ export default function UpdateCategory({ isOpen, onClose, onSuccess, categoryDat
                 id="status"
                 value={formData.status || 1}
                 onChange={(e) => setFormData({ ...formData, status: parseInt(e.target.value) })}
-                className="h-8 w-full px-3 py-1 border border-slate-300 rounded-lg focus:border-orange-500 focus:ring-orange-500 focus:outline-none bg-white text-sm flex items-center"
+                className="h-[38px] w-full px-3 py-1 border border-slate-300 rounded-lg focus:border-orange-500 focus:ring-orange-500 focus:outline-none bg-white text-sm flex items-center"
               >
                 <option value={1} className="text-sm">Hoạt động</option>
                 <option value={2} className="text-sm">Ngừng hoạt động</option>
@@ -161,7 +161,7 @@ export default function UpdateCategory({ isOpen, onClose, onSuccess, categoryDat
               <Button
                 type="button"
                 variant="outline"
-                className="h-8 px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
+                className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
                 onClick={handleReset}
               >
                 Hủy
@@ -169,7 +169,7 @@ export default function UpdateCategory({ isOpen, onClose, onSuccess, categoryDat
               <Button
                 type="submit"
                 disabled={loading}
-                className="h-8 px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
               >
                 {loading ? "Đang cập nhật..." : "Cập nhật"}
               </Button>

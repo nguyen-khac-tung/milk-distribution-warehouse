@@ -117,13 +117,13 @@ export const updateStorageConditionStatus = async (storageConditionId, status) =
         return res.data;
     } catch (error) {
         console.error("Error updating storage condition status:", error);
-        
+
         // Log more details about the error
         if (error.response) {
             console.error("Response status:", error.response.status);
             console.error("Response data:", error.response.data);
         }
-        
+
         throw error;
     }
 };
@@ -131,7 +131,7 @@ export const updateStorageConditionStatus = async (storageConditionId, status) =
 // Get storage conditions for dropdown
 export const getStorageConditionsDropdown = async () => {
     try {
-        const res = await api.get("/StorageCondition/GetStorageConditionsDropDown");
+        const res = await api.get("/StorageCondition/StorageConditionsDropdown");
         console.log("Storage conditions dropdown API response:", res.data);
         return res.data;
     } catch (error) {

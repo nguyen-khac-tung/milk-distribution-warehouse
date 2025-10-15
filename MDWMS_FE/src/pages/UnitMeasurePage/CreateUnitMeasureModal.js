@@ -78,7 +78,7 @@ export default function CreateUnitMeasure({ isOpen, onClose, onSuccess }) {
                   placeholder="Nhập tên đơn vị đo..."
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="h-8 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                  className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                   required
                 />
               </div>
@@ -93,7 +93,7 @@ export default function CreateUnitMeasure({ isOpen, onClose, onSuccess }) {
                   placeholder="Nhập mô tả đơn vị đo..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="h-8 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                  className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                   required
                 />
               </div>
@@ -104,7 +104,7 @@ export default function CreateUnitMeasure({ isOpen, onClose, onSuccess }) {
               <Button
                 type="button"
                 variant="outline"
-                className="h-8 px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
+                className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
                 onClick={handleReset}
               >
                 Hủy
@@ -112,7 +112,7 @@ export default function CreateUnitMeasure({ isOpen, onClose, onSuccess }) {
               <Button
                 type="submit"
                 disabled={loading}
-                className="h-8 px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
               >
                 {loading ? "Đang thêm..." : "Thêm"}
               </Button>

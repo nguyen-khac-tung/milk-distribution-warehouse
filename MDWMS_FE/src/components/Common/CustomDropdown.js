@@ -34,7 +34,7 @@ export default function CustomDropdown({
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
-        className={`h-8 w-full px-3 py-2 border border-slate-300 rounded-md focus:border-orange-500 focus:ring-orange-500 focus:outline-none bg-white hover:border-orange-500 hover:shadow-sm transition-all duration-200 text-left flex items-center justify-between text-sm ${
+        className={`h-[38px] w-full px-3 py-2 border border-slate-300 rounded-md focus:border-orange-500 focus:ring-orange-500 focus:outline-none bg-white hover:border-orange-500 hover:shadow-sm transition-all duration-200 text-left flex items-center justify-between text-sm ${
           disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
         }`}
       >

@@ -110,7 +110,7 @@ export default function SearchFilterToggle({
                   placeholder={searchPlaceholder}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 h-8 text-sm border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                  className="pl-9 h-[38px] text-sm border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                 />
               </div>
 
@@ -118,7 +118,7 @@ export default function SearchFilterToggle({
               <div className="relative status-filter-dropdown">
                 <button
                   onClick={() => setShowStatusFilter(!showStatusFilter)}
-                  className={`flex items-center space-x-2 px-4 py-2 h-8 border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706] transition-colors ${statusFilter ? 'bg-[#d97706] text-white' : 'bg-white text-slate-700'
+                  className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706] transition-colors ${statusFilter ? 'bg-[#d97706] text-white' : 'bg-white text-slate-700'
                     }`}
                 >
                   <Filter className="h-4 w-4" />
@@ -151,7 +151,7 @@ export default function SearchFilterToggle({
                 <div className="relative category-filter-dropdown">
                   <button
                     onClick={() => setShowCategoryFilter(!showCategoryFilter)}
-                    className={`flex items-center space-x-2 px-4 py-2 h-8 border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706] transition-colors ${categoryFilter ? 'bg-[#d97706] text-white' : 'bg-white text-slate-700'
+                    className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706] transition-colors ${categoryFilter ? 'bg-[#d97706] text-white' : 'bg-white text-slate-700'
                       }`}
                   >
                     <span className="text-sm font-medium">
@@ -189,7 +189,7 @@ export default function SearchFilterToggle({
                 <div className="relative supplier-filter-dropdown">
                   <button
                     onClick={() => setShowSupplierFilter(!showSupplierFilter)}
-                    className={`flex items-center space-x-2 px-4 py-2 h-8 border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706] transition-colors ${supplierFilter ? 'bg-[#d97706] text-white' : 'bg-white text-slate-700'
+                    className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706] transition-colors ${supplierFilter ? 'bg-[#d97706] text-white' : 'bg-white text-slate-700'
                       }`}
                   >
                     <span className="text-sm font-medium">
@@ -227,7 +227,7 @@ export default function SearchFilterToggle({
                 <div className="relative unit-measure-filter-dropdown">
                   <button
                     onClick={() => setShowUnitMeasureFilter(!showUnitMeasureFilter)}
-                    className={`flex items-center space-x-2 px-4 py-2 h-8 border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706] transition-colors ${unitMeasureFilter ? 'bg-[#d97706] text-white' : 'bg-white text-slate-700'
+                    className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706] transition-colors ${unitMeasureFilter ? 'bg-[#d97706] text-white' : 'bg-white text-slate-700'
                       }`}
                   >
                     <span className="text-sm font-medium">
@@ -270,7 +270,7 @@ export default function SearchFilterToggle({
                 variant="outline"
                 size="sm"
                 showIcon={true}
-                className="h-8"
+                className="h-[38px]"
               />
             )}
           </div>

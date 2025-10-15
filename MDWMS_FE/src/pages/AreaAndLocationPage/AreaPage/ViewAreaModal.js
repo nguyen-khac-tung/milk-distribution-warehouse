@@ -145,7 +145,7 @@ export function ModalAreaDetail({ area, onClose }) {
                     <div className="sticky bottom-0 bg-white border-t border-gray-200 px-4 py-3 flex justify-end">
                         <button
                             onClick={onClose}
-                            className="px-6 py-2 bg-pink-50 border border-red-300 text-red-600 rounded-md hover:bg-pink-100 hover:border-red-400 transition-colors shadow-sm"
+                            className="h-[38px] px-6 bg-pink-50 border border-red-300 text-red-600 rounded-md hover:bg-pink-100 hover:border-red-400 transition-colors shadow-sm"
                         >
                             Đóng
                         </button>

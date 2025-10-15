@@ -89,7 +89,7 @@ export default function CreateStorageCondition({ isOpen, onClose, onSuccess }) {
                     placeholder="Nhập nhiệt độ tối thiểu..."
                     value={formData.temperatureMin === 0 ? "" : formData.temperatureMin}
                     onChange={(e) => setFormData({ ...formData, temperatureMin: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 })}
-                    className="h-8 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                    className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                     required
                   />
                 </div>
@@ -105,7 +105,7 @@ export default function CreateStorageCondition({ isOpen, onClose, onSuccess }) {
                     placeholder="Nhập nhiệt độ tối đa..."
                     value={formData.temperatureMax === 0 ? "" : formData.temperatureMax}
                     onChange={(e) => setFormData({ ...formData, temperatureMax: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 })}
-                    className="h-8 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                    className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                     required
                   />
                 </div>
@@ -124,7 +124,7 @@ export default function CreateStorageCondition({ isOpen, onClose, onSuccess }) {
                     placeholder="Nhập độ ẩm tối thiểu..."
                     value={formData.humidityMin === 0 ? "" : formData.humidityMin}
                     onChange={(e) => setFormData({ ...formData, humidityMin: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 })}
-                    className="h-8 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                    className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                     required
                   />
                 </div>
@@ -140,7 +140,7 @@ export default function CreateStorageCondition({ isOpen, onClose, onSuccess }) {
                     placeholder="Nhập độ ẩm tối đa..."
                     value={formData.humidityMax === 0 ? "" : formData.humidityMax}
                     onChange={(e) => setFormData({ ...formData, humidityMax: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 })}
-                    className="h-8 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                    className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                     required
                   />
                 </div>
@@ -171,7 +171,7 @@ export default function CreateStorageCondition({ isOpen, onClose, onSuccess }) {
               <Button
                 type="button"
                 variant="outline"
-                className="h-8 px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
+                className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
                 onClick={handleReset}
               >
                 Hủy
@@ -179,7 +179,7 @@ export default function CreateStorageCondition({ isOpen, onClose, onSuccess }) {
               <Button
                 type="submit"
                 disabled={loading}
-                className="h-8 px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
               >
                 {loading ? "Đang thêm..." : "Thêm"}
               </Button>

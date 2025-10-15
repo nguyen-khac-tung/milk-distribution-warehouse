@@ -25,7 +25,7 @@ export function DisableFieldWrapper({
         value={value}
         onChange={onChange}
         disabled={isDisabled}
-        className={`h-8 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${
+        className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${
           isDisabled 
             ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200" 
             : ""
