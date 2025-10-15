@@ -77,7 +77,7 @@ namespace MilkDistributionWarehouse.Repositories
                 if (entity == null) return false;
 
                 entity.Status = CommonStatus.Deleted;
-                entity.UpdateAt = DateTime.UtcNow;
+                entity.UpdateAt = DateTime.Now;
                 await _context.SaveChangesAsync();
                 return true;
             }

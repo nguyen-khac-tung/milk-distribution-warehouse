@@ -58,7 +58,7 @@ namespace MilkDistributionWarehouse.Services
             var entity = _mapper.Map<Location>(dto);
             entity.LocationCode = $"{dto.Rack}-R{dto.Row:D2}-C{dto.Column:D2}";
             entity.AreaId = dto.AreaId;
-            entity.CreatedAt = DateTime.UtcNow;
+            entity.CreatedAt = DateTime.Now;
             entity.Status = (int)CommonStatus.Active;
 
             var createdEntity = await _locationRepository.CreateLocation(entity);
@@ -89,7 +89,7 @@ namespace MilkDistributionWarehouse.Services
 
             _mapper.Map(dto, locationExists);
             locationExists.LocationCode = $"{dto.Rack}-R{dto.Row:D2}-C{dto.Column:D2}";
-            locationExists.UpdateAt = DateTime.UtcNow;
+            locationExists.UpdateAt = DateTime.Now;
             var updatedEntity = await _locationRepository.UpdateLocation(locationExists);
             if (updatedEntity == null)
                 return ("Cập nhật vị trí thất bại.".ToMessageForUser(), new LocationDto.LocationResponseDto());
@@ -110,7 +110,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Không thể xoá vì vị trí này đang được sử dụng cho pallet hoặc kiểm kê hàng.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
             locationExists.Status = CommonStatus.Deleted;
-            locationExists.UpdateAt = DateTime.UtcNow;
+            locationExists.UpdateAt = DateTime.Now;
 
             var deletedEntity = await _locationRepository.UpdateLocation(locationExists);
             if (deletedEntity == null)
@@ -138,7 +138,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Không thể cập nhật trạng thái vì vị trí này đang được sử dụng cho pallet hoặc kiểm kê hàng.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
             location.Status = status;
-            location.UpdateAt = DateTime.UtcNow;
+            location.UpdateAt = DateTime.Now;
 
             var updatedEntity = await _locationRepository.UpdateLocation(location);
             if (updatedEntity == null)
