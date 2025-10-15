@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Button } from "antd";
-import { getAreas, deleteArea, getAreaDetail } from "../../../services/AreaServices";
-import { Edit, Trash2, ChevronDown, Plus, Eye } from "lucide-react";
+import { getAreas, deleteArea, getAreaDetail, updateAreaStatus } from "../../../services/AreaServices";
+import { Edit, Trash2, ChevronDown, Plus, Eye, ArrowUpDown, ArrowDown, ArrowUp } from "lucide-react";
 import DeleteModal from "../../../components/Common/DeleteModal";
 import SearchFilterToggle from "../../../components/Common/SearchFilterToggle";
 import Pagination from "../../../components/Common/Pagination";
@@ -13,6 +13,7 @@ import { Table as CustomTable, TableBody, TableCell, TableHead, TableHeader, Tab
 import { extractErrorMessage } from "../../../utils/Validation";
 import { ModalAreaDetail } from "./ViewAreaModal";
 import StatsCards from "../../../components/Common/StatsCards";
+import { StatusToggle } from "../../../components/Common/SwitchToggle/StatusToggle";
 
 const AreaLists = () => {
     const [areas, setAreas] = useState([]);
@@ -48,6 +49,7 @@ const AreaLists = () => {
     const [itemToView, setItemToView] = useState(null);
     const [loadingDetail, setLoadingDetail] = useState(false);
     const [showPageSizeFilter, setShowPageSizeFilter] = useState(false);
+
 
     // Fetch total stats (không filter)
     const fetchTotalStats = async () => {
@@ -87,6 +89,8 @@ const AreaLists = () => {
                 pageSize,
                 search: params.search,
                 filters: params.filters,
+                sortField: params.sortField || "",        // thêm dòng này
+                sortOrder: params.sortOrder || ""         // thêm dòng này
             });
 
             const payload = res ?? {};
@@ -206,10 +210,10 @@ const AreaLists = () => {
         if (sortField === field) {
             setSortAscending(!sortAscending);
         } else {
-            setSortField(field);
-            setSortAscending(true);
+            setSortField(field)
+            setSortAscending(true)
         }
-    };
+    }
 
     // Mở modal thêm mới
     const handleOpenCreate = () => {
@@ -262,6 +266,29 @@ const AreaLists = () => {
         setAreaDetail(null)
     }
 
+    const handleStatusChange = async (areaId, newStatus) => {
+        try {
+            await updateAreaStatus(areaId, newStatus)
+
+            // Update local state
+            setAreas(prevAreas =>
+                prevAreas.map(area =>
+                    area.areaId === areaId
+                        ? { ...area, status: newStatus }
+                        : area
+                )
+            )
+
+            const statusText = newStatus === 1 ? "kích hoạt" : "ngừng hoạt động"
+            window.showToast(`Đã ${statusText} nhà cung cấp thành công`, "success")
+        } catch (error) {
+            console.error("Error updating area status:", error)
+
+            const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật trạng thái")
+            window.showToast(errorMessage, "error")
+        }
+    }
+
     // Xem chi tiết khu vực
     const handleViewClick = async (area) => {
         try {
@@ -270,29 +297,24 @@ const AreaLists = () => {
             setLoadingDetail(true)
             setShowViewModal(true)
 
-            // Gọi API để lấy chi tiết điều kiện bảo quản
             const response = await getAreaDetail(area.areaId)
-            console.log("API Response Area:", response)
+            // console.log("API Response Area:", response)
 
-            // Handle API response structure
             if (response && response.data) {
-                // Merge dữ liệu từ area list với chi tiết từ API
                 const areaDetailData = {
-                    ...area, // Dữ liệu cơ bản từ danh sách
-                    ...response.data // Chi tiết điều kiện bảo quản từ API
+                    ...area,
+                    ...response.data
                 }
                 setAreaDetail(areaDetailData)
-                console.log("Area detail set:", areaDetailData)
+                // console.log("Area detail set:", areaDetailData)
             } else {
-                // Fallback: sử dụng dữ liệu từ danh sách nếu API không trả về data
                 setAreaDetail(area)
-                console.log("Using fallback area data:", area)
+                // console.log("Using fallback area data:", area)
             }
         } catch (error) {
-            console.error("Error loading area detail:", error)
-            // Fallback: sử dụng dữ liệu từ danh sách nếu API lỗi
+            // console.error("Error loading area detail:", error)
             setAreaDetail(area)
-            console.log("Using fallback area data due to error:", area)
+            // console.log("Using fallback area data due to error:", area)
         } finally {
             setLoadingDetail(false)
         }
@@ -316,22 +338,14 @@ const AreaLists = () => {
                     status: statusFilter ? Number(statusFilter) : undefined,
                 },
             });
-            fetchTotalStats(); // Cập nhật tổng stats
+            fetchTotalStats();
         } catch (error) {
-            console.error("Error deleting area:", error);
-
-            // Lấy thông báo lỗi rõ ràng từ backend (nếu có)
-            const cleanMsg =
-                error?.response?.data?.message?.replace(/^\[.*?\]\s*/, "") ||
-                error?.message ||
-                "Có lỗi xảy ra khi xóa khu vực!";
-
-            // Hiển thị lỗi chi tiết
-            window.showToast(cleanMsg, "error");
+            // console.error("Error deleting area:", error);
+            const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi xóa khu vực")
+            window.showToast(errorMessage, "error");
         }
     };
 
-    // Stats được lấy từ totalStats state (không bị ảnh hưởng bởi filter)
     const { total: totalCount, active: activeCount, inactive: inactiveCount } = totalStats;
 
     return (
@@ -405,21 +419,10 @@ const AreaLists = () => {
                                                 STT
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                                                <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("areaCode")}>
-                                                    <span>Mã khu vực</span>
-                                                    <div className="flex flex-col">
-                                                        <ChevronDown
-                                                            className={`h-3 w-3 ${sortField === "areaCode" && sortAscending ? "text-orange-500" : "text-slate-400"}`}
-                                                        />
-                                                        <ChevronDown
-                                                            className={`h-3 w-3 ${sortField === "areaCode" && !sortAscending ? "text-orange-500" : "text-slate-400"}`}
-                                                            style={{ transform: "rotate(180deg)" }}
-                                                        />
-                                                    </div>
-                                                </div>
+                                                Tên khu vực
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                                                Tên khu vực
+                                                Mã khu vực
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                                                 Mô tả

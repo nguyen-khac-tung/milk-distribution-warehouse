@@ -100,8 +100,8 @@ export default function CreateAreaModal({ isOpen, onClose, onSuccess }) {
         {/* Content */}
         <div className="p-6">
           <form className="space-y-6" onSubmit={handleSubmit}>
-            {/* Form Fields - 1 column layout */}
-            <div className="space-y-4">
+            {/* Row 1: Area Name + Area Code */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Area Name */}
               <div className="space-y-2">
                 <Label htmlFor="areaName" className="text-sm font-medium text-slate-700">
@@ -131,71 +131,71 @@ export default function CreateAreaModal({ isOpen, onClose, onSuccess }) {
                   required
                 />
               </div>
-
-              {/* Storage Condition */}
-              <div className="space-y-2">
-                <Label htmlFor="storageConditionId" className="text-sm font-medium text-slate-700">
-                  Điều kiện bảo quản <span className="text-red-500">*</span>
-                </Label>
-                <select
-                  id="storageConditionId"
-                  value={formData.storageConditionId}
-                  onChange={(e) => setFormData({ ...formData, storageConditionId: e.target.value })}
-                  className="h-[38px] w-full px-3 py-1 border border-slate-300 rounded-lg focus:border-orange-500 focus:ring-orange-500 focus:outline-none bg-white text-sm flex items-center"
-                  required
-                >
-                  <option value="">Chọn điều kiện bảo quản...</option>
-                  {loadingData ? (
-                    <option disabled>Đang tải...</option>
-                  ) : (
-                    storageConditions.map((condition) => (
-                      <option
-                        key={condition.storageConditionId}
-                        value={condition.storageConditionId.toString()}
-                      >
-                        {condition.conditionName} - Nhiệt độ: {condition.temperatureMin}°C đến {condition.temperatureMax}°C - Độ ẩm: {condition.humidityMin}% đến {condition.humidityMax}%
-                      </option>
-                    ))
-                  )}
-                </select>
-              </div>
-
-              {/* Description */}
-              <div className="space-y-2">
-                <Label htmlFor="description" className="text-sm font-medium text-slate-700">
-                  Mô tả
-                </Label>
-                <Input
-                  id="description"
-                  placeholder="Nhập mô tả khu vực..."
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                />
-              </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-4 justify-end pt-6">
-              <Button
-                type="button"
-                variant="outline"
-                className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
-                onClick={handleReset}
+            {/* Storage Condition */}
+            <div className="space-y-2">
+              <Label htmlFor="storageConditionId" className="text-sm font-medium text-slate-700">
+                Điều kiện bảo quản <span className="text-red-500">*</span>
+              </Label>
+              <select
+                id="storageConditionId"
+                value={formData.storageConditionId}
+                onChange={(e) => setFormData({ ...formData, storageConditionId: e.target.value })}
+                className="h-[38px] w-full px-3 py-1 border border-slate-300 rounded-lg focus:border-orange-500 focus:ring-orange-500 focus:outline-none bg-white text-sm flex items-center"
+                required
               >
-                Hủy
-              </Button>
-              <Button
-                type="submit"
-                disabled={loading || loadingData}
-                className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
-              >
-                {loading ? "Đang thêm..." : loadingData ? "Đang tải..." : "Thêm"}
-              </Button>
+                <option value="">Chọn điều kiện bảo quản...</option>
+                {loadingData ? (
+                  <option disabled>Đang tải...</option>
+                ) : (
+                  storageConditions.map((condition) => (
+                    <option
+                      key={condition.storageConditionId}
+                      value={condition.storageConditionId.toString()}
+                    >
+                      {condition.conditionName} - Nhiệt độ: {condition.temperatureMin}°C đến {condition.temperatureMax}°C - Độ ẩm: {condition.humidityMin}% đến {condition.humidityMax}%
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="description" className="text-sm font-medium text-slate-700">
+                Mô tả
+              </Label>
+              <Input
+                id="description"
+                placeholder="Nhập mô tả khu vực..."
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+              />
             </div>
           </form>
         </div>
-      </div>
-    </div>
+        {/* Action Buttons */}
+        <div className="flex gap-4 justify-end pt-6">
+          <Button
+            type="button"
+            variant="outline"
+            className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
+            onClick={handleReset}
+          >
+            Hủy
+          </Button>
+          <Button
+            type="submit"
+            disabled={loading || loadingData}
+            className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+          >
+            {loading ? "Đang thêm..." : loadingData ? "Đang tải..." : "Thêm"}
+          </Button>
+        </div>
+
+      </div >
+    </div >
   )
 }

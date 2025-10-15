@@ -1,141 +1,120 @@
-import React, { useState, useEffect } from "react"
-import { Button } from "../../../components/ui/button"
-import { Input } from "../../../components/ui/input"
-import { Label } from "../../../components/ui/label"
-import { Card } from "../../../components/ui/card"
-import { ComponentIcon } from "../../../components/IconComponent/Icon"
-import { updateArea, getAreaDetail } from "../../../services/AreaServices"
-import { getStorageCondition } from "../../../services/StorageConditionService"
-import { validateAndShowError, extractErrorMessage } from "../../../utils/Validation"
+import React, { useState, useEffect } from "react";
+import { Button } from "../../../components/ui/button";
+import { Input } from "../../../components/ui/input";
+import { Label } from "../../../components/ui/label";
+import { ComponentIcon } from "../../../components/IconComponent/Icon";
+import { updateArea, getAreaDetail } from "../../../services/AreaServices";
+import { getStorageCondition } from "../../../services/StorageConditionService";
+import { extractErrorMessage } from "../../../utils/Validation";
 
 export default function UpdateAreaModal({ isOpen, onClose, onSuccess, areaId, areaData }) {
   const [formData, setFormData] = useState({
-    areaId: 0,
     areaName: "",
     areaCode: "",
     description: "",
     storageConditionId: 0,
-    status: 0,
-  })
-  const [loading, setLoading] = useState(false)
-  const [storageConditions, setStorageConditions] = useState([])
-  const [loadingData, setLoadingData] = useState(false)
+  });
+  const [loading, setLoading] = useState(false);
+  const [storageConditions, setStorageConditions] = useState([]);
+  const [loadingData, setLoadingData] = useState(false);
 
-  // Load data for dropdowns and area details
+  // Load dropdowns + data
   useEffect(() => {
     if (isOpen) {
-      loadAreaData()
-      loadDropdownData()
+      loadDropdownData();
+      loadAreaData();
     }
-  }, [isOpen, areaData])
+  }, [isOpen, areaId, areaData]);
 
   const loadAreaData = async () => {
     try {
-      setLoadingData(true)
-      
-      // Ưu tiên sử dụng areaData từ props
+      setLoadingData(true);
       if (areaData) {
         setFormData({
-          areaId: areaData.areaId || 0,
           areaName: areaData.areaName || "",
           areaCode: areaData.areaCode || "",
           description: areaData.description || "",
-          storageConditionId: areaData.storageConditionId || 0,
-          status: areaData.status || 0,
-        })
-        return
+          storageConditionId: areaData.storageCondition?.storageConditionId || areaData.storageConditionId || 0,
+        });
+        return;
       }
-
-      // Nếu không có areaData, thử gọi API
       if (areaId) {
-        const response = await getAreaDetail(areaId)
-        if (response && response.data) {
-          const area = response.data
+        const res = await getAreaDetail(areaId);
+        if (res && res.data) {
+          const area = res.data;
           setFormData({
-            areaId: area.areaId || 0,
             areaName: area.areaName || "",
             areaCode: area.areaCode || "",
             description: area.description || "",
             storageConditionId: area.storageConditionId || 0,
-            status: area.status || 0,
-          })
+          });
         }
       }
     } catch (error) {
-      console.error("Error loading area data:", error)
-      const errorMessage = extractErrorMessage(error, "Lỗi khi tải thông tin khu vực")
-      window.showToast(errorMessage, "error")
+      console.error("Error loading area:", error);
+      window.showToast(extractErrorMessage(error, "Không thể tải dữ liệu khu vực"), "error");
     } finally {
-      setLoadingData(false)
+      setLoadingData(false);
     }
-  }
+  };
 
   const loadDropdownData = async () => {
     try {
-      setLoadingData(true)
-      const storageConditionsRes = await getStorageCondition({ pageNumber: 1, pageSize: 10 })
-
-      // Handle different response structures
-      setStorageConditions(storageConditionsRes?.data?.items || storageConditionsRes?.data || [])
+      setLoadingData(true);
+      const res = await getStorageCondition({ pageNumber: 1, pageSize: 50 });
+      setStorageConditions(res?.data?.items || res?.data || []);
     } catch (error) {
-      console.error("Error loading dropdown data:", error)
-      const errorMessage = extractErrorMessage(error, "Lỗi khi tải dữ liệu dropdown")
-      window.showToast(errorMessage, "error")
+      console.error("Error loading dropdown data:", error);
+      window.showToast(extractErrorMessage(error, "Không thể tải danh sách điều kiện bảo quản"), "error");
     } finally {
-      setLoadingData(false)
+      setLoadingData(false);
     }
-  }
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
-    // Validate required fields
-    if (!formData.areaName || !formData.areaCode || !formData.storageConditionId || formData.status === 0) {
-      window.showToast("Vui lòng điền đầy đủ thông tin", "error")
-      return
+    if (!formData.areaName || !formData.areaCode || !formData.storageConditionId) {
+      window.showToast("Vui lòng điền đầy đủ thông tin bắt buộc", "error");
+      return;
     }
 
     try {
-      setLoading(true)
-      const response = await updateArea(areaId, formData)
-      console.log("Area updated:", response)
-      window.showToast("Cập nhật khu vực thành công!", "success")
-      onSuccess && onSuccess()
-      onClose && onClose()
+      setLoading(true);
+      const response = await updateArea(areaId, formData);
+      window.showToast("Cập nhật khu vực thành công!", "success");
+      onSuccess?.();
+      onClose?.();
     } catch (error) {
-      console.error("Error updating area:", error)
-
-      // Sử dụng extractErrorMessage để xử lý lỗi từ API
-      const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật khu vực")
-      window.showToast(`Lỗi: ${errorMessage}`, "error")
+      console.error("Error updating area:", error);
+      window.showToast(extractErrorMessage(error, "Có lỗi khi cập nhật khu vực"), "error");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleReset = () => {
     setFormData({
-      areaId: 0,
       areaName: "",
       areaCode: "",
       description: "",
       storageConditionId: 0,
-      status: 0,
-    })
-    onClose && onClose()
-  }
+    });
+    onClose?.();
+  };
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-2xl">
+      <div className="w-full max-w-3xl mx-4 max-h-[90vh] overflow-y-auto bg-white rounded-xl shadow-2xl">
+
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-slate-800">Cập nhật khu vực</h1>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+          <h1 className="text-2xl font-semibold text-gray-800">Cập nhật khu vực</h1>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-1 rounded-full hover:bg-gray-100 transition-colors"
           >
             <ComponentIcon name="close" size={20} color="#6b7280" />
           </button>
@@ -219,10 +198,10 @@ export default function UpdateAreaModal({ isOpen, onClose, onSuccess, areaId, ar
               </div>
             </div>
 
-            {/* Status - Full width */}
+            {/* Description */}
             <div className="space-y-2">
-              <Label htmlFor="status" className="text-sm font-medium text-slate-700">
-                Trạng thái <span className="text-red-500">*</span>
+              <Label htmlFor="description" className="text-sm font-medium text-slate-700">
+                Mô tả
               </Label>
               <select
                 id="status"
@@ -235,8 +214,8 @@ export default function UpdateAreaModal({ isOpen, onClose, onSuccess, areaId, ar
               </select>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-4 justify-end pt-6">
+            {/* Footer */}
+            <div className="flex justify-end gap-4 pt-4 border-t border-gray-100">
               <Button
                 type="button"
                 variant="outline"
@@ -257,5 +236,5 @@ export default function UpdateAreaModal({ isOpen, onClose, onSuccess, areaId, ar
         </div>
       </div>
     </div>
-  )
+  );
 }
