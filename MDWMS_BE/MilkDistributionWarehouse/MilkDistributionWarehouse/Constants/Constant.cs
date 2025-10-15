@@ -7,13 +7,23 @@
         public const int Deleted = 3;         // Đã xóa
     }
 
+    public class RoleType
+    {
+        public const int WarehouseManager = 1;         
+        public const int WarehouseStaff = 2;
+        public const int Administrator = 3;
+        public const int BusinessOwner = 4;
+        public const int SalesRepresentative = 5;
+        public const int SaleManager = 6;        
+    }
+
     /// <summary>
     /// Các trạng thái của Đơn đặt hàng (Purchase Order)
     /// </summary>
     public static class PurchaseOrderStatus
     {
         public const int Draft = 1;
-        public const int PendingApproval = 2;   
+        public const int PendingApproval = 2;
         public const int Rejected = 3;
         public const int Approved = 4;
         public const int GoodsReceived = 5;
