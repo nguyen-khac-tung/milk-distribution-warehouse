@@ -72,6 +72,7 @@ namespace MilkDistributionWarehouse.Repositories
         public async Task<Location?> GetLocationById(int locationId)
         {
             return await _context.Locations
+                .Include(l => l.Area)
                 .FirstOrDefaultAsync(l => l.LocationId == locationId);
         }
 

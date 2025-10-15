@@ -58,14 +58,14 @@ namespace MilkDistributionWarehouse.Services
             var entity = _mapper.Map<Location>(dto);
             entity.LocationCode = $"{dto.Rack}-R{dto.Row:D2}-C{dto.Column:D2}";
             entity.AreaId = dto.AreaId;
-            entity.CreatedAt = DateTime.UtcNow;
+            entity.CreatedAt = DateTime.Now;
             entity.Status = (int)CommonStatus.Active;
 
             var createdEntity = await _locationRepository.CreateLocation(entity);
             if (createdEntity == null)
                 return ("Tạo vị trí thất bại.".ToMessageForUser(), new LocationDto.LocationResponseDto());
-
-            return ("", _mapper.Map<LocationDto.LocationResponseDto>(createdEntity));
+            var createdWithArea = await _locationRepository.GetLocationById(createdEntity.LocationId);
+            return ("", _mapper.Map<LocationDto.LocationResponseDto>(createdWithArea));
         }
 
         public async Task<(string, LocationDto.LocationResponseDto)> UpdateLocation(int locationId, LocationDto.LocationRequestDto dto)
@@ -89,12 +89,12 @@ namespace MilkDistributionWarehouse.Services
 
             _mapper.Map(dto, locationExists);
             locationExists.LocationCode = $"{dto.Rack}-R{dto.Row:D2}-C{dto.Column:D2}";
-            locationExists.UpdateAt = DateTime.UtcNow;
+            locationExists.UpdateAt = DateTime.Now;
             var updatedEntity = await _locationRepository.UpdateLocation(locationExists);
             if (updatedEntity == null)
                 return ("Cập nhật vị trí thất bại.".ToMessageForUser(), new LocationDto.LocationResponseDto());
-
-            return ("", _mapper.Map<LocationDto.LocationResponseDto>(updatedEntity));
+            var updatedWithArea = await _locationRepository.GetLocationById(updatedEntity.LocationId);
+            return ("", _mapper.Map<LocationDto.LocationResponseDto>(updatedWithArea));
         }
 
         public async Task<(string, LocationDto.LocationResponseDto)> DeleteLocation(int locationId)
@@ -110,13 +110,13 @@ namespace MilkDistributionWarehouse.Services
                 return ("Không thể xoá vì vị trí này đang được sử dụng cho pallet hoặc kiểm kê hàng.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
             locationExists.Status = CommonStatus.Deleted;
-            locationExists.UpdateAt = DateTime.UtcNow;
+            locationExists.UpdateAt = DateTime.Now;
 
             var deletedEntity = await _locationRepository.UpdateLocation(locationExists);
             if (deletedEntity == null)
                 return ("Xoá vị trí thất bại.".ToMessageForUser(), new LocationDto.LocationResponseDto());
-
-            return ("", _mapper.Map<LocationDto.LocationResponseDto>(deletedEntity));
+            var deletedWithArea = await _locationRepository.GetLocationById(deletedEntity.LocationId);
+            return ("", _mapper.Map<LocationDto.LocationResponseDto>(deletedWithArea));
         }
 
         public async Task<(string, LocationDto.LocationResponseDto)> UpdateStatus(int locationId, int status)
@@ -138,13 +138,13 @@ namespace MilkDistributionWarehouse.Services
                 return ("Không thể cập nhật trạng thái vì vị trí này đang được sử dụng cho pallet hoặc kiểm kê hàng.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
             location.Status = status;
-            location.UpdateAt = DateTime.UtcNow;
+            location.UpdateAt = DateTime.Now;
 
             var updatedEntity = await _locationRepository.UpdateLocation(location);
             if (updatedEntity == null)
                 return ("Cập nhật trạng thái thất bại.".ToMessageForUser(), new LocationDto.LocationResponseDto());
-
-            return ("", _mapper.Map<LocationDto.LocationResponseDto>(updatedEntity));
+            var updatedWithArea = await _locationRepository.GetLocationById(updatedEntity.LocationId);
+            return ("", _mapper.Map<LocationDto.LocationResponseDto>(updatedWithArea));
         }
 
     }
