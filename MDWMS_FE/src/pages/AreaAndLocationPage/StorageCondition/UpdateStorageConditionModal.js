@@ -1,215 +1,250 @@
+import React, { useState, useEffect } from "react";
+import { Button } from "../../../components/ui/button";
+import { Input } from "../../../components/ui/input";
+import { Label } from "../../../components/ui/label";
+import { ComponentIcon } from "../../../components/IconComponent/Icon";
+import { updateLocation, getLocationDetail } from "../../../services/LocationServices";
+import { getAreas } from "../../../services/AreaServices";
+import { extractErrorMessage } from "../../../utils/Validation";
 
-import React, { useState } from "react"
-import { Button } from "../../../components/ui/button"
-import { Input } from "../../../components/ui/input"
-import { Label } from "../../../components/ui/label"
-import { Card } from "../../../components/ui/card"
-import { X } from "lucide-react"
-import CustomDropdown from "../../../components/Common/CustomDropdown"
-import { updateStorageCondition } from "../../../services/StorageConditionService"
-import { validateAndShowError, extractErrorMessage } from "../../../utils/Validation"
-
-export default function UpdateStorageCondition({ isOpen, onClose, onSuccess, storageConditionData }) {
+export default function UpdateLocationModal({ isOpen, onClose, onSuccess, locationId, locationData }) {
   const [formData, setFormData] = useState({
-    temperatureMin: "",
-    temperatureMax: "",
-    humidityMin: "",
-    humidityMax: "",
-    lightLevel: "",
-  })
-  const [loading, setLoading] = useState(false)
+    locationId: 0,
+    areaId: "",
+    rack: "",
+    row: "",
+    column: "",
+    isAvailable: true,
+  });
 
-  // Load data when modal opens
-  React.useEffect(() => {
-    if (isOpen && storageConditionData) {
-      console.log("Loading storage condition data for update:", storageConditionData)
-      setFormData({
-        temperatureMin: storageConditionData.temperatureMin ?? 0,
-        temperatureMax: storageConditionData.temperatureMax ?? 0,
-        humidityMin: storageConditionData.humidityMin ?? 0,
-        humidityMax: storageConditionData.humidityMax ?? 0,
-        lightLevel: storageConditionData.lightLevel || "",
-      })
+  const [loading, setLoading] = useState(false);
+  const [areas, setAreas] = useState([]);
+  const [loadingData, setLoadingData] = useState(false);
+
+  // Load dữ liệu khi mở modal
+  useEffect(() => {
+    if (isOpen) {
+      loadAreas();
+      loadLocation();
     }
-  }, [isOpen, storageConditionData])
+  }, [isOpen, locationData]);
 
+  // Lấy danh sách khu vực
+  const loadAreas = async () => {
+    try {
+      setLoadingData(true);
+      const res = await getAreas({ pageNumber: 1, pageSize: 100 });
+      setAreas(res?.items || res?.data?.items || res?.data || []);
+    } catch (error) {
+      const msg = extractErrorMessage(error, "Lỗi khi tải khu vực");
+      window.showToast(msg, "error");
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
+  // Lấy chi tiết location (nếu có)
+  const loadLocation = async () => {
+    try {
+      setLoadingData(true);
+      if (locationData) {
+        setFormData({
+          locationId: locationData.locationId || 0,
+          areaId: locationData.areaId?.toString() || "",
+          rack: locationData.rack || "",
+          row: locationData.row?.toString() || "",
+          column: locationData.column?.toString() || "",
+          isAvailable: locationData.isAvailable ?? true,
+        });
+        return;
+      }
+      if (locationId) {
+        const res = await getLocationDetail(locationId);
+        const loc = res?.data || res;
+        setFormData({
+          locationId: loc.locationId || 0,
+          areaId: loc.areaId?.toString() || "",
+          rack: loc.rack || "",
+          row: loc.row?.toString() || "",
+          column: loc.column?.toString() || "",
+          isAvailable: loc.isAvailable ?? true,
+        });
+      }
+    } catch (error) {
+      const msg = extractErrorMessage(error, "Lỗi khi tải thông tin vị trí");
+      window.showToast(msg, "error");
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
+  // Submit cập nhật
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    
-    // Basic validation - only check if required fields are filled
-    if (!formData.lightLevel) {
-      window.showToast("Vui lòng chọn mức độ ánh sáng", "error")
-      return
-    }
-
-    if (!storageConditionData || !storageConditionData.storageConditionId) {
-      window.showToast("Không tìm thấy thông tin điều kiện bảo quản", "error")
-      return
+    e.preventDefault();
+    if (!formData.areaId || !formData.rack || !formData.row || !formData.column) {
+      window.showToast("Vui lòng nhập đầy đủ thông tin!", "error");
+      return;
     }
 
     try {
-      setLoading(true)
-      
-      const updateData = {
-        temperatureMin: isNaN(parseFloat(formData.temperatureMin)) ? 0 : parseFloat(formData.temperatureMin),
-        temperatureMax: isNaN(parseFloat(formData.temperatureMax)) ? 0 : parseFloat(formData.temperatureMax),
-        humidityMin: isNaN(parseFloat(formData.humidityMin)) ? 0 : parseFloat(formData.humidityMin),
-        humidityMax: isNaN(parseFloat(formData.humidityMax)) ? 0 : parseFloat(formData.humidityMax),
-        lightLevel: formData.lightLevel
-      }
-      
-      console.log("Update data:", updateData)
-      console.log("Storage condition ID:", storageConditionData.storageConditionId)
-      console.log("Form data before processing:", formData)
-      
-      const response = await updateStorageCondition(storageConditionData.storageConditionId, updateData)
-      console.log("Storage condition updated:", response)
-      window.showToast("Cập nhật điều kiện bảo quản thành công!", "success")
-      onSuccess && onSuccess()
-      onClose && onClose()
+      setLoading(true);
+      const payload = {
+        LocationId: formData.locationId,
+        AreaId: parseInt(formData.areaId),
+        Rack: formData.rack,
+        Row: parseInt(formData.row),
+        Column: parseInt(formData.column),
+        IsAvailable: formData.isAvailable,
+      };
+
+      console.log("Payload gửi lên:", payload);
+
+      const res = await updateLocation(payload);
+      console.log("Update response:", res);
+      window.showToast("Cập nhật vị trí thành công!", "success");
+
+      onSuccess && onSuccess();
+      onClose && onClose();
     } catch (error) {
-      console.error("Error updating storage condition:", error)
-      const cleanMsg = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật điều kiện bảo quản")
-      window.showToast(cleanMsg, "error")
+      const msg = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật vị trí");
+      window.showToast(msg, "error");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleReset = () => {
-    setFormData({
-      temperatureMin: "",
-      temperatureMax: "",
-      humidityMin: "",
-      humidityMax: "",
-      lightLevel: "",
-    })
-    onClose && onClose()
-  }
+    onClose && onClose();
+  };
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-2xl">
+      <div className="w-full max-w-2xl mx-4 bg-white rounded-xl shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-slate-800">Cập nhật điều kiện bảo quản</h1>
+        <div className="flex items-center justify-between p-6 border-b">
+          <h1 className="text-xl font-semibold text-slate-800">Cập nhật vị trí</h1>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-full transition-all"
           >
-            <X className="h-5 w-5 text-gray-500" />
+            <ComponentIcon name="close" size={20} color="#6b7280" />
           </button>
         </div>
 
-        {/* Content */}
+        {/* Body */}
         <div className="p-6">
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            {/* Row 1: Temperature Range */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="temperatureMin" className="text-sm font-medium text-slate-700">
-                    Nhiệt độ tối thiểu (°C) <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="temperatureMin"
-                    type="number"
-                    step="0.1"
-                    placeholder="Nhập nhiệt độ tối thiểu..."
-                    value={formData.temperatureMin === 0 ? "" : formData.temperatureMin}
-                    onChange={(e) => setFormData({ ...formData, temperatureMin: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 })}
-                    className="h-8 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                    required
-                  />
-                </div>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Grid fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Area */}
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="areaId" className="text-sm font-medium text-slate-700">
+                  Khu vực <span className="text-red-500">*</span>
+                </Label>
+                <select
+                  id="areaId"
+                  value={formData.areaId}
+                  onChange={(e) => setFormData({ ...formData, areaId: e.target.value })}
+                  className="h-10 px-3 border border-slate-300 rounded-lg focus:border-orange-500 focus:ring-orange-500 bg-white text-sm"
+                  required
+                >
+                  <option value="">Chọn khu vực...</option>
+                  {loadingData ? (
+                    <option disabled>Đang tải...</option>
+                  ) : (
+                    areas.map((a) => (
+                      <option key={a.areaId} value={a.areaId.toString()}>
+                        {a.areaName || `Khu vực ${a.areaId}`}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="temperatureMax" className="text-sm font-medium text-slate-700">
-                    Nhiệt độ tối đa (°C) <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="temperatureMax"
-                    type="number"
-                    step="0.1"
-                    placeholder="Nhập nhiệt độ tối đa..."
-                    value={formData.temperatureMax === 0 ? "" : formData.temperatureMax}
-                    onChange={(e) => setFormData({ ...formData, temperatureMax: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 })}
-                    className="h-8 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                    required
-                  />
-                </div>
+              {/* Rack */}
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="rack" className="text-sm font-medium text-slate-700">
+                  Kệ <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="rack"
+                  placeholder="Nhập tên kệ..."
+                  value={formData.rack}
+                  onChange={(e) => setFormData({ ...formData, rack: e.target.value })}
+                  className="h-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg"
+                  required
+                />
+              </div>
+
+              {/* Row */}
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="row" className="text-sm font-medium text-slate-700">
+                  Hàng <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="row"
+                  type="number"
+                  min="1"
+                  placeholder="Nhập số hàng..."
+                  value={formData.row}
+                  onChange={(e) => setFormData({ ...formData, row: e.target.value })}
+                  className="h-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg"
+                  required
+                />
+              </div>
+
+              {/* Column */}
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="column" className="text-sm font-medium text-slate-700">
+                  Cột <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="column"
+                  type="number"
+                  min="1"
+                  placeholder="Nhập số cột..."
+                  value={formData.column}
+                  onChange={(e) => setFormData({ ...formData, column: e.target.value })}
+                  className="h-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg"
+                  required
+                />
+              </div>
+
+              {/* Availability */}
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="isAvailable" className="text-sm font-medium text-slate-700">
+                  Tình trạng sử dụng
+                </Label>
+                <select
+                  id="isAvailable"
+                  value={formData.isAvailable.toString()}
+                  onChange={(e) =>
+                    setFormData({ ...formData, isAvailable: e.target.value === "true" })
+                  }
+                  className="h-10 px-3 border border-slate-300 rounded-lg focus:border-orange-500 focus:ring-orange-500 bg-white text-sm"
+                >
+                  <option value="true">Trống</option>
+                  <option value="false">Đang sử dụng</option>
+                </select>
+              </div>
             </div>
 
-            {/* Row 2: Humidity Range */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="humidityMin" className="text-sm font-medium text-slate-700">
-                    Độ ẩm tối thiểu (%) <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="humidityMin"
-                    type="number"
-                    step="0.1"
-                    placeholder="Nhập độ ẩm tối thiểu..."
-                    value={formData.humidityMin === 0 ? "" : formData.humidityMin}
-                    onChange={(e) => setFormData({ ...formData, humidityMin: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 })}
-                    className="h-8 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="humidityMax" className="text-sm font-medium text-slate-700">
-                    Độ ẩm tối đa (%) <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="humidityMax"
-                    type="number"
-                    step="0.1"
-                    placeholder="Nhập độ ẩm tối đa..."
-                    value={formData.humidityMax === 0 ? "" : formData.humidityMax}
-                    onChange={(e) => setFormData({ ...formData, humidityMax: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 })}
-                    className="h-8 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                    required
-                  />
-                </div>
-            </div>
-
-            {/* Row 3: Light Level */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="lightLevel" className="text-sm font-medium text-slate-700">
-                    Mức độ ánh sáng <span className="text-red-500">*</span>
-                  </Label>
-                  <CustomDropdown
-                    value={formData.lightLevel}
-                    onChange={(value) => setFormData({ ...formData, lightLevel: value })}
-                    options={[
-                      { value: "", label: "Chọn mức độ ánh sáng..." },
-                      { value: "Normal", label: "Bình thường" },
-                      { value: "Low", label: "Thấp" },
-                      { value: "High", label: "Cao" }
-                    ]}
-                    placeholder="Chọn mức độ ánh sáng..."
-                  />
-                </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-4 justify-end pt-6">
+            {/* Actions */}
+            <div className="flex justify-end gap-4 pt-6 border-t">
               <Button
                 type="button"
                 variant="outline"
-                className="h-8 px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
                 onClick={handleReset}
+                className="h-10 px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md transition-all"
               >
                 Hủy
               </Button>
               <Button
                 type="submit"
-                disabled={loading}
-                className="h-8 px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                disabled={loading || loadingData}
+                className="h-10 px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md transition-all disabled:opacity-50"
               >
                 {loading ? "Đang cập nhật..." : "Cập nhật"}
               </Button>
@@ -218,5 +253,5 @@ export default function UpdateStorageCondition({ isOpen, onClose, onSuccess, sto
         </div>
       </div>
     </div>
-  )
+  );
 }

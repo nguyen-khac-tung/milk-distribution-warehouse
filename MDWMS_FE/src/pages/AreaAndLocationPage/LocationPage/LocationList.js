@@ -1,18 +1,17 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Button } from "antd";
-import { getLocations, deleteLocation } from "../../../services/LocationServices";
-import { getAreas } from "../../../services/AreaServices";
-import { Edit, Trash2, ChevronDown, Plus, Filter } from "lucide-react";
+import { getLocations, deleteLocation, updateLocationStatus } from "../../../services/LocationServices";
+import { Edit, Trash2, ChevronDown, Plus} from "lucide-react";
 import DeleteModal from "../../../components/Common/DeleteModal";
 import SearchFilterToggle from "../../../components/Common/SearchFilterToggle";
 import StatsCards from "../../../components/Common/StatsCards";
-import Pagination from "../../../components/Common/Pagination";
 import Loading from "../../../components/Common/Loading";
 import CreateLocationModal from "./CreateLocationModal";
 import UpdateLocationModal from "./UpdateLocationModal";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Table as CustomTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
 import { extractErrorMessage } from "../../../utils/Validation";
+import { StatusToggle } from "../../../components/Common/SwitchToggle/StatusToggle";
 
 
 const LocationList = () => {
@@ -294,6 +293,29 @@ const LocationList = () => {
         setUpdateLocationId(null);
     };
 
+    const handleStatusChange = async (locationId, newStatus) => {
+        try {
+            await updateLocationStatus(locationId, newStatus)
+
+            // Update local state
+            setLocations(prevLocation =>
+                prevLocation.map(location =>
+                    location.locationId === locationId
+                        ? { ...location, status: newStatus }
+                        : location
+                )
+            )
+
+            const statusText = newStatus === 1 ? "kích hoạt" : "ngừng hoạt động"
+            window.showToast(`Đã ${statusText} nhà cung cấp thành công`, "success")
+        } catch (error) {
+            console.error("Error updating area status:", error)
+
+            const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật trạng thái")
+            window.showToast(errorMessage, "error")
+        }
+    }
+
     //Delete location
     const handleDeleteConfirm = async () => {
         try {
@@ -439,7 +461,7 @@ const LocationList = () => {
                                                         {location?.locationCode || ''}
                                                     </TableCell>
                                                     <TableCell className="text-slate-700 px-6 py-3 text-left">
-                                                        {location?.areaNameDto?.areaName || "—"}
+                                                        {location?.areaName || "—"}
                                                     </TableCell>
                                                     <TableCell className="text-slate-700 px-6 py-3 text-left">
                                                         {location?.rack || ''}
@@ -461,14 +483,15 @@ const LocationList = () => {
                                                         </span>
                                                     </TableCell>
                                                     <TableCell className="px-6 py-3 text-center">
-                                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${location?.status === 1
-                                                            ? 'bg-green-100 text-green-800'
-                                                            : 'bg-red-100 text-red-800'
-                                                            }`}>
-                                                            <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${location?.status === 1 ? 'bg-green-400' : 'bg-red-400'
-                                                                }`}></span>
-                                                            {location?.status === 1 ? 'Hoạt động' : 'Ngừng hoạt động'}
-                                                        </span>
+                                                        <div className="flex justify-center">
+                                                            <StatusToggle
+                                                                status={location?.status}
+                                                                onStatusChange={handleStatusChange}
+                                                                supplierId={location?.locationId}
+                                                                supplierName={location?.locationCode}
+                                                                entityType="Vị trí"
+                                                            />
+                                                        </div>
                                                     </TableCell>
                                                     <TableCell className="px-6 py-3 text-center">
                                                         <div className="flex items-center justify-center space-x-1">

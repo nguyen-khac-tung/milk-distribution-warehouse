@@ -8,7 +8,6 @@ const HeaderBar = ({ onToggleSidebar, sidebarCollapsed }) => {
     const [user, setUser] = useState(null);
     const [showUserMenu, setShowUserMenu] = useState(false);
 
-    console.log("55555", user);
     useEffect(() => {
         const savedUser = localStorage.getItem("userInfo");
         if (savedUser) {

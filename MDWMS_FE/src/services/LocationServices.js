@@ -33,8 +33,6 @@ export const getLocations = async (searchParams = {}) => {
         console.log("Location API response:", res.data);
         console.log("Search params received:", searchParams);
 
-        // API sometimes returns the payload directly in res.data or nested in res.data.data
-        // Normalize to an object with { items, totalCount, ... }
         const payload = res?.data?.data ?? res?.data ?? { items: [], totalCount: 0 };
         return payload;
     } catch (error) {
@@ -47,14 +45,11 @@ export const getLocations = async (searchParams = {}) => {
 export const createLocation = async (data) => {
     try {
         const body = {
-            LocationId: data.LocationId,
-            AreaId: data.AreaId,
-            LocationCode: data.LocationCode,
-            Rack: data.Rack,
-            Row: data.Row,
-            Column: data.Column,
-            IsAvailable: data.IsAvailable,
-            Status: data.Status,
+            areaId: data.areaId,
+            rack: data.rack,
+            row: data.row,
+            column: data.column,
+            isAvailable: data.isAvailable,
         };
 
         const res = await api.post("/Location/Create", body);
@@ -80,7 +75,6 @@ export const updateLocation = async (data) => {
         Row: data.Row,
         Column: data.Column,
         IsAvailable: data.IsAvailable,
-        Status: data.Status,
     };
 
     try {
@@ -121,6 +115,18 @@ export const deleteLocation = async (locationId) => {
         return res.data;
     } catch (error) {
         console.error("Error deleting location:", error);
+        throw error;
+    }
+};
+
+// Update location status
+export const updateLocationStatus = async (locationId, status) => {
+    try {
+        const res = await api.put(`/Location/UpdateStatus/${locationId}?status=${status}`);
+        console.log("Update location status response:", res.data);
+        return res.data;
+    } catch (error) {
+        console.error("Error updating location status:", error);
         throw error;
     }
 };
