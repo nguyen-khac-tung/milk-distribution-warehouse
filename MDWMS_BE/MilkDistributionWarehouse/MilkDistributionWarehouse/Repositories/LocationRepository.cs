@@ -14,6 +14,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<Location?> UpdateLocation(Location entity);
         Task<bool> HasDependentPalletsOrStocktakingsAsync(int locationId);
         Task<bool> IsDuplicateLocationAsync(string rack, int? row, int? column, int areaId, int? excludeId = null);
+        Task<List<Location>> GetActiveLocationsAsync();
     }
 
     public class LocationRepository : ILocationRepository
@@ -101,6 +102,15 @@ namespace MilkDistributionWarehouse.Repositories
             return await query.AnyAsync(l =>
                 l.Rack.ToLower().Trim() == rack.ToLower().Trim()
                 || (l.Row == row && l.Column == column));
+        }
+
+        public async Task<List<Location>> GetActiveLocationsAsync()
+        {
+            return await _context.Locations
+                .Where(l => l.Status == CommonStatus.Active)
+                .OrderBy(l => l.CreatedAt)
+                .AsNoTracking()
+                .ToListAsync();
         }
     }
 }
