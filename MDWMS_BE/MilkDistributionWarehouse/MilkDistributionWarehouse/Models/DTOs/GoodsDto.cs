@@ -43,7 +43,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
     {
         [JsonPropertyOrder(12)]
         public string BrandName { get; set; }
-        
+
         [JsonPropertyOrder(13)]
         public string Address { get; set; }
 
@@ -61,6 +61,8 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
         [JsonPropertyOrder(18)]
         public string? LightLevel { get; set; }
+        [JsonPropertyOrder(19)]
+        public bool IsDisable { get; set; }
     }
 
     public class GoodsCommonChange
@@ -90,7 +92,18 @@ namespace MilkDistributionWarehouse.Models.DTOs
     public class GoodsUpdate : GoodsCommonChange
     {
         [Required(ErrorMessage = "Cần phải chọn sản phẩm để cập nhật")]
-        public int GoodsId { get; set; }    
+        public int GoodsId { get; set; }
+    }
+
+    public class GoodsDropDown
+    {
+        public int GoodsId { get; set; }
+        public string GoodsName { get; set; }
+    }
+
+    public class GoodsUpdateStatus
+    {
+        public int GoodsId { get; set; }
         public int Status { get; set; }
     }
 }

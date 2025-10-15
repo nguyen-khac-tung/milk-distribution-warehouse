@@ -38,6 +38,7 @@ namespace MilkDistributionWarehouse.Mapper
 
             // Map UnitMeasure
             CreateMap<UnitMeasure, UnitMeasureDto>();
+            CreateMap<UnitMeasure, UnitMeasureDropDown>();
             CreateMap<UnitMeasureCreate, UnitMeasure>()
                 .ForMember(dest => dest.UnitMeasureId, opt => opt.Ignore())
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => CommonStatus.Active))
@@ -53,6 +54,7 @@ namespace MilkDistributionWarehouse.Mapper
 
             // Map Category
             CreateMap<Category, CategoryDto>();
+            CreateMap<Category, CategoryDropDown>();
             CreateMap<CategoryCreate, Category>()
                 .ForMember(dest => dest.CategoryId, opt => opt.Ignore())
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => CommonStatus.Active))
@@ -106,9 +108,8 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.LightLevel, opt => opt.MapFrom(src => src.StorageCondition.LightLevel));
 
             // Map Goods
-            CreateMap<Good, GoodsDto>()
-                .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.CategoryName.Trim()))
-                .ForMember(dest => dest.CompanyName, opt => opt.MapFrom(src => src.Supplier.CompanyName.Trim()));
+            CreateMap<Good, GoodsDto>();
+            CreateMap<Good, GoodsDropDown>();
             CreateMap<Good, GoodsDetail>()
                 .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.CategoryName.Trim()))
                 .ForMember(dest => dest.BrandName, opt => opt.MapFrom(src => src.Supplier.BrandName.Trim()))
@@ -126,13 +127,14 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => (DateTime?)null));
             CreateMap<GoodsUpdate, Good>()
                 .ForMember(dest => dest.GoodsId, opt => opt.Ignore())
-                .ForMember(dest => dest.GoodsCode, opt => opt.Ignore())
-                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
-                .ForMember(dest => dest.Category, opt => opt.Ignore())
-                .ForMember(dest => dest.Supplier, opt => opt.Ignore())
-                .ForMember(dest => dest.StorageCondition, opt => opt.Ignore())
-                .ForMember(dest => dest.UnitMeasure, opt => opt.Ignore())
-                .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => DateTime.Now));
+                //.ForMember(dest => dest.GoodsCode, opt => opt.Ignore())
+                //.ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                //.ForMember(dest => dest.Category, opt => opt.Ignore())
+                //.ForMember(dest => dest.Supplier, opt => opt.Ignore())
+                //.ForMember(dest => dest.StorageCondition, opt => opt.Ignore())
+                //.ForMember(dest => dest.UnitMeasure, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => DateTime.Now))
+                .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
 
             //Map Supplier
             CreateMap<Supplier, SupplierDto>();
@@ -153,6 +155,7 @@ namespace MilkDistributionWarehouse.Mapper
             //Map Retailer
             CreateMap<Retailer, RetailerDto>();
             CreateMap<Retailer, RetailerDetail>();
+            CreateMap<Retailer, RetailerDropDown>();
             CreateMap<RetailerCreate, Retailer>()
                 .ForMember(dest => dest.RetailerId, opt => opt.Ignore())
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => CommonStatus.Active))
