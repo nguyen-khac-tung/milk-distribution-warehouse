@@ -5,6 +5,7 @@ import { Input } from "../../../components/ui/input"
 import { Label } from "../../../components/ui/label"
 import { Card } from "../../../components/ui/card"
 import { X } from "lucide-react"
+import CustomDropdown from "../../../components/Common/CustomDropdown"
 import { updateStorageCondition } from "../../../services/StorageConditionService"
 import { validateAndShowError, extractErrorMessage } from "../../../utils/Validation"
 
@@ -15,7 +16,6 @@ export default function UpdateStorageCondition({ isOpen, onClose, onSuccess, sto
     humidityMin: "",
     humidityMax: "",
     lightLevel: "",
-    status: 1,
   })
   const [loading, setLoading] = useState(false)
 
@@ -29,7 +29,6 @@ export default function UpdateStorageCondition({ isOpen, onClose, onSuccess, sto
         humidityMin: storageConditionData.humidityMin ?? 0,
         humidityMax: storageConditionData.humidityMax ?? 0,
         lightLevel: storageConditionData.lightLevel || "",
-        status: storageConditionData.status !== undefined ? storageConditionData.status : 1,
       })
     }
   }, [isOpen, storageConditionData])
@@ -40,11 +39,6 @@ export default function UpdateStorageCondition({ isOpen, onClose, onSuccess, sto
     // Basic validation - only check if required fields are filled
     if (!formData.lightLevel) {
       window.showToast("Vui lòng chọn mức độ ánh sáng", "error")
-      return
-    }
-    
-    if (!formData.status || (formData.status !== 1 && formData.status !== 2)) {
-      window.showToast("Vui lòng chọn trạng thái", "error")
       return
     }
 
@@ -61,14 +55,12 @@ export default function UpdateStorageCondition({ isOpen, onClose, onSuccess, sto
         temperatureMax: isNaN(parseFloat(formData.temperatureMax)) ? 0 : parseFloat(formData.temperatureMax),
         humidityMin: isNaN(parseFloat(formData.humidityMin)) ? 0 : parseFloat(formData.humidityMin),
         humidityMax: isNaN(parseFloat(formData.humidityMax)) ? 0 : parseFloat(formData.humidityMax),
-        lightLevel: formData.lightLevel,
-        status: parseInt(formData.status)
+        lightLevel: formData.lightLevel
       }
       
       console.log("Update data:", updateData)
       console.log("Storage condition ID:", storageConditionData.storageConditionId)
       console.log("Form data before processing:", formData)
-      console.log("Status value:", formData.status, "Type:", typeof formData.status)
       
       const response = await updateStorageCondition(storageConditionData.storageConditionId, updateData)
       console.log("Storage condition updated:", response)
@@ -91,7 +83,6 @@ export default function UpdateStorageCondition({ isOpen, onClose, onSuccess, sto
       humidityMin: "",
       humidityMax: "",
       lightLevel: "",
-      status: 1,
     })
     onClose && onClose()
   }
@@ -99,7 +90,7 @@ export default function UpdateStorageCondition({ isOpen, onClose, onSuccess, sto
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -111,128 +102,106 @@ export default function UpdateStorageCondition({ isOpen, onClose, onSuccess, sto
             <X className="h-5 w-5 text-gray-500" />
           </button>
         </div>
-        
+
         {/* Content */}
         <div className="p-6">
-
           <form className="space-y-6" onSubmit={handleSubmit}>
-            {/* Temperature Range */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">
-                Nhiệt độ (°C) *
-              </Label>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label htmlFor="temperatureMin" className="text-xs text-slate-600">
-                    Tối thiểu
+            {/* Row 1: Temperature Range */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="temperatureMin" className="text-sm font-medium text-slate-700">
+                    Nhiệt độ tối thiểu (°C) <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="temperatureMin"
                     type="number"
                     step="0.1"
-                    placeholder="0"
+                    placeholder="Nhập nhiệt độ tối thiểu..."
                     value={formData.temperatureMin === 0 ? "" : formData.temperatureMin}
                     onChange={(e) => setFormData({ ...formData, temperatureMin: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 })}
-                    className="h-12 border-slate-300 focus:border-[#237486] focus:ring-[#237486]"
+                    className="h-8 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                    required
                   />
                 </div>
-                <div className="space-y-1">
-                  <Label htmlFor="temperatureMax" className="text-xs text-slate-600">
-                    Tối đa
+
+                <div className="space-y-2">
+                  <Label htmlFor="temperatureMax" className="text-sm font-medium text-slate-700">
+                    Nhiệt độ tối đa (°C) <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="temperatureMax"
                     type="number"
                     step="0.1"
-                    placeholder="0"
+                    placeholder="Nhập nhiệt độ tối đa..."
                     value={formData.temperatureMax === 0 ? "" : formData.temperatureMax}
                     onChange={(e) => setFormData({ ...formData, temperatureMax: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 })}
-                    className="h-12 border-slate-300 focus:border-[#237486] focus:ring-[#237486]"
+                    className="h-8 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                    required
                   />
                 </div>
-              </div>
             </div>
 
-            {/* Humidity Range */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">
-                Độ ẩm (%) *
-              </Label>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label htmlFor="humidityMin" className="text-xs text-slate-600">
-                    Tối thiểu
+            {/* Row 2: Humidity Range */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="humidityMin" className="text-sm font-medium text-slate-700">
+                    Độ ẩm tối thiểu (%) <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="humidityMin"
                     type="number"
                     step="0.1"
-                    placeholder="0"
+                    placeholder="Nhập độ ẩm tối thiểu..."
                     value={formData.humidityMin === 0 ? "" : formData.humidityMin}
                     onChange={(e) => setFormData({ ...formData, humidityMin: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 })}
-                    className="h-12 border-slate-300 focus:border-[#237486] focus:ring-[#237486]"
+                    className="h-8 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                    required
                   />
                 </div>
-                <div className="space-y-1">
-                  <Label htmlFor="humidityMax" className="text-xs text-slate-600">
-                    Tối đa
+
+                <div className="space-y-2">
+                  <Label htmlFor="humidityMax" className="text-sm font-medium text-slate-700">
+                    Độ ẩm tối đa (%) <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="humidityMax"
                     type="number"
                     step="0.1"
-                    placeholder="0"
+                    placeholder="Nhập độ ẩm tối đa..."
                     value={formData.humidityMax === 0 ? "" : formData.humidityMax}
                     onChange={(e) => setFormData({ ...formData, humidityMax: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 })}
-                    className="h-12 border-slate-300 focus:border-[#237486] focus:ring-[#237486]"
+                    className="h-8 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                    required
                   />
                 </div>
-              </div>
             </div>
 
-            {/* Light Level and Status */}
-            <div className="space-y-2">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
+            {/* Row 3: Light Level */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
                   <Label htmlFor="lightLevel" className="text-sm font-medium text-slate-700">
-                    Mức độ ánh sáng *
+                    Mức độ ánh sáng <span className="text-red-500">*</span>
                   </Label>
-                  <select
-                    id="lightLevel"
+                  <CustomDropdown
                     value={formData.lightLevel}
-                    onChange={(e) => setFormData({ ...formData, lightLevel: e.target.value })}
-                    className="h-12 w-full px-3 py-2 border border-slate-300 rounded-md focus:border-[#237486] focus:ring-[#237486] focus:outline-none bg-white"
-                    required
-                  >
-                    <option value="">Chọn mức độ ánh sáng</option>
-                    <option value="Normal">Bình thường</option>
-                    <option value="Low">Thấp</option>
-                    <option value="High">Cao</option>
-                  </select>
+                    onChange={(value) => setFormData({ ...formData, lightLevel: value })}
+                    options={[
+                      { value: "", label: "Chọn mức độ ánh sáng..." },
+                      { value: "Normal", label: "Bình thường" },
+                      { value: "Low", label: "Thấp" },
+                      { value: "High", label: "Cao" }
+                    ]}
+                    placeholder="Chọn mức độ ánh sáng..."
+                  />
                 </div>
-                <div className="space-y-1">
-                  <Label htmlFor="status" className="text-sm font-medium text-slate-700">
-                    Trạng thái *
-                  </Label>
-                  <select
-                    id="status"
-                    value={formData.status !== undefined ? formData.status : 1}
-                    onChange={(e) => setFormData({ ...formData, status: parseInt(e.target.value) })}
-                    className="h-12 w-full px-3 py-2 border border-slate-300 rounded-md focus:border-[#237486] focus:ring-[#237486] focus:outline-none bg-white"
-                  >
-                    <option value={1}>Hoạt động</option>
-                    <option value={2}>Ngừng hoạt động</option>
-                  </select>
-                </div>
-              </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-4 justify-center pt-6">
+            <div className="flex gap-4 justify-end pt-6">
               <Button
                 type="button"
                 variant="outline"
-                className="w-40 h-12 border-2 border-slate-300 bg-white text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
+                className="h-8 px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
                 onClick={handleReset}
               >
                 Hủy
@@ -240,7 +209,7 @@ export default function UpdateStorageCondition({ isOpen, onClose, onSuccess, sto
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-40 h-12 bg-[#237486] hover:bg-[#1e5f6b] text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                className="h-8 px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
               >
                 {loading ? "Đang cập nhật..." : "Cập nhật"}
               </Button>

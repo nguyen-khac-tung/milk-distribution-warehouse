@@ -19,6 +19,30 @@ export default function SearchFilterToggle({
   ],
   onStatusFilter,
   clearStatusFilter,
+  // Category Filter
+  categoryFilter,
+  setCategoryFilter,
+  showCategoryFilter,
+  setShowCategoryFilter,
+  categories = [],
+  onCategoryFilter,
+  clearCategoryFilter,
+  // Supplier Filter
+  supplierFilter,
+  setSupplierFilter,
+  showSupplierFilter,
+  setShowSupplierFilter,
+  suppliers = [],
+  onSupplierFilter,
+  clearSupplierFilter,
+  // Unit Measure Filter
+  unitMeasureFilter,
+  setUnitMeasureFilter,
+  showUnitMeasureFilter,
+  setShowUnitMeasureFilter,
+  unitMeasures = [],
+  onUnitMeasureFilter,
+  clearUnitMeasureFilter,
   searchWidth = "w-80",
   showToggle = true,
   defaultOpen = true,
@@ -40,10 +64,19 @@ export default function SearchFilterToggle({
       if (clearStatusFilter) {
         clearStatusFilter();
       }
+      if (clearCategoryFilter) {
+        clearCategoryFilter();
+      }
+      if (clearSupplierFilter) {
+        clearSupplierFilter();
+      }
+      if (clearUnitMeasureFilter) {
+        clearUnitMeasureFilter();
+      }
     }
   };
 
-  const hasActiveFilters = searchQuery || statusFilter;
+  const hasActiveFilters = searchQuery || statusFilter || categoryFilter || supplierFilter || unitMeasureFilter;
 
   return (
     <>
@@ -69,7 +102,7 @@ export default function SearchFilterToggle({
       {showSearchFilter && (
         <div className="bg-gray-50 border-b border-slate-200 px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4 flex-wrap">
               {/* Search Bar */}
               <div className={`relative ${searchWidth}`}>
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -112,6 +145,120 @@ export default function SearchFilterToggle({
                   </div>
                 )}
               </div>
+
+              {/* Category Filter */}
+              {categories.length > 0 && (
+                <div className="relative category-filter-dropdown">
+                  <button
+                    onClick={() => setShowCategoryFilter(!showCategoryFilter)}
+                    className={`flex items-center space-x-2 px-4 py-2 h-8 border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706] transition-colors ${categoryFilter ? 'bg-[#d97706] text-white' : 'bg-white text-slate-700'
+                      }`}
+                  >
+                    <span className="text-sm font-medium">
+                      {categoryFilter ? categories.find(c => c.categoryId.toString() === categoryFilter)?.categoryName || "Chọn danh mục" : "Tất cả danh mục"}
+                    </span>
+                    <ChevronDown className="h-4 w-4" />
+                  </button>
+
+                  {showCategoryFilter && (
+                    <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-10">
+                      <div className="py-1">
+                        <button
+                          onClick={clearCategoryFilter}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 text-slate-700"
+                        >
+                          Tất cả danh mục
+                        </button>
+                        {categories.map((category) => (
+                          <button
+                            key={category.categoryId}
+                            onClick={() => onCategoryFilter(category.categoryId.toString())}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${categoryFilter === category.categoryId.toString() ? 'bg-orange-500 text-white' : 'text-slate-700'}`}
+                          >
+                            {category.categoryName}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Supplier Filter */}
+              {suppliers.length > 0 && (
+                <div className="relative supplier-filter-dropdown">
+                  <button
+                    onClick={() => setShowSupplierFilter(!showSupplierFilter)}
+                    className={`flex items-center space-x-2 px-4 py-2 h-8 border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706] transition-colors ${supplierFilter ? 'bg-[#d97706] text-white' : 'bg-white text-slate-700'
+                      }`}
+                  >
+                    <span className="text-sm font-medium">
+                      {supplierFilter ? suppliers.find(s => s.supplierId.toString() === supplierFilter)?.companyName || "Chọn nhà cung cấp" : "Tất cả nhà cung cấp"}
+                    </span>
+                    <ChevronDown className="h-4 w-4" />
+                  </button>
+
+                  {showSupplierFilter && (
+                    <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-10">
+                      <div className="py-1">
+                        <button
+                          onClick={clearSupplierFilter}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 text-slate-700"
+                        >
+                          Tất cả nhà cung cấp
+                        </button>
+                        {suppliers.map((supplier) => (
+                          <button
+                            key={supplier.supplierId}
+                            onClick={() => onSupplierFilter(supplier.supplierId.toString())}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${supplierFilter === supplier.supplierId.toString() ? 'bg-orange-500 text-white' : 'text-slate-700'}`}
+                          >
+                            {supplier.companyName}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Unit Measure Filter */}
+              {unitMeasures.length > 0 && (
+                <div className="relative unit-measure-filter-dropdown">
+                  <button
+                    onClick={() => setShowUnitMeasureFilter(!showUnitMeasureFilter)}
+                    className={`flex items-center space-x-2 px-4 py-2 h-8 border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706] transition-colors ${unitMeasureFilter ? 'bg-[#d97706] text-white' : 'bg-white text-slate-700'
+                      }`}
+                  >
+                    <span className="text-sm font-medium">
+                      {unitMeasureFilter ? unitMeasures.find(u => u.unitMeasureId.toString() === unitMeasureFilter)?.name || "Chọn đơn vị" : "Tất cả đơn vị"}
+                    </span>
+                    <ChevronDown className="h-4 w-4" />
+                  </button>
+
+                  {showUnitMeasureFilter && (
+                    <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-10">
+                      <div className="py-1">
+                        <button
+                          onClick={clearUnitMeasureFilter}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 text-slate-700"
+                        >
+                          Tất cả đơn vị
+                        </button>
+                        {unitMeasures.map((unit) => (
+                          <button
+                            key={unit.unitMeasureId}
+                            onClick={() => onUnitMeasureFilter(unit.unitMeasureId.toString())}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${unitMeasureFilter === unit.unitMeasureId.toString() ? 'bg-orange-500 text-white' : 'text-slate-700'}`}
+                          >
+                            {unit.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Clear Filters Button */}

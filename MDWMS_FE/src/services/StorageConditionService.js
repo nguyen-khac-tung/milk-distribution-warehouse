@@ -100,3 +100,43 @@ export const updateStorageCondition = async (id, data) => {
     }
 };
 
+// Update storage condition status
+export const updateStorageConditionStatus = async (storageConditionId, status) => {
+    try {
+        // Validate input
+        if (!storageConditionId) {
+            throw new Error("StorageConditionId is required");
+        }
+        if (status === undefined || status === null) {
+            throw new Error("Status is required");
+        }
+
+        console.log("Updating storage condition status:", { storageConditionId, status });
+        const res = await api.put(`/StorageCondition/UpdateStatus/${storageConditionId}?status=${status}`);
+        console.log("Storage condition status update API response:", res.data);
+        return res.data;
+    } catch (error) {
+        console.error("Error updating storage condition status:", error);
+        
+        // Log more details about the error
+        if (error.response) {
+            console.error("Response status:", error.response.status);
+            console.error("Response data:", error.response.data);
+        }
+        
+        throw error;
+    }
+};
+
+// Get storage conditions for dropdown
+export const getStorageConditionsDropdown = async () => {
+    try {
+        const res = await api.get("/StorageCondition/GetStorageConditionsDropDown");
+        console.log("Storage conditions dropdown API response:", res.data);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching storage conditions dropdown:", error);
+        return { status: 500, message: "Error fetching storage conditions", data: [] };
+    }
+};
+

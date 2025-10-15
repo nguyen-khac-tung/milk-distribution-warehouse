@@ -108,7 +108,10 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.LightLevel, opt => opt.MapFrom(src => src.StorageCondition.LightLevel));
 
             // Map Goods
-            CreateMap<Good, GoodsDto>();
+            CreateMap<Good, GoodsDto>()
+                .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.CategoryName.Trim()))
+                .ForMember(dest => dest.UnitMeasureName, opt => opt.MapFrom(src => src.UnitMeasure.Name.Trim()))
+                .ForMember(dest => dest.CompanyName, opt => opt.MapFrom(src => src.Supplier.CompanyName.Trim()));
             CreateMap<Good, GoodsDropDown>();
             CreateMap<Good, GoodsDetail>()
                 .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.CategoryName.Trim()))

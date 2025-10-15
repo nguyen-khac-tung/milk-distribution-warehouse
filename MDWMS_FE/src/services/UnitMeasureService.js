@@ -106,3 +106,15 @@ export const updateUnitMeasureStatus = async (data) => {
     }
 };
 
+// Get unit measures for dropdown
+export const getUnitMeasuresDropdown = async () => {
+    try {
+        const res = await api.get("/UnitMeasure/GetUnitMeasureDropDown");
+        console.log("Unit measures dropdown API response:", res.data);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching unit measures dropdown:", error);
+        return { status: 500, message: "Error fetching unit measures", data: [] };
+    }
+};
+
