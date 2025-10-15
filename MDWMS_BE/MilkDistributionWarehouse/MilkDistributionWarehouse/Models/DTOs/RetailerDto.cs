@@ -25,6 +25,8 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public string TaxCode { get; set; }
         [JsonPropertyOrder(7)]
         public string Address { get; set; }
+        [JsonPropertyOrder(8)]
+        public bool IsDisable { get; set; }
     }
 
     public class RetailerCreate
@@ -54,7 +56,6 @@ namespace MilkDistributionWarehouse.Models.DTOs
     {
         [Required]
         public int RetailerId { get; set; }
-        public int? Status { get; set; }
     }
 
     public class RetailerDropDown

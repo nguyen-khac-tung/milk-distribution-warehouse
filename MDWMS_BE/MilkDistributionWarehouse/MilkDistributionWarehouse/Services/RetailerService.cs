@@ -8,6 +8,7 @@ using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
 using MilkDistributionWarehouse.Utilities;
 using System.Threading.Tasks;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace MilkDistributionWarehouse.Services
 {
@@ -71,7 +72,10 @@ namespace MilkDistributionWarehouse.Services
             if (retailer == null)
                 return ("Không tìm thấy nhà bán lẻ.".ToMessageForUser(), new RetailerDetail());
 
-            return ("", _mapper.Map<RetailerDetail>(retailer));
+            var retailerDetail = _mapper.Map<RetailerDetail>(retailer);
+            retailerDetail.IsDisable = !await _salesOrderRepository.IsAllSalesOrderDraffOrEmpty(retailerId);
+
+            return ("", retailerDetail);
         }
 
         public async Task<(string, RetailerDetail)> CreateRetailer(RetailerCreate create)
@@ -123,7 +127,7 @@ namespace MilkDistributionWarehouse.Services
             return ("", _mapper.Map<RetailerDetail>(retailerExist));
         }
 
-        public async Task<(string, RetailerUpdateStatus?)> UpdateRetailerStatus(RetailerUpdateStatus update)
+        public async Task<(string, RetailerUpdateStatus)> UpdateRetailerStatus(RetailerUpdateStatus update)
         {
             if (update.RetailerId <= 0)
                 return ("RetailerId is not invalid", new RetailerUpdateStatus());
