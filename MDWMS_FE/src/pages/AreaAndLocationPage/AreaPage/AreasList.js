@@ -437,21 +437,15 @@ const AreaLists = () => {
                                             areas.map((area, index) => (
                                                 <TableRow
                                                     key={area.areaId}
-                                                    className="bg-gray-50 hover:bg-gray-100 transition-colors duration-150 border-b border-slate-100"
+                                                    className="hover:bg-slate-50 border-b border-slate-200"
                                                 >
-                                                    <TableCell className="text-slate-600 px-6 py-3 text-left font-medium">
+                                                    <TableCell className="px-6 py-4 text-slate-600 font-medium">
                                                         {index + 1}
                                                     </TableCell>
-                                                    <TableCell className="font-medium text-slate-900 px-6 py-3 text-left">
-                                                        {area?.areaCode || ''}
-                                                    </TableCell>
-                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">
-                                                        {area?.areaName || "—"}
-                                                    </TableCell>
-                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">
-                                                        {area?.description || "—"}
-                                                    </TableCell>
-                                                    <TableCell className="px-6 py-3 text-center">
+                                                    <TableCell className="px-6 py-4 text-slate-700 font-medium">{area?.areaCode || ''}</TableCell>
+                                                    <TableCell className="px-6 py-4 text-slate-700">{area?.areaName || "—"}</TableCell>
+                                                    <TableCell className="px-6 py-4 text-slate-700">{area?.description || "—"}</TableCell>
+                                                    <TableCell className="px-6 py-4 text-center">
                                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${area?.status === 1
                                                             ? 'bg-green-100 text-green-800'
                                                             : 'bg-red-100 text-red-800'
@@ -461,24 +455,24 @@ const AreaLists = () => {
                                                             {area?.status === 1 ? 'Hoạt động' : 'Ngừng hoạt động'}
                                                         </span>
                                                     </TableCell>
-                                                    <TableCell className="px-6 py-3 text-center">
+                                                    <TableCell className="px-6 py-4 text-center">
                                                         <div className="flex items-center justify-center space-x-1">
                                                             <button
                                                                 className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                                                 title="Xem chi tiết"
                                                                 onClick={() => handleViewClick(area)}
                                                             >
-                                                                <Eye className="h-4 w-4 text-[#d97706]" />
+                                                                <Eye className="h-4 w-4 text-orange-500" />
                                                             </button>
                                                             <button
                                                                 className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                                                 title="Chỉnh sửa"
                                                                 onClick={() => handleOpenEdit(area)}
                                                             >
-                                                                <Edit className="h-4 w-4 text-[#d97706]" />
+                                                                <Edit className="h-4 w-4 text-orange-500" />
                                                             </button>
                                                             <button
-                                                                className="p-1.5 hover:bg-red-50 rounded transition-colors"
+                                                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                                                 title="Xóa"
                                                                 onClick={() => {
                                                                     setItemToDelete(area);

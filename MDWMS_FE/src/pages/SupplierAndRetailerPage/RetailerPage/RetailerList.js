@@ -512,18 +512,14 @@ export default function RetailersPage() {
                       filteredRetailers.map((retailer, index) => (
                         <TableRow
                           key={index}
-                          className="bg-gray-50 hover:bg-gray-100 transition-colors duration-150 border-b border-slate-100"
+                          className="hover:bg-slate-50 border-b border-slate-200"
                         >
-                          <TableCell className="text-slate-600 px-6 py-3 text-left font-medium">
+                          <TableCell className="px-6 py-4 text-slate-600 font-medium">
                             {index + 1}
                           </TableCell>
-                          <TableCell className="font-medium text-slate-900 px-6 py-3 text-left">
-                            {retailer?.retailerName || ''}
-                          </TableCell>
-                          <TableCell className="text-slate-700 px-6 py-3 text-left">
-                            {retailer?.phone || ''}
-                          </TableCell>
-                          <TableCell className="px-6 py-3 text-center">
+                          <TableCell className="px-6 py-4 text-slate-700 font-medium">{retailer?.retailerName || ''}</TableCell>
+                          <TableCell className="px-6 py-4 text-slate-700">{retailer?.phone || ''}</TableCell>
+                          <TableCell className="px-6 py-4 text-center">
                             <div className="flex justify-center">
                               <StatusToggle
                                 status={retailer?.status}
@@ -534,7 +530,7 @@ export default function RetailersPage() {
                               />
                             </div>
                           </TableCell>
-                          <TableCell className="px-6 py-3 text-center">
+                          <TableCell className="px-6 py-4 text-center">
                             <div className="flex items-center justify-center space-x-1">
                               <button
                                 className="p-1.5 hover:bg-slate-100 rounded transition-colors"

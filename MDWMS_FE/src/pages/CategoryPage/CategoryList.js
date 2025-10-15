@@ -472,18 +472,14 @@ export default function CategoriesPage() {
                       filteredCategories.map((category, index) => (
                         <TableRow
                           key={index}
-                          className="bg-gray-50 hover:bg-gray-100 transition-colors duration-150 border-b border-slate-100"
+                          className="hover:bg-slate-50 border-b border-slate-200"
                         >
-                          <TableCell className="text-slate-600 px-6 py-3 text-left font-medium">
+                          <TableCell className="px-6 py-4 text-slate-600 font-medium">
                             {index + 1}
                           </TableCell>
-                          <TableCell className="font-medium text-slate-900 px-6 py-3 text-left">
-                            {category?.categoryName || ''}
-                          </TableCell>
-                          <TableCell className="text-slate-700 px-6 py-3 text-left">
-                            {category?.description || ''}
-                          </TableCell>
-                          <TableCell className="px-6 py-3 text-center">
+                          <TableCell className="px-6 py-4 text-slate-700 font-medium">{category?.categoryName || ''}</TableCell>
+                          <TableCell className="px-6 py-4 text-slate-700">{category?.description || ''}</TableCell>
+                          <TableCell className="px-6 py-4 text-center">
                             <div className="flex justify-center">
                               <StatusToggle
                                 status={category?.status}
@@ -494,7 +490,7 @@ export default function CategoriesPage() {
                               />
                             </div>
                           </TableCell>
-                          <TableCell className="px-6 py-3 text-center">
+                          <TableCell className="px-6 py-4 text-center">
                             <div className="flex items-center justify-center space-x-1">
                               <button
                                 className="p-1.5 hover:bg-slate-100 rounded transition-colors"

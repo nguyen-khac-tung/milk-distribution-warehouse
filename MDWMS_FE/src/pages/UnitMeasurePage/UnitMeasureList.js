@@ -4,7 +4,7 @@ import { Card, CardContent } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
-import { Search, Plus, Edit, Trash2, Filter, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Search, Plus, Eye, Edit, Trash2, Filter, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import CreateUnitMeasure from "./CreateUnitMeasureModal";
 import UpdateUnitMeasure from "./UpdateUnitMeasureModal";
 import DeleteModal from "../../components/Common/DeleteModal";
@@ -508,14 +508,14 @@ export default function UnitMeasuresPage() {
                       filteredUnitMeasures.map((unitMeasure, index) => (
                         <TableRow
                           key={index}
-                          className="bg-gray-50 hover:bg-gray-100 transition-colors duration-150 border-b border-slate-100"
+                          className="hover:bg-slate-50 border-b border-slate-200"
                         >
-                          <TableCell className="text-slate-600 px-6 py-3 text-left font-medium">
+                          <TableCell className="px-6 py-4 text-slate-600 font-medium">
                             {index + 1}
                           </TableCell>
-                          <TableCell className="font-medium text-slate-900 px-6 py-3 text-left">{unitMeasure?.name || ''}</TableCell>
-                          <TableCell className="text-slate-700 px-6 py-3 text-left">{unitMeasure?.description || ''}</TableCell>
-                          <TableCell className="px-6 py-3 text-center">
+                          <TableCell className="px-6 py-4 text-slate-700 font-medium">{unitMeasure?.name || ''}</TableCell>
+                          <TableCell className="px-6 py-4 text-slate-700">{unitMeasure?.description || ''}</TableCell>
+                          <TableCell className="px-6 py-4 text-center">
                             <div className="flex justify-center">
                               <StatusToggle
                                 status={unitMeasure?.status}
@@ -526,17 +526,23 @@ export default function UnitMeasuresPage() {
                               />
                             </div>
                           </TableCell>
-                          <TableCell className="px-6 py-3 text-center">
+                          <TableCell className="px-6 py-4 text-center">
                             <div className="flex items-center justify-center space-x-1">
+                              <button
+                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                title="Xem chi tiết"
+                              >
+                                <Eye className="h-4 w-4 text-orange-500" />
+                              </button>
                               <button
                                 className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                 title="Chỉnh sửa"
                                 onClick={() => handleUpdateClick(unitMeasure)}
                               >
-                                <Edit className="h-4 w-4 text-[#d97706]" />
+                                <Edit className="h-4 w-4 text-orange-500" />
                               </button>
                               <button
-                                className="p-1.5 hover:bg-red-50 rounded transition-colors"
+                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                 title="Xóa"
                                 onClick={() => handleDeleteClick(unitMeasure)}
                               >

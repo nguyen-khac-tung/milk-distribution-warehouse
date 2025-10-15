@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { Button } from "antd";
 import { getLocations, deleteLocation } from "../../../services/LocationServices";
 import { getAreas } from "../../../services/AreaServices";
-import { Edit, Trash2, ChevronDown, Plus, Filter } from "lucide-react";
+import { Edit, Trash2, ChevronDown, Plus, Filter, Eye } from "lucide-react";
 import DeleteModal from "../../../components/Common/DeleteModal";
 import SearchFilterToggle from "../../../components/Common/SearchFilterToggle";
 import StatsCards from "../../../components/Common/StatsCards";
@@ -430,27 +430,17 @@ const LocationList = () => {
                                             locations.map((location, index) => (
                                                 <TableRow
                                                     key={location.locationId}
-                                                    className="bg-gray-50 hover:bg-gray-100 transition-colors duration-150 border-b border-slate-100"
+                                                    className="hover:bg-slate-50 border-b border-slate-200"
                                                 >
-                                                    <TableCell className="text-slate-600 px-6 py-3 text-left font-medium">
+                                                    <TableCell className="px-6 py-4 text-slate-600 font-medium">
                                                         {index + 1}
                                                     </TableCell>
-                                                    <TableCell className="font-medium text-slate-900 px-6 py-3 text-left">
-                                                        {location?.locationCode || ''}
-                                                    </TableCell>
-                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">
-                                                        {location?.areaNameDto?.areaName || "—"}
-                                                    </TableCell>
-                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">
-                                                        {location?.rack || ''}
-                                                    </TableCell>
-                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">
-                                                        {location?.row || ''}
-                                                    </TableCell>
-                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">
-                                                        {location?.column || ''}
-                                                    </TableCell>
-                                                    <TableCell className="px-6 py-3 text-center">
+                                                    <TableCell className="px-6 py-4 text-slate-700 font-medium">{location?.locationCode || ''}</TableCell>
+                                                    <TableCell className="px-6 py-4 text-slate-700">{location?.areaNameDto?.areaName || "—"}</TableCell>
+                                                    <TableCell className="px-6 py-4 text-slate-700">{location?.rack || ''}</TableCell>
+                                                    <TableCell className="px-6 py-4 text-slate-700">{location?.row || ''}</TableCell>
+                                                    <TableCell className="px-6 py-4 text-slate-700">{location?.column || ''}</TableCell>
+                                                    <TableCell className="px-6 py-4 text-center">
                                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${location?.isAvailable
                                                             ? 'bg-green-100 text-green-800'
                                                             : 'bg-red-100 text-red-800'
@@ -460,7 +450,7 @@ const LocationList = () => {
                                                             {location?.isAvailable ? 'Trống' : 'Đang sử dụng'}
                                                         </span>
                                                     </TableCell>
-                                                    <TableCell className="px-6 py-3 text-center">
+                                                    <TableCell className="px-6 py-4 text-center">
                                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${location?.status === 1
                                                             ? 'bg-green-100 text-green-800'
                                                             : 'bg-red-100 text-red-800'
@@ -470,17 +460,23 @@ const LocationList = () => {
                                                             {location?.status === 1 ? 'Hoạt động' : 'Ngừng hoạt động'}
                                                         </span>
                                                     </TableCell>
-                                                    <TableCell className="px-6 py-3 text-center">
+                                                    <TableCell className="px-6 py-4 text-center">
                                                         <div className="flex items-center justify-center space-x-1">
+                                                            <button
+                                                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                                title="Xem chi tiết"
+                                                            >
+                                                                <Eye className="h-4 w-4 text-orange-500" />
+                                                            </button>
                                                             <button
                                                                 className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                                                 title="Chỉnh sửa"
                                                                 onClick={() => handleOpenEdit(location)}
                                                             >
-                                                                <Edit className="h-4 w-4 text-[#d97706]" />
+                                                                <Edit className="h-4 w-4 text-orange-500" />
                                                             </button>
                                                             <button
-                                                                className="p-1.5 hover:bg-red-50 rounded transition-colors"
+                                                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                                                 title="Xóa"
                                                                 onClick={() => {
                                                                     setItemToDelete(location);

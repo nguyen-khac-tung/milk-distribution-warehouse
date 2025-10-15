@@ -3,7 +3,7 @@ import { getStorageCondition, deleteStorageCondition, updateStorageCondition, up
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
-import { Plus, Edit, Trash2, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Eye, Edit, Trash2, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import CreateStorageCondition from "./CreateStorageConditionModal";
 import UpdateStorageCondition from "./UpdateStorageConditionModal";
 import DeleteModal from "../../../components/Common/DeleteModal";
@@ -540,25 +540,25 @@ export default function StorageConditionPage() {
                       filteredStorageConditions.map((storageCondition, index) => (
                         <TableRow
                           key={index}
-                          className="bg-gray-50 hover:bg-gray-100 transition-colors duration-150 border-b border-slate-100"
+                          className="hover:bg-slate-50 border-b border-slate-200"
                         >
-                          <TableCell className="text-slate-600 px-6 py-3 text-left font-medium">
+                          <TableCell className="px-6 py-4 text-slate-600 font-medium">
                             {index + 1}
                           </TableCell>
-                          <TableCell className="font-medium text-slate-900 px-6 py-3 text-left">
+                          <TableCell className="px-6 py-4 text-slate-700 font-medium">
                             <span className="text-sm font-semibold text-slate-700">
                               {storageCondition?.temperatureMin ?? 0} - {storageCondition?.temperatureMax ?? 0}°C
                             </span>
                           </TableCell>
-                          <TableCell className="font-medium text-slate-900 px-6 py-3 text-left">
+                          <TableCell className="px-6 py-4 text-slate-700 font-medium">
                             <span className="text-sm font-semibold text-slate-700">
                               {storageCondition?.humidityMin ?? 0} - {storageCondition?.humidityMax ?? 0}%
                             </span>
                           </TableCell>
-                          <TableCell className="text-slate-700 px-6 py-3 text-left">
+                          <TableCell className="px-6 py-4 text-slate-700">
                             {storageCondition?.lightLevel || ''}
                           </TableCell>
-                          <TableCell className="px-6 py-3 text-center">
+                          <TableCell className="px-6 py-4 text-center">
                             <div className="flex justify-center">
                               <StatusToggle
                                 status={storageCondition?.status}
@@ -569,17 +569,23 @@ export default function StorageConditionPage() {
                               />
                             </div>
                           </TableCell>
-                          <TableCell className="px-6 py-3 text-center">
+                          <TableCell className="px-6 py-4 text-center">
                             <div className="flex items-center justify-center space-x-1">
+                              <button
+                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                title="Xem chi tiết"
+                              >
+                                <Eye className="h-4 w-4 text-orange-500" />
+                              </button>
                               <button
                                 className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                 title="Chỉnh sửa"
                                 onClick={() => handleUpdateClick(storageCondition)}
                               >
-                                <Edit className="h-4 w-4 text-[#d97706]" />
+                                <Edit className="h-4 w-4 text-orange-500" />
                               </button>
                               <button
-                                className="p-1.5 hover:bg-red-50 rounded transition-colors"
+                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                 title="Xóa"
                                 onClick={() => handleDeleteClick(storageCondition)}
                               >
