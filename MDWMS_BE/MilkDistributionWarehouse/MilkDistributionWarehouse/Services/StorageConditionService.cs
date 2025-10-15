@@ -16,6 +16,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, StorageConditionDto.StorageConditionResponseDto)> UpdateStorageCondition(int storageConditionId, StorageConditionDto.StorageConditionRequestDto dto);
         Task<(string, bool)> DeleteStorageCondition(int storageConditionId);
         Task<(string, StorageConditionDto.StorageConditionResponseDto)> UpdateStatus(int storageConditionId, int status);
+        Task<(string, List<StorageConditionDto.StorageConditionActiveDto>)> GetActiveStorageConditions();
     }
 
     public class StorageConditionService : IStorageConditionService
@@ -150,5 +151,15 @@ namespace MilkDistributionWarehouse.Services
             return ("", _mapper.Map<StorageConditionDto.StorageConditionResponseDto>(updated));
         }
 
+        public async Task<(string, List<StorageConditionDto.StorageConditionActiveDto>)> GetActiveStorageConditions()
+        {
+            var activeConditions = await _storageConditionRepository.GetActiveStorageConditionsAsync();
+
+            if (activeConditions == null || !activeConditions.Any())
+                return ("Không có điều kiện lưu trữ nào đang hoạt động.".ToMessageForUser(), new List<StorageConditionDto.StorageConditionActiveDto>());
+
+            var result = _mapper.Map<List<StorageConditionDto.StorageConditionActiveDto>>(activeConditions);
+            return ("", result);
+        }
     }
 }
