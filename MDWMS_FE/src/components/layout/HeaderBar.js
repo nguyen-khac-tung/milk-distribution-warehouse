@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogoutOutlined, BellOutlined, StarOutlined, MenuOutlined, MenuFoldOutlined, UserOutlined, SettingOutlined } from "@ant-design/icons";
+import { LogoutOutlined, StarOutlined, MenuOutlined, MenuFoldOutlined, UserOutlined, SettingOutlined } from "@ant-design/icons";
 import { logout } from "../../services/AuthenticationServices";
+import AnimatedBell from "../Common/AnimatedBell";
 
 const HeaderBar = ({ onToggleSidebar, sidebarCollapsed }) => {
     const navigate = useNavigate();
@@ -78,8 +79,11 @@ const HeaderBar = ({ onToggleSidebar, sidebarCollapsed }) => {
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 20, position: "relative" }}>
-                <BellOutlined
-                    style={{ fontSize: 20, color: "#6b7280", cursor: "pointer" }}
+                <AnimatedBell
+                    size={35}
+                    color="#6b7280"
+                    duration="3s"
+                    delay="2s"
                     title="Thông báo"
                 />
 
