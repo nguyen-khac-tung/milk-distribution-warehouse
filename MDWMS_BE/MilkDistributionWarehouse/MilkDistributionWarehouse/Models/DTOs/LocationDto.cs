@@ -12,7 +12,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
             public int AreaId { get; set; }
 
-            public AreaDto.AreaNameDto AreaNameDto { get; set; }
+            public string AreaName { get; set; }
 
             public string LocationCode { get; set; }
 

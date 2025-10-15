@@ -60,7 +60,9 @@ namespace MilkDistributionWarehouse.Repositories
         {
             try
             {
-                _context.Areas.Update(entity);
+                entity.StorageCondition = null;
+                _context.Areas.Attach(entity);
+                _context.Entry(entity).State = EntityState.Modified;
                 await _context.SaveChangesAsync();
                 return entity;
             }
