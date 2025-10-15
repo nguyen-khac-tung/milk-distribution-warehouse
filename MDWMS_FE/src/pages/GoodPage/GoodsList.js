@@ -384,7 +384,7 @@ export default function GoodsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white p-6">
+    <div className="min-h-screen p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -412,7 +412,7 @@ export default function GoodsPage() {
         />
 
         {/* Search Bar */}
-        <Card>
+        <Card className="bg-gray-50">
           <CardContent className="pt-6">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
@@ -427,7 +427,7 @@ export default function GoodsPage() {
         </Card>
 
         {/* Goods Table */}
-        <Card className="shadow-lg overflow-hidden p-0">
+        <Card className="shadow-lg overflow-hidden p-0 bg-gray-50">
           <div className="w-full">
             {loading ? (
               <Loading size="large" text="Đang tải dữ liệu..." />
@@ -528,8 +528,8 @@ export default function GoodsPage() {
                         <TableRow
                           key={index}
                           className={`
-                            ${index % 2 === 0 ? "bg-white" : "bg-slate-50"}
-                            hover:bg-[#e6f4f4] transition-colors duration-150 m-0 w-full
+                            ${index % 2 === 0 ? "bg-gray-50" : "bg-gray-100"}
+                            hover:bg-gray-200 transition-colors duration-150 m-0 w-full
                           `}
                         >
                           <TableCell className="text-slate-600 px-4 py-3 first:pl-6 last:pr-6 border-0 w-20 text-center font-medium">
@@ -591,7 +591,7 @@ export default function GoodsPage() {
 
         {/* Pagination */}
         {!loading && !searchLoading && pagination.totalCount > 0 && (
-          <Card>
+          <Card className="bg-gray-50">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-slate-600">
@@ -658,7 +658,7 @@ export default function GoodsPage() {
                       </button>
 
                       {showPageSizeFilter && (
-                        <div className="absolute bottom-full right-0 mb-1 w-20 bg-white rounded-md shadow-lg border z-10">
+                        <div className="absolute bottom-full right-0 mb-1 w-20 bg-gray-50 rounded-md shadow-lg border z-10">
                           <div className="py-1">
                             {[10, 20, 30, 40].map((size) => (
                               <button

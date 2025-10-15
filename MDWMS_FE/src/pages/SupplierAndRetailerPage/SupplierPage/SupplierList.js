@@ -380,7 +380,7 @@ export default function SuppliersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -408,7 +408,7 @@ export default function SuppliersPage() {
         />
 
         {/* Search and Table Combined */}
-        <Card className="shadow-sm border border-slate-200 overflow-hidden">
+        <Card className="shadow-sm border border-slate-200 overflow-hidden bg-gray-50">
           <SearchFilterToggle
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
@@ -441,7 +441,7 @@ export default function SuppliersPage() {
               <div className="overflow-x-auto">
                 <Table className="w-full">
                   <TableHeader>
-                    <TableRow className="bg-slate-50 hover:bg-slate-50 border-b border-slate-200">
+                      <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-16">
                         STT
                       </TableHead>
@@ -475,7 +475,7 @@ export default function SuppliersPage() {
                       filteredSuppliers.map((supplier, index) => (
                         <TableRow
                           key={index}
-                          className="bg-white hover:bg-slate-50 transition-colors duration-150 border-b border-slate-100"
+                          className="bg-gray-50 hover:bg-gray-100 transition-colors duration-150 border-b border-slate-100"
                         >
                           <TableCell className="text-slate-600 px-6 py-3 text-left font-medium">
                             {index + 1}
@@ -540,7 +540,7 @@ export default function SuppliersPage() {
 
         {/* Pagination */}
         {!loading && !searchLoading && pagination.totalCount > 0 && (
-          <Card>
+          <Card className="bg-gray-50">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-slate-600">

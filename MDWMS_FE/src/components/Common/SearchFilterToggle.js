@@ -49,7 +49,7 @@ export default function SearchFilterToggle({
     <>
       {/* Search and Filter Toggle Header */}
       {showToggle && (
-        <div className="bg-white border-b border-slate-200 px-6 py-3">
+        <div className="bg-gray-50 border-b border-slate-200 px-6 py-3">
           <button
             onClick={handleToggle}
             className="flex items-center space-x-2 text-slate-700 hover:text-orange-500 transition-colors"
@@ -67,7 +67,7 @@ export default function SearchFilterToggle({
 
       {/* Search and Filter Bar */}
       {showSearchFilter && (
-        <div className="bg-white border-b border-slate-200 px-6 py-4">
+        <div className="bg-gray-50 border-b border-slate-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               {/* Search Bar */}
@@ -96,7 +96,7 @@ export default function SearchFilterToggle({
                 </button>
 
                 {showStatusFilter && (
-                  <div className="absolute top-full right-0 mt-1 w-48 bg-white rounded-md shadow-lg border z-10">
+                  <div className="absolute top-full right-0 mt-1 w-48 bg-gray-50 rounded-md shadow-lg border z-10">
                     <div className="py-1">
                       {statusOptions.map((option) => (
                         <button
