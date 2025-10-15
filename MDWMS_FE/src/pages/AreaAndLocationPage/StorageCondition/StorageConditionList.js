@@ -3,7 +3,7 @@ import { getStorageCondition, deleteStorageCondition, updateStorageCondition, up
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
-import { Plus, Eye, Edit, Trash2, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Eye, Edit, Trash2, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Thermometer } from "lucide-react";
 import CreateStorageCondition from "./CreateStorageConditionModal";
 import UpdateStorageCondition from "./UpdateStorageConditionModal";
 import DeleteModal from "../../../components/Common/DeleteModal";
@@ -12,6 +12,7 @@ import Loading from "../../../components/Common/Loading";
 import SearchFilterToggle from "../../../components/Common/SearchFilterToggle";
 import { StatusToggle } from "../../../components/Common/SwitchToggle/StatusToggle";
 import { extractErrorMessage } from "../../../utils/Validation";
+import EmptyState from "../../../components/Common/EmptyState";
 
 // Type definition for StorageCondition
 const StorageCondition = {
@@ -366,6 +367,8 @@ export default function StorageConditionPage() {
     setShowStatusFilter(false)
   }
 
+  const clearAllFilters = handleClearAllFilters
+
   const handlePageSizeChange = (newPageSize) => {
     setPagination(prev => ({ ...prev, pageSize: newPageSize, pageNumber: 1 }))
     setShowPageSizeFilter(false)
@@ -596,11 +599,19 @@ export default function StorageConditionPage() {
                         </TableRow>
                       ))
                     ) : (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-12 text-slate-500">
-                          Không tìm thấy điều kiện bảo quản nào
-                        </TableCell>
-                      </TableRow>
+                      <EmptyState
+                        icon={Thermometer}
+                        title="Không tìm thấy điều kiện bảo quản nào"
+                        description={
+                          searchQuery || statusFilter
+                            ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
+                            : "Chưa có điều kiện bảo quản nào trong hệ thống"
+                        }
+                        actionText="Xóa bộ lọc"
+                        onAction={clearAllFilters}
+                        showAction={!!(searchQuery || statusFilter)}
+                        colSpan={6}
+                      />
                     )}
                   </TableBody>
                 </Table>

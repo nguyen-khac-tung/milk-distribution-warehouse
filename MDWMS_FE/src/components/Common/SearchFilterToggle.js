@@ -19,6 +19,14 @@ export default function SearchFilterToggle({
   ],
   onStatusFilter,
   clearStatusFilter,
+  // Role Filter
+  roleFilter,
+  setRoleFilter,
+  showRoleFilter,
+  setShowRoleFilter,
+  roles = [],
+  onRoleFilter,
+  clearRoleFilter,
   // Category Filter
   categoryFilter,
   setCategoryFilter,
@@ -47,7 +55,15 @@ export default function SearchFilterToggle({
   showToggle = true,
   defaultOpen = true,
   onClearAll = null,
-  showClearButton = true
+  showClearButton = true,
+  // Page Size Filter
+  pageSize,
+  setPageSize,
+  showPageSizeFilter,
+  setShowPageSizeFilter,
+  pageSizeOptions = [10, 20, 30, 40],
+  onPageSizeChange,
+  showPageSizeButton = false
 }) {
   const [showSearchFilter, setShowSearchFilter] = useState(defaultOpen);
 
@@ -64,6 +80,9 @@ export default function SearchFilterToggle({
       if (clearStatusFilter) {
         clearStatusFilter();
       }
+      if (clearRoleFilter) {
+        clearRoleFilter();
+      }
       if (clearCategoryFilter) {
         clearCategoryFilter();
       }
@@ -76,33 +95,69 @@ export default function SearchFilterToggle({
     }
   };
 
-  const hasActiveFilters = searchQuery || statusFilter || categoryFilter || supplierFilter || unitMeasureFilter;
+  const hasActiveFilters = searchQuery || statusFilter || roleFilter || categoryFilter || supplierFilter || unitMeasureFilter;
 
   return (
     <>
       {/* Search and Filter Toggle Header */}
       {showToggle && (
         <div className="bg-gray-50 border-b border-slate-200 px-6 py-3">
-          <button
-            onClick={handleToggle}
-            className="flex items-center space-x-2 text-slate-700 hover:text-orange-500 transition-colors"
-          >
-            <Settings className="h-4 w-4" />
-            <span className="font-medium text-sm">Tìm kiếm & Lọc</span>
-            {showSearchFilter ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
+          <div className="flex items-center justify-between">
+            <button
+              onClick={handleToggle}
+              className="flex items-center space-x-2 text-slate-700 hover:text-orange-500 transition-colors"
+            >
+              <Settings className="h-4 w-4" />
+              <span className="font-medium text-sm">Tìm kiếm & Lọc</span>
+              {showSearchFilter ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </button>
+
+            {/* Page Size Filter */}
+            {showPageSizeButton && (
+              <div className="relative page-size-filter-dropdown">
+                <button
+                  onClick={() => setShowPageSizeFilter(!showPageSizeFilter)}
+                  className="flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706] transition-colors bg-white text-slate-700"
+                >
+                  <span className="text-sm font-medium">
+                    {pageSize} / trang
+                  </span>
+                  <ChevronDown className="h-4 w-4" />
+                </button>
+
+                {showPageSizeFilter && (
+                  <div className="absolute top-full right-0 mt-1 w-32 bg-white rounded-md shadow-lg border z-50 max-h-60 overflow-y-auto">
+                    <div className="py-1">
+                      {pageSizeOptions.map((size) => (
+                        <button
+                          key={size}
+                          onClick={() => {
+                            onPageSizeChange(size)
+                            setShowPageSizeFilter(false)
+                          }}
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${pageSize === size ? 'bg-orange-500 text-white' : 'text-slate-700'}`}
+                        >
+                          {size} / trang
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
-          </button>
+          </div>
         </div>
       )}
 
       {/* Search and Filter Bar */}
       {showSearchFilter && (
-        <div className="bg-gray-50 border-b border-slate-200 px-6 py-4">
+        <div className="bg-gray-50 border-b border-slate-200 px-6 py-4 relative overflow-visible">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4 flex-wrap">
+            <div className="flex items-center space-x-4 flex-wrap relative overflow-visible">
               {/* Search Bar */}
               <div className={`relative ${searchWidth}`}>
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -129,7 +184,7 @@ export default function SearchFilterToggle({
                 </button>
 
                 {showStatusFilter && (
-                  <div className="absolute top-full right-0 mt-1 w-48 bg-gray-50 rounded-md shadow-lg border z-10">
+                  <div className="absolute top-full right-0 mt-1 w-48 bg-white rounded-md shadow-lg border z-50 max-h-60 overflow-y-auto">
                     <div className="py-1">
                       {statusOptions.map((option) => (
                         <button
@@ -146,6 +201,44 @@ export default function SearchFilterToggle({
                 )}
               </div>
 
+              {/* Role Filter */}
+              {roles.length > 0 && (
+                <div className="relative role-filter-dropdown">
+                  <button
+                    onClick={() => setShowRoleFilter(!showRoleFilter)}
+                    className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706] transition-colors ${roleFilter ? 'bg-[#d97706] text-white' : 'bg-white text-slate-700'
+                      }`}
+                  >
+                    <span className="text-sm font-medium">
+                      {roleFilter ? roleFilter : "Tất cả chức vụ"}
+                    </span>
+                    <ChevronDown className="h-4 w-4" />
+                  </button>
+
+                  {showRoleFilter && (
+                    <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-50 max-h-60 overflow-y-auto">
+                      <div className="py-1">
+                        <button
+                          onClick={clearRoleFilter}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 text-slate-700"
+                        >
+                          Tất cả chức vụ
+                        </button>
+                        {roles.map((role) => (
+                          <button
+                            key={role}
+                            onClick={() => onRoleFilter(role)}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${roleFilter === role ? 'bg-orange-500 text-white' : 'text-slate-700'}`}
+                          >
+                            {role}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Category Filter */}
               {categories.length > 0 && (
                 <div className="relative category-filter-dropdown">
@@ -161,7 +254,7 @@ export default function SearchFilterToggle({
                   </button>
 
                   {showCategoryFilter && (
-                    <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-10">
+                    <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-50 max-h-60 overflow-y-auto">
                       <div className="py-1">
                         <button
                           onClick={clearCategoryFilter}
@@ -199,7 +292,7 @@ export default function SearchFilterToggle({
                   </button>
 
                   {showSupplierFilter && (
-                    <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-10">
+                    <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-50 max-h-60 overflow-y-auto">
                       <div className="py-1">
                         <button
                           onClick={clearSupplierFilter}
@@ -237,7 +330,7 @@ export default function SearchFilterToggle({
                   </button>
 
                   {showUnitMeasureFilter && (
-                    <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-10">
+                    <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-50 max-h-60 overflow-y-auto">
                       <div className="py-1">
                         <button
                           onClick={clearUnitMeasureFilter}

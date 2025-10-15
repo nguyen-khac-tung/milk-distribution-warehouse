@@ -7,7 +7,7 @@ import { Card, CardContent } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
-import { Search, Plus, Edit, Trash2, Filter, ChevronDown, ArrowUp, ArrowDown, ArrowUpDown, Eye } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Filter, ChevronDown, ArrowUp, ArrowDown, ArrowUpDown, Eye, Package } from "lucide-react";
 import CreateGood from "./CreateGoodModal";
 import UpdateGoodModal from "./UpdateGoodModal";
 import DeleteModal from "../../components/Common/DeleteModal";
@@ -17,6 +17,7 @@ import Loading from "../../components/Common/Loading";
 import SearchFilterToggle from "../../components/Common/SearchFilterToggle";
 import { StatusToggle } from "../../components/Common/SwitchToggle/StatusToggle";
 import { extractErrorMessage } from "../../utils/Validation";
+import EmptyState from "../../components/Common/EmptyState";
 
 // Type definition for Good
 const Good = {
@@ -828,11 +829,19 @@ export default function GoodsPage() {
                         </TableRow>
                       ))
                     ) : (
-                      <TableRow>
-                        <TableCell colSpan={8} className="text-center py-12 text-slate-500">
-                          Không tìm thấy hàng hóa nào
-                        </TableCell>
-                      </TableRow>
+                      <EmptyState
+                        icon={Package}
+                        title="Không tìm thấy hàng hóa nào"
+                        description={
+                          searchQuery || statusFilter || categoryFilter || supplierFilter || unitMeasureFilter
+                            ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
+                            : "Chưa có hàng hóa nào trong hệ thống"
+                        }
+                        actionText="Xóa bộ lọc"
+                        onAction={clearAllFilters}
+                        showAction={!!(searchQuery || statusFilter || categoryFilter || supplierFilter || unitMeasureFilter)}
+                        colSpan={8}
+                      />
                     )}
                   </TableBody>
                 </Table>

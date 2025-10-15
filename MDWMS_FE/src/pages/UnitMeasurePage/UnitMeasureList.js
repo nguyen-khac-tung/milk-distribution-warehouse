@@ -4,7 +4,7 @@ import { Card, CardContent } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
-import { Search, Plus, Eye, Edit, Trash2, Filter, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Search, Plus, Eye, Edit, Trash2, Filter, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Ruler } from "lucide-react";
 import CreateUnitMeasure from "./CreateUnitMeasureModal";
 import UpdateUnitMeasure from "./UpdateUnitMeasureModal";
 import DeleteModal from "../../components/Common/DeleteModal";
@@ -13,6 +13,7 @@ import StatsCards from "../../components/Common/StatsCards";
 import Loading from "../../components/Common/Loading";
 import SearchFilterToggle from "../../components/Common/SearchFilterToggle";
 import { extractErrorMessage } from "../../utils/Validation";
+import EmptyState from "../../components/Common/EmptyState";
 
 // Type definition for UnitMeasure
 const UnitMeasure = {
@@ -382,6 +383,8 @@ export default function UnitMeasuresPage() {
     setShowStatusFilter(false)
   }
 
+  const clearAllFilters = handleClearAllFilters
+
   const handleStatusChange = async (unitMeasureId, newStatus, unitMeasureName) => {
     try {
       // Update status via API
@@ -553,11 +556,19 @@ export default function UnitMeasuresPage() {
                         </TableRow>
                       ))
                     ) : (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-12 text-slate-500">
-                          Không tìm thấy đơn vị đo nào
-                        </TableCell>
-                      </TableRow>
+                      <EmptyState
+                        icon={Ruler}
+                        title="Không tìm thấy đơn vị đo nào"
+                        description={
+                          searchQuery || statusFilter
+                            ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
+                            : "Chưa có đơn vị đo nào trong hệ thống"
+                        }
+                        actionText="Xóa bộ lọc"
+                        onAction={clearAllFilters}
+                        showAction={!!(searchQuery || statusFilter)}
+                        colSpan={5}
+                      />
                     )}
                   </TableBody>
                 </Table>

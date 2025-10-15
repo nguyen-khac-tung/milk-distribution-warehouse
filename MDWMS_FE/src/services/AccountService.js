@@ -24,3 +24,27 @@ export const getUserList = async (searchParams = {}) => {
     }
 };
 
+// Update user status
+export const updateUserStatus = async (userId, status) => {
+    try {
+        const body = {
+            userId: userId,
+            status: status
+        };
+
+        console.log("Update User Status API - Request body sent:", body);
+        
+        const res = await api.put("/User/UpdateUserStatus", body);
+        console.log("Update User Status API - Response received:", res.data);
+
+        return res.data;
+    } catch (error) {
+        console.error("Error updating user status:", error);
+        return {
+            status: 500,
+            message: "Failed to update user status",
+            data: null
+        };
+    }
+};
+

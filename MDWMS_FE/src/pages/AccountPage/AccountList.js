@@ -13,9 +13,11 @@ import SearchFilterToggle from "../../components/Common/SearchFilterToggle"
 import Loading from "../../components/Common/Loading"
 import AccountStatsChart from "../../components/AccountComponents/AccountStatsChart"
 import Pagination from "../../components/Common/Pagination"
+import EmptyState from "../../components/Common/EmptyState"
+import { StatusToggle } from "../../components/Common/SwitchToggle/StatusToggle"
 
 // Services
-import { getUserList } from "../../services/AccountService"
+import { getUserList, updateUserStatus } from "../../services/AccountService"
 
 // Icons
 import {
@@ -26,6 +28,7 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  Users,
 } from "lucide-react"
 
 // Constants
@@ -49,40 +52,41 @@ const getEmployeeStats = (employees) => {
     totalUsers: 0,
     activeUsers: 0,
     inactiveUsers: 0,
-    warehouseManagers: 0,
-    salesManagers: 0,
-    warehouseStaff: 0,
-    salesStaff: 0
+    roleStats: []
   }
 
   const totalUsers = employees.length
   const activeUsers = employees.filter(emp => emp.status === 1).length
   const inactiveUsers = employees.filter(emp => emp.status === 0).length
   
-  const warehouseManagers = employees.filter(emp => 
-    emp.roles && emp.roles.some(role => role.includes("Warehouse Manager"))
-  ).length
+  // Define all possible roles
+  const allRoles = [
+    "Warehouse Manager",
+    "Warehouse Staff", 
+    "Administrator",
+    "Business Owner",
+    "Sales Representative",
+    "Sale Manager"
+  ]
   
-  const salesManagers = employees.filter(emp => 
-    emp.roles && emp.roles.some(role => role.includes("Sales Manager"))
-  ).length
-  
-  const warehouseStaff = employees.filter(emp => 
-    emp.roles && emp.roles.some(role => role.includes("Warehouse Staff"))
-  ).length
-  
-  const salesStaff = employees.filter(emp => 
-    emp.roles && emp.roles.some(role => role.includes("Sales Staff"))
-  ).length
+  // Calculate count for each role
+  const roleStats = allRoles.map(roleName => {
+    const count = employees.filter(emp => 
+      emp.roles && emp.roles.some(role => role.includes(roleName))
+    ).length
+    
+    return {
+      roleName,
+      count,
+      percentage: totalUsers > 0 ? Math.round((count / totalUsers) * 100) : 0
+    }
+  })
 
   return {
     totalUsers,
     activeUsers,
     inactiveUsers,
-    warehouseManagers,
-    salesManagers,
-    warehouseStaff,
-    salesStaff
+    roleStats
   }
 }
 
@@ -91,6 +95,7 @@ export default function AdminPage() {
   
   // Data states
   const [allEmployees, setAllEmployees] = useState([])
+  const [allUsersForStats, setAllUsersForStats] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -98,6 +103,10 @@ export default function AdminPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("")
   const [showStatusFilter, setShowStatusFilter] = useState(false)
+  const [roleFilter, setRoleFilter] = useState("")
+  const [showRoleFilter, setShowRoleFilter] = useState(false)
+  const [availableRoles, setAvailableRoles] = useState([])
+  const [showPageSizeFilter, setShowPageSizeFilter] = useState(false)
 
   // Sort states
   const [sortColumn, setSortColumn] = useState(null)
@@ -128,6 +137,23 @@ export default function AdminPage() {
   const clearAllFilters = () => {
     setSearchQuery("")
     setStatusFilter("")
+    setRoleFilter("")
+  }
+
+  // Page size handler
+  const handlePageSizeChange = (newPageSize) => {
+    setPagination(prev => ({ ...prev, pageSize: newPageSize, pageNumber: 1 }))
+    setShowPageSizeFilter(false)
+  }
+
+  // Role filter handlers
+  const handleRoleFilter = (value) => {
+    setRoleFilter(value)
+    setShowRoleFilter(false)
+  }
+
+  const clearRoleFilter = () => {
+    setRoleFilter("")
   }
 
   // Sort handler
@@ -140,10 +166,84 @@ export default function AdminPage() {
     }
   }
 
+  // Status change handler
+  const handleStatusChange = async (id, newStatus, name) => {
+    try {
+      console.log(`Updating user ${id} (${name}) status to ${newStatus}`)
+      
+      // Call API to update user status
+      const response = await updateUserStatus(id, newStatus)
+      
+      if (response && response.success !== false) {
+        // Update only the specific user in allEmployees (table data)
+        setAllEmployees(prev => 
+          prev.map(emp => 
+            (emp.userId === id || emp.id === id) 
+              ? { ...emp, status: newStatus }
+              : emp
+          )
+        )
+        
+        // Update only the specific user in allUsersForStats (stats data)
+        setAllUsersForStats(prev => 
+          prev.map(emp => 
+            (emp.userId === id || emp.id === id) 
+              ? { ...emp, status: newStatus }
+              : emp
+          )
+        )
+        
+        console.log(`Successfully updated user ${name} status to ${newStatus}`)
+      } else {
+        console.error(`Failed to update user ${name} status:`, response?.message)
+      }
+    } catch (error) {
+      console.error("Error updating user status:", error)
+    }
+  }
+
 
 
   // ===== DATA FETCHING =====
   
+  // Fetch all users for statistics (without pagination)
+  useEffect(() => {
+    const fetchAllUsersForStats = async () => {
+      try {
+        const response = await getUserList({
+          pageNumber: 1,
+          pageSize: 1000, // Get all users for stats
+          search: "",
+          sortField: "",
+          sortAscending: true
+        })
+
+        if (response?.data?.items) {
+          setAllUsersForStats(response.data.items)
+          
+          // Extract unique roles for filter
+          const uniqueRoles = new Set()
+          response.data.items.forEach(user => {
+            if (user.roles && Array.isArray(user.roles)) {
+              user.roles.forEach(role => uniqueRoles.add(role))
+            }
+          })
+          setAvailableRoles(Array.from(uniqueRoles))
+        } else {
+          setAllUsersForStats([])
+          setAvailableRoles([])
+        }
+      } catch (err) {
+        console.error("Error fetching all users for stats:", err)
+        setAllUsersForStats([])
+        setAvailableRoles([])
+      }
+    }
+
+    fetchAllUsersForStats()
+  }, [])
+
+  // Fetch paginated users for table
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -211,7 +311,13 @@ export default function AdminPage() {
           }
         }
 
-        return matchesSearch && matchesStatus
+        // Role filter
+        let matchesRole = true
+        if (roleFilter) {
+          matchesRole = employee.roles && employee.roles.some(role => role.includes(roleFilter))
+        }
+
+        return matchesSearch && matchesStatus && matchesRole
       })
       .sort((a, b) => {
         if (!sortColumn) return 0
@@ -244,7 +350,7 @@ export default function AdminPage() {
   // ===== COMPUTED VALUES =====
   
   const filteredEmployees = filterAndSortEmployees()
-  const employeeStats = getEmployeeStats(allEmployees)
+  const employeeStats = getEmployeeStats(allUsersForStats)
 
 
   // ===== RENDER HELPERS =====
@@ -299,16 +405,10 @@ export default function AdminPage() {
           </div>
         </TableHead>
         <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-          <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("role")}>
-            <span>Chức vụ</span>
-            <SortIcon column="role" activeColumn={sortColumn} direction={sortDirection} />
-          </div>
+          <span>Chức vụ</span>
         </TableHead>
         <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-          <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("status")}>
-            <span>Trạng thái</span>
-            <SortIcon column="status" activeColumn={sortColumn} direction={sortDirection} />
-          </div>
+          <span>Trạng thái</span>
         </TableHead>
         <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
           Hoạt động
@@ -337,15 +437,13 @@ export default function AdminPage() {
         </span>
       </TableCell>
       <TableCell className="px-6 py-4">
-        <span
-          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${
-            employee.status === 1 || employee.status === "Active"
-              ? "bg-green-100 text-green-800 border border-green-200"
-              : "bg-red-100 text-red-800 border border-red-200"
-          }`}
-        >
-          {employee.status === 1 ? "Hoạt động" : "Ngừng hoạt động"}
-        </span>
+        <StatusToggle
+          status={employee.status}
+          onStatusChange={handleStatusChange}
+          supplierId={employee.userId || employee.id}
+          supplierName={employee.fullName}
+          entityType="người dùng"
+        />
       </TableCell>
       <TableCell className="px-6 py-4">
         <div className="flex items-center justify-center space-x-1">
@@ -387,7 +485,7 @@ export default function AdminPage() {
             <p className="text-slate-600 mt-1">Quản lý các tài khoản người dùng trong hệ thống</p>
           </div>
           <Button
-            className="bg-orange-500 hover:bg-orange-600 h-8 px-6 text-white"
+            className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
             onClick={() => setIsCreateModalOpen(true)}
           >
             <Plus className="mr-2 h-4 w-4 text-white" />
@@ -397,17 +495,11 @@ export default function AdminPage() {
 
         {/* ===== STATISTICS SECTION ===== */}
         <AccountStatsChart
-          totalUsers={employeeStats.totalUsers}
-          activeUsers={employeeStats.activeUsers}
-          inactiveUsers={employeeStats.inactiveUsers}
-          warehouseManagers={employeeStats.warehouseManagers}
-          salesManagers={employeeStats.salesManagers}
-          warehouseStaff={employeeStats.warehouseStaff}
-          salesStaff={employeeStats.salesStaff}
+          userStats={employeeStats}
         />
 
         {/* ===== SEARCH AND TABLE SECTION ===== */}
-        <Card className="shadow-sm border border-slate-200 overflow-hidden bg-gray-50">
+        <Card className="shadow-sm border border-slate-200 overflow-visible bg-gray-50">
           <SearchFilterToggle
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
@@ -423,25 +515,53 @@ export default function AdminPage() {
             ]}
             onStatusFilter={handleStatusFilter}
             clearStatusFilter={clearStatusFilter}
+            roleFilter={roleFilter}
+            setRoleFilter={setRoleFilter}
+            showRoleFilter={showRoleFilter}
+            setShowRoleFilter={setShowRoleFilter}
+            roles={availableRoles}
+            onRoleFilter={handleRoleFilter}
+            clearRoleFilter={clearRoleFilter}
             onClearAll={clearAllFilters}
+            pageSize={pagination.pageSize}
+            setPageSize={setPagination}
+            showPageSizeFilter={showPageSizeFilter}
+            setShowPageSizeFilter={setShowPageSizeFilter}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            onPageSizeChange={handlePageSizeChange}
+            showPageSizeButton={true}
           />
 
           {/* Table */}
           <div className="w-full">
-            <div className="overflow-x-auto">
+            <div className={`overflow-x-auto overflow-y-visible ${filteredEmployees.length === 0 ? 'max-h-96' : ''}`}>
               <Table className="w-full">
                 {renderTableHeader()}
                 <TableBody>
-                  {filteredEmployees.map((employee, index) => 
-                    renderTableRow(employee, index)
+                  {filteredEmployees.length === 0 ? (
+                    <EmptyState
+                      icon={Users}
+                      title="Không tìm thấy người dùng nào"
+                      description={
+                        searchQuery || statusFilter || roleFilter 
+                          ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm" 
+                          : "Chưa có người dùng nào trong hệ thống"
+                      }
+                      actionText="Xóa bộ lọc"
+                      onAction={clearAllFilters}
+                      showAction={!!(searchQuery || statusFilter || roleFilter)}
+                      colSpan={6}
+                    />
+                  ) : (
+                    filteredEmployees.map((employee, index) => 
+                      renderTableRow(employee, index)
+                    )
                   )}
                 </TableBody>
               </Table>
             </div>
           </div>
         </Card>
-
-        {/* ===== PAGINATION SECTION ===== */}
         {!loading && pagination.totalCount > 0 && (
           <Pagination
             current={pagination.pageNumber}

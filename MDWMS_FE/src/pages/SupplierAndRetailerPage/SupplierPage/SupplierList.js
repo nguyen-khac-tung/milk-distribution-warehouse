@@ -3,7 +3,7 @@ import { getSuppliers, deleteSupplier, updateSupplierStatus } from "../../../ser
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
-import { Plus, Edit, Trash2, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Eye } from "lucide-react";
+import { Plus, Edit, Trash2, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Eye, Building2 } from "lucide-react";
 import CreateSupplier from "./CreateSupplierModal";
 import { SupplierDetail } from "./ViewSupplierModal";
 import UpdateSupplier from "./UpdateSupplierModal";
@@ -13,6 +13,7 @@ import StatsCards from "../../../components/Common/StatsCards";
 import Loading from "../../../components/Common/Loading";
 import SearchFilterToggle from "../../../components/Common/SearchFilterToggle";
 import { extractErrorMessage } from "../../../utils/Validation";
+import EmptyState from "../../../components/Common/EmptyState";
 
 // Type definition for Supplier
 const Supplier = {
@@ -367,6 +368,8 @@ export default function SuppliersPage() {
     setShowStatusFilter(false)
   }
 
+  const clearAllFilters = handleClearAllFilters
+
   const handlePageSizeChange = (newPageSize) => {
     setPagination(prev => ({ ...prev, pageSize: newPageSize, pageNumber: 1 }))
     setShowPageSizeFilter(false)
@@ -535,11 +538,19 @@ export default function SuppliersPage() {
                         </TableRow>
                       ))
                     ) : (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-12 text-slate-500">
-                          Không tìm thấy nhà cung cấp nào
-                        </TableCell>
-                      </TableRow>
+                      <EmptyState
+                        icon={Building2}
+                        title="Không tìm thấy nhà cung cấp nào"
+                        description={
+                          searchQuery || statusFilter
+                            ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
+                            : "Chưa có nhà cung cấp nào trong hệ thống"
+                        }
+                        actionText="Xóa bộ lọc"
+                        onAction={clearAllFilters}
+                        showAction={!!(searchQuery || statusFilter)}
+                        colSpan={5}
+                      />
                     )}
                   </TableBody>
                 </Table>

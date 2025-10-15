@@ -3,7 +3,7 @@ import { getCategory, deleteCategory, updateCategoryStatus } from "../../service
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
-import { Plus, Edit, Trash2, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Edit, Trash2, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Folder } from "lucide-react";
 import CreateCategory from "./CreateCategoryModal";
 import UpdateCategory from "./UpdateCategoryModal";
 import DeleteModal from "../../components/Common/DeleteModal";
@@ -12,6 +12,7 @@ import Loading from "../../components/Common/Loading";
 import SearchFilterToggle from "../../components/Common/SearchFilterToggle";
 import { StatusToggle } from "../../components/Common/SwitchToggle/StatusToggle";
 import { extractErrorMessage } from "../../utils/Validation";
+import EmptyState from "../../components/Common/EmptyState";
 
 // Type definition for Category
 const Category = {
@@ -320,6 +321,8 @@ export default function CategoriesPage() {
     setShowStatusFilter(false)
   }
 
+  const clearAllFilters = handleClearAllFilters
+
   const handlePageSizeChange = (newPageSize) => {
     setPagination(prev => ({ ...prev, pageSize: newPageSize, pageNumber: 1 }))
     setShowPageSizeFilter(false)
@@ -511,11 +514,19 @@ export default function CategoriesPage() {
                         </TableRow>
                       ))
                     ) : (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-12 text-slate-500">
-                          Không tìm thấy danh mục nào
-                        </TableCell>
-                      </TableRow>
+                      <EmptyState
+                        icon={Folder}
+                        title="Không tìm thấy danh mục nào"
+                        description={
+                          searchQuery || statusFilter
+                            ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
+                            : "Chưa có danh mục nào trong hệ thống"
+                        }
+                        actionText="Xóa bộ lọc"
+                        onAction={clearAllFilters}
+                        showAction={!!(searchQuery || statusFilter)}
+                        colSpan={5}
+                      />
                     )}
                   </TableBody>
                 </Table>

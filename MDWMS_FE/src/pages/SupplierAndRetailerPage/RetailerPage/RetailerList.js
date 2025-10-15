@@ -3,7 +3,7 @@ import { getRetailers, getRetailerDetail, deleteRetailer, updateRetailerStatus }
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
-import { Plus, Edit, Trash2, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Eye } from "lucide-react";
+import { Plus, Edit, Trash2, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Eye, Store } from "lucide-react";
 import { RetailerDetail } from "./ViewRetailerModal";
 import DeleteModal from "../../../components/Common/DeleteModal";
 import CreateRetailer from "./CreateRetailerModal";
@@ -13,6 +13,7 @@ import Loading from "../../../components/Common/Loading";
 import SearchFilterToggle from "../../../components/Common/SearchFilterToggle";
 import { StatusToggle } from "../../../components/Common/SwitchToggle/StatusToggle";
 import { extractErrorMessage } from "../../../utils/Validation";
+import EmptyState from "../../../components/Common/EmptyState";
 
 // Type definition for Retailer
 const Retailer = {
@@ -361,6 +362,14 @@ export default function RetailersPage() {
     setShowStatusFilter(false)
   }
 
+  const handleClearAllFilters = () => {
+    setSearchQuery("")
+    setStatusFilter("")
+    setShowStatusFilter(false)
+  }
+
+  const clearAllFilters = handleClearAllFilters
+
   const handlePageSizeChange = (newPageSize) => {
     setPagination(prev => ({ ...prev, pageSize: newPageSize, pageNumber: 1 }))
     setShowPageSizeFilter(false)
@@ -558,11 +567,19 @@ export default function RetailersPage() {
                         </TableRow>
                       ))
                     ) : (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-12 text-slate-500">
-                          Không tìm thấy nhà bán lẻ nào
-                        </TableCell>
-                      </TableRow>
+                      <EmptyState
+                        icon={Store}
+                        title="Không tìm thấy nhà bán lẻ nào"
+                        description={
+                          searchQuery || statusFilter
+                            ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
+                            : "Chưa có nhà bán lẻ nào trong hệ thống"
+                        }
+                        actionText="Xóa bộ lọc"
+                        onAction={clearAllFilters}
+                        showAction={!!(searchQuery || statusFilter)}
+                        colSpan={5}
+                      />
                     )}
                   </TableBody>
                 </Table>

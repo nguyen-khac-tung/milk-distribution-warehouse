@@ -1,194 +1,362 @@
-import React from "react"
+import React, { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
-import { Building2, Users, UserCheck, UserX, TrendingUp, Activity } from "lucide-react"
+import { Building2, Users, UserCheck, UserX, Activity, BarChart3, ChevronDown, ChevronUp } from "lucide-react"
+import { getRoleList } from "../../services/RoleService"
 
 export default function AccountStatsChart({ 
-  totalUsers = 0,
-  activeUsers = 0,
-  inactiveUsers = 0,
-  warehouseManagers = 0,
-  salesManagers = 0,
-  warehouseStaff = 0,
-  salesStaff = 0,
+  userStats = {
+    totalUsers: 0,
+    activeUsers: 0,
+    inactiveUsers: 0,
+    roleStats: []
+  },
   className = ""
 }) {
+  // State for toggle
+  const [isDetailsExpanded, setIsDetailsExpanded] = useState(false)
+  
+  // State for roles
+  const [roles, setRoles] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  // Fetch roles on component mount
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        setLoading(true)
+        const response = await getRoleList()
+        if (response?.data) {
+          setRoles(response.data)
+        }
+      } catch (error) {
+        console.error("Error fetching roles:", error)
+        setRoles([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchRoles()
+  }, [])
+
+  // Extract data from props
+  const { totalUsers, activeUsers, inactiveUsers, roleStats = [] } = userStats
+
   // Calculate percentages
   const activePercentage = totalUsers > 0 ? Math.round((activeUsers / totalUsers) * 100) : 0
   const inactivePercentage = totalUsers > 0 ? Math.round((inactiveUsers / totalUsers) * 100) : 0
 
-  // Calculate role percentages
-  const warehouseManagerPercentage = totalUsers > 0 ? Math.round((warehouseManagers / totalUsers) * 100) : 0
-  const salesManagerPercentage = totalUsers > 0 ? Math.round((salesManagers / totalUsers) * 100) : 0
-  const warehouseStaffPercentage = totalUsers > 0 ? Math.round((warehouseStaff / totalUsers) * 100) : 0
-  const salesStaffPercentage = totalUsers > 0 ? Math.round((salesStaff / totalUsers) * 100) : 0
+  // Toggle function
+  const toggleDetails = () => {
+    setIsDetailsExpanded(!isDetailsExpanded)
+  }
+
+  // Helper function to get role display name
+  const getRoleDisplayName = (roleName) => {
+    const roleMap = {
+      "Warehouse Manager": "Quản lý kho",
+      "Warehouse Staff": "Nhân viên kho",
+      "Administrator": "Quản trị viên",
+      "Business Owner": "Chủ doanh nghiệp",
+      "Sales Representative": "Đại diện bán hàng",
+      "Sale Manager": "Quản lý kinh doanh"
+    }
+    return roleMap[roleName] || roleName
+  }
+
+  // Helper function to get role data from roleStats
+  const getRoleData = (roleName) => {
+    const roleData = roleStats.find(stat => stat.roleName === roleName)
+    return roleData || { count: 0, percentage: 0 }
+  }
+
+  // Helper function to get role color
+  const getRoleColor = (roleName) => {
+    const roleColorMap = {
+      "Warehouse Manager": "blue",
+      "Warehouse Staff": "indigo",
+      "Administrator": "purple",
+      "Business Owner": "orange",
+      "Sales Representative": "teal",
+      "Sale Manager": "green"
+    }
+    return roleColorMap[roleName] || "gray"
+  }
 
   return (
-    <div className={`space-y-6 ${className}`}>
-      {/* Main Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Total Users Card */}
-        <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 hover:shadow-lg transition-all duration-300">
+    <div className={`${className}`}>
+      {/* Unified Statistics Card */}
+      <Card className="bg-white border border-slate-200 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-orange-50 to-orange-100 border-b border-orange-200">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-slate-800 flex items-center text-xl">
+              <BarChart3 className="h-6 w-6 mr-3 text-orange-500" />
+              Thống kê người dùng hệ thống
+            </CardTitle>
+            <button
+              onClick={toggleDetails}
+              className="flex items-center space-x-2 px-3 py-2 text-slate-600 hover:text-orange-600 hover:bg-orange-100 rounded-lg transition-all duration-200 group"
+              title={isDetailsExpanded ? "Ẩn chi tiết" : "Hiện chi tiết"}
+            >
+              <span className="text-sm font-medium">
+                {isDetailsExpanded ? "Ẩn chi tiết" : "Hiện chi tiết"}
+              </span>
+              {isDetailsExpanded ? (
+                <ChevronUp className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+              ) : (
+                <ChevronDown className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+              )}
+            </button>
+          </div>
+        </CardHeader>
+        
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-orange-600 text-sm font-medium">Tổng người dùng</p>
-                <p className="text-3xl font-bold text-orange-700 mt-2">{totalUsers}</p>
-                <div className="flex items-center mt-2">
-                  <TrendingUp className="h-4 w-4 text-orange-500 mr-1" />
-                  <span className="text-orange-600 text-sm">100% tổng số</span>
+          {/* Top Section - Overall Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 mt-8">
+            {/* Total Users */}
+            <div className="bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition-shadow h-24 flex items-center justify-center">
+              <div className="flex items-center w-full h-full">
+                <div className="w-14 h-14 bg-orange-500 rounded-lg flex items-center justify-center mr-4 ml-6">
+                  <Users className="h-7 w-7 text-white" />
+                </div>
+                <div className="flex-1">
+                  <div className="text-lg font-medium text-slate-600 mb-1">Tổng người dùng</div>
+                  <div className="text-2xl font-bold text-slate-900">{totalUsers}</div>
+                </div>
+                <div className="w-16 h-8 relative group mr-6">
+                  <svg width="64" height="32" viewBox="0 0 64 32" className="w-full h-full">
+                    <defs>
+                      <linearGradient id="trendGradient1" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#f97316" stopOpacity="0.2" />
+                        <stop offset="50%" stopColor="#f97316" stopOpacity="0.6" />
+                        <stop offset="100%" stopColor="#f97316" stopOpacity="0.9" />
+                      </linearGradient>
+                    </defs>
+                    <path
+                      d="M2,24 Q8,18 16,22 T24,16 T32,20 T40,14 T48,18 T56,12 T62,16 L62,32 L2,32 Z"
+                      fill="url(#trendGradient1)"
+                      opacity="0.1"
+                    />
+                    <path
+                      d="M2,24 Q8,18 16,22 T24,16 T32,20 T40,14 T48,18 T56,12 T62,16"
+                      stroke="#f97316"
+                      strokeWidth="2"
+                      fill="none"
+                      strokeDasharray="100"
+                      strokeDashoffset="100"
+                      className="animate-draw"
+                    />
+                    <circle cx="2" cy="24" r="1.5" fill="#f97316" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '0.5s'}} />
+                    <circle cx="8" cy="18" r="1.5" fill="#f97316" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '0.8s'}} />
+                    <circle cx="16" cy="22" r="1.5" fill="#f97316" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '1.1s'}} />
+                    <circle cx="24" cy="16" r="1.5" fill="#f97316" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '1.4s'}} />
+                    <circle cx="32" cy="20" r="2" fill="#f97316" className="opacity-0 animate-fadeIn hover:r-3 transition-all cursor-pointer" style={{animationDelay: '1.7s'}} />
+                    <circle cx="40" cy="14" r="1.5" fill="#f97316" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '2s'}} />
+                    <circle cx="48" cy="18" r="1.5" fill="#f97316" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '2.3s'}} />
+                    <circle cx="56" cy="12" r="1.5" fill="#f97316" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '2.6s'}} />
+                    <circle cx="62" cy="16" r="1.5" fill="#f97316" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '2.9s'}} />
+                  </svg>
+                  <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                    {totalUsers} tổng người dùng
+                  </div>
                 </div>
               </div>
-              <div className="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center">
-                <Users className="h-8 w-8 text-white" />
-              </div>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Active Users Card */}
-        <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200 hover:shadow-lg transition-all duration-300">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-green-600 text-sm font-medium">Đang hoạt động</p>
-                <p className="text-3xl font-bold text-green-700 mt-2">{activeUsers}</p>
-                <div className="flex items-center mt-2">
-                  <Activity className="h-4 w-4 text-green-500 mr-1" />
-                  <span className="text-green-600 text-sm">{activePercentage}% tổng số</span>
+            {/* Active Users */}
+            <div className="bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition-shadow h-24 flex items-center justify-center">
+              <div className="flex items-center w-full h-full">
+                <div className="w-14 h-14 bg-green-500 rounded-lg flex items-center justify-center mr-4 ml-6">
+                  <UserCheck className="h-7 w-7 text-white" />
+                </div>
+                <div className="flex-1">
+                  <div className="text-lg font-medium text-slate-600 mb-1">Đang hoạt động</div>
+                  <div className="text-2xl font-bold text-green-600">{activeUsers}</div>
+                </div>
+                <div className="w-16 h-8 relative group mr-6">
+                  <svg width="64" height="32" viewBox="0 0 64 32" className="w-full h-full">
+                    <defs>
+                      <linearGradient id="trendGradient2" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#22c55e" stopOpacity="0.2" />
+                        <stop offset="50%" stopColor="#22c55e" stopOpacity="0.6" />
+                        <stop offset="100%" stopColor="#22c55e" stopOpacity="0.9" />
+                      </linearGradient>
+                    </defs>
+                    <path
+                      d="M2,20 Q8,26 16,22 T24,28 T32,24 T40,30 T48,26 T56,32 T62,28 L62,32 L2,32 Z"
+                      fill="url(#trendGradient2)"
+                      opacity="0.1"
+                    />
+                    <path
+                      d="M2,20 Q8,26 16,22 T24,28 T32,24 T40,30 T48,26 T56,32 T62,28"
+                      stroke="#22c55e"
+                      strokeWidth="2"
+                      fill="none"
+                      strokeDasharray="100"
+                      strokeDashoffset="100"
+                      className="animate-draw"
+                    />
+                    <circle cx="2" cy="20" r="1.5" fill="#22c55e" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '0.5s'}} />
+                    <circle cx="8" cy="26" r="1.5" fill="#22c55e" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '0.8s'}} />
+                    <circle cx="16" cy="22" r="1.5" fill="#22c55e" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '1.1s'}} />
+                    <circle cx="24" cy="28" r="1.5" fill="#22c55e" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '1.4s'}} />
+                    <circle cx="32" cy="24" r="2" fill="#22c55e" className="opacity-0 animate-fadeIn hover:r-3 transition-all cursor-pointer" style={{animationDelay: '1.7s'}} />
+                    <circle cx="40" cy="30" r="1.5" fill="#22c55e" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '2s'}} />
+                    <circle cx="48" cy="26" r="1.5" fill="#22c55e" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '2.3s'}} />
+                    <circle cx="56" cy="32" r="1.5" fill="#22c55e" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '2.6s'}} />
+                    <circle cx="62" cy="28" r="1.5" fill="#22c55e" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '2.9s'}} />
+                  </svg>
+                  <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                    {activeUsers} đang hoạt động
+                  </div>
                 </div>
               </div>
-              <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center">
-                <UserCheck className="h-8 w-8 text-white" />
-              </div>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Inactive Users Card */}
-        <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200 hover:shadow-lg transition-all duration-300">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-red-600 text-sm font-medium">Ngừng hoạt động</p>
-                <p className="text-3xl font-bold text-red-700 mt-2">{inactiveUsers}</p>
-                <div className="flex items-center mt-2">
-                  <UserX className="h-4 w-4 text-red-500 mr-1" />
-                  <span className="text-red-600 text-sm">{inactivePercentage}% tổng số</span>
+            {/* Inactive Users */}
+            <div className="bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition-shadow h-24 flex items-center justify-center">
+              <div className="flex items-center w-full h-full">
+                <div className="w-14 h-14 bg-red-500 rounded-lg flex items-center justify-center mr-4 ml-6">
+                  <UserX className="h-7 w-7 text-white" />
+                </div>
+                <div className="flex-1">
+                  <div className="text-lg font-medium text-slate-600 mb-1">Ngừng hoạt động</div>
+                  <div className="text-2xl font-bold text-red-600">{inactiveUsers}</div>
+                </div>
+                <div className="w-16 h-8 relative group mr-6">
+                  <svg width="64" height="32" viewBox="0 0 64 32" className="w-full h-full">
+                    <defs>
+                      <linearGradient id="trendGradient3" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#ef4444" stopOpacity="0.2" />
+                        <stop offset="50%" stopColor="#ef4444" stopOpacity="0.6" />
+                        <stop offset="100%" stopColor="#ef4444" stopOpacity="0.9" />
+                      </linearGradient>
+                    </defs>
+                    <path
+                      d="M2,28 Q8,24 16,26 T24,22 T32,24 T40,20 T48,22 T56,18 T62,20 L62,32 L2,32 Z"
+                      fill="url(#trendGradient3)"
+                      opacity="0.1"
+                    />
+                    <path
+                      d="M2,28 Q8,24 16,26 T24,22 T32,24 T40,20 T48,22 T56,18 T62,20"
+                      stroke="#ef4444"
+                      strokeWidth="2"
+                      fill="none"
+                      strokeDasharray="100"
+                      strokeDashoffset="100"
+                      className="animate-draw"
+                    />
+                    <circle cx="2" cy="28" r="1.5" fill="#ef4444" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '0.5s'}} />
+                    <circle cx="8" cy="24" r="1.5" fill="#ef4444" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '0.8s'}} />
+                    <circle cx="16" cy="26" r="1.5" fill="#ef4444" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '1.1s'}} />
+                    <circle cx="24" cy="22" r="1.5" fill="#ef4444" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '1.4s'}} />
+                    <circle cx="32" cy="24" r="2" fill="#ef4444" className="opacity-0 animate-fadeIn hover:r-3 transition-all cursor-pointer" style={{animationDelay: '1.7s'}} />
+                    <circle cx="40" cy="20" r="1.5" fill="#ef4444" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '2s'}} />
+                    <circle cx="48" cy="22" r="1.5" fill="#ef4444" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '2.3s'}} />
+                    <circle cx="56" cy="18" r="1.5" fill="#ef4444" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '2.6s'}} />
+                    <circle cx="62" cy="20" r="1.5" fill="#ef4444" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '2.9s'}} />
+                  </svg>
+                  <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                    {inactiveUsers} ngừng hoạt động
+                  </div>
                 </div>
               </div>
-              <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center">
-                <UserX className="h-8 w-8 text-white" />
-              </div>
             </div>
-          </CardContent>
-        </Card>
       </div>
 
+          {/* Bottom Section - Role Distribution and Status Overview */}
+          <div className={`grid grid-cols-1 lg:grid-cols-2 gap-8 transition-all duration-500 ease-in-out ${
+            isDetailsExpanded 
+              ? 'opacity-100 max-h-[1000px] overflow-visible' 
+              : 'opacity-0 max-h-0 overflow-hidden'
+          }`}>
       {/* Role Distribution */}
-      <Card className="bg-white border border-slate-200 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-slate-800 flex items-center">
+            <div className="space-y-6">
+              <div className="flex items-center justify-center mb-6">
             <Building2 className="h-5 w-5 mr-2 text-orange-500" />
-            Phân bố theo chức vụ
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Warehouse Manager */}
-            <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-blue-700 font-medium text-sm">Quản lý kho</span>
-                <span className="text-blue-600 text-xs">{warehouseManagerPercentage}%</span>
+                <h3 className="text-lg font-semibold text-slate-800">Phân bố theo chức vụ</h3>
               </div>
-              <div className="text-2xl font-bold text-blue-800">{warehouseManagers}</div>
-              <div className="w-full bg-blue-200 rounded-full h-2 mt-2">
+              
+              <div className="space-y-4">
+                {loading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500"></div>
+                    <span className="ml-2 text-slate-600">Đang tải...</span>
+              </div>
+                ) : (
+                  roles.map((role, index) => {
+                    const color = getRoleColor(role.roleName)
+                    const roleData = getRoleData(role.roleName)
+                    const count = roleData.count || 0
+                    const percentage = roleData.percentage || 0
+                    const displayName = getRoleDisplayName(role.roleName)
+                    
+                    return (
+                      <div key={role.roleId || index} className="flex items-center justify-between py-2 hover:bg-slate-50 rounded-lg transition-colors duration-200">
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-2 h-2 bg-${color}-500 rounded-full`}></div>
+                          <span className="text-slate-700 font-medium text-sm">{displayName}</span>
+              </div>
+                        <div className="flex items-center space-x-3">
+                          <span className={`text-2xl font-bold text-${color}-600`}>{count}</span>
+                          <div className="w-16 h-1 bg-slate-200 rounded-full overflow-hidden">
                 <div 
-                  className="bg-blue-500 h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${warehouseManagerPercentage}%` }}
+                              className={`h-full bg-gradient-to-r from-${color}-400 to-${color}-600 rounded-full transition-all duration-1000 ease-out`}
+                              style={{ width: `${percentage}%` }}
                 ></div>
+              </div>
+                          <span className="text-slate-500 text-xs font-medium w-8 text-right">{percentage}%</span>
+            </div>
+              </div>
+                    )
+                  })
+                )}
               </div>
             </div>
 
-            {/* Sales Manager */}
-            <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-purple-700 font-medium text-sm">Quản lý kinh doanh</span>
-                <span className="text-purple-600 text-xs">{salesManagerPercentage}%</span>
+            {/* Status Overview */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-center mb-6">
+                <Activity className="h-5 w-5 mr-2 text-orange-500" />
+                <h3 className="text-lg font-semibold text-slate-800">Tổng quan trạng thái</h3>
               </div>
-              <div className="text-2xl font-bold text-purple-800">{salesManagers}</div>
-              <div className="w-full bg-purple-200 rounded-full h-2 mt-2">
+              
+              <div className="space-y-6">
+                {/* Active Status */}
+                <div className="flex items-center justify-between py-3 hover:bg-slate-50 rounded-lg transition-colors duration-200">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-slate-700 font-semibold">Hoạt động</span>
+              </div>
+                  <div className="flex items-center space-x-4">
+                    <span className="text-3xl font-bold text-green-600">{activeUsers}</span>
+                    <div className="w-20 h-2 bg-slate-200 rounded-full overflow-hidden">
                 <div 
-                  className="bg-purple-500 h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${salesManagerPercentage}%` }}
-                ></div>
-              </div>
-            </div>
-
-            {/* Warehouse Staff */}
-            <div className="bg-gradient-to-r from-indigo-50 to-indigo-100 p-4 rounded-lg border border-indigo-200">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-indigo-700 font-medium text-sm">Nhân viên kho</span>
-                <span className="text-indigo-600 text-xs">{warehouseStaffPercentage}%</span>
-              </div>
-              <div className="text-2xl font-bold text-indigo-800">{warehouseStaff}</div>
-              <div className="w-full bg-indigo-200 rounded-full h-2 mt-2">
-                <div 
-                  className="bg-indigo-500 h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${warehouseStaffPercentage}%` }}
-                ></div>
-              </div>
-            </div>
-
-            {/* Sales Staff */}
-            <div className="bg-gradient-to-r from-teal-50 to-teal-100 p-4 rounded-lg border border-teal-200">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-teal-700 font-medium text-sm">Nhân viên kinh doanh</span>
-                <span className="text-teal-600 text-xs">{salesStaffPercentage}%</span>
-              </div>
-              <div className="text-2xl font-bold text-teal-800">{salesStaff}</div>
-              <div className="w-full bg-teal-200 rounded-full h-2 mt-2">
-                <div 
-                  className="bg-teal-500 h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${salesStaffPercentage}%` }}
-                ></div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Status Overview */}
-      <Card className="bg-white border border-slate-200 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-slate-800 flex items-center">
-            <Activity className="h-5 w-5 mr-2 text-orange-500" />
-            Tổng quan trạng thái
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-slate-600 text-sm">Hoạt động</span>
-                <span className="text-slate-600 text-sm">{activeUsers} người ({activePercentage}%)</span>
-              </div>
-              <div className="w-full bg-slate-200 rounded-full h-3">
-                <div 
-                  className="bg-green-500 h-3 rounded-full transition-all duration-700"
+                        className="h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full transition-all duration-1000 ease-out"
                   style={{ width: `${activePercentage}%` }}
                 ></div>
+                    </div>
+                    <span className="text-slate-500 text-sm font-medium w-12 text-right">{activePercentage}%</span>
               </div>
             </div>
-            <div className="flex-1 ml-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-slate-600 text-sm">Ngừng hoạt động</span>
-                <span className="text-slate-600 text-sm">{inactiveUsers} người ({inactivePercentage}%)</span>
+
+                {/* Inactive Status */}
+                <div className="flex items-center justify-between py-3 hover:bg-slate-50 rounded-lg transition-colors duration-200">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <span className="text-slate-700 font-semibold">Ngừng hoạt động</span>
               </div>
-              <div className="w-full bg-slate-200 rounded-full h-3">
+                  <div className="flex items-center space-x-4">
+                    <span className="text-3xl font-bold text-red-600">{inactiveUsers}</span>
+                    <div className="w-20 h-2 bg-slate-200 rounded-full overflow-hidden">
                 <div 
-                  className="bg-red-500 h-3 rounded-full transition-all duration-700"
+                        className="h-full bg-gradient-to-r from-red-400 to-red-600 rounded-full transition-all duration-1000 ease-out"
                   style={{ width: `${inactivePercentage}%` }}
                 ></div>
+                    </div>
+                    <span className="text-slate-500 text-sm font-medium w-12 text-right">{inactivePercentage}%</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
