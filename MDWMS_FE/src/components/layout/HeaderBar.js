@@ -39,7 +39,7 @@ const HeaderBar = ({ onToggleSidebar, sidebarCollapsed }) => {
     return (
         <div
             style={{
-                height: 64,
+                height: 75,
                 background: "#ffffff",
                 display: "flex",
                 alignItems: "center",
@@ -84,33 +84,50 @@ const HeaderBar = ({ onToggleSidebar, sidebarCollapsed }) => {
                     title="Thông báo"
                 />
 
-                {/* User Avatar */}
+                {/* User Section: Avatar + Name + Role */}
                 <div style={{ position: "relative" }}>
                     <div
                         onClick={handleUserMenuClick}
                         style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: "50%",
-                            backgroundColor: "#f59e0b",
                             display: "flex",
                             alignItems: "center",
-                            justifyContent: "center",
+                            gap: 12,
                             cursor: "pointer",
-                            transition: "all 0.2s ease",
-                            border: "2px solid #ffffff",
-                            boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                            padding: "4px 8px",
+                            borderRadius: 8,
+                            transition: "background-color 0.2s",
                         }}
                         onMouseEnter={(e) => {
-                            e.target.style.backgroundColor = "#d97706";
-                            e.target.style.transform = "scale(1.05)";
+                            e.currentTarget.style.backgroundColor = "#f9fafb";
                         }}
                         onMouseLeave={(e) => {
-                            e.target.style.backgroundColor = "#f59e0b";
-                            e.target.style.transform = "scale(1)";
+                            e.currentTarget.style.backgroundColor = "transparent";
                         }}
                     >
-                        <UserOutlined style={{ fontSize: 18, color: "white" }} />
+                        <div
+                            style={{
+                                width: 40,
+                                height: 40,
+                                borderRadius: "50%",
+                                backgroundColor: "#f59e0b",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                transition: "all 0.2s ease",
+                                border: "2px solid #ffffff",
+                                boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                            }}
+                        >
+                            <UserOutlined style={{ fontSize: 18, color: "white" }} />
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.1 }}>
+                            <span style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>
+                                {user?.fullName || "Người dùng"}
+                            </span>
+                            <span style={{ fontSize: 12, color: "#6b7280" }}>
+                                {user?.roles?.[0] || "Admin"}
+                            </span>
+                        </div>
                     </div>
 
                     {/* User Dropdown Menu */}
