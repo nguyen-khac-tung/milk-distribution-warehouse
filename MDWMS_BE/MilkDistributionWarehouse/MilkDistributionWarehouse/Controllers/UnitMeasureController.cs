@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
-using MilkDistributionWarehouse.Utilities;
 using MilkDistributionWarehouse.Models.DTOs;
+using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Services;
+using MilkDistributionWarehouse.Utilities;
+using System.Threading.Tasks;
 
 namespace MilkDistributionWarehouse.Controllers
 {
@@ -15,6 +17,15 @@ namespace MilkDistributionWarehouse.Controllers
         public UnitMeasureController(IUnitMeasureService unitMeasureService)
         {
             _unitMeasureService = unitMeasureService;
+        }
+
+        [HttpGet("GetUnitMeasureDropDown")]
+        public async Task<IActionResult> GetUnitMeasureDropDown()
+        {
+            var (msg, unitMeasureDropDown) = await _unitMeasureService.GetUnitMeasureDropDown();
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<List<UnitMeasureDropDown>>.ToResultOk(unitMeasureDropDown);
         }
 
         [HttpPost("UnitMeasures")]
@@ -42,6 +53,15 @@ namespace MilkDistributionWarehouse.Controllers
             if(!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<UnitMeasureDto>.ToResultOk(unitMeasure);
+        }
+
+        [HttpPost("UpdateUnitMeasureStatus")]
+        public async Task<IActionResult> UpdateUnitMeasureStatus([FromBody] UnitMeasureUpdateStatusDto update)
+        {
+            var (msg, unitMeasureStatus) = await _unitMeasureService.UpdateUnitMeasureStatus(update);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<UnitMeasureUpdateStatusDto>.ToResultOk(unitMeasureStatus);
         }
 
         [HttpDelete("Delete/{unitMeasureId}")]

@@ -20,6 +20,7 @@ namespace MilkDistributionWarehouse.Services
         Task<string> RequestForgotPassword(string email);
         Task<string> VerifyForgotPasswordOtp(VerifyOtpDto verifyOtp);
         Task<(string, AuthenticationDto?)> ResetPassword(ResetPasswordDto resetPasswordDto);
+        Task<(string, AuthenticationDto?)> ChangePassword(int? userId, ChangePasswordDto changePasswordDto);
         Task<string> DoLogout(int? userId);
     }
 
@@ -114,6 +115,25 @@ namespace MilkDistributionWarehouse.Services
             user.Password = BCrypt.Net.BCrypt.HashPassword(resetPasswordDto.NewPassword);
             var message = await _userRepository.UpdateUser(user);
             if(message.Length > 0) return (message, null);
+
+            var (msg, authenDto) = await GetAuthResponse(user);
+            if (msg.Length > 0) return (msg, null);
+
+            return ("", authenDto);
+        }
+
+        public async Task<(string, AuthenticationDto?)> ChangePassword(int? userId, ChangePasswordDto changePasswordDto)
+        {
+            if (userId == null) return ("UserId is invalid.", null);
+            var user = await _userRepository.GetUserById(userId);
+            if (user == null) return ("User not found", null);
+
+            bool isOldPasswordCorrect = BCrypt.Net.BCrypt.Verify(changePasswordDto.OldPassword, user.Password);
+            if(!isOldPasswordCorrect) return ("Mật khẩu cũ không chính xác!".ToMessageForUser(), null);
+
+            user.Password = BCrypt.Net.BCrypt.HashPassword(changePasswordDto.NewPassword);
+            var message = await _userRepository.UpdateUser(user);
+            if (message.Length > 0) return (message, null);
 
             var (msg, authenDto) = await GetAuthResponse(user);
             if (msg.Length > 0) return (msg, null);
