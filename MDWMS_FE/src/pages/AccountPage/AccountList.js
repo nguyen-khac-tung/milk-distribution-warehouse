@@ -144,23 +144,21 @@ export default function AdminPage() {
       console.log(`Updating user ${id} (${name}) status to ${newStatus}`)
       const response = await updateUserStatus(id, newStatus)
       if (response && response.success !== false) {
-        setAllEmployees(prev =>
-          prev.map(emp =>
-            (emp.userId === id || emp.id === id)
-              ? { ...emp, status: newStatus }
-              : emp
-          )
-        )
-        setAllUsersForStats(prev =>
-          prev.map(emp =>
-            (emp.userId === id || emp.id === id)
-              ? { ...emp, status: newStatus }
-              : emp
-          )
-        )
         const statusText = newStatus === 1 ? "kích hoạt" : "ngừng hoạt động"
         window.showToast(`Đã ${statusText} người dùng "${name}" thành công`, "success")
         console.log(`Successfully updated user ${name} status to ${newStatus}`)
+        
+        // Refresh all users for stats
+        fetchAllUsersForStats()
+
+        // Refresh data after status change
+        fetchData({
+          pageNumber: pagination.pageNumber,
+          pageSize: pagination.pageSize,
+          search: searchQuery,
+          sortField: sortColumn || "",
+          sortAscending: sortDirection === "asc"
+        })
       } else {
         console.error(`Failed to update user ${name} status:`, response?.message)
         const errorMessage = response?.message || "Có lỗi xảy ra khi cập nhật trạng thái người dùng"
@@ -179,6 +177,75 @@ export default function AdminPage() {
     setShowDeleteModal(true)
   }
 
+  // Fetch data from API
+  const fetchData = async (searchParams = {}) => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      const response = await getUserList({
+        pageNumber: searchParams.pageNumber !== undefined ? searchParams.pageNumber : pagination.pageNumber,
+        pageSize: searchParams.pageSize !== undefined ? searchParams.pageSize : pagination.pageSize,
+        search: searchParams.search !== undefined ? searchParams.search : searchQuery,
+        sortField: searchParams.sortField || sortColumn || "",
+        sortAscending: searchParams.sortAscending !== undefined ? searchParams.sortAscending : sortDirection === "asc"
+      })
+
+      if (response?.data?.items) {
+        setAllEmployees(response.data.items)
+        setPagination(prev => ({
+          ...prev,
+          totalCount: response.data.totalCount || 0
+        }))
+      } else {
+        setAllEmployees([])
+        setPagination(prev => ({
+          ...prev,
+          totalCount: 0
+        }))
+      }
+    } catch (err) {
+      console.error("Error fetching users:", err)
+      setError("Không thể tải danh sách người dùng")
+      setAllEmployees([])
+    } finally {
+      setLoading(false)
+      setSearchLoading(false)
+    }
+  }
+
+  // Fetch all users for stats
+  const fetchAllUsersForStats = async () => {
+    try {
+      const response = await getUserList({
+        pageNumber: 1,
+        pageSize: 1000,
+        search: "",
+        sortField: "",
+        sortAscending: true
+      })
+
+      if (response?.data?.items) {
+        setAllUsersForStats(response.data.items)
+
+        const uniqueRoles = new Set()
+        response.data.items.forEach(user => {
+          if (user.roles && Array.isArray(user.roles)) {
+            user.roles.forEach(role => uniqueRoles.add(role))
+          }
+        })
+        setAvailableRoles(Array.from(uniqueRoles))
+      } else {
+        setAllUsersForStats([])
+        setAvailableRoles([])
+      }
+    } catch (err) {
+      console.error("Error fetching all users for stats:", err)
+      setAllUsersForStats([])
+      setAvailableRoles([])
+    }
+  }
+
   const handleDeleteConfirm = async () => {
     if (!userToDelete) return
 
@@ -187,22 +254,31 @@ export default function AdminPage() {
       const response = await deleteUser(userToDelete.userId || userToDelete.id)
       
       if (response && response.success !== false) {
-        // Remove user from both lists
-        setAllEmployees(prev => 
-          prev.filter(emp => (emp.userId !== userToDelete.userId && emp.id !== userToDelete.id))
-        )
-        setAllUsersForStats(prev => 
-          prev.filter(emp => (emp.userId !== userToDelete.userId && emp.id !== userToDelete.id))
-        )
-        
-        // Update pagination total count
-        setPagination(prev => ({
-          ...prev,
-          totalCount: prev.totalCount - 1
-        }))
-        
         window.showToast(`Đã xóa người dùng "${userToDelete.fullName}" thành công`, "success")
         console.log(`Successfully deleted user ${userToDelete.fullName}`)
+        
+        // Calculate if current page will be empty after deletion
+        const currentPageItemCount = allEmployees.length
+        const willPageBeEmpty = currentPageItemCount <= 1
+
+        // If current page will be empty and we're not on page 1, go to previous page
+        let targetPage = pagination.pageNumber
+        if (willPageBeEmpty && pagination.pageNumber > 1) {
+          targetPage = pagination.pageNumber - 1
+          setPagination(prev => ({ ...prev, pageNumber: targetPage }))
+        }
+
+        // Refresh all users for stats
+        fetchAllUsersForStats()
+
+        // Refresh data after deletion, keeping current page or going to previous page if needed
+        fetchData({
+          pageNumber: targetPage,
+          pageSize: pagination.pageSize,
+          search: searchQuery,
+          sortField: sortColumn || "",
+          sortAscending: sortDirection === "asc"
+        })
       } else {
         console.error(`Failed to delete user ${userToDelete.fullName}:`, response?.message)
         const errorMessage = response?.message || "Có lỗi xảy ra khi xóa người dùng"
@@ -224,78 +300,17 @@ export default function AdminPage() {
   }
 
   useEffect(() => {
-    const fetchAllUsersForStats = async () => {
-      try {
-        const response = await getUserList({
-          pageNumber: 1,
-          pageSize: 1000,
-          search: "",
-          sortField: "",
-          sortAscending: true
-        })
-
-        if (response?.data?.items) {
-          setAllUsersForStats(response.data.items)
-
-          const uniqueRoles = new Set()
-          response.data.items.forEach(user => {
-            if (user.roles && Array.isArray(user.roles)) {
-              user.roles.forEach(role => uniqueRoles.add(role))
-            }
-          })
-          setAvailableRoles(Array.from(uniqueRoles))
-        } else {
-          setAllUsersForStats([])
-          setAvailableRoles([])
-        }
-      } catch (err) {
-        console.error("Error fetching all users for stats:", err)
-        setAllUsersForStats([])
-        setAvailableRoles([])
-      }
-    }
-
     fetchAllUsersForStats()
   }, [])
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-
-        const response = await getUserList({
-          pageNumber: pagination.pageNumber,
-          pageSize: pagination.pageSize,
-          search: searchQuery,
-          sortField: sortColumn || "",
-          sortAscending: sortDirection === "asc"
-        })
-
-        if (response?.data?.items) {
-          setAllEmployees(response.data.items)
-          setPagination(prev => ({
-            ...prev,
-            totalCount: response.data.totalCount || 0
-          }))
-        } else {
-          setAllEmployees([])
-          setPagination(prev => ({
-            ...prev,
-            totalCount: 0
-          }))
-        }
-      } catch (err) {
-        console.error("Error fetching users:", err)
-        setError("Không thể tải danh sách người dùng")
-        setAllEmployees([])
-      } finally {
-        setLoading(false)
-        setSearchLoading(false)
-      }
-    }
-
-    fetchUsers()
+    fetchData({
+      pageNumber: pagination.pageNumber,
+      pageSize: pagination.pageSize,
+      search: searchQuery,
+      sortField: sortColumn || "",
+      sortAscending: sortDirection === "asc"
+    })
   }, [searchQuery, sortColumn, sortDirection, statusFilter, roleFilter, pagination.pageNumber, pagination.pageSize])
 
   // Handle search loading
@@ -574,8 +589,18 @@ export default function AdminPage() {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={() => {
-          // Refresh the user list
-          window.location.reload()
+          // Refresh all users for stats
+          fetchAllUsersForStats()
+          
+          // Reset to first page and refresh data
+          setPagination(prev => ({ ...prev, pageNumber: 1 }))
+          fetchData({
+            pageNumber: 1,
+            pageSize: pagination.pageSize,
+            search: searchQuery,
+            sortField: sortColumn || "",
+            sortAscending: sortDirection === "asc"
+          })
         }}
       />
       
@@ -595,3 +620,4 @@ export default function AdminPage() {
     </div>
   )
 }
+
