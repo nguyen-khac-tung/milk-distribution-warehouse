@@ -726,7 +726,7 @@ export default function GoodsPage() {
 
 
           {/* Table */}
-          <div className="w-full">
+          <div className="w-full min-h-[200px]">
             {loading ? (
               <Loading size="large" text="Đang tải dữ liệu..." />
             ) : searchLoading ? (
@@ -778,7 +778,7 @@ export default function GoodsPage() {
                       filteredGoods.map((good, index) => (
                         <TableRow
                           key={index}
-                          className="hover:bg-slate-50 border-b border-slate-200"
+                          className="hover:bg-slate-50 border-b border-slate-200 min-h-[60px]"
                         >
                           <TableCell className="px-6 py-4 text-slate-600 font-medium">
                             {index + 1}

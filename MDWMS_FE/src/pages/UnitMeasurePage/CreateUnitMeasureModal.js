@@ -4,6 +4,7 @@ import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
 import { Label } from "../../components/ui/label"
 import { Card } from "../../components/ui/card"
+import { Textarea } from "../../components/ui/textarea"
 import { X } from "lucide-react"
 import { createUnitMeasure } from "../../services/UnitMeasureService"
 import { validateAndShowError, extractErrorMessage } from "../../utils/Validation"
@@ -86,15 +87,14 @@ export default function CreateUnitMeasure({ isOpen, onClose, onSuccess }) {
               {/* Row 2: Description */}
               <div className="space-y-2">
                 <Label htmlFor="description" className="text-sm font-medium text-slate-700">
-                  Mô tả <span className="text-red-500"></span>
+                  Mô tả
                 </Label>
-                <Input
+                <Textarea
                   id="description"
                   placeholder="Nhập mô tả đơn vị đo..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                  required
+                  className="min-h-[80px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg resize-none"
                 />
               </div>
             </div>

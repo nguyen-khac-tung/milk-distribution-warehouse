@@ -113,6 +113,24 @@ export default function SearchFilterToggle({
 
   return (
     <>
+      {/* Custom scrollbar styles */}
+      <style jsx>{`
+        .dropdown-scroll::-webkit-scrollbar {
+          width: 6px;
+        }
+        .dropdown-scroll::-webkit-scrollbar-track {
+          background: #f1f5f9;
+          border-radius: 3px;
+        }
+        .dropdown-scroll::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 3px;
+        }
+        .dropdown-scroll::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
+        }
+      `}</style>
+      
       {/* Search and Filter Toggle Header */}
       {showToggle && (
         <div className="bg-gray-50 border-b border-slate-200 px-6 py-3">
@@ -144,7 +162,7 @@ export default function SearchFilterToggle({
                 </button>
 
                 {showPageSizeFilter && (
-                  <div className="absolute top-full right-0 mt-1 w-32 bg-white rounded-md shadow-lg border z-50 max-h-60 overflow-y-auto">
+                  <div className="absolute top-full right-0 mt-1 w-32 bg-white rounded-md shadow-lg border z-50 max-h-48 overflow-y-auto dropdown-scroll" style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 #f1f5f9' }}>
                     <div className="py-1">
                       {pageSizeOptions.map((size) => (
                         <button
@@ -202,7 +220,7 @@ export default function SearchFilterToggle({
                 </button>
 
                 {showStatusFilter && (
-                  <div className="absolute top-full right-0 mt-1 w-48 bg-white rounded-md shadow-lg border z-50 max-h-60 overflow-y-auto">
+                  <div className="absolute top-full right-0 mt-1 w-48 bg-white rounded-md shadow-lg border z-50 max-h-48 overflow-y-auto dropdown-scroll" style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 #f1f5f9' }}>
                     <div className="py-1">
                       {statusOptions.map((option) => (
                         <button
@@ -316,7 +334,7 @@ export default function SearchFilterToggle({
                   </button>
 
                   {showCategoryFilter && (
-                    <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-50 max-h-60 overflow-y-auto">
+                    <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-50 max-h-48 overflow-y-auto dropdown-scroll" style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 #f1f5f9' }}>
                       <div className="py-1">
                         <button
                           onClick={clearCategoryFilter}
@@ -354,7 +372,7 @@ export default function SearchFilterToggle({
                   </button>
 
                   {showSupplierFilter && (
-                    <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-50 max-h-60 overflow-y-auto">
+                    <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-50 max-h-48 overflow-y-auto dropdown-scroll" style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 #f1f5f9' }}>
                       <div className="py-1">
                         <button
                           onClick={clearSupplierFilter}
@@ -392,7 +410,7 @@ export default function SearchFilterToggle({
                   </button>
 
                   {showUnitMeasureFilter && (
-                    <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-50 max-h-60 overflow-y-auto">
+                    <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-50 max-h-48 overflow-y-auto dropdown-scroll" style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 #f1f5f9' }}>
                       <div className="py-1">
                         <button
                           onClick={clearUnitMeasureFilter}

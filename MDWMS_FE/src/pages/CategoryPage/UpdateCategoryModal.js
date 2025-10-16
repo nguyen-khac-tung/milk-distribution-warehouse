@@ -12,7 +12,6 @@ export default function UpdateCategory({ isOpen, onClose, onSuccess, categoryDat
   const [formData, setFormData] = useState({
     categoryName: "",
     description: "",
-    status: 1,
   })
   const [loading, setLoading] = useState(false)
 
@@ -23,7 +22,6 @@ export default function UpdateCategory({ isOpen, onClose, onSuccess, categoryDat
       setFormData({
         categoryName: categoryData.categoryName || "",
         description: categoryData.description || "",
-        status: categoryData.status !== undefined ? categoryData.status : 1,
       })
     }
   }, [isOpen, categoryData])
@@ -44,26 +42,17 @@ export default function UpdateCategory({ isOpen, onClose, onSuccess, categoryDat
     try {
       setLoading(true)
 
-      // Only change status if user selected different from original
-      const originalStatus = parseInt(categoryData.status)
-      const selectedStatus = parseInt(formData.status)
-      const statusChanged = originalStatus !== selectedStatus
-
       const updateData = {
         categoryName: formData.categoryName.trim(),
         description: formData.description.trim(),
         categoryId: parseInt(categoryData.categoryId),
-        status: statusChanged ? selectedStatus : originalStatus // Keep original if not changed
       }
 
-      console.log("Original status:", originalStatus, "Selected status:", selectedStatus)
-      console.log("Status changed:", statusChanged)
       console.log("Update data:", updateData)
       console.log("Data validation:", {
         categoryName: updateData.categoryName.length > 0,
         description: updateData.description.length > 0,
         categoryId: !isNaN(updateData.categoryId),
-        status: [1, 2].includes(updateData.status)
       })
 
       const response = await updateCategory(updateData)
@@ -84,7 +73,6 @@ export default function UpdateCategory({ isOpen, onClose, onSuccess, categoryDat
     setFormData({
       categoryName: "",
       description: "",
-      status: 1,
     })
     onClose && onClose()
   }
@@ -140,21 +128,6 @@ export default function UpdateCategory({ isOpen, onClose, onSuccess, categoryDat
               </div>
             </div>
 
-            {/* Status - Full width */}
-            <div className="space-y-2">
-              <Label htmlFor="status" className="text-sm font-medium text-slate-700">
-                Trạng thái <span className="text-red-500">*</span>
-              </Label>
-              <select
-                id="status"
-                value={formData.status || 1}
-                onChange={(e) => setFormData({ ...formData, status: parseInt(e.target.value) })}
-                className="h-[38px] w-full px-3 py-1 border border-slate-300 rounded-lg focus:border-orange-500 focus:ring-orange-500 focus:outline-none bg-white text-sm flex items-center"
-              >
-                <option value={1} className="text-sm">Hoạt động</option>
-                <option value={2} className="text-sm">Ngừng hoạt động</option>
-              </select>
-            </div>
 
             {/* Action Buttons */}
             <div className="flex gap-4 justify-end pt-6">
