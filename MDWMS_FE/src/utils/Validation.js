@@ -112,7 +112,6 @@ export const showValidationError = (message) => {
 export const cleanErrorMessage = (errorMsg) => {
   if (!errorMsg) return ""
   
-  // Remove array brackets and extra whitespace
   return errorMsg.replace(/^\[[^\]]*\]\s*/, "").trim()
 }
 
