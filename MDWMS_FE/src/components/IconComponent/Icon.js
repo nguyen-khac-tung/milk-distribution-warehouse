@@ -20,7 +20,6 @@ export const IconMap = [
   { keywords: ['close'], icon: 'mdi:close' },
   { keywords: ['phone'], icon: 'line-md:phone-call-loop' },
   { keywords: ['email'], icon: 'fxemoji:email' },
-  { keywords: ['email'], icon: 'fxemoji:email' },
   { keywords: ['tax'], icon: 'streamline-freehand:receipt' },
   { keywords: ['building'], icon: 'emojione-monotone:office-building' },
   { keywords: ['qrcode'], icon: 'vaadin:qrcode' },
@@ -48,6 +47,7 @@ export const IconMap = [
   { keywords: ['people'], icon: 'fluent-color:people-interwoven-48' },
   { keywords: ['europeanNameBadge'], icon: 'openmoji:european-name-badge' },
   { keywords: ['schoolboyRunaway'], icon: 'arcticons:schoolboy-runaway' },
+  { keywords: ['trash', 'delete'], icon: 'mdi:trash-can-outline' }
   // có thể thêm nhiều icon khác ở đây
 ];
 
@@ -89,6 +89,7 @@ export const ComponentIcon = ({ name, color = "#000000", size = 20, collapsed = 
   const isEuropeanNameBadgeIcon = name === 'europeanNameBadge';
   const isSchoolboyRunawayIcon = name === 'schoolboyRunaway';
   const isBatchIcon = name === 'batch';
+  const isTrashIcon = name === 'trash' || name === 'delete';
 
   const needsSpecialAlignment = isMilkIcon || isUnitMeasureIcon || isCategoryIcon || isStorageCondition ||
     isPartnerIcon || isRetailerIcon || isSupplierIcon || isThermometerIcon ||
@@ -96,7 +97,7 @@ export const ComponentIcon = ({ name, color = "#000000", size = 20, collapsed = 
     isMapPinIcon || isBoxIcon || isCloseIcon || isQrcodeIcon || isProductVariantIcon ||
     isPhoneIcon || isEmailIcon || isTaxIcon || isCalendarIcon || isStreamlineplumpIcon || isFormkitdownIcon || isBellIcon || isBoyIcon || isGirlIcon
     || isCalendarzxIcon || isCrownIcon || isServerNetworkIcon || isPeopleIcon || isEuropeanNameBadgeIcon
-    || isSchoolboyRunawayIcon || isBatchIcon;
+    || isSchoolboyRunawayIcon || isBatchIcon || isTrashIcon;
 
   return (
     <Icon

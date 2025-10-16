@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Button } from "../../../components/ui/button";
 import { getAreas, deleteArea, getAreaDetail, updateAreaStatus } from "../../../services/AreaServices";
-import { Edit, Trash2, ChevronDown, Plus, Eye, ArrowUpDown, ArrowDown, ArrowUp } from "lucide-react";
+import { Edit, Trash2, ChevronDown, Plus, Eye, ArrowUpDown, ArrowDown, ArrowUp, Folder } from "lucide-react";
 import DeleteModal from "../../../components/Common/DeleteModal";
 import SearchFilterToggle from "../../../components/Common/SearchFilterToggle";
 import Pagination from "../../../components/Common/Pagination";
@@ -14,6 +14,7 @@ import { extractErrorMessage } from "../../../utils/Validation";
 import { ModalAreaDetail } from "./ViewAreaModal";
 import StatsCards from "../../../components/Common/StatsCards";
 import { StatusToggle } from "../../../components/Common/SwitchToggle/StatusToggle";
+import EmptyState from "../../../components/Common/EmptyState";
 
 const AreaLists = () => {
     const [areas, setAreas] = useState([]);
@@ -193,6 +194,14 @@ const AreaLists = () => {
         });
         setPagination((p) => ({ ...p, current: 1 }));
     };
+
+    const handleClearAllFilters = () => {
+        setSearchQuery("")
+        setStatusFilter("")
+        setShowStatusFilter(false)
+    }
+
+    const clearAllFilters = handleClearAllFilters
 
     // Page handlers
     const handlePageChange = (newPage) => {
@@ -526,8 +535,8 @@ const AreaLists = () => {
                                                     <TableCell className="px-6 py-4 text-slate-600 font-medium">
                                                         {index + 1}
                                                     </TableCell>
-                                                    <TableCell className="px-6 py-4 text-slate-700 font-medium">{area?.areaCode || ''}</TableCell>
                                                     <TableCell className="px-6 py-4 text-slate-700">{area?.areaName || "—"}</TableCell>
+                                                    <TableCell className="px-6 py-4 text-slate-700 font-medium">{area?.areaCode || ''}</TableCell>
                                                     <TableCell className="px-6 py-4 text-slate-700">{area?.description || "—"}</TableCell>
                                                     <TableCell className="px-6 py-4 text-center">
                                                         <div className="flex justify-center">
@@ -571,11 +580,19 @@ const AreaLists = () => {
                                                 </TableRow>
                                             ))
                                         ) : (
-                                            <TableRow>
-                                                <TableCell colSpan={6} className="text-center py-12 text-slate-500">
-                                                    Không tìm thấy khu vực nào
-                                                </TableCell>
-                                            </TableRow>
+                                            <EmptyState
+                                                icon={Folder}
+                                                title="Không tìm khu vực nào"
+                                                description={
+                                                    searchQuery || statusFilter
+                                                        ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
+                                                        : "Chưa có khu vực nào trong hệ thống"
+                                                }
+                                                actionText="Xóa bộ lọc"
+                                                onAction={clearAllFilters}
+                                                showAction={!!(searchQuery || statusFilter)}
+                                                colSpan={5}
+                                            />
                                         )}
                                     </TableBody>
                                 </CustomTable>

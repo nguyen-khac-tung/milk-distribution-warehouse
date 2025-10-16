@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "../../components/ui/card";
 import { Table as CustomTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
 import { Button } from "../../components/ui/button";
-import { Plus, Edit, Trash2, Eye, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, Folder } from "lucide-react";
 import SearchFilterToggle from "../../components/Common/SearchFilterToggle";
 import Loading from "../../components/Common/Loading";
 import StatsCards from "../../components/Common/StatsCards";
@@ -12,6 +12,7 @@ import { extractErrorMessage } from "../../utils/Validation";
 import { getBatches, deleteBatch, updateBatchStatus } from "../../services/BatchService";
 import CreateBatchModal from "./CreateBatchModal";
 import UpdateBatchModal from "./UpdateBatchModal";
+import EmptyState from "../../components/Common/EmptyState";
 
 const BatchList = () => {
     const [batches, setBatches] = useState([]);
@@ -129,6 +130,14 @@ const BatchList = () => {
         setPagination(prev => ({ ...prev, pageSize: newPageSize, pageNumber: 1 }));
         fetchBatches({ pageNumber: 1, pageSize: newPageSize });
     };
+
+    const handleClearAllFilters = () => {
+        setSearchQuery("")
+        setStatusFilter("")
+        setShowStatusFilter(false)
+    }
+
+    const clearAllFilters = handleClearAllFilters
 
     const handleSort = (field) => {
         if (sortField === field) {
@@ -323,9 +332,19 @@ const BatchList = () => {
                                                 </TableRow>
                                             ))
                                         ) : (
-                                            <TableRow>
-                                                <TableCell colSpan={7} className="text-center py-12 text-slate-500">Không tìm thấy lô hàng nào</TableCell>
-                                            </TableRow>
+                                            <EmptyState
+                                                icon={Folder}
+                                                title="Không tìm thấy lô hàng nào"
+                                                description={
+                                                    searchQuery || statusFilter
+                                                        ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
+                                                        : "Chưa có lô hàng nào trong hệ thống"
+                                                }
+                                                actionText="Xóa bộ lọc"
+                                                onAction={clearAllFilters}
+                                                showAction={!!(searchQuery || statusFilter)}
+                                                colSpan={5}
+                                            />
                                         )}
                                     </TableBody>
                                 </CustomTable>
