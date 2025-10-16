@@ -121,80 +121,74 @@ export default function UpdateAreaModal({ isOpen, onClose, onSuccess, areaId, ar
         </div>
 
         {/* Content */}
-        <div className="p-6">
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            {/* Form Fields - 1 column layout */}
-            <div className="space-y-4">
-              {/* Area Name */}
-              <div className="space-y-2">
-                <Label htmlFor="areaName" className="text-sm font-medium text-slate-700">
-                  Tên khu vực <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="areaName"
-                  placeholder="Nhập tên khu vực..."
-                  value={formData.areaName}
-                  onChange={(e) => setFormData({ ...formData, areaName: e.target.value })}
-                  className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                  required
-                />
+        <div className="px-6 py-6">
+          <form className="space-y-8" onSubmit={handleSubmit}>
+
+            {/* 2-column grid layout */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {/* Left column */}
+              <div className="space-y-5">
+                {/* Area Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="areaName" className="text-sm font-medium text-gray-700">
+                    Tên khu vực <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="areaName"
+                    placeholder="Nhập tên khu vực..."
+                    value={formData.areaName}
+                    onChange={(e) => setFormData({ ...formData, areaName: e.target.value })}
+                    className="h-9 border-gray-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg"
+                    required
+                  />
+                </div>
+
+
+                {/* Storage Condition */}
+                <div className="space-y-2">
+                  <Label htmlFor="storageConditionId" className="text-sm font-medium text-gray-700">
+                    Điều kiện bảo quản <span className="text-red-500">*</span>
+                  </Label>
+                  <select
+                    id="storageConditionId"
+                    value={formData.storageConditionId}
+                    onChange={(e) =>
+                      setFormData({ ...formData, storageConditionId: parseInt(e.target.value) })
+                    }
+                    className="h-9 w-full px-3 border border-gray-300 rounded-lg focus:border-orange-500 focus:ring-orange-500 focus:outline-none bg-white text-sm"
+                    required
+                  >
+                    <option value={0}>Chọn điều kiện bảo quản...</option>
+                    {loadingData ? (
+                      <option disabled>Đang tải...</option>
+                    ) : (
+                      storageConditions.map((c) => (
+                        <option key={c.storageConditionId} value={c.storageConditionId}>
+                          {c.conditionName} - Nhiệt độ: {c.temperatureMin}°C đến {c.temperatureMax}°C - Độ ẩm: {c.humidityMin}% → {c.humidityMax}%
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
+
               </div>
 
-              {/* Area Code */}
-              <div className="space-y-2">
-                <Label htmlFor="areaCode" className="text-sm font-medium text-slate-700">
-                  Mã khu vực <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="areaCode"
-                  placeholder="Nhập mã khu vực..."
-                  value={formData.areaCode}
-                  onChange={(e) => setFormData({ ...formData, areaCode: e.target.value })}
-                  className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                  required
-                />
-              </div>
-
-              {/* Storage Condition */}
-              <div className="space-y-2">
-                <Label htmlFor="storageConditionId" className="text-sm font-medium text-slate-700">
-                  Điều kiện bảo quản <span className="text-red-500">*</span>
-                </Label>
-                <select
-                  id="storageConditionId"
-                  value={formData.storageConditionId}
-                  onChange={(e) => setFormData({ ...formData, storageConditionId: parseInt(e.target.value) })}
-                  className="h-[38px] w-full px-3 py-1 border border-slate-300 rounded-lg focus:border-orange-500 focus:ring-orange-500 focus:outline-none bg-white text-sm flex items-center"
-                  required
-                >
-                  <option value={0}>Chọn điều kiện bảo quản...</option>
-                  {loadingData ? (
-                    <option disabled>Đang tải...</option>
-                  ) : (
-                    storageConditions.map((condition) => (
-                      <option
-                        key={condition.storageConditionId}
-                        value={condition.storageConditionId}
-                      >
-                        {condition.conditionName} - Nhiệt độ: {condition.temperatureMin}°C đến {condition.temperatureMax}°C - Độ ẩm: {condition.humidityMin}% đến {condition.humidityMax}%
-                      </option>
-                    ))
-                  )}
-                </select>
-              </div>
-
-              {/* Description */}
-              <div className="space-y-2">
-                <Label htmlFor="description" className="text-sm font-medium text-slate-700">
-                  Mô tả
-                </Label>
-                <Input
-                  id="description"
-                  placeholder="Nhập mô tả khu vực..."
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                />
+              {/* Right column */}
+              <div className="space-y-5">
+                {/* Area Code */}
+                <div className="space-y-2">
+                  <Label htmlFor="areaCode" className="text-sm font-medium text-gray-700">
+                    Mã khu vực <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="areaCode"
+                    placeholder="Nhập mã khu vực..."
+                    value={formData.areaCode}
+                    onChange={(e) => setFormData({ ...formData, areaCode: e.target.value })}
+                    className="h-9 border-gray-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg"
+                    required
+                  />
+                </div>
               </div>
             </div>
 
@@ -203,15 +197,16 @@ export default function UpdateAreaModal({ isOpen, onClose, onSuccess, areaId, ar
               <Label htmlFor="description" className="text-sm font-medium text-slate-700">
                 Mô tả
               </Label>
-              <select
-                id="status"
-                value={formData.status || 1}
-                onChange={(e) => setFormData({ ...formData, status: parseInt(e.target.value) })}
-                className="h-[38px] w-full px-3 py-1 border border-slate-300 rounded-lg focus:border-orange-500 focus:ring-orange-500 focus:outline-none bg-white text-sm flex items-center"
-              >
-                <option value={1} className="text-sm">Hoạt động</option>
-                <option value={2} className="text-sm">Ngừng hoạt động</option>
-              </select>
+              <textarea
+                id="description"
+                placeholder="Nhập mô tả khu vực..."
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+                rows={3}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-orange-500 focus:ring-orange-500 focus:outline-none text-sm resize-y"
+              />
             </div>
 
             {/* Footer */}
@@ -219,7 +214,7 @@ export default function UpdateAreaModal({ isOpen, onClose, onSuccess, areaId, ar
               <Button
                 type="button"
                 variant="outline"
-                className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
+                className="h-9 px-6 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition-all"
                 onClick={handleReset}
               >
                 Hủy
@@ -227,7 +222,7 @@ export default function UpdateAreaModal({ isOpen, onClose, onSuccess, areaId, ar
               <Button
                 type="submit"
                 disabled={loading || loadingData}
-                className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                className="h-9 px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-sm transition-all disabled:opacity-60"
               >
                 {loading ? "Đang cập nhật..." : loadingData ? "Đang tải..." : "Cập nhật"}
               </Button>

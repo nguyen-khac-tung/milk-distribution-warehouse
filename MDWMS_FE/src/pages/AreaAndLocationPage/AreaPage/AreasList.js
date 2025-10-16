@@ -14,6 +14,7 @@ import { extractErrorMessage } from "../../../utils/Validation";
 import { ModalAreaDetail } from "./ViewAreaModal";
 import StatsCards from "../../../components/Common/StatsCards";
 import { StatusToggle } from "../../../components/Common/SwitchToggle/StatusToggle";
+import { StatusToggle } from "../../../components/Common/SwitchToggle/StatusToggle";
 
 const AreaLists = () => {
     const [areas, setAreas] = useState([]);
@@ -49,6 +50,7 @@ const AreaLists = () => {
     const [itemToView, setItemToView] = useState(null);
     const [loadingDetail, setLoadingDetail] = useState(false);
     const [showPageSizeFilter, setShowPageSizeFilter] = useState(false);
+
 
 
     // Fetch total stats (không filter)
@@ -251,7 +253,7 @@ const AreaLists = () => {
                 sortAscending: true,
             });
         }
-    };
+    }
 
     // Mở modal thêm mới
     const handleOpenCreate = () => {
@@ -331,6 +333,29 @@ const AreaLists = () => {
         }
     }
 
+    const handleStatusChange = async (areaId, newStatus) => {
+        try {
+            await updateAreaStatus(areaId, newStatus)
+
+            // Update local state
+            setAreas(prevAreas =>
+                prevAreas.map(area =>
+                    area.areaId === areaId
+                        ? { ...area, status: newStatus }
+                        : area
+                )
+            )
+
+            const statusText = newStatus === 1 ? "kích hoạt" : "ngừng hoạt động"
+            window.showToast(`Đã ${statusText} nhà cung cấp thành công`, "success")
+        } catch (error) {
+            console.error("Error updating area status:", error)
+
+            const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật trạng thái")
+            window.showToast(errorMessage, "error")
+        }
+    }
+
     // Xem chi tiết khu vực
     const handleViewClick = async (area) => {
         try {
@@ -341,21 +366,28 @@ const AreaLists = () => {
 
             const response = await getAreaDetail(area.areaId)
             // console.log("API Response Area:", response)
+            // console.log("API Response Area:", response)
 
             if (response && response.data) {
                 const areaDetailData = {
                     ...area,
                     ...response.data
+                    ...area,
+                    ...response.data
                 }
                 setAreaDetail(areaDetailData)
+                // console.log("Area detail set:", areaDetailData)
                 // console.log("Area detail set:", areaDetailData)
             } else {
                 setAreaDetail(area)
                 // console.log("Using fallback area data:", area)
+                // console.log("Using fallback area data:", area)
             }
         } catch (error) {
             // console.error("Error loading area detail:", error)
+            // console.error("Error loading area detail:", error)
             setAreaDetail(area)
+            // console.log("Using fallback area data due to error:", area)
             // console.log("Using fallback area data due to error:", area)
         } finally {
             setLoadingDetail(false)
@@ -383,7 +415,11 @@ const AreaLists = () => {
                 sortAscending
             });
             fetchTotalStats();
+            fetchTotalStats();
         } catch (error) {
+            // console.error("Error deleting area:", error);
+            const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi xóa khu vực")
+            window.showToast(errorMessage, "error");
             // console.error("Error deleting area:", error);
             const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi xóa khu vực")
             window.showToast(errorMessage, "error");

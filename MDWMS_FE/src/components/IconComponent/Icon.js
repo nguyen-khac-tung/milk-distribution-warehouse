@@ -20,6 +20,7 @@ export const IconMap = [
   { keywords: ['close'], icon: 'mdi:close' },
   { keywords: ['phone'], icon: 'line-md:phone-call-loop' },
   { keywords: ['email'], icon: 'fxemoji:email' },
+  { keywords: ['email'], icon: 'fxemoji:email' },
   { keywords: ['tax'], icon: 'streamline-freehand:receipt' },
   { keywords: ['building'], icon: 'emojione-monotone:office-building' },
   { keywords: ['qrcode'], icon: 'vaadin:qrcode' },
@@ -37,6 +38,16 @@ export const IconMap = [
   { keywords: ['europeanNameBadge'], icon: 'openmoji:european-name-badge' },
   { keywords: ['schoolboyRunaway'], icon: 'arcticons:schoolboy-runaway' },
   { keywords: ['batch', 'lot', 'shipment'], icon: 'mdi:package-variant-closed' },
+  { keywords: ['bell'], icon: 'noto:bell' },
+  { keywords: ['boy'], icon: 'fluent-emoji-flat:boy-light' },
+  { keywords: ['girl'], icon: 'fluent-emoji-flat:girl-light' },
+  { keywords: ['calendar'], icon: 'noto:calendar' },
+  { keywords: ['calendarzx'], icon: 'fxemoji:calendar' },
+  { keywords: ['shield'], icon: 'openmoji:shield' },
+  { keywords: ['serverNetwork'], icon: 'streamline-stickies-color:server-network' },
+  { keywords: ['people'], icon: 'fluent-color:people-interwoven-48' },
+  { keywords: ['europeanNameBadge'], icon: 'openmoji:european-name-badge' },
+  { keywords: ['schoolboyRunaway'], icon: 'arcticons:schoolboy-runaway' },
   // có thể thêm nhiều icon khác ở đây
 ];
 
@@ -67,6 +78,7 @@ export const ComponentIcon = ({ name, color = "#000000", size = 20, collapsed = 
   const isTaxIcon = name === 'tax';
   const isCalendarIcon = name === 'calendar';
   const isCalendarzxIcon = name === 'calendarzx';
+  const isCalendarzxIcon = name === 'calendarzx';
   const isStreamlineplumpIcon = name === 'streamlineplump';
   const isFormkitdownIcon = name === 'down';
   const isBellIcon = name === 'bell';
@@ -79,6 +91,15 @@ export const ComponentIcon = ({ name, color = "#000000", size = 20, collapsed = 
   const isSchoolboyRunawayIcon = name === 'schoolboyRunaway';
   const isBatchIcon = name === 'batch';
 
+  const isBellIcon = name === 'bell';
+  const isBoyIcon = name === 'boy';
+  const isGirlIcon = name === 'girl';
+  const isCrownIcon = name === 'shield';
+  const isServerNetworkIcon = name === 'serverNetwork';
+  const isPeopleIcon = name === 'people';
+  const isEuropeanNameBadgeIcon = name === 'europeanNameBadge';
+  const isSchoolboyRunawayIcon = name === 'schoolboyRunaway';
+
   const needsSpecialAlignment = isMilkIcon || isUnitMeasureIcon || isCategoryIcon || isStorageCondition ||
     isPartnerIcon || isRetailerIcon || isSupplierIcon || isThermometerIcon ||
     isPackageIcon || isBuildingIcon || isDropletsIcon || isSunIcon || isTagIcon ||
@@ -86,6 +107,9 @@ export const ComponentIcon = ({ name, color = "#000000", size = 20, collapsed = 
     isPhoneIcon || isEmailIcon || isTaxIcon || isCalendarIcon || isStreamlineplumpIcon || isFormkitdownIcon || isBellIcon || isBoyIcon || isGirlIcon
     || isCalendarzxIcon || isCrownIcon || isServerNetworkIcon || isPeopleIcon || isEuropeanNameBadgeIcon
     || isSchoolboyRunawayIcon || isBatchIcon;
+  isPhoneIcon || isEmailIcon || isTaxIcon || isCalendarIcon || isStreamlineplumpIcon || isFormkitdownIcon || isBellIcon || isBoyIcon || isGirlIcon
+    || isCalendarzxIcon || isCrownIcon || isServerNetworkIcon || isPeopleIcon || isEuropeanNameBadgeIcon
+    || isSchoolboyRunawayIcon;
 
   return (
     <Icon

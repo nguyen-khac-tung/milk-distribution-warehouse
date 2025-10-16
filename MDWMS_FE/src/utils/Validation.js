@@ -13,7 +13,7 @@ const VALID_NAME_REGEX = /^[a-zA-Z0-9\sàáạảãâầấậẩẫăằắặ�
  */
 export const validateCategoryName = (categoryName) => {
   const trimmedName = categoryName.trim()
-  
+
   // Kiểm tra độ dài tối thiểu
   if (trimmedName.length < 2) {
     return {
@@ -21,7 +21,7 @@ export const validateCategoryName = (categoryName) => {
       message: "Tên danh mục phải có ít nhất 2 ký tự"
     }
   }
-  
+
   // Kiểm tra ký tự hợp lệ
   if (!VALID_NAME_REGEX.test(trimmedName)) {
     return {
@@ -29,7 +29,7 @@ export const validateCategoryName = (categoryName) => {
       message: "Tên danh mục chỉ được chứa chữ cái, số và khoảng trắng"
     }
   }
-  
+
   return {
     isValid: true,
     message: ""
@@ -51,13 +51,13 @@ export const validateCategoryForm = (formData) => {
       message: "Tên danh mục là bắt buộc"
     }
   }
-  
+
   // Validate tên danh mục
   const nameValidation = validateCategoryName(formData.categoryName)
   if (!nameValidation.isValid) {
     return nameValidation
   }
-  
+
   return {
     isValid: true,
     message: ""
@@ -79,13 +79,13 @@ export const validateUnitMeasureForm = (formData) => {
       message: "Vui lòng điền đầy đủ thông tin"
     }
   }
-  
+
   // Validate tên đơn vị đo
   const nameValidation = validateCategoryName(formData.name)
   if (!nameValidation.isValid) {
     return nameValidation
   }
-  
+
   return {
     isValid: true,
     message: ""
@@ -111,8 +111,15 @@ export const showValidationError = (message) => {
  */
 export const cleanErrorMessage = (errorMsg) => {
   if (!errorMsg) return ""
-  
-  return errorMsg.replace(/^\[[^\]]*\]\s*/, "").trim()
+
+  // Remove various bracket patterns and clean up
+  let cleaned = errorMsg
+    .replace(/^\[[^\]]*\]\s*/, "") // Remove [User] at start
+    .replace(/\[[^\]]*\]/g, "") // Remove any [brackets] anywhere
+    .replace(/\s+/g, " ") // Replace multiple spaces with single space
+    .trim()
+
+  return cleaned
 }
 
 /**
@@ -122,7 +129,7 @@ export const cleanErrorMessage = (errorMsg) => {
  * @returns {string} - Cleaned error message
  */
 export const extractErrorMessage = (error, fallbackMessage = "Có lỗi xảy ra, vui lòng thử lại!") => {
-  const errorMsg = 
+  const errorMsg =
     error?.response?.data?.message ||
     error?.message ||
     fallbackMessage
@@ -153,7 +160,7 @@ export const validateAndShowError = (formData) => {
     }
     return true
   }
-  
+
   if (!validation.isValid) {
     showValidationError(validation.message)
     return false
