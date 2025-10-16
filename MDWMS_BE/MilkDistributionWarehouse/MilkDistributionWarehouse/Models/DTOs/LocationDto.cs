@@ -31,6 +31,13 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public DateTime? UpdateAt { get; set; }
         }
 
+        public class LocationActiveDto
+        {
+            public int LocationId { get; set; }
+
+            public string LocationCode { get; set; }
+        }
+
         public class LocationRequestDto
         {
             [Required(ErrorMessage = "Chưa chọn khu vực!")]

@@ -25,6 +25,28 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<PageResult<LocationDto.LocationResponseDto>>.ToResultOk(locations);
         }
 
+        [HttpGet("LocationDetail/{id}")]
+        public async Task<IActionResult> GetLocationDetail(int id)
+        {
+            var (msg, location) = await _locationService.GetLocationDetail(id);
+
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<LocationDto.LocationResponseDto>.ToResultOk(location);
+        }
+
+        [HttpGet("LocationDropdown")]
+        public async Task<IActionResult> GetLocationDropdown()
+        {
+            var (msg, locations) = await _locationService.GetActiveLocations();
+
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<List<LocationDto.LocationActiveDto>>.ToResultOk(locations);
+        }
+
         [HttpPost("Create")]
         public async Task<IActionResult> CreateLocation([FromBody] LocationDto.LocationRequestDto dto)
         {
@@ -32,6 +54,17 @@ namespace MilkDistributionWarehouse.Controllers
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<LocationDto.LocationResponseDto>.ToResultOk(location);
+        }
+
+        [HttpPost("CreateMultiple")]
+        public async Task<IActionResult> CreateMultipleLocations([FromBody] List<LocationDto.LocationRequestDto> dtos)
+        {
+            var (msg, createdList) = await _locationService.CreateMultipleLocations(dtos);
+
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<List<LocationDto.LocationResponseDto>>.ToResultOk(createdList);
         }
 
         [HttpPut("Update/{locationId}")]

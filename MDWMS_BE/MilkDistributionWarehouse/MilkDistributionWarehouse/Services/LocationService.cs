@@ -12,10 +12,13 @@ namespace MilkDistributionWarehouse.Services
     public interface ILocationService
     {
         Task<(string, PageResult<LocationDto.LocationResponseDto>)> GetLocations(PagedRequest request);
+        Task<(string, LocationDto.LocationResponseDto)> GetLocationDetail(int locationId);
         Task<(string, LocationDto.LocationResponseDto)> CreateLocation(LocationDto.LocationRequestDto dto);
         Task<(string, LocationDto.LocationResponseDto)> UpdateLocation(int locationId, LocationDto.LocationRequestDto dto);
         Task<(string, LocationDto.LocationResponseDto)> DeleteLocation(int locationId);
         Task<(string, LocationDto.LocationResponseDto)> UpdateStatus(int locationId, int status);
+        Task<(string, List<LocationDto.LocationActiveDto>)> GetActiveLocations();
+        Task<(string, List<LocationDto.LocationResponseDto>)> CreateMultipleLocations(List<LocationDto.LocationRequestDto> dtos);
     }
 
     public class LocationService : ILocationService
@@ -42,6 +45,19 @@ namespace MilkDistributionWarehouse.Services
             var pagedResult = await locationDtos.ToPagedResultAsync(request);
 
             return ("", pagedResult);
+        }
+
+        public async Task<(string, LocationDto.LocationResponseDto)> GetLocationDetail(int locationId)
+        {
+            if (locationId <= 0)
+                return ("Mã vị trí không hợp lệ.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+
+            var location = await _locationRepository.GetLocationById(locationId);
+            if (location == null || location.Status == CommonStatus.Deleted)
+                return ("Không tìm thấy vị trí hoặc vị trí đã bị xóa.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+
+            var dto = _mapper.Map<LocationDto.LocationResponseDto>(location);
+            return ("", dto);
         }
 
         public async Task<(string, LocationDto.LocationResponseDto)> CreateLocation(LocationDto.LocationRequestDto dto)
@@ -147,5 +163,67 @@ namespace MilkDistributionWarehouse.Services
             return ("", _mapper.Map<LocationDto.LocationResponseDto>(updatedWithArea));
         }
 
+        public async Task<(string, List<LocationDto.LocationActiveDto>)> GetActiveLocations()
+        {
+            var locations = await _locationRepository.GetActiveLocationsAsync();
+
+            if (locations == null || !locations.Any())
+                return ("Không có vị trí nào đang hoạt động.".ToMessageForUser(), new List<LocationDto.LocationActiveDto>());
+
+            var dtoList = _mapper.Map<List<LocationDto.LocationActiveDto>>(locations);
+            return ("", dtoList);
+        }
+
+        public async Task<(string, List<LocationDto.LocationResponseDto>)> CreateMultipleLocations(List<LocationDto.LocationRequestDto> dtos)
+        {
+            if (dtos == null || !dtos.Any())
+                return ("Danh sách vị trí không hợp lệ hoặc rỗng.".ToMessageForUser(), new List<LocationDto.LocationResponseDto>());
+
+            var duplicateInRequest = dtos
+                .GroupBy(x => new { x.AreaId, x.Rack, x.Row, x.Column })
+                .Where(g => g.Count() > 1)
+                .Select(g => $"{g.Key.Rack}-R{g.Key.Row}-C{g.Key.Column} (Area {g.Key.AreaId})")
+                .ToList();
+
+            if (duplicateInRequest.Any())
+            {
+                return ($"Trong danh sách gửi lên có các vị trí bị trùng nhau: {string.Join(", ", duplicateInRequest)}",
+                        new List<LocationDto.LocationResponseDto>());
+            }
+
+            for (int i = 0; i < dtos.Count; i++)
+            {
+                var dto = dtos[i];
+                bool isDup = await _locationRepository.IsDuplicateLocationAsync(dto.Rack, dto.Row, dto.Column, dto.AreaId);
+                if (isDup)
+                {
+                    return ($"Vị trí tại dòng {i + 1} ({dto.Rack}-R{dto.Row}-C{dto.Column}) đã tồn tại trong hệ thống.",
+                        new List<LocationDto.LocationResponseDto>());
+                }
+            }
+
+            var resultList = new List<LocationDto.LocationResponseDto>();
+            foreach (var dto in dtos)
+            {
+                var areaExists = await _areaRepository.GetAreaById(dto.AreaId);
+                if (areaExists == null)
+                    return ($"Khu vực {dto.AreaId} không tồn tại hoặc đã bị xoá.".ToMessageForUser(), new List<LocationDto.LocationResponseDto>());
+
+                var entity = _mapper.Map<Location>(dto);
+                entity.LocationCode = $"{dto.Rack}-R{dto.Row:D2}-C{dto.Column:D2}";
+                entity.AreaId = dto.AreaId;
+                entity.CreatedAt = DateTime.Now;
+                entity.Status = (int)CommonStatus.Active;
+
+                var createdEntity = await _locationRepository.CreateLocation(entity);
+                if (createdEntity == null)
+                    return ("Tạo vị trí thất bại trong quá trình lưu DB.".ToMessageForUser(), new List<LocationDto.LocationResponseDto>());
+
+                var createdWithArea = await _locationRepository.GetLocationById(createdEntity.LocationId);
+                resultList.Add(_mapper.Map<LocationDto.LocationResponseDto>(createdWithArea));
+            }
+
+            return ("", resultList);
+        }
     }
 }

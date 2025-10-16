@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { LogoutOutlined, StarOutlined, MenuOutlined, MenuFoldOutlined, UserOutlined, SettingOutlined } from "@ant-design/icons";
 import { logout } from "../../services/AuthenticationServices";
 import AnimatedBell from "../Common/AnimatedBell";
+import SearchBar from "../Common/SearchBar";
 
 const HeaderBar = ({ onToggleSidebar, sidebarCollapsed }) => {
     const navigate = useNavigate();
@@ -52,7 +53,7 @@ const HeaderBar = ({ onToggleSidebar, sidebarCollapsed }) => {
                 zIndex: 100,
             }}
         >
-            <div style={{ display: "flex", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
                 <div
                     onClick={onToggleSidebar}
                     style={{
@@ -76,6 +77,9 @@ const HeaderBar = ({ onToggleSidebar, sidebarCollapsed }) => {
                         <MenuFoldOutlined style={{ fontSize: 14, color: "white" }} />
                     )}
                 </div>
+                
+                {/* Search Bar */}
+                <SearchBar />
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 20, position: "relative" }}>
