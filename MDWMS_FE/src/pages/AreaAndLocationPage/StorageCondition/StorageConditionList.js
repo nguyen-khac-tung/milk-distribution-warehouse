@@ -3,7 +3,7 @@ import { getStorageCondition, deleteStorageCondition, updateStorageCondition, up
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
-import { Plus, Eye, Edit, Trash2, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Thermometer } from "lucide-react";
+import { Plus, Edit, Trash2, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Thermometer } from "lucide-react";
 import CreateStorageCondition from "./CreateStorageConditionModal";
 import UpdateStorageCondition from "./UpdateStorageConditionModal";
 import DeleteModal from "../../../components/Common/DeleteModal";
@@ -574,12 +574,6 @@ export default function StorageConditionPage() {
                           </TableCell>
                           <TableCell className="px-6 py-4 text-center">
                             <div className="flex items-center justify-center space-x-1">
-                              <button
-                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                title="Xem chi tiết"
-                              >
-                                <Eye className="h-4 w-4 text-orange-500" />
-                              </button>
                               <button
                                 className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                 title="Chỉnh sửa"
