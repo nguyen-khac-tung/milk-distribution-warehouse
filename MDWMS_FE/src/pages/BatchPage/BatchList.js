@@ -1,172 +1,392 @@
-
 import React, { useEffect, useState } from "react";
-import { Table, Input, Button, Space, Tag, Tooltip } from "antd";
-import {
-    SearchOutlined,
-    ReloadOutlined,
-    EditOutlined,
-    DeleteOutlined,
-    PlusOutlined,
-    EyeOutlined,
-} from "@ant-design/icons";
-import dayjs from "dayjs";
+import { Card, CardContent } from "../../components/ui/card";
+import { Table as CustomTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
+import { Button } from "../../components/ui/button";
+import { Plus, Edit, Trash2, Eye, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown } from "lucide-react";
+import SearchFilterToggle from "../../components/Common/SearchFilterToggle";
+import Loading from "../../components/Common/Loading";
+import StatsCards from "../../components/Common/StatsCards";
+import DeleteModal from "../../components/Common/DeleteModal";
+import { StatusToggle } from "../../components/Common/SwitchToggle/StatusToggle";
+import { extractErrorMessage } from "../../utils/Validation";
+import { getBatches, deleteBatch, updateBatchStatus } from "../../services/BatchService";
+import CreateBatchModal from "./CreateBatchModal";
+import UpdateBatchModal from "./UpdateBatchModal";
 
 const BatchList = () => {
     const [batches, setBatches] = useState([]);
-    const [searchText, setSearchText] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [searchLoading, setSearchLoading] = useState(false);
+    const [pagination, setPagination] = useState({ pageNumber: 1, pageSize: 10, totalCount: 0 });
+    const [searchQuery, setSearchQuery] = useState("");
+    const [statusFilter, setStatusFilter] = useState("");
+    const [showStatusFilter, setShowStatusFilter] = useState(false);
+    const [sortField, setSortField] = useState("");
+    const [sortAscending, setSortAscending] = useState(true);
+    const [showPageSizeFilter, setShowPageSizeFilter] = useState(false);
+
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showUpdateModal, setShowUpdateModal] = useState(false);
+    const [updateBatchId, setUpdateBatchId] = useState(null);
+    const [editingBatch, setEditingBatch] = useState(null);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState(null);
+
+    const [totalStats, setTotalStats] = useState({ total: 0, active: 0, inactive: 0 });
+
+    const fetchBatches = async (params = {}) => {
+        try {
+            setLoading(true);
+            const res = await getBatches({
+                pageNumber: params.pageNumber ?? pagination.pageNumber,
+                pageSize: params.pageSize ?? pagination.pageSize,
+                search: params.search ?? searchQuery,
+                sortField: params.sortField ?? sortField,
+                sortAscending: typeof params.sortAscending === 'boolean' ? params.sortAscending : sortAscending,
+                status: params.status ?? statusFilter,
+            });
+
+            const payload = res ?? {};
+            const items = Array.isArray(payload.items)
+                ? payload.items
+                : Array.isArray(payload.data?.items)
+                    ? payload.data.items
+                    : Array.isArray(payload.data)
+                        ? payload.data
+                        : [];
+            const total = (payload.totalCount ?? payload.data?.totalCount) || 0;
+
+            setBatches(items);
+            setPagination(prev => ({ ...prev, pageNumber: params.pageNumber ?? prev.pageNumber, pageSize: params.pageSize ?? prev.pageSize, totalCount: total }));
+        } catch (error) {
+            console.error("Không thể tải danh sách lô hàng:", error);
+            window.showToast("Không thể tải danh sách lô hàng", "error");
+        } finally {
+            setLoading(false);
+            setSearchLoading(false);
+        }
+    };
+
+    const fetchTotalStats = async () => {
+        try {
+            const res = await getBatches({ pageNumber: 1, pageSize: 1000, search: "", sortField: "", sortAscending: true });
+            const items = Array.isArray(res?.data?.items) ? res.data.items : Array.isArray(res?.items) ? res.items : [];
+            const total = items.length;
+            const active = items.filter(b => b.status === 1).length;
+            const inactive = items.filter(b => b.status === 2).length;
+            setTotalStats({ total, active, inactive });
+        } catch (e) {
+            console.error("Không thể tải thống kê lô hàng", e);
+        }
+    };
 
     useEffect(() => {
-        // Dữ liệu mẫu - thay bằng API thực tế
-        const data = [
-            { BatchId: 1, BatchCode: "BT0001", GoodsId: 4, ManufacturingDate: "2023-03-10", ExpiryDate: "2023-11-30", CreateAt: "2023-03-10", CreateBy: 3 },
-            { BatchId: 2, BatchCode: "BT0002", GoodsId: 5, ManufacturingDate: "2023-04-05", ExpiryDate: "2023-12-20", CreateAt: "2023-04-05", CreateBy: 3 },
-            { BatchId: 3, BatchCode: "BT0003", GoodsId: 4, ManufacturingDate: "2023-06-26", ExpiryDate: "2024-03-31", CreateAt: "2023-06-26", CreateBy: 3 },
-            { BatchId: 4, BatchCode: "BT0004", GoodsId: 1, ManufacturingDate: "2023-02-08", ExpiryDate: "2023-11-11", CreateAt: "2023-02-08", CreateBy: 3 },
-            { BatchId: 5, BatchCode: "BT0005", GoodsId: 3, ManufacturingDate: "2023-06-15", ExpiryDate: "2024-02-27", CreateAt: "2023-06-15", CreateBy: 3 },
-            { BatchId: 6, BatchCode: "BT0006", GoodsId: 2, ManufacturingDate: "2023-05-20", ExpiryDate: "2024-01-25", CreateAt: "2023-05-20", CreateBy: 3 },
-            { BatchId: 7, BatchCode: "BT0007", GoodsId: 5, ManufacturingDate: "2023-07-12", ExpiryDate: "2024-06-30", CreateAt: "2023-07-12", CreateBy: 3 },
-            { BatchId: 8, BatchCode: "BT0008", GoodsId: 1, ManufacturingDate: "2023-01-30", ExpiryDate: "2023-10-10", CreateAt: "2023-01-30", CreateBy: 3 },
-            { BatchId: 9, BatchCode: "BT0009", GoodsId: 2, ManufacturingDate: "2023-08-05", ExpiryDate: "2024-05-15", CreateAt: "2023-08-05", CreateBy: 3 },
-            { BatchId: 10, BatchCode: "BT0010", GoodsId: 3, ManufacturingDate: "2023-09-01", ExpiryDate: "2024-08-20", CreateAt: "2023-09-01", CreateBy: 3 },
-        ];
-        setBatches(data);
+        fetchBatches({ pageNumber: 1, pageSize: 10 });
+        fetchTotalStats();
     }, []);
 
-    const handleSearch = (value) => {
-        setSearchText(value.toLowerCase());
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (showStatusFilter && !event.target.closest('.status-filter-dropdown')) {
+                setShowStatusFilter(false);
+            }
+            if (showPageSizeFilter && !event.target.closest('.page-size-filter-dropdown')) {
+                setShowPageSizeFilter(false);
+            }
+        }
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showStatusFilter, showPageSizeFilter]);
+
+    // Debounced search
+    useEffect(() => {
+        const t = setTimeout(() => {
+            setSearchLoading(true);
+            fetchBatches({ pageNumber: 1, pageSize: pagination.pageSize, search: searchQuery });
+        }, 500);
+        return () => clearTimeout(t);
+    }, [searchQuery]);
+
+    const handleStatusFilter = (value) => {
+        setStatusFilter(value);
+        setSearchLoading(true);
+        fetchBatches({ pageNumber: 1, status: value });
     };
 
-    const handleReset = () => {
-        setSearchText("");
+    const clearStatusFilter = () => {
+        setStatusFilter("");
+        setSearchLoading(true);
+        fetchBatches({ pageNumber: 1, status: "" });
     };
 
-    const filteredData = batches.filter(
-        (b) =>
-            b.BatchCode.toLowerCase().includes(searchText) ||
-            String(b.GoodsId).includes(searchText)
-    );
+    const handlePageChange = (newPage) => {
+        setPagination(prev => ({ ...prev, pageNumber: newPage }));
+        fetchBatches({ pageNumber: newPage });
+    };
 
-    const columns = [
-        {
-            title: "Mã lô hàng",
-            dataIndex: "BatchCode",
-            key: "BatchCode",
-            sorter: (a, b) => a.BatchCode.localeCompare(b.BatchCode),
-            render: (text) => <b>{text}</b>,
-        },
-        {
-            title: "Mã sản phẩm",
-            dataIndex: "GoodsId",
-            key: "GoodsId",
-            sorter: (a, b) => a.GoodsId - b.GoodsId,
-            render: (id) => <Tag color="blue">#{id}</Tag>,
-        },
-        {
-            title: "Ngày sản xuất",
-            dataIndex: "ManufacturingDate",
-            key: "ManufacturingDate",
-            sorter: (a, b) =>
-                new Date(a.ManufacturingDate) - new Date(b.ManufacturingDate),
-            render: (date) => dayjs(date).format("DD/MM/YYYY"),
-        },
-        {
-            title: "Ngày hết hạn",
-            dataIndex: "ExpiryDate",
-            key: "ExpiryDate",
-            sorter: (a, b) => new Date(a.ExpiryDate) - new Date(b.ExpiryDate),
-            render: (date) => {
-                const expired = dayjs(date).isBefore(dayjs());
-                return (
-                    <Tag color={expired ? "red" : "green"}>
-                        {dayjs(date).format("DD/MM/YYYY")}
-                    </Tag>
-                );
-            },
-        },
-        {
-            title: "Người tạo",
-            dataIndex: "CreateBy",
-            key: "CreateBy",
-            render: (id) => <Tag color="purple">Người dùng {id}</Tag>,
-        },
-        {
-            title: "Thao tác",
-            key: "action",
-            render: (_, record) => (
-                <Space size="middle">
-                    <Button
-                        type="link"
-                        icon={<EyeOutlined style={{ color: "#1890ff" }} />} // xanh
-                        size="small"
-                        onClick={() => console.log("Xem:", record)}
-                    />
+    const handlePageSizeChange = (newPageSize) => {
+        setPagination(prev => ({ ...prev, pageSize: newPageSize, pageNumber: 1 }));
+        fetchBatches({ pageNumber: 1, pageSize: newPageSize });
+    };
 
-                    <Button
-                        type="link"
-                        icon={<EditOutlined style={{ color: "#52c41a" }} />} // xanh lá
-                        size="small"
-                        onClick={() => console.log("Sửa:", record)}
-                    />
+    const handleSort = (field) => {
+        if (sortField === field) {
+            if (sortAscending === true) {
+                setSortAscending(false);
+                fetchBatches({ sortField: field, sortAscending: false });
+            } else {
+                setSortField("");
+                setSortAscending(true);
+                fetchBatches({ sortField: "", sortAscending: undefined });
+            }
+        } else {
+            setSortField(field);
+            setSortAscending(true);
+            fetchBatches({ sortField: field, sortAscending: true });
+        }
+    };
 
-                    <Button
-                        type="link"
-                        icon={<DeleteOutlined style={{ color: "#ff4d4f" }} />} // đỏ
-                        size="small"
-                        onClick={() => console.log("Xóa:", record)}
-                    />
+    const handleOpenCreate = () => setShowCreateModal(true);
+    const handleOpenEdit = (record) => {
+        setEditingBatch(record);
+        setUpdateBatchId(record.batchId);
+        setShowUpdateModal(true);
+    };
 
-                </Space>
-            ),
-        },
-    ];
+    const handleCreateSuccess = () => {
+        setShowCreateModal(false);
+        fetchBatches({ pageNumber: pagination.pageNumber });
+        fetchTotalStats();
+    };
+
+    const handleUpdateSuccess = () => {
+        setShowUpdateModal(false);
+        setEditingBatch(null);
+        setUpdateBatchId(null);
+        fetchBatches({ pageNumber: pagination.pageNumber });
+        fetchTotalStats();
+    };
+
+    const handleUpdateCancel = () => {
+        setShowUpdateModal(false);
+        setEditingBatch(null);
+        setUpdateBatchId(null);
+    };
+
+    const handleStatusChange = async (batchId, newStatus, displayName) => {
+        try {
+            await updateBatchStatus({ batchId: parseInt(batchId), status: newStatus });
+            setBatches(prev => prev.map(b => b.batchId === batchId ? { ...b, status: newStatus } : b));
+            window.showToast(`Đã ${newStatus === 1 ? 'kích hoạt' : 'ngừng hoạt động'} lô: ${displayName}`, "success");
+        } catch (error) {
+            console.error("Error updating batch status:", error);
+            const msg = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật trạng thái");
+            window.showToast(msg, "error");
+        }
+    };
+
+    const handleDeleteConfirm = async () => {
+        try {
+            await deleteBatch(itemToDelete?.batchId);
+            window.showToast(`Đã xóa lô: ${itemToDelete?.batchCode || ''}`, "success");
+            setShowDeleteModal(false);
+            setItemToDelete(null);
+            fetchBatches({ pageNumber: pagination.pageNumber });
+            fetchTotalStats();
+        } catch (error) {
+            const msg = extractErrorMessage(error, "Có lỗi xảy ra khi xóa lô hàng");
+            window.showToast(msg, "error");
+        }
+    };
 
     return (
-        <div>
-            <div
-                style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: 24,
-                }}
-            >
-                <h2 style={{ fontWeight: 700, fontSize: 22, margin: 0 }}>
-                    Quản lý lô hàng
-                </h2>
-                <Button type="primary" icon={<PlusOutlined />}>
-                    Thêm lô hàng
-                </Button>
+        <div className="min-h-screen">
+            <div className="max-w-7xl mx-auto space-y-6">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-600">Quản lý Lô hàng</h1>
+                        <p className="text-slate-600 mt-1">Quản lý các lô hàng trong hệ thống</p>
+                    </div>
+                    <Button className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white" onClick={handleOpenCreate}>
+                        <Plus className="mr-2 h-4 w-4 text-white" />
+                        Thêm lô hàng
+                    </Button>
+                </div>
+
+                {/* Stats Cards */}
+                <StatsCards
+                    totalCount={totalStats.total}
+                    activeCount={totalStats.active}
+                    inactiveCount={totalStats.inactive}
+                    totalLabel="Tổng lô hàng"
+                    activeLabel="Hoạt động"
+                    inactiveLabel="Ngừng hoạt động"
+                />
+
+                {/* Search + Table */}
+                <Card className="shadow-sm border border-slate-200 overflow-hidden bg-gray-50">
+                    <SearchFilterToggle
+                        searchQuery={searchQuery}
+                        setSearchQuery={setSearchQuery}
+                        searchPlaceholder="Tìm kiếm theo mã lô, tên hàng hóa"
+                        statusFilter={statusFilter}
+                        setStatusFilter={setStatusFilter}
+                        showStatusFilter={showStatusFilter}
+                        setShowStatusFilter={setShowStatusFilter}
+                        statusOptions={[
+                            { value: "", label: "Tất cả trạng thái" },
+                            { value: "1", label: "Hoạt động" },
+                            { value: "2", label: "Ngừng hoạt động" }
+                        ]}
+                        onStatusFilter={handleStatusFilter}
+                        clearStatusFilter={clearStatusFilter}
+                        onClearAll={() => {
+                            setSearchQuery("");
+                            setStatusFilter("");
+                            setShowStatusFilter(false);
+                        }}
+                        searchWidth="w-80"
+                        showToggle={true}
+                        defaultOpen={true}
+                        showClearButton={true}
+                    />
+
+                    <div className="w-full">
+                        {loading ? (
+                            <Loading size="large" text="Đang tải dữ liệu..." />
+                        ) : searchLoading ? (
+                            <Loading size="medium" text="Đang tìm kiếm..." />
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <CustomTable className="w-full">
+                                    <TableHeader>
+                                        <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-16">
+                                                STT
+                                            </TableHead>
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                                <div
+                                                    className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                                    onClick={() => handleSort("batchCode")}
+                                                >
+                                                    <span>Mã lô hàng</span>
+                                                    {sortField === "batchCode" ? (
+                                                        sortAscending ? (
+                                                            <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                        ) : (
+                                                            <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                        )
+                                                    ) : (
+                                                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                    )}
+                                                </div>
+                                            </TableHead>
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                                Tên hàng hóa
+                                            </TableHead>
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                                Ngày sản xuất
+                                            </TableHead>
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                                Ngày hết hạn
+                                            </TableHead>
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
+                                                Hoạt động
+                                            </TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {Array.isArray(batches) && batches.length > 0 ? (
+                                            batches.map((batch, index) => (
+                                                <TableRow key={batch.batchId} className="hover:bg-slate-50 border-b border-slate-200">
+                                                    <TableCell className="px-6 py-4 text-slate-600 font-medium">{index + 1}</TableCell>
+                                                    <TableCell className="font-medium text-slate-900 px-6 py-3 text-left">{batch?.batchCode || ''}</TableCell>
+                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">{batch?.goodsName || ''}</TableCell>
+                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">{batch?.manufacturingDate || ''}</TableCell>
+                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">{batch?.expiryDate || ''}</TableCell>
+                                                    <TableCell className="px-6 py-4 text-center">
+                                                        <div className="flex items-center justify-center space-x-1">
+                                                            <button className="p-1.5 hover:bg-slate-100 rounded transition-colors" title="Chỉnh sửa" onClick={() => handleOpenEdit(batch)}>
+                                                                <Edit className="h-4 w-4 text-orange-500" />
+                                                            </button>
+                                                            <button
+                                                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                                title="Xóa"
+                                                                onClick={() => { setItemToDelete(batch); setShowDeleteModal(true); }}
+                                                            >
+                                                                <Trash2 className="h-4 w-4 text-red-500" />
+                                                            </button>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        ) : (
+                                            <TableRow>
+                                                <TableCell colSpan={7} className="text-center py-12 text-slate-500">Không tìm thấy lô hàng nào</TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </CustomTable>
+                            </div>
+                        )}
+                    </div>
+                </Card>
+
+                {/* Pagination */}
+                {!loading && !searchLoading && pagination.totalCount > 0 && (
+                    <Card className="bg-gray-50">
+                        <CardContent className="pt-6">
+                            <div className="flex items-center justify-between">
+                                <div className="text-sm text-slate-600">
+                                    Hiển thị {((pagination.pageNumber - 1) * pagination.pageSize) + 1} - {Math.min(pagination.pageNumber * pagination.pageSize, pagination.totalCount)} trong tổng số {pagination.totalCount} lô hàng
+                                </div>
+                                <div className="flex items-center space-x-4">
+                                    <div className="flex items-center space-x-2">
+                                        <Button variant="outline" size="sm" className="h-8" onClick={() => { if (pagination.pageNumber > 1) { handlePageChange(pagination.pageNumber - 1); } }} disabled={pagination.pageNumber <= 1}>Trước</Button>
+                                        <span className="text-sm text-slate-600">Trang {pagination.pageNumber} / {Math.ceil(pagination.totalCount / pagination.pageSize)}</span>
+                                        <Button variant="outline" size="sm" className="h-8" onClick={() => { if (pagination.pageNumber < Math.ceil(pagination.totalCount / pagination.pageSize)) { handlePageChange(pagination.pageNumber + 1); } }} disabled={pagination.pageNumber >= Math.ceil(pagination.totalCount / pagination.pageSize)}>Sau</Button>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <span className="text-sm text-slate-600">Hiển thị:</span>
+                                        <div className="relative page-size-filter-dropdown">
+                                            <button onClick={() => setShowPageSizeFilter(!showPageSizeFilter)} className="flex items-center space-x-2 px-3 py-2 h-8 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                                <span>{pagination.pageSize}</span>
+                                                <ChevronDown className="h-4 w-4" />
+                                            </button>
+                                            {showPageSizeFilter && (
+                                                <div className="absolute bottom-full right-0 mb-1 w-20 bg-gray-50 rounded-md shadow-lg border z-10">
+                                                    <div className="py-1">
+                                                        {[10, 20, 30, 40].map((size) => (
+                                                            <button key={size} onClick={() => handlePageSizeChange(size)} className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 flex items-center justify-between ${pagination.pageSize === size ? 'bg-[#d97706] text-white' : 'text-slate-700'}`}>
+                                                                {size}
+                                                                {pagination.pageSize === size && <span className="text-white">✓</span>}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <span className="text-sm text-slate-600">/ Trang</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
 
-            <Space style={{ marginBottom: 16 }}>
-                <Input
-                    placeholder="Tìm kiếm theo mã lô hoặc mã sản phẩm"
-                    value={searchText}
-                    onChange={(e) => handleSearch(e.target.value)}
-                    prefix={<SearchOutlined />}
-                    allowClear
-                    style={{ width: 300 }}
-                />
-                <Tooltip title="Làm mới">
-                    <Button icon={<ReloadOutlined />} onClick={handleReset} />
-                </Tooltip>
-            </Space>
+            {/* Create */}
+            <CreateBatchModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} onSuccess={handleCreateSuccess} />
 
-            <Table
-                columns={columns}
-                dataSource={filteredData}
-                rowKey="BatchId"
-                pagination={{
-                    pageSize: 5,
-                    showTotal: (total, range) =>
-                        `${range[0]} -${range[1]} trong tổng ${total} lô hàng`,
-                }}
-                bordered
-                size="middle"
-            />
+            {/* Update */}
+            <UpdateBatchModal isOpen={showUpdateModal} onClose={handleUpdateCancel} onSuccess={handleUpdateSuccess} batchId={updateBatchId} batchData={editingBatch} />
+
+            {/* Delete */}
+            <DeleteModal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} onConfirm={handleDeleteConfirm} itemName={itemToDelete?.batchCode || ""} />
         </div>
     );
 };
 
 export default BatchList;
-

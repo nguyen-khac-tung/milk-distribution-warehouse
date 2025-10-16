@@ -2,6 +2,45 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Align native date picker indicator to the right under our custom icon */
+.date-picker-input::-webkit-calendar-picker-indicator {
+  position: absolute;
+  right: 0.75rem; /* 12px */
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  opacity: 0; /* keep clickable but invisible (our icon shows) */
+  cursor: pointer;
+}
+
+/* Ensure enough right padding for the icon */
+.date-picker-input {
+  padding-right: 2.5rem; /* 40px */
+}
+
+/* Print helpers for centering printable content */
+.print-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+}
+
+@media print {
+  .print-wrapper {
+    position: static;
+    visibility: visible;
+  }
+  .print-container {
+    min-height: 100vh;
+    width: 100vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
 /* CSS variables moved to login.css */
 
 body {

@@ -19,6 +19,18 @@ export default function SearchFilterToggle({
   ],
   onStatusFilter,
   clearStatusFilter,
+  // Condition Filter (Tình trạng)
+  conditionFilter,
+  setConditionFilter,
+  showConditionFilter,
+  setShowConditionFilter,
+  conditionOptions = [
+    { value: "", label: "Tất cả tình trạng" },
+    { value: "true", label: "Trống" },
+    { value: "false", label: "Đang sử dụng" },
+  ],
+  onConditionFilter,
+  clearConditionFilter,
   // Role Filter
   roleFilter,
   setRoleFilter,
@@ -63,7 +75,9 @@ export default function SearchFilterToggle({
   setShowPageSizeFilter,
   pageSizeOptions = [10, 20, 30, 40],
   onPageSizeChange,
-  showPageSizeButton = false
+  showPageSizeButton = false,
+  // Feature flags
+  enableConditionFilter = false
 }) {
   const [showSearchFilter, setShowSearchFilter] = useState(defaultOpen);
 
@@ -173,7 +187,11 @@ export default function SearchFilterToggle({
               <div className="relative status-filter-dropdown">
                 <button
                   onClick={() => setShowStatusFilter(!showStatusFilter)}
-                  className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706] transition-colors ${statusFilter ? 'bg-[#d97706] text-white' : 'bg-white text-slate-700'
+                  className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors
+                    focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
+                    ${statusFilter
+                      ? 'bg-[#d97706] text-white hover:bg-[#d97706]'
+                      : 'bg-white text-slate-700 hover:bg-white'
                     }`}
                 >
                   <Filter className="h-4 w-4" />
@@ -189,7 +207,10 @@ export default function SearchFilterToggle({
                       {statusOptions.map((option) => (
                         <button
                           key={option.value}
-                          onClick={() => onStatusFilter(option.value)}
+                          onClick={() => {
+                            onStatusFilter(option.value);
+                            setShowStatusFilter(false);
+                          }}
                           className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center justify-between"
                         >
                           {option.label}
@@ -200,6 +221,47 @@ export default function SearchFilterToggle({
                   </div>
                 )}
               </div>
+
+              {/* Condition Filter (Tình trạng) */}
+              {enableConditionFilter && (
+                <div className="relative condition-filter-dropdown">
+                  <button
+                    onClick={() => setShowConditionFilter(!showConditionFilter)}
+                    className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors
+                    focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
+                    ${conditionFilter
+                        ? 'bg-[#d97706] text-white hover:bg-[#d97706]'
+                        : 'bg-white text-slate-700 hover:bg-white'
+                      }`}
+                  >
+                    <Filter className="h-4 w-4" />
+                    <span className="text-sm font-medium">
+                      {conditionOptions.find(option => option.value === conditionFilter)?.label || conditionOptions[0].label}
+                    </span>
+                    <ChevronDown className="h-4 w-4" />
+                  </button>
+
+                  {showConditionFilter && (
+                    <div className="absolute top-full right-0 mt-1 w-48 bg-white rounded-md shadow-lg border z-50 max-h-60 overflow-y-auto">
+                      <div className="py-1">
+                        {conditionOptions.map((option) => (
+                          <button
+                            key={option.value}
+                            onClick={() => {
+                              onConditionFilter(option.value);
+                              setShowConditionFilter(false);
+                            }}
+                            className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center justify-between"
+                          >
+                            {option.label}
+                            {conditionFilter === option.value && <span className="text-[#d97706]">✓</span>}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Role Filter */}
               {roles.length > 0 && (

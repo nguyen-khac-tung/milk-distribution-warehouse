@@ -76,6 +76,11 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
             label: "Quản lý hàng hóa",
         },
         {
+            key: "/admin/batchs",
+            icon: <ComponentIcon name="batch" size={16} collapsed={collapsed} />,
+            label: "Quản lý lô hàng",
+        },
+        {
             key: "partner-management",
             icon: <ComponentIcon name="partner" size={16} collapsed={collapsed} />,
             label: "Quản lý đối tác",

@@ -113,7 +113,7 @@ export const routes = [
         isShowHeader: true,
     },
     {
-        path: "/admin/batch",
+        path: "/admin/batchs",
         page: () => (
             <Layout>
                 <BatchList />

@@ -174,27 +174,27 @@ export default function CreateAreaModal({ isOpen, onClose, onSuccess }) {
                 className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
               />
             </div>
+
+            <div className="flex gap-4 justify-end pt-6">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
+                onClick={handleReset}
+              >
+                Hủy
+              </Button>
+              <Button
+                type="submit"
+                disabled={loading}
+                className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+              >
+                {loading ? "Đang thêm..." : "Thêm"}
+              </Button>
+            </div>
+
           </form>
         </div>
-        {/* Action Buttons */}
-        <div className="flex gap-4 justify-end pt-6">
-          <Button
-            type="button"
-            variant="outline"
-            className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
-            onClick={handleReset}
-          >
-            Hủy
-          </Button>
-          <Button
-            type="submit"
-            disabled={loading || loadingData}
-            className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
-          >
-            {loading ? "Đang thêm..." : loadingData ? "Đang tải..." : "Thêm"}
-          </Button>
-        </div>
-
       </div >
     </div >
   )

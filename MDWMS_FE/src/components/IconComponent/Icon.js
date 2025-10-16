@@ -36,6 +36,7 @@ export const IconMap = [
   { keywords: ['people'], icon: 'fluent-color:people-interwoven-48' },
   { keywords: ['europeanNameBadge'], icon: 'openmoji:european-name-badge' },
   { keywords: ['schoolboyRunaway'], icon: 'arcticons:schoolboy-runaway' },
+  { keywords: ['batch', 'lot', 'shipment'], icon: 'mdi:package-variant-closed' },
   // có thể thêm nhiều icon khác ở đây
 ];
 
@@ -76,6 +77,7 @@ export const ComponentIcon = ({ name, color = "#000000", size = 20, collapsed = 
   const isPeopleIcon = name === 'people';
   const isEuropeanNameBadgeIcon = name === 'europeanNameBadge';
   const isSchoolboyRunawayIcon = name === 'schoolboyRunaway';
+  const isBatchIcon = name === 'batch';
 
   const needsSpecialAlignment = isMilkIcon || isUnitMeasureIcon || isCategoryIcon || isStorageCondition ||
     isPartnerIcon || isRetailerIcon || isSupplierIcon || isThermometerIcon ||
@@ -83,7 +85,7 @@ export const ComponentIcon = ({ name, color = "#000000", size = 20, collapsed = 
     isMapPinIcon || isBoxIcon || isCloseIcon || isQrcodeIcon || isProductVariantIcon ||
     isPhoneIcon || isEmailIcon || isTaxIcon || isCalendarIcon || isStreamlineplumpIcon || isFormkitdownIcon || isBellIcon || isBoyIcon || isGirlIcon
     || isCalendarzxIcon || isCrownIcon || isServerNetworkIcon || isPeopleIcon || isEuropeanNameBadgeIcon
-    || isSchoolboyRunawayIcon;
+    || isSchoolboyRunawayIcon || isBatchIcon;
 
   return (
     <Icon

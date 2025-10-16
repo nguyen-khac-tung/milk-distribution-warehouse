@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Button } from "antd";
+import { Button } from "../../../components/ui/button";
 import { getAreas, deleteArea, getAreaDetail, updateAreaStatus } from "../../../services/AreaServices";
 import { Edit, Trash2, ChevronDown, Plus, Eye, ArrowUpDown, ArrowDown, ArrowUp } from "lucide-react";
 import DeleteModal from "../../../components/Common/DeleteModal";
@@ -89,8 +89,11 @@ const AreaLists = () => {
                 pageSize,
                 search: params.search,
                 filters: params.filters,
-                sortField: params.sortField || "",        // thêm dòng này
-                sortOrder: params.sortOrder || ""         // thêm dòng này
+                // Align with common list components
+                sortField: params.sortField || "",
+                sortAscending: typeof params.sortAscending === 'boolean' ? params.sortAscending : undefined,
+                // Backward compatibility if API expects sortOrder
+                sortOrder: typeof params.sortAscending === 'boolean' ? (params.sortAscending ? 'asc' : 'desc') : (params.sortOrder || "")
             });
 
             const payload = res ?? {};
@@ -151,7 +154,9 @@ const AreaLists = () => {
                 search: searchQuery || "",
                 filters: {
                     status: statusFilter ? Number(statusFilter) : undefined
-                }
+                },
+                sortField,
+                sortAscending
             });
             setPagination((p) => ({ ...p, current: 1 }));
         }, 500);
@@ -167,7 +172,9 @@ const AreaLists = () => {
             search: searchQuery,
             filters: {
                 status: status ? Number(status) : undefined
-            }
+            },
+            sortField,
+            sortAscending
         });
         setPagination((p) => ({ ...p, current: 1 }));
     };
@@ -179,7 +186,9 @@ const AreaLists = () => {
             search: searchQuery,
             filters: {
                 status: undefined
-            }
+            },
+            sortField,
+            sortAscending
         });
         setPagination((p) => ({ ...p, current: 1 }));
     };
@@ -191,7 +200,9 @@ const AreaLists = () => {
             search: searchQuery,
             filters: {
                 status: statusFilter ? Number(statusFilter) : undefined
-            }
+            },
+            sortField,
+            sortAscending
         });
     };
 
@@ -201,19 +212,46 @@ const AreaLists = () => {
             search: searchQuery,
             filters: {
                 status: statusFilter ? Number(statusFilter) : undefined
-            }
+            },
+            sortField,
+            sortAscending
         });
     };
 
     // Sort handler
     const handleSort = (field) => {
         if (sortField === field) {
-            setSortAscending(!sortAscending);
+            if (sortAscending === true) {
+                setSortAscending(false);
+                fetchAreas(pagination.current, pagination.pageSize, {
+                    search: searchQuery,
+                    filters: { status: statusFilter ? Number(statusFilter) : undefined },
+                    sortField: field,
+                    sortAscending: false,
+                });
+            } else {
+                // Lần 3: bỏ sort
+                setSortField("");
+                setSortAscending(true);
+                fetchAreas(pagination.current, pagination.pageSize, {
+                    search: searchQuery,
+                    filters: { status: statusFilter ? Number(statusFilter) : undefined },
+                    sortField: "",
+                    sortAscending: undefined,
+                });
+            }
         } else {
-            setSortField(field)
-            setSortAscending(true)
+            // Lần đầu click cột khác → sort asc
+            setSortField(field);
+            setSortAscending(true);
+            fetchAreas(pagination.current, pagination.pageSize, {
+                search: searchQuery,
+                filters: { status: statusFilter ? Number(statusFilter) : undefined },
+                sortField: field,
+                sortAscending: true,
+            });
         }
-    }
+    };
 
     // Mở modal thêm mới
     const handleOpenCreate = () => {
@@ -234,7 +272,9 @@ const AreaLists = () => {
             search: searchQuery,
             filters: {
                 status: statusFilter ? Number(statusFilter) : undefined
-            }
+            },
+            sortField,
+            sortAscending
         });
         fetchTotalStats(); // Cập nhật tổng stats
     };
@@ -248,7 +288,9 @@ const AreaLists = () => {
             search: searchQuery,
             filters: {
                 status: statusFilter ? Number(statusFilter) : undefined
-            }
+            },
+            sortField,
+            sortAscending
         });
         fetchTotalStats(); // Cập nhật tổng stats
     };
@@ -337,6 +379,8 @@ const AreaLists = () => {
                 filters: {
                     status: statusFilter ? Number(statusFilter) : undefined,
                 },
+                sortField,
+                sortAscending
             });
             fetchTotalStats();
         } catch (error) {
@@ -381,7 +425,7 @@ const AreaLists = () => {
                     <SearchFilterToggle
                         searchQuery={searchQuery}
                         setSearchQuery={setSearchQuery}
-                        searchPlaceholder="Tìm kiếm theo mã khu vực..."
+                        searchPlaceholder="Tìm kiếm theo tên, mã khu vực"
                         statusFilter={statusFilter}
                         setStatusFilter={setStatusFilter}
                         showStatusFilter={showStatusFilter}
@@ -419,10 +463,38 @@ const AreaLists = () => {
                                                 STT
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                                                Tên khu vực
+                                                <div
+                                                    className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                                    onClick={() => handleSort("areaName")}
+                                                >
+                                                    <span>Tên khu vực</span>
+                                                    {sortField === "areaName" ? (
+                                                        sortAscending ? (
+                                                            <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                        ) : (
+                                                            <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                        )
+                                                    ) : (
+                                                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                    )}
+                                                </div>
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                                                Mã khu vực
+                                                <div
+                                                    className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                                    onClick={() => handleSort("areaCode")}
+                                                >
+                                                    <span>Mã khu vực</span>
+                                                    {sortField === "areaCode" ? (
+                                                        sortAscending ? (
+                                                            <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                        ) : (
+                                                            <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                        )
+                                                    ) : (
+                                                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                    )}
+                                                </div>
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                                                 Mô tả
@@ -449,14 +521,15 @@ const AreaLists = () => {
                                                     <TableCell className="px-6 py-4 text-slate-700">{area?.areaName || "—"}</TableCell>
                                                     <TableCell className="px-6 py-4 text-slate-700">{area?.description || "—"}</TableCell>
                                                     <TableCell className="px-6 py-4 text-center">
-                                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${area?.status === 1
-                                                            ? 'bg-green-100 text-green-800'
-                                                            : 'bg-red-100 text-red-800'
-                                                            }`}>
-                                                            <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${area?.status === 1 ? 'bg-green-400' : 'bg-red-400'
-                                                                }`}></span>
-                                                            {area?.status === 1 ? 'Hoạt động' : 'Ngừng hoạt động'}
-                                                        </span>
+                                                        <div className="flex justify-center">
+                                                            <StatusToggle
+                                                                status={area?.status}
+                                                                onStatusChange={handleStatusChange}
+                                                                supplierId={area?.areaId}
+                                                                supplierName={area?.areaName}
+                                                                entityType="danh mục"
+                                                            />
+                                                        </div>
                                                     </TableCell>
                                                     <TableCell className="px-6 py-4 text-center">
                                                         <div className="flex items-center justify-center space-x-1">
@@ -608,22 +681,22 @@ const AreaLists = () => {
 
             {/* View Area Detail Modal */}
             {showViewModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-                        {loadingDetail ? (
-                            <Loading size="large" text="Đang tải chi tiết khu vực..." />
-                        ) : areaDetail ? (
-                            <ModalAreaDetail
-                                area={areaDetail}
-                                onClose={handleViewClose}
-                            />
-                        ) : (
-                            <div className="flex items-center justify-center py-12">
-                                <div className="text-slate-600">Không có dữ liệu để hiển thị</div>
-                            </div>
-                        )}
-                    </div>
+
+                <div >
+                    {loadingDetail ? (
+                        <Loading size="large" text="Đang tải chi tiết khu vực..." />
+                    ) : areaDetail ? (
+                        <ModalAreaDetail
+                            area={areaDetail}
+                            onClose={handleViewClose}
+                        />
+                    ) : (
+                        <div className="flex items-center justify-center py-12">
+                            <div className="text-slate-600">Không có dữ liệu để hiển thị</div>
+                        </div>
+                    )}
                 </div>
+
             )}
         </div>
     );

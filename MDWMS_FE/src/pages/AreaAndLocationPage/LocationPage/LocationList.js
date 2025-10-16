@@ -1,8 +1,7 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { Button } from "antd";
-import { getLocations, deleteLocation } from "../../../services/LocationServices";
-import { getAreas } from "../../../services/AreaServices";
-import { Edit, Trash2, ChevronDown, Plus, Filter, Eye } from "lucide-react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
+import { Button } from "../../../components/ui/button";
+import { getLocations, deleteLocation, updateLocationStatus } from "../../../services/LocationServices";
+import { Edit, Trash2, ChevronDown, Plus, Eye, ArrowUpDown, ArrowDown, ArrowUp, Printer } from "lucide-react";
 import DeleteModal from "../../../components/Common/DeleteModal";
 import SearchFilterToggle from "../../../components/Common/SearchFilterToggle";
 import StatsCards from "../../../components/Common/StatsCards";
@@ -13,7 +12,9 @@ import { Card, CardContent } from "../../../components/ui/card";
 import { Table as CustomTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
 import { extractErrorMessage } from "../../../utils/Validation";
 import { StatusToggle } from "../../../components/Common/SwitchToggle/StatusToggle";
-
+import BulkCreateLocationModal from "../LocationPage/BulkCreateLocation";
+import { useReactToPrint } from "react-to-print";
+import Barcode from "react-barcode";
 
 const LocationList = () => {
     const [locations, setLocations] = useState([]);
@@ -27,6 +28,7 @@ const LocationList = () => {
     const [globalStats, setGlobalStats] = useState({ total: 0, available: 0, unavailable: 0 });
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showBulkModal, setShowBulkModal] = useState(false);
     const [itemToDelete, setItemToDelete] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showUpdateModal, setShowUpdateModal] = useState(false);
@@ -37,9 +39,19 @@ const LocationList = () => {
     const [showStatusFilter, setShowStatusFilter] = useState(false);
     const [statusTypeFilter, setStatusTypeFilter] = useState("");
     const [showStatusTypeFilter, setShowStatusTypeFilter] = useState(false);
+    const [showConditionFilter, setShowConditionFilter] = useState(false);
+    const [conditionFilter, setConditionFilter] = useState("");
     const [sortField, setSortField] = useState("");
     const [sortAscending, setSortAscending] = useState(true);
     const [showPageSizeFilter, setShowPageSizeFilter] = useState(false);
+    const printRef = useRef();
+    const [selectedLocation, setSelectedLocation] = useState(null);
+
+    const handlePrint = useReactToPrint({
+        contentRef: printRef,
+        documentTitle: "Phiếu dán vị trí kho",
+        pageStyle: `@page { size: auto; margin: 0; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }`,
+    });
 
     const fetchLocations = async (page = 1, pageSize = 10, params = {}) => {
         try {
@@ -50,6 +62,8 @@ const LocationList = () => {
                 search: params.search,
                 isAvailable: params.filters?.isAvailable,
                 status: params.filters?.status,
+                sortField: params.sortField ?? sortField,
+                sortAscending: typeof (params.sortAscending ?? sortAscending) === 'boolean' ? (params.sortAscending ?? sortAscending) : undefined,
             });
             const res = await getLocations({
                 pageNumber: page,
@@ -58,6 +72,13 @@ const LocationList = () => {
                 isAvailable: params.filters?.isAvailable,
                 areaId: params.filters?.areaId,
                 status: params.filters?.status,
+                // Sorting params (align with AreasList)
+                sortField: params.sortField ?? sortField ?? "",
+                sortAscending: typeof (params.sortAscending ?? sortAscending) === 'boolean' ? (params.sortAscending ?? sortAscending) : undefined,
+                // Fallback if API expects sortOrder string
+                sortOrder: typeof (params.sortAscending ?? sortAscending) === 'boolean'
+                    ? ((params.sortAscending ?? sortAscending) ? 'asc' : 'desc')
+                    : (params.sortOrder || "")
             });
 
             const payload = res ?? {};
@@ -151,19 +172,14 @@ const LocationList = () => {
         fetchLocations(1, pagination.pageSize, params);
     }, [pagination.pageSize]);
 
-    // Search input change handler
-    const handleSearchInputChange = (e) => {
-        setSearchQuery(e.target.value);
-    };
-
     // Debounced search effect
     useEffect(() => {
         const timeoutId = setTimeout(() => {
             handleFilterChange({
                 search: searchQuery,
                 filters: {
-                    isAvailable: statusFilter ? statusFilter === "true" : undefined,
-                    status: statusTypeFilter ? Number(statusTypeFilter) : undefined
+                    isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
+                    status: statusFilter !== "" ? Number(statusFilter) : undefined
                 }
             });
         }, 500);
@@ -171,14 +187,16 @@ const LocationList = () => {
         return () => clearTimeout(timeoutId);
     }, [searchQuery, statusFilter, statusTypeFilter, handleFilterChange]);
 
-    const handleStatusFilter = (status) => {
-        setStatusFilter(status);
+    const handleStatusFilter = (value) => {
+        setStatusFilter(value);
+
         handleFilterChange({
             search: searchQuery,
             filters: {
-                isAvailable: status ? status === "true" : undefined,
-                status: statusTypeFilter ? Number(statusTypeFilter) : undefined
-            }
+                // Nếu value rỗng → bỏ qua filter
+                status: value !== "" ? Number(value) : undefined,
+                isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
+            },
         });
     };
 
@@ -187,31 +205,32 @@ const LocationList = () => {
         handleFilterChange({
             search: searchQuery,
             filters: {
+                status: undefined,
+                isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
+            },
+        });
+    };
+
+    const handleConditionFilter = (value) => {
+        setConditionFilter(value);
+
+        handleFilterChange({
+            search: searchQuery,
+            filters: {
+                status: statusFilter !== "" ? Number(statusFilter) : undefined,
+                isAvailable: value !== "" ? value === "true" : undefined,
+            },
+        });
+    };
+
+    const clearConditionFilter = () => {
+        setConditionFilter("");
+        handleFilterChange({
+            search: searchQuery,
+            filters: {
+                status: statusFilter !== "" ? Number(statusFilter) : undefined,
                 isAvailable: undefined,
-                status: statusTypeFilter ? Number(statusTypeFilter) : undefined
-            }
-        });
-    };
-
-    const handleStatusTypeFilter = (status) => {
-        setStatusTypeFilter(status);
-        handleFilterChange({
-            search: searchQuery,
-            filters: {
-                isAvailable: statusFilter ? statusFilter === "true" : undefined,
-                status: status ? Number(status) : undefined
-            }
-        });
-    };
-
-    const clearStatusTypeFilter = () => {
-        setStatusTypeFilter("");
-        handleFilterChange({
-            search: searchQuery,
-            filters: {
-                isAvailable: statusFilter ? statusFilter === "true" : undefined,
-                status: undefined
-            }
+            },
         });
     };
 
@@ -220,8 +239,8 @@ const LocationList = () => {
         fetchLocations(newPage, pagination.pageSize, {
             search: searchQuery,
             filters: {
-                isAvailable: statusFilter ? statusFilter === "true" : undefined,
-                status: statusTypeFilter ? Number(statusTypeFilter) : undefined
+                isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
+                status: statusFilter !== "" ? Number(statusFilter) : undefined
             }
         });
     };
@@ -231,18 +250,53 @@ const LocationList = () => {
         fetchLocations(1, newPageSize, {
             search: searchQuery,
             filters: {
-                isAvailable: statusFilter ? statusFilter === "true" : undefined,
-                status: statusTypeFilter ? Number(statusTypeFilter) : undefined
+                isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
+                status: statusFilter !== "" ? Number(statusFilter) : undefined
             }
         });
     };
 
     const handleSort = (field) => {
         if (sortField === field) {
-            setSortAscending(!sortAscending);
+            if (sortAscending === true) {
+                // Second click: descending
+                setSortAscending(false);
+                fetchLocations(pagination.current, pagination.pageSize, {
+                    search: searchQuery,
+                    filters: {
+                        isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
+                        status: statusFilter !== "" ? Number(statusFilter) : undefined
+                    },
+                    sortField: field,
+                    sortAscending: false,
+                });
+            } else {
+                // Third click: clear sorting
+                setSortField("");
+                setSortAscending(true);
+                fetchLocations(pagination.current, pagination.pageSize, {
+                    search: searchQuery,
+                    filters: {
+                        isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
+                        status: statusFilter !== "" ? Number(statusFilter) : undefined
+                    },
+                    sortField: "",
+                    sortAscending: undefined,
+                });
+            }
         } else {
+            // First click on a different column: ascending
             setSortField(field);
             setSortAscending(true);
+            fetchLocations(pagination.current, pagination.pageSize, {
+                search: searchQuery,
+                filters: {
+                    isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
+                    status: statusFilter !== "" ? Number(statusFilter) : undefined
+                },
+                sortField: field,
+                sortAscending: true,
+            });
         }
     };
 
@@ -265,8 +319,8 @@ const LocationList = () => {
         fetchLocations(pagination.current, pagination.pageSize, {
             search: searchQuery,
             filters: {
-                isAvailable: statusFilter ? statusFilter === "true" : undefined,
-                status: statusTypeFilter ? Number(statusTypeFilter) : undefined
+                isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
+                status: statusFilter !== "" ? Number(statusFilter) : undefined
             }
         });
         fetchStats(); // Cập nhật tổng stats
@@ -280,8 +334,8 @@ const LocationList = () => {
         fetchLocations(pagination.current, pagination.pageSize, {
             search: searchQuery,
             filters: {
-                isAvailable: statusFilter ? statusFilter === "true" : undefined,
-                status: statusTypeFilter ? Number(statusTypeFilter) : undefined
+                isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
+                status: statusFilter !== "" ? Number(statusFilter) : undefined
             }
         });
         fetchStats(); // Cập nhật tổng stats
@@ -327,8 +381,8 @@ const LocationList = () => {
             fetchLocations(pagination.current, pagination.pageSize, {
                 search: searchQuery,
                 filters: {
-                    isAvailable: statusFilter ? statusFilter === "true" : undefined,
-                    status: statusTypeFilter ? Number(statusTypeFilter) : undefined
+                    isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
+                    status: statusFilter !== "" ? Number(statusFilter) : undefined
                 }
             });
             // refresh global stats
@@ -338,6 +392,23 @@ const LocationList = () => {
         }
     };
 
+    const PrintableLocationLabel = React.forwardRef(({ location }, ref) => (
+        <div ref={ref} className="p-6 w-[600px] h-[600px] text-center border border-gray-200 rounded-md bg-white flex flex-col items-center justify-center">
+            <h2 className="text-2xl font-bold mb-4 text-gray-800">MÃ VỊ TRÍ</h2>
+            <div className="flex justify-center">
+                {location?.locationCode && (
+                    <Barcode
+                        value={location.locationCode}
+                        height={100}
+                        width={2.5}
+                        margin={0}
+                        displayValue={true}
+                        fontSize={30}
+                    />
+                )}
+            </div>
+        </div>
+    ));
 
     return (
         <div className="min-h-screen">
@@ -346,15 +417,28 @@ const LocationList = () => {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-bold text-slate-600">Quản lý Vị trí</h1>
-                        <p className="text-slate-600 mt-1">Quản lý các vị trí lưu trữ trong hệ thống</p>
+                        <p className="text-slate-600 mt-1">
+                            Quản lý các vị trí lưu trữ trong hệ thống
+                        </p>
                     </div>
-                    <Button
-                        className="bg-orange-500 hover:bg-orange-600 h-8 px-6 text-white"
-                        onClick={handleOpenCreate}
-                    >
-                        <Plus className="mr-2 h-4 w-4 text-white" />
-                        Thêm vị trí
-                    </Button>
+
+                    <div className="flex items-center gap-3">
+                        <Button
+                            className="bg-blue-500 hover:bg-blue-600 h-[38px] px-6 text-white transition-colors duration-200"
+                            onClick={() => setShowBulkModal(true)}
+                        >
+                            <Plus className="mr-2 h-4 w-4 text-white" />
+                            Thêm nhiều vị trí
+                        </Button>
+
+                        <Button
+                            className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white transition-colors duration-200"
+                            onClick={handleOpenCreate}
+                        >
+                            <Plus className="mr-2 h-4 w-4 text-white" />
+                            Thêm vị trí
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Stats Cards */}
@@ -372,24 +456,42 @@ const LocationList = () => {
                     <SearchFilterToggle
                         searchQuery={searchQuery}
                         setSearchQuery={setSearchQuery}
-                        searchPlaceholder="Tìm kiếm theo mã vị trí..."
+                        searchPlaceholder="Tìm kiếm theo mã vị trí, khu vực"
+
+                        // Filter TRẠNG THÁI
                         statusFilter={statusFilter}
                         setStatusFilter={setStatusFilter}
                         showStatusFilter={showStatusFilter}
                         setShowStatusFilter={setShowStatusFilter}
                         statusOptions={[
-                            { value: "", label: "Tất cả tình trạng" },
-                            { value: "true", label: "Trống" },
-                            { value: "false", label: "Đang sử dụng" }
+                            { value: "", label: "Tất cả trạng thái" },
+                            { value: "1", label: "Hoạt động" },
+                            { value: "2", label: "Ngừng hoạt động" },
                         ]}
                         onStatusFilter={handleStatusFilter}
                         clearStatusFilter={clearStatusFilter}
+
+                        // Filter TÌNH TRẠNG
+                        enableConditionFilter={true}
+                        conditionFilter={conditionFilter}
+                        setConditionFilter={setConditionFilter}
+                        showConditionFilter={showConditionFilter}
+                        setShowConditionFilter={setShowConditionFilter}
+                        conditionOptions={[
+                            { value: "", label: "Tất cả tình trạng" },
+                            { value: "true", label: "Trống" },
+                            { value: "false", label: "Đang sử dụng" },
+                        ]}
+                        onConditionFilter={handleConditionFilter}
+                        clearConditionFilter={clearConditionFilter}
+
+                        // Khác
                         onClearAll={() => {
                             setSearchQuery("");
                             setStatusFilter("");
-                            setStatusTypeFilter("");
+                            setConditionFilter("");
                             setShowStatusFilter(false);
-                            setShowStatusTypeFilter(false);
+                            setShowConditionFilter(false);
                         }}
                         searchWidth="w-80"
                         showToggle={true}
@@ -412,21 +514,38 @@ const LocationList = () => {
                                                 STT
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                                                <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("locationCode")}>
+                                                <div
+                                                    className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                                    onClick={() => handleSort("locationCode")}
+                                                >
                                                     <span>Mã vị trí</span>
-                                                    <div className="flex flex-col">
-                                                        <ChevronDown
-                                                            className={`h-3 w-3 ${sortField === "locationCode" && sortAscending ? "text-orange-500" : "text-slate-400"}`}
-                                                        />
-                                                        <ChevronDown
-                                                            className={`h-3 w-3 ${sortField === "locationCode" && !sortAscending ? "text-orange-500" : "text-slate-400"}`}
-                                                            style={{ transform: "rotate(180deg)" }}
-                                                        />
-                                                    </div>
+                                                    {sortField === "locationCode" ? (
+                                                        sortAscending ? (
+                                                            <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                        ) : (
+                                                            <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                        )
+                                                    ) : (
+                                                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                    )}
                                                 </div>
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                                                Khu vực
+                                                <div
+                                                    className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                                    onClick={() => handleSort("areaName")}
+                                                >
+                                                    <span>Khu vực</span>
+                                                    {sortField === "areaName" ? (
+                                                        sortAscending ? (
+                                                            <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                        ) : (
+                                                            <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                        )
+                                                    ) : (
+                                                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                    )}
+                                                </div>
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                                                 Kệ
@@ -459,7 +578,7 @@ const LocationList = () => {
                                                         {index + 1}
                                                     </TableCell>
                                                     <TableCell className="px-6 py-4 text-slate-700 font-medium">{location?.locationCode || ''}</TableCell>
-                                                    <TableCell className="px-6 py-4 text-slate-700">{location?.areaNameDto?.areaName || "—"}</TableCell>
+                                                    <TableCell className="px-6 py-4 text-slate-700">{location?.areaName || "—"}</TableCell>
                                                     <TableCell className="px-6 py-4 text-slate-700">{location?.rack || ''}</TableCell>
                                                     <TableCell className="px-6 py-4 text-slate-700">{location?.row || ''}</TableCell>
                                                     <TableCell className="px-6 py-4 text-slate-700">{location?.column || ''}</TableCell>
@@ -474,22 +593,33 @@ const LocationList = () => {
                                                         </span>
                                                     </TableCell>
                                                     <TableCell className="px-6 py-4 text-center">
-                                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${location?.status === 1
-                                                            ? 'bg-green-100 text-green-800'
-                                                            : 'bg-red-100 text-red-800'
-                                                            }`}>
-                                                            <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${location?.status === 1 ? 'bg-green-400' : 'bg-red-400'
-                                                                }`}></span>
-                                                            {location?.status === 1 ? 'Hoạt động' : 'Ngừng hoạt động'}
-                                                        </span>
+                                                        <div className="flex justify-center">
+                                                            <StatusToggle
+                                                                status={location?.status}
+                                                                onStatusChange={handleStatusChange}
+                                                                supplierId={location?.locationId}
+                                                                supplierName={location?.locationCode}
+                                                                entityType="Vị trí"
+                                                            />
+                                                        </div>
                                                     </TableCell>
                                                     <TableCell className="px-6 py-4 text-center">
                                                         <div className="flex items-center justify-center space-x-1">
-                                                            <button
+                                                            {/* <button
                                                                 className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                                                 title="Xem chi tiết"
                                                             >
                                                                 <Eye className="h-4 w-4 text-orange-500" />
+                                                            </button> */}
+                                                            <button
+                                                                className="p-1.5 hover:bg-blue-100 rounded transition-colors"
+                                                                title="In phiếu vị trí"
+                                                                onClick={() => {
+                                                                    setSelectedLocation(location);
+                                                                    setTimeout(() => handlePrint(), 100);
+                                                                }}
+                                                            >
+                                                                <Printer className="h-4 w-4 text-blue-600" />
                                                             </button>
                                                             <button
                                                                 className="p-1.5 hover:bg-slate-100 rounded transition-colors"
@@ -614,6 +744,14 @@ const LocationList = () => {
                 onSuccess={handleCreateSuccess}
             />
 
+            {/* Modal Tạo nhiều vị trí */}
+            {showBulkModal && (
+                <BulkCreateLocationModal
+                    isOpen={showBulkModal}
+                    onClose={() => setShowBulkModal(false)}
+                />
+            )}
+
             {/* Update Location Modal */}
             <UpdateLocationModal
                 isOpen={showUpdateModal}
@@ -630,6 +768,14 @@ const LocationList = () => {
                 onConfirm={handleDeleteConfirm}
                 itemName={itemToDelete?.locationCode || ""}
             />
+
+            {/* Vùng in phiếu - căn giữa khi in */}
+            <div className="print-wrapper">
+                <div ref={printRef} className="print-container">
+                    <PrintableLocationLabel location={selectedLocation} />
+                </div>
+            </div>
+
         </div>
     );
 };
