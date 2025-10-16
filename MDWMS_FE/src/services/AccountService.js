@@ -101,3 +101,23 @@ export const updateUserStatus = async (userId, status) => {
     }
 };
 
+// Delete user
+export const deleteUser = async (userId) => {
+    try {
+        console.log("Delete User API - User ID:", userId);
+        
+        const res = await api.delete(`/User/DeleteUser/${userId}`);
+        console.log("Delete User API - Response received:", res.data);
+
+        return res.data;
+    } catch (error) {
+        console.error("Error deleting user:", error);
+        return {
+            success: false,
+            status: 500,
+            message: error?.response?.data?.message || "Failed to delete user",
+            data: null
+        };
+    }
+};
+

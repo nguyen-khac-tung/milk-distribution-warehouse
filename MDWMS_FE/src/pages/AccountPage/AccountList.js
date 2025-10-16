@@ -9,9 +9,10 @@ import AccountStatsChart from "../../components/AccountComponents/AccountStatsCh
 import Pagination from "../../components/Common/Pagination"
 import EmptyState from "../../components/Common/EmptyState"
 import { StatusToggle } from "../../components/Common/SwitchToggle/StatusToggle"
-import { getUserList, updateUserStatus } from "../../services/AccountService"
+import { getUserList, updateUserStatus, deleteUser } from "../../services/AccountService"
 import CreateAccountModal from "./CreateAccountModal"
 import { AccountDetail } from "./ViewAccountModal"
+import DeleteModal from "../../components/Common/DeleteModal"
 import {
   Plus,
   Eye,
@@ -104,6 +105,8 @@ export default function AdminPage() {
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [selectedUserId, setSelectedUserId] = useState(null)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [userToDelete, setUserToDelete] = useState(null)
 
   const handleStatusFilter = (value) => {
     setStatusFilter(value)
@@ -169,6 +172,57 @@ export default function AdminPage() {
       window.showToast(errorMessage, "error")
     }
   }
+
+  // Handle delete user
+  const handleDeleteClick = (user) => {
+    setUserToDelete(user)
+    setShowDeleteModal(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!userToDelete) return
+
+    try {
+      console.log(`Deleting user ${userToDelete.userId || userToDelete.id} (${userToDelete.fullName})`)
+      const response = await deleteUser(userToDelete.userId || userToDelete.id)
+      
+      if (response && response.success !== false) {
+        // Remove user from both lists
+        setAllEmployees(prev => 
+          prev.filter(emp => (emp.userId !== userToDelete.userId && emp.id !== userToDelete.id))
+        )
+        setAllUsersForStats(prev => 
+          prev.filter(emp => (emp.userId !== userToDelete.userId && emp.id !== userToDelete.id))
+        )
+        
+        // Update pagination total count
+        setPagination(prev => ({
+          ...prev,
+          totalCount: prev.totalCount - 1
+        }))
+        
+        window.showToast(`Đã xóa người dùng "${userToDelete.fullName}" thành công`, "success")
+        console.log(`Successfully deleted user ${userToDelete.fullName}`)
+      } else {
+        console.error(`Failed to delete user ${userToDelete.fullName}:`, response?.message)
+        const errorMessage = response?.message || "Có lỗi xảy ra khi xóa người dùng"
+        window.showToast(errorMessage, "error")
+      }
+    } catch (error) {
+      console.error("Error deleting user:", error)
+      const errorMessage = error?.response?.data?.message || "Có lỗi xảy ra khi xóa người dùng"
+      window.showToast(errorMessage, "error")
+    } finally {
+      setShowDeleteModal(false)
+      setUserToDelete(null)
+    }
+  }
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false)
+    setUserToDelete(null)
+  }
+
   useEffect(() => {
     const fetchAllUsersForStats = async () => {
       try {
@@ -390,6 +444,7 @@ export default function AdminPage() {
           <button
             className="p-1.5 hover:bg-slate-100 rounded transition-colors"
             title="Xóa"
+            onClick={() => handleDeleteClick(employee)}
           >
             <Trash2 className="h-4 w-4 text-red-500" />
           </button>
@@ -528,6 +583,14 @@ export default function AdminPage() {
       <AccountDetail
         userId={selectedUserId}
         onClose={() => setSelectedUserId(null)}
+      />
+      
+      {/* Delete Confirmation Modal */}
+      <DeleteModal
+        isOpen={showDeleteModal}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        itemName={userToDelete?.fullName || ""}
       />
     </div>
   )
