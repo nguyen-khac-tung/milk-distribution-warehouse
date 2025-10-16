@@ -101,6 +101,63 @@ export const updateUserStatus = async (userId, status) => {
     }
 };
 
+// Update user
+export const updateUser = async (userData) => {
+    try {
+        const body = {
+            email: userData.email,
+            fullName: userData.fullName,
+            doB: userData.doB,
+            gender: userData.gender,
+            phone: userData.phone,
+            address: userData.address,
+            roleId: userData.roleId,
+            userId: userData.userId
+        };
+
+        console.log("Update User API - Request body sent:", body);
+        
+        const res = await api.put("/User/UpdateUser", body);
+        console.log("Update User API - Response received:", res.data);
+
+        return res.data;
+    } catch (error) {
+        console.error("Error updating user:", error);
+        return {
+            success: false,
+            status: 500,
+            message: error?.response?.data?.message || "Failed to update user",
+            data: null
+        };
+    }
+};
+
+// Update password
+export const updatePassword = async (passwordData) => {
+    try {
+        const body = {
+            oldPassword: passwordData.currentPassword,
+            newPassword: passwordData.newPassword,
+            confirmNewPassword: passwordData.confirmPassword
+        };
+
+        console.log("Update Password API - Request body sent:", { ...body, oldPassword: "***", newPassword: "***", confirmNewPassword: "***" });
+        
+        const res = await api.put("/Authentication/ChangePassword", body);
+        console.log("Update Password API - Response received:", res.data);
+
+        return res.data;
+    } catch (error) {
+        console.error("Error updating password:", error);
+        return {
+            success: false,
+            status: 500,
+            message: error?.response?.data?.message || "Failed to update password",
+            data: null
+        };
+    }
+};
+
 // Delete user
 export const deleteUser = async (userId) => {
     try {

@@ -112,7 +112,14 @@ export const showValidationError = (message) => {
 export const cleanErrorMessage = (errorMsg) => {
   if (!errorMsg) return ""
   
-  return errorMsg.replace(/^\[[^\]]*\]\s*/, "").trim()
+  // Remove various bracket patterns and clean up
+  let cleaned = errorMsg
+    .replace(/^\[[^\]]*\]\s*/, "") // Remove [User] at start
+    .replace(/\[[^\]]*\]/g, "") // Remove any [brackets] anywhere
+    .replace(/\s+/g, " ") // Replace multiple spaces with single space
+    .trim()
+  
+  return cleaned
 }
 
 /**

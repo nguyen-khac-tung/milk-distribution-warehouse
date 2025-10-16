@@ -10,7 +10,9 @@ import Pagination from "../../components/Common/Pagination"
 import EmptyState from "../../components/Common/EmptyState"
 import { StatusToggle } from "../../components/Common/SwitchToggle/StatusToggle"
 import { getUserList, updateUserStatus, deleteUser } from "../../services/AccountService"
+import { extractErrorMessage } from "../../utils/Validation"
 import CreateAccountModal from "./CreateAccountModal"
+import UpdateAccountModal from "./UpdateAccountModal"
 import { AccountDetail } from "./ViewAccountModal"
 import DeleteModal from "../../components/Common/DeleteModal"
 import {
@@ -104,7 +106,9 @@ export default function AdminPage() {
   })
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false)
   const [selectedUserId, setSelectedUserId] = useState(null)
+  const [userToUpdate, setUserToUpdate] = useState(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [userToDelete, setUserToDelete] = useState(null)
 
@@ -161,14 +165,20 @@ export default function AdminPage() {
         })
       } else {
         console.error(`Failed to update user ${name} status:`, response?.message)
-        const errorMessage = response?.message || "Có lỗi xảy ra khi cập nhật trạng thái người dùng"
+        const errorMessage = extractErrorMessage({ response: { data: response } }, "Có lỗi xảy ra khi cập nhật trạng thái người dùng")
         window.showToast(errorMessage, "error")
       }
     } catch (error) {
       console.error("Error updating user status:", error)
-      const errorMessage = error?.response?.data?.message || "Có lỗi xảy ra khi cập nhật trạng thái người dùng"
+      const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật trạng thái người dùng")
       window.showToast(errorMessage, "error")
     }
+  }
+
+  // Handle update user
+  const handleUpdateClick = (user) => {
+    setUserToUpdate(user)
+    setIsUpdateModalOpen(true)
   }
 
   // Handle delete user
@@ -281,12 +291,12 @@ export default function AdminPage() {
         })
       } else {
         console.error(`Failed to delete user ${userToDelete.fullName}:`, response?.message)
-        const errorMessage = response?.message || "Có lỗi xảy ra khi xóa người dùng"
+        const errorMessage = extractErrorMessage({ response: { data: response } }, "Có lỗi xảy ra khi xóa người dùng")
         window.showToast(errorMessage, "error")
       }
     } catch (error) {
       console.error("Error deleting user:", error)
-      const errorMessage = error?.response?.data?.message || "Có lỗi xảy ra khi xóa người dùng"
+      const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi xóa người dùng")
       window.showToast(errorMessage, "error")
     } finally {
       setShowDeleteModal(false)
@@ -453,6 +463,7 @@ export default function AdminPage() {
           <button
             className="p-1.5 hover:bg-slate-100 rounded transition-colors"
             title="Chỉnh sửa"
+            onClick={() => handleUpdateClick(employee)}
           >
             <Edit className="h-4 w-4 text-orange-500" />
           </button>
@@ -602,6 +613,29 @@ export default function AdminPage() {
             sortAscending: sortDirection === "asc"
           })
         }}
+      />
+      
+      {/* Update Account Modal */}
+      <UpdateAccountModal
+        isOpen={isUpdateModalOpen}
+        onClose={() => {
+          setIsUpdateModalOpen(false)
+          setUserToUpdate(null)
+        }}
+        onSuccess={() => {
+          // Refresh all users for stats
+          fetchAllUsersForStats()
+          
+          // Refresh data after update
+          fetchData({
+            pageNumber: pagination.pageNumber,
+            pageSize: pagination.pageSize,
+            search: searchQuery,
+            sortField: sortColumn || "",
+            sortAscending: sortDirection === "asc"
+          })
+        }}
+        userData={userToUpdate}
       />
       
       {/* View Account Modal */}

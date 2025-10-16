@@ -4,11 +4,13 @@ import { LogoutOutlined, StarOutlined, MenuOutlined, MenuFoldOutlined, UserOutli
 import { logout } from "../../services/AuthenticationServices";
 import AnimatedBell from "../Common/AnimatedBell";
 import SearchBar from "../Common/SearchBar";
+import { ViewProfileModal } from "../../pages/AccountPage/ViewProfileModal";
 
 const HeaderBar = ({ onToggleSidebar, sidebarCollapsed }) => {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [showUserMenu, setShowUserMenu] = useState(false);
+    const [showProfileModal, setShowProfileModal] = useState(false);
 
     useEffect(() => {
         const savedUser = localStorage.getItem("userInfo");
@@ -33,26 +35,26 @@ const HeaderBar = ({ onToggleSidebar, sidebarCollapsed }) => {
 
     const handleProfileClick = () => {
         setShowUserMenu(false);
-        // Navigate to profile page
-        console.log("Navigate to profile");
+        setShowProfileModal(true);
     };
 
     return (
-        <div
-            style={{
-                height: 75,
-                background: "#ffffff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "0 24px",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                borderBottom: "1px solid #e5e7eb",
-                position: "sticky",
-                top: 0,
-                zIndex: 100,
-            }}
-        >
+        <>
+            <div
+                style={{
+                    height: 75,
+                    background: "#ffffff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "0 24px",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                    borderBottom: "1px solid #e5e7eb",
+                    position: "sticky",
+                    top: 0,
+                    zIndex: 100,
+                }}
+            >
             <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
                 <div
                     onClick={onToggleSidebar}
@@ -252,7 +254,17 @@ const HeaderBar = ({ onToggleSidebar, sidebarCollapsed }) => {
                     )}
                 </div>
             </div>
-        </div>
+            </div>
+            
+            {/* View Profile Modal */}
+            {showProfileModal && (
+                <ViewProfileModal
+                    isOpen={showProfileModal}
+                    userId={user?.userId || user?.id}
+                    onClose={() => setShowProfileModal(false)}
+                />
+            )}
+        </>
     );
 };
 

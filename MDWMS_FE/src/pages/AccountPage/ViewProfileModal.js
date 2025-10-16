@@ -2,17 +2,18 @@ import React, { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
 import { Separator } from "../../components/ui/separator"
 import { Button } from "../../components/ui/button"
-import { X } from "lucide-react";
+import { X, Lock } from "lucide-react";
 import { ComponentIcon } from "../../components/IconComponent/Icon";
 import { getUserDetail } from "../../services/AccountService";
 import Loading from "../../components/Common/Loading";
+import ChangePasswordModal from "./ChangePasswordModal";
 import { extractErrorMessage } from "../../utils/Validation";
 
-
-export function AccountDetail({ userId, onClose }) {
+export function ViewProfileModal({ userId, onClose, isOpen }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [showChangePassword, setShowChangePassword] = useState(false)
 
   useEffect(() => {
     const fetchUserDetail = async () => {
@@ -20,7 +21,7 @@ export function AccountDetail({ userId, onClose }) {
         setLoading(true)
         setError(null)
         const response = await getUserDetail(userId)
-        
+
         if (response && response.success !== false && response.data) {
           setUser(response.data)
         } else {
@@ -39,8 +40,8 @@ export function AccountDetail({ userId, onClose }) {
     }
   }, [userId])
 
-  // Don't render if no userId
-  if (!userId) return null
+  // Don't render if not open or no userId
+  if (!isOpen || !userId) return null
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -92,7 +93,7 @@ export function AccountDetail({ userId, onClose }) {
       <div className="w-full max-w-4xl  max-h-[75vh] overflow-y-auto bg-white rounded-lg shadow-2xl relative">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-slate-800">Chi tiết người dùng</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Thông tin cá nhân</h1>
           <button
             onClick={onClose}
             className="p-1 hover:bg-gray-100 rounded-full transition-colors"
@@ -213,7 +214,14 @@ export function AccountDetail({ userId, onClose }) {
         </div>
 
         {/* Action Buttons - Fixed Footer */}
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-end">
+        <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-between">
+          <Button
+            onClick={() => setShowChangePassword(true)}
+            className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2"
+          >
+            <Lock className="h-4 w-4" />
+            Đổi mật khẩu
+          </Button>
           <Button
             onClick={onClose}
             className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
@@ -222,6 +230,13 @@ export function AccountDetail({ userId, onClose }) {
           </Button>
         </div>
       </div>
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={showChangePassword}
+        onClose={() => setShowChangePassword(false)}
+        userId={userId}
+      />
     </div>
   )
 }
