@@ -10,6 +10,8 @@ import Pagination from "../../components/Common/Pagination"
 import EmptyState from "../../components/Common/EmptyState"
 import { StatusToggle } from "../../components/Common/SwitchToggle/StatusToggle"
 import { getUserList, updateUserStatus } from "../../services/AccountService"
+import CreateAccountModal from "./CreateAccountModal"
+import { AccountDetail } from "./ViewAccountModal"
 import {
   Plus,
   Eye,
@@ -101,6 +103,7 @@ export default function AdminPage() {
   })
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [selectedUserId, setSelectedUserId] = useState(null)
 
   const handleStatusFilter = (value) => {
     setStatusFilter(value)
@@ -374,6 +377,7 @@ export default function AdminPage() {
           <button
             className="p-1.5 hover:bg-slate-100 rounded transition-colors"
             title="Xem chi tiết"
+            onClick={() => setSelectedUserId(employee.userId || employee.id)}
           >
             <Eye className="h-4 w-4 text-orange-500" />
           </button>
@@ -507,7 +511,24 @@ export default function AdminPage() {
             className="bg-gray-50"
           />
         )}
+
       </div>
+      
+      {/* Create Account Modal */}
+      <CreateAccountModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={() => {
+          // Refresh the user list
+          window.location.reload()
+        }}
+      />
+      
+      {/* View Account Modal */}
+      <AccountDetail
+        userId={selectedUserId}
+        onClose={() => setSelectedUserId(null)}
+      />
     </div>
   )
 }
