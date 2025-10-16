@@ -4,7 +4,7 @@ import { Card, CardContent } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
-import { Search, Plus, Eye, Edit, Trash2, Filter, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Ruler } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Filter, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Ruler } from "lucide-react";
 import CreateUnitMeasure from "./CreateUnitMeasureModal";
 import UpdateUnitMeasure from "./UpdateUnitMeasureModal";
 import DeleteModal from "../../components/Common/DeleteModal";
@@ -531,12 +531,6 @@ export default function UnitMeasuresPage() {
                           </TableCell>
                           <TableCell className="px-6 py-4 text-center">
                             <div className="flex items-center justify-center space-x-1">
-                              <button
-                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                title="Xem chi tiết"
-                              >
-                                <Eye className="h-4 w-4 text-orange-500" />
-                              </button>
                               <button
                                 className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                 title="Chỉnh sửa"
