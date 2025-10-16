@@ -14,7 +14,6 @@ import { extractErrorMessage } from "../../../utils/Validation";
 import { ModalAreaDetail } from "./ViewAreaModal";
 import StatsCards from "../../../components/Common/StatsCards";
 import { StatusToggle } from "../../../components/Common/SwitchToggle/StatusToggle";
-import { StatusToggle } from "../../../components/Common/SwitchToggle/StatusToggle";
 
 const AreaLists = () => {
     const [areas, setAreas] = useState([]);
@@ -333,29 +332,6 @@ const AreaLists = () => {
         }
     }
 
-    const handleStatusChange = async (areaId, newStatus) => {
-        try {
-            await updateAreaStatus(areaId, newStatus)
-
-            // Update local state
-            setAreas(prevAreas =>
-                prevAreas.map(area =>
-                    area.areaId === areaId
-                        ? { ...area, status: newStatus }
-                        : area
-                )
-            )
-
-            const statusText = newStatus === 1 ? "kích hoạt" : "ngừng hoạt động"
-            window.showToast(`Đã ${statusText} nhà cung cấp thành công`, "success")
-        } catch (error) {
-            console.error("Error updating area status:", error)
-
-            const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật trạng thái")
-            window.showToast(errorMessage, "error")
-        }
-    }
-
     // Xem chi tiết khu vực
     const handleViewClick = async (area) => {
         try {
@@ -371,7 +347,7 @@ const AreaLists = () => {
             if (response && response.data) {
                 const areaDetailData = {
                     ...area,
-                    ...response.data
+                    ...response.data,
                     ...area,
                     ...response.data
                 }
@@ -417,9 +393,6 @@ const AreaLists = () => {
             fetchTotalStats();
             fetchTotalStats();
         } catch (error) {
-            // console.error("Error deleting area:", error);
-            const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi xóa khu vực")
-            window.showToast(errorMessage, "error");
             // console.error("Error deleting area:", error);
             const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi xóa khu vực")
             window.showToast(errorMessage, "error");

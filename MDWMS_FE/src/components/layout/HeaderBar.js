@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogoutOutlined, StarOutlined, MenuOutlined, MenuFoldOutlined, UserOutlined, SettingOutlined } from "@ant-design/icons";
-import { LogoutOutlined, StarOutlined, MenuOutlined, MenuFoldOutlined, UserOutlined, SettingOutlined } from "@ant-design/icons";
 import { logout } from "../../services/AuthenticationServices";
-import AnimatedBell from "../Common/AnimatedBell";
 import AnimatedBell from "../Common/AnimatedBell";
 import SearchBar from "../Common/SearchBar";
 import { ViewProfileModal } from "../../pages/AccountPage/ViewProfileModal";
@@ -92,11 +90,6 @@ const HeaderBar = ({ onToggleSidebar, sidebarCollapsed }) => {
                         color="#6b7280"
                         duration="3s"
                         delay="2s"
-                <AnimatedBell
-                        size={35}
-                        color="#6b7280"
-                        duration="3s"
-                        delay="2s"
                         title="Thông báo"
                     />
 
@@ -126,7 +119,6 @@ const HeaderBar = ({ onToggleSidebar, sidebarCollapsed }) => {
                                     height: 40,
                                     borderRadius: "50%",
                                     backgroundColor: "#c7c7c7ff",
-                                    backgroundColor: "#c7c7c7ff",
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
@@ -139,57 +131,48 @@ const HeaderBar = ({ onToggleSidebar, sidebarCollapsed }) => {
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.1 }}>
                                 <span style={{ fontSize: 16, fontWeight: 600, color: "#111827" }}>
-                                    <span style={{ fontSize: 16, fontWeight: 600, color: "#111827" }}>
-                                        {user?.fullName || "Người dùng"}
-                                    </span>
-                                    <span style={{ fontSize: 14, color: "#6b7280", marginTop: 2 }}>
-                                        <span style={{ fontSize: 14, color: "#6b7280", marginTop: 2 }}>
-                                            {user?.roles?.[0] || "Admin"}
-                                        </span>
-                                    </div>
+                                    {user?.fullName || "Người dùng"}
+                                </span>
+                                <span style={{ fontSize: 14, color: "#6b7280", marginTop: 2 }}>
+                                    {user?.roles?.[0] || "Admin"}
+                                </span>
                             </div>
+                        </div>
 
-                            {/* User Dropdown Menu */}
-                            {showUserMenu && (
-                                <>
-                                    {/* Backdrop */}
-                                    <div
-                                        style={{
-                                            position: "fixed",
-                                            top: 0,
-                                            left: 0,
-                                            right: 0,
-                                            bottom: 0,
-                                            zIndex: 998
-                                        }}
-                                        onClick={() => setShowUserMenu(false)}
-                                    />
+                        {/* User Dropdown Menu */}
+                        {showUserMenu && (
+                            <>
+                                {/* Backdrop */}
+                                <div
+                                    style={{
+                                        position: "fixed",
+                                        top: 0,
+                                        left: 0,
+                                        right: 0,
+                                        bottom: 0,
+                                        zIndex: 998
+                                    }}
+                                    onClick={() => setShowUserMenu(false)}
+                                />
 
-                                    {/* Dropdown Content */}
-                                    <div
-                                        style={{
-                                            position: "fixed",
-                                            top: "72px",
-                                            position: "fixed",
-                                            top: "72px",
-                                            right: 0,
-                                            marginTop: 3,
-                                            marginTop: 3,
-                                            backgroundColor: "#ffffff",
-                                            borderRadius: "8px 0 0 8px",
-                                            borderRadius: "8px 0 0 8px",
-                                            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                                            border: "1px solid #e5e7eb",
-                                            width: "200px",
-                                            zIndex: 9999,
-                                            width: "200px",
-                                            zIndex: 9999,
-                                            overflow: "hidden"
-                                        }}
-                                    >
-                                        {/* User Info */}
-                                        {/* <div style={{
-                                {/* <div style={{
+                                {/* Dropdown Content */}
+                                <div
+                                    style={{
+                                        position: "fixed",
+                                        top: "72px",
+                                        right: 0,
+                                        marginTop: 3,
+                                        backgroundColor: "#ffffff",
+                                        borderRadius: "8px 0 0 8px",
+                                        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                                        border: "1px solid #e5e7eb",
+                                        width: "200px",
+                                        zIndex: 9999,
+                                        overflow: "hidden"
+                                    }}
+                                >
+                                    {/* User Info */}
+                                    {/* <div style={{
                                     padding: "16px",
                                     borderBottom: "1px solid #f3f4f6",
                                     display: "flex",
@@ -211,7 +194,6 @@ const HeaderBar = ({ onToggleSidebar, sidebarCollapsed }) => {
                                         <div style={{
                                             fontWeight: 600,
                                             fontSize: "16px",
-                                            fontSize: "16px",
                                             color: "#1f2937",
                                             lineHeight: 1.2
                                         }}>
@@ -219,9 +201,7 @@ const HeaderBar = ({ onToggleSidebar, sidebarCollapsed }) => {
                                         </div>
                                         <div style={{
                                             marginTop: 2,
-                                            marginTop: 2,
                                             fontWeight: 400,
-                                            fontSize: "14px",
                                             fontSize: "14px",
                                             color: "#6b7280",
                                             lineHeight: 1.2
@@ -230,7 +210,6 @@ const HeaderBar = ({ onToggleSidebar, sidebarCollapsed }) => {
                                         </div>
                                     </div>
                                 </div> */}
-                                    </div> */}
 
                                     {/* Menu Items */}
                                     <div style={{ padding: "8px 0" }}>
@@ -271,8 +250,8 @@ const HeaderBar = ({ onToggleSidebar, sidebarCollapsed }) => {
                                         </div>
                                     </div>
                                 </div>
-                        </>
-                    )}
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
