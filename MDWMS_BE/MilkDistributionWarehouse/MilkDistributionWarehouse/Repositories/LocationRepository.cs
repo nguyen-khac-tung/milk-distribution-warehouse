@@ -101,7 +101,8 @@ namespace MilkDistributionWarehouse.Repositories
 
             return await query.AnyAsync(l =>
                 l.Rack.ToLower().Trim() == rack.ToLower().Trim()
-                || (l.Row == row && l.Column == column));
+                && l.Row == row
+                && l.Column == column);
         }
 
         public async Task<List<Location>> GetActiveLocationsAsync()
