@@ -297,9 +297,7 @@ export default function SearchFilterToggle({
                 <div className="relative role-filter-dropdown">
                   <button
                     onClick={() => setShowRoleFilter(!showRoleFilter)}
-                    className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706] transition-colors min-w-0 max-w-48 ${roleFilter ? 'bg-[#d97706] text-white' : 'bg-white text-slate-700'
-                      }`}
-                    className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors
+                    className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors min-w-0 max-w-48
                       focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
                       ${roleFilter ? 'bg-[#d97706] text-white hover:bg-[#d97706]' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
                   >
@@ -338,9 +336,7 @@ export default function SearchFilterToggle({
                 <div className="relative category-filter-dropdown">
                   <button
                     onClick={() => setShowCategoryFilter(!showCategoryFilter)}
-                    className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706] transition-colors min-w-0 max-w-48 ${categoryFilter ? 'bg-[#d97706] text-white' : 'bg-white text-slate-700'
-                      }`}
-                    className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors
+                    className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors min-w-0 max-w-48
                       focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
                       ${categoryFilter ? 'bg-[#d97706] text-white hover:bg-[#d97706]' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
                   >
@@ -379,9 +375,7 @@ export default function SearchFilterToggle({
                 <div className="relative supplier-filter-dropdown">
                   <button
                     onClick={() => setShowSupplierFilter(!showSupplierFilter)}
-                    className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706] transition-colors min-w-0 max-w-48 ${supplierFilter ? 'bg-[#d97706] text-white' : 'bg-white text-slate-700'
-                      }`}
-                    className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors
+                    className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors min-w-0 max-w-48
                       focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
                       ${supplierFilter ? 'bg-[#d97706] text-white hover:bg-[#d97706]' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
                   >
@@ -468,9 +462,7 @@ export default function SearchFilterToggle({
                 <div className="relative unit-measure-filter-dropdown">
                   <button
                     onClick={() => setShowUnitMeasureFilter(!showUnitMeasureFilter)}
-                    className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706] transition-colors min-w-0 max-w-48 ${unitMeasureFilter ? 'bg-[#d97706] text-white' : 'bg-white text-slate-700'
-                      }`}
-                    className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors
+                    className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors min-w-0 max-w-48
                       focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
                       ${unitMeasureFilter ? 'bg-[#d97706] text-white hover:bg-[#d97706]' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
                   >
