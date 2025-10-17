@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Services;
@@ -17,7 +18,7 @@ namespace MilkDistributionWarehouse.Controllers
             _batchService = batchService;
         }
 
-
+        [Authorize(Roles = "Warehouse Manager, Warehouse Staff")]
         [HttpPost("GetBatchList")]
         public async Task<IActionResult> GetBatchList(PagedRequest request)
         {
@@ -27,6 +28,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<PageResult<BatchDto>>.ToResultOk(batchs);
         }
 
+        [Authorize(Roles = "Warehouse Manager, Warehouse Staff")]
         [HttpGet("DropDown/{goodsId}")]
         public async Task<IActionResult> GetBatchDropDown(int goodsId)
         {
@@ -37,6 +39,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<List<BatchDropDownDto>>.ToResultOk(batches);
         }
 
+        [Authorize(Roles = "Warehouse Manager, Warehouse Staff")]
         [HttpPost("Create")]
         public async Task<IActionResult> CreateBatch(BatchCreateDto createDto)
         {
@@ -46,6 +49,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<BatchDto>.ToResultOk(batch);
         }
 
+        [Authorize(Roles = "Warehouse Manager, Warehouse Staff")]
         [HttpPut("Update")]
         public async Task<IActionResult> UpdateBatch(BatchUpdateDto updateDto)
         {
@@ -55,6 +59,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<BatchDto>.ToResultOk(batch);
         }
 
+        [Authorize(Roles = "Warehouse Manager, Warehouse Staff")]
         [HttpPut("UpdateStatus")]
         public async Task<IActionResult> UpdateBatchStatus(BatchUpdateStatusDto updateDto)
         {
@@ -65,6 +70,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<BatchUpdateStatusDto>.ToResultOk(batchStatus);
         }
 
+        [Authorize(Roles = "Warehouse Manager, Warehouse Staff")]
         [HttpDelete("Delete/{batchId}")]
         public async Task<IActionResult> DeleteBatch(Guid batchId)
         {

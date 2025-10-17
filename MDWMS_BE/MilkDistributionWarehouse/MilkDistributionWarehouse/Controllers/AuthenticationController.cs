@@ -62,6 +62,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<AuthenticationDto>.ToResultOk(authenDto, "Đặt lại mật khẩu thành công.");
         }
 
+        [Authorize]
         [HttpPut("Logout")]
         public async Task<IActionResult> DoLogout()
         {

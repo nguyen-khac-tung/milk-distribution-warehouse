@@ -15,6 +15,8 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public DateOnly? ManufacturingDate { get; set; }
 
         public DateOnly? ExpiryDate { get; set; }
+
+        public int? Status { get; set; }
     }
 
     public class BatchDropDownDto
