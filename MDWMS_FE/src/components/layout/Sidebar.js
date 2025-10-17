@@ -15,7 +15,6 @@ import {
 } from "@ant-design/icons";
 import { Link, useLocation } from "react-router-dom";
 import { ComponentIcon } from "../../components/IconComponent/Icon";
-import Logo from "../../components/IconComponent/Logo";
 
 const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
     const location = useLocation();
@@ -310,7 +309,11 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
             }}>
                 {!collapsed && (
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <Logo size={32} />
+                        <img 
+                            src="/logo.png" 
+                            alt="Logo" 
+                            style={{ width: 80, height: 80, objectFit: 'contain' }}
+                        />
                         <div>
                             <div style={{ fontWeight: 700, fontSize: 16, color: "#1f2937", lineHeight: 1.2 }}>
                                 Kho Phân Phối Sữa
@@ -325,7 +328,11 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
                         justifyContent: "center",
                         margin: "0 auto"
                     }}>
-                        <Logo size={28} />
+                        <img 
+                            src="/logo.png" 
+                            alt="Logo" 
+                            style={{ width: 28, height: 28, objectFit: 'contain' }}
+                        />
                     </div>
                 )}
             </div>
