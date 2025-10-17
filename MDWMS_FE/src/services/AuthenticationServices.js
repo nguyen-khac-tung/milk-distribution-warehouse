@@ -40,10 +40,20 @@ export const login = async (data) => {
         }
     } catch (error) {
         console.error("Error during login:", error);
-        if (error.response?.data?.message) {
-            throw new Error(error.response.data.message);
+
+        if (error.response) {
+            return {
+                success: false,
+                message: error.response.data?.message || "Đăng nhập thất bại",
+                status: error.response.status
+            };
         }
-        throw error;
+
+        return {
+            success: false,
+            message: "Vui lòng kiểm tra lại kết nối.",
+            status: 0
+        };
     }
 };
 
