@@ -3,8 +3,8 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Link, useNavigate } from "react-router-dom";
-import { message, Spin } from "antd"; // dùng thông báo của antd cho tiện
-import { login } from "../../services/AuthenticationServices"; // ✅ import service login
+import { message, Spin } from "antd";
+import { login } from "../../services/AuthenticationServices";
 import Logo from "../IconComponent/Logo";
 import { extractErrorMessage } from "../../utils/Validation";
 
@@ -42,7 +42,12 @@ export function LoginForm() {
             }
         } catch (error) {
             console.error("Error in login form:", error);
-            window.showToast(extractErrorMessage(error, "Không thể đăng nhập. Vui lòng thử lại sau!"), "error");
+            if (error.message === "Network Error" || !error.response) {
+                window.showToast("Không thể kết nối đến máy chủ. Vui lòng kiểm tra lại mạng hoặc server!", "error");
+            }
+            else if (error.response && error.response.data && error.response.data.message) {
+                window.showToast(extractErrorMessage(error.response.data.message), "error");
+            }
         } finally {
             setLoading(false);
         }
