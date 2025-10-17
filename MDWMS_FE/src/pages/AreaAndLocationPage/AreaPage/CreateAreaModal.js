@@ -5,8 +5,9 @@ import { Label } from "../../../components/ui/label"
 import { Card } from "../../../components/ui/card"
 import { X } from "lucide-react"
 import { createArea } from "../../../services/AreaServices"
-import { getStorageCondition } from "../../../services/StorageConditionService"
+import { getStorageConditionsDropdown } from "../../../services/StorageConditionService"
 import { validateAndShowError, extractErrorMessage } from "../../../utils/Validation"
+import CustomDropdown from "../../../components/Common/CustomDropdown"
 
 export default function CreateAreaModal({ isOpen, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -30,7 +31,7 @@ export default function CreateAreaModal({ isOpen, onClose, onSuccess }) {
   const loadDropdownData = async () => {
     try {
       setLoadingData(true)
-      const storageConditionsRes = await getStorageCondition({ pageNumber: 1, pageSize: 10 })
+      const storageConditionsRes = await getStorageConditionsDropdown({ pageNumber: 1, pageSize: 10 })
 
       // Handle different response structures
       setStorageConditions(storageConditionsRes?.data?.items || storageConditionsRes?.data || [])
@@ -138,27 +139,21 @@ export default function CreateAreaModal({ isOpen, onClose, onSuccess }) {
               <Label htmlFor="storageConditionId" className="text-sm font-medium text-slate-700">
                 Điều kiện bảo quản <span className="text-red-500">*</span>
               </Label>
-              <select
-                id="storageConditionId"
-                value={formData.storageConditionId}
-                onChange={(e) => setFormData({ ...formData, storageConditionId: e.target.value })}
-                className="h-[38px] w-full px-3 py-1 border border-slate-300 rounded-lg focus:border-orange-500 focus:ring-orange-500 focus:outline-none bg-white text-sm flex items-center"
-                required
-              >
-                <option value="">Chọn điều kiện bảo quản...</option>
-                {loadingData ? (
-                  <option disabled>Đang tải...</option>
-                ) : (
-                  storageConditions.map((condition) => (
-                    <option
-                      key={condition.storageConditionId}
-                      value={condition.storageConditionId.toString()}
-                    >
-                      {condition.conditionName} - Nhiệt độ: {condition.temperatureMin}°C đến {condition.temperatureMax}°C - Độ ẩm: {condition.humidityMin}% đến {condition.humidityMax}%
-                    </option>
-                  ))
-                )}
-              </select>
+              <CustomDropdown
+                value={formData.storageConditionId?.toString() || ""}
+                onChange={(value) =>
+                  setFormData({ ...formData, storageConditionId: value })
+                }
+                options={[
+                  { value: "", label: "Chọn điều kiện bảo quản..." },
+                  ...storageConditions.map((condition) => ({
+                    value: condition.storageConditionId.toString(),
+                    label: `- Nhiệt độ: ${condition.temperatureMin}°C đến ${condition.temperatureMax}°C - Độ ẩm: ${condition.humidityMin}% đến ${condition.humidityMax}%`,
+                  })),
+                ]}
+                placeholder="Chọn điều kiện bảo quản..."
+                loading={loadingData}
+              />
             </div>
 
             {/* Description */}
@@ -166,12 +161,13 @@ export default function CreateAreaModal({ isOpen, onClose, onSuccess }) {
               <Label htmlFor="description" className="text-sm font-medium text-slate-700">
                 Mô tả
               </Label>
-              <Input
+              <textarea
                 id="description"
                 placeholder="Nhập mô tả khu vực..."
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                rows={3}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-orange-500 focus:ring-orange-500 focus:outline-none text-sm resize-y"
               />
             </div>
 

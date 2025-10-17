@@ -6,6 +6,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { message, Spin } from "antd"; // dùng thông báo của antd cho tiện
 import { login } from "../../services/AuthenticationServices"; // ✅ import service login
 import Logo from "../IconComponent/Logo";
+import { extractErrorMessage } from "../../utils/Validation";
 
 export function LoginForm() {
     const [email, setEmail] = useState("");
@@ -18,7 +19,7 @@ export function LoginForm() {
         e.preventDefault();
 
         if (!email || !password) {
-            message.warning("Vui lòng nhập đầy đủ thông tin đăng nhập.");
+            window.showToast(extractErrorMessage("Vui lòng nhập đầy đủ thông tin đăng nhập."), "error");
             return;
         }
 
@@ -37,11 +38,11 @@ export function LoginForm() {
                 // Điều hướng sau khi đăng nhập thành công
                 navigate("/admin/dashboard");
             } else {
-                message.error(res.message || "Đăng nhập thất bại!");
+                window.showToast(extractErrorMessage(res.message || "Đăng nhập thất bại!"), "error");
             }
         } catch (error) {
             console.error("Error in login form:", error);
-            message.error("Không thể đăng nhập. Vui lòng thử lại sau!");
+            window.showToast(extractErrorMessage(error, "Không thể đăng nhập. Vui lòng thử lại sau!"), "error");
         } finally {
             setLoading(false);
         }

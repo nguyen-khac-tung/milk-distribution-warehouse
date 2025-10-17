@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { Button } from "../../../components/ui/button";
 import { getLocations, deleteLocation, updateLocationStatus } from "../../../services/LocationServices";
-import { Edit, Trash2, ChevronDown, Plus, Eye, ArrowUpDown, ArrowDown, ArrowUp, Printer } from "lucide-react";
+import { Edit, Trash2, ChevronDown, Plus, Eye, ArrowUpDown, ArrowDown, ArrowUp, Printer, Folder } from "lucide-react";
 import DeleteModal from "../../../components/Common/DeleteModal";
 import SearchFilterToggle from "../../../components/Common/SearchFilterToggle";
 import StatsCards from "../../../components/Common/StatsCards";
@@ -15,6 +15,7 @@ import { StatusToggle } from "../../../components/Common/SwitchToggle/StatusTogg
 import BulkCreateLocationModal from "../LocationPage/BulkCreateLocation";
 import { useReactToPrint } from "react-to-print";
 import Barcode from "react-barcode";
+import EmptyState from "../../../components/Common/EmptyState";
 
 const LocationList = () => {
     const [locations, setLocations] = useState([]);
@@ -326,6 +327,14 @@ const LocationList = () => {
         fetchStats(); // Cập nhật tổng stats
     };
 
+    const handleClearAllFilters = () => {
+        setSearchQuery("")
+        setStatusFilter("")
+        setShowStatusFilter(false)
+    }
+
+    const clearAllFilters = handleClearAllFilters
+
     // Handle update success
     const handleUpdateSuccess = () => {
         setShowUpdateModal(false);
@@ -424,7 +433,7 @@ const LocationList = () => {
 
                     <div className="flex items-center gap-3">
                         <Button
-                            className="bg-blue-500 hover:bg-blue-600 h-[38px] px-6 text-white transition-colors duration-200"
+                            className="bg-orange-400 hover:bg-orange-500 h-[38px] px-6 text-white transition-colors duration-200"
                             onClick={() => setShowBulkModal(true)}
                         >
                             <Plus className="mr-2 h-4 w-4 text-white" />
@@ -643,11 +652,19 @@ const LocationList = () => {
                                                 </TableRow>
                                             ))
                                         ) : (
-                                            <TableRow>
-                                                <TableCell colSpan={9} className="text-center py-12 text-slate-500">
-                                                    Không tìm thấy vị trí nào
-                                                </TableCell>
-                                            </TableRow>
+                                            <EmptyState
+                                                icon={Folder}
+                                                title="Không tìm thấy vị trí nào"
+                                                description={
+                                                    searchQuery || statusFilter
+                                                        ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
+                                                        : "Chưa có vị trí nào trong hệ thống"
+                                                }
+                                                actionText="Xóa bộ lọc"
+                                                onAction={clearAllFilters}
+                                                showAction={!!(searchQuery || statusFilter)}
+                                                colSpan={5}
+                                            />
                                         )}
                                     </TableBody>
                                 </CustomTable>
