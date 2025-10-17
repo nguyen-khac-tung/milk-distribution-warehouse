@@ -1,7 +1,7 @@
 
 import Layout from "../components/layout/Layout";
 import NotFoundPage from "../pages/NotFoundPage";
-import Dashboard from "../pages/AccountPage/Dashboard";
+import Dashboard from "../pages/AccountPage/Dashboard/Dashboard";
 import Products from "../pages/GoodPage/GoodsList";
 import Reports from "../pages/Reports";
 import Settings from "../pages/Settings";

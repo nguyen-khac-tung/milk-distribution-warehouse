@@ -49,6 +49,7 @@ export default function StorageConditionPage() {
     totalCount: 0
   })
   const [showPageSizeFilter, setShowPageSizeFilter] = useState(false)
+  const [isInitialized, setIsInitialized] = useState(false)
   
   // Thống kê tổng (không thay đổi khi search/filter)
   const [totalStats, setTotalStats] = useState({
@@ -183,8 +184,8 @@ export default function StorageConditionPage() {
       status: ""
     })
 
-    // Mark initial mount as complete
-    setIsInitialMount(false)
+    // Mark as initialized after initial load
+    setIsInitialized(true)
   }, [])
 
   // Close status filter dropdown when clicking outside
@@ -204,56 +205,26 @@ export default function StorageConditionPage() {
     }
   }, [showStatusFilter, showPageSizeFilter])
 
-  // Search with debounce
+  // Combined effect for search, filters, and sort
   useEffect(() => {
-    // Skip on initial mount
-    if (isInitialMount) {
-      return
-    }
+    // Skip if not initialized yet (avoid calling API during initial state setup)
+    if (!isInitialized) return
 
     const timeoutId = setTimeout(() => {
       setSearchLoading(true)
-      fetchData({ 
-        pageNumber: 1, 
-        pageSize: pagination.pageSize, 
-        search: searchQuery || "", 
+      fetchData({
+        pageNumber: 1,
+        pageSize: pagination.pageSize,
+        search: searchQuery || "",
         sortField: sortField,
         sortAscending: sortAscending,
         status: statusFilter
       })
       setPagination(prev => ({ ...prev, pageNumber: 1 }))
-    }, 500)
+    }, searchQuery ? 500 : 0) // Only debounce for search, immediate for filters
 
     return () => clearTimeout(timeoutId)
-  }, [searchQuery, isInitialMount])
-
-  // Filter by status
-  useEffect(() => {
-    setSearchLoading(true)
-    fetchData({ 
-      pageNumber: 1, 
-      pageSize: pagination.pageSize, 
-      search: searchQuery || "", 
-      sortField: sortField,
-      sortAscending: sortAscending,
-      status: statusFilter
-    })
-    setPagination(prev => ({ ...prev, pageNumber: 1 }))
-  }, [statusFilter])
-
-  // Sort when sortField or sortAscending changes
-  useEffect(() => {
-    setSearchLoading(true)
-    fetchData({ 
-      pageNumber: 1, 
-      pageSize: pagination.pageSize, 
-      search: searchQuery || "", 
-      sortField: sortField,
-      sortAscending: sortAscending,
-      status: statusFilter
-    })
-    setPagination(prev => ({ ...prev, pageNumber: 1 }))
-  }, [sortField, sortAscending])
+  }, [searchQuery, statusFilter, sortField, sortAscending, isInitialized])
 
   // Remove client-side filtering since backend already handles search and filter
   const filteredStorageConditions = useMemo(() => {
