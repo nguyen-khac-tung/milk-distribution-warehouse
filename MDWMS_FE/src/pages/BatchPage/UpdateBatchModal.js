@@ -111,7 +111,7 @@ const UpdateBatchModal = ({ isOpen, onClose, onSuccess, batchId, batchData }) =>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="areaId" className="text-sm font-medium text-slate-700">
-                                    Chọn sữa <span className="text-red-500">*</span>
+                                    Chọn hàng hóa <span className="text-red-500">*</span>
                                 </Label>
                                 <CustomDropdown
                                     value={formData.goodsId}

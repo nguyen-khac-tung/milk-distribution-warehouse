@@ -130,3 +130,35 @@ export const updateLocationStatus = async (locationId, status) => {
         throw error;
     }
 };
+
+// Tạo nhiều Location cùng lúc
+export const createMultipleLocations = async (locations) => {
+    try {
+        if (!Array.isArray(locations) || locations.length === 0) {
+            throw new Error("Danh sách location không hợp lệ hoặc trống.");
+        }
+
+        const body = locations.map((loc) => ({
+            areaId: loc.areaId,
+            rack: loc.rack,
+            row: loc.row,
+            column: loc.column,
+            isAvailable: loc.isAvailable,
+        }));
+
+        console.log("Sending CreateMultiple request:", body);
+
+        const res = await api.post("/Location/CreateMultiple", body);
+
+        console.log("CreateMultiple Locations API response:", res.data);
+
+        return res.data;
+    } catch (error) {
+        console.error("Error creating multiple locations:", error);
+
+        if (error.response && error.response.data && error.response.data.message) {
+            throw new Error(error.response.data.message);
+        }
+        throw error;
+    }
+};

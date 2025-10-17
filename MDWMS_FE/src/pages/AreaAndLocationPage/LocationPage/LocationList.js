@@ -652,19 +652,24 @@ const LocationList = () => {
                                                 </TableRow>
                                             ))
                                         ) : (
-                                            <EmptyState
-                                                icon={Folder}
-                                                title="Không tìm thấy vị trí nào"
-                                                description={
-                                                    searchQuery || statusFilter
-                                                        ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
-                                                        : "Chưa có vị trí nào trong hệ thống"
-                                                }
-                                                actionText="Xóa bộ lọc"
-                                                onAction={clearAllFilters}
-                                                showAction={!!(searchQuery || statusFilter)}
-                                                colSpan={5}
-                                            />
+                                            <TableRow>
+                                                <TableCell colSpan={9}>
+                                                    <div className="flex flex-col items-center justify-center text-center min-h-[260px]">
+                                                        <EmptyState
+                                                            icon={Folder}
+                                                            title="Không tìm thấy vị trí nào"
+                                                            description={
+                                                                searchQuery || statusFilter
+                                                                    ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
+                                                                    : "Chưa có vị trí nào trong hệ thống"
+                                                            }
+                                                            actionText="Xóa bộ lọc"
+                                                            onAction={clearAllFilters}
+                                                            showAction={!!(searchQuery || statusFilter)}
+                                                        />
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
                                         )}
                                     </TableBody>
                                 </CustomTable>

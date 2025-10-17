@@ -4,7 +4,7 @@ import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
 import { ComponentIcon } from "../../../components/IconComponent/Icon";
 import { getAreaDropdown } from "../../../services/AreaServices";
-import { createLocation } from "../../../services/LocationServices";
+import { createMultipleLocations } from "../../../services/LocationServices";
 import CustomDropdown from "../../../components/Common/CustomDropdown";
 import { extractErrorMessage } from "../../../utils/Validation";
 
@@ -90,21 +90,36 @@ export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess }) 
         try {
             setLoading(true);
 
-            // Gọi API tạo nhiều vị trí
+            // Chuẩn hóa dữ liệu và gọi API tạo nhiều vị trí trong MỘT lần
+            const locations = [];
+            const parsedAreaId = parseInt(areaId);
+
             for (const row of rows) {
+                const parsedRow = parseInt(row.rowName);
+                if (Number.isNaN(parsedRow)) continue;
+
                 for (const col of row.columns) {
-                    const payload = {
-                        areaId: parseInt(areaId),
+                    const parsedCol = parseInt(col);
+                    if (Number.isNaN(parsedCol)) continue;
+
+                    locations.push({
+                        areaId: parsedAreaId,
                         rack,
-                        row: parseInt(row.rowName),
-                        column: parseInt(col),
+                        row: parsedRow,
+                        column: parsedCol,
                         isAvailable: true,
-                    };
-                    await createLocation(payload);
+                    });
                 }
             }
 
-            window.showToast(`Tạo thành công ${totalPositions} vị trí`, "success");
+            if (locations.length === 0) {
+                window.showToast("Vui lòng nhập hàng/cột hợp lệ để tạo vị trí", "error");
+                return;
+            }
+
+            await createMultipleLocations(locations);
+
+            window.showToast(`Tạo thành công ${locations.length} vị trí`, "success");
             onSuccess?.();
             onClose?.();
         } catch (error) {
@@ -292,3 +307,4 @@ export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess }) 
         </div>
     );
 }
+

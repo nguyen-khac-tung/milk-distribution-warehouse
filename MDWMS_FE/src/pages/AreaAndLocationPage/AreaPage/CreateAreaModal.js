@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react"
 import { Button } from "../../../components/ui/button"
 import { Input } from "../../../components/ui/input"
 import { Label } from "../../../components/ui/label"
-import { Card } from "../../../components/ui/card"
+import { Textarea } from "../../../components/ui/textarea"
 import { X } from "lucide-react"
 import { createArea } from "../../../services/AreaServices"
 import { getStorageConditionsDropdown } from "../../../services/StorageConditionService"
@@ -161,13 +161,14 @@ export default function CreateAreaModal({ isOpen, onClose, onSuccess }) {
               <Label htmlFor="description" className="text-sm font-medium text-slate-700">
                 Mô tả
               </Label>
-              <textarea
+              <Textarea
                 id="description"
                 placeholder="Nhập mô tả khu vực..."
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
                 rows={3}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-orange-500 focus:ring-orange-500 focus:outline-none text-sm resize-y"
               />
             </div>
 

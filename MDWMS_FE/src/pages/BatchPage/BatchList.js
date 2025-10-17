@@ -332,19 +332,24 @@ const BatchList = () => {
                                                 </TableRow>
                                             ))
                                         ) : (
-                                            <EmptyState
-                                                icon={Folder}
-                                                title="Không tìm thấy lô hàng nào"
-                                                description={
-                                                    searchQuery || statusFilter
-                                                        ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
-                                                        : "Chưa có lô hàng nào trong hệ thống"
-                                                }
-                                                actionText="Xóa bộ lọc"
-                                                onAction={clearAllFilters}
-                                                showAction={!!(searchQuery || statusFilter)}
-                                                colSpan={5}
-                                            />
+                                            <TableRow>
+                                                <TableCell colSpan={6}>
+                                                    <div className="flex flex-col items-center justify-center text-center min-h-[260px]">
+                                                        <EmptyState
+                                                            icon={Folder}
+                                                            title="Không tìm lô hàng nào"
+                                                            description={
+                                                                searchQuery || statusFilter
+                                                                    ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
+                                                                    : "Chưa có lô hàng nào trong hệ thống"
+                                                            }
+                                                            actionText="Xóa bộ lọc"
+                                                            onAction={clearAllFilters}
+                                                            showAction={!!(searchQuery || statusFilter)}
+                                                        />
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
                                         )}
                                     </TableBody>
                                 </CustomTable>
