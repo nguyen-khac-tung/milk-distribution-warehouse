@@ -9,6 +9,7 @@ import Loading from "../../../components/Common/Loading";
 import CreateLocationModal from "./CreateLocationModal";
 import UpdateLocationModal from "./UpdateLocationModal";
 import { Card, CardContent } from "../../../components/ui/card";
+import Pagination from "../../../components/Common/Pagination";
 import { Table as CustomTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
 import { extractErrorMessage } from "../../../utils/Validation";
 import { StatusToggle } from "../../../components/Common/SwitchToggle/StatusToggle";
@@ -16,6 +17,7 @@ import BulkCreateLocationModal from "../LocationPage/BulkCreateLocation";
 import { useReactToPrint } from "react-to-print";
 import Barcode from "react-barcode";
 import EmptyState from "../../../components/Common/EmptyState";
+import { getAreaDropdown } from "../../../services/AreaServices";
 
 const LocationList = () => {
     const [locations, setLocations] = useState([]);
@@ -42,11 +44,16 @@ const LocationList = () => {
     const [showStatusTypeFilter, setShowStatusTypeFilter] = useState(false);
     const [showConditionFilter, setShowConditionFilter] = useState(false);
     const [conditionFilter, setConditionFilter] = useState("");
+    const [areaFilter, setAreaFilter] = useState("");
+    const [showAreaFilter, setShowAreaFilter] = useState(false);
+    const [areas, setAreas] = useState([]);
     const [sortField, setSortField] = useState("");
     const [sortAscending, setSortAscending] = useState(true);
     const [showPageSizeFilter, setShowPageSizeFilter] = useState(false);
     const printRef = useRef();
     const [selectedLocation, setSelectedLocation] = useState(null);
+    const didMountRef = useRef(false);
+    const skipFirstSearchRef = useRef(true);
 
     const handlePrint = useReactToPrint({
         contentRef: printRef,
@@ -62,6 +69,7 @@ const LocationList = () => {
                 pageSize,
                 search: params.search,
                 isAvailable: params.filters?.isAvailable,
+                areaId: params.filters?.areaId,
                 status: params.filters?.status,
                 sortField: params.sortField ?? sortField,
                 sortAscending: typeof (params.sortAscending ?? sortAscending) === 'boolean' ? (params.sortAscending ?? sortAscending) : undefined,
@@ -141,9 +149,21 @@ const LocationList = () => {
     };
 
     useEffect(() => {
+        if (didMountRef.current) return; // Guard against React 18 StrictMode double-invoke in dev
+        didMountRef.current = true;
         fetchLocations(1, 10);
         // Also fetch global stats once on mount
         fetchStats();
+        // Load areas for dropdown
+        (async () => {
+            try {
+                const res = await getAreaDropdown();
+                const list = res?.data ?? res ?? [];
+                setAreas(Array.isArray(list) ? list : []);
+            } catch (e) {
+                console.error("Failed to load areas dropdown", e);
+            }
+        })();
     }, []);
 
     // Close filters when clicking outside
@@ -155,6 +175,9 @@ const LocationList = () => {
             if (showStatusTypeFilter && !event.target.closest('.status-type-filter-dropdown')) {
                 setShowStatusTypeFilter(false);
             }
+            if (showAreaFilter && !event.target.closest('.area-filter-dropdown')) {
+                setShowAreaFilter(false);
+            }
             if (showPageSizeFilter && !event.target.closest('.page-size-filter-dropdown')) {
                 setShowPageSizeFilter(false);
             }
@@ -164,7 +187,7 @@ const LocationList = () => {
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         }
-    }, [showStatusFilter, showStatusTypeFilter, showPageSizeFilter]);
+    }, [showStatusFilter, showStatusTypeFilter, showAreaFilter, showPageSizeFilter]);
 
     // Callback khi filter thay đổi
     const handleFilterChange = useCallback((params) => {
@@ -173,20 +196,26 @@ const LocationList = () => {
         fetchLocations(1, pagination.pageSize, params);
     }, [pagination.pageSize]);
 
-    // Debounced search effect
+    // Debounced search effect: only searchQuery; skip first run on mount to avoid duplicate with initial fetch
     useEffect(() => {
+        if (skipFirstSearchRef.current) {
+            skipFirstSearchRef.current = false;
+            return;
+        }
         const timeoutId = setTimeout(() => {
             handleFilterChange({
                 search: searchQuery,
                 filters: {
                     isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
-                    status: statusFilter !== "" ? Number(statusFilter) : undefined
+                    status: statusFilter !== "" ? Number(statusFilter) : undefined,
+                    areaId: areaFilter !== "" ? Number(areaFilter) : undefined,
                 }
             });
         }, 500);
 
         return () => clearTimeout(timeoutId);
-    }, [searchQuery, statusFilter, statusTypeFilter, handleFilterChange]);
+        // Only depend on searchQuery to avoid triggering twice when clicking filters
+    }, [searchQuery]);
 
     const handleStatusFilter = (value) => {
         setStatusFilter(value);
@@ -197,6 +226,7 @@ const LocationList = () => {
                 // Nếu value rỗng → bỏ qua filter
                 status: value !== "" ? Number(value) : undefined,
                 isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
+                areaId: areaFilter !== "" ? Number(areaFilter) : undefined,
             },
         });
     };
@@ -208,6 +238,7 @@ const LocationList = () => {
             filters: {
                 status: undefined,
                 isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
+                areaId: areaFilter !== "" ? Number(areaFilter) : undefined,
             },
         });
     };
@@ -220,6 +251,7 @@ const LocationList = () => {
             filters: {
                 status: statusFilter !== "" ? Number(statusFilter) : undefined,
                 isAvailable: value !== "" ? value === "true" : undefined,
+                areaId: areaFilter !== "" ? Number(areaFilter) : undefined,
             },
         });
     };
@@ -231,8 +263,34 @@ const LocationList = () => {
             filters: {
                 status: statusFilter !== "" ? Number(statusFilter) : undefined,
                 isAvailable: undefined,
+                areaId: areaFilter !== "" ? Number(areaFilter) : undefined,
             },
         });
+    };
+
+    const handleAreaFilter = (value) => {
+        setAreaFilter(value);
+        handleFilterChange({
+            search: searchQuery,
+            filters: {
+                status: statusFilter !== "" ? Number(statusFilter) : undefined,
+                isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
+                areaId: value !== "" ? Number(value) : undefined,
+            },
+        });
+    };
+
+    const clearAreaFilter = () => {
+        setAreaFilter("");
+        handleFilterChange({
+            search: searchQuery,
+            filters: {
+                status: statusFilter !== "" ? Number(statusFilter) : undefined,
+                isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
+                areaId: undefined,
+            },
+        });
+        setShowAreaFilter(false);
     };
 
     const handlePageChange = (newPage) => {
@@ -241,7 +299,8 @@ const LocationList = () => {
             search: searchQuery,
             filters: {
                 isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
-                status: statusFilter !== "" ? Number(statusFilter) : undefined
+                status: statusFilter !== "" ? Number(statusFilter) : undefined,
+                areaId: areaFilter !== "" ? Number(areaFilter) : undefined,
             }
         });
     };
@@ -252,7 +311,8 @@ const LocationList = () => {
             search: searchQuery,
             filters: {
                 isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
-                status: statusFilter !== "" ? Number(statusFilter) : undefined
+                status: statusFilter !== "" ? Number(statusFilter) : undefined,
+                areaId: areaFilter !== "" ? Number(areaFilter) : undefined,
             }
         });
     };
@@ -266,7 +326,8 @@ const LocationList = () => {
                     search: searchQuery,
                     filters: {
                         isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
-                        status: statusFilter !== "" ? Number(statusFilter) : undefined
+                        status: statusFilter !== "" ? Number(statusFilter) : undefined,
+                        areaId: areaFilter !== "" ? Number(areaFilter) : undefined,
                     },
                     sortField: field,
                     sortAscending: false,
@@ -279,7 +340,8 @@ const LocationList = () => {
                     search: searchQuery,
                     filters: {
                         isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
-                        status: statusFilter !== "" ? Number(statusFilter) : undefined
+                        status: statusFilter !== "" ? Number(statusFilter) : undefined,
+                        areaId: areaFilter !== "" ? Number(areaFilter) : undefined,
                     },
                     sortField: "",
                     sortAscending: undefined,
@@ -293,7 +355,8 @@ const LocationList = () => {
                 search: searchQuery,
                 filters: {
                     isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
-                    status: statusFilter !== "" ? Number(statusFilter) : undefined
+                    status: statusFilter !== "" ? Number(statusFilter) : undefined,
+                    areaId: areaFilter !== "" ? Number(areaFilter) : undefined,
                 },
                 sortField: field,
                 sortAscending: true,
@@ -321,7 +384,8 @@ const LocationList = () => {
             search: searchQuery,
             filters: {
                 isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
-                status: statusFilter !== "" ? Number(statusFilter) : undefined
+                status: statusFilter !== "" ? Number(statusFilter) : undefined,
+                areaId: areaFilter !== "" ? Number(areaFilter) : undefined,
             }
         });
         fetchStats(); // Cập nhật tổng stats
@@ -331,6 +395,10 @@ const LocationList = () => {
         setSearchQuery("")
         setStatusFilter("")
         setShowStatusFilter(false)
+        setConditionFilter("")
+        setShowConditionFilter(false)
+        setAreaFilter("")
+        setShowAreaFilter(false)
     }
 
     const clearAllFilters = handleClearAllFilters
@@ -495,12 +563,24 @@ const LocationList = () => {
                         clearConditionFilter={clearConditionFilter}
 
                         // Khác
+                        // Filter KHU VỰC
+                        areaFilter={areaFilter}
+                        setAreaFilter={setAreaFilter}
+                        showAreaFilter={showAreaFilter}
+                        setShowAreaFilter={setShowAreaFilter}
+                        areas={areas}
+                        onAreaFilter={handleAreaFilter}
+                        clearAreaFilter={clearAreaFilter}
+
+                        // Khác
                         onClearAll={() => {
                             setSearchQuery("");
                             setStatusFilter("");
                             setConditionFilter("");
                             setShowStatusFilter(false);
                             setShowConditionFilter(false);
+                            setAreaFilter("");
+                            setShowAreaFilter(false);
                         }}
                         searchWidth="w-80"
                         showToggle={true}
@@ -680,82 +760,16 @@ const LocationList = () => {
 
                 {/* Pagination */}
                 {!loading && !searchLoading && pagination.total > 0 && (
-                    <Card className="bg-gray-50">
-                        <CardContent className="pt-6">
-                            <div className="flex items-center justify-between">
-                                <div className="text-sm text-slate-600">
-                                    Hiển thị {((pagination.current - 1) * pagination.pageSize) + 1} - {Math.min(pagination.current * pagination.pageSize, pagination.total)} trong tổng số {pagination.total} vị trí
-                                </div>
-
-                                <div className="flex items-center space-x-4">
-                                    <div className="flex items-center space-x-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="h-8"
-                                            onClick={() => {
-                                                if (pagination.current > 1) {
-                                                    handlePageChange(pagination.current - 1);
-                                                }
-                                            }}
-                                            disabled={pagination.current <= 1}
-                                        >
-                                            Trước
-                                        </Button>
-                                        <span className="text-sm text-slate-600">
-                                            Trang {pagination.current} / {Math.ceil(pagination.total / pagination.pageSize)}
-                                        </span>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="h-8"
-                                            onClick={() => {
-                                                if (pagination.current < Math.ceil(pagination.total / pagination.pageSize)) {
-                                                    handlePageChange(pagination.current + 1);
-                                                }
-                                            }}
-                                            disabled={pagination.current >= Math.ceil(pagination.total / pagination.pageSize)}
-                                        >
-                                            Sau
-                                        </Button>
-                                    </div>
-
-                                    {/* Page Size Selector */}
-                                    <div className="flex items-center space-x-2">
-                                        <span className="text-sm text-slate-600">Hiển thị:</span>
-                                        <div className="relative page-size-filter-dropdown">
-                                            <button
-                                                onClick={() => setShowPageSizeFilter(!showPageSizeFilter)}
-                                                className="flex items-center space-x-2 px-3 py-2 h-8 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                                            >
-                                                <span>{pagination.pageSize}</span>
-                                                <ChevronDown className="h-4 w-4" />
-                                            </button>
-
-                                            {showPageSizeFilter && (
-                                                <div className="absolute bottom-full right-0 mb-1 w-20 bg-gray-50 rounded-md shadow-lg border z-10">
-                                                    <div className="py-1">
-                                                        {[10, 20, 30, 40].map((size) => (
-                                                            <button
-                                                                key={size}
-                                                                onClick={() => handlePageSizeChange(size)}
-                                                                className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 flex items-center justify-between ${pagination.pageSize === size ? 'bg-[#d97706] text-white' : 'text-slate-700'
-                                                                    }`}
-                                                            >
-                                                                {size}
-                                                                {pagination.pageSize === size && <span className="text-white">✓</span>}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <span className="text-sm text-slate-600">/ Trang</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <Pagination
+                        current={pagination.current}
+                        pageSize={pagination.pageSize}
+                        total={pagination.total}
+                        onPageChange={handlePageChange}
+                        onPageSizeChange={handlePageSizeChange}
+                        showPageSize={true}
+                        pageSizeOptions={[10, 20, 30, 40]}
+                        className="bg-gray-50"
+                    />
                 )}
             </div>
 

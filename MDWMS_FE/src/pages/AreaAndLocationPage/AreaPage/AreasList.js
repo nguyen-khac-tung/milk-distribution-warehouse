@@ -44,7 +44,6 @@ const AreaLists = () => {
     const [showStatusFilter, setShowStatusFilter] = useState(false);
     const [sortField, setSortField] = useState("");
     const [sortAscending, setSortAscending] = useState(true);
-    const searchQueryRef = useRef("");
     const [areaDetail, setAreaDetail] = useState(null);
     const [showViewModal, setShowViewModal] = useState(false);
     const [itemToView, setItemToView] = useState(null);
@@ -119,7 +118,12 @@ const AreaLists = () => {
         }
     };
 
+    const didMountRef = useRef(false);
+    const skipFirstSearchRef = useRef(true);
+
     useEffect(() => {
+        if (didMountRef.current) return; // Guard against React 18 StrictMode double-invoke in dev
+        didMountRef.current = true;
         fetchAreas(pagination.current, pagination.pageSize);
         fetchTotalStats(); // Load tổng stats
     }, []);
@@ -141,15 +145,12 @@ const AreaLists = () => {
         }
     }, [showStatusFilter, showPageSizeFilter]);
 
-    // Search input change handler
-    const handleSearchInputChange = (e) => {
-        const value = e.target.value;
-        setSearchQuery(value);
-        searchQueryRef.current = value;
-    };
-
-    // Debounced search effect
+    // Debounced search effect; skip first run to avoid duplicate with initial fetch
     useEffect(() => {
+        if (skipFirstSearchRef.current) {
+            skipFirstSearchRef.current = false;
+            return;
+        }
         const timeoutId = setTimeout(() => {
             setSearchLoading(true);
             fetchAreas(1, pagination.pageSize, {
@@ -164,7 +165,7 @@ const AreaLists = () => {
         }, 500);
 
         return () => clearTimeout(timeoutId);
-    }, [searchQuery, statusFilter]);
+    }, [searchQuery]);
 
     // Filter handlers
     const handleStatusFilter = (status) => {
@@ -608,82 +609,16 @@ const AreaLists = () => {
 
                 {/* Pagination */}
                 {!loading && !searchLoading && pagination.total > 0 && (
-                    <Card className="bg-gray-50">
-                        <CardContent className="pt-6">
-                            <div className="flex items-center justify-between">
-                                <div className="text-sm text-slate-600">
-                                    Hiển thị {((pagination.current - 1) * pagination.pageSize) + 1} - {Math.min(pagination.current * pagination.pageSize, pagination.total)} trong tổng số {pagination.total} khu vực
-                                </div>
-
-                                <div className="flex items-center space-x-4">
-                                    <div className="flex items-center space-x-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="h-[38px]"
-                                            onClick={() => {
-                                                if (pagination.current > 1) {
-                                                    handlePageChange(pagination.current - 1);
-                                                }
-                                            }}
-                                            disabled={pagination.current <= 1}
-                                        >
-                                            Trước
-                                        </Button>
-                                        <span className="text-sm text-slate-600">
-                                            Trang {pagination.current} / {Math.ceil(pagination.total / pagination.pageSize)}
-                                        </span>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="h-[38px]"
-                                            onClick={() => {
-                                                if (pagination.current < Math.ceil(pagination.total / pagination.pageSize)) {
-                                                    handlePageChange(pagination.current + 1);
-                                                }
-                                            }}
-                                            disabled={pagination.current >= Math.ceil(pagination.total / pagination.pageSize)}
-                                        >
-                                            Sau
-                                        </Button>
-                                    </div>
-
-                                    {/* Page Size Selector */}
-                                    <div className="flex items-center space-x-2">
-                                        <span className="text-sm text-slate-600">Hiển thị:</span>
-                                        <div className="relative page-size-filter-dropdown">
-                                            <button
-                                                onClick={() => setShowPageSizeFilter(!showPageSizeFilter)}
-                                                className="flex items-center space-x-2 px-3 py-2 h-[38px] text-sm border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                                            >
-                                                <span>{pagination.pageSize}</span>
-                                                <ChevronDown className="h-4 w-4" />
-                                            </button>
-
-                                            {showPageSizeFilter && (
-                                                <div className="absolute bottom-full right-0 mb-1 w-20 bg-gray-50 rounded-md shadow-lg border z-10">
-                                                    <div className="py-1">
-                                                        {[10, 20, 30, 40].map((size) => (
-                                                            <button
-                                                                key={size}
-                                                                onClick={() => handlePageSizeChange(size)}
-                                                                className={`w-full text-left px-3 py-2 h-[38px] text-sm hover:bg-slate-100 flex items-center justify-between ${pagination.pageSize === size ? 'bg-[#d97706] text-white' : 'text-slate-700'
-                                                                    }`}
-                                                            >
-                                                                {size}
-                                                                {pagination.pageSize === size && <span className="text-white">✓</span>}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <span className="text-sm text-slate-600">/ Trang</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <Pagination
+                        current={pagination.current}
+                        pageSize={pagination.pageSize}
+                        total={pagination.total}
+                        onPageChange={handlePageChange}
+                        onPageSizeChange={handlePageSizeChange}
+                        showPageSize={true}
+                        pageSizeOptions={[10, 20, 30, 40]}
+                        className="bg-gray-50"
+                    />
                 )}
             </div>
 

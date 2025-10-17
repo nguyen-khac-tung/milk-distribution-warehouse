@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "../../components/ui/card";
+import Pagination from "../../components/Common/Pagination";
 import { Table as CustomTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
 import { Button } from "../../components/ui/button";
 import { Plus, Edit, Trash2, Eye, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, Folder } from "lucide-react";
@@ -185,7 +186,7 @@ const BatchList = () => {
 
     const handleStatusChange = async (batchId, newStatus, displayName) => {
         try {
-            await updateBatchStatus({ batchId: parseInt(batchId), status: newStatus });
+            await updateBatchStatus({ batchId: batchId, status: newStatus });
             setBatches(prev => prev.map(b => b.batchId === batchId ? { ...b, status: newStatus } : b));
             window.showToast(`Đã ${newStatus === 1 ? 'kích hoạt' : 'ngừng hoạt động'} lô: ${displayName}`, "success");
         } catch (error) {
@@ -301,6 +302,9 @@ const BatchList = () => {
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                                                 Ngày hết hạn
                                             </TableHead>
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-48">
+                                                Trạng thái
+                                            </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
                                                 Hoạt động
                                             </TableHead>
@@ -315,6 +319,17 @@ const BatchList = () => {
                                                     <TableCell className="text-slate-700 px-6 py-3 text-left">{batch?.goodsName || ''}</TableCell>
                                                     <TableCell className="text-slate-700 px-6 py-3 text-left">{batch?.manufacturingDate || ''}</TableCell>
                                                     <TableCell className="text-slate-700 px-6 py-3 text-left">{batch?.expiryDate || ''}</TableCell>
+                                                    <TableCell className="px-6 py-4 text-center">
+                                                        <div className="flex justify-center">
+                                                            <StatusToggle
+                                                                status={batch?.status}
+                                                                onStatusChange={handleStatusChange}
+                                                                supplierId={batch?.batchId}
+                                                                supplierName={batch?.batchCode}
+                                                                entityType="lô hàng"
+                                                            />
+                                                        </div>
+                                                    </TableCell>
                                                     <TableCell className="px-6 py-4 text-center">
                                                         <div className="flex items-center justify-center space-x-1">
                                                             <button className="p-1.5 hover:bg-slate-100 rounded transition-colors" title="Chỉnh sửa" onClick={() => handleOpenEdit(batch)}>
@@ -333,8 +348,8 @@ const BatchList = () => {
                                             ))
                                         ) : (
                                             <TableRow>
-                                                <TableCell colSpan={6}>
-                                                    <div className="flex flex-col items-center justify-center text-center min-h-[260px]">
+                                                <TableCell colSpan={7} className="p-0">
+                                                    <div className="flex items-center justify-center text-center h-[300px] w-full">
                                                         <EmptyState
                                                             icon={Folder}
                                                             title="Không tìm lô hàng nào"
@@ -360,44 +375,16 @@ const BatchList = () => {
 
                 {/* Pagination */}
                 {!loading && !searchLoading && pagination.totalCount > 0 && (
-                    <Card className="bg-gray-50">
-                        <CardContent className="pt-6">
-                            <div className="flex items-center justify-between">
-                                <div className="text-sm text-slate-600">
-                                    Hiển thị {((pagination.pageNumber - 1) * pagination.pageSize) + 1} - {Math.min(pagination.pageNumber * pagination.pageSize, pagination.totalCount)} trong tổng số {pagination.totalCount} lô hàng
-                                </div>
-                                <div className="flex items-center space-x-4">
-                                    <div className="flex items-center space-x-2">
-                                        <Button variant="outline" size="sm" className="h-8" onClick={() => { if (pagination.pageNumber > 1) { handlePageChange(pagination.pageNumber - 1); } }} disabled={pagination.pageNumber <= 1}>Trước</Button>
-                                        <span className="text-sm text-slate-600">Trang {pagination.pageNumber} / {Math.ceil(pagination.totalCount / pagination.pageSize)}</span>
-                                        <Button variant="outline" size="sm" className="h-8" onClick={() => { if (pagination.pageNumber < Math.ceil(pagination.totalCount / pagination.pageSize)) { handlePageChange(pagination.pageNumber + 1); } }} disabled={pagination.pageNumber >= Math.ceil(pagination.totalCount / pagination.pageSize)}>Sau</Button>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                        <span className="text-sm text-slate-600">Hiển thị:</span>
-                                        <div className="relative page-size-filter-dropdown">
-                                            <button onClick={() => setShowPageSizeFilter(!showPageSizeFilter)} className="flex items-center space-x-2 px-3 py-2 h-8 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
-                                                <span>{pagination.pageSize}</span>
-                                                <ChevronDown className="h-4 w-4" />
-                                            </button>
-                                            {showPageSizeFilter && (
-                                                <div className="absolute bottom-full right-0 mb-1 w-20 bg-gray-50 rounded-md shadow-lg border z-10">
-                                                    <div className="py-1">
-                                                        {[10, 20, 30, 40].map((size) => (
-                                                            <button key={size} onClick={() => handlePageSizeChange(size)} className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 flex items-center justify-between ${pagination.pageSize === size ? 'bg-[#d97706] text-white' : 'text-slate-700'}`}>
-                                                                {size}
-                                                                {pagination.pageSize === size && <span className="text-white">✓</span>}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <span className="text-sm text-slate-600">/ Trang</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <Pagination
+                        current={pagination.pageNumber}
+                        pageSize={pagination.pageSize}
+                        total={pagination.totalCount}
+                        onPageChange={handlePageChange}
+                        onPageSizeChange={handlePageSizeChange}
+                        showPageSize={true}
+                        pageSizeOptions={[10, 20, 30, 40]}
+                        className="bg-gray-50"
+                    />
                 )}
             </div>
 
