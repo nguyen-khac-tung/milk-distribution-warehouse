@@ -5,7 +5,6 @@ import { Label } from "../ui/label";
 import { Link, useNavigate } from "react-router-dom";
 import { message, Spin } from "antd"; // dùng thông báo của antd cho tiện
 import { login } from "../../services/AuthenticationServices"; // ✅ import service login
-import Logo from "../IconComponent/Logo";
 import { extractErrorMessage } from "../../utils/Validation";
 
 export function LoginForm() {
@@ -53,7 +52,11 @@ export function LoginForm() {
             {/* Logo / Thương hiệu */}
             <div className="space-y-3">
                 <div className="flex items-center gap-2 mb-8">
-                    <Logo size={32} />
+                    <img 
+                        src="/logo.png" 
+                        alt="Logo" 
+                        className="w-[100px] h-[100px] object-contain"
+                    />
                     <span className="text-xl font-semibold text-foreground">
                         HỆ THỐNG PHÂN PHỐI KHO SỮA
                     </span>

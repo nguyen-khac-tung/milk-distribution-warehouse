@@ -453,7 +453,11 @@ const SearchBar = () => {
                 <div style={{ 
                   padding: "40px 20px", 
                   textAlign: "center",
-                  color: "#6b7280"
+                  color: "#6b7280",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center"
                 }}>
                   <Search size={32} color="#d1d5db" style={{ marginBottom: "12px" }} />
                   <div style={{ fontSize: "16px", marginBottom: "4px" }}>
