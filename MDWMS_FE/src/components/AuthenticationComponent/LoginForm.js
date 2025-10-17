@@ -4,7 +4,7 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Link, useNavigate } from "react-router-dom";
 import { message, Spin } from "antd"; // dùng thông báo của antd cho tiện
-import { login } from "../../services/AuthenticationServices"; // ✅ import service login
+import { login } from "../../services/AuthenticationServices";
 import { extractErrorMessage } from "../../utils/Validation";
 
 export function LoginForm() {
