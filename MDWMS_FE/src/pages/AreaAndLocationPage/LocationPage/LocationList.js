@@ -18,6 +18,8 @@ import { useReactToPrint } from "react-to-print";
 import Barcode from "react-barcode";
 import EmptyState from "../../../components/Common/EmptyState";
 import { getAreaDropdown } from "../../../services/AreaServices";
+import PermissionWrapper from "../../../components/Common/PermissionWrapper";
+import { PERMISSIONS } from "../../../utils/permissions";
 
 const LocationList = () => {
     const [locations, setLocations] = useState([]);
@@ -500,21 +502,25 @@ const LocationList = () => {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <Button
-                            className="bg-orange-400 hover:bg-orange-500 h-[38px] px-6 text-white transition-colors duration-200"
-                            onClick={() => setShowBulkModal(true)}
-                        >
-                            <Plus className="mr-2 h-4 w-4 text-white" />
-                            Thêm nhiều vị trí
-                        </Button>
+                        <PermissionWrapper requiredPermission={PERMISSIONS.LOCATION_CREATE}>
+                            <Button
+                                className="bg-orange-400 hover:bg-orange-500 h-[38px] px-6 text-white transition-colors duration-200"
+                                onClick={() => setShowBulkModal(true)}
+                            >
+                                <Plus className="mr-2 h-4 w-4 text-white" />
+                                Thêm nhiều vị trí
+                            </Button>
+                        </PermissionWrapper>
 
-                        <Button
-                            className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white transition-colors duration-200"
-                            onClick={handleOpenCreate}
-                        >
-                            <Plus className="mr-2 h-4 w-4 text-white" />
-                            Thêm vị trí
-                        </Button>
+                        <PermissionWrapper requiredPermission={PERMISSIONS.LOCATION_CREATE}>
+                            <Button
+                                className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white transition-colors duration-200"
+                                onClick={handleOpenCreate}
+                            >
+                                <Plus className="mr-2 h-4 w-4 text-white" />
+                                Thêm vị trí
+                            </Button>
+                        </PermissionWrapper>
                     </div>
                 </div>
 
@@ -683,50 +689,67 @@ const LocationList = () => {
                                                     </TableCell>
                                                     <TableCell className="px-6 py-4 text-center">
                                                         <div className="flex justify-center">
-                                                            <StatusToggle
-                                                                status={location?.status}
-                                                                onStatusChange={handleStatusChange}
-                                                                supplierId={location?.locationId}
-                                                                supplierName={location?.locationCode}
-                                                                entityType="Vị trí"
-                                                            />
+                                                            <PermissionWrapper 
+                                                                requiredPermission={PERMISSIONS.LOCATION_UPDATE}
+                                                                hide={false}
+                                                                fallback={
+                                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center justify-center gap-1 ${
+                                                                        location?.status === 1 
+                                                                            ? 'bg-green-100 text-green-800' 
+                                                                            : 'bg-red-100 text-red-800'
+                                                                    }`}>
+                                                                        <span className={`w-2 h-2 rounded-full ${
+                                                                            location?.status === 1 ? 'bg-green-500' : 'bg-red-500'
+                                                                        }`}></span>
+                                                                        {location?.status === 1 ? 'Hoạt động' : 'Ngừng hoạt động'}
+                                                                    </span>
+                                                                }
+                                                            >
+                                                                <StatusToggle
+                                                                    status={location?.status}
+                                                                    onStatusChange={handleStatusChange}
+                                                                    supplierId={location?.locationId}
+                                                                    supplierName={location?.locationCode}
+                                                                    entityType="Vị trí"
+                                                                />
+                                                            </PermissionWrapper>
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className="px-6 py-4 text-center">
                                                         <div className="flex items-center justify-center space-x-1">
-                                                            {/* <button
-                                                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                                title="Xem chi tiết"
-                                                            >
-                                                                <Eye className="h-4 w-4 text-orange-500" />
-                                                            </button> */}
-                                                            <button
-                                                                className="p-1.5 hover:bg-blue-100 rounded transition-colors"
-                                                                title="In phiếu vị trí"
-                                                                onClick={() => {
-                                                                    setSelectedLocation(location);
-                                                                    setTimeout(() => handlePrint(), 100);
-                                                                }}
-                                                            >
-                                                                <Printer className="h-4 w-4 text-blue-600" />
-                                                            </button>
-                                                            <button
-                                                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                                title="Chỉnh sửa"
-                                                                onClick={() => handleOpenEdit(location)}
-                                                            >
-                                                                <Edit className="h-4 w-4 text-orange-500" />
-                                                            </button>
-                                                            <button
-                                                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                                title="Xóa"
-                                                                onClick={() => {
-                                                                    setItemToDelete(location);
-                                                                    setShowDeleteModal(true);
-                                                                }}
-                                                            >
-                                                                <Trash2 className="h-4 w-4 text-red-500" />
-                                                            </button>
+                                                            <PermissionWrapper requiredPermission={PERMISSIONS.LOCATION_PRINT}>
+                                                                <button
+                                                                    className="p-1.5 hover:bg-blue-100 rounded transition-colors"
+                                                                    title="In phiếu vị trí"
+                                                                    onClick={() => {
+                                                                        setSelectedLocation(location);
+                                                                        setTimeout(() => handlePrint(), 100);
+                                                                    }}
+                                                                >
+                                                                    <Printer className="h-4 w-4 text-blue-600" />
+                                                                </button>
+                                                            </PermissionWrapper>
+                                                            <PermissionWrapper requiredPermission={PERMISSIONS.LOCATION_UPDATE}>
+                                                                <button
+                                                                    className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                                    title="Chỉnh sửa"
+                                                                    onClick={() => handleOpenEdit(location)}
+                                                                >
+                                                                    <Edit className="h-4 w-4 text-orange-500" />
+                                                                </button>
+                                                            </PermissionWrapper>
+                                                            <PermissionWrapper requiredPermission={PERMISSIONS.LOCATION_DELETE}>
+                                                                <button
+                                                                    className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                                    title="Xóa"
+                                                                    onClick={() => {
+                                                                        setItemToDelete(location);
+                                                                        setShowDeleteModal(true);
+                                                                    }}
+                                                                >
+                                                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                                                </button>
+                                                            </PermissionWrapper>
                                                         </div>
                                                     </TableCell>
                                                 </TableRow>
@@ -774,36 +797,44 @@ const LocationList = () => {
             </div>
 
             {/* Create Location Modal */}
-            <CreateLocationModal
-                isOpen={showCreateModal}
-                onClose={() => setShowCreateModal(false)}
-                onSuccess={handleCreateSuccess}
-            />
+            <PermissionWrapper requiredPermission={PERMISSIONS.LOCATION_CREATE}>
+                <CreateLocationModal
+                    isOpen={showCreateModal}
+                    onClose={() => setShowCreateModal(false)}
+                    onSuccess={handleCreateSuccess}
+                />
+            </PermissionWrapper>
 
             {/* Modal Tạo nhiều vị trí */}
-            {showBulkModal && (
-                <BulkCreateLocationModal
-                    isOpen={showBulkModal}
-                    onClose={() => setShowBulkModal(false)}
-                />
-            )}
+            <PermissionWrapper requiredPermission={PERMISSIONS.LOCATION_CREATE}>
+                {showBulkModal && (
+                    <BulkCreateLocationModal
+                        isOpen={showBulkModal}
+                        onClose={() => setShowBulkModal(false)}
+                    />
+                )}
+            </PermissionWrapper>
 
             {/* Update Location Modal */}
-            <UpdateLocationModal
-                isOpen={showUpdateModal}
-                onClose={handleUpdateCancel}
-                onSuccess={handleUpdateSuccess}
-                locationId={updateLocationId}
-                locationData={editingLocation}
-            />
+            <PermissionWrapper requiredPermission={PERMISSIONS.LOCATION_UPDATE}>
+                <UpdateLocationModal
+                    isOpen={showUpdateModal}
+                    onClose={handleUpdateCancel}
+                    onSuccess={handleUpdateSuccess}
+                    locationId={updateLocationId}
+                    locationData={editingLocation}
+                />
+            </PermissionWrapper>
 
             {/* Delete Confirmation Modal */}
-            <DeleteModal
-                isOpen={showDeleteModal}
-                onClose={() => setShowDeleteModal(false)}
-                onConfirm={handleDeleteConfirm}
-                itemName={itemToDelete?.locationCode || ""}
-            />
+            <PermissionWrapper requiredPermission={PERMISSIONS.LOCATION_DELETE}>
+                <DeleteModal
+                    isOpen={showDeleteModal}
+                    onClose={() => setShowDeleteModal(false)}
+                    onConfirm={handleDeleteConfirm}
+                    itemName={itemToDelete?.locationCode || ""}
+                />
+            </PermissionWrapper>
 
             {/* Vùng in phiếu - căn giữa khi in */}
             <div className="print-wrapper">

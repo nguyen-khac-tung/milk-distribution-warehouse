@@ -15,6 +15,8 @@ import { ModalAreaDetail } from "./ViewAreaModal";
 import StatsCards from "../../../components/Common/StatsCards";
 import { StatusToggle } from "../../../components/Common/SwitchToggle/StatusToggle";
 import EmptyState from "../../../components/Common/EmptyState";
+import PermissionWrapper from "../../../components/Common/PermissionWrapper";
+import { PERMISSIONS } from "../../../utils/permissions";
 
 const AreaLists = () => {
     const [areas, setAreas] = useState([]);
@@ -420,13 +422,15 @@ const AreaLists = () => {
                         <h1 className="text-2xl font-bold text-slate-600">Quản lý Khu vực</h1>
                         <p className="text-slate-600 mt-1">Quản lý các khu vực lưu trữ trong hệ thống</p>
                     </div>
-                    <Button
-                        className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
-                        onClick={handleOpenCreate}
-                    >
-                        <Plus className="mr-2 h-4 w-4 text-white" />
-                        Thêm khu vực
-                    </Button>
+                    <PermissionWrapper requiredPermission={PERMISSIONS.AREA_CREATE}>
+                        <Button
+                            className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
+                            onClick={handleOpenCreate}
+                        >
+                            <Plus className="mr-2 h-4 w-4 text-white" />
+                            Thêm khu vực
+                        </Button>
+                    </PermissionWrapper>
                 </div>
 
                 {/* Stats Cards */}
@@ -541,41 +545,64 @@ const AreaLists = () => {
                                                     <TableCell className="px-6 py-4 text-slate-700">{area?.description || "—"}</TableCell>
                                                     <TableCell className="px-6 py-4 text-center">
                                                         <div className="flex justify-center">
-                                                            <StatusToggle
-                                                                status={area?.status}
-                                                                onStatusChange={handleStatusChange}
-                                                                supplierId={area?.areaId}
-                                                                supplierName={area?.areaName}
-                                                                entityType="danh mục"
-                                                            />
+                                                            <PermissionWrapper 
+                                                                requiredPermission={PERMISSIONS.AREA_UPDATE}
+                                                                hide={false}
+                                                                fallback={
+                                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center justify-center gap-1 ${
+                                                                        area?.status === 1 
+                                                                            ? 'bg-green-100 text-green-800' 
+                                                                            : 'bg-red-100 text-red-800'
+                                                                    }`}>
+                                                                        <span className={`w-2 h-2 rounded-full ${
+                                                                            area?.status === 1 ? 'bg-green-500' : 'bg-red-500'
+                                                                        }`}></span>
+                                                                        {area?.status === 1 ? 'Hoạt động' : 'Ngừng hoạt động'}
+                                                                    </span>
+                                                                }
+                                                            >
+                                                                <StatusToggle
+                                                                    status={area?.status}
+                                                                    onStatusChange={handleStatusChange}
+                                                                    supplierId={area?.areaId}
+                                                                    supplierName={area?.areaName}
+                                                                    entityType="danh mục"
+                                                                />
+                                                            </PermissionWrapper>
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className="px-6 py-4 text-center">
                                                         <div className="flex items-center justify-center space-x-1">
-                                                            <button
-                                                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                                title="Xem chi tiết"
-                                                                onClick={() => handleViewClick(area)}
-                                                            >
-                                                                <Eye className="h-4 w-4 text-orange-500" />
-                                                            </button>
-                                                            <button
-                                                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                                title="Chỉnh sửa"
-                                                                onClick={() => handleOpenEdit(area)}
-                                                            >
-                                                                <Edit className="h-4 w-4 text-orange-500" />
-                                                            </button>
-                                                            <button
-                                                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                                title="Xóa"
-                                                                onClick={() => {
-                                                                    setItemToDelete(area);
-                                                                    setShowDeleteModal(true);
-                                                                }}
-                                                            >
-                                                                <Trash2 className="h-4 w-4 text-red-500" />
-                                                            </button>
+                                                            <PermissionWrapper requiredPermission={PERMISSIONS.AREA_VIEW}>
+                                                                <button
+                                                                    className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                                    title="Xem chi tiết"
+                                                                    onClick={() => handleViewClick(area)}
+                                                                >
+                                                                    <Eye className="h-4 w-4 text-orange-500" />
+                                                                </button>
+                                                            </PermissionWrapper>
+                                                            <PermissionWrapper requiredPermission={PERMISSIONS.AREA_UPDATE}>
+                                                                <button
+                                                                    className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                                    title="Chỉnh sửa"
+                                                                    onClick={() => handleOpenEdit(area)}
+                                                                >
+                                                                    <Edit className="h-4 w-4 text-orange-500" />
+                                                                </button>
+                                                            </PermissionWrapper>
+                                                            <PermissionWrapper requiredPermission={PERMISSIONS.AREA_DELETE}>
+                                                                <button
+                                                                    className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                                    title="Xóa"
+                                                                    onClick={() => {
+                                                                        setItemToDelete(area);
+                                                                        setShowDeleteModal(true);
+                                                                    }}
+                                                                >
+                                                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                                                </button>
+                                                            </PermissionWrapper>
                                                         </div>
                                                     </TableCell>
                                                 </TableRow>
@@ -623,47 +650,53 @@ const AreaLists = () => {
             </div>
 
             {/* Create Area Modal */}
-            <CreateAreaModal
-                isOpen={showCreateModal}
-                onClose={() => setShowCreateModal(false)}
-                onSuccess={handleCreateSuccess}
-            />
+            <PermissionWrapper requiredPermission={PERMISSIONS.AREA_CREATE}>
+                <CreateAreaModal
+                    isOpen={showCreateModal}
+                    onClose={() => setShowCreateModal(false)}
+                    onSuccess={handleCreateSuccess}
+                />
+            </PermissionWrapper>
 
             {/* Update Area Modal */}
-            <UpdateAreaModal
-                isOpen={showUpdateModal}
-                onClose={handleUpdateCancel}
-                onSuccess={handleUpdateSuccess}
-                areaId={updateAreaId}
-                areaData={editingArea}
-            />
+            <PermissionWrapper requiredPermission={PERMISSIONS.AREA_UPDATE}>
+                <UpdateAreaModal
+                    isOpen={showUpdateModal}
+                    onClose={handleUpdateCancel}
+                    onSuccess={handleUpdateSuccess}
+                    areaId={updateAreaId}
+                    areaData={editingArea}
+                />
+            </PermissionWrapper>
 
-            <DeleteModal
-                isOpen={showDeleteModal}
-                onClose={() => setShowDeleteModal(false)}
-                onConfirm={handleDeleteConfirm}
-                itemName={itemToDelete?.areaCode || ""}
-            />
+            <PermissionWrapper requiredPermission={PERMISSIONS.AREA_DELETE}>
+                <DeleteModal
+                    isOpen={showDeleteModal}
+                    onClose={() => setShowDeleteModal(false)}
+                    onConfirm={handleDeleteConfirm}
+                    itemName={itemToDelete?.areaCode || ""}
+                />
+            </PermissionWrapper>
 
             {/* View Area Detail Modal */}
-            {showViewModal && (
-
-                <div >
-                    {loadingDetail ? (
-                        <Loading size="large" text="Đang tải chi tiết khu vực..." />
-                    ) : areaDetail ? (
-                        <ModalAreaDetail
-                            area={areaDetail}
-                            onClose={handleViewClose}
-                        />
-                    ) : (
-                        <div className="flex items-center justify-center py-12">
-                            <div className="text-slate-600">Không có dữ liệu để hiển thị</div>
-                        </div>
-                    )}
-                </div>
-
-            )}
+            <PermissionWrapper requiredPermission={PERMISSIONS.AREA_VIEW}>
+                {showViewModal && (
+                    <div >
+                        {loadingDetail ? (
+                            <Loading size="large" text="Đang tải chi tiết khu vực..." />
+                        ) : areaDetail ? (
+                            <ModalAreaDetail
+                                area={areaDetail}
+                                onClose={handleViewClose}
+                            />
+                        ) : (
+                            <div className="flex items-center justify-center py-12">
+                                <div className="text-slate-600">Không có dữ liệu để hiển thị</div>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </PermissionWrapper>
         </div>
     );
 };
