@@ -21,7 +21,6 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpGet("GetUnitMeasureDropDown")]
-        [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> GetUnitMeasureDropDown()
         {
             var (msg, unitMeasureDropDown) = await _unitMeasureService.GetUnitMeasureDropDown();

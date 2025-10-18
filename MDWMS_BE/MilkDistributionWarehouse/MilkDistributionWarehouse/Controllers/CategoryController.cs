@@ -19,7 +19,6 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpGet("GetCategoriesDropDown")]
-        [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> GetCategoriesDropDown()
         {
             var (msg, categoriesDropDown) = await _categoryService.GetCategoryDropDown();
