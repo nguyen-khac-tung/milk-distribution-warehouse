@@ -4,7 +4,7 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { X, Calendar } from "lucide-react";
 import { createBatch } from "../../services/BatchService";
-import { getGoods } from "../../services/GoodService";
+import { getGoodsDropdown } from "../../services/GoodService";
 import { extractErrorMessage } from "../../utils/Validation";
 import CustomDropdown from "../../components/Common/CustomDropdown";
 
@@ -33,8 +33,7 @@ const CreateBatchModal = ({ isOpen, onClose, onSuccess }) => {
 
     const loadGoods = async () => {
         try {
-            const res = await getGoods({ pageNumber: 1, pageSize: 1000 });
-            const items = Array.isArray(res?.data?.items) ? res.data.items : Array.isArray(res?.items) ? res.items : [];
+            const items = await getGoodsDropdown();
             setGoodsOptions(items);
         } catch (e) {
             console.error("Error loading goods for dropdown", e);
@@ -95,13 +94,13 @@ const CreateBatchModal = ({ isOpen, onClose, onSuccess }) => {
                                     value={formData.goodsId}
                                     onChange={(value) => setFormData({ ...formData, goodsId: value })}
                                     options={[
-                                        { value: "", label: "Chọn sữa..." },
+                                        { value: "", label: "Chọn hàng hóa..." },
                                         ...goodsOptions.map((a) => ({
                                             value: a.goodsId.toString(),
                                             label: a.goodsName
                                         }))
                                     ]}
-                                    placeholder="Chọn sữa..."
+                                    placeholder="Chọn hàng hóa..."
                                 />
                             </div>
                         </div>
