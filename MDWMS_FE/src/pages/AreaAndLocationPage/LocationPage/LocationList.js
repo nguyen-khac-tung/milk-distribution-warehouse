@@ -484,9 +484,9 @@ const LocationList = () => {
         <div ref={ref} className="p-6 w-[600px] h-[600px] text-center border border-gray-200 rounded-md bg-white flex flex-col items-center justify-center">
             <h2 className="text-2xl font-bold mb-4 text-gray-800">MÃ VỊ TRÍ</h2>
             <div className="flex justify-center">
-                {location?.locationCode && (
+                {location?.locationCode && location?.areaId && (
                     <Barcode
-                        value={location.locationCode}
+                        value={`${location.areaId}-${location.locationCode}`}
                         height={100}
                         width={2.5}
                         margin={0}
@@ -700,18 +700,16 @@ const LocationList = () => {
                                                     </TableCell>
                                                     <TableCell className="px-6 py-4 text-center">
                                                         <div className="flex justify-center">
-                                                            <PermissionWrapper 
+                                                            <PermissionWrapper
                                                                 requiredPermission={PERMISSIONS.LOCATION_UPDATE}
                                                                 hide={false}
                                                                 fallback={
-                                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center justify-center gap-1 ${
-                                                                        location?.status === 1 
-                                                                            ? 'bg-green-100 text-green-800' 
-                                                                            : 'bg-red-100 text-red-800'
-                                                                    }`}>
-                                                                        <span className={`w-2 h-2 rounded-full ${
-                                                                            location?.status === 1 ? 'bg-green-500' : 'bg-red-500'
-                                                                        }`}></span>
+                                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center justify-center gap-1 ${location?.status === 1
+                                                                        ? 'bg-green-100 text-green-800'
+                                                                        : 'bg-red-100 text-red-800'
+                                                                        }`}>
+                                                                        <span className={`w-2 h-2 rounded-full ${location?.status === 1 ? 'bg-green-500' : 'bg-red-500'
+                                                                            }`}></span>
                                                                         {location?.status === 1 ? 'Hoạt động' : 'Ngừng hoạt động'}
                                                                     </span>
                                                                 }
