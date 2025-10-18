@@ -1,5 +1,4 @@
 
-import Layout from "../components/layout/Layout";
 import NotFoundPage from "../pages/NotFoundPage";
 import Dashboard from "../pages/AccountPage/Dashboard/Dashboard";
 import Products from "../pages/GoodPage/GoodsList";
@@ -59,10 +58,8 @@ export const routes = [
     {
         path: "/dashboard",
         page: () => (
-            <ProtectedRoute requiredPermission={PERMISSIONS.ADMIN_DASHBOARD_VIEW}>
-                <Layout>
-                    <Dashboard />
-                </Layout>
+            <ProtectedRoute requiredPermission={PERMISSIONS.DASHBOARD_VIEW}>
+                <Dashboard />
             </ProtectedRoute>
         ),
         isShowHeader: true,
@@ -71,9 +68,7 @@ export const routes = [
         path: "/accounts",
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.ACCOUNT_VIEW}>
-                <Layout>
-                    <Accounts />
-                </Layout>
+                <Accounts />
             </ProtectedRoute>
         ),
         isShowHeader: true,
@@ -82,9 +77,7 @@ export const routes = [
         path: "/categories",
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.CATEGORY_VIEW}>
-                <Layout>
-                    <CategoryList />
-                </Layout>
+                <CategoryList />
             </ProtectedRoute>
         ),
     },
@@ -92,9 +85,7 @@ export const routes = [
         path: "/unit-measures",
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.UNIT_MEASURE_VIEW}>
-                <Layout>
-                    <UnitMeasureList />
-                </Layout>
+                <UnitMeasureList />
             </ProtectedRoute>
         ),
     },
@@ -102,9 +93,7 @@ export const routes = [
         path: "/goods",
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.GOODS_VIEW}>
-                <Layout>
-                    <GoodsList />
-                </Layout>
+                <GoodsList />
             </ProtectedRoute>
         ),
     },
@@ -112,9 +101,7 @@ export const routes = [
         path: "/batches",
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.BATCH_VIEW}>
-                <Layout>
-                    <BatchList />
-                </Layout>
+                <BatchList />
             </ProtectedRoute>
         ),
         isShowHeader: true,
@@ -123,29 +110,25 @@ export const routes = [
         path: "/suppliers",
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.SUPPLIER_VIEW}>
-                <Layout>
-                    <SupplierList />
-                </Layout>
+                <SupplierList />
             </ProtectedRoute>
         ),
+        isShowHeader: true,
     },
     {
         path: "/retailers",
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.RETAILER_VIEW}>
-                <Layout>
-                    <RetailerList />
-                </Layout>
+                <RetailerList />
             </ProtectedRoute>
         ),
+        isShowHeader: true,
     },
     {
         path: "/areas",
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.AREA_VIEW}>
-                <Layout>
-                    <Areas />
-                </Layout>
+                <Areas />
             </ProtectedRoute>
         ),
         isShowHeader: true,
@@ -154,9 +137,7 @@ export const routes = [
         path: "/locations",
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.LOCATION_VIEW}>
-                <Layout>
-                    <Locations />
-                </Layout>
+                <Locations />
             </ProtectedRoute>
         ),
         isShowHeader: true,
@@ -165,9 +146,7 @@ export const routes = [
         path: "/storage-conditions",
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.STORAGE_CONDITION_VIEW}>
-                <Layout>
-                    <StorageCondition />
-                </Layout>
+                <StorageCondition />
             </ProtectedRoute>
         ),
         isShowHeader: true,
@@ -176,9 +155,7 @@ export const routes = [
         path: "/reports",
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.REPORT_VIEW}>
-                <Layout>
-                    <Reports />
-                </Layout>
+                <Reports />
             </ProtectedRoute>
         ),
         isShowHeader: true,
@@ -187,9 +164,7 @@ export const routes = [
         path: "/settings",
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.SETTINGS_VIEW}>
-                <Layout>
-                    <Settings />
-                </Layout>
+                <Settings />
             </ProtectedRoute>
         ),
         isShowHeader: true,

@@ -22,7 +22,7 @@ const ToastManager = () => {
   }, [addToast, removeToast])
 
   return (
-    <div className="fixed top-20 right-4 z-[10000] space-y-2">
+    <div className="fixed top-20 right-4 z-[999999] space-y-2">
       {toasts.map((toast) => (
         <Toast
           key={toast.id}

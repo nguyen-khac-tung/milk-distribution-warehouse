@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { ROLES, PERMISSIONS, ROLE_PERMISSIONS } from '../utils/permissions';
 
+
+///FILE NÀY TRUNG TÂM XỬ LÝ PHÂN QUYỀN MINH NHÉ
 export const usePermissions = () => {
     const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
     const userRoles = userInfo.roles || [];
@@ -9,10 +11,7 @@ export const usePermissions = () => {
         return (permission) => {
             if (!permission) return true;
             
-            // Admin có tất cả quyền
-            if (userRoles.includes(ROLES.ADMIN)) return true;
-            
-            // Kiểm tra quyền theo role
+            // Kiểm tra quyền theo role (bao gồm cả Admin)
             return userRoles.some(role => 
                 ROLE_PERMISSIONS[role]?.includes(permission)
             );
@@ -36,7 +35,7 @@ export const usePermissions = () => {
     const canAccessRoute = useMemo(() => {
         return (route) => {
             const routePermissions = {
-                '/dashboard': [PERMISSIONS.GOODS_VIEW],
+                '/dashboard': [PERMISSIONS.DASHBOARD_VIEW],
                 '/accounts': [PERMISSIONS.ACCOUNT_VIEW],
                 '/categories': [PERMISSIONS.CATEGORY_VIEW],
                 '/unit-measures': [PERMISSIONS.UNIT_MEASURE_VIEW],

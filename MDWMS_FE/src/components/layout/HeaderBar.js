@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, memo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogoutOutlined, StarOutlined, MenuOutlined, MenuFoldOutlined, UserOutlined, SettingOutlined } from "@ant-design/icons";
 import { logout } from "../../services/AuthenticationServices";
@@ -6,7 +6,7 @@ import AnimatedBell from "../Common/AnimatedBell";
 import SearchBar from "../Common/SearchBar";
 import { ViewProfileModal } from "../../pages/AccountPage/ViewProfileModal";
 
-const HeaderBar = ({ onToggleSidebar, sidebarCollapsed }) => {
+const HeaderBar = memo(({ onToggleSidebar, sidebarCollapsed }) => {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [showUserMenu, setShowUserMenu] = useState(false);
@@ -19,7 +19,7 @@ const HeaderBar = ({ onToggleSidebar, sidebarCollapsed }) => {
         }
     }, []);
 
-    const handleLogout = async () => {
+    const handleLogout = useCallback(async () => {
         try {
             await logout();
         } catch (error) {
@@ -27,16 +27,16 @@ const HeaderBar = ({ onToggleSidebar, sidebarCollapsed }) => {
         } finally {
             navigate("/login");
         }
-    };
+    }, [navigate]);
 
-    const handleUserMenuClick = () => {
-        setShowUserMenu(!showUserMenu);
-    };
+    const handleUserMenuClick = useCallback(() => {
+        setShowUserMenu(prev => !prev);
+    }, []);
 
-    const handleProfileClick = () => {
+    const handleProfileClick = useCallback(() => {
         setShowUserMenu(false);
         setShowProfileModal(true);
-    };
+    }, []);
 
     return (
         <>
@@ -260,12 +260,13 @@ const HeaderBar = ({ onToggleSidebar, sidebarCollapsed }) => {
             {showProfileModal && (
                 <ViewProfileModal
                     isOpen={showProfileModal}
-                    userId={user?.userId || user?.id}
                     onClose={() => setShowProfileModal(false)}
                 />
             )}
         </>
     );
-};
+});
+
+HeaderBar.displayName = 'HeaderBar';
 
 export default HeaderBar;

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useMemo, useCallback, memo } from "react";
 import { Menu } from "antd";
 import {
     DashboardOutlined,
@@ -13,13 +13,14 @@ import {
     DownOutlined,
     RightOutlined,
 } from "@ant-design/icons";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ComponentIcon } from "../../components/IconComponent/Icon";
 import { usePermissions } from "../../hooks/usePermissions";
 import { ROLES, PERMISSIONS } from "../../utils/permissions";
 
-const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
+const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
     const location = useLocation();
+    const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [openKeys, setOpenKeys] = useState([]);
 
@@ -31,10 +32,10 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
     // Xác định submenu nào cần mở dựa trên path hiện tại
     const getOpenKeysFromPath = useCallback((pathname) => {
         const keys = [];
-        if (pathname.startsWith('/sales-manager/suppliers') || pathname.startsWith('/sales-manager/retailers')) {
+        if (pathname.startsWith('/suppliers') || pathname.startsWith('/retailers')) {
             keys.push('partner-management');
         }
-        if (pathname.startsWith('/admin/areas') || pathname.startsWith('/admin/locations') || pathname.startsWith('/admin/storage-condition')) {
+        if (pathname.startsWith('/areas') || pathname.startsWith('/locations') || pathname.startsWith('/storage-conditions')) {
             keys.push('location-management');
         }
         return keys;
@@ -56,7 +57,7 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
                 key: "/dashboard",
                 icon: <DashboardOutlined style={{ color: '#000000' }} />,
                 label: "Dashboard",
-                permission: PERMISSIONS.ADMIN_DASHBOARD_VIEW
+                permission: PERMISSIONS.DASHBOARD_VIEW
             },
             {
                 key: "/accounts",
@@ -166,7 +167,7 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
                         }
                     }
                 }
-                
+
                 // Kiểm tra children nếu có
                 if (item.children) {
                     const filteredChildren = filterMenuItems(item.children);
@@ -175,7 +176,7 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
                     }
                     item.children = filteredChildren;
                 }
-                
+
                 return true;
             });
         };
@@ -184,28 +185,42 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
     }, [collapsed, hasPermission, userRoles]);
 
 
-    const handleMenuClick = ({ key }) => {
+    const handleMenuClick = useCallback(({ key }) => {
         if (key.startsWith('/')) {
             // Đây là menu item thông thường, không cần xử lý gì thêm
         }
-    };
+    }, []);
 
-    const handleSubMenuClick = ({ key }) => {
-        if (openKeys.includes(key)) {
-            setOpenKeys(openKeys.filter(k => k !== key));
-        } else {
-            setOpenKeys([...openKeys, key]);
-        }
-    };
+    const handleChildMenuClick = useCallback((path) => {
+        // Sử dụng navigate để chuyển trang mà không reload
+        navigate(path);
+    }, [navigate]);
 
-    const renderMenuItem = (item, isActive) => {
+    const handleSubMenuClick = useCallback(({ key }, event) => {
+        // Ngăn event bubbling để không ảnh hưởng đến menu cha
+        event.stopPropagation();
+
+        setOpenKeys(prevKeys => {
+            if (prevKeys.includes(key)) {
+                return prevKeys.filter(k => k !== key);
+            } else {
+                return [...prevKeys, key];
+            }
+        });
+    }, []);
+
+    const renderMenuItem = useCallback((item, isActive) => {
         if (item.children) {
             const isOpen = openKeys.includes(item.key);
             return (
                 <div key={item.key}>
                     <div
                         className={`menu-item ${isActive ? 'active' : ''}`}
-                        onClick={() => handleSubMenuClick({ key: item.key })}
+                        onClick={(e) => handleSubMenuClick({ key: item.key }, e)}
+                        onMouseDown={(e) => {
+                            // Ngăn event bubbling để không đóng sidebar
+                            e.stopPropagation();
+                        }}
                         style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -245,41 +260,46 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
                             {item.children.map(child => {
                                 const isChildActive = location.pathname === child.key;
                                 return (
-                                    <Link
+                                    <div
                                         key={child.key}
-                                        to={child.key}
-                                        style={{ textDecoration: 'none' }}
+                                        className={`submenu-item ${isChildActive ? 'active' : ''}`}
+                                        onClick={(e) => {
+                                            // Ngăn event bubbling để không ảnh hưởng đến menu cha
+                                            e.stopPropagation();
+                                            // Sử dụng navigate thay vì Link để tránh reload trang
+                                            handleChildMenuClick(child.key);
+                                        }}
+                                        onMouseDown={(e) => {
+                                            // Ngăn event bubbling để không đóng sidebar
+                                            e.stopPropagation();
+                                        }}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            padding: '10px 20px 10px 48px',
+                                            margin: '2px 12px',
+                                            cursor: 'pointer',
+                                            color: isChildActive ? '#d97706' : '#000000',
+                                            backgroundColor: 'transparent',
+                                            transition: 'all 0.2s ease',
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                        }}
+                                    /* Hover effects handled by CSS for better performance */
                                     >
-                                        <div
-                                            className={`submenu-item ${isChildActive ? 'active' : ''}`}
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                padding: '10px 20px 10px 48px',
-                                                margin: '2px 12px',
-                                                cursor: 'pointer',
+                                        <div style={{ marginRight: 8, display: 'flex', alignItems: 'center' }}>
+                                            {React.cloneElement(child.icon, {
                                                 color: isChildActive ? '#d97706' : '#000000',
-                                                backgroundColor: 'transparent',
-                                                transition: 'all 0.2s ease',
-                                                whiteSpace: 'nowrap',
-                                                overflow: 'hidden',
-                                            }}
-                                        /* Hover effects handled by CSS for better performance */
-                                        >
-                                            <div style={{ marginRight: 8, display: 'flex', alignItems: 'center' }}>
-                                                {React.cloneElement(child.icon, {
-                                                    color: isChildActive ? '#d97706' : '#000000',
-                                                    size: 14
-                                                })}
-                                            </div>
-                                            <span style={{
-                                                fontWeight: 400,
-                                                whiteSpace: 'nowrap',
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis'
-                                            }}>{child.label}</span>
+                                                size: 14
+                                            })}
                                         </div>
-                                    </Link>
+                                        <span style={{
+                                            fontWeight: 400,
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis'
+                                        }}>{child.label}</span>
+                                    </div>
                                 );
                             })}
                         </div>
@@ -292,6 +312,10 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
             <Link key={item.key} to={item.key} style={{ textDecoration: 'none' }}>
                 <div
                     className={`menu-item ${isActive ? 'active' : ''}`}
+                    onMouseDown={(e) => {
+                        // Ngăn event bubbling để không đóng sidebar
+                        e.stopPropagation();
+                    }}
                     style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -324,7 +348,7 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
                 </div>
             </Link>
         );
-    };
+    }, [collapsed, openKeys, location.pathname, handleSubMenuClick, handleChildMenuClick]);
 
     return (
         <aside
@@ -362,9 +386,9 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
             }}>
                 {!collapsed && (
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <img 
-                            src="/logo.png" 
-                            alt="Logo" 
+                        <img
+                            src="/logo.png"
+                            alt="Logo"
                             style={{ width: 80, height: 80, objectFit: 'contain' }}
                         />
                         <div>
@@ -381,9 +405,9 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
                         justifyContent: "center",
                         margin: "0 auto"
                     }}>
-                        <img 
-                            src="/logo.png" 
-                            alt="Logo" 
+                        <img
+                            src="/logo.png"
+                            alt="Logo"
                             style={{ width: 28, height: 28, objectFit: 'contain' }}
                         />
                     </div>
@@ -400,6 +424,8 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
             </div>
         </aside>
     );
-};
+});
+
+Sidebar.displayName = 'Sidebar';
 
 export default Sidebar;

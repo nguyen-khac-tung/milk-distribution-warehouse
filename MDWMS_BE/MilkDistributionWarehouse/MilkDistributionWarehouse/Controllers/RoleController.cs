@@ -19,7 +19,7 @@ namespace MilkDistributionWarehouse.Controllers
             _roleService = roleService;
         }
 
-        //[Authorize(Roles = "Administrator, Business Owner")]
+        [Authorize(Roles = "Administrator, Business Owner")]
         [HttpGet("GetRoles")]
         public async Task<IActionResult> GetRoles()
         {
