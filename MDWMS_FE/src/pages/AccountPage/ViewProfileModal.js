@@ -144,63 +144,6 @@ export function ViewProfileModal({ userId, onClose, isOpen }) {
               </Card>
             </div>
 
-            {/* Role and System Information Card - Full Width */}
-            <Card className="mt-6 bg-gray-50 shadow-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
-                  <ComponentIcon name="serverNetwork" size={40} color="#374151" />
-                  Thông tin hệ thống
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-6 md:grid-cols-3">
-                  {/* Role */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-slate-600">
-                      <ComponentIcon name="shield" size={40} color="#6b7280" />
-                      <span className="text-sm font-medium">Chức vụ</span>
-                    </div>
-                    <div className="rounded-lg bg-white p-4 border border-gray-200">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg font-bold text-slate-800">
-                          {user.roles && user.roles.length > 0 ? user.roles.join(", ") : 'N/A'}
-                        </span>
-                      </div>
-                      <p className="mt-2 text-xs text-slate-500">Vai trò trong hệ thống</p>
-                    </div>
-                  </div>
-
-                  {/* Created Date */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-slate-600">
-                      <ComponentIcon name="calendar" size={40} color="#6b7280" />
-                      <span className="text-sm font-medium">Ngày tạo</span>
-                    </div>
-                    <div className="rounded-lg bg-white p-4 border border-gray-200">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg font-bold text-slate-800">{formatDate(user.createAt)}</span>
-                      </div>
-                      <p className="mt-2 text-xs text-slate-500">Thời gian tạo tài khoản</p>
-                    </div>
-                  </div>
-
-                  {/* Updated Date */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-slate-600">
-                      <ComponentIcon name="calendarzx" size={40} color="#6b7280" />
-                      <span className="text-sm font-medium">Cập nhật cuối</span>
-                    </div>
-                    <div className="rounded-lg bg-white p-4 border border-gray-200">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg font-bold text-slate-800">{formatDate(user.updateAt)}</span>
-                      </div>
-                      <p className="mt-2 text-xs text-slate-500">Lần cập nhật gần nhất</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
           </div>
 
           {/* Action Buttons - Fixed Footer */}
