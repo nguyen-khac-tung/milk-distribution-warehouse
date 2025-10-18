@@ -63,6 +63,7 @@ export default function GoodsPage() {
     totalCount: 0
   })
   const [showPageSizeFilter, setShowPageSizeFilter] = useState(false)
+  const [isInitialized, setIsInitialized] = useState(false)
 
   // Dropdown data for filters
   const [categories, setCategories] = useState([])
@@ -229,7 +230,10 @@ export default function GoodsPage() {
       supplierId: "",
       unitMeasureId: ""
     })
-  }, [])
+
+    // Mark as initialized after initial load
+    setIsInitialized(true)
+  }, []) // Empty dependency array - only run once on mount
 
   // Close filter dropdowns when clicking outside
   useEffect(() => {
@@ -257,8 +261,11 @@ export default function GoodsPage() {
     }
   }, [showStatusFilter, showCategoryFilter, showSupplierFilter, showUnitMeasureFilter, showPageSizeFilter])
 
-  // Search with debounce
+  // Combined effect for search, filters, and sort
   useEffect(() => {
+    // Skip if not initialized yet (avoid calling API during initial state setup)
+    if (!isInitialized) return
+
     const timeoutId = setTimeout(() => {
       setSearchLoading(true)
       fetchData({
@@ -273,95 +280,10 @@ export default function GoodsPage() {
         unitMeasureId: unitMeasureFilter
       })
       setPagination(prev => ({ ...prev, pageNumber: 1 }))
-    }, 500)
+    }, searchQuery ? 500 : 0) // Only debounce for search, immediate for filters
 
     return () => clearTimeout(timeoutId)
-  }, [searchQuery])
-
-  // Filter by status
-  useEffect(() => {
-    setSearchLoading(true)
-    fetchData({
-      pageNumber: 1,
-      pageSize: pagination.pageSize,
-      search: searchQuery || "",
-      sortField: sortField,
-      sortAscending: sortAscending,
-      status: statusFilter,
-      categoryId: categoryFilter,
-      supplierId: supplierFilter,
-      unitMeasureId: unitMeasureFilter
-    })
-    setPagination(prev => ({ ...prev, pageNumber: 1 }))
-  }, [statusFilter])
-
-  // Filter by category
-  useEffect(() => {
-    setSearchLoading(true)
-    fetchData({
-      pageNumber: 1,
-      pageSize: pagination.pageSize,
-      search: searchQuery || "",
-      sortField: sortField,
-      sortAscending: sortAscending,
-      status: statusFilter,
-      categoryId: categoryFilter,
-      supplierId: supplierFilter,
-      unitMeasureId: unitMeasureFilter
-    })
-    setPagination(prev => ({ ...prev, pageNumber: 1 }))
-  }, [categoryFilter])
-
-  // Filter by supplier
-  useEffect(() => {
-    setSearchLoading(true)
-    fetchData({
-      pageNumber: 1,
-      pageSize: pagination.pageSize,
-      search: searchQuery || "",
-      sortField: sortField,
-      sortAscending: sortAscending,
-      status: statusFilter,
-      categoryId: categoryFilter,
-      supplierId: supplierFilter,
-      unitMeasureId: unitMeasureFilter
-    })
-    setPagination(prev => ({ ...prev, pageNumber: 1 }))
-  }, [supplierFilter])
-
-  // Filter by unit measure
-  useEffect(() => {
-    setSearchLoading(true)
-    fetchData({
-      pageNumber: 1,
-      pageSize: pagination.pageSize,
-      search: searchQuery || "",
-      sortField: sortField,
-      sortAscending: sortAscending,
-      status: statusFilter,
-      categoryId: categoryFilter,
-      supplierId: supplierFilter,
-      unitMeasureId: unitMeasureFilter
-    })
-    setPagination(prev => ({ ...prev, pageNumber: 1 }))
-  }, [unitMeasureFilter])
-
-  // Sort when sortField or sortAscending changes
-  useEffect(() => {
-    setSearchLoading(true)
-    fetchData({
-      pageNumber: 1,
-      pageSize: pagination.pageSize,
-      search: searchQuery || "",
-      sortField: sortField,
-      sortAscending: sortAscending,
-      status: statusFilter,
-      categoryId: categoryFilter,
-      supplierId: supplierFilter,
-      unitMeasureId: unitMeasureFilter
-    })
-    setPagination(prev => ({ ...prev, pageNumber: 1 }))
-  }, [sortField, sortAscending])
+  }, [searchQuery, statusFilter, categoryFilter, supplierFilter, unitMeasureFilter, sortField, sortAscending, isInitialized])
 
 
   // Remove client-side filtering since backend already handles search and filter
@@ -726,7 +648,7 @@ export default function GoodsPage() {
 
 
           {/* Table */}
-          <div className="w-full">
+          <div className="w-full min-h-[200px]">
             {loading ? (
               <Loading size="large" text="Đang tải dữ liệu..." />
             ) : searchLoading ? (
@@ -778,7 +700,7 @@ export default function GoodsPage() {
                       filteredGoods.map((good, index) => (
                         <TableRow
                           key={index}
-                          className="hover:bg-slate-50 border-b border-slate-200"
+                          className="hover:bg-slate-50 border-b border-slate-200 min-h-[60px]"
                         >
                           <TableCell className="px-6 py-4 text-slate-600 font-medium">
                             {index + 1}

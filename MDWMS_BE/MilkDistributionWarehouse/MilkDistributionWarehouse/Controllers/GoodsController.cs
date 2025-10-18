@@ -1,4 +1,5 @@
 ﻿using Azure.Core;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MilkDistributionWarehouse.Models.DTOs;
@@ -29,6 +30,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("Goods")]
+        [Authorize(Roles = "Sale Manager, Sales Representative")]
         public async Task<IActionResult> GetGoodss([FromBody]PagedRequest request)
         {
             var(msg, goodss) = await _goodsService.GetGoods(request);
@@ -38,6 +40,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpGet("GoodsByGoodsId/{goodsId}")]
+        [Authorize(Roles = "Sale Manager, Sales Representative")]
         public  async Task<IActionResult> GoodsByGoodsId(int goodsId)
         {
             var(msg, goodsDetail) = await _goodsService.GetGoodsByGoodsId(goodsId);
@@ -47,6 +50,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("Create")]
+        [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> CreateGoods([FromBody]GoodsCreate create)
         {
             var(msg, goods) = await _goodsService.CreateGoods(create);
@@ -56,6 +60,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPut("Update")]
+        [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> UpdateGoods([FromBody] GoodsUpdate update)
         {
             var(msg, goods) = await _goodsService.UpdateGoods_1(update);
@@ -65,6 +70,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpDelete("Delete/{goodsId}")]
+        [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> DeleteGoods(int goodsId)
         {
             var (msg, goods) = await _goodsService.DeleteGoods(goodsId);
@@ -74,6 +80,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPut("UpdateStatus")]
+        [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> UpdateStatus(GoodsUpdateStatus update)
         {
             var (msg, goods) = await _goodsService.UpdateGoodsStatus(update);

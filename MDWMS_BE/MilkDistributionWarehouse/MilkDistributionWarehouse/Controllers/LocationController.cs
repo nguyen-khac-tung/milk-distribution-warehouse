@@ -56,6 +56,17 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<LocationDto.LocationResponseDto>.ToResultOk(location);
         }
 
+        [HttpPost("CreateMultiple")]
+        public async Task<IActionResult> CreateMultipleLocations([FromBody] List<LocationDto.LocationRequestDto> dtos)
+        {
+            var (msg, createdList) = await _locationService.CreateMultipleLocations(dtos);
+
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<List<LocationDto.LocationResponseDto>>.ToResultOk(createdList);
+        }
+
         [HttpPut("Update/{locationId}")]
         public async Task<IActionResult> UpdateLocation(int locationId, [FromBody] LocationDto.LocationRequestDto dto)
         {

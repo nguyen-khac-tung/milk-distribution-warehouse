@@ -8,13 +8,15 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
         public string BatchCode { get; set; }
 
-        public int? GoodsId { get; set; }
+        public int GoodsId { get; set; }
 
-        public string? GoodsName { get; set; }
+        public string GoodsName { get; set; }
 
-        public DateOnly? ManufacturingDate { get; set; }
+        public DateOnly ManufacturingDate { get; set; }
 
-        public DateOnly? ExpiryDate { get; set; }
+        public DateOnly ExpiryDate { get; set; }
+
+        public int Status { get; set; }
     }
 
     public class BatchDropDownDto

@@ -4,7 +4,7 @@ import { Card, CardContent } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
-import { Search, Plus, Eye, Edit, Trash2, Filter, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Ruler } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Filter, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Ruler } from "lucide-react";
 import CreateUnitMeasure from "./CreateUnitMeasureModal";
 import UpdateUnitMeasure from "./UpdateUnitMeasureModal";
 import DeleteModal from "../../components/Common/DeleteModal";
@@ -45,6 +45,7 @@ export default function UnitMeasuresPage() {
   })
   const [showPageSizeFilter, setShowPageSizeFilter] = useState(false)
   const [isInitialMount, setIsInitialMount] = useState(true)
+  const [isInitialized, setIsInitialized] = useState(false)
   
   // Thống kê tổng (không thay đổi khi search/filter)
   const [totalStats, setTotalStats] = useState({
@@ -155,33 +156,33 @@ export default function UnitMeasuresPage() {
 
   // Initial load
   useEffect(() => {
-    if (isInitialMount) {
-      // Fetch tổng thống kê khi component mount
-      fetchTotalStats()
-      
-      // Reset tất cả filter và sort về mặc định
-      setSearchQuery("")
-      setStatusFilter("")
-      setSortField("")
-      setSortAscending(true)
-      setPagination({
-        pageNumber: 1,
-        pageSize: 10,
-        totalCount: 0
-      })
-      
-      // Fetch dữ liệu hiển thị với không có sort/filter
-      fetchData({
-        pageNumber: 1,
-        pageSize: 10,
-        search: "",
-        sortField: "",
-        sortAscending: true,
-        status: ""
-      })
-      setIsInitialMount(false)
-    }
-  }, [isInitialMount])
+    // Fetch tổng thống kê khi component mount
+    fetchTotalStats()
+    
+    // Reset tất cả filter và sort về mặc định
+    setSearchQuery("")
+    setStatusFilter("")
+    setSortField("")
+    setSortAscending(true)
+    setPagination({
+      pageNumber: 1,
+      pageSize: 10,
+      totalCount: 0
+    })
+    
+    // Fetch dữ liệu hiển thị với không có sort/filter
+    fetchData({
+      pageNumber: 1,
+      pageSize: 10,
+      search: "",
+      sortField: "",
+      sortAscending: true,
+      status: ""
+    })
+
+    // Mark as initialized after initial load
+    setIsInitialized(true)
+  }, [])
 
   // Close status filter dropdown when clicking outside
   useEffect(() => {
@@ -200,29 +201,12 @@ export default function UnitMeasuresPage() {
     }
   }, [showStatusFilter, showPageSizeFilter])
 
-  // Search with debounce
+  // Combined effect for search, filters, and sort
   useEffect(() => {
-    if (!isInitialMount) {
-      const timeoutId = setTimeout(() => {
-        setSearchLoading(true)
-        fetchData({
-          pageNumber: 1,
-          pageSize: pagination.pageSize,
-          search: searchQuery || "",
-          sortField: sortField,
-          sortAscending: sortAscending,
-          status: statusFilter
-        })
-        setPagination(prev => ({ ...prev, pageNumber: 1 }))
-      }, 500)
+    // Skip if not initialized yet (avoid calling API during initial state setup)
+    if (!isInitialized) return
 
-      return () => clearTimeout(timeoutId)
-    }
-  }, [searchQuery, isInitialMount])
-
-  // Filter by status
-  useEffect(() => {
-    if (!isInitialMount) {
+    const timeoutId = setTimeout(() => {
       setSearchLoading(true)
       fetchData({
         pageNumber: 1,
@@ -233,24 +217,10 @@ export default function UnitMeasuresPage() {
         status: statusFilter
       })
       setPagination(prev => ({ ...prev, pageNumber: 1 }))
-    }
-  }, [statusFilter, isInitialMount])
+    }, searchQuery ? 500 : 0) // Only debounce for search, immediate for filters
 
-  // Sort when sortField or sortAscending changes
-  useEffect(() => {
-    if (!isInitialMount) {
-      setSearchLoading(true)
-      fetchData({
-        pageNumber: 1,
-        pageSize: pagination.pageSize,
-        search: searchQuery || "",
-        sortField: sortField,
-        sortAscending: sortAscending,
-        status: statusFilter
-      })
-      setPagination(prev => ({ ...prev, pageNumber: 1 }))
-    }
-  }, [sortField, sortAscending, isInitialMount])
+    return () => clearTimeout(timeoutId)
+  }, [searchQuery, statusFilter, sortField, sortAscending, isInitialized])
 
   // Remove client-side filtering since backend already handles search and filter
   const filteredUnitMeasures = useMemo(() => {
@@ -531,12 +501,6 @@ export default function UnitMeasuresPage() {
                           </TableCell>
                           <TableCell className="px-6 py-4 text-center">
                             <div className="flex items-center justify-center space-x-1">
-                              <button
-                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                title="Xem chi tiết"
-                              >
-                                <Eye className="h-4 w-4 text-orange-500" />
-                              </button>
                               <button
                                 className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                 title="Chỉnh sửa"

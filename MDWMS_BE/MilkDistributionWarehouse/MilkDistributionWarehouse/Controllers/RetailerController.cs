@@ -1,4 +1,5 @@
 ﻿using Azure.Core;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MilkDistributionWarehouse.Models.DTOs;
@@ -20,6 +21,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("Retailers")]
+        [Authorize(Roles = "Sale Manager, Sales Representative")]
         public async Task<IActionResult> GetRetailer(PagedRequest request)
         {
             var (msg, retailers) = await _retailerSevice.GetRetailers(request);
@@ -38,6 +40,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpGet("GetRetailerByRetailerId/{retailerId}")]
+        [Authorize(Roles = "Sale Manager, Sales Representative")]
         public async Task<IActionResult> GetRetailerByRetailerId(int retailerId)
         {
             var (msg, retailerDetail) = await _retailerSevice.GetRetailerByRetailerId(retailerId);
@@ -47,6 +50,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("Create")]
+        [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> CreateRetailer(RetailerCreate create)
         {
             var (msg, retailerDetail) = await _retailerSevice.CreateRetailer(create);
@@ -56,6 +60,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPut("Update")]
+        [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> UpdateRetailer(RetailerUpdate update)
         {
             var (msg, retailerDetail) = await _retailerSevice.UpdateRetailer(update); 
@@ -65,6 +70,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPut("UpdateStatus")]
+        [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> UpdateRetailerStatus(RetailerUpdateStatus update)
         {
             var (msg, retailerStatus) = await _retailerSevice.UpdateRetailerStatus(update);
@@ -74,6 +80,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpDelete("Delete/{retailerId}")]
+        [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> DeleteRetailer(int retailerId)
         {
             var (msg, retailerDetail) = await _retailerSevice.DeleteRetailer(retailerId);

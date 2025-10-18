@@ -14,7 +14,7 @@ export const login = async (data) => {
         if (res.data?.success && res.data?.data) {
             const userData = res.data.data;
 
-            // 🔹 Lưu token và thông tin người dùng
+            // Lưu token và thông tin người dùng
             localStorage.setItem("accessToken", userData.jwtToken);
             localStorage.setItem("refreshToken", userData.refreshToken);
             localStorage.setItem(
@@ -40,11 +40,19 @@ export const login = async (data) => {
         }
     } catch (error) {
         console.error("Error during login:", error);
+
+        if (error.response) {
+            return {
+                success: false,
+                message: error.response.data?.message || "Đăng nhập thất bại",
+                status: error.response.status
+            };
+        }
+
         return {
             success: false,
-            message:
-                error.response?.data?.message ||
-                "Lỗi hệ thống, vui lòng thử lại.",
+            message: "Vui lòng kiểm tra lại kết nối.",
+            status: 0
         };
     }
 };
@@ -70,6 +78,9 @@ export const refreshAccessToken = async () => {
         }
     } catch (error) {
         console.error("Error refreshing token:", error);
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
         throw error;
     }
 };

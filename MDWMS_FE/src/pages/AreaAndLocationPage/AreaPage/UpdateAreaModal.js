@@ -4,8 +4,10 @@ import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
 import { ComponentIcon } from "../../../components/IconComponent/Icon";
 import { updateArea, getAreaDetail } from "../../../services/AreaServices";
-import { getStorageCondition } from "../../../services/StorageConditionService";
+import { getStorageConditionsDropdown } from "../../../services/StorageConditionService";
 import { extractErrorMessage } from "../../../utils/Validation";
+import CustomDropdown from "../../../components/Common/CustomDropdown";
+import { Textarea } from "../../../components/ui/textarea"
 
 export default function UpdateAreaModal({ isOpen, onClose, onSuccess, areaId, areaData }) {
   const [formData, setFormData] = useState({
@@ -61,7 +63,7 @@ export default function UpdateAreaModal({ isOpen, onClose, onSuccess, areaId, ar
   const loadDropdownData = async () => {
     try {
       setLoadingData(true);
-      const res = await getStorageCondition({ pageNumber: 1, pageSize: 50 });
+      const res = await getStorageConditionsDropdown({ pageNumber: 1, pageSize: 50 });
       setStorageConditions(res?.data?.items || res?.data || []);
     } catch (error) {
       console.error("Error loading dropdown data:", error);
@@ -149,26 +151,21 @@ export default function UpdateAreaModal({ isOpen, onClose, onSuccess, areaId, ar
                   <Label htmlFor="storageConditionId" className="text-sm font-medium text-gray-700">
                     Điều kiện bảo quản <span className="text-red-500">*</span>
                   </Label>
-                  <select
-                    id="storageConditionId"
-                    value={formData.storageConditionId}
-                    onChange={(e) =>
-                      setFormData({ ...formData, storageConditionId: parseInt(e.target.value) })
+                  <CustomDropdown
+                    value={formData.storageConditionId?.toString() || ""}
+                    onChange={(value) =>
+                      setFormData({ ...formData, storageConditionId: value })
                     }
-                    className="h-9 w-full px-3 border border-gray-300 rounded-lg focus:border-orange-500 focus:ring-orange-500 focus:outline-none bg-white text-sm"
-                    required
-                  >
-                    <option value={0}>Chọn điều kiện bảo quản...</option>
-                    {loadingData ? (
-                      <option disabled>Đang tải...</option>
-                    ) : (
-                      storageConditions.map((c) => (
-                        <option key={c.storageConditionId} value={c.storageConditionId}>
-                          {c.conditionName} - Nhiệt độ: {c.temperatureMin}°C đến {c.temperatureMax}°C - Độ ẩm: {c.humidityMin}% → {c.humidityMax}%
-                        </option>
-                      ))
-                    )}
-                  </select>
+                    options={[
+                      { value: "", label: "Chọn điều kiện bảo quản..." },
+                      ...storageConditions.map((condition) => ({
+                        value: condition.storageConditionId.toString(),
+                        label: `- Nhiệt độ: ${condition.temperatureMin}°C đến ${condition.temperatureMax}°C - Độ ẩm: ${condition.humidityMin}% đến ${condition.humidityMax}%`,
+                      })),
+                    ]}
+                    placeholder="Chọn điều kiện bảo quản..."
+                    loading={loadingData}
+                  />
                 </div>
 
               </div>
@@ -197,7 +194,7 @@ export default function UpdateAreaModal({ isOpen, onClose, onSuccess, areaId, ar
               <Label htmlFor="description" className="text-sm font-medium text-slate-700">
                 Mô tả
               </Label>
-              <textarea
+              <Textarea
                 id="description"
                 placeholder="Nhập mô tả khu vực..."
                 value={formData.description}
@@ -205,7 +202,6 @@ export default function UpdateAreaModal({ isOpen, onClose, onSuccess, areaId, ar
                   setFormData({ ...formData, description: e.target.value })
                 }
                 rows={3}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-orange-500 focus:ring-orange-500 focus:outline-none text-sm resize-y"
               />
             </div>
 

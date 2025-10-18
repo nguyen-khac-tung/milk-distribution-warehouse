@@ -4,6 +4,7 @@ import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
 import { Label } from "../../components/ui/label"
 import { Card } from "../../components/ui/card"
+import { Textarea } from "../../components/ui/textarea"
 import { X } from "lucide-react"
 import { createCategory } from "../../services/CategoryService/CategoryServices"
 import { validateAndShowError, extractErrorMessage } from "../../utils/Validation"
@@ -88,12 +89,12 @@ export default function CreateCategory({ isOpen, onClose, onSuccess }) {
                 <Label htmlFor="description" className="text-sm font-medium text-slate-700">
                   Mô tả
                 </Label>
-                <Input
+                <Textarea
                   id="description"
                   placeholder="Nhập mô tả danh mục..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                  className="min-h-[100px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg resize-none"
                 />
               </div>
             </div>
