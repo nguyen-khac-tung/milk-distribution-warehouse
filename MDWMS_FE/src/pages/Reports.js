@@ -206,7 +206,25 @@ const Reports = () => {
         <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
                 <h2 style={{ fontWeight: 700, fontSize: 24, margin: 0 }}>Báo cáo & Thống kê</h2>
-                <Button type="primary" icon={<DownloadOutlined />}>
+                <Button 
+                    type="primary" 
+                    icon={<DownloadOutlined />}
+                    style={{ 
+                        height: '38px',
+                        backgroundColor: '#f97316',
+                        borderColor: '#f97316',
+                        borderRadius: '8px',
+                        fontWeight: 500
+                    }}
+                    onMouseEnter={(e) => {
+                        e.target.style.backgroundColor = '#ea580c';
+                        e.target.style.borderColor = '#ea580c';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.target.style.backgroundColor = '#f97316';
+                        e.target.style.borderColor = '#f97316';
+                    }}
+                >
                     Xuất báo cáo
                 </Button>
             </div>
@@ -215,10 +233,23 @@ const Reports = () => {
             <Card style={{ marginBottom: 24 }}>
                 <Row gutter={16}>
                     <Col span={8}>
-                        <RangePicker style={{ width: '100%' }} placeholder={["Từ ngày", "Đến ngày"]} />
+                        <RangePicker 
+                            style={{ 
+                                width: '100%',
+                                height: '38px'
+                            }} 
+                            placeholder={["Từ ngày", "Đến ngày"]} 
+                        />
                     </Col>
                     <Col span={6}>
-                        <Select placeholder="Loại báo cáo" style={{ width: '100%' }} defaultValue="all">
+                        <Select 
+                            placeholder="Loại báo cáo" 
+                            style={{ 
+                                width: '100%',
+                                height: '38px'
+                            }} 
+                            defaultValue="all"
+                        >
                             <Option value="all">Tất cả</Option>
                             <Option value="products">Sản phẩm</Option>
                             <Option value="orders">Đơn hàng</Option>
@@ -226,7 +257,14 @@ const Reports = () => {
                         </Select>
                     </Col>
                     <Col span={6}>
-                        <Select placeholder="Khoảng thời gian" style={{ width: '100%' }} defaultValue="month">
+                        <Select 
+                            placeholder="Khoảng thời gian" 
+                            style={{ 
+                                width: '100%',
+                                height: '38px'
+                            }} 
+                            defaultValue="month"
+                        >
                             <Option value="week">Tuần</Option>
                             <Option value="month">Tháng</Option>
                             <Option value="quarter">Quý</Option>
@@ -234,7 +272,26 @@ const Reports = () => {
                         </Select>
                     </Col>
                     <Col span={4}>
-                        <Button type="primary" icon={<FileTextOutlined />} style={{ width: '100%' }}>
+                        <Button 
+                            type="primary" 
+                            icon={<FileTextOutlined />} 
+                            style={{ 
+                                width: '100%',
+                                height: '38px',
+                                backgroundColor: '#f97316',
+                                borderColor: '#f97316',
+                                borderRadius: '8px',
+                                fontWeight: 500
+                            }}
+                            onMouseEnter={(e) => {
+                                e.target.style.backgroundColor = '#ea580c';
+                                e.target.style.borderColor = '#ea580c';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.target.style.backgroundColor = '#f97316';
+                                e.target.style.borderColor = '#f97316';
+                            }}
+                        >
                             Tạo báo cáo
                         </Button>
                     </Col>
@@ -296,8 +353,6 @@ const Reports = () => {
                 }}>
                     <p style={{ color: '#999', fontSize: 16 }}>
                         Biểu đồ doanh thu sẽ được hiển thị ở đây
-                        <br />
-                        (Có thể tích hợp Chart.js hoặc Ant Design Charts)
                     </p>
                 </div>
             </Card>

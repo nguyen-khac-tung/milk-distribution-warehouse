@@ -20,8 +20,10 @@ import EmptyState from "../../../components/Common/EmptyState";
 import { getAreaDropdown } from "../../../services/AreaServices";
 import PermissionWrapper from "../../../components/Common/PermissionWrapper";
 import { PERMISSIONS } from "../../../utils/permissions";
+import { usePermissions } from "../../../hooks/usePermissions";
 
 const LocationList = () => {
+    const { hasAnyPermission } = usePermissions();
     const [locations, setLocations] = useState([]);
     const [loading, setLoading] = useState(false);
     const [searchLoading, setSearchLoading] = useState(false);
@@ -56,6 +58,13 @@ const LocationList = () => {
     const [selectedLocation, setSelectedLocation] = useState(null);
     const didMountRef = useRef(false);
     const skipFirstSearchRef = useRef(true);
+
+    // Kiểm tra xem user có bất kỳ quyền nào trong cột "Hoạt động" không
+    const hasAnyActionPermission = hasAnyPermission([
+        PERMISSIONS.LOCATION_PRINT,
+        PERMISSIONS.LOCATION_UPDATE,
+        PERMISSIONS.LOCATION_DELETE
+    ]);
 
     const handlePrint = useReactToPrint({
         contentRef: printRef,
@@ -657,9 +666,11 @@ const LocationList = () => {
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-48">
                                                 Trạng thái
                                             </TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
-                                                Hoạt động
-                                            </TableHead>
+                                            {hasAnyActionPermission && (
+                                                <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
+                                                    Hoạt động
+                                                </TableHead>
+                                            )}
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -715,48 +726,50 @@ const LocationList = () => {
                                                             </PermissionWrapper>
                                                         </div>
                                                     </TableCell>
-                                                    <TableCell className="px-6 py-4 text-center">
-                                                        <div className="flex items-center justify-center space-x-1">
-                                                            <PermissionWrapper requiredPermission={PERMISSIONS.LOCATION_PRINT}>
-                                                                <button
-                                                                    className="p-1.5 hover:bg-blue-100 rounded transition-colors"
-                                                                    title="In phiếu vị trí"
-                                                                    onClick={() => {
-                                                                        setSelectedLocation(location);
-                                                                        setTimeout(() => handlePrint(), 100);
-                                                                    }}
-                                                                >
-                                                                    <Printer className="h-4 w-4 text-blue-600" />
-                                                                </button>
-                                                            </PermissionWrapper>
-                                                            <PermissionWrapper requiredPermission={PERMISSIONS.LOCATION_UPDATE}>
-                                                                <button
-                                                                    className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                                    title="Chỉnh sửa"
-                                                                    onClick={() => handleOpenEdit(location)}
-                                                                >
-                                                                    <Edit className="h-4 w-4 text-orange-500" />
-                                                                </button>
-                                                            </PermissionWrapper>
-                                                            <PermissionWrapper requiredPermission={PERMISSIONS.LOCATION_DELETE}>
-                                                                <button
-                                                                    className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                                    title="Xóa"
-                                                                    onClick={() => {
-                                                                        setItemToDelete(location);
-                                                                        setShowDeleteModal(true);
-                                                                    }}
-                                                                >
-                                                                    <Trash2 className="h-4 w-4 text-red-500" />
-                                                                </button>
-                                                            </PermissionWrapper>
-                                                        </div>
-                                                    </TableCell>
+                                                    {hasAnyActionPermission && (
+                                                        <TableCell className="px-6 py-4 text-center">
+                                                            <div className="flex items-center justify-center space-x-1">
+                                                                <PermissionWrapper requiredPermission={PERMISSIONS.LOCATION_PRINT}>
+                                                                    <button
+                                                                        className="p-1.5 hover:bg-blue-100 rounded transition-colors"
+                                                                        title="In phiếu vị trí"
+                                                                        onClick={() => {
+                                                                            setSelectedLocation(location);
+                                                                            setTimeout(() => handlePrint(), 100);
+                                                                        }}
+                                                                    >
+                                                                        <Printer className="h-4 w-4 text-blue-600" />
+                                                                    </button>
+                                                                </PermissionWrapper>
+                                                                <PermissionWrapper requiredPermission={PERMISSIONS.LOCATION_UPDATE}>
+                                                                    <button
+                                                                        className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                                        title="Chỉnh sửa"
+                                                                        onClick={() => handleOpenEdit(location)}
+                                                                    >
+                                                                        <Edit className="h-4 w-4 text-orange-500" />
+                                                                    </button>
+                                                                </PermissionWrapper>
+                                                                <PermissionWrapper requiredPermission={PERMISSIONS.LOCATION_DELETE}>
+                                                                    <button
+                                                                        className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                                        title="Xóa"
+                                                                        onClick={() => {
+                                                                            setItemToDelete(location);
+                                                                            setShowDeleteModal(true);
+                                                                        }}
+                                                                    >
+                                                                        <Trash2 className="h-4 w-4 text-red-500" />
+                                                                    </button>
+                                                                </PermissionWrapper>
+                                                            </div>
+                                                        </TableCell>
+                                                    )}
                                                 </TableRow>
                                             ))
                                         ) : (
                                             <TableRow>
-                                                <TableCell colSpan={9}>
+                                                <TableCell colSpan={hasAnyActionPermission ? 9 : 8}>
                                                     <div className="flex flex-col items-center justify-center text-center min-h-[260px]">
                                                         <EmptyState
                                                             icon={Folder}

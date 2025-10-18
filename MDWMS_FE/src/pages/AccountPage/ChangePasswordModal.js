@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
 import { Label } from "../../components/ui/label"
@@ -7,7 +7,7 @@ import { X, Eye, EyeOff, Lock, CheckCircle } from "lucide-react"
 import { updatePassword } from "../../services/AccountService"
 import { extractErrorMessage } from "../../utils/Validation"
 
-export default function ChangePasswordModal({ isOpen, onClose, userId }) {
+export default function ChangePasswordModal({ isOpen, onClose }) {
   const [formData, setFormData] = useState({
     currentPassword: "",
     newPassword: "",
@@ -20,6 +20,20 @@ export default function ChangePasswordModal({ isOpen, onClose, userId }) {
     confirm: false
   })
   const [errors, setErrors] = useState({})
+  const [userId, setUserId] = useState(null)
+
+  // Lấy userId từ localStorage
+  useEffect(() => {
+    const savedUser = localStorage.getItem("userInfo")
+    if (savedUser) {
+      try {
+        const userData = JSON.parse(savedUser)
+        setUserId(userData?.userId || userData?.id)
+      } catch (err) {
+        console.error("Error parsing user data:", err)
+      }
+    }
+  }, [])
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))

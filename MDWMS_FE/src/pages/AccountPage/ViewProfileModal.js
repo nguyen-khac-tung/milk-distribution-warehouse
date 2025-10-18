@@ -4,55 +4,40 @@ import { Separator } from "../../components/ui/separator"
 import { Button } from "../../components/ui/button"
 import { X, Lock } from "lucide-react";
 import { ComponentIcon } from "../../components/IconComponent/Icon";
-import { getUserDetail } from "../../services/AccountService";
 import Loading from "../../components/Common/Loading";
 import ChangePasswordModal from "./ChangePasswordModal";
 import { extractErrorMessage } from "../../utils/Validation";
+import PermissionWrapper from "../../components/Common/PermissionWrapper";
+import { PERMISSIONS } from "../../utils/permissions";
 
 export function ViewProfileModal({ userId, onClose, isOpen }) {
   const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [showChangePassword, setShowChangePassword] = useState(false)
 
   useEffect(() => {
-    const fetchUserDetail = async () => {
+    // Lấy thông tin user từ localStorage thay vì gọi API
+    const savedUser = localStorage.getItem("userInfo")
+    if (savedUser) {
       try {
-        setLoading(true)
-        setError(null)
-        const response = await getUserDetail(userId)
-
-        if (response && response.success !== false && response.data) {
-          setUser(response.data)
-        } else {
-          setError(extractErrorMessage({ response: { data: response } }, "Không thể tải thông tin người dùng"))
-        }
+        const userData = JSON.parse(savedUser)
+        setUser(userData)
+        setLoading(false)
       } catch (err) {
-        console.error("Error fetching user detail:", err)
-        setError(extractErrorMessage(err, "Có lỗi xảy ra khi tải thông tin người dùng"))
-      } finally {
+        console.error("Error parsing user data:", err)
+        setError("Không thể tải thông tin người dùng")
         setLoading(false)
       }
+    } else {
+      setError("Không tìm thấy thông tin người dùng")
+      setLoading(false)
     }
+  }, [])
 
-    if (userId) {
-      fetchUserDetail()
-    }
-  }, [userId])
+  // Don't render if not open
+  if (!isOpen) return null
 
-  // Don't render if not open or no userId
-  if (!isOpen || !userId) return null
-
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 1:
-        return <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Đang hoạt động</span>
-      case 2:
-        return <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">Ngừng hoạt động</span>
-      default:
-        return <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Không xác định</span>
-    }
-  }
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A'
@@ -89,8 +74,9 @@ export function ViewProfileModal({ userId, onClose, isOpen }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-4xl  max-h-[75vh] overflow-y-auto bg-white rounded-lg shadow-2xl relative">
+    <PermissionWrapper requiredPermission={PERMISSIONS.PROFILE_VIEW}>
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="w-full max-w-4xl  max-h-[75vh] overflow-y-auto bg-white rounded-lg shadow-2xl relative">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h1 className="text-2xl font-bold text-slate-800">Thông tin cá nhân</h1>
@@ -109,7 +95,6 @@ export function ViewProfileModal({ userId, onClose, isOpen }) {
             <div className="flex items-center gap-2 mb-2">
               <ComponentIcon name="schoolboyRunaway" size={40} color="#6b7280" />
               <h2 className="text-xl font-semibold text-slate-800">{user.fullName}</h2>
-              {getStatusBadge(user.status)}
             </div>
             <div className="flex items-center gap-2 text-slate-600">
               <ComponentIcon name="email" size={30} color="#6b7280" />
@@ -231,13 +216,13 @@ export function ViewProfileModal({ userId, onClose, isOpen }) {
         </div>
       </div>
 
-      {/* Change Password Modal */}
-      <ChangePasswordModal
-        isOpen={showChangePassword}
-        onClose={() => setShowChangePassword(false)}
-        userId={userId}
-      />
-    </div>
+        {/* Change Password Modal */}
+        <ChangePasswordModal
+          isOpen={showChangePassword}
+          onClose={() => setShowChangePassword(false)}
+        />
+      </div>
+    </PermissionWrapper>
   )
 }
 

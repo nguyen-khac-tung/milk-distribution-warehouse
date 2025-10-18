@@ -260,7 +260,6 @@ const HeaderBar = memo(({ onToggleSidebar, sidebarCollapsed }) => {
             {showProfileModal && (
                 <ViewProfileModal
                     isOpen={showProfileModal}
-                    userId={user?.userId || user?.id}
                     onClose={() => setShowProfileModal(false)}
                 />
             )}
