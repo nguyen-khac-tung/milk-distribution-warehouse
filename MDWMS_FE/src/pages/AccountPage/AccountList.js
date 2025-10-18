@@ -15,7 +15,7 @@ import CreateAccountModal from "./CreateAccountModal"
 import UpdateAccountModal from "./UpdateAccountModal"
 import { AccountDetail } from "./ViewAccountModal"
 import DeleteModal from "../../components/Common/DeleteModal"
-import PermissionGate from "../../components/Common/PermissionGate"
+import PermissionWrapper from "../../components/Common/PermissionWrapper"
 import { PERMISSIONS } from "../../utils/permissions"
 import {
   Plus,
@@ -445,8 +445,8 @@ export default function AdminPage() {
         </span>
       </TableCell>
       <TableCell className="px-6 py-4">
-        <PermissionGate
-          permission={PERMISSIONS.ACCOUNT_UPDATE}
+        <PermissionWrapper
+          requiredPermission={PERMISSIONS.ACCOUNT_UPDATE}
           fallback={
             <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${employee.status === 1
                 ? 'bg-green-100 text-green-800 border border-green-200'
@@ -463,11 +463,11 @@ export default function AdminPage() {
             supplierName={employee.fullName}
             entityType="người dùng"
           />
-        </PermissionGate>
+        </PermissionWrapper>
       </TableCell>
       <TableCell className="px-6 py-4">
         <div className="flex items-center justify-center space-x-1">
-          <PermissionGate permission={PERMISSIONS.ACCOUNT_VIEW}>
+          <PermissionWrapper requiredPermission={PERMISSIONS.ACCOUNT_VIEW}>
             <button
               className="p-1.5 hover:bg-slate-100 rounded transition-colors"
               title="Xem chi tiết"
@@ -475,8 +475,8 @@ export default function AdminPage() {
             >
               <Eye className="h-4 w-4 text-orange-500" />
             </button>
-          </PermissionGate>
-          <PermissionGate permission={PERMISSIONS.ACCOUNT_UPDATE}>
+          </PermissionWrapper>
+          <PermissionWrapper requiredPermission={PERMISSIONS.ACCOUNT_UPDATE}>
             <button
               className="p-1.5 hover:bg-slate-100 rounded transition-colors"
               title="Chỉnh sửa"
@@ -484,8 +484,8 @@ export default function AdminPage() {
             >
               <Edit className="h-4 w-4 text-orange-500" />
             </button>
-          </PermissionGate>
-          <PermissionGate permission={PERMISSIONS.ACCOUNT_DELETE}>
+          </PermissionWrapper>
+          <PermissionWrapper requiredPermission={PERMISSIONS.ACCOUNT_DELETE}>
             <button
               className="p-1.5 hover:bg-slate-100 rounded transition-colors"
               title="Xóa"
@@ -493,7 +493,7 @@ export default function AdminPage() {
             >
               <Trash2 className="h-4 w-4 text-red-500" />
             </button>
-          </PermissionGate>
+          </PermissionWrapper>
         </div>
       </TableCell>
     </TableRow>
@@ -521,7 +521,7 @@ export default function AdminPage() {
             <h1 className="text-2xl font-bold text-slate-600">Quản lý người dùng</h1>
             <p className="text-slate-600 mt-1">Quản lý các tài khoản người dùng trong hệ thống</p>
           </div>
-          <PermissionGate permission={PERMISSIONS.ACCOUNT_CREATE}>
+          <PermissionWrapper requiredPermission={PERMISSIONS.ACCOUNT_CREATE}>
             <Button
               className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
               onClick={() => setIsCreateModalOpen(true)}
@@ -529,7 +529,7 @@ export default function AdminPage() {
               <Plus className="mr-2 h-4 w-4 text-white" />
               Thêm người dùng
             </Button>
-          </PermissionGate>
+          </PermissionWrapper>
         </div>
         <AccountStatsChart
           userStats={employeeStats}
@@ -618,7 +618,7 @@ export default function AdminPage() {
       </div>
 
       {/* Create Account Modal */}
-      <PermissionGate permission={PERMISSIONS.ACCOUNT_CREATE}>
+      <PermissionWrapper requiredPermission={PERMISSIONS.ACCOUNT_CREATE}>
         <CreateAccountModal
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
@@ -637,10 +637,10 @@ export default function AdminPage() {
             })
           }}
         />
-      </PermissionGate>
+      </PermissionWrapper>
 
       {/* Update Account Modal */}
-      <PermissionGate permission={PERMISSIONS.ACCOUNT_UPDATE}>
+      <PermissionWrapper requiredPermission={PERMISSIONS.ACCOUNT_UPDATE}>
         <UpdateAccountModal
           isOpen={isUpdateModalOpen}
           onClose={() => {
@@ -662,25 +662,25 @@ export default function AdminPage() {
           }}
           userData={userToUpdate}
         />
-      </PermissionGate>
+      </PermissionWrapper>
 
       {/* View Account Modal */}
-      <PermissionGate permission={PERMISSIONS.ACCOUNT_VIEW}>
+      <PermissionWrapper requiredPermission={PERMISSIONS.ACCOUNT_VIEW}>
         <AccountDetail
           userId={selectedUserId}
           onClose={() => setSelectedUserId(null)}
         />
-      </PermissionGate>
+      </PermissionWrapper>
 
       {/* Delete Confirmation Modal */}
-      <PermissionGate permission={PERMISSIONS.ACCOUNT_DELETE}>
+      <PermissionWrapper requiredPermission={PERMISSIONS.ACCOUNT_DELETE}>
         <DeleteModal
           isOpen={showDeleteModal}
           onClose={handleDeleteCancel}
           onConfirm={handleDeleteConfirm}
           itemName={userToDelete?.fullName || ""}
         />
-      </PermissionGate>
+      </PermissionWrapper>
     </div>
   )
 }

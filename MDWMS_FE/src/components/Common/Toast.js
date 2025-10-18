@@ -15,7 +15,7 @@ const Toast = ({ message, type = 'success', duration = 3000, onClose }) => {
   }, [duration, onClose])
 
   const getToastStyles = () => {
-    const baseStyles = "fixed top-20 right-4 z-[10000] max-w-sm w-full bg-white rounded-lg shadow-lg border-l-4 transform transition-all duration-300 ease-in-out"
+    const baseStyles = "fixed top-20 right-4 z-[999999] max-w-sm w-full bg-white rounded-lg shadow-lg border-l-4 transform transition-all duration-300 ease-in-out"
     
     if (type === 'success') {
       return `${baseStyles} border-green-500 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}`

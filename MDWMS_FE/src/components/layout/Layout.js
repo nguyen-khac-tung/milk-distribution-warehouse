@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, memo, useCallback } from "react";
 import Sidebar from "./Sidebar";
 import HeaderBar from "./HeaderBar";
 
-const AdminLayout = ({ children }) => {
+const AdminLayout = memo(({ children }) => {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
 
@@ -21,15 +21,15 @@ const AdminLayout = ({ children }) => {
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    const handleLogout = () => {
+    const handleLogout = useCallback(() => {
         // Xóa token và chuyển về trang login
         localStorage.removeItem("token");
         window.location.href = "/login";
-    };
+    }, []);
 
-    const toggleSidebar = () => {
-        setSidebarCollapsed(!sidebarCollapsed);
-    };
+    const toggleSidebar = useCallback(() => {
+        setSidebarCollapsed(prev => !prev);
+    }, []);
 
     return (
         <div style={{ minHeight: "100vh", background: "#f3f4f6", display: "flex", position: "relative" }}>
@@ -79,6 +79,8 @@ const AdminLayout = ({ children }) => {
             </div>
         </div>
     );
-};
+});
+
+AdminLayout.displayName = 'AdminLayout';
 
 export default AdminLayout;

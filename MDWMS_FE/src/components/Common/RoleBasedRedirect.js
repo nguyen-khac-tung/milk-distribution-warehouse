@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { usePermissions } from '../../hooks/usePermissions';
 import { ROLES } from '../../utils/permissions';
 
+/// File này là Setup độ ưu tiên truy cập route theo role
 const RoleBasedRedirect = () => {
     const { 
         isAdministrator, 
@@ -11,8 +12,10 @@ const RoleBasedRedirect = () => {
         isSalesRepresentative, 
         isWarehouseManager, 
         isWarehouseStaff,
-        hasPermission
+        hasPermission,
+        userRoles
     } = usePermissions();
+
 
     // Định nghĩa trang mặc định cho từng role
     const getDefaultRoute = () => {
@@ -21,36 +24,29 @@ const RoleBasedRedirect = () => {
             return '/dashboard';
         }
 
-        // Sale Manager -> Goods management (có quyền cao nhất)
+        // Sale Manager -> Dashboard (quản lý kinh doanh)
         if (isSaleManager) {
-            return '/goods';
+            return '/dashboard';
         }
 
-        // Sales Representative -> Reports (chỉ xem)
+        // Warehouse Manager -> Dashboard (quản lý kho)
+        if (isWarehouseManager) {
+            return '/dashboard';
+        }
+
+        // Sales Representative -> Reports
         if (isSalesRepresentative) {
             return '/reports';
         }
 
-        // Warehouse Manager -> Batches (quản lý kho)
-        if (isWarehouseManager) {
-            return '/batches';
-        }
-
-        // Warehouse Staff -> Goods (chỉ xem)
+        // Warehouse Staff -> Reports
         if (isWarehouseStaff) {
-            return '/goods';
+            return '/reports';
         }
 
         // Fallback: kiểm tra permission có sẵn
         const availableRoutes = [
-            { path: '/dashboard', permission: 'ADMIN_DASHBOARD_VIEW' },
-            { path: '/accounts', permission: 'ACCOUNT_VIEW' },
-            { path: '/goods', permission: 'GOODS_VIEW' },
-            { path: '/batches', permission: 'BATCH_VIEW' },
-            { path: '/suppliers', permission: 'SUPPLIER_VIEW' },
-            { path: '/retailers', permission: 'RETAILER_VIEW' },
-            { path: '/areas', permission: 'AREA_VIEW' },
-            { path: '/locations', permission: 'LOCATION_VIEW' },
+            { path: '/dashboard', permission: 'DASHBOARD_VIEW' },
             { path: '/reports', permission: 'REPORT_VIEW' }
         ];
 

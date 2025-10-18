@@ -14,6 +14,8 @@ import SearchFilterToggle from "../../../components/Common/SearchFilterToggle";
 import { StatusToggle } from "../../../components/Common/SwitchToggle/StatusToggle";
 import { extractErrorMessage } from "../../../utils/Validation";
 import EmptyState from "../../../components/Common/EmptyState";
+import PermissionWrapper from "../../../components/Common/PermissionWrapper";
+import { PERMISSIONS } from "../../../utils/permissions";
 
 // Type definition for Retailer
 const Retailer = {
@@ -418,13 +420,15 @@ export default function RetailersPage() {
             <h1 className="text-2xl font-bold text-slate-600">Quản lý Nhà bán lẻ</h1>
             <p className="text-slate-600 mt-1">Quản lý các nhà bán lẻ trong hệ thống</p>
           </div>
-          <Button
-            className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
-            onClick={() => setShowCreateModal(true)}
-          >
-            <Plus className="mr-2 h-4 w-4 text-white" />
-            Thêm nhà bán lẻ
-          </Button>
+          <PermissionWrapper requiredPermission={PERMISSIONS.RETAILER_CREATE}>
+            <Button
+              className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
+              onClick={() => setShowCreateModal(true)}
+            >
+              <Plus className="mr-2 h-4 w-4 text-white" />
+              Thêm nhà bán lẻ
+            </Button>
+          </PermissionWrapper>
         </div>
 
         {/* Stats Cards */}
@@ -509,38 +513,63 @@ export default function RetailersPage() {
                           <TableCell className="px-6 py-4 text-slate-700">{retailer?.phone || ''}</TableCell>
                           <TableCell className="px-6 py-4 text-center">
                             <div className="flex justify-center">
-                              <StatusToggle
-                                status={retailer?.status}
-                                onStatusChange={handleStatusChange}
-                                supplierId={retailer?.retailerId}
-                                supplierName={retailer?.retailerName}
-                                entityType="nhà bán lẻ"
-                              />
+                              <PermissionWrapper 
+                                requiredPermission={PERMISSIONS.RETAILER_UPDATE}
+                                hide={false}
+                                fallback={
+                                  <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center justify-center gap-1 ${
+                                    retailer?.status === 1 
+                                      ? 'bg-green-100 text-green-800' 
+                                      : 'bg-red-100 text-red-800'
+                                  }`}>
+                                    <span className={`w-2 h-2 rounded-full ${
+                                      retailer?.status === 1 ? 'bg-green-500' : 'bg-red-500'
+                                    }`}></span>
+                                    {retailer?.status === 1 ? 'Hoạt động' : 'Ngừng hoạt động'}
+                                  </span>
+                                }
+                              >
+                                <StatusToggle
+                                  status={retailer?.status}
+                                  onStatusChange={handleStatusChange}
+                                  supplierId={retailer?.retailerId}
+                                  supplierName={retailer?.retailerName}
+                                  entityType="nhà bán lẻ"
+                                />
+                              </PermissionWrapper>
                             </div>
                           </TableCell>
                           <TableCell className="px-6 py-4 text-center">
                             <div className="flex items-center justify-center space-x-1">
-                              <button
-                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                title="Xem chi tiết"
-                                onClick={() => handleViewClick(retailer)}
-                              >
-                                <Eye className="h-4 w-4 text-orange-500" />
-                              </button>
-                              <button
-                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                title="Chỉnh sửa"
-                                onClick={() => handleUpdateClick(retailer)}
-                              >
-                                <Edit className="h-4 w-4 text-orange-500" />
-                              </button>
-                              <button
-                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                title="Xóa"
-                                onClick={() => handleDeleteClick(retailer)}
-                              >
-                                <Trash2 className="h-4 w-4 text-red-500" />
-                              </button>
+                              <PermissionWrapper requiredPermission={PERMISSIONS.RETAILER_VIEW}>
+                                <button
+                                  className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                  title="Xem chi tiết"
+                                  onClick={() => handleViewClick(retailer)}
+                                >
+                                  <Eye className="h-4 w-4 text-orange-500" />
+                                </button>
+                              </PermissionWrapper>
+                              
+                              <PermissionWrapper requiredPermission={PERMISSIONS.RETAILER_UPDATE}>
+                                <button
+                                  className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                  title="Chỉnh sửa"
+                                  onClick={() => handleUpdateClick(retailer)}
+                                >
+                                  <Edit className="h-4 w-4 text-orange-500" />
+                                </button>
+                              </PermissionWrapper>
+                              
+                              <PermissionWrapper requiredPermission={PERMISSIONS.RETAILER_DELETE}>
+                                <button
+                                  className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                  title="Xóa"
+                                  onClick={() => handleDeleteClick(retailer)}
+                                >
+                                  <Trash2 className="h-4 w-4 text-red-500" />
+                                </button>
+                              </PermissionWrapper>
                             </div>
                           </TableCell>
                         </TableRow>
