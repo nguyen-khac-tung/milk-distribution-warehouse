@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using MilkDistributionWarehouse.Utilities;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Services;
+using MilkDistributionWarehouse.Utilities;
 
 namespace MilkDistributionWarehouse.Controllers
 {
@@ -15,7 +16,7 @@ namespace MilkDistributionWarehouse.Controllers
         {
             _areaService = areaService;
         }
-
+        [Authorize(Roles = "Warehouse Manager, Warehouse Staff, Business Owner, Administrator")]
         [HttpPost("Areas")]
         public async Task<IActionResult> GetAreas([FromBody] PagedRequest request)
         {
@@ -34,6 +35,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<List<AreaDto.AreaActiveDto>>.ToResultOk(areas);
         }
 
+        [Authorize(Roles = "Warehouse Manager, Warehouse Staff, Business Owner, Administrator")]
         [HttpGet("AreaDetail/{id}")]
         public async Task<IActionResult> GetArea(int id)
         {
@@ -42,7 +44,7 @@ namespace MilkDistributionWarehouse.Controllers
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<AreaDto.AreaDetailDto>.ToResultOk(area);
         }
-
+        [Authorize(Roles = "Business Owner, Administrator")]
         [HttpPost("Create")]
         public async Task<IActionResult> CreateArea([FromBody] AreaDto.AreaRequestDto dto)
         {
@@ -55,6 +57,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<AreaDto.AreaResponseDto>.ToResultOk(createdArea);
         }
 
+        [Authorize(Roles = "Business Owner, Administrator")]
         [HttpPut("Update/{id}")]
         public async Task<IActionResult> UpdateArea(int id, [FromBody] AreaDto.AreaRequestDto dto)
         {
@@ -67,6 +70,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<AreaDto.AreaResponseDto>.ToResultOk(updatedArea);
         }
 
+        [Authorize(Roles = "Business Owner, Administrator")]
         [HttpPut("UpdateStatus/{areaId}")]
         public async Task<IActionResult> UpdateStatusArea(int areaId, [FromQuery] int status)
         {
@@ -78,7 +82,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<AreaDto.AreaResponseDto>.ToResultOk(area);
         }
 
-
+        [Authorize(Roles = "Business Owner, Administrator")]
         [HttpDelete("Delete/{id}")]
         public async Task<IActionResult> DeleteArea(int id)
         {
