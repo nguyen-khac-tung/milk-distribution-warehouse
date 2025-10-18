@@ -21,7 +21,6 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpGet("GetGoodsDropDown")]
-        [Authorize(Roles = "Sale Manager, Sales Representative")]
         public async Task<IActionResult> GetGoodsDropDown()
         {
             var (msg, goodss) = await _goodsService.GetGoodsDropDown();

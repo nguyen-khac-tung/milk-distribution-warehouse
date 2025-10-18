@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using MilkDistributionWarehouse.Utilities;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Services;
+using MilkDistributionWarehouse.Utilities;
 
 namespace MilkDistributionWarehouse.Controllers
 {
@@ -16,6 +17,7 @@ namespace MilkDistributionWarehouse.Controllers
             _locationService = locationService;
         }
 
+        [Authorize(Roles = "Warehouse Manager, Warehouse Staff, Business Owner, Administrator")]
         [HttpPost("Locations")]
         public async Task<IActionResult> GetLocations([FromBody] PagedRequest request)
         {
@@ -25,6 +27,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<PageResult<LocationDto.LocationResponseDto>>.ToResultOk(locations);
         }
 
+        [Authorize(Roles = "Warehouse Manager, Warehouse Staff, Business Owner, Administrator")]
         [HttpGet("LocationDetail/{id}")]
         public async Task<IActionResult> GetLocationDetail(int id)
         {
@@ -46,7 +49,7 @@ namespace MilkDistributionWarehouse.Controllers
 
             return ApiResponse<List<LocationDto.LocationActiveDto>>.ToResultOk(locations);
         }
-
+        [Authorize(Roles = "Business Owner, Administrator")]
         [HttpPost("Create")]
         public async Task<IActionResult> CreateLocation([FromBody] LocationDto.LocationRequestDto dto)
         {
@@ -55,7 +58,7 @@ namespace MilkDistributionWarehouse.Controllers
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<LocationDto.LocationResponseDto>.ToResultOk(location);
         }
-
+        [Authorize(Roles = "Business Owner, Administrator")]
         [HttpPost("CreateMultiple")]
         public async Task<IActionResult> CreateMultipleLocations([FromBody] List<LocationDto.LocationRequestDto> dtos)
         {
@@ -67,6 +70,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<List<LocationDto.LocationResponseDto>>.ToResultOk(createdList);
         }
 
+        [Authorize(Roles = "Business Owner, Administrator")]
         [HttpPut("Update/{locationId}")]
         public async Task<IActionResult> UpdateLocation(int locationId, [FromBody] LocationDto.LocationRequestDto dto)
         {
@@ -76,6 +80,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<LocationDto.LocationResponseDto>.ToResultOk(location);
         }
 
+        [Authorize(Roles = "Business Owner, Administrator")]
         [HttpPut("UpdateStatus/{locationId}")]
         public async Task<IActionResult> UpdateStatusLocation(int locationId, int status)
         {
@@ -87,6 +92,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<LocationDto.LocationResponseDto>.ToResultOk(location);
         }
 
+        [Authorize(Roles = "Business Owner, Administrator")]
         [HttpDelete("Delete/{locationId}")]
         public async Task<IActionResult> DeleteLocation(int locationId)
         {
