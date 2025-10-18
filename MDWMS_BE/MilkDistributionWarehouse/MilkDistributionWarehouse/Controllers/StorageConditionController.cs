@@ -17,7 +17,7 @@ namespace MilkDistributionWarehouse.Controllers
             _storageConditionService = storageConditionService;
         }
 
-        [Authorize(Roles = "Sale Manager, Business Owner, Administrator")]
+        [Authorize(Roles = "Business Owner, Administrator")]
         [HttpPost("StorageConditions")]
         public async Task<IActionResult> GetStorageConditions([FromBody] PagedRequest request)
         {
@@ -47,6 +47,7 @@ namespace MilkDistributionWarehouse.Controllers
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<StorageConditionDto.StorageConditionResponseDto>.ToResultOk(createdStorageCondition);
         }
+        
         [Authorize(Roles = "Business Owner, Administrator")]
         [HttpPut("Update/{id}")]
         public async Task<IActionResult> UpdateStorageCondition(int id, [FromBody] StorageConditionDto.StorageConditionRequestDto dto)
@@ -56,6 +57,7 @@ namespace MilkDistributionWarehouse.Controllers
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<StorageConditionDto.StorageConditionResponseDto>.ToResultOk(updatedStorageCondition);
         }
+        
         [Authorize(Roles = "Business Owner, Administrator")]
         [HttpPut("UpdateStatus/{storageConditionId}")]
         public async Task<IActionResult> UpdateStatus(int storageConditionId, [FromQuery] int status)
@@ -68,6 +70,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<StorageConditionDto.StorageConditionResponseDto>.ToResultOk(result);
         }
 
+        [Authorize(Roles = "Business Owner, Administrator")]
         [HttpDelete("Delete/{id}")]
         public async Task<IActionResult> DeleteStorageCondition(int id)
         {
