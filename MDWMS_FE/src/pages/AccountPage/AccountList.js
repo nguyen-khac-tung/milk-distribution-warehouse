@@ -15,6 +15,8 @@ import CreateAccountModal from "./CreateAccountModal"
 import UpdateAccountModal from "./UpdateAccountModal"
 import { AccountDetail } from "./ViewAccountModal"
 import DeleteModal from "../../components/Common/DeleteModal"
+import PermissionGate from "../../components/Common/PermissionGate"
+import { PERMISSIONS } from "../../utils/permissions"
 import {
   Plus,
   Eye,
@@ -443,37 +445,55 @@ export default function AdminPage() {
         </span>
       </TableCell>
       <TableCell className="px-6 py-4">
-        <StatusToggle
-          status={employee.status}
-          onStatusChange={handleStatusChange}
-          supplierId={employee.userId || employee.id}
-          supplierName={employee.fullName}
-          entityType="người dùng"
-        />
+        <PermissionGate
+          permission={PERMISSIONS.ACCOUNT_UPDATE}
+          fallback={
+            <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${employee.status === 1
+                ? 'bg-green-100 text-green-800 border border-green-200'
+                : 'bg-red-100 text-red-800 border border-red-200'
+              }`}>
+              {employee.status === 1 ? 'Hoạt động' : 'Ngừng hoạt động'}
+            </span>
+          }
+        >
+          <StatusToggle
+            status={employee.status}
+            onStatusChange={handleStatusChange}
+            supplierId={employee.userId || employee.id}
+            supplierName={employee.fullName}
+            entityType="người dùng"
+          />
+        </PermissionGate>
       </TableCell>
       <TableCell className="px-6 py-4">
         <div className="flex items-center justify-center space-x-1">
-          <button
-            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-            title="Xem chi tiết"
-            onClick={() => setSelectedUserId(employee.userId || employee.id)}
-          >
-            <Eye className="h-4 w-4 text-orange-500" />
-          </button>
-          <button
-            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-            title="Chỉnh sửa"
-            onClick={() => handleUpdateClick(employee)}
-          >
-            <Edit className="h-4 w-4 text-orange-500" />
-          </button>
-          <button
-            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-            title="Xóa"
-            onClick={() => handleDeleteClick(employee)}
-          >
-            <Trash2 className="h-4 w-4 text-red-500" />
-          </button>
+          <PermissionGate permission={PERMISSIONS.ACCOUNT_VIEW}>
+            <button
+              className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+              title="Xem chi tiết"
+              onClick={() => setSelectedUserId(employee.userId || employee.id)}
+            >
+              <Eye className="h-4 w-4 text-orange-500" />
+            </button>
+          </PermissionGate>
+          <PermissionGate permission={PERMISSIONS.ACCOUNT_UPDATE}>
+            <button
+              className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+              title="Chỉnh sửa"
+              onClick={() => handleUpdateClick(employee)}
+            >
+              <Edit className="h-4 w-4 text-orange-500" />
+            </button>
+          </PermissionGate>
+          <PermissionGate permission={PERMISSIONS.ACCOUNT_DELETE}>
+            <button
+              className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+              title="Xóa"
+              onClick={() => handleDeleteClick(employee)}
+            >
+              <Trash2 className="h-4 w-4 text-red-500" />
+            </button>
+          </PermissionGate>
         </div>
       </TableCell>
     </TableRow>
@@ -501,13 +521,15 @@ export default function AdminPage() {
             <h1 className="text-2xl font-bold text-slate-600">Quản lý người dùng</h1>
             <p className="text-slate-600 mt-1">Quản lý các tài khoản người dùng trong hệ thống</p>
           </div>
-          <Button
-            className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
-            onClick={() => setIsCreateModalOpen(true)}
-          >
-            <Plus className="mr-2 h-4 w-4 text-white" />
-            Thêm người dùng
-          </Button>
+          <PermissionGate permission={PERMISSIONS.ACCOUNT_CREATE}>
+            <Button
+              className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
+              onClick={() => setIsCreateModalOpen(true)}
+            >
+              <Plus className="mr-2 h-4 w-4 text-white" />
+              Thêm người dùng
+            </Button>
+          </PermissionGate>
         </div>
         <AccountStatsChart
           userStats={employeeStats}
@@ -596,61 +618,69 @@ export default function AdminPage() {
       </div>
 
       {/* Create Account Modal */}
-      <CreateAccountModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSuccess={() => {
-          // Refresh all users for stats
-          fetchAllUsersForStats()
+      <PermissionGate permission={PERMISSIONS.ACCOUNT_CREATE}>
+        <CreateAccountModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSuccess={() => {
+            // Refresh all users for stats
+            fetchAllUsersForStats()
 
-          // Reset to first page and refresh data
-          setPagination(prev => ({ ...prev, pageNumber: 1 }))
-          fetchData({
-            pageNumber: 1,
-            pageSize: pagination.pageSize,
-            search: searchQuery,
-            sortField: sortColumn || "",
-            sortAscending: sortDirection === "asc"
-          })
-        }}
-      />
+            // Reset to first page and refresh data
+            setPagination(prev => ({ ...prev, pageNumber: 1 }))
+            fetchData({
+              pageNumber: 1,
+              pageSize: pagination.pageSize,
+              search: searchQuery,
+              sortField: sortColumn || "",
+              sortAscending: sortDirection === "asc"
+            })
+          }}
+        />
+      </PermissionGate>
 
       {/* Update Account Modal */}
-      <UpdateAccountModal
-        isOpen={isUpdateModalOpen}
-        onClose={() => {
-          setIsUpdateModalOpen(false)
-          setUserToUpdate(null)
-        }}
-        onSuccess={() => {
-          // Refresh all users for stats
-          fetchAllUsersForStats()
+      <PermissionGate permission={PERMISSIONS.ACCOUNT_UPDATE}>
+        <UpdateAccountModal
+          isOpen={isUpdateModalOpen}
+          onClose={() => {
+            setIsUpdateModalOpen(false)
+            setUserToUpdate(null)
+          }}
+          onSuccess={() => {
+            // Refresh all users for stats
+            fetchAllUsersForStats()
 
-          // Refresh data after update
-          fetchData({
-            pageNumber: pagination.pageNumber,
-            pageSize: pagination.pageSize,
-            search: searchQuery,
-            sortField: sortColumn || "",
-            sortAscending: sortDirection === "asc"
-          })
-        }}
-        userData={userToUpdate}
-      />
+            // Refresh data after update
+            fetchData({
+              pageNumber: pagination.pageNumber,
+              pageSize: pagination.pageSize,
+              search: searchQuery,
+              sortField: sortColumn || "",
+              sortAscending: sortDirection === "asc"
+            })
+          }}
+          userData={userToUpdate}
+        />
+      </PermissionGate>
 
       {/* View Account Modal */}
-      <AccountDetail
-        userId={selectedUserId}
-        onClose={() => setSelectedUserId(null)}
-      />
+      <PermissionGate permission={PERMISSIONS.ACCOUNT_VIEW}>
+        <AccountDetail
+          userId={selectedUserId}
+          onClose={() => setSelectedUserId(null)}
+        />
+      </PermissionGate>
 
       {/* Delete Confirmation Modal */}
-      <DeleteModal
-        isOpen={showDeleteModal}
-        onClose={handleDeleteCancel}
-        onConfirm={handleDeleteConfirm}
-        itemName={userToDelete?.fullName || ""}
-      />
+      <PermissionGate permission={PERMISSIONS.ACCOUNT_DELETE}>
+        <DeleteModal
+          isOpen={showDeleteModal}
+          onClose={handleDeleteCancel}
+          onConfirm={handleDeleteConfirm}
+          itemName={userToDelete?.fullName || ""}
+        />
+      </PermissionGate>
     </div>
   )
 }

@@ -31,7 +31,7 @@ export const LoginFormWithLogic = ({
 
             if (res.success) {
                 window.showToast("Đăng nhập thành công!", "success");
-                navigate("/admin/dashboard");
+                navigate("/dashboard");
             } else {
                 const m = cleanErrorMessage(res.message || "Sai email hoặc mật khẩu.");
                 setErrorMessage(m);

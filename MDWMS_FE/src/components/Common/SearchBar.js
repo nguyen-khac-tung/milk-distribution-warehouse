@@ -41,7 +41,7 @@ const SearchBar = () => {
       title: "Dashboard", 
       description: "Trang tổng quan hệ thống",
       icon: Home, 
-      path: "/admin/dashboard",
+      path: "/dashboard",
       category: "DASHBOARD"
     },
 
@@ -51,7 +51,7 @@ const SearchBar = () => {
       title: "Quản lý tài khoản", 
       description: "Quản lý tài khoản người dùng",
       icon: Users, 
-      path: "/admin/accounts",
+      path: "/accounts",
       category: "QUẢN LÝ NGƯỜI DÙNG"
     },
 
@@ -61,7 +61,7 @@ const SearchBar = () => {
       title: "Quản lý danh mục", 
       description: "Phân loại sản phẩm",
       icon: Tag, 
-      path: "/sales-manager/categorys",
+      path: "/categories",
       category: "QUẢN LÝ HÀNG HÓA"
     },
     { 
@@ -69,7 +69,7 @@ const SearchBar = () => {
       title: "Quản lý đơn vị", 
       description: "Quản lý đơn vị đo lường",
       icon: Scale, 
-      path: "/sales-manager/unitMeasures",
+      path: "/unit-measures",
       category: "QUẢN LÝ HÀNG HÓA"
     },
     { 
@@ -77,7 +77,7 @@ const SearchBar = () => {
       title: "Quản lý hàng hóa", 
       description: "Quản lý sản phẩm và hàng hóa",
       icon: Package, 
-      path: "/sales-manager/goods",
+      path: "/goods",
       category: "QUẢN LÝ HÀNG HÓA"
     },
 
@@ -87,7 +87,7 @@ const SearchBar = () => {
       title: "Quản lý nhà cung cấp", 
       description: "Quản lý đối tác cung cấp",
       icon: Truck, 
-      path: "/sales-manager/suppliers",
+      path: "/suppliers",
       category: "QUẢN LÝ ĐỐI TÁC"
     },
     { 
@@ -95,7 +95,7 @@ const SearchBar = () => {
       title: "Quản lý nhà bán lẻ", 
       description: "Quản lý đối tác bán lẻ",
       icon: ShoppingCart, 
-      path: "/sales-manager/retailers",
+      path: "/retailers",
       category: "QUẢN LÝ ĐỐI TÁC"
     },
 
@@ -105,7 +105,7 @@ const SearchBar = () => {
       title: "Quản lý khu vực", 
       description: "Quản lý các khu vực kho",
       icon: MapPin, 
-      path: "/admin/areas",
+      path: "/areas",
       category: "QUẢN LÝ VỊ TRÍ VÀ KHU VỰC"
     },
     { 
@@ -113,7 +113,7 @@ const SearchBar = () => {
       title: "Quản lý vị trí", 
       description: "Quản lý vị trí lưu trữ",
       icon: Building2, 
-      path: "/admin/locations",
+      path: "/locations",
       category: "QUẢN LÝ VỊ TRÍ VÀ KHU VỰC"
     },
     { 
@@ -121,7 +121,7 @@ const SearchBar = () => {
       title: "Quản lý điều kiện bảo quản", 
       description: "Quản lý điều kiện lưu trữ",
       icon: Thermometer, 
-      path: "/admin/storage-condition",
+      path: "/storage-conditions",
       category: "QUẢN LÝ VỊ TRÍ VÀ KHU VỰC"
     },
 
@@ -131,7 +131,7 @@ const SearchBar = () => {
       title: "Báo cáo", 
       description: "Xem các báo cáo chi tiết",
       icon: BarChart3, 
-      path: "/admin/reports",
+      path: "/reports",
       category: "BÁO CÁO"
     },
 
@@ -141,7 +141,7 @@ const SearchBar = () => {
       title: "Cài đặt", 
       description: "Cấu hình hệ thống",
       icon: Settings, 
-      path: "/admin/settings",
+      path: "/settings",
       category: "HỆ THỐNG"
     }
   ];

@@ -1,0 +1,183 @@
+// Định nghĩa roles và permissions theo database thực tế
+export const ROLES = {
+    WAREHOUSE_MANAGER: 'Warehouse Manager',
+    WAREHOUSE_STAFF: 'Warehouse Staff',
+    ADMINISTRATOR: 'Administrator',
+    BUSINESS_OWNER: 'Business Owner',
+    SALES_REPRESENTATIVE: 'Sales Representative',
+    SALE_MANAGER: 'Sale Manager'
+};
+
+export const PERMISSIONS = {
+    // Goods permissions
+    GOODS_VIEW: 'Goods.View',
+    GOODS_CREATE: 'Goods.Create',
+    GOODS_UPDATE: 'Goods.Update',
+    GOODS_DELETE: 'Goods.Delete',
+
+    // Category permissions
+    CATEGORY_VIEW: 'Category.View',
+    CATEGORY_CREATE: 'Category.Create',
+    CATEGORY_UPDATE: 'Category.Update',
+    CATEGORY_DELETE: 'Category.Delete',
+
+    // Supplier permissions
+    SUPPLIER_VIEW: 'Supplier.View',
+    SUPPLIER_CREATE: 'Supplier.Create',
+    SUPPLIER_UPDATE: 'Supplier.Update',
+    SUPPLIER_DELETE: 'Supplier.Delete',
+
+    // Retailer permissions  
+    RETAILER_VIEW: 'Retailer.View',
+    RETAILER_CREATE: 'Retailer.Create',
+    RETAILER_UPDATE: 'Retailer.Update',
+    RETAILER_DELETE: 'Retailer.Delete',
+
+    // Unit Measure permissions
+    UNIT_MEASURE_VIEW: 'UnitMeasure.View',
+    UNIT_MEASURE_CREATE: 'UnitMeasure.Create',
+    UNIT_MEASURE_UPDATE: 'UnitMeasure.Update',
+    UNIT_MEASURE_DELETE: 'UnitMeasure.Delete',
+
+    // Area permissions
+    AREA_VIEW: 'Area.View',
+    AREA_CREATE: 'Area.Create',
+    AREA_UPDATE: 'Area.Update',
+    AREA_DELETE: 'Area.Delete',
+
+    // Location permissions
+    LOCATION_VIEW: 'Location.View',
+    LOCATION_CREATE: 'Location.Create',
+    LOCATION_UPDATE: 'Location.Update',
+    LOCATION_DELETE: 'Location.Delete',
+
+    // Storage Condition permissions
+    STORAGE_CONDITION_VIEW: 'StorageCondition.View',
+    STORAGE_CONDITION_CREATE: 'StorageCondition.Create',
+    STORAGE_CONDITION_UPDATE: 'StorageCondition.Update',
+    STORAGE_CONDITION_DELETE: 'StorageCondition.Delete',
+
+    // Batch permissions
+    BATCH_VIEW: 'Batch.View',
+    BATCH_CREATE: 'Batch.Create',
+    BATCH_UPDATE: 'Batch.Update',
+    BATCH_DELETE: 'Batch.Delete',
+
+    // Account permissions
+    ACCOUNT_VIEW: 'Account.View',
+    ACCOUNT_CREATE: 'Account.Create',
+    ACCOUNT_UPDATE: 'Account.Update',
+    ACCOUNT_DELETE: 'Account.Delete',
+
+    // Report permissions
+    REPORT_VIEW: 'Report.View',
+    REPORT_EXPORT: 'Report.Export',
+
+    // Settings permissions
+    SETTINGS_VIEW: 'Settings.View',
+    SETTINGS_UPDATE: 'Settings.Update',
+
+    // Dashboard permissions
+    DASHBOARD_VIEW: 'Dashboard.View',
+    ADMIN_DASHBOARD_VIEW: 'AdminDashboard.View'
+};
+
+// Mapping roles với permissions theo thực tế
+export const ROLE_PERMISSIONS = {
+    [ROLES.ADMINISTRATOR]: [
+        // Account Management - CRUD đầy đủ
+        PERMISSIONS.ACCOUNT_VIEW, PERMISSIONS.ACCOUNT_CREATE, PERMISSIONS.ACCOUNT_UPDATE, PERMISSIONS.ACCOUNT_DELETE,
+
+        // Dashboard permissions
+        PERMISSIONS.DASHBOARD_VIEW, PERMISSIONS.ADMIN_DASHBOARD_VIEW,
+
+        // Location Management - CRUD đầy đủ
+        PERMISSIONS.AREA_VIEW, PERMISSIONS.AREA_CREATE, PERMISSIONS.AREA_UPDATE, PERMISSIONS.AREA_DELETE,
+        PERMISSIONS.LOCATION_VIEW, PERMISSIONS.LOCATION_CREATE, PERMISSIONS.LOCATION_UPDATE, PERMISSIONS.LOCATION_DELETE,
+        PERMISSIONS.STORAGE_CONDITION_VIEW, PERMISSIONS.STORAGE_CONDITION_CREATE, PERMISSIONS.STORAGE_CONDITION_UPDATE, PERMISSIONS.STORAGE_CONDITION_DELETE,
+        // Reports - View và Export
+        PERMISSIONS.REPORT_VIEW, PERMISSIONS.REPORT_EXPORT
+    ],
+
+    [ROLES.BUSINESS_OWNER]: [
+        // Account Management - CRUD đầy đủ
+        PERMISSIONS.ACCOUNT_VIEW, PERMISSIONS.ACCOUNT_CREATE, PERMISSIONS.ACCOUNT_UPDATE, PERMISSIONS.ACCOUNT_DELETE,
+
+        // Dashboard permissions
+        PERMISSIONS.DASHBOARD_VIEW, PERMISSIONS.ADMIN_DASHBOARD_VIEW,
+
+        // Location Management - CRUD đầy đủ
+        PERMISSIONS.AREA_VIEW, PERMISSIONS.AREA_CREATE, PERMISSIONS.AREA_UPDATE, PERMISSIONS.AREA_DELETE,
+        PERMISSIONS.LOCATION_VIEW, PERMISSIONS.LOCATION_CREATE, PERMISSIONS.LOCATION_UPDATE, PERMISSIONS.LOCATION_DELETE,
+        PERMISSIONS.STORAGE_CONDITION_VIEW, PERMISSIONS.STORAGE_CONDITION_CREATE, PERMISSIONS.STORAGE_CONDITION_UPDATE, PERMISSIONS.STORAGE_CONDITION_DELETE,
+        // Reports - View và Export
+        PERMISSIONS.REPORT_VIEW, PERMISSIONS.REPORT_EXPORT
+    ],
+
+    [ROLES.SALE_MANAGER]: [
+        // Dashboard permissions
+        PERMISSIONS.DASHBOARD_VIEW,
+
+        // Goods Management - CRUD đầy đủ
+        PERMISSIONS.GOODS_VIEW, PERMISSIONS.GOODS_CREATE, PERMISSIONS.GOODS_UPDATE, PERMISSIONS.GOODS_DELETE,
+        PERMISSIONS.CATEGORY_VIEW, PERMISSIONS.CATEGORY_CREATE, PERMISSIONS.CATEGORY_UPDATE, PERMISSIONS.CATEGORY_DELETE,
+        PERMISSIONS.UNIT_MEASURE_VIEW, PERMISSIONS.UNIT_MEASURE_CREATE, PERMISSIONS.UNIT_MEASURE_UPDATE, PERMISSIONS.UNIT_MEASURE_DELETE,
+
+        // Business Partners - CRUD đầy đủ
+        PERMISSIONS.SUPPLIER_VIEW, PERMISSIONS.SUPPLIER_CREATE, PERMISSIONS.SUPPLIER_UPDATE, PERMISSIONS.SUPPLIER_DELETE,
+        PERMISSIONS.RETAILER_VIEW, PERMISSIONS.RETAILER_CREATE, PERMISSIONS.RETAILER_UPDATE, PERMISSIONS.RETAILER_DELETE,
+
+
+    ],
+
+    [ROLES.SALES_REPRESENTATIVE]: [
+        // Dashboard permissions
+        PERMISSIONS.DASHBOARD_VIEW,
+
+        // Chỉ có quyền xem
+        PERMISSIONS.GOODS_VIEW,
+        PERMISSIONS.CATEGORY_VIEW,
+        PERMISSIONS.SUPPLIER_VIEW,
+        PERMISSIONS.RETAILER_VIEW,
+        PERMISSIONS.UNIT_MEASURE_VIEW,
+        PERMISSIONS.REPORT_VIEW
+    ],
+
+    [ROLES.WAREHOUSE_MANAGER]: [
+        // Dashboard permissions
+        PERMISSIONS.DASHBOARD_VIEW,
+
+        // Goods Management - View và Update
+        PERMISSIONS.GOODS_VIEW, PERMISSIONS.GOODS_UPDATE,
+        PERMISSIONS.CATEGORY_VIEW,
+        PERMISSIONS.SUPPLIER_VIEW,
+        PERMISSIONS.RETAILER_VIEW,
+
+        // Location Management - CRUD đầy đủ
+        PERMISSIONS.AREA_VIEW, PERMISSIONS.AREA_CREATE, PERMISSIONS.AREA_UPDATE, PERMISSIONS.AREA_DELETE,
+        PERMISSIONS.LOCATION_VIEW, PERMISSIONS.LOCATION_CREATE, PERMISSIONS.LOCATION_UPDATE, PERMISSIONS.LOCATION_DELETE,
+        PERMISSIONS.STORAGE_CONDITION_VIEW, PERMISSIONS.STORAGE_CONDITION_CREATE, PERMISSIONS.STORAGE_CONDITION_UPDATE, PERMISSIONS.STORAGE_CONDITION_DELETE,
+
+        // Batch Management - CRUD đầy đủ
+        PERMISSIONS.BATCH_VIEW, PERMISSIONS.BATCH_CREATE, PERMISSIONS.BATCH_UPDATE, PERMISSIONS.BATCH_DELETE,
+
+        // Reports - View và Export
+        PERMISSIONS.REPORT_VIEW, PERMISSIONS.REPORT_EXPORT
+    ],
+
+    [ROLES.WAREHOUSE_STAFF]: [
+        // Dashboard permissions
+        PERMISSIONS.DASHBOARD_VIEW,
+
+        // Chỉ có quyền xem
+        PERMISSIONS.GOODS_VIEW,
+        PERMISSIONS.CATEGORY_VIEW,
+        PERMISSIONS.SUPPLIER_VIEW,
+        PERMISSIONS.RETAILER_VIEW,
+        PERMISSIONS.AREA_VIEW,
+        PERMISSIONS.LOCATION_VIEW,
+        PERMISSIONS.STORAGE_CONDITION_VIEW,
+        PERMISSIONS.BATCH_VIEW,
+        PERMISSIONS.REPORT_VIEW
+    ]
+};
