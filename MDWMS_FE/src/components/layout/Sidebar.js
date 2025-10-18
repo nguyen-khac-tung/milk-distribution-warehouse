@@ -167,7 +167,7 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                         }
                     }
                 }
-                
+
                 // Kiểm tra children nếu có
                 if (item.children) {
                     const filteredChildren = filterMenuItems(item.children);
@@ -176,7 +176,7 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                     }
                     item.children = filteredChildren;
                 }
-                
+
                 return true;
             });
         };
@@ -199,7 +199,7 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
     const handleSubMenuClick = useCallback(({ key }, event) => {
         // Ngăn event bubbling để không ảnh hưởng đến menu cha
         event.stopPropagation();
-        
+
         setOpenKeys(prevKeys => {
             if (prevKeys.includes(key)) {
                 return prevKeys.filter(k => k !== key);
@@ -386,9 +386,9 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
             }}>
                 {!collapsed && (
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <img 
-                            src="/logo.png" 
-                            alt="Logo" 
+                        <img
+                            src="/logo.png"
+                            alt="Logo"
                             style={{ width: 80, height: 80, objectFit: 'contain' }}
                         />
                         <div>
@@ -405,9 +405,9 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                         justifyContent: "center",
                         margin: "0 auto"
                     }}>
-                        <img 
-                            src="/logo.png" 
-                            alt="Logo" 
+                        <img
+                            src="/logo.png"
+                            alt="Logo"
                             style={{ width: 28, height: 28, objectFit: 'contain' }}
                         />
                     </div>
