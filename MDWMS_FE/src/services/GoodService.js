@@ -29,7 +29,7 @@ export const getGoods = async (searchParams = {}) => {
 
         console.log("Goods API - Search params received:", searchParams);
         console.log("Goods API - Request body sent:", body);
-        
+
         const res = await api.post("/Goods/Goods", body);
         console.log("Goods API - Response received:", res.data);
 
@@ -90,6 +90,18 @@ export const updateGoodStatus = async (data) => {
             console.error("Error response data:", error.response.data);
             console.error("Error response status:", error.response.status);
         }
+        throw error;
+    }
+};
+
+// Lấy dropdown goods 
+export const getGoodsDropdown = async (goodsId) => {
+    try {
+        const res = await api.get(`/Goods/GetGoodsDropDown`);
+        console.log("Goods dropdown response:", res.data);
+        return res.data?.data || [];
+    } catch (error) {
+        console.error("Error fetching batch dropdown:", error);
         throw error;
     }
 };
