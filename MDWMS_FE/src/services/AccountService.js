@@ -178,3 +178,22 @@ export const deleteUser = async (userId) => {
     }
 };
 
+// Get user profile
+export const getUserProfile = async () => {
+    try {
+        console.log("Get User Profile API - Fetching current user profile");
+
+        const res = await api.get("/User/GetUserProfile");
+        console.log("Get User Profile API - Response received:", res.data);
+
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching user profile:", error);
+        return {
+            success: false,
+            status: 500,
+            message: error?.response?.data?.message || "Failed to fetch user profile",
+            data: null
+        };
+    }
+};
