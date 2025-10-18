@@ -4,7 +4,7 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { X, Calendar } from "lucide-react";
 import { getBatchDetail, updateBatch } from "../../services/BatchService";
-import { getGoods } from "../../services/GoodService";
+import { getGoodsDropdown } from "../../services/GoodService";
 import { extractErrorMessage } from "../../utils/Validation";
 import CustomDropdown from "../../components/Common/CustomDropdown";
 
@@ -29,8 +29,7 @@ const UpdateBatchModal = ({ isOpen, onClose, onSuccess, batchId, batchData }) =>
 
     const loadGoods = async () => {
         try {
-            const res = await getGoods({ pageNumber: 1, pageSize: 1000 });
-            const items = Array.isArray(res?.data?.items) ? res.data.items : Array.isArray(res?.items) ? res.items : [];
+            const items = await getGoodsDropdown();
             setGoodsOptions(items);
         } catch (e) {
             console.error("Error loading goods for dropdown", e);
@@ -40,25 +39,22 @@ const UpdateBatchModal = ({ isOpen, onClose, onSuccess, batchId, batchData }) =>
     const loadData = async () => {
         try {
             setLoadingData(true);
+
+            let data;
             if (batchData) {
-                setFormData({
-                    batchId: batchData.batchId || 0,
-                    batchCode: batchData.batchCode || "",
-                    goodsId: (batchData.goodsId || "").toString(),
-                    manufacturingDate: batchData.manufacturingDate || "",
-                    expiryDate: batchData.expiryDate || "",
-                });
+                data = batchData;
             } else {
                 const res = await getBatchDetail(batchId);
-                const data = res?.data || res;
-                setFormData({
-                    batchId: data.batchId || 0,
-                    batchCode: data.batchCode || "",
-                    goodsId: (data.goodsId || "").toString(),
-                    manufacturingDate: data.manufacturingDate || "",
-                    expiryDate: data.expiryDate || "",
-                });
+                data = res?.data || res;
             }
+
+            setFormData({
+                batchId: data.batchId || 0,
+                batchCode: data.batchCode || "",
+                goodsId: data.goodsId && data.goodsId > 0 ? data.goodsId.toString() : "",
+                manufacturingDate: data.manufacturingDate || "",
+                expiryDate: data.expiryDate || "",
+            });
         } catch (error) {
             const msg = extractErrorMessage(error, "Lỗi khi tải thông tin lô hàng");
             window.showToast(msg, "error");
@@ -114,16 +110,15 @@ const UpdateBatchModal = ({ isOpen, onClose, onSuccess, batchId, batchData }) =>
                                     Chọn hàng hóa <span className="text-red-500">*</span>
                                 </Label>
                                 <CustomDropdown
-                                    value={formData.goodsId}
-                                    onChange={(value) => setFormData({ ...formData, goodsId: value })}
+                                    value={formData.goodsId?.toString() || ""}
+                                    onChange={(value) => setFormData({ ...formData, goodsId: value ? Number(value) : null })}
                                     options={[
-                                        { value: "", label: "Chọn sữa..." },
+                                        { value: "", label: "Chọn hàng hóa..." },
                                         ...goodsOptions.map((a) => ({
                                             value: a.goodsId.toString(),
-                                            label: a.goodsName
-                                        }))
+                                            label: a.goodsName,
+                                        })),
                                     ]}
-                                    placeholder="Chọn sữa..."
                                 />
                             </div>
                             {/* <div className="space-y-2">
