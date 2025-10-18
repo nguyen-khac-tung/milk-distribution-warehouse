@@ -15,6 +15,8 @@ import {
 } from "@ant-design/icons";
 import { Link, useLocation } from "react-router-dom";
 import { ComponentIcon } from "../../components/IconComponent/Icon";
+import { usePermissions } from "../../hooks/usePermissions";
+import { ROLES, PERMISSIONS } from "../../utils/permissions";
 
 const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
     const location = useLocation();
@@ -46,89 +48,140 @@ const Sidebar = ({ collapsed, isMobile, onToggleSidebar }) => {
         }
     }, [collapsed, location.pathname, getOpenKeysFromPath]);
 
-    const role = user?.roles?.[0] || "Guest";
+    const { hasPermission, userRoles } = usePermissions();
 
-    const menuItems = useMemo(() => [
-        {
-            key: "/admin/dashboard",
-            icon: <DashboardOutlined style={{ color: '#000000' }} />,
-            label: "Dashboard",
-        },
-        {
-            key: "/admin/accounts",
-            icon: <UsergroupAddOutlined style={{ color: '#000000' }} />,
-            label: "Quản lý tài khoản",
-        },
-        {
-            key: "/sales-manager/categorys",
-            icon: <ComponentIcon name="category" size={16} collapsed={collapsed} />,
-            label: "Quản lý danh mục",
-        },
-        {
-            key: "/sales-manager/unitMeasures",
-            icon: <ComponentIcon name="unitMeasure" size={16} collapsed={collapsed} />,
-            label: "Quản lý đơn vị",
-        },
-        {
-            key: "/sales-manager/goods",
-            icon: <ComponentIcon name="milk" size={16} collapsed={collapsed} />,
-            label: "Quản lý hàng hóa",
-        },
-        {
-            key: "/admin/batchs",
-            icon: <ComponentIcon name="batch" size={16} collapsed={collapsed} />,
-            label: "Quản lý lô hàng",
-        },
-        {
-            key: "partner-management",
-            icon: <ComponentIcon name="partner" size={16} collapsed={collapsed} />,
-            label: "Quản lý đối tác",
-            children: [
-                {
-                    key: "/sales-manager/suppliers",
-                    icon: <ComponentIcon name="supplier" size={14} collapsed={collapsed} />,
-                    label: "Quản lý nhà cung cấp",
-                },
-                {
-                    key: "/sales-manager/retailers",
-                    icon: <ComponentIcon name="retailer" size={14} collapsed={collapsed} />,
-                    label: "Quản lý nhà bán lẻ",
-                },
-            ],
-        },
-        {
-            key: "location-management",
-            icon: <EnvironmentOutlined style={{ color: '#000000' }} />,
-            label: "Quản lý vị trí và khu vực",
-            children: [
-                {
-                    key: "/admin/areas",
-                    icon: <AppstoreOutlined style={{ color: '#000000' }} />,
-                    label: "Quản lý khu vực",
-                },
-                {
-                    key: "/admin/locations",
-                    icon: <ClusterOutlined style={{ color: '#000000' }} />,
-                    label: "Quản lý vị trí",
-                },
-                {
-                    key: "/admin/storage-condition",
-                    icon: <ComponentIcon name="storageCondition" size={14} collapsed={collapsed} />,
-                    label: "Quản lý điều kiện bảo quản",
-                },
-            ],
-        },
-        {
-            key: "/admin/reports",
-            icon: <BarChartOutlined style={{ color: '#000000' }} />,
-            label: "Báo cáo",
-        },
-        {
-            key: "/admin/settings",
-            icon: <SettingOutlined style={{ color: '#000000' }} />,
-            label: "Cài đặt",
-        },
-    ], [collapsed]);
+    const menuItems = useMemo(() => {
+        const allMenuItems = [
+            {
+                key: "/dashboard",
+                icon: <DashboardOutlined style={{ color: '#000000' }} />,
+                label: "Dashboard",
+                permission: PERMISSIONS.ADMIN_DASHBOARD_VIEW
+            },
+            {
+                key: "/accounts",
+                icon: <UsergroupAddOutlined style={{ color: '#000000' }} />,
+                label: "Quản lý tài khoản",
+                permission: PERMISSIONS.ACCOUNT_VIEW
+            },
+            {
+                key: "/categories",
+                icon: <ComponentIcon name="category" size={16} collapsed={collapsed} />,
+                label: "Quản lý danh mục",
+                permission: PERMISSIONS.CATEGORY_VIEW
+            },
+            {
+                key: "/unit-measures",
+                icon: <ComponentIcon name="unitMeasure" size={16} collapsed={collapsed} />,
+                label: "Quản lý đơn vị",
+                permission: PERMISSIONS.UNIT_MEASURE_VIEW
+            },
+            {
+                key: "/goods",
+                icon: <ComponentIcon name="milk" size={16} collapsed={collapsed} />,
+                label: "Quản lý hàng hóa",
+                permission: PERMISSIONS.GOODS_VIEW
+            },
+            {
+                key: "/batches",
+                icon: <ComponentIcon name="batch" size={16} collapsed={collapsed} />,
+                label: "Quản lý lô hàng",
+                permission: PERMISSIONS.BATCH_VIEW
+            },
+            {
+                key: "partner-management",
+                icon: <ComponentIcon name="partner" size={16} collapsed={collapsed} />,
+                label: "Quản lý đối tác",
+                permission: [PERMISSIONS.SUPPLIER_VIEW, PERMISSIONS.RETAILER_VIEW],
+                children: [
+                    {
+                        key: "/suppliers",
+                        icon: <ComponentIcon name="supplier" size={14} collapsed={collapsed} />,
+                        label: "Quản lý nhà cung cấp",
+                        permission: PERMISSIONS.SUPPLIER_VIEW
+                    },
+                    {
+                        key: "/retailers",
+                        icon: <ComponentIcon name="retailer" size={14} collapsed={collapsed} />,
+                        label: "Quản lý nhà bán lẻ",
+                        permission: PERMISSIONS.RETAILER_VIEW
+                    },
+                ],
+            },
+            {
+                key: "location-management",
+                icon: <EnvironmentOutlined style={{ color: '#000000' }} />,
+                label: "Quản lý vị trí và khu vực",
+                permission: [PERMISSIONS.AREA_VIEW, PERMISSIONS.LOCATION_VIEW, PERMISSIONS.STORAGE_CONDITION_VIEW],
+                children: [
+                    {
+                        key: "/areas",
+                        icon: <AppstoreOutlined style={{ color: '#000000' }} />,
+                        label: "Quản lý khu vực",
+                        permission: PERMISSIONS.AREA_VIEW
+                    },
+                    {
+                        key: "/locations",
+                        icon: <ClusterOutlined style={{ color: '#000000' }} />,
+                        label: "Quản lý vị trí",
+                        permission: PERMISSIONS.LOCATION_VIEW
+                    },
+                    {
+                        key: "/storage-conditions",
+                        icon: <ComponentIcon name="storageCondition" size={14} collapsed={collapsed} />,
+                        label: "Quản lý điều kiện bảo quản",
+                        permission: PERMISSIONS.STORAGE_CONDITION_VIEW
+                    },
+                ],
+            },
+            {
+                key: "/reports",
+                icon: <BarChartOutlined style={{ color: '#000000' }} />,
+                label: "Báo cáo",
+                permission: PERMISSIONS.REPORT_VIEW
+            },
+            {
+                key: "/settings",
+                icon: <SettingOutlined style={{ color: '#000000' }} />,
+                label: "Cài đặt",
+                permission: PERMISSIONS.SETTINGS_VIEW
+            },
+        ];
+
+        // Lọc menu theo quyền
+        const filterMenuItems = (items) => {
+            return items.filter(item => {
+                // Kiểm tra quyền của menu chính
+                if (item.role && !userRoles.includes(item.role)) {
+                    return false;
+                }
+                if (item.permission) {
+                    if (Array.isArray(item.permission)) {
+                        if (!item.permission.some(p => hasPermission(p))) {
+                            return false;
+                        }
+                    } else {
+                        if (!hasPermission(item.permission)) {
+                            return false;
+                        }
+                    }
+                }
+                
+                // Kiểm tra children nếu có
+                if (item.children) {
+                    const filteredChildren = filterMenuItems(item.children);
+                    if (filteredChildren.length === 0) {
+                        return false;
+                    }
+                    item.children = filteredChildren;
+                }
+                
+                return true;
+            });
+        };
+
+        return filterMenuItems(allMenuItems);
+    }, [collapsed, hasPermission, userRoles]);
 
 
     const handleMenuClick = ({ key }) => {
