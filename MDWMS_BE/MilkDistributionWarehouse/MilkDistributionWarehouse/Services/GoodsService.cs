@@ -6,6 +6,7 @@ using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
 using MilkDistributionWarehouse.Utilities;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
@@ -20,6 +21,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, GoodsDto)> UpdateGoods_1(GoodsUpdate update);
         Task<(string, List<GoodsDropDown>)> GetGoodsDropDown();
         Task<(string, GoodsUpdateStatus)> UpdateGoodsStatus(GoodsUpdateStatus update);
+        Task<(string, GoodsBulkdResponse)> CreateGoodsBulk(GoodsBulkCreate create);
     }
     public class GoodsService : IGoodsService
     {
@@ -28,14 +30,16 @@ namespace MilkDistributionWarehouse.Services
         private readonly IUnitMeasureRepository _unitMeasureRepository;
         private readonly IStorageConditionRepository _storageConditionRepository;
         private readonly IMapper _mapper;
+        private IUnitOfWork _unitOfWork;
         public GoodsService(IGoodsRepository goodRepository, IMapper mapper, ICategoryRepository categoryRepository,
-            IUnitMeasureRepository unitMeasureRepository, IStorageConditionRepository storageConditionRepository)
+            IUnitMeasureRepository unitMeasureRepository, IStorageConditionRepository storageConditionRepository, IUnitOfWork unitOfWork)
         {
             _goodRepository = goodRepository;
             _mapper = mapper;
             _categoryRepository = categoryRepository;
             _unitMeasureRepository = unitMeasureRepository;
             _storageConditionRepository = storageConditionRepository;
+            _unitOfWork = unitOfWork;
         }
 
         public async Task<(string, PageResult<GoodsDto>)> GetGoods(PagedRequest request)
@@ -90,7 +94,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Goods create data is invalid", new GoodsDto());
 
             if (await _goodRepository.IsDuplicationCode(null, goodsCreate.GoodsCode))
-                return ("Mã sản phẩm đã tồn tại trong hệ thống", new GoodsDto());
+                return ("Mã sản phẩm đã tồn tại trong hệ thống".ToMessageForUser(), new GoodsDto());
 
             var goods = _mapper.Map<Good>(goodsCreate);
 
@@ -249,6 +253,95 @@ namespace MilkDistributionWarehouse.Services
 
             return string.Empty;
         }
+
+        public async Task<(string, GoodsBulkdResponse)> CreateGoodsBulk(GoodsBulkCreate create)
+        {
+            var result = new GoodsBulkdResponse();
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                var goodsCodeCreate = create.Goods.Select(g => g.GoodsCode).ToList();
+
+                var existingGoodsCode = await _goodRepository.GetExistingGoodsCode(goodsCodeCreate);
+
+                var existingCodesSet = new HashSet<string>(existingGoodsCode);
+
+                var validGoods = new List<Good>();
+
+                for (int i = 0; i < create.Goods.Count; i++)
+                {
+                    var goodDto = create.Goods[i];
+
+                    var validation = ValidationGoods(goodDto, existingCodesSet);
+
+                    if(validation != null)
+                    {
+                        result.FailedItems.Add(new FailedItem
+                        {
+                            Index = i,
+                            Code = goodDto.GoodsCode,
+                            Error = validation.ToMessageForUser()
+                        });
+                        result.TotalFailed++;
+                        continue;
+                    }
+
+                    var goods = _mapper.Map<Good>(goodDto);
+                    validGoods.Add(goods);
+
+                    existingCodesSet.Add(goodDto.GoodsCode);
+                }
+
+                if(validGoods.Any())
+                {
+                    await _unitOfWork.Goods.CreateGoodsBulk(validGoods);
+                    result.TotalInserted = validGoods.Count;
+                }
+                await _unitOfWork.CommitTransactionAsync();
+
+                return ("",  result);
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
+        }
+
+        private string? ValidationGoods(GoodsCreateBulkDto create, HashSet<string> existingGoodsCode)
+        {
+            // Kiểm tra mã sản phẩm trùng
+            if (existingGoodsCode.Contains(create.GoodsCode))
+                return "Mã sản phẩm đã tồn tại trong hệ thống";
+
+            // Kiểm tra tên sản phẩm
+            if (string.IsNullOrWhiteSpace(create.GoodsName))
+                return "Tên sản phẩm không được để trống";
+
+            if (create.GoodsName.Length > 255)
+                return "Độ dài tên sản phẩm không được vượt quá 255 ký tự";
+
+            if (!Regex.IsMatch(create.GoodsName, @"^[\p{L}0-9\s_\-.,]+$"))
+                return "Tên sản phẩm không được chứa các ký tự đặc biệt";
+
+            // Kiểm tra các trường bắt buộc khác
+            if (create.CategoryId <= 0)
+                return "Loại sản phẩm không được để trống";
+
+            if (create.SupplierId <= 0)
+                return "Nhà cung cấp không được để trống";
+
+            if (create.StorageConditionId <= 0)
+                return "Điều kiện lưu trữ không được để trống";
+
+            if (create.UnitMeasureId <= 0)
+                return "Đơn vị sản phẩm không được để trống";
+
+            // Không có lỗi
+            return null;
+        }
+
 
     }
 }

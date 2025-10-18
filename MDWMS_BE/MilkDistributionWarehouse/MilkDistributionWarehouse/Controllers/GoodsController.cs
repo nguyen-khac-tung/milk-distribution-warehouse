@@ -31,19 +31,19 @@ namespace MilkDistributionWarehouse.Controllers
 
         [HttpPost("Goods")]
         [Authorize(Roles = "Sale Manager, Sales Representative")]
-        public async Task<IActionResult> GetGoodss([FromBody]PagedRequest request)
+        public async Task<IActionResult> GetGoodss([FromBody] PagedRequest request)
         {
-            var(msg, goodss) = await _goodsService.GetGoods(request);
-            if(!string.IsNullOrEmpty(msg)) 
+            var (msg, goodss) = await _goodsService.GetGoods(request);
+            if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<PageResult<GoodsDto>>.ToResultOk(goodss);
         }
 
         [HttpGet("GoodsByGoodsId/{goodsId}")]
         [Authorize(Roles = "Sale Manager, Sales Representative")]
-        public  async Task<IActionResult> GoodsByGoodsId(int goodsId)
+        public async Task<IActionResult> GoodsByGoodsId(int goodsId)
         {
-            var(msg, goodsDetail) = await _goodsService.GetGoodsByGoodsId(goodsId);
+            var (msg, goodsDetail) = await _goodsService.GetGoodsByGoodsId(goodsId);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<GoodsDetail>.ToResultOk(goodsDetail);
@@ -51,12 +51,20 @@ namespace MilkDistributionWarehouse.Controllers
 
         [HttpPost("Create")]
         [Authorize(Roles = "Sale Manager")]
-        public async Task<IActionResult> CreateGoods([FromBody]GoodsCreate create)
+        public async Task<IActionResult> CreateGoods([FromBody] GoodsCreate create)
         {
-            var(msg, goods) = await _goodsService.CreateGoods(create);
+            var (msg, goods) = await _goodsService.CreateGoods(create);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<GoodsDto>.ToResultOk(goods);
+        }
+        [HttpPost("CreateBulk")]
+        public async Task<IActionResult> CreateGoodsBulk([FromBody] GoodsBulkCreate create)
+        {
+            var (msg, goods) = await _goodsService.CreateGoodsBulk(create);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<GoodsBulkdResponse>.ToResultOk(goods);
         }
 
         [HttpPut("Update")]
