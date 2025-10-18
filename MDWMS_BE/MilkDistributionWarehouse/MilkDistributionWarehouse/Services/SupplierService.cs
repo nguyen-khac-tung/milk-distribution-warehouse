@@ -78,7 +78,7 @@ namespace MilkDistributionWarehouse.Services
 
             var supplierDetail = _mapper.Map<SupplierDetail>(supplier);
 
-            supplierDetail.IsDisable = true ? !canUpdateAllFields : false; 
+            supplierDetail.IsDisable = true ? !canUpdateAllFields : false;
 
             return ("", supplierDetail);
         }
@@ -131,12 +131,13 @@ namespace MilkDistributionWarehouse.Services
                 supplierExist.Email = update.Email;
                 supplierExist.Phone = update.Phone;
             }
-            else
-            {
-                supplierExist.BrandName = update.BrandName;
-                supplierExist.Email = update.Email;
-                supplierExist.Phone = update.Phone;
-            }
+
+            supplierExist.BrandName = update.BrandName;
+            supplierExist.Email = update.Email;
+            supplierExist.Phone = update.Phone;
+            supplierExist.ContactPersonName = update.ContactPersonName;
+            supplierExist.ContactPersonPhone = update.ContactPersonPhone;
+            supplierExist.ContactPersonEmail = update.ContactPersonEmail;
             supplierExist.UpdatedAt = DateTime.Now;
 
             var updateResult = await _supplierRepository.UpdateSupplier(supplierExist);
@@ -154,6 +155,9 @@ namespace MilkDistributionWarehouse.Services
             var supplierExist = await _supplierRepository.GetSupplierBySupplierId(update.SupplierId);
             if (supplierExist == null) return ("Supplier is not exist.", new SupplierUpdateStatusDto());
 
+            if (supplierExist.Status == update.Status)
+                return ("Supplier status is not change", new SupplierUpdateStatusDto());
+
             // Check chuyen trang thai Active => InActive
             var changeStatus = supplierExist.Status == CommonStatus.Active && update.Status == CommonStatus.Inactive;
 
@@ -168,7 +172,7 @@ namespace MilkDistributionWarehouse.Services
             supplierExist.UpdatedAt = DateTime.Now;
 
             var updateStatusResult = await _supplierRepository.UpdateSupplier(supplierExist);
-            if (updateStatusResult == null) 
+            if (updateStatusResult == null)
                 return ("Cập nhật trạng thái nhà cung cấp thất bại.".ToMessageForUser(), new SupplierUpdateStatusDto());
 
             return ("", update);
