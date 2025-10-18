@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using MilkDistributionWarehouse.Models.DTOs;
@@ -20,6 +21,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpGet("GetUnitMeasureDropDown")]
+        [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> GetUnitMeasureDropDown()
         {
             var (msg, unitMeasureDropDown) = await _unitMeasureService.GetUnitMeasureDropDown();
@@ -29,6 +31,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("UnitMeasures")]
+        [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> GetUnitMeasures([FromBody]PagedRequest request)
         {
             var (msg, unitMeasures) = await _unitMeasureService.GetUnitMeasure(request);
@@ -38,6 +41,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("Create")]
+        [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> CreateUnitMeasure([FromBody]UnitMeasureCreate create)
         {
             var(msg, unitMeasure) = await _unitMeasureService.CreateUnitMeasure(create);
@@ -47,6 +51,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPut("Update")]
+        [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> UpdateUnitMeasure([FromBody] UnitMeasureUpdate update)
         {
             var (msg, unitMeasure) = await _unitMeasureService.UpdateUnitMeasure(update);
@@ -56,6 +61,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("UpdateUnitMeasureStatus")]
+        [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> UpdateUnitMeasureStatus([FromBody] UnitMeasureUpdateStatusDto update)
         {
             var (msg, unitMeasureStatus) = await _unitMeasureService.UpdateUnitMeasureStatus(update);
@@ -65,6 +71,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpDelete("Delete/{unitMeasureId}")]
+        [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> DeleteUnitMeasure(int unitMeasureId)
         {
             var (msg, unitMeasure) = await _unitMeasureService.DeleteUnitMeasure(unitMeasureId);
