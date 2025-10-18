@@ -64,13 +64,13 @@ export const refreshAccessToken = async () => {
         if (!refreshToken) throw new Error("Không tìm thấy refresh token.");
 
         const res = await api.post("/Authentication/RefreshToken", {
-            refreshToken,
+            token: refreshToken,
         });
 
         console.log("Refresh Token API response:", res.data);
 
-        if (res.data?.success && res.data?.data?.jwtToken) {
-            const newAccessToken = res.data.data.jwtToken;
+        if (res.data?.success && res.data?.data?.token) {
+            const newAccessToken = res.data.data.token;
             localStorage.setItem("accessToken", newAccessToken);
             return newAccessToken;
         } else {
