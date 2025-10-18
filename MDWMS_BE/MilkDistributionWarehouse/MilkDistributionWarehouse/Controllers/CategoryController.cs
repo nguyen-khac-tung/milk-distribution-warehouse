@@ -1,4 +1,5 @@
 ﻿using Azure.Core;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Services;
@@ -18,6 +19,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpGet("GetCategoriesDropDown")]
+        [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> GetCategoriesDropDown()
         {
             var (msg, categoriesDropDown) = await _categoryService.GetCategoryDropDown();
@@ -27,6 +29,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("Categories")]
+        [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> GetCategories(PagedRequest request)
         {
             var(msg, categories) = await _categoryService.GetCategories(request);
@@ -36,6 +39,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("Create")]
+        [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> CreateCategory([FromBody]CategoryCreate categoryCreate)
         {
             var (msg, category) = await _categoryService.CreateCategory(categoryCreate);
@@ -45,6 +49,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPut("Update")]
+        [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> UpdateCategory([FromBody]CategoryUpdate categoryUpdate)
         {
             var(msg,category) = await _categoryService.UpdateCategory(categoryUpdate);
@@ -54,6 +59,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPut("UpdateStatus")]
+        [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> UpdateCategoryStatus([FromBody] CategoryUpdateStatus update)
         {
             var (msg, categoryStatus) = await _categoryService.UpdateCategoryStatus(update);
@@ -63,6 +69,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpDelete("Delete/{categoryId}")]
+        [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> DeleteCategory(int categoryId)
         {
             var (msg, category) = await _categoryService.DeleteCategory(categoryId);
