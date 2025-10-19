@@ -9,6 +9,7 @@ import { Button } from "../../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
 import { Search, Plus, Edit, Trash2, Filter, ChevronDown, ArrowUp, ArrowDown, ArrowUpDown, Eye, Package } from "lucide-react";
 import CreateGood from "./CreateGoodModal";
+import CreateBulkGoods from "./CreateBulkGoods";
 import UpdateGoodModal from "./UpdateGoodModal";
 import DeleteModal from "../../components/Common/DeleteModal";
 import { ProductDetail } from "./ViewGoodModal";
@@ -50,6 +51,7 @@ export default function GoodsPage() {
   const [loading, setLoading] = useState(true)
   const [searchLoading, setSearchLoading] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showBulkCreateModal, setShowBulkCreateModal] = useState(false)
   const [showUpdateModal, setShowUpdateModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showViewModal, setShowViewModal] = useState(false)
@@ -585,15 +587,26 @@ export default function GoodsPage() {
             <h1 className="text-2xl font-bold text-slate-600">Quản lý Hàng hóa</h1>
             <p className="text-slate-600 mt-1">Quản lý các hàng hóa sản phẩm trong hệ thống</p>
           </div>
-          <PermissionWrapper requiredPermission={PERMISSIONS.GOODS_CREATE}>
-            <Button
-              className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
-              onClick={() => setShowCreateModal(true)}
-            >
-              <Plus className="mr-2 h-4 w-4 text-white" />
-              Thêm hàng hóa
-            </Button>
-          </PermissionWrapper>
+          <div className="flex space-x-3">
+            <PermissionWrapper requiredPermission={PERMISSIONS.GOODS_CREATE}>
+              <Button
+                className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
+                onClick={() => setShowBulkCreateModal(true)}
+              >
+                <Package className="mr-2 h-4 w-4 text-white" />
+                Thêm nhiều hàng hóa
+              </Button>
+            </PermissionWrapper>
+            <PermissionWrapper requiredPermission={PERMISSIONS.GOODS_CREATE}>
+              <Button
+                className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
+                onClick={() => setShowCreateModal(true)}
+              >
+                <Plus className="mr-2 h-4 w-4 text-white" />
+                Thêm hàng hóa
+              </Button>
+            </PermissionWrapper>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -908,6 +921,13 @@ export default function GoodsPage() {
       <CreateGood
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
+        onSuccess={handleCreateSuccess}
+      />
+
+      {/* Create Bulk Goods Modal */}
+      <CreateBulkGoods
+        isOpen={showBulkCreateModal}
+        onClose={() => setShowBulkCreateModal(false)}
         onSuccess={handleCreateSuccess}
       />
 
