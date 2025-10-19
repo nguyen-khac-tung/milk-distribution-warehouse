@@ -21,6 +21,7 @@ import ResetPasswordPage from "../pages/AuthenticationPage/ResetPasswordPage";
 import UnauthorizedPage from "../pages/UnauthorizedPage";
 import ProtectedRoute from "../components/Common/ProtectedRoute";
 import RoleBasedRedirect from "../components/Common/RoleBasedRedirect";
+import PurchaseOrderList from "../pages/PurchaseOrderPage/PurchaseOrderList";
 import { PERMISSIONS } from "../utils/permissions";
 
 export const routes = [
@@ -166,6 +167,13 @@ export const routes = [
             <ProtectedRoute requiredPermission={PERMISSIONS.SETTINGS_VIEW}>
                 <Settings />
             </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/purchase-orders",
+        page: () => (
+            <PurchaseOrderList />
         ),
         isShowHeader: true,
     },

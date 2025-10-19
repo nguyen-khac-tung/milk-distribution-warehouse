@@ -47,7 +47,8 @@ export const IconMap = [
   { keywords: ['people'], icon: 'fluent-color:people-interwoven-48' },
   { keywords: ['europeanNameBadge'], icon: 'openmoji:european-name-badge' },
   { keywords: ['schoolboyRunaway'], icon: 'arcticons:schoolboy-runaway' },
-  { keywords: ['trash', 'delete'], icon: 'mdi:trash-can-outline' }
+  { keywords: ['trash', 'delete'], icon: 'mdi:trash-can-outline' },
+  { keywords: ['cart'], icon: 'raphael:cart' },
   // có thể thêm nhiều icon khác ở đây
 ];
 
@@ -90,6 +91,7 @@ export const ComponentIcon = ({ name, color = "#000000", size = 20, collapsed = 
   const isSchoolboyRunawayIcon = name === 'schoolboyRunaway';
   const isBatchIcon = name === 'batch';
   const isTrashIcon = name === 'trash' || name === 'delete';
+  const isCartIcon = name === 'cart';
 
   const needsSpecialAlignment = isMilkIcon || isUnitMeasureIcon || isCategoryIcon || isStorageCondition ||
     isPartnerIcon || isRetailerIcon || isSupplierIcon || isThermometerIcon ||
@@ -97,7 +99,7 @@ export const ComponentIcon = ({ name, color = "#000000", size = 20, collapsed = 
     isMapPinIcon || isBoxIcon || isCloseIcon || isQrcodeIcon || isProductVariantIcon ||
     isPhoneIcon || isEmailIcon || isTaxIcon || isCalendarIcon || isStreamlineplumpIcon || isFormkitdownIcon || isBellIcon || isBoyIcon || isGirlIcon
     || isCalendarzxIcon || isCrownIcon || isServerNetworkIcon || isPeopleIcon || isEuropeanNameBadgeIcon
-    || isSchoolboyRunawayIcon || isBatchIcon || isTrashIcon;
+    || isSchoolboyRunawayIcon || isBatchIcon || isTrashIcon || isCartIcon;
 
   return (
     <Icon

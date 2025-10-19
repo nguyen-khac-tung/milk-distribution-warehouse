@@ -136,6 +136,11 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                 ],
             },
             {
+                key: "/purchase-orders",
+                icon: <ComponentIcon name="cart" size={16} collapsed={collapsed} />,
+                label: "Quản lý đơn nhập hàng",
+            },
+            {
                 key: "/reports",
                 icon: <BarChartOutlined style={{ color: '#000000' }} />,
                 label: "Báo cáo",
