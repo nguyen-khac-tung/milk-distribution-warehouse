@@ -66,6 +66,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
         [RegularExpression(@"^[\p{L}0-9\s_\-.,]+$", ErrorMessage = "Tên địa chỉ không được chứa các ký tự đặc biệt")]
         public string Address { get; set; }
         [MaxLength(255, ErrorMessage = "Độ dài địa chỉ không được vượt quá 255 ký tự.")]
+        [RegularExpression(@"^[\p{L}0-9\s_\-.,]+$", ErrorMessage = "Tên liên lạc không được chứa các ký tự đặc biệt")]
         public string ContactPersonName { get; set; }
         [RegularExpression(@"^(0|\+84)(\d{9})$", ErrorMessage = "Số điện thoại không hợp lệ (VD: 0912345678 hoặc +84912345678).")]
         public string ContactPersonPhone { get; set; }
