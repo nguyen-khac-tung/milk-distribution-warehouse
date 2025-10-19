@@ -49,6 +49,11 @@ export const IconMap = [
   { keywords: ['schoolboyRunaway'], icon: 'arcticons:schoolboy-runaway' },
   { keywords: ['trash', 'delete'], icon: 'mdi:trash-can-outline' },
   { keywords: ['cart'], icon: 'raphael:cart' },
+  { keywords: ['puscharorder'], icon: 'fluent-emoji-high-contrast:clipboard' },
+  { keywords: ['createpuscharorder'], icon: 'fluent:clipboard-text-edit-24-regular' },
+
+
+
   // có thể thêm nhiều icon khác ở đây
 ];
 
@@ -92,6 +97,8 @@ export const ComponentIcon = ({ name, color = "#000000", size = 20, collapsed = 
   const isBatchIcon = name === 'batch';
   const isTrashIcon = name === 'trash' || name === 'delete';
   const isCartIcon = name === 'cart';
+  const isPurchaseOrder = name === 'puscharorder';
+  const isCPOrder = name === 'createpuscharorder';
 
   const needsSpecialAlignment = isMilkIcon || isUnitMeasureIcon || isCategoryIcon || isStorageCondition ||
     isPartnerIcon || isRetailerIcon || isSupplierIcon || isThermometerIcon ||
@@ -99,7 +106,8 @@ export const ComponentIcon = ({ name, color = "#000000", size = 20, collapsed = 
     isMapPinIcon || isBoxIcon || isCloseIcon || isQrcodeIcon || isProductVariantIcon ||
     isPhoneIcon || isEmailIcon || isTaxIcon || isCalendarIcon || isStreamlineplumpIcon || isFormkitdownIcon || isBellIcon || isBoyIcon || isGirlIcon
     || isCalendarzxIcon || isCrownIcon || isServerNetworkIcon || isPeopleIcon || isEuropeanNameBadgeIcon
-    || isSchoolboyRunawayIcon || isBatchIcon || isTrashIcon || isCartIcon;
+    || isSchoolboyRunawayIcon || isBatchIcon || isTrashIcon || isCartIcon || isPurchaseOrder
+    || isCPOrder;
 
   return (
     <Icon
