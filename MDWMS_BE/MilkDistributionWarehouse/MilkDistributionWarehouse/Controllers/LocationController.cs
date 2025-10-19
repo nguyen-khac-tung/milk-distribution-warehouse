@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Services;
 using MilkDistributionWarehouse.Utilities;
+using static MilkDistributionWarehouse.Models.DTOs.LocationDto;
 
 namespace MilkDistributionWarehouse.Controllers
 {
@@ -58,16 +59,14 @@ namespace MilkDistributionWarehouse.Controllers
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<LocationDto.LocationResponseDto>.ToResultOk(location);
         }
-        [Authorize(Roles = "Business Owner, Administrator")]
+        //[Authorize(Roles = "Business Owner, Administrator")]
         [HttpPost("CreateMultiple")]
-        public async Task<IActionResult> CreateMultipleLocations([FromBody] List<LocationDto.LocationRequestDto> dtos)
+        public async Task<IActionResult> CreateLocationsBulk([FromBody] LocationBulkCreate create)
         {
-            var (msg, createdList) = await _locationService.CreateMultipleLocations(dtos);
-
+            var (msg, response) = await _locationService.CreateLocationsBulk(create);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-
-            return ApiResponse<List<LocationDto.LocationResponseDto>>.ToResultOk(createdList);
+            return ApiResponse<LocationBulkResponse>.ToResultOk(response);
         }
 
         [Authorize(Roles = "Business Owner, Administrator")]

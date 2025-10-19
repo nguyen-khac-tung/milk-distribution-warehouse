@@ -1,11 +1,11 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
-using Microsoft.EntityFrameworkCore;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
 using MilkDistributionWarehouse.Utilities;
+using static MilkDistributionWarehouse.Models.DTOs.LocationDto;
 
 namespace MilkDistributionWarehouse.Services
 {
@@ -18,7 +18,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, LocationDto.LocationResponseDto)> DeleteLocation(int locationId);
         Task<(string, LocationDto.LocationResponseDto)> UpdateStatus(int locationId, int status);
         Task<(string, List<LocationDto.LocationActiveDto>)> GetActiveLocations();
-        Task<(string, List<LocationDto.LocationResponseDto>)> CreateMultipleLocations(List<LocationDto.LocationRequestDto> dtos);
+        Task<(string, LocationBulkResponse)> CreateLocationsBulk(LocationBulkCreate create);
     }
 
     public class LocationService : ILocationService
@@ -26,12 +26,14 @@ namespace MilkDistributionWarehouse.Services
         private readonly ILocationRepository _locationRepository;
         private readonly IMapper _mapper;
         private readonly IAreaRepository _areaRepository;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public LocationService(ILocationRepository locationRepository, IMapper mapper, IAreaRepository areaRepository)
+        public LocationService(ILocationRepository locationRepository, IMapper mapper, IAreaRepository areaRepository, IUnitOfWork unitOfWork)
         {
             _locationRepository = locationRepository;
             _mapper = mapper;
             _areaRepository = areaRepository;
+            _unitOfWork = unitOfWork;
         }
 
         public async Task<(string, PageResult<LocationDto.LocationResponseDto>)> GetLocations(PagedRequest request)
@@ -62,57 +64,62 @@ namespace MilkDistributionWarehouse.Services
 
         public async Task<(string, LocationDto.LocationResponseDto)> CreateLocation(LocationDto.LocationRequestDto dto)
         {
-            if (dto == null) return ("Dữ liệu vị trí không hợp lệ.".ToMessageForUser(), new LocationDto.LocationResponseDto());
-
-            if (await _locationRepository.IsDuplicateLocationAsync(dto.Rack, dto.Row, dto.Column, dto.AreaId))
-                return ("Đã tồn tại vị trí có cùng mã hoặc trùng hàng và cột trong khu vực này.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+            if (dto == null)
+                return ("Dữ liệu vị trí không hợp lệ.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
             var areaExists = await _areaRepository.GetAreaById(dto.AreaId);
             if (areaExists == null)
                 return ("Khu vực được chọn không tồn tại hoặc đã bị xoá.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
+            var locationCode = $"{dto.Rack}-R{dto.Row:D2}-C{dto.Column:D2}";
+            if (await _locationRepository.IsDuplicateLocationCodeInAreaAsync(locationCode, dto.AreaId))
+                return ("Đã tồn tại vị trí có cùng mã trong khu vực này.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+
             var entity = _mapper.Map<Location>(dto);
-            entity.LocationCode = $"{dto.Rack}-R{dto.Row:D2}-C{dto.Column:D2}";
-            entity.AreaId = dto.AreaId;
+            entity.LocationCode = locationCode;
             entity.CreatedAt = DateTime.Now;
             entity.Status = (int)CommonStatus.Active;
 
             var createdEntity = await _locationRepository.CreateLocation(entity);
             if (createdEntity == null)
                 return ("Tạo vị trí thất bại.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+
             var createdWithArea = await _locationRepository.GetLocationById(createdEntity.LocationId);
             return ("", _mapper.Map<LocationDto.LocationResponseDto>(createdWithArea));
         }
 
+
         public async Task<(string, LocationDto.LocationResponseDto)> UpdateLocation(int locationId, LocationDto.LocationRequestDto dto)
         {
-            if (dto == null) return ("Dữ liệu cập nhật vị trí không hợp lệ.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+            if (dto == null)
+                return ("Dữ liệu cập nhật vị trí không hợp lệ.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
             var locationExists = await _locationRepository.GetLocationById(locationId);
             if (locationExists == null)
                 return ("Không tìm thấy vị trí cần cập nhật.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
-            if(locationExists.Status == CommonStatus.Deleted)
-                return ("Vị trí này đã bị xóa, không thể cập nhật thông tin.".ToMessageForUser(),new LocationDto.LocationResponseDto());
+            if (locationExists.Status == CommonStatus.Deleted)
+                return ("Vị trí này đã bị xóa, không thể cập nhật thông tin.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
-            if (await _locationRepository.IsDuplicateLocationAsync(dto.Rack, dto.Row, dto.Column, dto.AreaId, locationId))
-                return ("Đã tồn tại vị trí có cùng mã hoặc trùng hàng và cột trong khu vực này.".ToMessageForUser(), new LocationDto.LocationResponseDto());
-
-            // Validate Area FK async
             var areaExists = await _areaRepository.GetAreaById(dto.AreaId);
             if (areaExists == null)
                 return ("Khu vực được chọn không tồn tại hoặc đã bị xoá.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
+            var locationCode = $"{dto.Rack}-R{dto.Row:D2}-C{dto.Column:D2}";
+            if (await _locationRepository.IsDuplicateLocationCodeInAreaAsync(locationCode, dto.AreaId, locationId))
+                return ("Đã tồn tại vị trí có cùng mã trong khu vực này.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+
             _mapper.Map(dto, locationExists);
-            locationExists.LocationCode = $"{dto.Rack}-R{dto.Row:D2}-C{dto.Column:D2}";
+            locationExists.LocationCode = locationCode;
             locationExists.UpdateAt = DateTime.Now;
+
             var updatedEntity = await _locationRepository.UpdateLocation(locationExists);
             if (updatedEntity == null)
                 return ("Cập nhật vị trí thất bại.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+
             var updatedWithArea = await _locationRepository.GetLocationById(updatedEntity.LocationId);
             return ("", _mapper.Map<LocationDto.LocationResponseDto>(updatedWithArea));
         }
-
         public async Task<(string, LocationDto.LocationResponseDto)> DeleteLocation(int locationId)
         {
             if (locationId <= 0)
@@ -173,57 +180,103 @@ namespace MilkDistributionWarehouse.Services
             var dtoList = _mapper.Map<List<LocationDto.LocationActiveDto>>(locations);
             return ("", dtoList);
         }
-
-        public async Task<(string, List<LocationDto.LocationResponseDto>)> CreateMultipleLocations(List<LocationDto.LocationRequestDto> dtos)
+        public async Task<(string, LocationBulkResponse)> CreateLocationsBulk(LocationBulkCreate create)
         {
-            if (dtos == null || !dtos.Any())
-                return ("Danh sách vị trí không hợp lệ hoặc rỗng.".ToMessageForUser(), new List<LocationDto.LocationResponseDto>());
-
-            var duplicateInRequest = dtos
-                .GroupBy(x => new { x.AreaId, x.Rack, x.Row, x.Column })
-                .Where(g => g.Count() > 1)
-                .Select(g => $"{g.Key.Rack}-R{g.Key.Row}-C{g.Key.Column} (Area {g.Key.AreaId})")
-                .ToList();
-
-            if (duplicateInRequest.Any())
+            var result = new LocationBulkResponse();
+            try
             {
-                return ($"Trong danh sách gửi lên có các vị trí bị trùng nhau: {string.Join(", ", duplicateInRequest)}",
-                        new List<LocationDto.LocationResponseDto>());
-            }
+                await _unitOfWork.BeginTransactionAsync();
 
-            for (int i = 0; i < dtos.Count; i++)
-            {
-                var dto = dtos[i];
-                bool isDup = await _locationRepository.IsDuplicateLocationAsync(dto.Rack, dto.Row, dto.Column, dto.AreaId);
-                if (isDup)
+                var areaIds = create.Locations.Select(l => l.AreaId).Distinct().ToList();
+                var existingKeys = await _locationRepository.GetExistingLocationKeys(areaIds);
+                var existingSet = new HashSet<string>(existingKeys);
+
+                var validLocations = new List<Location>();
+
+                for (int i = 0; i < create.Locations.Count; i++)
                 {
-                    return ($"Vị trí tại dòng {i + 1} ({dto.Rack}-R{dto.Row}-C{dto.Column}) đã tồn tại trong hệ thống.",
-                        new List<LocationDto.LocationResponseDto>());
+                    var dto = create.Locations[i];
+                    var key = $"{dto.AreaId}:{dto.Rack?.ToLower().Trim()}:{dto.Row}:{dto.Column}";
+
+                    var validation = ValidationLocation(dto, existingSet);
+                    if (validation != null)
+                    {
+                        result.FailedItems.Add(new LocationDto.FailedItem
+                        {
+                            Index = i,
+                            Code = $"{dto.Rack}-R{dto.Row:D2}-C{dto.Column:D2}",
+                            Error = validation.ToMessageForUser()
+                        });
+                        result.TotalFailed++;
+                        continue;
+                    }
+
+                    var areaExists = await _areaRepository.GetAreaById(dto.AreaId);
+                    if (areaExists == null)
+                    {
+                        result.FailedItems.Add(new LocationDto.FailedItem
+                        {
+                            Index = i,
+                            Code = $"{dto.Rack}-R{dto.Row:D2}-C{dto.Column:D2}",
+                            Error = "Khu vực được chọn không tồn tại hoặc đã bị xoá.".ToMessageForUser()
+                        });
+                        result.TotalFailed++;
+                        continue;
+                    }
+
+                    var entity = _mapper.Map<Location>(dto);
+                    entity.LocationCode = $"{dto.Rack}-R{dto.Row:D2}-C{dto.Column:D2}";
+                    entity.AreaId = dto.AreaId;
+                    entity.CreatedAt = DateTime.Now;
+                    entity.Status = (int)CommonStatus.Active;
+
+                    validLocations.Add(entity);
+                    existingSet.Add(key); 
                 }
-            }
 
-            var resultList = new List<LocationDto.LocationResponseDto>();
-            foreach (var dto in dtos)
+                if (validLocations.Any())
+                {
+                    var insertedCount = await _locationRepository.CreateLocationsBulk(validLocations);
+                    if (insertedCount == 0)
+                    {
+                        throw new Exception("Insert bulk failed");
+                    }
+                    result.TotalInserted = insertedCount;
+                }
+
+                await _unitOfWork.CommitTransactionAsync();
+
+                return ("", result);
+            }
+            catch
             {
-                var areaExists = await _areaRepository.GetAreaById(dto.AreaId);
-                if (areaExists == null)
-                    return ($"Khu vực {dto.AreaId} không tồn tại hoặc đã bị xoá.".ToMessageForUser(), new List<LocationDto.LocationResponseDto>());
-
-                var entity = _mapper.Map<Location>(dto);
-                entity.LocationCode = $"{dto.Rack}-R{dto.Row:D2}-C{dto.Column:D2}";
-                entity.AreaId = dto.AreaId;
-                entity.CreatedAt = DateTime.Now;
-                entity.Status = (int)CommonStatus.Active;
-
-                var createdEntity = await _locationRepository.CreateLocation(entity);
-                if (createdEntity == null)
-                    return ("Tạo vị trí thất bại trong quá trình lưu DB.".ToMessageForUser(), new List<LocationDto.LocationResponseDto>());
-
-                var createdWithArea = await _locationRepository.GetLocationById(createdEntity.LocationId);
-                resultList.Add(_mapper.Map<LocationDto.LocationResponseDto>(createdWithArea));
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
             }
+        }
 
-            return ("", resultList);
+        private string? ValidationLocation(LocationRequestDto dto, HashSet<string> existingSet)
+        {
+            if (dto.AreaId <= 0)
+                return "Khu vực không hợp lệ!";
+
+            if (string.IsNullOrWhiteSpace(dto.Rack))
+                return "Rack không được để trống";
+
+            if (dto.Rack.Length > 20)
+                return "Rack không được vượt quá 20 ký tự!";
+
+            if (dto.Row < 1 || dto.Row >= 1000)
+                return "Số hàng (Row) phải >= 1 và < 1000";
+
+            if (dto.Column < 1 || dto.Column >= 1000)
+                return "Số cột (Column) phải >= 1 và < 1000";
+
+            var key = $"{dto.AreaId}:{dto.Rack.ToLower().Trim()}:{dto.Row}:{dto.Column}";
+            if (existingSet.Contains(key))
+                return "Vị trí đã tồn tại (trùng Rack, Row, Column trong Area)";
+
+            return null;
         }
     }
 }
