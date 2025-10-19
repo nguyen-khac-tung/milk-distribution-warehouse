@@ -59,7 +59,7 @@ namespace MilkDistributionWarehouse.Controllers
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<LocationDto.LocationResponseDto>.ToResultOk(location);
         }
-        //[Authorize(Roles = "Business Owner, Administrator")]
+        [Authorize(Roles = "Business Owner, Administrator")]
         [HttpPost("CreateMultiple")]
         public async Task<IActionResult> CreateLocationsBulk([FromBody] LocationBulkCreate create)
         {
