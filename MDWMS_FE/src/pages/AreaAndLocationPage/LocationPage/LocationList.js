@@ -558,21 +558,23 @@ const LocationList = () => {
     };
 
     const PrintableLocationLabel = React.forwardRef(({ location }, ref) => (
-        <div ref={ref} className="p-6 w-[600px] h-[600px] text-center border border-gray-200 rounded-md bg-white flex flex-col items-center justify-center">
-            <h2 className="text-2xl font-bold mb-4 text-gray-800">MÃ VỊ TRÍ</h2>
-            <div className="flex justify-center w-full">
-                {location?.locationCode && location?.areaId && (
-                    <Barcode
-                        value={`${location.areaId}-${location.locationCode}`}
-                        height={100}
-                        width={3}
-                        margin={15}
-                        displayValue={true}
-                        fontSize={24}
-                        format="CODE128"
-                    />
-                )}
+        <div ref={ref} className="p-6 w-[600px] h-[400px] text-center border border-gray-200 rounded-md bg-white flex flex-col items-center justify-center">
+            <h2 className="text-3xl font-bold text-gray-800 mb-0 leading-tight">
+                MÃ VỊ TRÍ
+            </h2>
+            <div className="flex justify-center w-full mt-[2px]">
+                <Barcode
+                    value={`${location.areaCode}-${location.locationCode}`}
+                    height={100}
+                    width={3}
+                    margin={0}
+                    displayValue={true}
+                    fontSize={45}
+                    textMargin={8}
+                    format="CODE128"
+                />
             </div>
+
         </div>
     ));
 
@@ -596,21 +598,23 @@ const LocationList = () => {
                                 pageBreakInside: 'avoid'
                             }}
                         >
-                            <h3 className="text-lg font-bold mb-3 text-gray-800">MÃ VỊ TRÍ</h3>
-                            <div className="flex justify-center w-full">
-                                {location?.locationCode && location?.areaId && (
-                                    <Barcode
-                                        value={`${location.areaId}-${location.locationCode}`}
-                                        height={80}
-                                        width={3}
-                                        margin={10}
-                                        displayValue={true}
-                                        fontSize={16}
-                                        format="CODE128"
-                                    />
-                                )}
+                            <h2 className="text-3xl font-bold text-gray-800 mb-0 leading-tight">
+                                MÃ VỊ TRÍ
+                            </h2>
+                            <div className="flex justify-center w-full mt-[2px]">
+                                <Barcode
+                                    value={`${location.areaCode}-${location.locationCode}`}
+                                    height={100}
+                                    width={3}
+                                    margin={0}
+                                    displayValue={true}
+                                    fontSize={45}
+                                    textMargin={8}
+                                    format="CODE128"
+                                />
                             </div>
-                            <p className="text-sm text-gray-600 mt-2">{location?.locationCode}</p>
+
+                            {/* <p className="text-lg text-gray-600 mt-2">{location?.locationCode}</p> */}
                         </div>
                     ))}
                 </div>

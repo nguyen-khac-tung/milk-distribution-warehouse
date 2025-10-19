@@ -23,7 +23,7 @@ export const createBulkGoods = async (goodsList) => {
                 unitMeasureId: parseInt(goods.unitMeasureId)
             }))
         };
-        
+
         console.log("Create bulk goods request:", requestBody);
         const res = await api.post("Goods/CreateBulk", requestBody);
         console.log("Create bulk goods response:", res.data);
