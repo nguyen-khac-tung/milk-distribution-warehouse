@@ -134,6 +134,25 @@ export function SupplierDetail({ supplier, onClose }) {
             </Card>
           </div>
 
+          {/* Contact Person Information Card */}
+          <div className="mt-6">
+            <Card className="shadow-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <ComponentIcon name="user" size={30} color="#374151" />
+                  Thông tin người liên hệ
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid gap-4">
+                  <InfoRow icon={<ComponentIcon name="people" size={20} color="#6b7280" />} label="Tên người liên hệ" value={supplierData.contactPersonName || 'N/A'} />
+                  <InfoRow icon={<ComponentIcon name="phone" size={20} color="#6b7280" />} label="Số điện thoại người liên hệ" value={supplierData.contactPersonPhone || 'N/A'} />
+                  <InfoRow icon={<ComponentIcon name="email" size={20} color="#6b7280" />} label="Email người liên hệ" value={supplierData.contactPersonEmail || 'N/A'} />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
 
         </div>
 
