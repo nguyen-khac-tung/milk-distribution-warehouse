@@ -14,6 +14,8 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
             public string AreaName { get; set; }
 
+            public string AreaCode { get; set; }
+
             public string LocationCode { get; set; }
 
             public string Rack { get; set; }
