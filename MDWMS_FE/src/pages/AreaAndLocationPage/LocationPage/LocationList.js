@@ -634,14 +634,14 @@ const LocationList = () => {
                         {hasPrintPermission && selectedLocations.length > 0 && (
                             <>
                                 <Button
-                                    className="bg-blue-500 hover:bg-blue-600 h-[38px] px-6 text-white transition-colors duration-200"
+                                    className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white transition-colors duration-200"
                                     onClick={handlePrintSelected}
                                 >
                                     <Printer className="mr-2 h-4 w-4 text-white" />
                                     In đã chọn ({selectedLocations.length})
                                 </Button>
                                 <Button
-                                    className="bg-gray-500 hover:bg-gray-600 h-[38px] px-6 text-white transition-colors duration-200"
+                                    className="bg-slate-800 hover:bg-slate-900 h-[38px] px-6 text-white transition-colors duration-200"
                                     onClick={() => {
                                         setSelectedLocations([]);
                                         setSelectAll(false);
@@ -890,14 +890,14 @@ const LocationList = () => {
                                                             <div className="flex items-center justify-center space-x-1">
                                                                 <PermissionWrapper requiredPermission={PERMISSIONS.LOCATION_PRINT}>
                                                                     <button
-                                                                        className="p-1.5 hover:bg-blue-100 rounded transition-colors"
+                                                                        className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                                                         title="In phiếu vị trí"
                                                                         onClick={() => {
                                                                             setSelectedLocation(location);
                                                                             setTimeout(() => handlePrint(), 100);
                                                                         }}
                                                                     >
-                                                                        <Printer className="h-4 w-4 text-blue-600" />
+                                                                        <Printer className="h-4 w-4 text-orange-500" />
                                                                     </button>
                                                                 </PermissionWrapper>
                                                                 <PermissionWrapper requiredPermission={PERMISSIONS.LOCATION_UPDATE}>
