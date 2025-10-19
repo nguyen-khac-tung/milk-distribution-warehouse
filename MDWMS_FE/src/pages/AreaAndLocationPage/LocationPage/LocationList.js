@@ -1056,9 +1056,9 @@ const LocationList = () => {
                 <div ref={printRef} className="print-container">
                     {selectedLocations.length > 1 ? (
                         <PrintableMultipleLocationLabels locations={selectedLocations} />
-                    ) : (
+                    ) : selectedLocation ? (
                         <PrintableLocationLabel location={selectedLocation} />
-                    )}
+                    ) : null}
                 </div>
             </div>
 
