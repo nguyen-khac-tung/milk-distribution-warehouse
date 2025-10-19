@@ -1,4 +1,5 @@
 ﻿using Azure.Core;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MilkDistributionWarehouse.Models.DTOs;
@@ -28,6 +29,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("Suppliers")]
+        [Authorize(Roles = "Sale Manager, Sales Representative")]
         public async Task<IActionResult> GetSuppliers([FromBody]PagedRequest request)
         {
             var (msg, suppliers) = await _supplierService.GetSuppliers(request);
@@ -37,6 +39,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpGet("GetSupplierBySupplierId/{supplierId}")]
+        [Authorize(Roles = "Sale Manager, Sales Representative")]
         public async Task<IActionResult> GetSupplierBySupplierId(int supplierId)
         {
             var(msg, supplierDetail) = await _supplierService.GetSupplierBySupplierId(supplierId);
@@ -46,6 +49,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("Create")]
+        [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> CreateSupplier([FromBody]SupplierCreate create)
         {
             var(msg, supplierDetail) = await _supplierService.CreateSupplier(create);
@@ -55,6 +59,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPut("Update")]
+        [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> UpdateSupplier([FromBody]SupplierUpdate update)
         {
             var(msg, supplierDetail) = await _supplierService.UpdateSupplier(update);
@@ -62,7 +67,9 @@ namespace MilkDistributionWarehouse.Controllers
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<SupplierDetail>.ToResultOk(supplierDetail);
         }
+
         [HttpPut("UpdateStatus")]
+        [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> UpdateSupplierStatus([FromBody] SupplierUpdateStatusDto update)
         {
             var (msg, supplierUpdateStatusDto) = await _supplierService.UpdateSupplierStatus(update);
@@ -72,6 +79,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpDelete("Delete/{supplierId}")]
+        [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> DeleteSupplier(int supplierId)
         {
             var(msg, supplierDetail) = await _supplierService.DeleteSupplier(supplierId);

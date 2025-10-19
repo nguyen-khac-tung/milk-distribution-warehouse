@@ -70,6 +70,9 @@ namespace MilkDistributionWarehouse.Configurations
             services.AddScoped<IRoleService, RoleService>();
             services.AddScoped<IRoleRepository, RoleRepository>();
 
+            //UnitOfWork
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
+
             //Pallet
             services.AddScoped<IPalletRepository, PalletRepository>();
             services.AddScoped<IPalletService, PalletService>();

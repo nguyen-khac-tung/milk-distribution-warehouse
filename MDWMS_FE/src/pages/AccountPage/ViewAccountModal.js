@@ -19,7 +19,7 @@ export function AccountDetail({ userId, onClose }) {
         setLoading(true)
         setError(null)
         const response = await getUserDetail(userId)
-        
+
         if (response && response.success !== false && response.data) {
           setUser(response.data)
         } else {

@@ -36,6 +36,18 @@ export const IconMap = [
   { keywords: ['people'], icon: 'fluent-color:people-interwoven-48' },
   { keywords: ['europeanNameBadge'], icon: 'openmoji:european-name-badge' },
   { keywords: ['schoolboyRunaway'], icon: 'arcticons:schoolboy-runaway' },
+  { keywords: ['batch', 'lot', 'shipment'], icon: 'mdi:package-variant-closed' },
+  { keywords: ['bell'], icon: 'noto:bell' },
+  { keywords: ['boy'], icon: 'fluent-emoji-flat:boy-light' },
+  { keywords: ['girl'], icon: 'fluent-emoji-flat:girl-light' },
+  { keywords: ['calendar'], icon: 'noto:calendar' },
+  { keywords: ['calendarzx'], icon: 'fxemoji:calendar' },
+  { keywords: ['shield'], icon: 'openmoji:shield' },
+  { keywords: ['serverNetwork'], icon: 'streamline-stickies-color:server-network' },
+  { keywords: ['people'], icon: 'fluent-color:people-interwoven-48' },
+  { keywords: ['europeanNameBadge'], icon: 'openmoji:european-name-badge' },
+  { keywords: ['schoolboyRunaway'], icon: 'arcticons:schoolboy-runaway' },
+  { keywords: ['trash', 'delete'], icon: 'mdi:trash-can-outline' }
   // có thể thêm nhiều icon khác ở đây
 ];
 
@@ -76,6 +88,8 @@ export const ComponentIcon = ({ name, color = "#000000", size = 20, collapsed = 
   const isPeopleIcon = name === 'people';
   const isEuropeanNameBadgeIcon = name === 'europeanNameBadge';
   const isSchoolboyRunawayIcon = name === 'schoolboyRunaway';
+  const isBatchIcon = name === 'batch';
+  const isTrashIcon = name === 'trash' || name === 'delete';
 
   const needsSpecialAlignment = isMilkIcon || isUnitMeasureIcon || isCategoryIcon || isStorageCondition ||
     isPartnerIcon || isRetailerIcon || isSupplierIcon || isThermometerIcon ||
@@ -83,7 +97,7 @@ export const ComponentIcon = ({ name, color = "#000000", size = 20, collapsed = 
     isMapPinIcon || isBoxIcon || isCloseIcon || isQrcodeIcon || isProductVariantIcon ||
     isPhoneIcon || isEmailIcon || isTaxIcon || isCalendarIcon || isStreamlineplumpIcon || isFormkitdownIcon || isBellIcon || isBoyIcon || isGirlIcon
     || isCalendarzxIcon || isCrownIcon || isServerNetworkIcon || isPeopleIcon || isEuropeanNameBadgeIcon
-    || isSchoolboyRunawayIcon;
+    || isSchoolboyRunawayIcon || isBatchIcon || isTrashIcon;
 
   return (
     <Icon

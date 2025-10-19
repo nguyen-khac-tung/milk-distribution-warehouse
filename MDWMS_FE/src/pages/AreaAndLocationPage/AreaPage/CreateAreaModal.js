@@ -2,11 +2,12 @@ import React, { useState, useEffect } from "react"
 import { Button } from "../../../components/ui/button"
 import { Input } from "../../../components/ui/input"
 import { Label } from "../../../components/ui/label"
-import { Card } from "../../../components/ui/card"
+import { Textarea } from "../../../components/ui/textarea"
 import { X } from "lucide-react"
 import { createArea } from "../../../services/AreaServices"
-import { getStorageCondition } from "../../../services/StorageConditionService"
+import { getStorageConditionsDropdown } from "../../../services/StorageConditionService"
 import { validateAndShowError, extractErrorMessage } from "../../../utils/Validation"
+import CustomDropdown from "../../../components/Common/CustomDropdown"
 
 export default function CreateAreaModal({ isOpen, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -30,7 +31,7 @@ export default function CreateAreaModal({ isOpen, onClose, onSuccess }) {
   const loadDropdownData = async () => {
     try {
       setLoadingData(true)
-      const storageConditionsRes = await getStorageCondition({ pageNumber: 1, pageSize: 10 })
+      const storageConditionsRes = await getStorageConditionsDropdown({ pageNumber: 1, pageSize: 10 })
 
       // Handle different response structures
       setStorageConditions(storageConditionsRes?.data?.items || storageConditionsRes?.data || [])
@@ -133,54 +134,44 @@ export default function CreateAreaModal({ isOpen, onClose, onSuccess }) {
               </div>
             </div>
 
-            {/* Row 2: Storage Condition */}
-            <div className="space-y-2 md:w-1/2">
+            {/* Storage Condition */}
+            <div className="space-y-2">
               <Label htmlFor="storageConditionId" className="text-sm font-medium text-slate-700">
                 Điều kiện bảo quản <span className="text-red-500">*</span>
               </Label>
-              <select
-                id="storageConditionId"
-                value={formData.storageConditionId}
-                onChange={(e) => setFormData({ ...formData, storageConditionId: e.target.value })}
-                className="h-8 w-full px-3 py-1 border border-slate-300 rounded-lg focus:border-orange-500 focus:ring-orange-500 focus:outline-none bg-white text-sm"
-                required
-              >
-                <option value="">Chọn điều kiện bảo quản...</option>
-                {loadingData ? (
-                  <option disabled>Đang tải...</option>
-                ) : (
-                  storageConditions.map((condition) => (
-                    <option
-                      key={condition.storageConditionId}
-                      value={condition.storageConditionId.toString()}
-                    >
-                      {condition.conditionName} - Nhiệt độ: {condition.temperatureMin}°C đến{" "}
-                      {condition.temperatureMax}°C - Độ ẩm: {condition.humidityMin}% đến{" "}
-                      {condition.humidityMax}%
-                    </option>
-                  ))
-                )}
-              </select>
+              <CustomDropdown
+                value={formData.storageConditionId?.toString() || ""}
+                onChange={(value) =>
+                  setFormData({ ...formData, storageConditionId: value })
+                }
+                options={[
+                  { value: "", label: "Chọn điều kiện bảo quản..." },
+                  ...storageConditions.map((condition) => ({
+                    value: condition.storageConditionId.toString(),
+                    label: `- Nhiệt độ: ${condition.temperatureMin}°C đến ${condition.temperatureMax}°C - Độ ẩm: ${condition.humidityMin}% đến ${condition.humidityMax}%`,
+                  })),
+                ]}
+                placeholder="Chọn điều kiện bảo quản..."
+                loading={loadingData}
+              />
             </div>
 
-            {/* Row 3: Description */}
+            {/* Description */}
             <div className="space-y-2">
               <Label htmlFor="description" className="text-sm font-medium text-slate-700">
                 Mô tả
               </Label>
-              <textarea
+              <Textarea
                 id="description"
                 placeholder="Nhập mô tả khu vực..."
                 value={formData.description}
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
                 }
-                rows={3} // mặc định 3 dòng, tự cao hơn khi gõ
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-orange-500 focus:ring-orange-500 focus:outline-none text-sm resize-y"
+                rows={3}
               />
             </div>
 
-            {/* Action Buttons */}
             <div className="flex gap-4 justify-end pt-6">
               <Button
                 type="button"
@@ -192,15 +183,16 @@ export default function CreateAreaModal({ isOpen, onClose, onSuccess }) {
               </Button>
               <Button
                 type="submit"
-                disabled={loading || loadingData}
+                disabled={loading}
                 className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
               >
-                {loading ? "Đang thêm..." : loadingData ? "Đang tải..." : "Thêm"}
+                {loading ? "Đang thêm..." : "Thêm"}
               </Button>
             </div>
+
           </form>
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
   )
 }

@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { Button } from "antd";
+import React, { useEffect, useState, useCallback, useRef } from "react";
+import { Button } from "../../../components/ui/button";
 import { getLocations, deleteLocation, updateLocationStatus } from "../../../services/LocationServices";
-import { Edit, Trash2, ChevronDown, Plus, Eye } from "lucide-react";
+import { Edit, Trash2, ChevronDown, Plus, Eye, ArrowUpDown, ArrowDown, ArrowUp, Printer, Folder } from "lucide-react";
 import DeleteModal from "../../../components/Common/DeleteModal";
 import SearchFilterToggle from "../../../components/Common/SearchFilterToggle";
 import StatsCards from "../../../components/Common/StatsCards";
@@ -9,12 +9,21 @@ import Loading from "../../../components/Common/Loading";
 import CreateLocationModal from "./CreateLocationModal";
 import UpdateLocationModal from "./UpdateLocationModal";
 import { Card, CardContent } from "../../../components/ui/card";
+import Pagination from "../../../components/Common/Pagination";
 import { Table as CustomTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
 import { extractErrorMessage } from "../../../utils/Validation";
 import { StatusToggle } from "../../../components/Common/SwitchToggle/StatusToggle";
-
+import BulkCreateLocationModal from "../LocationPage/BulkCreateLocation";
+import { useReactToPrint } from "react-to-print";
+import Barcode from "react-barcode";
+import EmptyState from "../../../components/Common/EmptyState";
+import { getAreaDropdown } from "../../../services/AreaServices";
+import PermissionWrapper from "../../../components/Common/PermissionWrapper";
+import { PERMISSIONS } from "../../../utils/permissions";
+import { usePermissions } from "../../../hooks/usePermissions";
 
 const LocationList = () => {
+    const { hasAnyPermission } = usePermissions();
     const [locations, setLocations] = useState([]);
     const [loading, setLoading] = useState(false);
     const [searchLoading, setSearchLoading] = useState(false);
@@ -26,6 +35,7 @@ const LocationList = () => {
     const [globalStats, setGlobalStats] = useState({ total: 0, available: 0, unavailable: 0 });
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showBulkModal, setShowBulkModal] = useState(false);
     const [itemToDelete, setItemToDelete] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showUpdateModal, setShowUpdateModal] = useState(false);
@@ -36,9 +46,31 @@ const LocationList = () => {
     const [showStatusFilter, setShowStatusFilter] = useState(false);
     const [statusTypeFilter, setStatusTypeFilter] = useState("");
     const [showStatusTypeFilter, setShowStatusTypeFilter] = useState(false);
+    const [showConditionFilter, setShowConditionFilter] = useState(false);
+    const [conditionFilter, setConditionFilter] = useState("");
+    const [areaFilter, setAreaFilter] = useState("");
+    const [showAreaFilter, setShowAreaFilter] = useState(false);
+    const [areas, setAreas] = useState([]);
     const [sortField, setSortField] = useState("");
     const [sortAscending, setSortAscending] = useState(true);
     const [showPageSizeFilter, setShowPageSizeFilter] = useState(false);
+    const printRef = useRef();
+    const [selectedLocation, setSelectedLocation] = useState(null);
+    const didMountRef = useRef(false);
+    const skipFirstSearchRef = useRef(true);
+
+    // Kiểm tra xem user có bất kỳ quyền nào trong cột "Hoạt động" không
+    const hasAnyActionPermission = hasAnyPermission([
+        PERMISSIONS.LOCATION_PRINT,
+        PERMISSIONS.LOCATION_UPDATE,
+        PERMISSIONS.LOCATION_DELETE
+    ]);
+
+    const handlePrint = useReactToPrint({
+        contentRef: printRef,
+        documentTitle: "Phiếu dán vị trí kho",
+        pageStyle: `@page { size: auto; margin: 0; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }`,
+    });
 
     const fetchLocations = async (page = 1, pageSize = 10, params = {}) => {
         try {
@@ -48,7 +80,10 @@ const LocationList = () => {
                 pageSize,
                 search: params.search,
                 isAvailable: params.filters?.isAvailable,
+                areaId: params.filters?.areaId,
                 status: params.filters?.status,
+                sortField: params.sortField ?? sortField,
+                sortAscending: typeof (params.sortAscending ?? sortAscending) === 'boolean' ? (params.sortAscending ?? sortAscending) : undefined,
             });
             const res = await getLocations({
                 pageNumber: page,
@@ -57,6 +92,13 @@ const LocationList = () => {
                 isAvailable: params.filters?.isAvailable,
                 areaId: params.filters?.areaId,
                 status: params.filters?.status,
+                // Sorting params (align with AreasList)
+                sortField: params.sortField ?? sortField ?? "",
+                sortAscending: typeof (params.sortAscending ?? sortAscending) === 'boolean' ? (params.sortAscending ?? sortAscending) : undefined,
+                // Fallback if API expects sortOrder string
+                sortOrder: typeof (params.sortAscending ?? sortAscending) === 'boolean'
+                    ? ((params.sortAscending ?? sortAscending) ? 'asc' : 'desc')
+                    : (params.sortOrder || "")
             });
 
             const payload = res ?? {};
@@ -118,9 +160,21 @@ const LocationList = () => {
     };
 
     useEffect(() => {
+        if (didMountRef.current) return; // Guard against React 18 StrictMode double-invoke in dev
+        didMountRef.current = true;
         fetchLocations(1, 10);
         // Also fetch global stats once on mount
         fetchStats();
+        // Load areas for dropdown
+        (async () => {
+            try {
+                const res = await getAreaDropdown();
+                const list = res?.data ?? res ?? [];
+                setAreas(Array.isArray(list) ? list : []);
+            } catch (e) {
+                console.error("Failed to load areas dropdown", e);
+            }
+        })();
     }, []);
 
     // Close filters when clicking outside
@@ -132,6 +186,9 @@ const LocationList = () => {
             if (showStatusTypeFilter && !event.target.closest('.status-type-filter-dropdown')) {
                 setShowStatusTypeFilter(false);
             }
+            if (showAreaFilter && !event.target.closest('.area-filter-dropdown')) {
+                setShowAreaFilter(false);
+            }
             if (showPageSizeFilter && !event.target.closest('.page-size-filter-dropdown')) {
                 setShowPageSizeFilter(false);
             }
@@ -141,7 +198,7 @@ const LocationList = () => {
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         }
-    }, [showStatusFilter, showStatusTypeFilter, showPageSizeFilter]);
+    }, [showStatusFilter, showStatusTypeFilter, showAreaFilter, showPageSizeFilter]);
 
     // Callback khi filter thay đổi
     const handleFilterChange = useCallback((params) => {
@@ -150,34 +207,38 @@ const LocationList = () => {
         fetchLocations(1, pagination.pageSize, params);
     }, [pagination.pageSize]);
 
-    // Search input change handler
-    const handleSearchInputChange = (e) => {
-        setSearchQuery(e.target.value);
-    };
-
-    // Debounced search effect
+    // Debounced search effect: only searchQuery; skip first run on mount to avoid duplicate with initial fetch
     useEffect(() => {
+        if (skipFirstSearchRef.current) {
+            skipFirstSearchRef.current = false;
+            return;
+        }
         const timeoutId = setTimeout(() => {
             handleFilterChange({
                 search: searchQuery,
                 filters: {
-                    isAvailable: statusFilter ? statusFilter === "true" : undefined,
-                    status: statusTypeFilter ? Number(statusTypeFilter) : undefined
+                    isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
+                    status: statusFilter !== "" ? Number(statusFilter) : undefined,
+                    areaId: areaFilter !== "" ? Number(areaFilter) : undefined,
                 }
             });
         }, 500);
 
         return () => clearTimeout(timeoutId);
-    }, [searchQuery, statusFilter, statusTypeFilter, handleFilterChange]);
+        // Only depend on searchQuery to avoid triggering twice when clicking filters
+    }, [searchQuery]);
 
-    const handleStatusFilter = (status) => {
-        setStatusFilter(status);
+    const handleStatusFilter = (value) => {
+        setStatusFilter(value);
+
         handleFilterChange({
             search: searchQuery,
             filters: {
-                isAvailable: status ? status === "true" : undefined,
-                status: statusTypeFilter ? Number(statusTypeFilter) : undefined
-            }
+                // Nếu value rỗng → bỏ qua filter
+                status: value !== "" ? Number(value) : undefined,
+                isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
+                areaId: areaFilter !== "" ? Number(areaFilter) : undefined,
+            },
         });
     };
 
@@ -186,32 +247,61 @@ const LocationList = () => {
         handleFilterChange({
             search: searchQuery,
             filters: {
+                status: undefined,
+                isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
+                areaId: areaFilter !== "" ? Number(areaFilter) : undefined,
+            },
+        });
+    };
+
+    const handleConditionFilter = (value) => {
+        setConditionFilter(value);
+
+        handleFilterChange({
+            search: searchQuery,
+            filters: {
+                status: statusFilter !== "" ? Number(statusFilter) : undefined,
+                isAvailable: value !== "" ? value === "true" : undefined,
+                areaId: areaFilter !== "" ? Number(areaFilter) : undefined,
+            },
+        });
+    };
+
+    const clearConditionFilter = () => {
+        setConditionFilter("");
+        handleFilterChange({
+            search: searchQuery,
+            filters: {
+                status: statusFilter !== "" ? Number(statusFilter) : undefined,
                 isAvailable: undefined,
-                status: statusTypeFilter ? Number(statusTypeFilter) : undefined
-            }
+                areaId: areaFilter !== "" ? Number(areaFilter) : undefined,
+            },
         });
     };
 
-    const handleStatusTypeFilter = (status) => {
-        setStatusTypeFilter(status);
+    const handleAreaFilter = (value) => {
+        setAreaFilter(value);
         handleFilterChange({
             search: searchQuery,
             filters: {
-                isAvailable: statusFilter ? statusFilter === "true" : undefined,
-                status: status ? Number(status) : undefined
-            }
+                status: statusFilter !== "" ? Number(statusFilter) : undefined,
+                isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
+                areaId: value !== "" ? Number(value) : undefined,
+            },
         });
     };
 
-    const clearStatusTypeFilter = () => {
-        setStatusTypeFilter("");
+    const clearAreaFilter = () => {
+        setAreaFilter("");
         handleFilterChange({
             search: searchQuery,
             filters: {
-                isAvailable: statusFilter ? statusFilter === "true" : undefined,
-                status: undefined
-            }
+                status: statusFilter !== "" ? Number(statusFilter) : undefined,
+                isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
+                areaId: undefined,
+            },
         });
+        setShowAreaFilter(false);
     };
 
     const handlePageChange = (newPage) => {
@@ -219,8 +309,9 @@ const LocationList = () => {
         fetchLocations(newPage, pagination.pageSize, {
             search: searchQuery,
             filters: {
-                isAvailable: statusFilter ? statusFilter === "true" : undefined,
-                status: statusTypeFilter ? Number(statusTypeFilter) : undefined
+                isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
+                status: statusFilter !== "" ? Number(statusFilter) : undefined,
+                areaId: areaFilter !== "" ? Number(areaFilter) : undefined,
             }
         });
     };
@@ -230,18 +321,57 @@ const LocationList = () => {
         fetchLocations(1, newPageSize, {
             search: searchQuery,
             filters: {
-                isAvailable: statusFilter ? statusFilter === "true" : undefined,
-                status: statusTypeFilter ? Number(statusTypeFilter) : undefined
+                isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
+                status: statusFilter !== "" ? Number(statusFilter) : undefined,
+                areaId: areaFilter !== "" ? Number(areaFilter) : undefined,
             }
         });
     };
 
     const handleSort = (field) => {
         if (sortField === field) {
-            setSortAscending(!sortAscending);
+            if (sortAscending === true) {
+                // Second click: descending
+                setSortAscending(false);
+                fetchLocations(pagination.current, pagination.pageSize, {
+                    search: searchQuery,
+                    filters: {
+                        isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
+                        status: statusFilter !== "" ? Number(statusFilter) : undefined,
+                        areaId: areaFilter !== "" ? Number(areaFilter) : undefined,
+                    },
+                    sortField: field,
+                    sortAscending: false,
+                });
+            } else {
+                // Third click: clear sorting
+                setSortField("");
+                setSortAscending(true);
+                fetchLocations(pagination.current, pagination.pageSize, {
+                    search: searchQuery,
+                    filters: {
+                        isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
+                        status: statusFilter !== "" ? Number(statusFilter) : undefined,
+                        areaId: areaFilter !== "" ? Number(areaFilter) : undefined,
+                    },
+                    sortField: "",
+                    sortAscending: undefined,
+                });
+            }
         } else {
+            // First click on a different column: ascending
             setSortField(field);
             setSortAscending(true);
+            fetchLocations(pagination.current, pagination.pageSize, {
+                search: searchQuery,
+                filters: {
+                    isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
+                    status: statusFilter !== "" ? Number(statusFilter) : undefined,
+                    areaId: areaFilter !== "" ? Number(areaFilter) : undefined,
+                },
+                sortField: field,
+                sortAscending: true,
+            });
         }
     };
 
@@ -264,12 +394,25 @@ const LocationList = () => {
         fetchLocations(pagination.current, pagination.pageSize, {
             search: searchQuery,
             filters: {
-                isAvailable: statusFilter ? statusFilter === "true" : undefined,
-                status: statusTypeFilter ? Number(statusTypeFilter) : undefined
+                isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
+                status: statusFilter !== "" ? Number(statusFilter) : undefined,
+                areaId: areaFilter !== "" ? Number(areaFilter) : undefined,
             }
         });
         fetchStats(); // Cập nhật tổng stats
     };
+
+    const handleClearAllFilters = () => {
+        setSearchQuery("")
+        setStatusFilter("")
+        setShowStatusFilter(false)
+        setConditionFilter("")
+        setShowConditionFilter(false)
+        setAreaFilter("")
+        setShowAreaFilter(false)
+    }
+
+    const clearAllFilters = handleClearAllFilters
 
     // Handle update success
     const handleUpdateSuccess = () => {
@@ -279,8 +422,8 @@ const LocationList = () => {
         fetchLocations(pagination.current, pagination.pageSize, {
             search: searchQuery,
             filters: {
-                isAvailable: statusFilter ? statusFilter === "true" : undefined,
-                status: statusTypeFilter ? Number(statusTypeFilter) : undefined
+                isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
+                status: statusFilter !== "" ? Number(statusFilter) : undefined
             }
         });
         fetchStats(); // Cập nhật tổng stats
@@ -326,8 +469,8 @@ const LocationList = () => {
             fetchLocations(pagination.current, pagination.pageSize, {
                 search: searchQuery,
                 filters: {
-                    isAvailable: statusFilter ? statusFilter === "true" : undefined,
-                    status: statusTypeFilter ? Number(statusTypeFilter) : undefined
+                    isAvailable: conditionFilter !== "" ? conditionFilter === "true" : undefined,
+                    status: statusFilter !== "" ? Number(statusFilter) : undefined
                 }
             });
             // refresh global stats
@@ -337,6 +480,23 @@ const LocationList = () => {
         }
     };
 
+    const PrintableLocationLabel = React.forwardRef(({ location }, ref) => (
+        <div ref={ref} className="p-6 w-[600px] h-[600px] text-center border border-gray-200 rounded-md bg-white flex flex-col items-center justify-center">
+            <h2 className="text-2xl font-bold mb-4 text-gray-800">MÃ VỊ TRÍ</h2>
+            <div className="flex justify-center">
+                {location?.locationCode && location?.areaId && (
+                    <Barcode
+                        value={`${location.areaId}-${location.locationCode}`}
+                        height={100}
+                        width={2.5}
+                        margin={0}
+                        displayValue={true}
+                        fontSize={30}
+                    />
+                )}
+            </div>
+        </div>
+    ));
 
     return (
         <div className="min-h-screen">
@@ -345,15 +505,32 @@ const LocationList = () => {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-bold text-slate-600">Quản lý Vị trí</h1>
-                        <p className="text-slate-600 mt-1">Quản lý các vị trí lưu trữ trong hệ thống</p>
+                        <p className="text-slate-600 mt-1">
+                            Quản lý các vị trí lưu trữ trong hệ thống
+                        </p>
                     </div>
-                    <Button
-                        className="bg-orange-500 hover:bg-orange-600 h-8 px-6 text-white"
-                        onClick={handleOpenCreate}
-                    >
-                        <Plus className="mr-2 h-4 w-4 text-white" />
-                        Thêm vị trí
-                    </Button>
+
+                    <div className="flex items-center gap-3">
+                        <PermissionWrapper requiredPermission={PERMISSIONS.LOCATION_CREATE}>
+                            <Button
+                                className="bg-orange-400 hover:bg-orange-500 h-[38px] px-6 text-white transition-colors duration-200"
+                                onClick={() => setShowBulkModal(true)}
+                            >
+                                <Plus className="mr-2 h-4 w-4 text-white" />
+                                Thêm nhiều vị trí
+                            </Button>
+                        </PermissionWrapper>
+
+                        <PermissionWrapper requiredPermission={PERMISSIONS.LOCATION_CREATE}>
+                            <Button
+                                className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white transition-colors duration-200"
+                                onClick={handleOpenCreate}
+                            >
+                                <Plus className="mr-2 h-4 w-4 text-white" />
+                                Thêm vị trí
+                            </Button>
+                        </PermissionWrapper>
+                    </div>
                 </div>
 
                 {/* Stats Cards */}
@@ -371,24 +548,54 @@ const LocationList = () => {
                     <SearchFilterToggle
                         searchQuery={searchQuery}
                         setSearchQuery={setSearchQuery}
-                        searchPlaceholder="Tìm kiếm theo mã vị trí..."
+                        searchPlaceholder="Tìm kiếm theo mã vị trí, khu vực"
+
+                        // Filter TRẠNG THÁI
                         statusFilter={statusFilter}
                         setStatusFilter={setStatusFilter}
                         showStatusFilter={showStatusFilter}
                         setShowStatusFilter={setShowStatusFilter}
                         statusOptions={[
-                            { value: "", label: "Tất cả tình trạng" },
-                            { value: "true", label: "Trống" },
-                            { value: "false", label: "Đang sử dụng" }
+                            { value: "", label: "Tất cả trạng thái" },
+                            { value: "1", label: "Hoạt động" },
+                            { value: "2", label: "Ngừng hoạt động" },
                         ]}
                         onStatusFilter={handleStatusFilter}
                         clearStatusFilter={clearStatusFilter}
+
+                        // Filter TÌNH TRẠNG
+                        enableConditionFilter={true}
+                        conditionFilter={conditionFilter}
+                        setConditionFilter={setConditionFilter}
+                        showConditionFilter={showConditionFilter}
+                        setShowConditionFilter={setShowConditionFilter}
+                        conditionOptions={[
+                            { value: "", label: "Tất cả tình trạng" },
+                            { value: "true", label: "Trống" },
+                            { value: "false", label: "Đang sử dụng" },
+                        ]}
+                        onConditionFilter={handleConditionFilter}
+                        clearConditionFilter={clearConditionFilter}
+
+                        // Khác
+                        // Filter KHU VỰC
+                        areaFilter={areaFilter}
+                        setAreaFilter={setAreaFilter}
+                        showAreaFilter={showAreaFilter}
+                        setShowAreaFilter={setShowAreaFilter}
+                        areas={areas}
+                        onAreaFilter={handleAreaFilter}
+                        clearAreaFilter={clearAreaFilter}
+
+                        // Khác
                         onClearAll={() => {
                             setSearchQuery("");
                             setStatusFilter("");
-                            setStatusTypeFilter("");
+                            setConditionFilter("");
                             setShowStatusFilter(false);
-                            setShowStatusTypeFilter(false);
+                            setShowConditionFilter(false);
+                            setAreaFilter("");
+                            setShowAreaFilter(false);
                         }}
                         searchWidth="w-80"
                         showToggle={true}
@@ -411,21 +618,38 @@ const LocationList = () => {
                                                 STT
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                                                <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("locationCode")}>
+                                                <div
+                                                    className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                                    onClick={() => handleSort("locationCode")}
+                                                >
                                                     <span>Mã vị trí</span>
-                                                    <div className="flex flex-col">
-                                                        <ChevronDown
-                                                            className={`h-3 w-3 ${sortField === "locationCode" && sortAscending ? "text-orange-500" : "text-slate-400"}`}
-                                                        />
-                                                        <ChevronDown
-                                                            className={`h-3 w-3 ${sortField === "locationCode" && !sortAscending ? "text-orange-500" : "text-slate-400"}`}
-                                                            style={{ transform: "rotate(180deg)" }}
-                                                        />
-                                                    </div>
+                                                    {sortField === "locationCode" ? (
+                                                        sortAscending ? (
+                                                            <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                        ) : (
+                                                            <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                        )
+                                                    ) : (
+                                                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                    )}
                                                 </div>
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                                                Khu vực
+                                                <div
+                                                    className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                                    onClick={() => handleSort("areaName")}
+                                                >
+                                                    <span>Khu vực</span>
+                                                    {sortField === "areaName" ? (
+                                                        sortAscending ? (
+                                                            <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                        ) : (
+                                                            <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                        )
+                                                    ) : (
+                                                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                    )}
+                                                </div>
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                                                 Kệ
@@ -442,9 +666,11 @@ const LocationList = () => {
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-48">
                                                 Trạng thái
                                             </TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
-                                                Hoạt động
-                                            </TableHead>
+                                            {hasAnyActionPermission && (
+                                                <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
+                                                    Hoạt động
+                                                </TableHead>
+                                            )}
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -457,22 +683,12 @@ const LocationList = () => {
                                                     <TableCell className="px-6 py-4 text-slate-600 font-medium">
                                                         {index + 1}
                                                     </TableCell>
-                                                    <TableCell className="font-medium text-slate-900 px-6 py-3 text-left">
-                                                        {location?.locationCode || ''}
-                                                    </TableCell>
-                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">
-                                                        {location?.areaName || "—"}
-                                                    </TableCell>
-                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">
-                                                        {location?.rack || ''}
-                                                    </TableCell>
-                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">
-                                                        {location?.row || ''}
-                                                    </TableCell>
-                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">
-                                                        {location?.column || ''}
-                                                    </TableCell>
-                                                    <TableCell className="px-6 py-3 text-center">
+                                                    <TableCell className="px-6 py-4 text-slate-700 font-medium">{location?.locationCode || ''}</TableCell>
+                                                    <TableCell className="px-6 py-4 text-slate-700">{location?.areaName || "—"}</TableCell>
+                                                    <TableCell className="px-6 py-4 text-slate-700">{location?.rack || ''}</TableCell>
+                                                    <TableCell className="px-6 py-4 text-slate-700">{location?.row || ''}</TableCell>
+                                                    <TableCell className="px-6 py-4 text-slate-700">{location?.column || ''}</TableCell>
+                                                    <TableCell className="px-6 py-4 text-center">
                                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${location?.isAvailable
                                                             ? 'bg-green-100 text-green-800'
                                                             : 'bg-red-100 text-red-800'
@@ -482,50 +698,90 @@ const LocationList = () => {
                                                             {location?.isAvailable ? 'Trống' : 'Đang sử dụng'}
                                                         </span>
                                                     </TableCell>
-                                                    <TableCell className="px-6 py-3 text-center">
-                                                        <div className="flex justify-center">
-                                                            <StatusToggle
-                                                                status={location?.status}
-                                                                onStatusChange={handleStatusChange}
-                                                                supplierId={location?.locationId}
-                                                                supplierName={location?.locationCode}
-                                                                entityType="Vị trí"
-                                                            />
-                                                        </div>
-                                                    </TableCell>
                                                     <TableCell className="px-6 py-4 text-center">
-                                                        <div className="flex items-center justify-center space-x-1">
-                                                            <button
-                                                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                                title="Xem chi tiết"
+                                                        <div className="flex justify-center">
+                                                            <PermissionWrapper
+                                                                requiredPermission={PERMISSIONS.LOCATION_UPDATE}
+                                                                hide={false}
+                                                                fallback={
+                                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center justify-center gap-1 ${location?.status === 1
+                                                                        ? 'bg-green-100 text-green-800'
+                                                                        : 'bg-red-100 text-red-800'
+                                                                        }`}>
+                                                                        <span className={`w-2 h-2 rounded-full ${location?.status === 1 ? 'bg-green-500' : 'bg-red-500'
+                                                                            }`}></span>
+                                                                        {location?.status === 1 ? 'Hoạt động' : 'Ngừng hoạt động'}
+                                                                    </span>
+                                                                }
                                                             >
-                                                                <Eye className="h-4 w-4 text-orange-500" />
-                                                            </button>
-                                                            <button
-                                                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                                title="Chỉnh sửa"
-                                                                onClick={() => handleOpenEdit(location)}
-                                                            >
-                                                                <Edit className="h-4 w-4 text-orange-500" />
-                                                            </button>
-                                                            <button
-                                                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                                title="Xóa"
-                                                                onClick={() => {
-                                                                    setItemToDelete(location);
-                                                                    setShowDeleteModal(true);
-                                                                }}
-                                                            >
-                                                                <Trash2 className="h-4 w-4 text-red-500" />
-                                                            </button>
+                                                                <StatusToggle
+                                                                    status={location?.status}
+                                                                    onStatusChange={handleStatusChange}
+                                                                    supplierId={location?.locationId}
+                                                                    supplierName={location?.locationCode}
+                                                                    entityType="Vị trí"
+                                                                />
+                                                            </PermissionWrapper>
                                                         </div>
                                                     </TableCell>
+                                                    {hasAnyActionPermission && (
+                                                        <TableCell className="px-6 py-4 text-center">
+                                                            <div className="flex items-center justify-center space-x-1">
+                                                                <PermissionWrapper requiredPermission={PERMISSIONS.LOCATION_PRINT}>
+                                                                    <button
+                                                                        className="p-1.5 hover:bg-blue-100 rounded transition-colors"
+                                                                        title="In phiếu vị trí"
+                                                                        onClick={() => {
+                                                                            setSelectedLocation(location);
+                                                                            setTimeout(() => handlePrint(), 100);
+                                                                        }}
+                                                                    >
+                                                                        <Printer className="h-4 w-4 text-blue-600" />
+                                                                    </button>
+                                                                </PermissionWrapper>
+                                                                <PermissionWrapper requiredPermission={PERMISSIONS.LOCATION_UPDATE}>
+                                                                    <button
+                                                                        className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                                        title="Chỉnh sửa"
+                                                                        onClick={() => handleOpenEdit(location)}
+                                                                    >
+                                                                        <Edit className="h-4 w-4 text-orange-500" />
+                                                                    </button>
+                                                                </PermissionWrapper>
+                                                                <PermissionWrapper requiredPermission={PERMISSIONS.LOCATION_DELETE}>
+                                                                    <button
+                                                                        className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                                        title="Xóa"
+                                                                        onClick={() => {
+                                                                            setItemToDelete(location);
+                                                                            setShowDeleteModal(true);
+                                                                        }}
+                                                                    >
+                                                                        <Trash2 className="h-4 w-4 text-red-500" />
+                                                                    </button>
+                                                                </PermissionWrapper>
+                                                            </div>
+                                                        </TableCell>
+                                                    )}
                                                 </TableRow>
                                             ))
                                         ) : (
                                             <TableRow>
-                                                <TableCell colSpan={9} className="text-center py-12 text-slate-500">
-                                                    Không tìm thấy vị trí nào
+                                                <TableCell colSpan={hasAnyActionPermission ? 9 : 8}>
+                                                    <div className="flex flex-col items-center justify-center text-center min-h-[260px]">
+                                                        <EmptyState
+                                                            icon={Folder}
+                                                            title="Không tìm thấy vị trí nào"
+                                                            description={
+                                                                searchQuery || statusFilter
+                                                                    ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
+                                                                    : "Chưa có vị trí nào trong hệ thống"
+                                                            }
+                                                            actionText="Xóa bộ lọc"
+                                                            onAction={clearAllFilters}
+                                                            showAction={!!(searchQuery || statusFilter)}
+                                                        />
+                                                    </div>
                                                 </TableCell>
                                             </TableRow>
                                         )}
@@ -538,108 +794,66 @@ const LocationList = () => {
 
                 {/* Pagination */}
                 {!loading && !searchLoading && pagination.total > 0 && (
-                    <Card className="bg-gray-50">
-                        <CardContent className="pt-6">
-                            <div className="flex items-center justify-between">
-                                <div className="text-sm text-slate-600">
-                                    Hiển thị {((pagination.current - 1) * pagination.pageSize) + 1} - {Math.min(pagination.current * pagination.pageSize, pagination.total)} trong tổng số {pagination.total} vị trí
-                                </div>
-
-                                <div className="flex items-center space-x-4">
-                                    <div className="flex items-center space-x-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="h-8"
-                                            onClick={() => {
-                                                if (pagination.current > 1) {
-                                                    handlePageChange(pagination.current - 1);
-                                                }
-                                            }}
-                                            disabled={pagination.current <= 1}
-                                        >
-                                            Trước
-                                        </Button>
-                                        <span className="text-sm text-slate-600">
-                                            Trang {pagination.current} / {Math.ceil(pagination.total / pagination.pageSize)}
-                                        </span>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="h-8"
-                                            onClick={() => {
-                                                if (pagination.current < Math.ceil(pagination.total / pagination.pageSize)) {
-                                                    handlePageChange(pagination.current + 1);
-                                                }
-                                            }}
-                                            disabled={pagination.current >= Math.ceil(pagination.total / pagination.pageSize)}
-                                        >
-                                            Sau
-                                        </Button>
-                                    </div>
-
-                                    {/* Page Size Selector */}
-                                    <div className="flex items-center space-x-2">
-                                        <span className="text-sm text-slate-600">Hiển thị:</span>
-                                        <div className="relative page-size-filter-dropdown">
-                                            <button
-                                                onClick={() => setShowPageSizeFilter(!showPageSizeFilter)}
-                                                className="flex items-center space-x-2 px-3 py-2 h-8 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                                            >
-                                                <span>{pagination.pageSize}</span>
-                                                <ChevronDown className="h-4 w-4" />
-                                            </button>
-
-                                            {showPageSizeFilter && (
-                                                <div className="absolute bottom-full right-0 mb-1 w-20 bg-gray-50 rounded-md shadow-lg border z-10">
-                                                    <div className="py-1">
-                                                        {[10, 20, 30, 40].map((size) => (
-                                                            <button
-                                                                key={size}
-                                                                onClick={() => handlePageSizeChange(size)}
-                                                                className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 flex items-center justify-between ${pagination.pageSize === size ? 'bg-[#d97706] text-white' : 'text-slate-700'
-                                                                    }`}
-                                                            >
-                                                                {size}
-                                                                {pagination.pageSize === size && <span className="text-white">✓</span>}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <span className="text-sm text-slate-600">/ Trang</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <Pagination
+                        current={pagination.current}
+                        pageSize={pagination.pageSize}
+                        total={pagination.total}
+                        onPageChange={handlePageChange}
+                        onPageSizeChange={handlePageSizeChange}
+                        showPageSize={true}
+                        pageSizeOptions={[10, 20, 30, 40]}
+                        className="bg-gray-50"
+                    />
                 )}
             </div>
 
             {/* Create Location Modal */}
-            <CreateLocationModal
-                isOpen={showCreateModal}
-                onClose={() => setShowCreateModal(false)}
-                onSuccess={handleCreateSuccess}
-            />
+            <PermissionWrapper requiredPermission={PERMISSIONS.LOCATION_CREATE}>
+                <CreateLocationModal
+                    isOpen={showCreateModal}
+                    onClose={() => setShowCreateModal(false)}
+                    onSuccess={handleCreateSuccess}
+                />
+            </PermissionWrapper>
+
+            {/* Modal Tạo nhiều vị trí */}
+            <PermissionWrapper requiredPermission={PERMISSIONS.LOCATION_CREATE}>
+                {showBulkModal && (
+                    <BulkCreateLocationModal
+                        isOpen={showBulkModal}
+                        onClose={() => setShowBulkModal(false)}
+                    />
+                )}
+            </PermissionWrapper>
 
             {/* Update Location Modal */}
-            <UpdateLocationModal
-                isOpen={showUpdateModal}
-                onClose={handleUpdateCancel}
-                onSuccess={handleUpdateSuccess}
-                locationId={updateLocationId}
-                locationData={editingLocation}
-            />
+            <PermissionWrapper requiredPermission={PERMISSIONS.LOCATION_UPDATE}>
+                <UpdateLocationModal
+                    isOpen={showUpdateModal}
+                    onClose={handleUpdateCancel}
+                    onSuccess={handleUpdateSuccess}
+                    locationId={updateLocationId}
+                    locationData={editingLocation}
+                />
+            </PermissionWrapper>
 
             {/* Delete Confirmation Modal */}
-            <DeleteModal
-                isOpen={showDeleteModal}
-                onClose={() => setShowDeleteModal(false)}
-                onConfirm={handleDeleteConfirm}
-                itemName={itemToDelete?.locationCode || ""}
-            />
+            <PermissionWrapper requiredPermission={PERMISSIONS.LOCATION_DELETE}>
+                <DeleteModal
+                    isOpen={showDeleteModal}
+                    onClose={() => setShowDeleteModal(false)}
+                    onConfirm={handleDeleteConfirm}
+                    itemName={itemToDelete?.locationCode || ""}
+                />
+            </PermissionWrapper>
+
+            {/* Vùng in phiếu - căn giữa khi in */}
+            <div className="print-wrapper">
+                <div ref={printRef} className="print-container">
+                    <PrintableLocationLabel location={selectedLocation} />
+                </div>
+            </div>
+
         </div>
     );
 };

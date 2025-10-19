@@ -106,4 +106,35 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int GoodsId { get; set; }
         public int Status { get; set; }
     }
+
+    public class GoodsCreateBulkDto
+    {
+        public string GoodsCode { get; set; }
+        public string GoodsName { get; set; }
+        public int CategoryId { get; set; }
+        public int SupplierId { get; set; }
+        public int StorageConditionId { get; set; }
+        public int UnitMeasureId { get; set; }
+    }
+
+    public class GoodsBulkCreate
+    {
+        [Required]
+        [MinLength(1, ErrorMessage = "Danh sách hàng hoá không được rỗng")]
+        [MaxLength(1000, ErrorMessage = "Số lượng hàng hoá tối đa 1000 sản phẩm")]
+        public List<GoodsCreateBulkDto> Goods { get; set; } = new();
+    }
+
+    public class GoodsBulkdResponse
+    {
+        public int TotalInserted { get; set; }
+        public int TotalFailed { get; set; }
+        public List<FailedItem> FailedItems { get; set; } = new();
+    }
+    public class FailedItem
+    {
+        public int Index { get; set; }
+        public string Code { get; set; } = string.Empty;
+        public string Error { get; set; } = string.Empty;
+    }
 }

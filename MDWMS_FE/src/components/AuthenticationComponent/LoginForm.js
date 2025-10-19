@@ -3,14 +3,15 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Link, useNavigate } from "react-router-dom";
-import { message, Spin } from "antd"; // dùng thông báo của antd cho tiện
-import { login } from "../../services/AuthenticationServices"; // ✅ import service login
-import Logo from "../IconComponent/Logo";
+import { Spin } from "antd";
+import { login } from "../../services/AuthenticationServices";
+import { cleanErrorMessage, extractErrorMessage } from "../../utils/Validation";
 
 export function LoginForm() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
@@ -18,7 +19,7 @@ export function LoginForm() {
         e.preventDefault();
 
         if (!email || !password) {
-            message.warning("Vui lòng nhập đầy đủ thông tin đăng nhập.");
+            setErrorMessage("Vui lòng nhập đầy đủ thông tin đăng nhập.");
             return;
         }
 
@@ -28,21 +29,18 @@ export function LoginForm() {
             console.log("Login response:", res);
 
             if (res.success) {
-                // message.success("Đăng nhập thành công!");
-                window.showToast(
-                    `Đăng nhập thành công!`,
-                    "success"
-                );
-
-                // Điều hướng sau khi đăng nhập thành công
-                navigate("/admin/dashboard");
+                window.showToast("Đăng nhập thành công!", "success");
+                navigate("/");
             } else {
-                message.error(res.message || "Đăng nhập thất bại!");
+                const m = cleanErrorMessage(res.message || "Sai email hoặc mật khẩu.");
+                setErrorMessage(m);
             }
         } catch (error) {
             console.error("Error in login form:", error);
-            message.error("Không thể đăng nhập. Vui lòng thử lại sau!");
-        } finally {
+            const m = extractErrorMessage(error, "Đã xảy ra lỗi khi đăng nhập.");
+            setErrorMessage(m);
+        }
+        finally {
             setLoading(false);
         }
     };
@@ -52,7 +50,11 @@ export function LoginForm() {
             {/* Logo / Thương hiệu */}
             <div className="space-y-3">
                 <div className="flex items-center gap-2 mb-8">
-                    <Logo size={32} />
+                    <img
+                        src="/logo.png"
+                        alt="Logo"
+                        className="w-[100px] h-[100px] object-contain"
+                    />
                     <span className="text-xl font-semibold text-foreground">
                         HỆ THỐNG PHÂN PHỐI KHO SỮA
                     </span>
@@ -77,7 +79,7 @@ export function LoginForm() {
                         type="email"
                         placeholder="example@gmai.com"
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        onChange={(e) => { setEmail(e.target.value); setErrorMessage(""); }}
                         required
                         className="h-11"
                     />
@@ -101,30 +103,33 @@ export function LoginForm() {
                             type={showPassword ? "text" : "password"}
                             placeholder="Nhập mật khẩu của bạn"
                             value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                            onChange={(e) => { setPassword(e.target.value); setErrorMessage(""); }}
                             required
                             className="h-11 pr-10"
                         />
 
-                        {/* Eye toggle button */}
                         <button
                             type="button"
                             onClick={() => setShowPassword((s) => !s)}
                             aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
                             className="absolute inset-y-0 right-2 flex items-center px-2 text-muted-foreground hover:text-foreground"
                         >
-                            {/* single SVG with optional slash to avoid layout shift */}
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                                 <circle cx="12" cy="12" r="3" />
                                 {showPassword && (
-                                    // simple slash line across the icon when showing password (eye with slash)
                                     <line x1="3" y1="3" x2="21" y2="21" />
                                 )}
                             </svg>
                         </button>
                     </div>
                 </div>
+
+                {errorMessage && (
+                    <div className="text-sm text-red-600 mt-2">
+                        {errorMessage}
+                    </div>
+                )}
 
                 <Button
                     type="submit"

@@ -1,4 +1,5 @@
 ﻿using Azure.Core;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MilkDistributionWarehouse.Models.DTOs;
@@ -29,33 +30,45 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPost("Goods")]
-        public async Task<IActionResult> GetGoodss([FromBody]PagedRequest request)
+        [Authorize(Roles = "Sale Manager, Sales Representative")]
+        public async Task<IActionResult> GetGoodss([FromBody] PagedRequest request)
         {
-            var(msg, goodss) = await _goodsService.GetGoods(request);
-            if(!string.IsNullOrEmpty(msg)) 
+            var (msg, goodss) = await _goodsService.GetGoods(request);
+            if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<PageResult<GoodsDto>>.ToResultOk(goodss);
         }
 
         [HttpGet("GoodsByGoodsId/{goodsId}")]
-        public  async Task<IActionResult> GoodsByGoodsId(int goodsId)
+        [Authorize(Roles = "Sale Manager, Sales Representative")]
+        public async Task<IActionResult> GoodsByGoodsId(int goodsId)
         {
-            var(msg, goodsDetail) = await _goodsService.GetGoodsByGoodsId(goodsId);
+            var (msg, goodsDetail) = await _goodsService.GetGoodsByGoodsId(goodsId);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<GoodsDetail>.ToResultOk(goodsDetail);
         }
 
         [HttpPost("Create")]
-        public async Task<IActionResult> CreateGoods([FromBody]GoodsCreate create)
+        [Authorize(Roles = "Sale Manager")]
+        public async Task<IActionResult> CreateGoods([FromBody] GoodsCreate create)
         {
-            var(msg, goods) = await _goodsService.CreateGoods(create);
+            var (msg, goods) = await _goodsService.CreateGoods(create);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<GoodsDto>.ToResultOk(goods);
         }
+        [HttpPost("CreateBulk")]
+        public async Task<IActionResult> CreateGoodsBulk([FromBody] GoodsBulkCreate create)
+        {
+            var (msg, goods) = await _goodsService.CreateGoodsBulk(create);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<GoodsBulkdResponse>.ToResultOk(goods);
+        }
 
         [HttpPut("Update")]
+        [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> UpdateGoods([FromBody] GoodsUpdate update)
         {
             var(msg, goods) = await _goodsService.UpdateGoods_1(update);
@@ -65,6 +78,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpDelete("Delete/{goodsId}")]
+        [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> DeleteGoods(int goodsId)
         {
             var (msg, goods) = await _goodsService.DeleteGoods(goodsId);
@@ -74,6 +88,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPut("UpdateStatus")]
+        [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> UpdateStatus(GoodsUpdateStatus update)
         {
             var (msg, goods) = await _goodsService.UpdateGoodsStatus(update);

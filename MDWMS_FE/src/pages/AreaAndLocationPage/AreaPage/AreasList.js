@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Button } from "antd";
+import { Button } from "../../../components/ui/button";
 import { getAreas, deleteArea, getAreaDetail, updateAreaStatus } from "../../../services/AreaServices";
-import { Edit, Trash2, ChevronDown, Plus, Eye, ArrowUpDown, ArrowDown, ArrowUp } from "lucide-react";
+import { Edit, Trash2, ChevronDown, Plus, Eye, ArrowUpDown, ArrowDown, ArrowUp, Folder } from "lucide-react";
 import DeleteModal from "../../../components/Common/DeleteModal";
 import SearchFilterToggle from "../../../components/Common/SearchFilterToggle";
 import Pagination from "../../../components/Common/Pagination";
@@ -14,6 +14,9 @@ import { extractErrorMessage } from "../../../utils/Validation";
 import { ModalAreaDetail } from "./ViewAreaModal";
 import StatsCards from "../../../components/Common/StatsCards";
 import { StatusToggle } from "../../../components/Common/SwitchToggle/StatusToggle";
+import EmptyState from "../../../components/Common/EmptyState";
+import PermissionWrapper from "../../../components/Common/PermissionWrapper";
+import { PERMISSIONS } from "../../../utils/permissions";
 
 const AreaLists = () => {
     const [areas, setAreas] = useState([]);
@@ -43,12 +46,12 @@ const AreaLists = () => {
     const [showStatusFilter, setShowStatusFilter] = useState(false);
     const [sortField, setSortField] = useState("");
     const [sortAscending, setSortAscending] = useState(true);
-    const searchQueryRef = useRef("");
     const [areaDetail, setAreaDetail] = useState(null);
     const [showViewModal, setShowViewModal] = useState(false);
     const [itemToView, setItemToView] = useState(null);
     const [loadingDetail, setLoadingDetail] = useState(false);
     const [showPageSizeFilter, setShowPageSizeFilter] = useState(false);
+
 
 
     // Fetch total stats (không filter)
@@ -89,8 +92,11 @@ const AreaLists = () => {
                 pageSize,
                 search: params.search,
                 filters: params.filters,
-                sortField: params.sortField || "",        // thêm dòng này
-                sortOrder: params.sortOrder || ""         // thêm dòng này
+                // Align with common list components
+                sortField: params.sortField || "",
+                sortAscending: typeof params.sortAscending === 'boolean' ? params.sortAscending : undefined,
+                // Backward compatibility if API expects sortOrder
+                sortOrder: typeof params.sortAscending === 'boolean' ? (params.sortAscending ? 'asc' : 'desc') : (params.sortOrder || "")
             });
 
             const payload = res ?? {};
@@ -114,7 +120,12 @@ const AreaLists = () => {
         }
     };
 
+    const didMountRef = useRef(false);
+    const skipFirstSearchRef = useRef(true);
+
     useEffect(() => {
+        if (didMountRef.current) return; // Guard against React 18 StrictMode double-invoke in dev
+        didMountRef.current = true;
         fetchAreas(pagination.current, pagination.pageSize);
         fetchTotalStats(); // Load tổng stats
     }, []);
@@ -136,28 +147,27 @@ const AreaLists = () => {
         }
     }, [showStatusFilter, showPageSizeFilter]);
 
-    // Search input change handler
-    const handleSearchInputChange = (e) => {
-        const value = e.target.value;
-        setSearchQuery(value);
-        searchQueryRef.current = value;
-    };
-
-    // Debounced search effect
+    // Debounced search effect; skip first run to avoid duplicate with initial fetch
     useEffect(() => {
+        if (skipFirstSearchRef.current) {
+            skipFirstSearchRef.current = false;
+            return;
+        }
         const timeoutId = setTimeout(() => {
             setSearchLoading(true);
             fetchAreas(1, pagination.pageSize, {
                 search: searchQuery || "",
                 filters: {
                     status: statusFilter ? Number(statusFilter) : undefined
-                }
+                },
+                sortField,
+                sortAscending
             });
             setPagination((p) => ({ ...p, current: 1 }));
         }, 500);
 
         return () => clearTimeout(timeoutId);
-    }, [searchQuery, statusFilter]);
+    }, [searchQuery]);
 
     // Filter handlers
     const handleStatusFilter = (status) => {
@@ -167,7 +177,9 @@ const AreaLists = () => {
             search: searchQuery,
             filters: {
                 status: status ? Number(status) : undefined
-            }
+            },
+            sortField,
+            sortAscending
         });
         setPagination((p) => ({ ...p, current: 1 }));
     };
@@ -179,10 +191,20 @@ const AreaLists = () => {
             search: searchQuery,
             filters: {
                 status: undefined
-            }
+            },
+            sortField,
+            sortAscending
         });
         setPagination((p) => ({ ...p, current: 1 }));
     };
+
+    const handleClearAllFilters = () => {
+        setSearchQuery("")
+        setStatusFilter("")
+        setShowStatusFilter(false)
+    }
+
+    const clearAllFilters = handleClearAllFilters
 
     // Page handlers
     const handlePageChange = (newPage) => {
@@ -191,7 +213,9 @@ const AreaLists = () => {
             search: searchQuery,
             filters: {
                 status: statusFilter ? Number(statusFilter) : undefined
-            }
+            },
+            sortField,
+            sortAscending
         });
     };
 
@@ -201,17 +225,44 @@ const AreaLists = () => {
             search: searchQuery,
             filters: {
                 status: statusFilter ? Number(statusFilter) : undefined
-            }
+            },
+            sortField,
+            sortAscending
         });
     };
 
     // Sort handler
     const handleSort = (field) => {
         if (sortField === field) {
-            setSortAscending(!sortAscending);
+            if (sortAscending === true) {
+                setSortAscending(false);
+                fetchAreas(pagination.current, pagination.pageSize, {
+                    search: searchQuery,
+                    filters: { status: statusFilter ? Number(statusFilter) : undefined },
+                    sortField: field,
+                    sortAscending: false,
+                });
+            } else {
+                // Lần 3: bỏ sort
+                setSortField("");
+                setSortAscending(true);
+                fetchAreas(pagination.current, pagination.pageSize, {
+                    search: searchQuery,
+                    filters: { status: statusFilter ? Number(statusFilter) : undefined },
+                    sortField: "",
+                    sortAscending: undefined,
+                });
+            }
         } else {
-            setSortField(field)
-            setSortAscending(true)
+            // Lần đầu click cột khác → sort asc
+            setSortField(field);
+            setSortAscending(true);
+            fetchAreas(pagination.current, pagination.pageSize, {
+                search: searchQuery,
+                filters: { status: statusFilter ? Number(statusFilter) : undefined },
+                sortField: field,
+                sortAscending: true,
+            });
         }
     }
 
@@ -234,7 +285,9 @@ const AreaLists = () => {
             search: searchQuery,
             filters: {
                 status: statusFilter ? Number(statusFilter) : undefined
-            }
+            },
+            sortField,
+            sortAscending
         });
         fetchTotalStats(); // Cập nhật tổng stats
     };
@@ -248,7 +301,9 @@ const AreaLists = () => {
             search: searchQuery,
             filters: {
                 status: statusFilter ? Number(statusFilter) : undefined
-            }
+            },
+            sortField,
+            sortAscending
         });
         fetchTotalStats(); // Cập nhật tổng stats
     };
@@ -299,21 +354,28 @@ const AreaLists = () => {
 
             const response = await getAreaDetail(area.areaId)
             // console.log("API Response Area:", response)
+            // console.log("API Response Area:", response)
 
             if (response && response.data) {
                 const areaDetailData = {
+                    ...area,
+                    ...response.data,
                     ...area,
                     ...response.data
                 }
                 setAreaDetail(areaDetailData)
                 // console.log("Area detail set:", areaDetailData)
+                // console.log("Area detail set:", areaDetailData)
             } else {
                 setAreaDetail(area)
+                // console.log("Using fallback area data:", area)
                 // console.log("Using fallback area data:", area)
             }
         } catch (error) {
             // console.error("Error loading area detail:", error)
+            // console.error("Error loading area detail:", error)
             setAreaDetail(area)
+            // console.log("Using fallback area data due to error:", area)
             // console.log("Using fallback area data due to error:", area)
         } finally {
             setLoadingDetail(false)
@@ -337,7 +399,10 @@ const AreaLists = () => {
                 filters: {
                     status: statusFilter ? Number(statusFilter) : undefined,
                 },
+                sortField,
+                sortAscending
             });
+            fetchTotalStats();
             fetchTotalStats();
         } catch (error) {
             // console.error("Error deleting area:", error);
@@ -357,13 +422,15 @@ const AreaLists = () => {
                         <h1 className="text-2xl font-bold text-slate-600">Quản lý Khu vực</h1>
                         <p className="text-slate-600 mt-1">Quản lý các khu vực lưu trữ trong hệ thống</p>
                     </div>
-                    <Button
-                        className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
-                        onClick={handleOpenCreate}
-                    >
-                        <Plus className="mr-2 h-4 w-4 text-white" />
-                        Thêm khu vực
-                    </Button>
+                    <PermissionWrapper requiredPermission={PERMISSIONS.AREA_CREATE}>
+                        <Button
+                            className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
+                            onClick={handleOpenCreate}
+                        >
+                            <Plus className="mr-2 h-4 w-4 text-white" />
+                            Thêm khu vực
+                        </Button>
+                    </PermissionWrapper>
                 </div>
 
                 {/* Stats Cards */}
@@ -381,7 +448,7 @@ const AreaLists = () => {
                     <SearchFilterToggle
                         searchQuery={searchQuery}
                         setSearchQuery={setSearchQuery}
-                        searchPlaceholder="Tìm kiếm theo mã khu vực..."
+                        searchPlaceholder="Tìm kiếm theo tên, mã khu vực"
                         statusFilter={statusFilter}
                         setStatusFilter={setStatusFilter}
                         showStatusFilter={showStatusFilter}
@@ -419,10 +486,38 @@ const AreaLists = () => {
                                                 STT
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                                                Tên khu vực
+                                                <div
+                                                    className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                                    onClick={() => handleSort("areaName")}
+                                                >
+                                                    <span>Tên khu vực</span>
+                                                    {sortField === "areaName" ? (
+                                                        sortAscending ? (
+                                                            <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                        ) : (
+                                                            <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                        )
+                                                    ) : (
+                                                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                    )}
+                                                </div>
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                                                Mã khu vực
+                                                <div
+                                                    className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                                    onClick={() => handleSort("areaCode")}
+                                                >
+                                                    <span>Mã khu vực</span>
+                                                    {sortField === "areaCode" ? (
+                                                        sortAscending ? (
+                                                            <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                        ) : (
+                                                            <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                        )
+                                                    ) : (
+                                                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                    )}
+                                                </div>
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                                                 Mô tả
@@ -445,60 +540,90 @@ const AreaLists = () => {
                                                     <TableCell className="px-6 py-4 text-slate-600 font-medium">
                                                         {index + 1}
                                                     </TableCell>
-                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">
-                                                        {area?.areaName || "—"}
-                                                    </TableCell>
-                                                    <TableCell className="font-medium text-slate-900 px-6 py-3 text-left">
-                                                        {area?.areaCode || ''}
-                                                    </TableCell>
-                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">
-                                                        {area?.description || "—"}
-                                                    </TableCell>
-                                                    <TableCell className="px-6 py-3 text-center">
+                                                    <TableCell className="px-6 py-4 text-slate-700">{area?.areaName || "—"}</TableCell>
+                                                    <TableCell className="px-6 py-4 text-slate-700 font-medium">{area?.areaCode || ''}</TableCell>
+                                                    <TableCell className="px-6 py-4 text-slate-700">{area?.description || "—"}</TableCell>
+                                                    <TableCell className="px-6 py-4 text-center">
                                                         <div className="flex justify-center">
-                                                            <StatusToggle
-                                                                status={area?.status}
-                                                                onStatusChange={handleStatusChange}
-                                                                supplierId={area?.areaId}
-                                                                supplierName={area?.areaName}
-                                                                entityType="khu vực"
-                                                            />
+                                                            <PermissionWrapper 
+                                                                requiredPermission={PERMISSIONS.AREA_UPDATE}
+                                                                hide={false}
+                                                                fallback={
+                                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center justify-center gap-1 ${
+                                                                        area?.status === 1 
+                                                                            ? 'bg-green-100 text-green-800' 
+                                                                            : 'bg-red-100 text-red-800'
+                                                                    }`}>
+                                                                        <span className={`w-2 h-2 rounded-full ${
+                                                                            area?.status === 1 ? 'bg-green-500' : 'bg-red-500'
+                                                                        }`}></span>
+                                                                        {area?.status === 1 ? 'Hoạt động' : 'Ngừng hoạt động'}
+                                                                    </span>
+                                                                }
+                                                            >
+                                                                <StatusToggle
+                                                                    status={area?.status}
+                                                                    onStatusChange={handleStatusChange}
+                                                                    supplierId={area?.areaId}
+                                                                    supplierName={area?.areaName}
+                                                                    entityType="danh mục"
+                                                                />
+                                                            </PermissionWrapper>
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className="px-6 py-4 text-center">
                                                         <div className="flex items-center justify-center space-x-1">
-                                                            <button
-                                                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                                title="Xem chi tiết"
-                                                                onClick={() => handleViewClick(area)}
-                                                            >
-                                                                <Eye className="h-4 w-4 text-orange-500" />
-                                                            </button>
-                                                            <button
-                                                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                                title="Chỉnh sửa"
-                                                                onClick={() => handleOpenEdit(area)}
-                                                            >
-                                                                <Edit className="h-4 w-4 text-orange-500" />
-                                                            </button>
-                                                            <button
-                                                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                                title="Xóa"
-                                                                onClick={() => {
-                                                                    setItemToDelete(area);
-                                                                    setShowDeleteModal(true);
-                                                                }}
-                                                            >
-                                                                <Trash2 className="h-4 w-4 text-red-500" />
-                                                            </button>
+                                                            <PermissionWrapper requiredPermission={PERMISSIONS.AREA_VIEW}>
+                                                                <button
+                                                                    className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                                    title="Xem chi tiết"
+                                                                    onClick={() => handleViewClick(area)}
+                                                                >
+                                                                    <Eye className="h-4 w-4 text-orange-500" />
+                                                                </button>
+                                                            </PermissionWrapper>
+                                                            <PermissionWrapper requiredPermission={PERMISSIONS.AREA_UPDATE}>
+                                                                <button
+                                                                    className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                                    title="Chỉnh sửa"
+                                                                    onClick={() => handleOpenEdit(area)}
+                                                                >
+                                                                    <Edit className="h-4 w-4 text-orange-500" />
+                                                                </button>
+                                                            </PermissionWrapper>
+                                                            <PermissionWrapper requiredPermission={PERMISSIONS.AREA_DELETE}>
+                                                                <button
+                                                                    className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                                    title="Xóa"
+                                                                    onClick={() => {
+                                                                        setItemToDelete(area);
+                                                                        setShowDeleteModal(true);
+                                                                    }}
+                                                                >
+                                                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                                                </button>
+                                                            </PermissionWrapper>
                                                         </div>
                                                     </TableCell>
                                                 </TableRow>
                                             ))
                                         ) : (
                                             <TableRow>
-                                                <TableCell colSpan={6} className="text-center py-12 text-slate-500">
-                                                    Không tìm thấy khu vực nào
+                                                <TableCell colSpan={6}>
+                                                    <div className="flex flex-col items-center justify-center text-center min-h-[260px]">
+                                                        <EmptyState
+                                                            icon={Folder}
+                                                            title="Không tìm khu vực nào"
+                                                            description={
+                                                                searchQuery || statusFilter
+                                                                    ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
+                                                                    : "Chưa có khu vực nào trong hệ thống"
+                                                            }
+                                                            actionText="Xóa bộ lọc"
+                                                            onAction={clearAllFilters}
+                                                            showAction={!!(searchQuery || statusFilter)}
+                                                        />
+                                                    </div>
                                                 </TableCell>
                                             </TableRow>
                                         )}
@@ -511,112 +636,52 @@ const AreaLists = () => {
 
                 {/* Pagination */}
                 {!loading && !searchLoading && pagination.total > 0 && (
-                    <Card className="bg-gray-50">
-                        <CardContent className="pt-6">
-                            <div className="flex items-center justify-between">
-                                <div className="text-sm text-slate-600">
-                                    Hiển thị {((pagination.current - 1) * pagination.pageSize) + 1} - {Math.min(pagination.current * pagination.pageSize, pagination.total)} trong tổng số {pagination.total} khu vực
-                                </div>
-
-                                <div className="flex items-center space-x-4">
-                                    <div className="flex items-center space-x-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="h-[38px]"
-                                            onClick={() => {
-                                                if (pagination.current > 1) {
-                                                    handlePageChange(pagination.current - 1);
-                                                }
-                                            }}
-                                            disabled={pagination.current <= 1}
-                                        >
-                                            Trước
-                                        </Button>
-                                        <span className="text-sm text-slate-600">
-                                            Trang {pagination.current} / {Math.ceil(pagination.total / pagination.pageSize)}
-                                        </span>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="h-[38px]"
-                                            onClick={() => {
-                                                if (pagination.current < Math.ceil(pagination.total / pagination.pageSize)) {
-                                                    handlePageChange(pagination.current + 1);
-                                                }
-                                            }}
-                                            disabled={pagination.current >= Math.ceil(pagination.total / pagination.pageSize)}
-                                        >
-                                            Sau
-                                        </Button>
-                                    </div>
-
-                                    {/* Page Size Selector */}
-                                    <div className="flex items-center space-x-2">
-                                        <span className="text-sm text-slate-600">Hiển thị:</span>
-                                        <div className="relative page-size-filter-dropdown">
-                                            <button
-                                                onClick={() => setShowPageSizeFilter(!showPageSizeFilter)}
-                                                className="flex items-center space-x-2 px-3 py-2 h-[38px] text-sm border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                                            >
-                                                <span>{pagination.pageSize}</span>
-                                                <ChevronDown className="h-4 w-4" />
-                                            </button>
-
-                                            {showPageSizeFilter && (
-                                                <div className="absolute bottom-full right-0 mb-1 w-20 bg-gray-50 rounded-md shadow-lg border z-10">
-                                                    <div className="py-1">
-                                                        {[10, 20, 30, 40].map((size) => (
-                                                            <button
-                                                                key={size}
-                                                                onClick={() => handlePageSizeChange(size)}
-                                                                className={`w-full text-left px-3 py-2 h-[38px] text-sm hover:bg-slate-100 flex items-center justify-between ${pagination.pageSize === size ? 'bg-[#d97706] text-white' : 'text-slate-700'
-                                                                    }`}
-                                                            >
-                                                                {size}
-                                                                {pagination.pageSize === size && <span className="text-white">✓</span>}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <span className="text-sm text-slate-600">/ Trang</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <Pagination
+                        current={pagination.current}
+                        pageSize={pagination.pageSize}
+                        total={pagination.total}
+                        onPageChange={handlePageChange}
+                        onPageSizeChange={handlePageSizeChange}
+                        showPageSize={true}
+                        pageSizeOptions={[10, 20, 30, 40]}
+                        className="bg-gray-50"
+                    />
                 )}
             </div>
 
             {/* Create Area Modal */}
-            <CreateAreaModal
-                isOpen={showCreateModal}
-                onClose={() => setShowCreateModal(false)}
-                onSuccess={handleCreateSuccess}
-            />
+            <PermissionWrapper requiredPermission={PERMISSIONS.AREA_CREATE}>
+                <CreateAreaModal
+                    isOpen={showCreateModal}
+                    onClose={() => setShowCreateModal(false)}
+                    onSuccess={handleCreateSuccess}
+                />
+            </PermissionWrapper>
 
             {/* Update Area Modal */}
-            <UpdateAreaModal
-                isOpen={showUpdateModal}
-                onClose={handleUpdateCancel}
-                onSuccess={handleUpdateSuccess}
-                areaId={updateAreaId}
-                areaData={editingArea}
-            />
+            <PermissionWrapper requiredPermission={PERMISSIONS.AREA_UPDATE}>
+                <UpdateAreaModal
+                    isOpen={showUpdateModal}
+                    onClose={handleUpdateCancel}
+                    onSuccess={handleUpdateSuccess}
+                    areaId={updateAreaId}
+                    areaData={editingArea}
+                />
+            </PermissionWrapper>
 
-            <DeleteModal
-                isOpen={showDeleteModal}
-                onClose={() => setShowDeleteModal(false)}
-                onConfirm={handleDeleteConfirm}
-                itemName={itemToDelete?.areaCode || ""}
-            />
+            <PermissionWrapper requiredPermission={PERMISSIONS.AREA_DELETE}>
+                <DeleteModal
+                    isOpen={showDeleteModal}
+                    onClose={() => setShowDeleteModal(false)}
+                    onConfirm={handleDeleteConfirm}
+                    itemName={itemToDelete?.areaCode || ""}
+                />
+            </PermissionWrapper>
 
             {/* View Area Detail Modal */}
-            {showViewModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <PermissionWrapper requiredPermission={PERMISSIONS.AREA_VIEW}>
+                {showViewModal && (
+                    <div >
                         {loadingDetail ? (
                             <Loading size="large" text="Đang tải chi tiết khu vực..." />
                         ) : areaDetail ? (
@@ -630,8 +695,8 @@ const AreaLists = () => {
                             </div>
                         )}
                     </div>
-                </div>
-            )}
+                )}
+            </PermissionWrapper>
         </div>
     );
 };

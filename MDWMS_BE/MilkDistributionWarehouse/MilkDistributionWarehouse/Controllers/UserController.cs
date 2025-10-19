@@ -26,6 +26,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<UserProfileDto>.ToResultOk(userProfile);
         }
 
+        [Authorize(Roles = "Administrator, Business Owner")]
         [HttpGet("GetUserDetail/{id}")]
         public async Task<IActionResult> GetUserDetail(int? id)
         {
@@ -35,6 +36,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<UserDetailDto>.ToResultOk(userDetail);
         }
 
+        [Authorize(Roles = "Administrator, Business Owner")]
         [HttpPost("GetUserList")]
         public async Task<IActionResult> GetUserList(PagedRequest request)
         {
@@ -44,6 +46,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<PageResult<UserDto>>.ToResultOk(users);
         }
 
+        [Authorize(Roles = "Administrator, Business Owner")]
         [HttpPost("CreateUser")]
         public async Task<IActionResult> CreateUser(UserCreateDto userCreate)
         {
@@ -53,6 +56,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<UserDto>.ToResultOk(user);
         }
 
+        [Authorize(Roles = "Administrator, Business Owner")]
         [HttpPut("UpdateUser")]
         public async Task<IActionResult> UpdateUser(UserUpdateDto userUpdate)
         {
@@ -62,6 +66,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<UserDto>.ToResultOk(user);
         }
 
+        [Authorize(Roles = "Administrator, Business Owner")]
         [HttpPut("UpdateUserStatus")]
         public async Task<IActionResult> UpdateUserStatus(UserStatusUpdateDto userUpdate)
         {
@@ -71,6 +76,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<string>.ToResultOkMessage();
         }
 
+        [Authorize(Roles = "Administrator, Business Owner")]
         [HttpDelete("DeleteUser/{id}")]
         public async Task<IActionResult> DeleteUser(int? id)
         {

@@ -29,6 +29,7 @@ namespace MilkDistributionWarehouse.Repositories
         {
             return _context.Batchs
                 .Include(b => b.Goods)
+                .Where(b => b.Status != CommonStatus.Deleted)
                 .OrderByDescending(b => b.CreateAt)
                 .AsNoTracking();
         }

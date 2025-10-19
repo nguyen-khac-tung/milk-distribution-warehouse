@@ -1,7 +1,6 @@
 
-import Layout from "../components/layout/Layout";
 import NotFoundPage from "../pages/NotFoundPage";
-import Dashboard from "../pages/AccountPage/Dashboard";
+import Dashboard from "../pages/AccountPage/Dashboard/Dashboard";
 import Products from "../pages/GoodPage/GoodsList";
 import Reports from "../pages/Reports";
 import Settings from "../pages/Settings";
@@ -19,6 +18,10 @@ import RetailerList from "../pages/SupplierAndRetailerPage/RetailerPage/Retailer
 import BatchList from "../pages/BatchPage/BatchList";
 import VerifyOtpPage from "../pages/AuthenticationPage/VerifyOtpPage";
 import ResetPasswordPage from "../pages/AuthenticationPage/ResetPasswordPage";
+import UnauthorizedPage from "../pages/UnauthorizedPage";
+import ProtectedRoute from "../components/Common/ProtectedRoute";
+import RoleBasedRedirect from "../components/Common/RoleBasedRedirect";
+import { PERMISSIONS } from "../utils/permissions";
 
 export const routes = [
     {
@@ -38,11 +41,14 @@ export const routes = [
         page: ResetPasswordPage,
     },
     {
+        path: "/unauthorized",
+        page: UnauthorizedPage,
+    },
+    {
         path: "/",
         page: () => {
             if (localStorage.getItem("accessToken")) {
-                window.location.href = "/admin/dashboard";
-                return null;
+                return <RoleBasedRedirect />;
             } else {
                 window.location.href = "/login";
                 return null;
@@ -50,125 +56,118 @@ export const routes = [
         },
     },
     {
-        path: "/admin/dashboard",
+        path: "/dashboard",
         page: () => (
-            <Layout>
+            <ProtectedRoute requiredPermission={PERMISSIONS.DASHBOARD_VIEW}>
                 <Dashboard />
-            </Layout>
+            </ProtectedRoute>
         ),
         isShowHeader: true,
     },
     {
-        path: "/admin/products",
+        path: "/accounts",
         page: () => (
-            <Layout>
-                <Products />
-            </Layout>
-        ),
-        isShowHeader: true,
-    },
-    {
-        path: "/admin/reports",
-        page: () => (
-            <Layout>
-                <Reports />
-            </Layout>
-        ),
-        isShowHeader: true,
-    },
-    {
-        path: "/admin/settings",
-        page: () => (
-            <Layout>
-                <Settings />
-            </Layout>
-        ),
-        isShowHeader: true,
-    },
-    {
-        path: "/admin/areas",
-        page: () => (
-            <Layout>
-                <Areas />
-            </Layout>
-        ),
-        isShowHeader: true,
-    },
-    {
-        path: "/admin/locations",
-        page: () => (
-            <Layout>
-                <Locations />
-            </Layout>
-        ),
-        isShowHeader: true,
-    },
-    {
-        path: "/admin/storage-condition",
-        page: () => (
-            <Layout>
-                <StorageCondition />
-            </Layout>
-        ),
-        isShowHeader: true,
-    },
-    {
-        path: "/admin/batch",
-        page: () => (
-            <Layout>
-                <BatchList />
-            </Layout>
-        ),
-        isShowHeader: true,
-    },
-    {
-        path: "/admin/accounts",
-        page: () => (
-            <Layout>
+            <ProtectedRoute requiredPermission={PERMISSIONS.ACCOUNT_VIEW}>
                 <Accounts />
-            </Layout>
+            </ProtectedRoute>
         ),
         isShowHeader: true,
     },
     {
-        path: "/sales-manager/categorys",
+        path: "/categories",
         page: () => (
-            <Layout>
+            <ProtectedRoute requiredPermission={PERMISSIONS.CATEGORY_VIEW}>
                 <CategoryList />
-            </Layout >
+            </ProtectedRoute>
         ),
     },
     {
-        path: "/sales-manager/unitMeasures",
+        path: "/unit-measures",
         page: () => (
-            <Layout>
+            <ProtectedRoute requiredPermission={PERMISSIONS.UNIT_MEASURE_VIEW}>
                 <UnitMeasureList />
-            </Layout>
+            </ProtectedRoute>
         ),
     },
     {
-        path: "/sales-manager/goods",
+        path: "/goods",
         page: () => (
-            <Layout>
+            <ProtectedRoute requiredPermission={PERMISSIONS.GOODS_VIEW}>
                 <GoodsList />
-            </Layout>
+            </ProtectedRoute>
         ),
     },
     {
-        path: "/sales-manager/suppliers",
+        path: "/batches",
         page: () => (
-            <Layout>
+            <ProtectedRoute requiredPermission={PERMISSIONS.BATCH_VIEW}>
+                <BatchList />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/suppliers",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.SUPPLIER_VIEW}>
                 <SupplierList />
-            </Layout>
+            </ProtectedRoute>
         ),
+        isShowHeader: true,
     },
     {
-        path: "/sales-manager/retailers",
+        path: "/retailers",
         page: () => (
-            <Layout>
+            <ProtectedRoute requiredPermission={PERMISSIONS.RETAILER_VIEW}>
                 <RetailerList />
-            </Layout>
+            </ProtectedRoute>
         ),
+        isShowHeader: true,
+    },
+    {
+        path: "/areas",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.AREA_VIEW}>
+                <Areas />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/locations",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.LOCATION_VIEW}>
+                <Locations />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/storage-conditions",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.STORAGE_CONDITION_VIEW}>
+                <StorageCondition />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/reports",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.REPORT_VIEW}>
+                <Reports />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/settings",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.SETTINGS_VIEW}>
+                <Settings />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
     },
     { path: "*", page: NotFoundPage },
 ];

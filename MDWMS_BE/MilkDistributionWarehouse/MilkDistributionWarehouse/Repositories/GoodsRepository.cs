@@ -30,6 +30,8 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> VerifyStorageConditionUsage(int storageConditionId);
         Task<bool> HasActiveGoods(int supplierId);
         Task<bool> IsGoodsActiveOrInActive(int supplierId);
+        Task<List<string>> GetExistingGoodsCode(List<string> goodsCode);
+        Task<int> CreateGoodsBulk(List<Good> goods);
     }
     public class GoodsRepository : IGoodsRepository
     {
@@ -110,7 +112,7 @@ namespace MilkDistributionWarehouse.Repositories
 
             var checkPurchaseOrder = await IsGoodsUsedInPurchaseOrderWithExcludedStatusesAsync(goodsId, PurchaseOrderStatus.Draft);
 
-            var checkSalesOrder =  await IsGoodsUsedInSalesOrderWithExcludedStatusesAsync(goodsId, SalesOrderStatus.Draft);
+            var checkSalesOrder = await IsGoodsUsedInSalesOrderWithExcludedStatusesAsync(goodsId, SalesOrderStatus.Draft);
 
             return checkBatch || checkPurchaseOrder || checkSalesOrder;
         }
@@ -188,6 +190,27 @@ namespace MilkDistributionWarehouse.Repositories
         {
             return await _warehouseContext.Goods
                 .AnyAsync(g => g.SupplierId == supplierId && (g.Status == CommonStatus.Active || g.Status == CommonStatus.Inactive));
+        }
+
+        public async Task<List<string>> GetExistingGoodsCode(List<string> goodsCode)
+        {
+            return await _warehouseContext.Goods
+                .Where(g => goodsCode.Contains(g.GoodsCode))
+                .Select(g => g.GoodsCode)
+                .ToListAsync();
+        }
+
+        public async Task<int> CreateGoodsBulk(List<Good> goods)
+        {
+            try
+            {
+                await _warehouseContext.AddRangeAsync(goods);
+                return await _warehouseContext.SaveChangesAsync();
+            }
+            catch
+            {
+                return 0;
+            }
         }
     }
 }

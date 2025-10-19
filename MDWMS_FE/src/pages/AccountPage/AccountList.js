@@ -9,9 +9,14 @@ import AccountStatsChart from "../../components/AccountComponents/AccountStatsCh
 import Pagination from "../../components/Common/Pagination"
 import EmptyState from "../../components/Common/EmptyState"
 import { StatusToggle } from "../../components/Common/SwitchToggle/StatusToggle"
-import { getUserList, updateUserStatus } from "../../services/AccountService"
+import { getUserList, updateUserStatus, deleteUser } from "../../services/AccountService"
+import { extractErrorMessage } from "../../utils/Validation"
 import CreateAccountModal from "./CreateAccountModal"
+import UpdateAccountModal from "./UpdateAccountModal"
 import { AccountDetail } from "./ViewAccountModal"
+import DeleteModal from "../../components/Common/DeleteModal"
+import PermissionWrapper from "../../components/Common/PermissionWrapper"
+import { PERMISSIONS } from "../../utils/permissions"
 import {
   Plus,
   Eye,
@@ -103,7 +108,11 @@ export default function AdminPage() {
   })
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false)
   const [selectedUserId, setSelectedUserId] = useState(null)
+  const [userToUpdate, setUserToUpdate] = useState(null)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [userToDelete, setUserToDelete] = useState(null)
 
   const handleStatusFilter = (value) => {
     setStatusFilter(value)
@@ -141,107 +150,179 @@ export default function AdminPage() {
       console.log(`Updating user ${id} (${name}) status to ${newStatus}`)
       const response = await updateUserStatus(id, newStatus)
       if (response && response.success !== false) {
-        setAllEmployees(prev =>
-          prev.map(emp =>
-            (emp.userId === id || emp.id === id)
-              ? { ...emp, status: newStatus }
-              : emp
-          )
-        )
-        setAllUsersForStats(prev =>
-          prev.map(emp =>
-            (emp.userId === id || emp.id === id)
-              ? { ...emp, status: newStatus }
-              : emp
-          )
-        )
         const statusText = newStatus === 1 ? "kích hoạt" : "ngừng hoạt động"
         window.showToast(`Đã ${statusText} người dùng "${name}" thành công`, "success")
         console.log(`Successfully updated user ${name} status to ${newStatus}`)
-      } else {
-        console.error(`Failed to update user ${name} status:`, response?.message)
-        const errorMessage = response?.message || "Có lỗi xảy ra khi cập nhật trạng thái người dùng"
-        window.showToast(errorMessage, "error")
-      }
-    } catch (error) {
-      console.error("Error updating user status:", error)
-      const errorMessage = error?.response?.data?.message || "Có lỗi xảy ra khi cập nhật trạng thái người dùng"
-      window.showToast(errorMessage, "error")
-    }
-  }
-  useEffect(() => {
-    const fetchAllUsersForStats = async () => {
-      try {
-        const response = await getUserList({
-          pageNumber: 1,
-          pageSize: 1000,
-          search: "",
-          sortField: "",
-          sortAscending: true
-        })
 
-        if (response?.data?.items) {
-          setAllUsersForStats(response.data.items)
+        // Refresh all users for stats
+        fetchAllUsersForStats()
 
-          const uniqueRoles = new Set()
-          response.data.items.forEach(user => {
-            if (user.roles && Array.isArray(user.roles)) {
-              user.roles.forEach(role => uniqueRoles.add(role))
-            }
-          })
-          setAvailableRoles(Array.from(uniqueRoles))
-        } else {
-          setAllUsersForStats([])
-          setAvailableRoles([])
-        }
-      } catch (err) {
-        console.error("Error fetching all users for stats:", err)
-        setAllUsersForStats([])
-        setAvailableRoles([])
-      }
-    }
-
-    fetchAllUsersForStats()
-  }, [])
-
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-
-        const response = await getUserList({
+        // Refresh data after status change
+        fetchData({
           pageNumber: pagination.pageNumber,
           pageSize: pagination.pageSize,
           search: searchQuery,
           sortField: sortColumn || "",
           sortAscending: sortDirection === "asc"
         })
-
-        if (response?.data?.items) {
-          setAllEmployees(response.data.items)
-          setPagination(prev => ({
-            ...prev,
-            totalCount: response.data.totalCount || 0
-          }))
-        } else {
-          setAllEmployees([])
-          setPagination(prev => ({
-            ...prev,
-            totalCount: 0
-          }))
-        }
-      } catch (err) {
-        console.error("Error fetching users:", err)
-        setError("Không thể tải danh sách người dùng")
-        setAllEmployees([])
-      } finally {
-        setLoading(false)
-        setSearchLoading(false)
+      } else {
+        console.error(`Failed to update user ${name} status:`, response?.message)
+        const errorMessage = extractErrorMessage({ response: { data: response } }, "Có lỗi xảy ra khi cập nhật trạng thái người dùng")
+        window.showToast(errorMessage, "error")
       }
+    } catch (error) {
+      console.error("Error updating user status:", error)
+      const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật trạng thái người dùng")
+      window.showToast(errorMessage, "error")
     }
+  }
 
-    fetchUsers()
+  // Handle update user
+  const handleUpdateClick = (user) => {
+    setUserToUpdate(user)
+    setIsUpdateModalOpen(true)
+  }
+
+  // Handle delete user
+  const handleDeleteClick = (user) => {
+    setUserToDelete(user)
+    setShowDeleteModal(true)
+  }
+
+  // Fetch data from API
+  const fetchData = async (searchParams = {}) => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      const response = await getUserList({
+        pageNumber: searchParams.pageNumber !== undefined ? searchParams.pageNumber : pagination.pageNumber,
+        pageSize: searchParams.pageSize !== undefined ? searchParams.pageSize : pagination.pageSize,
+        search: searchParams.search !== undefined ? searchParams.search : searchQuery,
+        sortField: searchParams.sortField || sortColumn || "",
+        sortAscending: searchParams.sortAscending !== undefined ? searchParams.sortAscending : sortDirection === "asc"
+      })
+
+      if (response?.data?.items) {
+        setAllEmployees(response.data.items)
+        setPagination(prev => ({
+          ...prev,
+          totalCount: response.data.totalCount || 0
+        }))
+      } else {
+        setAllEmployees([])
+        setPagination(prev => ({
+          ...prev,
+          totalCount: 0
+        }))
+      }
+    } catch (err) {
+      console.error("Error fetching users:", err)
+      setError("Không thể tải danh sách người dùng")
+      setAllEmployees([])
+    } finally {
+      setLoading(false)
+      setSearchLoading(false)
+    }
+  }
+
+  // Fetch all users for stats
+  const fetchAllUsersForStats = async () => {
+    try {
+      const response = await getUserList({
+        pageNumber: 1,
+        pageSize: 1000,
+        search: "",
+        sortField: "",
+        sortAscending: true
+      })
+
+      if (response?.data?.items) {
+        setAllUsersForStats(response.data.items)
+
+        const uniqueRoles = new Set()
+        response.data.items.forEach(user => {
+          if (user.roles && Array.isArray(user.roles)) {
+            user.roles.forEach(role => uniqueRoles.add(role))
+          }
+        })
+        setAvailableRoles(Array.from(uniqueRoles))
+      } else {
+        setAllUsersForStats([])
+        setAvailableRoles([])
+      }
+    } catch (err) {
+      console.error("Error fetching all users for stats:", err)
+      setAllUsersForStats([])
+      setAvailableRoles([])
+    }
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!userToDelete) return
+
+    try {
+      console.log(`Deleting user ${userToDelete.userId || userToDelete.id} (${userToDelete.fullName})`)
+      const response = await deleteUser(userToDelete.userId || userToDelete.id)
+
+      if (response && response.success !== false) {
+        window.showToast(`Đã xóa người dùng "${userToDelete.fullName}" thành công`, "success")
+        console.log(`Successfully deleted user ${userToDelete.fullName}`)
+
+        // Calculate if current page will be empty after deletion
+        const currentPageItemCount = allEmployees.length
+        const willPageBeEmpty = currentPageItemCount <= 1
+
+        // If current page will be empty and we're not on page 1, go to previous page
+        let targetPage = pagination.pageNumber
+        if (willPageBeEmpty && pagination.pageNumber > 1) {
+          targetPage = pagination.pageNumber - 1
+          setPagination(prev => ({ ...prev, pageNumber: targetPage }))
+        }
+
+        // Refresh all users for stats
+        fetchAllUsersForStats()
+
+        // Refresh data after deletion, keeping current page or going to previous page if needed
+        fetchData({
+          pageNumber: targetPage,
+          pageSize: pagination.pageSize,
+          search: searchQuery,
+          sortField: sortColumn || "",
+          sortAscending: sortDirection === "asc"
+        })
+      } else {
+        console.error(`Failed to delete user ${userToDelete.fullName}:`, response?.message)
+        const errorMessage = extractErrorMessage({ response: { data: response } }, "Có lỗi xảy ra khi xóa người dùng")
+        window.showToast(errorMessage, "error")
+      }
+    } catch (error) {
+      console.error("Error deleting user:", error)
+      const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi xóa người dùng")
+      window.showToast(errorMessage, "error")
+    } finally {
+      setShowDeleteModal(false)
+      setUserToDelete(null)
+    }
+  }
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false)
+    setUserToDelete(null)
+  }
+
+  useEffect(() => {
+    fetchAllUsersForStats()
+  }, [])
+
+  useEffect(() => {
+    fetchData({
+      pageNumber: pagination.pageNumber,
+      pageSize: pagination.pageSize,
+      search: searchQuery,
+      sortField: sortColumn || "",
+      sortAscending: sortDirection === "asc"
+    })
   }, [searchQuery, sortColumn, sortDirection, statusFilter, roleFilter, pagination.pageNumber, pagination.pageSize])
 
   // Handle search loading
@@ -364,35 +445,55 @@ export default function AdminPage() {
         </span>
       </TableCell>
       <TableCell className="px-6 py-4">
-        <StatusToggle
-          status={employee.status}
-          onStatusChange={handleStatusChange}
-          supplierId={employee.userId || employee.id}
-          supplierName={employee.fullName}
-          entityType="người dùng"
-        />
+        <PermissionWrapper
+          requiredPermission={PERMISSIONS.ACCOUNT_UPDATE}
+          fallback={
+            <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${employee.status === 1
+                ? 'bg-green-100 text-green-800 border border-green-200'
+                : 'bg-red-100 text-red-800 border border-red-200'
+              }`}>
+              {employee.status === 1 ? 'Hoạt động' : 'Ngừng hoạt động'}
+            </span>
+          }
+        >
+          <StatusToggle
+            status={employee.status}
+            onStatusChange={handleStatusChange}
+            supplierId={employee.userId || employee.id}
+            supplierName={employee.fullName}
+            entityType="người dùng"
+          />
+        </PermissionWrapper>
       </TableCell>
       <TableCell className="px-6 py-4">
         <div className="flex items-center justify-center space-x-1">
-          <button
-            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-            title="Xem chi tiết"
-            onClick={() => setSelectedUserId(employee.userId || employee.id)}
-          >
-            <Eye className="h-4 w-4 text-orange-500" />
-          </button>
-          <button
-            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-            title="Chỉnh sửa"
-          >
-            <Edit className="h-4 w-4 text-orange-500" />
-          </button>
-          <button
-            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-            title="Xóa"
-          >
-            <Trash2 className="h-4 w-4 text-red-500" />
-          </button>
+          <PermissionWrapper requiredPermission={PERMISSIONS.ACCOUNT_VIEW}>
+            <button
+              className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+              title="Xem chi tiết"
+              onClick={() => setSelectedUserId(employee.userId || employee.id)}
+            >
+              <Eye className="h-4 w-4 text-orange-500" />
+            </button>
+          </PermissionWrapper>
+          <PermissionWrapper requiredPermission={PERMISSIONS.ACCOUNT_UPDATE}>
+            <button
+              className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+              title="Chỉnh sửa"
+              onClick={() => handleUpdateClick(employee)}
+            >
+              <Edit className="h-4 w-4 text-orange-500" />
+            </button>
+          </PermissionWrapper>
+          <PermissionWrapper requiredPermission={PERMISSIONS.ACCOUNT_DELETE}>
+            <button
+              className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+              title="Xóa"
+              onClick={() => handleDeleteClick(employee)}
+            >
+              <Trash2 className="h-4 w-4 text-red-500" />
+            </button>
+          </PermissionWrapper>
         </div>
       </TableCell>
     </TableRow>
@@ -420,13 +521,15 @@ export default function AdminPage() {
             <h1 className="text-2xl font-bold text-slate-600">Quản lý người dùng</h1>
             <p className="text-slate-600 mt-1">Quản lý các tài khoản người dùng trong hệ thống</p>
           </div>
-          <Button
-            className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
-            onClick={() => setIsCreateModalOpen(true)}
-          >
-            <Plus className="mr-2 h-4 w-4 text-white" />
-            Thêm người dùng
-          </Button>
+          <PermissionWrapper requiredPermission={PERMISSIONS.ACCOUNT_CREATE}>
+            <Button
+              className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
+              onClick={() => setIsCreateModalOpen(true)}
+            >
+              <Plus className="mr-2 h-4 w-4 text-white" />
+              Thêm người dùng
+            </Button>
+          </PermissionWrapper>
         </div>
         <AccountStatsChart
           userStats={employeeStats}
@@ -513,22 +616,72 @@ export default function AdminPage() {
         )}
 
       </div>
-      
+
       {/* Create Account Modal */}
-      <CreateAccountModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSuccess={() => {
-          // Refresh the user list
-          window.location.reload()
-        }}
-      />
-      
+      <PermissionWrapper requiredPermission={PERMISSIONS.ACCOUNT_CREATE}>
+        <CreateAccountModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSuccess={() => {
+            // Refresh all users for stats
+            fetchAllUsersForStats()
+
+            // Reset to first page and refresh data
+            setPagination(prev => ({ ...prev, pageNumber: 1 }))
+            fetchData({
+              pageNumber: 1,
+              pageSize: pagination.pageSize,
+              search: searchQuery,
+              sortField: sortColumn || "",
+              sortAscending: sortDirection === "asc"
+            })
+          }}
+        />
+      </PermissionWrapper>
+
+      {/* Update Account Modal */}
+      <PermissionWrapper requiredPermission={PERMISSIONS.ACCOUNT_UPDATE}>
+        <UpdateAccountModal
+          isOpen={isUpdateModalOpen}
+          onClose={() => {
+            setIsUpdateModalOpen(false)
+            setUserToUpdate(null)
+          }}
+          onSuccess={() => {
+            // Refresh all users for stats
+            fetchAllUsersForStats()
+
+            // Refresh data after update
+            fetchData({
+              pageNumber: pagination.pageNumber,
+              pageSize: pagination.pageSize,
+              search: searchQuery,
+              sortField: sortColumn || "",
+              sortAscending: sortDirection === "asc"
+            })
+          }}
+          userData={userToUpdate}
+        />
+      </PermissionWrapper>
+
       {/* View Account Modal */}
-      <AccountDetail
-        userId={selectedUserId}
-        onClose={() => setSelectedUserId(null)}
-      />
+      <PermissionWrapper requiredPermission={PERMISSIONS.ACCOUNT_VIEW}>
+        <AccountDetail
+          userId={selectedUserId}
+          onClose={() => setSelectedUserId(null)}
+        />
+      </PermissionWrapper>
+
+      {/* Delete Confirmation Modal */}
+      <PermissionWrapper requiredPermission={PERMISSIONS.ACCOUNT_DELETE}>
+        <DeleteModal
+          isOpen={showDeleteModal}
+          onClose={handleDeleteCancel}
+          onConfirm={handleDeleteConfirm}
+          itemName={userToDelete?.fullName || ""}
+        />
+      </PermissionWrapper>
     </div>
   )
 }
+

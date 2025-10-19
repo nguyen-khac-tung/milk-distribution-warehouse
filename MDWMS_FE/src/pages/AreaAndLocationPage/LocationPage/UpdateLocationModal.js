@@ -6,6 +6,7 @@ import { ComponentIcon } from "../../../components/IconComponent/Icon";
 import { updateLocation, getLocationDetail } from "../../../services/LocationServices";
 import { getAreaDropdown } from "../../../services/AreaServices";
 import { extractErrorMessage } from "../../../utils/Validation";
+import CustomDropdown from "../../../components/Common/CustomDropdown";
 
 export default function UpdateLocationModal({ isOpen, onClose, onSuccess, locationId, locationData }) {
   const [formData, setFormData] = useState({
@@ -137,97 +138,97 @@ export default function UpdateLocationModal({ isOpen, onClose, onSuccess, locati
         <div className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Grid fields */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Area */}
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="areaId" className="text-sm font-medium text-slate-700">
-                  Khu vực <span className="text-red-500">*</span>
-                </Label>
-                <select
-                  id="areaId"
-                  value={formData.areaId}
-                  onChange={(e) => setFormData({ ...formData, areaId: e.target.value })}
-                  className="h-10 px-3 border border-slate-300 rounded-lg focus:border-orange-500 focus:ring-orange-500 bg-white text-sm"
-                  required
-                >
-                  <option value="">Chọn khu vực...</option>
-                  {loadingData ? (
-                    <option disabled>Đang tải...</option>
-                  ) : (
-                    areas.map((a) => (
-                      <option key={a.areaId} value={a.areaId.toString()}>
-                        {a.areaName || `Khu vực ${a.areaId}`}
-                      </option>
-                    ))
-                  )}
-                </select>
+            <div className="flex flex-col gap-4">
+              {/* Nhóm 1: Area + Availability */}
+              <div className="flex gap-4">
+                {/* Area */}
+                <div className="flex-1 flex flex-col gap-2">
+                  <Label htmlFor="areaId" className="text-sm font-medium text-slate-700">
+                    Khu vực <span className="text-red-500">*</span>
+                  </Label>
+                  <CustomDropdown
+                    value={formData.areaId}
+                    onChange={(value) => setFormData({ ...formData, areaId: value })}
+                    options={[
+                      { value: "", label: "Chọn khu vực..." },
+                      ...areas.map((a) => ({ value: a.areaId.toString(), label: a.areaName })),
+                    ]}
+                    placeholder="Chọn khu vực..."
+                    loading={loadingData}
+                  />
+                </div>
+
+                {/* Availability */}
+                <div className="flex-1 flex flex-col gap-2">
+                  <Label htmlFor="isAvailable" className="text-sm font-medium text-slate-700">
+                    Tình trạng sử dụng <span className="text-red-500">*</span>
+                  </Label>
+                  <CustomDropdown
+                    value={formData.isAvailable.toString()}
+                    onChange={(value) =>
+                      setFormData({ ...formData, isAvailable: value === "true" })
+                    }
+                    options={[
+                      { value: "", label: "Chọn trạng thái..." },
+                      { value: "true", label: "Trống" },
+                      { value: "false", label: "Đang sử dụng" },
+                    ]}
+                    placeholder="Chọn trạng thái..."
+                    loading={loadingData}
+                  />
+                </div>
               </div>
 
-              {/* Rack */}
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="rack" className="text-sm font-medium text-slate-700">
-                  Kệ <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="rack"
-                  placeholder="Nhập tên kệ..."
-                  value={formData.rack}
-                  onChange={(e) => setFormData({ ...formData, rack: e.target.value })}
-                  className="h-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg"
-                  required
-                />
-              </div>
+              {/* Nhóm 2: Rack + Row + Column */}
+              <div className="flex gap-4">
+                {/* Rack */}
+                <div className="flex-1 flex flex-col gap-2">
+                  <Label htmlFor="rack" className="text-sm font-medium text-slate-700">
+                    Kệ <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="rack"
+                    placeholder="Nhập tên kệ..."
+                    value={formData.rack}
+                    onChange={(e) => setFormData({ ...formData, rack: e.target.value })}
+                    className="h-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg"
+                    required
+                  />
+                </div>
 
-              {/* Row */}
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="row" className="text-sm font-medium text-slate-700">
-                  Hàng <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="row"
-                  type="number"
-                  min="1"
-                  placeholder="Nhập số hàng..."
-                  value={formData.row}
-                  onChange={(e) => setFormData({ ...formData, row: e.target.value })}
-                  className="h-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg"
-                  required
-                />
-              </div>
+                {/* Row */}
+                <div className="flex-1 flex flex-col gap-2">
+                  <Label htmlFor="row" className="text-sm font-medium text-slate-700">
+                    Hàng <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="row"
+                    type="number"
+                    min="1"
+                    placeholder="Nhập số hàng..."
+                    value={formData.row}
+                    onChange={(e) => setFormData({ ...formData, row: e.target.value })}
+                    className="h-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg"
+                    required
+                  />
+                </div>
 
-              {/* Column */}
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="column" className="text-sm font-medium text-slate-700">
-                  Cột <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="column"
-                  type="number"
-                  min="1"
-                  placeholder="Nhập số cột..."
-                  value={formData.column}
-                  onChange={(e) => setFormData({ ...formData, column: e.target.value })}
-                  className="h-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg"
-                  required
-                />
-              </div>
-
-              {/* Availability */}
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="isAvailable" className="text-sm font-medium text-slate-700">
-                  Tình trạng sử dụng
-                </Label>
-                <select
-                  id="isAvailable"
-                  value={formData.isAvailable.toString()}
-                  onChange={(e) =>
-                    setFormData({ ...formData, isAvailable: e.target.value === "true" })
-                  }
-                  className="h-10 px-3 border border-slate-300 rounded-lg focus:border-orange-500 focus:ring-orange-500 bg-white text-sm"
-                >
-                  <option value="true">Trống</option>
-                  <option value="false">Đang sử dụng</option>
-                </select>
+                {/* Column */}
+                <div className="flex-1 flex flex-col gap-2">
+                  <Label htmlFor="column" className="text-sm font-medium text-slate-700">
+                    Cột <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="column"
+                    type="number"
+                    min="1"
+                    placeholder="Nhập số cột..."
+                    value={formData.column}
+                    onChange={(e) => setFormData({ ...formData, column: e.target.value })}
+                    className="h-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg"
+                    required
+                  />
+                </div>
               </div>
             </div>
 

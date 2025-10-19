@@ -177,23 +177,21 @@ export default function UpdateStorageCondition({ isOpen, onClose, onSuccess, sto
             </div>
 
             {/* Row 3: Light Level */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="lightLevel" className="text-sm font-medium text-slate-700">
-                  Mức độ ánh sáng <span className="text-red-500">*</span>
-                </Label>
-                <CustomDropdown
-                  value={formData.lightLevel}
-                  onChange={(value) => setFormData({ ...formData, lightLevel: value })}
-                  options={[
-                    { value: "", label: "Chọn mức độ ánh sáng..." },
-                    { value: "Normal", label: "Bình thường" },
-                    { value: "Low", label: "Thấp" },
-                    { value: "High", label: "Cao" }
-                  ]}
-                  placeholder="Chọn mức độ ánh sáng..."
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="lightLevel" className="text-sm font-medium text-slate-700">
+                Mức độ ánh sáng <span className="text-red-500">*</span>
+              </Label>
+              <CustomDropdown
+                value={formData.lightLevel}
+                onChange={(value) => setFormData({ ...formData, lightLevel: value })}
+                options={[
+                  { value: "", label: "Chọn mức độ ánh sáng..." },
+                  { value: "Normal", label: "Bình thường" },
+                  { value: "Low", label: "Thấp" },
+                  { value: "High", label: "Cao" }
+                ]}
+                placeholder="Chọn mức độ ánh sáng..."
+              />
             </div>
 
             {/* Action Buttons */}

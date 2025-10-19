@@ -1,138 +1,155 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
-import { Separator } from "../../../components/ui/separator";
+import { Button } from "../../../components/ui/button";
 import { ComponentIcon } from "../../../components/IconComponent/Icon";
+import { X } from "lucide-react";
 
 export function ModalAreaDetail({ area, onClose }) {
     const getStatusBadge = (status) => {
         switch (status) {
             case 1:
-                return <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Đang hoạt động</span>;
+                return (
+                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Đang hoạt động
+                    </span>
+                );
             case 2:
-                return <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">Ngừng hoạt động</span>;
+                return (
+                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                        Ngừng hoạt động
+                    </span>
+                );
             default:
-                return <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Không xác định</span>;
+                return (
+                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        Không xác định
+                    </span>
+                );
         }
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
             <div className="w-full max-w-4xl mx-4 max-h-[75vh] overflow-y-auto bg-white rounded-lg shadow-2xl relative">
 
-                {/* Nút đóng góc trên */}
-                {onClose && (
+                {/* Header */}
+                <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                    <h1 className="text-2xl font-bold text-slate-800">Chi tiết khu vực</h1>
                     <button
                         onClick={onClose}
-                        className="fixed top-6 right-6 h-8 w-8 rounded-full hover:bg-gray-100 flex items-center justify-center z-20 bg-white shadow-lg border border-gray-200"
-                        aria-label="Đóng"
+                        className="p-1 hover:bg-gray-100 rounded-full transition-colors"
                     >
-                        <ComponentIcon name="close" size={16} color="#6b7280" />
+                        <X className="h-5 w-5 text-gray-500" />
                     </button>
-                )}
+                </div>
 
-                <div className="container mx-auto px-4 py-6 md:py-8 max-w-6xl">
-                    {/* Header */}
-                    <div className="mb-8 md:mb-12 relative">
-                        <div className="space-y-3">
-                            <div className="flex items-center gap-3 flex-wrap">
-                                <ComponentIcon name="warehouse" size={20} color="#6b7280" />
-                                <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{area?.areaName}</h1>
-                                {getStatusBadge(area.status)}
-                            </div>
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                                <ComponentIcon name="qrcode" size={20} color="#6b7280" />
-                                <span className="font-mono text-sm">{area.areaCode}</span>
-                            </div>
+                {/* Content */}
+                <div className="p-6 space-y-6">
+                    {/* Area Info */}
+                    <div className="mb-4">
+                        <div className="flex items-center gap-3 mb-4 flex-wrap">
+                            <ComponentIcon name="warehouse" size={20} color="#6b7280" />
+                            <h2 className="text-xl font-semibold text-slate-800">
+                                {area?.areaName}
+                            </h2>
+                            {getStatusBadge(area.status)}
+                        </div>
+                        <div className="flex items-center gap-2 text-slate-600">
+                            <ComponentIcon name="qrcode" size={16} color="#6b7280" />
+                            <span className="text-sm font-medium">Mã khu vực:</span>{" "}
+                            {area?.areaCode || "N/A"}
                         </div>
                     </div>
 
-                    <Separator className="mb-8 md:mb-12" />
-
-                    {/* Thông tin chung */}
-                    <Card className="shadow-sm mb-6">
+                    {/* Info Card */}
+                    <Card className="bg-gray-50 shadow-sm">
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-xl">
-                                <ComponentIcon name="info" size={40} color="#374151" />
+                            <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
+                                <ComponentIcon name="info" size={20} color="#374151" />
                                 Thông tin khu vực
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <InfoRow
-                                icon={<ComponentIcon name="warehouse" size={20} color="#6b7280" />}
+                                icon={<ComponentIcon name="warehouse" size={16} color="#6b7280" />}
                                 label="Tên khu vực"
                                 value={area?.areaName || "N/A"}
                             />
                             <InfoRow
-                                icon={<ComponentIcon name="description" size={20} color="#6b7280" />}
+                                icon={<ComponentIcon name="description" size={16} color="#6b7280" />}
                                 label="Mô tả"
-                                value={area.description || "Không có mô tả"}
+                                value={area?.description || "Không có mô tả"}
                             />
-                            {/* <InfoRow
-                                icon={<ComponentIcon name="calendar" size={20} color="#6b7280" />}
-                                label="Ngày tạo"
-                                value={new Date(area.createdAt).toLocaleString("vi-VN")}
-                            />
-                            <InfoRow
-                                icon={<ComponentIcon name="calendar" size={20} color="#6b7280" />}
-                                label="Ngày cập nhật"
-                                value={new Date(area.updateAt).toLocaleString("vi-VN")}
-                            /> */}
                         </CardContent>
                     </Card>
 
-                    {/* Điều kiện bảo quản */}
-                    <Card className="shadow-sm">
+                    {/* Storage Condition */}
+                    <Card className="bg-gray-50 shadow-sm">
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-xl">
-                                <ComponentIcon name="storageCondition" size={40} color="#374151" />
+                            <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
+                                <ComponentIcon name="storageCondition" size={20} color="#374151" />
                                 Điều kiện bảo quản
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="grid gap-6 md:grid-cols-3">
-                                {/* Nhiệt độ */}
+                                {/* Temperature */}
                                 <div className="space-y-3">
-                                    <div className="flex items-center gap-2 text-muted-foreground">
+                                    <div className="flex items-center gap-2 text-slate-600">
                                         <ComponentIcon name="thermometer" size={40} color="#6b7280" />
                                         <span className="text-sm font-medium">Nhiệt độ</span>
                                     </div>
-                                    <div className="rounded-lg bg-muted/50 p-4">
+                                    <div className="rounded-lg bg-white p-4 border border-gray-200">
                                         <div className="flex items-baseline gap-2">
-                                            <span className="text-2xl font-bold text-foreground">{area.temperatureMin ?? "N/A"}°C</span>
-                                            <span className="text-muted-foreground">-</span>
-                                            <span className="text-2xl font-bold text-foreground">{area.temperatureMax ?? "N/A"}°C</span>
+                                            <span className="text-2xl font-bold text-slate-800">
+                                                {area.temperatureMin ?? "N/A"}°C
+                                            </span>
+                                            <span className="text-slate-500">-</span>
+                                            <span className="text-2xl font-bold text-slate-800">
+                                                {area.temperatureMax ?? "N/A"}°C
+                                            </span>
                                         </div>
-                                        <p className="mt-2 text-xs text-muted-foreground">Khoảng nhiệt độ khuyến nghị</p>
+                                        <p className="mt-2 text-xs text-slate-500">
+                                            Khoảng nhiệt độ khuyến nghị
+                                        </p>
                                     </div>
                                 </div>
 
-                                {/* Độ ẩm */}
+                                {/* Humidity */}
                                 <div className="space-y-3">
-                                    <div className="flex items-center gap-2 text-muted-foreground">
+                                    <div className="flex items-center gap-2 text-slate-600">
                                         <ComponentIcon name="droplets" size={40} color="#6b7280" />
                                         <span className="text-sm font-medium">Độ ẩm</span>
                                     </div>
-                                    <div className="rounded-lg bg-muted/50 p-4">
+                                    <div className="rounded-lg bg-white p-4 border border-gray-200">
                                         <div className="flex items-baseline gap-2">
-                                            <span className="text-2xl font-bold text-foreground">{area.humidityMin ?? "N/A"}%</span>
-                                            <span className="text-muted-foreground">-</span>
-                                            <span className="text-2xl font-bold text-foreground">{area.humidityMax ?? "N/A"}%</span>
+                                            <span className="text-2xl font-bold text-slate-800">
+                                                {area.humidityMin ?? "N/A"}%
+                                            </span>
+                                            <span className="text-slate-500">-</span>
+                                            <span className="text-2xl font-bold text-slate-800">
+                                                {area.humidityMax ?? "N/A"}%
+                                            </span>
                                         </div>
-                                        <p className="mt-2 text-xs text-muted-foreground">Khoảng độ ẩm khuyến nghị</p>
+                                        <p className="mt-2 text-xs text-slate-500">
+                                            Khoảng độ ẩm khuyến nghị
+                                        </p>
                                     </div>
                                 </div>
 
-                                {/* Ánh sáng */}
+                                {/* Light Level */}
                                 <div className="space-y-3">
-                                    <div className="flex items-center gap-2 text-muted-foreground">
+                                    <div className="flex items-center gap-2 text-slate-600">
                                         <ComponentIcon name="sun" size={40} color="#6b7280" />
                                         <span className="text-sm font-medium">Ánh sáng</span>
                                     </div>
-                                    <div className="rounded-lg bg-muted/50 p-4">
+                                    <div className="rounded-lg bg-white p-4 border border-gray-200">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-2xl font-bold text-foreground">{area.lightLevel || "N/A"}</span>
+                                            <span className="text-2xl font-bold text-slate-800">
+                                                {area.lightLevel || "N/A"}
+                                            </span>
                                         </div>
-                                        <p className="mt-2 text-xs text-muted-foreground">Mức độ ánh sáng khuyến nghị</p>
+                                        <p className="mt-2 text-xs text-slate-500">Mức độ ánh sáng</p>
                                     </div>
                                 </div>
                             </div>
@@ -140,17 +157,15 @@ export function ModalAreaDetail({ area, onClose }) {
                     </Card>
                 </div>
 
-                {/* Nút đóng cuối trang */}
-                {onClose && (
-                    <div className="sticky bottom-0 bg-white border-t border-gray-200 px-4 py-3 flex justify-end">
-                        <button
-                            onClick={onClose}
-                            className="h-[38px] px-6 bg-pink-50 border border-red-300 text-red-600 rounded-md hover:bg-pink-100 hover:border-red-400 transition-colors shadow-sm"
-                        >
-                            Đóng
-                        </button>
-                    </div>
-                )}
+                {/* Footer */}
+                <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-end">
+                    <Button
+                        onClick={onClose}
+                        className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
+                    >
+                        Đóng
+                    </Button>
+                </div>
             </div>
         </div>
     );
@@ -159,11 +174,13 @@ export function ModalAreaDetail({ area, onClose }) {
 function InfoRow({ icon, label, value }) {
     return (
         <div className="flex items-start justify-between gap-4 py-2">
-            <div className="flex items-center gap-2 text-muted-foreground min-w-0">
+            <div className="flex items-center gap-2 text-slate-600 min-w-0">
                 {icon}
                 <span className="text-sm font-medium">{label}</span>
             </div>
-            <span className="text-sm font-semibold text-foreground text-right">{value}</span>
+            <span className="text-sm font-semibold text-slate-800 text-right">
+                {value}
+            </span>
         </div>
     );
 }
