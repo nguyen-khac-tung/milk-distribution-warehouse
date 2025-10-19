@@ -33,6 +33,7 @@ namespace MilkDistributionWarehouse.Repositories
         {
             return await _context.RefreshTokens
                 .Include(r => r.User)
+                .ThenInclude(u => u.Roles)
                 .Where(r => r.Token == token)
                 .FirstOrDefaultAsync();
         }
