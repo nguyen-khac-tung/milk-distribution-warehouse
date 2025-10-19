@@ -27,6 +27,12 @@ namespace MilkDistributionWarehouse.Models.DTOs
         [JsonPropertyOrder(7)]
         public string Address { get; set; }
         [JsonPropertyOrder(8)]
+        public string ContactPersonName { get; set; }
+        [JsonPropertyOrder(9)]
+        public string ContactPersonPhone { get; set; }
+        [JsonPropertyOrder(10)]
+        public string ContactPersonEmail { get; set; }
+        [JsonPropertyOrder(11)]
         public bool IsDisable { get; set; }
     }
 
@@ -59,6 +65,14 @@ namespace MilkDistributionWarehouse.Models.DTOs
         [MaxLength(255, ErrorMessage = "Độ dài địa chỉ không được vượt quá 255 ký tự.")]
         [RegularExpression(@"^[\p{L}0-9\s_\-.,]+$", ErrorMessage = "Tên địa chỉ không được chứa các ký tự đặc biệt")]
         public string Address { get; set; }
+        [MaxLength(255, ErrorMessage = "Độ dài địa chỉ không được vượt quá 255 ký tự.")]
+        [RegularExpression(@"^[\p{L}0-9\s_\-.,]+$", ErrorMessage = "Tên liên lạc không được chứa các ký tự đặc biệt")]
+        public string ContactPersonName { get; set; }
+        [RegularExpression(@"^(0|\+84)(\d{9})$", ErrorMessage = "Số điện thoại không hợp lệ (VD: 0912345678 hoặc +84912345678).")]
+        public string ContactPersonPhone { get; set; }
+        [EmailAddress(ErrorMessage = "Email không hợp lệ.")]
+        [MaxLength(50, ErrorMessage = "Độ dài email không được vượt quá 255 ký tự.")]
+        public string ContactPersonEmail { get; set; }
     }
 
     public class SupplierUpdate : SupplierCreate

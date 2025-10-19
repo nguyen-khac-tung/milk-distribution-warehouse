@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.Entities;
+using System.Linq;
 
 namespace MilkDistributionWarehouse.Repositories
 {
@@ -8,13 +9,13 @@ namespace MilkDistributionWarehouse.Repositories
     {
         IQueryable<Location>? GetLocations();
         Task<Location?> CreateLocation(Location entity);
-        Task<bool> IsDuplicateLocationCode(string locationCode);
         Task<Location?> GetLocationById(int locationId);
-        Task<bool> IsDuplicationByIdAndCode(int locationId, string locationCode);
         Task<Location?> UpdateLocation(Location entity);
         Task<bool> HasDependentPalletsOrStocktakingsAsync(int locationId);
-        Task<bool> IsDuplicateLocationAsync(string rack, int? row, int? column, int areaId, int? excludeId = null);
         Task<List<Location>> GetActiveLocationsAsync();
+        Task<List<string>> GetExistingLocationKeys(List<int> areaIds);
+        Task<int> CreateLocationsBulk(List<Location> locations);
+        Task<bool> IsDuplicateLocationCodeInAreaAsync(string locationCode, int areaId, int? excludeId = null);
     }
 
     public class LocationRepository : ILocationRepository
@@ -49,13 +50,6 @@ namespace MilkDistributionWarehouse.Repositories
             }
         }
 
-        public async Task<bool> IsDuplicateLocationCode(string locationCode)
-        {
-            return await _context.Locations.AnyAsync(l =>
-                l.LocationCode.ToLower().Trim() == locationCode.ToLower().Trim() &&
-                l.Status != CommonStatus.Deleted);
-        }
-
         public async Task<Location?> UpdateLocation(Location entity)
         {
             try
@@ -77,21 +71,21 @@ namespace MilkDistributionWarehouse.Repositories
                 .FirstOrDefaultAsync(l => l.LocationId == locationId);
         }
 
-        public async Task<bool> IsDuplicationByIdAndCode(int locationId, string locationCode)
-        {
-            return await _context.Locations.AnyAsync(l =>
-                l.LocationId != locationId &&
-                l.LocationCode.ToLower().Trim() == locationCode.ToLower().Trim() &&
-                l.Status != CommonStatus.Deleted);
-        }
-
         public async Task<bool> HasDependentPalletsOrStocktakingsAsync(int locationId)
         {
             return await _context.Pallets.AnyAsync(p => p.LocationId == locationId && p.Status != CommonStatus.Deleted) ||
                    await _context.StocktakingLocations.AnyAsync(sl => sl.LocationId == locationId && sl.Status != CommonStatus.Deleted);
         }
 
-        public async Task<bool> IsDuplicateLocationAsync(string rack, int? row, int? column, int areaId, int? excludeId = null)
+        public async Task<List<Location>> GetActiveLocationsAsync()
+        {
+            return await _context.Locations
+                .Where(l => l.Status == CommonStatus.Active && l.IsAvailable == true)
+                .OrderBy(l => l.CreatedAt)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+        public async Task<bool> IsDuplicateLocationCodeInAreaAsync(string locationCode, int areaId, int? excludeId = null)
         {
             var query = _context.Locations
                 .Where(l => l.AreaId == areaId && l.Status != CommonStatus.Deleted);
@@ -99,19 +93,28 @@ namespace MilkDistributionWarehouse.Repositories
             if (excludeId.HasValue)
                 query = query.Where(l => l.LocationId != excludeId.Value);
 
-            return await query.AnyAsync(l =>
-                l.Rack.ToLower().Trim() == rack.ToLower().Trim()
-                && l.Row == row
-                && l.Column == column);
+            return await query.AnyAsync(l => l.LocationCode.ToLower().Trim() == locationCode.ToLower().Trim());
         }
 
-        public async Task<List<Location>> GetActiveLocationsAsync()
+        public async Task<List<string>> GetExistingLocationKeys(List<int> areaIds)
         {
             return await _context.Locations
-                .Where(l => l.Status == CommonStatus.Active)
-                .OrderBy(l => l.CreatedAt)
-                .AsNoTracking()
+                .Where(l => areaIds.Contains((int)l.AreaId) && l.Status != CommonStatus.Deleted)
+                .Select(l => $"{l.AreaId}:{l.Rack.ToLower().Trim()}:{l.Row}:{l.Column}")
                 .ToListAsync();
+        }
+
+        public async Task<int> CreateLocationsBulk(List<Location> locations)
+        {
+            try
+            {
+                await _context.Locations.AddRangeAsync(locations);
+                return await _context.SaveChangesAsync();
+            }
+            catch
+            {
+                return 0;
+            }
         }
     }
 }

@@ -117,6 +117,8 @@ export const cleanErrorMessage = (errorMsg) => {
     .replace(/^\[[^\]]*\]\s*/, "") // Remove [User] at start
     .replace(/\[[^\]]*\]/g, "") // Remove any [brackets] anywhere
     .replace(/\s+/g, " ") // Replace multiple spaces with single space
+    .replace(/^[:\s-]+/, "") // Remove leading colons, spaces, or dashes
+    .replace(/[:\s-]+$/, "") // Remove trailing colons, spaces, or dashes
     .trim()
 
   return cleaned

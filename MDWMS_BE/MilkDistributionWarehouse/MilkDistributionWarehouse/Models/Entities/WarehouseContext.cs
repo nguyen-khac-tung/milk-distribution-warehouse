@@ -454,6 +454,13 @@ public partial class WarehouseContext : DbContext
             entity.Property(e => e.TaxCode)
                 .HasMaxLength(100)
                 .IsUnicode(false);
+            entity.Property(e => e.ContactPersonName).HasMaxLength(100);
+            entity.Property(e => e.ContactPersonPhone)
+                .HasMaxLength(20)
+                .IsUnicode(false);
+            entity.Property(e => e.ContactPersonEmail)
+                .HasMaxLength(50)
+                .IsUnicode(false);
         });
 
         modelBuilder.Entity<UnitMeasure>(entity =>

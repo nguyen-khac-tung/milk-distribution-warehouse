@@ -17,6 +17,9 @@ export default function UpdateSupplierModal({ isOpen, onClose, onSuccess, suppli
     email: "",
     address: "",
     phone: "",
+    contactPersonName: "",
+    contactPersonPhone: "",
+    contactPersonEmail: "",
     isDisable: false,
   })
   const [loading, setLoading] = useState(false)
@@ -48,6 +51,9 @@ export default function UpdateSupplierModal({ isOpen, onClose, onSuccess, suppli
           email: supplierInfo.email || "",
           address: supplierInfo.address || "",
           phone: supplierInfo.phone || "",
+          contactPersonName: supplierInfo.contactPersonName || "",
+          contactPersonPhone: supplierInfo.contactPersonPhone || "",
+          contactPersonEmail: supplierInfo.contactPersonEmail || "",
           isDisable: supplierInfo.isDisable || false,
         })
       }
@@ -65,7 +71,9 @@ export default function UpdateSupplierModal({ isOpen, onClose, onSuccess, suppli
 
     // Basic validation - check if required fields are filled
     if (!formData.companyName?.trim() || !formData.brandName?.trim() || !formData.taxCode?.trim() ||
-      !formData.email?.trim() || !formData.address?.trim() || !formData.phone?.trim()) {
+      !formData.email?.trim() || !formData.address?.trim() || !formData.phone?.trim() ||
+      !formData.contactPersonName?.trim() || !formData.contactPersonPhone?.trim() || 
+      !formData.contactPersonEmail?.trim()) {
       window.showToast("Vui lòng điền đầy đủ thông tin", "error")
       return
     }
@@ -77,10 +85,22 @@ export default function UpdateSupplierModal({ isOpen, onClose, onSuccess, suppli
       return
     }
 
+    // Contact person email validation
+    if (!emailRegex.test(formData.contactPersonEmail)) {
+      window.showToast("Email người liên hệ không hợp lệ", "error")
+      return
+    }
+
     // Phone validation (basic)
     const phoneRegex = /^[0-9+\-\s()]+$/
     if (!phoneRegex.test(formData.phone)) {
       window.showToast("Số điện thoại không hợp lệ", "error")
+      return
+    }
+
+    // Contact person phone validation
+    if (!phoneRegex.test(formData.contactPersonPhone)) {
+      window.showToast("Số điện thoại người liên hệ không hợp lệ", "error")
       return
     }
 
@@ -115,6 +135,9 @@ export default function UpdateSupplierModal({ isOpen, onClose, onSuccess, suppli
       email: "",
       address: "",
       phone: "",
+      contactPersonName: "",
+      contactPersonPhone: "",
+      contactPersonEmail: "",
       isDisable: false,
     })
     onClose && onClose()
@@ -138,7 +161,7 @@ export default function UpdateSupplierModal({ isOpen, onClose, onSuccess, suppli
 
         {/* Content */}
         <div className="p-6">
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <form id="update-supplier-form" className="space-y-6" onSubmit={handleSubmit}>
             {/* Form Fields - 2 column layout */}
             <div className="space-y-4">
               {/* Row 1: Company Name & Brand Name */}
@@ -218,27 +241,83 @@ export default function UpdateSupplierModal({ isOpen, onClose, onSuccess, suppli
                   />
                 </div>
               </div>
+
+              {/* Contact Person Section */}
+              <div className="border-t border-gray-200 pt-4">
+                <h3 className="text-lg font-semibold text-slate-800 mb-4">Thông tin người liên hệ</h3>
+                
+                {/* Row 4: Contact Person Name & Phone */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="contactPersonName" className="text-sm font-medium text-slate-700">
+                      Tên người liên hệ <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="contactPersonName"
+                      placeholder="Nhập tên người liên hệ..."
+                      value={formData.contactPersonName}
+                      onChange={(e) => setFormData({ ...formData, contactPersonName: e.target.value })}
+                      className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="contactPersonPhone" className="text-sm font-medium text-slate-700">
+                      Số điện thoại người liên hệ <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="contactPersonPhone"
+                      placeholder="Nhập số điện thoại người liên hệ..."
+                      value={formData.contactPersonPhone}
+                      onChange={(e) => setFormData({ ...formData, contactPersonPhone: e.target.value })}
+                      className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Row 5: Contact Person Email */}
+                <div className="grid grid-cols-1 gap-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="contactPersonEmail" className="text-sm font-medium text-slate-700">
+                      Email người liên hệ <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="contactPersonEmail"
+                      type="email"
+                      placeholder="Nhập email người liên hệ..."
+                      value={formData.contactPersonEmail}
+                      onChange={(e) => setFormData({ ...formData, contactPersonEmail: e.target.value })}
+                      className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-4 justify-end pt-6">
-              <Button
-                type="button"
-                variant="outline"
-                className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
-                onClick={handleReset}
-              >
-                Hủy
-              </Button>
-              <Button
-                type="submit"
-                disabled={loading || loadingData}
-                className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
-              >
-                {loading ? "Đang cập nhật..." : loadingData ? "Đang tải..." : "Cập nhật"}
-              </Button>
-            </div>
           </form>
+        </div>
+
+        {/* Footer with Action Buttons */}
+        <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-end gap-4">
+          <Button
+            type="button"
+            variant="outline"
+            className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
+            onClick={handleReset}
+          >
+            Hủy
+          </Button>
+          <Button
+            type="submit"
+            disabled={loading || loadingData}
+            className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+            form="update-supplier-form"
+          >
+            {loading ? "Đang cập nhật..." : loadingData ? "Đang tải..." : "Cập nhật"}
+          </Button>
         </div>
       </div>
     </div>

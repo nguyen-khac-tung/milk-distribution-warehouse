@@ -38,6 +38,9 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
         if (pathname.startsWith('/areas') || pathname.startsWith('/locations') || pathname.startsWith('/storage-conditions')) {
             keys.push('location-management');
         }
+        if (pathname.startsWith('/purchase-orders')) {
+            keys.push('purchase-orders-management');
+        }
         return keys;
     }, []);
 
@@ -136,6 +139,26 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                 ],
             },
             {
+                key: "purchase-orders-management",
+                icon: <ComponentIcon name="puscharorder" size={16} collapsed={collapsed} />,
+                label: "Quản lý đơn nhập",
+                permission: null, // Tạm thời không cần phân quyền
+                children: [
+                    {
+                        key: "/purchase-orders",
+                        icon: <ComponentIcon name="cart" size={14} collapsed={collapsed} />,
+                        label: "Danh sách đơn nhập",
+                        permission: null, // Tạm thời không cần phân quyền
+                    },
+                    {
+                        key: "/purchase-orders/create",
+                        icon: <ComponentIcon name="createpuscharorder" size={14} collapsed={collapsed} />,
+                        label: "Tạo đơn nhập",
+                        permission: null, // Tạm thời không cần phân quyền
+                    },
+                ],
+            },
+            {
                 key: "/reports",
                 icon: <BarChartOutlined style={{ color: '#000000' }} />,
                 label: "Báo cáo",
@@ -156,7 +179,7 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                 if (item.role && !userRoles.includes(item.role)) {
                     return false;
                 }
-                if (item.permission) {
+                if (item.permission !== null && item.permission !== undefined) {
                     if (Array.isArray(item.permission)) {
                         if (!item.permission.some(p => hasPermission(p))) {
                             return false;
@@ -167,7 +190,7 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                         }
                     }
                 }
-                
+
                 // Kiểm tra children nếu có
                 if (item.children) {
                     const filteredChildren = filterMenuItems(item.children);
@@ -176,7 +199,7 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                     }
                     item.children = filteredChildren;
                 }
-                
+
                 return true;
             });
         };
@@ -199,7 +222,7 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
     const handleSubMenuClick = useCallback(({ key }, event) => {
         // Ngăn event bubbling để không ảnh hưởng đến menu cha
         event.stopPropagation();
-        
+
         setOpenKeys(prevKeys => {
             if (prevKeys.includes(key)) {
                 return prevKeys.filter(k => k !== key);
@@ -386,9 +409,9 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
             }}>
                 {!collapsed && (
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <img 
-                            src="/logo.png" 
-                            alt="Logo" 
+                        <img
+                            src="/logo.png"
+                            alt="Logo"
                             style={{ width: 80, height: 80, objectFit: 'contain' }}
                         />
                         <div>
@@ -405,9 +428,9 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                         justifyContent: "center",
                         margin: "0 auto"
                     }}>
-                        <img 
-                            src="/logo.png" 
-                            alt="Logo" 
+                        <img
+                            src="/logo.png"
+                            alt="Logo"
                             style={{ width: 28, height: 28, objectFit: 'contain' }}
                         />
                     </div>

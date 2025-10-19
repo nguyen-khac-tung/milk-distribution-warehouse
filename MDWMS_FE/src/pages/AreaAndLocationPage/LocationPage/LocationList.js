@@ -56,6 +56,9 @@ const LocationList = () => {
     const [showPageSizeFilter, setShowPageSizeFilter] = useState(false);
     const printRef = useRef();
     const [selectedLocation, setSelectedLocation] = useState(null);
+    const [selectedLocations, setSelectedLocations] = useState([]);
+    const [selectAll, setSelectAll] = useState(false);
+    const [showPrintPreview, setShowPrintPreview] = useState(false);
     const didMountRef = useRef(false);
     const skipFirstSearchRef = useRef(true);
 
@@ -66,11 +69,85 @@ const LocationList = () => {
         PERMISSIONS.LOCATION_DELETE
     ]);
 
+    // Kiểm tra quyền in
+    const hasPrintPermission = hasAnyPermission([PERMISSIONS.LOCATION_PRINT]);
+
     const handlePrint = useReactToPrint({
         contentRef: printRef,
         documentTitle: "Phiếu dán vị trí kho",
-        pageStyle: `@page { size: auto; margin: 0; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }`,
+        pageStyle: `
+            @page { 
+                size: A4; 
+                margin: 10mm; 
+            } 
+            body { 
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact; 
+                margin: 0;
+                padding: 0;
+            }
+            .print-container {
+                width: 100% !important;
+                height: auto !important;
+                overflow: visible !important;
+            }
+        `,
     });
+
+    // Xử lý chọn/bỏ chọn tất cả
+    const handleSelectAll = (checked) => {
+        setSelectAll(checked);
+        if (checked) {
+            setSelectedLocations([...locations]);
+        } else {
+            setSelectedLocations([]);
+        }
+    };
+
+    // Cập nhật selectAll khi selectedLocations thay đổi
+    useEffect(() => {
+        if (selectedLocations.length === 0) {
+            setSelectAll(false);
+        } else if (selectedLocations.length === locations.length && locations.length > 0) {
+            setSelectAll(true);
+        } else {
+            setSelectAll(false);
+        }
+    }, [selectedLocations, locations]);
+
+    // Xử lý chọn/bỏ chọn một vị trí
+    const handleSelectLocation = (location, checked) => {
+        if (checked) {
+            setSelectedLocations(prev => [...prev, location]);
+        } else {
+            setSelectedLocations(prev => prev.filter(loc => loc.locationId !== location.locationId));
+        }
+    };
+
+    // Kiểm tra xem một vị trí có được chọn không
+    const isLocationSelected = (location) => {
+        return selectedLocations.some(loc => loc.locationId === location.locationId);
+    };
+
+    // In nhiều vị trí đã chọn
+    const handlePrintSelected = () => {
+        if (selectedLocations.length === 0) {
+            window.showToast("Vui lòng chọn ít nhất một vị trí để in", "warning");
+            return;
+        }
+        // Hiển thị modal preview trước khi in
+        setShowPrintPreview(true);
+    };
+
+    // Xác nhận in từ modal preview
+    const handleConfirmPrint = () => {
+        setShowPrintPreview(false);
+        // Nếu chỉ có 1 vị trí, sử dụng selectedLocation để tương thích với logic cũ
+        if (selectedLocations.length === 1) {
+            setSelectedLocation(selectedLocations[0]);
+        }
+        setTimeout(() => handlePrint(), 100);
+    };
 
     const fetchLocations = async (page = 1, pageSize = 10, params = {}) => {
         try {
@@ -483,17 +560,60 @@ const LocationList = () => {
     const PrintableLocationLabel = React.forwardRef(({ location }, ref) => (
         <div ref={ref} className="p-6 w-[600px] h-[600px] text-center border border-gray-200 rounded-md bg-white flex flex-col items-center justify-center">
             <h2 className="text-2xl font-bold mb-4 text-gray-800">MÃ VỊ TRÍ</h2>
-            <div className="flex justify-center">
-                {location?.locationCode && (
+            <div className="flex justify-center w-full">
+                {location?.locationCode && location?.areaId && (
                     <Barcode
-                        value={location.locationCode}
+                        value={`${location.areaId}-${location.locationCode}`}
                         height={100}
-                        width={2.5}
-                        margin={0}
+                        width={3}
+                        margin={15}
                         displayValue={true}
-                        fontSize={30}
+                        fontSize={24}
+                        format="CODE128"
                     />
                 )}
+            </div>
+        </div>
+    ));
+
+    // Component in nhiều vị trí (2 barcode trên 1 dòng)
+    const PrintableMultipleLocationLabels = React.forwardRef(({ locations }, ref) => (
+        <div ref={ref} className="bg-white" style={{ width: '100%', minHeight: '100vh' }}>
+            <div
+                className="max-w-[800px] mx-auto"
+                style={{
+                    padding: '20px',
+                    backgroundColor: '#ffffff'
+                }}
+            >
+                <div className="flex flex-wrap gap-4">
+                    {locations.map((location, index) => (
+                        <div
+                            key={location.locationId}
+                            className="p-4 w-[calc(50%-8px)] text-center border border-gray-200 rounded-md bg-white flex flex-col items-center justify-center"
+                            style={{
+                                minHeight: '200px',
+                                pageBreakInside: 'avoid'
+                            }}
+                        >
+                            <h3 className="text-lg font-bold mb-3 text-gray-800">MÃ VỊ TRÍ</h3>
+                            <div className="flex justify-center w-full">
+                                {location?.locationCode && location?.areaId && (
+                                    <Barcode
+                                        value={`${location.areaId}-${location.locationCode}`}
+                                        height={80}
+                                        width={3}
+                                        margin={10}
+                                        displayValue={true}
+                                        fontSize={16}
+                                        format="CODE128"
+                                    />
+                                )}
+                            </div>
+                            <p className="text-sm text-gray-600 mt-2">{location?.locationCode}</p>
+                        </div>
+                    ))}
+                </div>
             </div>
         </div>
     ));
@@ -511,6 +631,27 @@ const LocationList = () => {
                     </div>
 
                     <div className="flex items-center gap-3">
+                        {hasPrintPermission && selectedLocations.length > 0 && (
+                            <>
+                                <Button
+                                    className="bg-blue-500 hover:bg-blue-600 h-[38px] px-6 text-white transition-colors duration-200"
+                                    onClick={handlePrintSelected}
+                                >
+                                    <Printer className="mr-2 h-4 w-4 text-white" />
+                                    In đã chọn ({selectedLocations.length})
+                                </Button>
+                                <Button
+                                    className="bg-gray-500 hover:bg-gray-600 h-[38px] px-6 text-white transition-colors duration-200"
+                                    onClick={() => {
+                                        setSelectedLocations([]);
+                                        setSelectAll(false);
+                                    }}
+                                >
+                                    Bỏ chọn tất cả
+                                </Button>
+                            </>
+                        )}
+
                         <PermissionWrapper requiredPermission={PERMISSIONS.LOCATION_CREATE}>
                             <Button
                                 className="bg-orange-400 hover:bg-orange-500 h-[38px] px-6 text-white transition-colors duration-200"
@@ -614,6 +755,16 @@ const LocationList = () => {
                                 <CustomTable className="w-full">
                                     <TableHeader>
                                         <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
+                                            {hasPrintPermission && (
+                                                <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-12">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectAll}
+                                                        onChange={(e) => handleSelectAll(e.target.checked)}
+                                                        className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                                                    />
+                                                </TableHead>
+                                            )}
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-16">
                                                 STT
                                             </TableHead>
@@ -680,6 +831,16 @@ const LocationList = () => {
                                                     key={location.locationId}
                                                     className="hover:bg-slate-50 border-b border-slate-200"
                                                 >
+                                                    {hasPrintPermission && (
+                                                        <TableCell className="px-6 py-4 text-center">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={isLocationSelected(location)}
+                                                                onChange={(e) => handleSelectLocation(location, e.target.checked)}
+                                                                className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                                                            />
+                                                        </TableCell>
+                                                    )}
                                                     <TableCell className="px-6 py-4 text-slate-600 font-medium">
                                                         {index + 1}
                                                     </TableCell>
@@ -700,18 +861,16 @@ const LocationList = () => {
                                                     </TableCell>
                                                     <TableCell className="px-6 py-4 text-center">
                                                         <div className="flex justify-center">
-                                                            <PermissionWrapper 
+                                                            <PermissionWrapper
                                                                 requiredPermission={PERMISSIONS.LOCATION_UPDATE}
                                                                 hide={false}
                                                                 fallback={
-                                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center justify-center gap-1 ${
-                                                                        location?.status === 1 
-                                                                            ? 'bg-green-100 text-green-800' 
-                                                                            : 'bg-red-100 text-red-800'
-                                                                    }`}>
-                                                                        <span className={`w-2 h-2 rounded-full ${
-                                                                            location?.status === 1 ? 'bg-green-500' : 'bg-red-500'
-                                                                        }`}></span>
+                                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center justify-center gap-1 ${location?.status === 1
+                                                                        ? 'bg-green-100 text-green-800'
+                                                                        : 'bg-red-100 text-red-800'
+                                                                        }`}>
+                                                                        <span className={`w-2 h-2 rounded-full ${location?.status === 1 ? 'bg-green-500' : 'bg-red-500'
+                                                                            }`}></span>
                                                                         {location?.status === 1 ? 'Hoạt động' : 'Ngừng hoạt động'}
                                                                     </span>
                                                                 }
@@ -769,7 +928,7 @@ const LocationList = () => {
                                             ))
                                         ) : (
                                             <TableRow>
-                                                <TableCell colSpan={hasAnyActionPermission ? 9 : 8}>
+                                                <TableCell colSpan={hasPrintPermission ? (hasAnyActionPermission ? 10 : 9) : (hasAnyActionPermission ? 9 : 8)}>
                                                     <div className="flex flex-col items-center justify-center text-center min-h-[260px]">
                                                         <EmptyState
                                                             icon={Folder}
@@ -849,10 +1008,53 @@ const LocationList = () => {
                 />
             </PermissionWrapper>
 
+            {/* Modal Preview In */}
+            {showPrintPreview && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style={{ zIndex: 9999 }}>
+                    <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col">
+                        <div className="flex items-center justify-between p-4 border-b">
+                            <h3 className="text-lg font-semibold text-gray-900">
+                                Xem trước barcode ({selectedLocations.length} vị trí)
+                            </h3>
+                            <button
+                                onClick={() => setShowPrintPreview(false)}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-4">
+                            <PrintableMultipleLocationLabels locations={selectedLocations} />
+                        </div>
+                        <div className="flex items-center justify-end gap-3 p-4 border-t">
+                            <button
+                                onClick={() => setShowPrintPreview(false)}
+                                className="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                            >
+                                Hủy
+                            </button>
+                            <button
+                                onClick={handleConfirmPrint}
+                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center gap-2"
+                            >
+                                <Printer className="w-4 h-4" />
+                                In ngay
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Vùng in phiếu - căn giữa khi in */}
             <div className="print-wrapper">
                 <div ref={printRef} className="print-container">
-                    <PrintableLocationLabel location={selectedLocation} />
+                    {selectedLocations.length > 1 ? (
+                        <PrintableMultipleLocationLabels locations={selectedLocations} />
+                    ) : (
+                        <PrintableLocationLabel location={selectedLocation} />
+                    )}
                 </div>
             </div>
 
