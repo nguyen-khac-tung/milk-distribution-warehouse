@@ -6,6 +6,7 @@ namespace MilkDistributionWarehouse.Repositories
     public interface IUnitOfWork
     {
         IGoodsRepository Goods { get; }
+        ILocationRepository Locations { get; }
         Task<int> SaveChangesAsync();
         Task BeginTransactionAsync();
         Task CommitTransactionAsync();
@@ -16,11 +17,13 @@ namespace MilkDistributionWarehouse.Repositories
         private readonly WarehouseContext _context;
         private IDbContextTransaction? _transaction;
         public IGoodsRepository Goods { get; }
+        public ILocationRepository Locations { get; }
 
         public UnitOfWork(WarehouseContext context)
         {
             _context = context;
             Goods = new GoodsRepository(_context);
+            Locations = new LocationRepository(context);
         }
 
         public async Task BeginTransactionAsync()
