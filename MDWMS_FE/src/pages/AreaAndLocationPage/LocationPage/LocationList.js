@@ -579,19 +579,19 @@ const LocationList = () => {
     // Component in nhiều vị trí (2 barcode trên 1 dòng)
     const PrintableMultipleLocationLabels = React.forwardRef(({ locations }, ref) => (
         <div ref={ref} className="bg-white" style={{ width: '100%', minHeight: '100vh' }}>
-            <div 
+            <div
                 className="max-w-[800px] mx-auto"
-                style={{ 
+                style={{
                     padding: '20px',
                     backgroundColor: '#ffffff'
                 }}
             >
                 <div className="flex flex-wrap gap-4">
                     {locations.map((location, index) => (
-                        <div 
-                            key={location.locationId} 
+                        <div
+                            key={location.locationId}
                             className="p-4 w-[calc(50%-8px)] text-center border border-gray-200 rounded-md bg-white flex flex-col items-center justify-center"
-                            style={{ 
+                            style={{
                                 minHeight: '200px',
                                 pageBreakInside: 'avoid'
                             }}
