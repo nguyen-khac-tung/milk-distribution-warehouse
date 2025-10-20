@@ -32,12 +32,12 @@ export default function UpdateAccount({ isOpen, onClose, onSuccess, userData }) 
         try {
           setLoading(true)
           const userId = userData.userId || userData.id
-          
+
           const response = await getUserDetail(userId)
-          
+
           if (response && response.data) {
             setUserDetail(response.data)
-            
+
             // Handle roleId - check both roleId and roles array
             let roleId = response.data.roleId || 0
             if (!roleId && response.data.roles && response.data.roles.length > 0) {
@@ -51,7 +51,7 @@ export default function UpdateAccount({ isOpen, onClose, onSuccess, userData }) 
                 roleId = 0 // Temporary, will be updated when roles load
               }
             }
-            
+
             setFormData({
               email: response.data.email || "",
               fullName: response.data.fullName || "",
@@ -103,16 +103,16 @@ export default function UpdateAccount({ isOpen, onClose, onSuccess, userData }) 
         const response = await getRoleList()
         if (response && response.data) {
           setRoles(response.data)
-          
+
           // If we have userDetail with roleName but no roleId, map it now
           if (userDetail && userDetail.roles && userDetail.roles.length > 0 && formData.roleId === 0) {
             const userRoleName = userDetail.roles[0].roleName || userDetail.roles[0]
-            
-            const matchingRole = response.data.find(role => 
-              role.roleName === userRoleName || 
+
+            const matchingRole = response.data.find(role =>
+              role.roleName === userRoleName ||
               role.roleName?.toLowerCase() === userRoleName?.toLowerCase()
             )
-            
+
             if (matchingRole) {
               setFormData(prev => ({
                 ...prev,
@@ -125,7 +125,7 @@ export default function UpdateAccount({ isOpen, onClose, onSuccess, userData }) 
         // Handle error silently
       }
     }
-    
+
     if (isOpen) {
       fetchRoles()
     }
@@ -133,7 +133,7 @@ export default function UpdateAccount({ isOpen, onClose, onSuccess, userData }) 
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
+
     // Basic validation
     if (!formData.email || !formData.fullName || !formData.phone || !formData.roleId || !formData.userId) {
       window.showToast("Vui lòng điền đầy đủ thông tin bắt buộc", "error")
@@ -142,9 +142,9 @@ export default function UpdateAccount({ isOpen, onClose, onSuccess, userData }) 
 
     try {
       setLoading(true)
-      
+
       const response = await updateUser(formData)
-      
+
       // Check if response is successful
       if (response && (response.success !== false && response.status !== 500)) {
         window.showToast("Cập nhật người dùng thành công!", "success")
@@ -215,7 +215,7 @@ export default function UpdateAccount({ isOpen, onClose, onSuccess, userData }) 
             <X className="h-5 w-5 text-gray-500" />
           </button>
         </div>
-        
+
         {/* Content */}
         <div className="p-6">
           {loading ? (
@@ -227,8 +227,8 @@ export default function UpdateAccount({ isOpen, onClose, onSuccess, userData }) 
             </div>
           ) : (
             <form className="space-y-6" onSubmit={handleSubmit}>
-            {/* Row 1: Email and Full Name */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Row 1: Email and Full Name */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-sm font-medium text-slate-700">
                     Email <span className="text-red-500">*</span>
@@ -258,10 +258,10 @@ export default function UpdateAccount({ isOpen, onClose, onSuccess, userData }) 
                     required
                   />
                 </div>
-            </div>
+              </div>
 
-            {/* Row 2: Date of Birth and Gender */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Row 2: Date of Birth and Gender */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="doB" className="text-sm font-medium text-slate-700">
                     Ngày sinh
@@ -289,10 +289,10 @@ export default function UpdateAccount({ isOpen, onClose, onSuccess, userData }) 
                     placeholder="Chọn giới tính..."
                   />
                 </div>
-            </div>
+              </div>
 
-            {/* Row 3: Phone and Address */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Row 3: Phone and Address */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="phone" className="text-sm font-medium text-slate-700">
                     Số điện thoại <span className="text-red-500">*</span>
@@ -310,7 +310,7 @@ export default function UpdateAccount({ isOpen, onClose, onSuccess, userData }) 
 
                 <div className="space-y-2">
                   <Label htmlFor="address" className="text-sm font-medium text-slate-700">
-                    Địa chỉ
+                    Địa chỉ<span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="address"
@@ -321,10 +321,10 @@ export default function UpdateAccount({ isOpen, onClose, onSuccess, userData }) 
                     className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                   />
                 </div>
-            </div>
+              </div>
 
-            {/* Row 4: Role */}
-            <div className="grid grid-cols-1 gap-6">
+              {/* Row 4: Role */}
+              <div className="grid grid-cols-1 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="roleId" className="text-sm font-medium text-slate-700">
                     Chức vụ <span className="text-red-500">*</span>
@@ -342,27 +342,27 @@ export default function UpdateAccount({ isOpen, onClose, onSuccess, userData }) 
                     placeholder="Chọn chức vụ..."
                   />
                 </div>
-            </div>
+              </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-4 justify-end pt-6">
-              <Button
-                type="button"
-                variant="outline"
-                className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
-                onClick={handleReset}
-              >
-                Hủy
-              </Button>
-              <Button
-                type="submit"
-                disabled={loading}
-                className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
-              >
-                {loading ? "Đang cập nhật..." : "Cập nhật"}
-              </Button>
-            </div>
-          </form>
+              {/* Action Buttons */}
+              <div className="flex gap-4 justify-end pt-6">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
+                  onClick={handleReset}
+                >
+                  Hủy
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                >
+                  {loading ? "Đang cập nhật..." : "Cập nhật"}
+                </Button>
+              </div>
+            </form>
           )}
         </div>
       </div>
