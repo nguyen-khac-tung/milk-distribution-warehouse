@@ -46,7 +46,7 @@ export default function UpdateRetailerModal({ isOpen, onClose, onSuccess, retail
           email: retailerInfo.email || "",
           address: retailerInfo.address || "",
           phone: retailerInfo.phone || "",
-          isDisable: retailerInfo.status === 2, // 2 = inactive
+          isDisable: retailerInfo.isDisable || false, // Sử dụng trực tiếp isDisable từ API
         })
       }
     } catch (error) {

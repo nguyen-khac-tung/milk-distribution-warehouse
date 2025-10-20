@@ -95,20 +95,21 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
   }
 
   const addGoodsRow = () => {
-    setGoodsList([...goodsList, {
+    const newGoodsList = [...goodsList, {
       goodsCode: "",
       goodsName: "",
       categoryId: "",
       supplierId: "",
       storageConditionId: "",
       unitMeasureId: "",
-    }])
+    }]
+    setGoodsList(newGoodsList)
     
     // Re-check for duplicates after adding new row
     const newErrors = { ...errors }
-    goodsList.forEach((goods, index) => {
+    newGoodsList.forEach((goods, index) => {
       if (goods.goodsCode) {
-        const duplicateIndex = goodsList.findIndex((g, i) => i !== index && g.goodsCode === goods.goodsCode)
+        const duplicateIndex = newGoodsList.findIndex((g, i) => i !== index && g.goodsCode === goods.goodsCode)
         if (duplicateIndex !== -1) {
           newErrors[`${index}-goodsCode`] = "Mã hàng hóa đã tồn tại trong danh sách"
         }
@@ -119,9 +120,27 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
   }
 
   const removeGoodsRow = (index) => {
+    console.log('Removing goods at index:', index, 'Current goodsList length:', goodsList.length)
+    
     if (goodsList.length > 1) {
       const newList = goodsList.filter((_, i) => i !== index)
+      console.log('New list after removal:', newList)
       setGoodsList(newList)
+      
+      // Update successfulGoods set to remove the deleted index and re-index remaining indices
+      const newSuccessfulGoods = new Set()
+      successfulGoods.forEach(successIndex => {
+        if (successIndex < index) {
+          // Keep successful goods before the removed row
+          newSuccessfulGoods.add(successIndex)
+        } else if (successIndex > index) {
+          // Re-index successful goods after the removed row
+          newSuccessfulGoods.add(successIndex - 1)
+        }
+        // Skip the removed row (successIndex === index)
+      })
+      console.log('Updated successfulGoods:', newSuccessfulGoods)
+      setSuccessfulGoods(newSuccessfulGoods)
       
       // Clear errors for removed row and re-index remaining errors
       const newErrors = {}
@@ -151,6 +170,8 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
       
       setErrors(newErrors)
       setHasBackendErrors(Object.keys(newErrors).length > 0)
+    } else {
+      console.log('Cannot remove last remaining goods item')
     }
   }
 
@@ -420,6 +441,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
             <div className="space-y-6">
               {goodsList.map((goods, index) => {
                 const isSuccessful = successfulGoods.has(index)
+                console.log(`Rendering goods ${index + 1}:`, goods, 'isSuccessful:', isSuccessful)
                 return (
                   <Card key={index} className={`p-6 border ${isSuccessful ? 'border-green-200 bg-green-50' : 'border-slate-200'}`}>
                     <div className="flex items-center justify-between mb-4">
@@ -439,7 +461,10 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => removeGoodsRow(index)}
+                            onClick={() => {
+                              console.log('Clicking remove for successful goods at index:', index)
+                              removeGoodsRow(index)
+                            }}
                             className="text-green-600 hover:text-green-700 hover:bg-green-50"
                           >
                             <Trash2 className="h-4 w-4 mr-1" />
@@ -451,7 +476,10 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => removeGoodsRow(index)}
+                            onClick={() => {
+                              console.log('Clicking remove for unsuccessful goods at index:', index)
+                              removeGoodsRow(index)
+                            }}
                             className="text-red-500 hover:text-red-700 hover:bg-red-50"
                           >
                             <Trash2 className="h-4 w-4 mr-1" />
