@@ -7,12 +7,13 @@ import { Card, CardContent } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
-import { Search, Plus, Edit, Trash2, Filter, ChevronDown, ArrowUp, ArrowDown, ArrowUpDown, Eye, Package } from "lucide-react";
+import { Search, Plus, Trash2, Filter, ChevronDown, ArrowUp, ArrowDown, ArrowUpDown, Eye, Package } from "lucide-react";
 import CreateGood from "./CreateGoodModal";
 import CreateBulkGoods from "./CreateBulkGoods";
 import UpdateGoodModal from "./UpdateGoodModal";
 import DeleteModal from "../../components/Common/DeleteModal";
 import { ProductDetail } from "./ViewGoodModal";
+import EditButton from "./EditButton";
 import StatsCards from "../../components/Common/StatsCards";
 import Loading from "../../components/Common/Loading";
 import SearchFilterToggle from "../../components/Common/SearchFilterToggle";
@@ -68,6 +69,7 @@ export default function GoodsPage() {
   })
   const [showPageSizeFilter, setShowPageSizeFilter] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
+  const [statsLoaded, setStatsLoaded] = useState(false)
 
   // Dropdown data for filters
   const [categories, setCategories] = useState([])
@@ -100,6 +102,9 @@ export default function GoodsPage() {
 
   // Fetch tổng thống kê (không có search/filter)
   const fetchTotalStats = async () => {
+    // Chỉ fetch stats nếu chưa load hoặc khi cần refresh
+    if (statsLoaded) return
+
     try {
       const response = await getGoods({
         pageNumber: 1,
@@ -123,9 +128,39 @@ export default function GoodsPage() {
           activeCount: activeCount,
           inactiveCount: inactiveCount
         })
+        setStatsLoaded(true)
       }
     } catch (error) {
       console.error("Error fetching total stats:", error)
+    }
+  }
+
+  // Fetch isDisable status for all goods in current list
+  const fetchGoodsDisableStatus = async (goodsList) => {
+    if (!goodsList || goodsList.length === 0) return goodsList
+
+    try {
+      // Gọi API detail cho từng item để lấy isDisable (song song)
+      const enrichedData = await Promise.all(
+        goodsList.map(async (good) => {
+          try {
+            const detailResponse = await getGoodDetail(good.goodsId)
+            if (detailResponse && detailResponse.status === 200 && detailResponse.data) {
+              return {
+                ...good,
+                isDisable: detailResponse.data.isDisable
+              }
+            }
+          } catch (error) {
+            console.error(`Error fetching detail for ${good.goodsName}:`, error)
+          }
+          return good
+        })
+      )
+      return enrichedData
+    } catch (error) {
+      console.error("Error fetching goods disable status:", error)
+      return goodsList
     }
   }
 
@@ -146,45 +181,27 @@ export default function GoodsPage() {
         unitMeasureId: searchParams.unitMeasureId || ""
       }
 
-      console.log("fetchData - searchParams received:", searchParams)
-      console.log("fetchData - requestParams built:", requestParams)
-      console.log("fetchData - current state:", { searchQuery, statusFilter, categoryFilter, supplierFilter, unitMeasureFilter })
+      console.log("API Goods - Request params:", requestParams)
 
       const response = await getGoods(requestParams)
-      console.log("fetchData - Full response:", response)
+      console.log("API Goods - Response:", response)
 
       if (response && response.data) {
         // API returns response.data.items (array) and response.data.totalCount
         const dataArray = Array.isArray(response.data.items) ? response.data.items : []
-        console.log("fetchData - Data array from response:", dataArray)
+        console.log("API Goods - Items count:", dataArray.length)
 
-        // Gọi API detail cho từng item để lấy isDisable
-        const enrichedData = await Promise.all(
-          dataArray.map(async (good) => {
-            try {
-              const detailResponse = await getGoodDetail(good.goodsId)
-              if (detailResponse && detailResponse.status === 200 && detailResponse.data) {
-                const enrichedGood = {
-                  ...good,
-                  isDisable: detailResponse.data.isDisable
-                }
-                return enrichedGood
-              }
-            } catch (error) {
-              console.error(`Error fetching detail for ${good.goodsName}:`, error)
-            }
-            return good
-          })
-        )
-
-        console.log("fetchData - Enriched data:", enrichedData)
+        // Load isDisable status cho tất cả items để ẩn/hiện nút edit đúng
+        const enrichedData = await fetchGoodsDisableStatus(dataArray)
+        console.log("API Goods - Enriched with isDisable:", enrichedData.length, "items")
+        
         setGoods(enrichedData)
         setPagination(prev => ({
           ...prev,
           totalCount: response.data.totalCount || enrichedData.length
         }))
       } else {
-        console.log("fetchData - No data or success false")
+        console.log("API Goods - No data or success false")
         setGoods([])
         setPagination(prev => ({ ...prev, totalCount: 0 }))
       }
@@ -303,6 +320,8 @@ export default function GoodsPage() {
   const handleCreateSuccess = () => {
     // Add small delay to ensure API has processed the new record
     setTimeout(() => {
+      // Reset stats loaded flag để refresh stats
+      setStatsLoaded(false)
       // Refresh tổng thống kê
       fetchTotalStats()
 
@@ -333,21 +352,18 @@ export default function GoodsPage() {
 
   const handleViewClick = async (good) => {
     try {
-      console.log("Viewing good:", good)
       setItemToView(good)
       setLoadingDetail(true)
       setShowViewModal(true)
 
       const response = await getGoodDetail(good.goodsId)
-      console.log("API Response:", response)
 
       // Handle API response structure: { status: 200, message: "Success", data: {...} }
       if (response && response.status === 200 && response.data) {
         const goodDetail = response.data
         setGoodDetail(goodDetail)
 
-
-        // Update isDisable status in the goods list
+        // Update isDisable status in the goods list để cache cho lần sau
         setGoods(prevGoods =>
           prevGoods.map(item =>
             item.goodsId === good.goodsId
@@ -355,10 +371,7 @@ export default function GoodsPage() {
               : item
           )
         )
-
-        console.log("Good detail set:", goodDetail)
       } else {
-        console.log("Invalid response structure:", response)
         window.showToast("Không thể tải chi tiết hàng hóa", "error")
         setShowViewModal(false)
       }
@@ -385,7 +398,6 @@ export default function GoodsPage() {
 
   const handleDeleteConfirm = async () => {
     try {
-      console.log("Deleting good:", itemToDelete)
       await deleteGood(itemToDelete?.goodsId)
       window.showToast(`Đã xóa hàng hóa: ${itemToDelete?.goodsName || ''}`, "success")
       setShowDeleteModal(false)
@@ -402,6 +414,8 @@ export default function GoodsPage() {
         setPagination(prev => ({ ...prev, pageNumber: targetPage }))
       }
 
+      // Reset stats loaded flag để refresh stats
+      setStatsLoaded(false)
       // Refresh tổng thống kê
       fetchTotalStats()
 
@@ -419,8 +433,6 @@ export default function GoodsPage() {
       })
     } catch (error) {
       console.error("Error deleting good:", error)
-
-      // Sử dụng extractErrorMessage để xử lý lỗi từ API
       const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi xóa hàng hóa")
       window.showToast(`Lỗi: ${errorMessage}`, "error")
     }
@@ -433,6 +445,8 @@ export default function GoodsPage() {
   }
 
   const handleUpdateSuccess = () => {
+    // Reset stats loaded flag để refresh stats
+    setStatsLoaded(false)
     // Refresh tổng thống kê
     fetchTotalStats()
 
@@ -569,6 +583,8 @@ export default function GoodsPage() {
         unitMeasureId: unitMeasureFilter
       })
 
+      // Reset stats loaded flag để refresh stats
+      setStatsLoaded(false)
       // Refresh total stats
       fetchTotalStats()
     } catch (error) {
@@ -767,17 +783,10 @@ export default function GoodsPage() {
                                 </button>
                               </PermissionWrapper>
                               
-                              <PermissionWrapper requiredPermission={PERMISSIONS.GOODS_UPDATE}>
-                                {!good?.isDisable && (
-                                  <button
-                                    className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                    title="Chỉnh sửa"
-                                    onClick={() => handleUpdateClick(good)}
-                                  >
-                                    <Edit className="h-4 w-4 text-orange-500" />
-                                  </button>
-                                )}
-                              </PermissionWrapper>
+                              <EditButton
+                                good={good}
+                                onUpdateClick={handleUpdateClick}
+                              />
                               
                               <PermissionWrapper requiredPermission={PERMISSIONS.GOODS_DELETE}>
                                 <button
