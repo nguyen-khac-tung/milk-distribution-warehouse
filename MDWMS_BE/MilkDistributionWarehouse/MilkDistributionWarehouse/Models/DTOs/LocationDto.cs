@@ -14,6 +14,8 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
             public string AreaName { get; set; }
 
+            public string AreaCode { get; set; }
+
             public string LocationCode { get; set; }
 
             public string Rack { get; set; }
@@ -57,6 +59,28 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public int Column { get; set; }
 
             public bool? IsAvailable { get; set; } = true;
+        }
+
+        public class LocationBulkCreate
+        {
+            [Required(ErrorMessage = "Danh sách vị trí không được rỗng")]
+            [MinLength(1, ErrorMessage = "Danh sách vị trí không được rỗng")]
+            [MaxLength(1000, ErrorMessage = "Số lượng vị trí tối đa 1000")]
+            public List<LocationRequestDto> Locations { get; set; } = new();
+        }
+
+        public class LocationBulkResponse
+        {
+            public int TotalInserted { get; set; }
+            public int TotalFailed { get; set; }
+            public List<FailedItem> FailedItems { get; set; } = new();
+        }
+
+        public class FailedItem
+        {
+            public int Index { get; set; }
+            public string Code { get; set; } = string.Empty;
+            public string Error { get; set; } = string.Empty;
         }
     }
 }

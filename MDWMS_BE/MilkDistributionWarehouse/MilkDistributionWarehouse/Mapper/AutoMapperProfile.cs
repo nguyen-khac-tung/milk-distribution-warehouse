@@ -79,7 +79,9 @@ namespace MilkDistributionWarehouse.Mapper
             // Map Location
             CreateMap<Location, LocationDto.LocationResponseDto>()
                 .ForMember(dest => dest.AreaName,
-                opt => opt.MapFrom(src => src.Area != null ? src.Area.AreaName.Trim() : null));
+                opt => opt.MapFrom(src => src.Area != null ? src.Area.AreaName.Trim() : null))
+                .ForMember(dest => dest.AreaCode,
+                opt => opt.MapFrom(src => src.Area != null ? src.Area.AreaCode.Trim() : null));
             CreateMap<Location, LocationDto.LocationActiveDto>()
                 .ForMember(dest => dest.LocationId, opt => opt.MapFrom(src => src.LocationId))
                 .ForMember(dest => dest.LocationCode, opt => opt.MapFrom(src => src.LocationCode.Trim()));

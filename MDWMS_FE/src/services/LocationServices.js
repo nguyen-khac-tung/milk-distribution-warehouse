@@ -138,13 +138,15 @@ export const createMultipleLocations = async (locations) => {
             throw new Error("Danh sách location không hợp lệ hoặc trống.");
         }
 
-        const body = locations.map((loc) => ({
-            areaId: loc.areaId,
-            rack: loc.rack,
-            row: loc.row,
-            column: loc.column,
-            isAvailable: loc.isAvailable,
-        }));
+        const body = {
+            locations: locations.map((loc) => ({
+                areaId: loc.areaId,
+                rack: loc.rack,
+                row: loc.row,
+                column: loc.column,
+                isAvailable: loc.isAvailable,
+            })),
+        };
 
         console.log("Sending CreateMultiple request:", body);
 

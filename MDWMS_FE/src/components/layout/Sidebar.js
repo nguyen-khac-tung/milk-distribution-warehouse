@@ -38,6 +38,9 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
         if (pathname.startsWith('/areas') || pathname.startsWith('/locations') || pathname.startsWith('/storage-conditions')) {
             keys.push('location-management');
         }
+        if (pathname.startsWith('/purchase-orders')) {
+            keys.push('purchase-orders-management');
+        }
         return keys;
     }, []);
 
@@ -136,6 +139,26 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                 ],
             },
             {
+                key: "purchase-orders-management",
+                icon: <ComponentIcon name="puscharorder" size={16} collapsed={collapsed} />,
+                label: "Quản lý đơn nhập",
+                permission: null, // Tạm thời không cần phân quyền
+                children: [
+                    {
+                        key: "/purchase-orders",
+                        icon: <ComponentIcon name="cart" size={14} collapsed={collapsed} />,
+                        label: "Danh sách đơn nhập",
+                        permission: null, // Tạm thời không cần phân quyền
+                    },
+                    {
+                        key: "/purchase-orders/create",
+                        icon: <ComponentIcon name="createpuscharorder" size={14} collapsed={collapsed} />,
+                        label: "Tạo đơn nhập",
+                        permission: null, // Tạm thời không cần phân quyền
+                    },
+                ],
+            },
+            {
                 key: "/reports",
                 icon: <BarChartOutlined style={{ color: '#000000' }} />,
                 label: "Báo cáo",
@@ -156,7 +179,7 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                 if (item.role && !userRoles.includes(item.role)) {
                     return false;
                 }
-                if (item.permission) {
+                if (item.permission !== null && item.permission !== undefined) {
                     if (Array.isArray(item.permission)) {
                         if (!item.permission.some(p => hasPermission(p))) {
                             return false;

@@ -11,6 +11,29 @@ export const createGood = async (goodData) => {
     }
 };
 
+export const createBulkGoods = async (goodsList) => {
+    try {
+        const requestBody = {
+            goods: goodsList.map(goods => ({
+                goodsCode: goods.goodsCode,
+                goodsName: goods.goodsName,
+                categoryId: parseInt(goods.categoryId),
+                supplierId: parseInt(goods.supplierId),
+                storageConditionId: parseInt(goods.storageConditionId),
+                unitMeasureId: parseInt(goods.unitMeasureId)
+            }))
+        };
+
+        console.log("Create bulk goods request:", requestBody);
+        const res = await api.post("Goods/CreateBulk", requestBody);
+        console.log("Create bulk goods response:", res.data);
+        return res.data;
+    } catch (error) {
+        console.error("Error creating bulk goods:", error);
+        throw error;
+    }
+};
+
 export const getGoods = async (searchParams = {}) => {
     try {
         const body = {

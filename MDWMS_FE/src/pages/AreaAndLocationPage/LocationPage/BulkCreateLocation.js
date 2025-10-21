@@ -2,11 +2,12 @@ import React, { useState, useEffect } from "react";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
+import { Card } from "../../../components/ui/card";
 import { ComponentIcon } from "../../../components/IconComponent/Icon";
 import { getAreaDropdown } from "../../../services/AreaServices";
 import { createMultipleLocations } from "../../../services/LocationServices";
 import CustomDropdown from "../../../components/Common/CustomDropdown";
-import { extractErrorMessage } from "../../../utils/Validation";
+import { extractErrorMessage, cleanErrorMessage } from "../../../utils/Validation";
 
 export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess }) {
     const [areas, setAreas] = useState([]);
@@ -17,6 +18,10 @@ export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess }) 
     const [rows, setRows] = useState([
         { rowName: "", columns: [""] } // Hàng mặc định
     ]);
+    const [errors, setErrors] = useState({});
+    const [hasBackendErrors, setHasBackendErrors] = useState(false);
+    const [successfulLocations, setSuccessfulLocations] = useState(new Set());
+    const [failedLocations, setFailedLocations] = useState(new Map());
 
     // Load khu vực dropdown khi mở modal
     useEffect(() => {
@@ -92,7 +97,9 @@ export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess }) 
 
             // Chuẩn hóa dữ liệu và gọi API tạo nhiều vị trí trong MỘT lần
             const locations = [];
+            const locationIndexMap = new Map(); // Map để track index của từng location
             const parsedAreaId = parseInt(areaId);
+            let locationIndex = 0;
 
             for (const row of rows) {
                 const parsedRow = parseInt(row.rowName);
@@ -102,13 +109,17 @@ export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess }) 
                     const parsedCol = parseInt(col);
                     if (Number.isNaN(parsedCol)) continue;
 
-                    locations.push({
+                    const location = {
                         areaId: parsedAreaId,
                         rack,
                         row: parsedRow,
                         column: parsedCol,
                         isAvailable: true,
-                    });
+                    };
+
+                    locations.push(location);
+                    locationIndexMap.set(locationIndex, { row: parsedRow, column: parsedCol });
+                    locationIndex++;
                 }
             }
 
@@ -117,17 +128,102 @@ export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess }) 
                 return;
             }
 
-            await createMultipleLocations(locations);
+            const response = await createMultipleLocations(locations);
+            const failedItems = response?.failedItems || response?.data?.failedItems || [];
+            // Process response
+            const newErrors = {};
+            const newFailedLocations = new Map();
+            const newSuccessfulLocations = new Set();
 
-            window.showToast(`Tạo thành công ${locations.length} vị trí`, "success");
-            onSuccess?.();
-            onClose?.();
+            // Mark all locations as successful initially
+            for (let i = 0; i < locations.length; i++) {
+                newSuccessfulLocations.add(i);
+            }
+
+            // Process failed items from backend response
+            if (failedItems.length > 0) {
+                failedItems.forEach(failedItem => {
+                    const index = failedItem.index;
+                    const errorMessage = cleanErrorMessage(failedItem.error);
+
+                    // Remove from successful and add to failed
+                    newSuccessfulLocations.delete(index);
+                    newFailedLocations.set(index, {
+                        code: failedItem.code,
+                        error: errorMessage,
+                        row: locationIndexMap.get(index)?.row,
+                        column: locationIndexMap.get(index)?.column
+                    });
+
+                    // Add to errors for display
+                    newErrors[`${index}-location`] = errorMessage;
+                });
+            }
+
+            // Update states
+            setErrors(newErrors);
+            setHasBackendErrors(newFailedLocations.size > 0);
+            setSuccessfulLocations(newSuccessfulLocations);
+            setFailedLocations(newFailedLocations);
+
+            // Show appropriate message
+            const totalSuccess = newSuccessfulLocations.size;
+            const totalFailed = newFailedLocations.size;
+
+            if (totalFailed === 0) {
+                // All locations created successfully
+                window.showToast(`Tạo thành công ${totalSuccess} vị trí!`, "success");
+                setHasBackendErrors(false);
+                setSuccessfulLocations(new Set());
+                setFailedLocations(new Map());
+                onSuccess?.();
+                onClose?.();
+            } else {
+                // Some locations failed
+                let toastMessage = `Tạo thành công ${totalSuccess}/${locations.length} vị trí.\n\nCòn ${totalFailed} vị trí cần sửa lỗi trước khi có thể đóng modal.`;
+
+                const duplicateErrors = Array.from(newFailedLocations.values()).filter(item =>
+                    item.error.includes('đã tồn tại') || item.error.includes('duplicate') ||
+                    item.error.includes('already exists') || item.error.includes('trùng lặp')
+                );
+
+                if (duplicateErrors.length > 0) {
+                    toastMessage += `\n\nCó ${duplicateErrors.length} vị trí bị trùng với dữ liệu trong hệ thống.`;
+                }
+
+                window.showToast(toastMessage, "warning");
+            }
+
         } catch (error) {
-            const msg = extractErrorMessage(error, "Lỗi khi tạo vị trí");
-            window.showToast(msg, "error");
+            console.error("Error in bulk create locations:", error);
+            const msg = extractErrorMessage(error, "Có lỗi xảy ra khi tạo vị trí");
+            window.showToast(`Lỗi: ${msg}`, "error");
         } finally {
             setLoading(false);
         }
+    };
+
+    // Handle close with error check
+    const handleClose = () => {
+        if (hasBackendErrors) {
+            window.showToast("Vui lòng sửa lỗi trước khi đóng modal hoặc nhấn Hủy để bỏ qua", "warning");
+            return;
+        }
+        onSuccess?.();
+        onClose?.();
+    };
+
+    // Handle reset
+    const handleReset = () => {
+        setRows([{ rowName: "", columns: [""] }]);
+        setAreaId("");
+        setRack("");
+        setErrors({});
+        setHasBackendErrors(false);
+        setSuccessfulLocations(new Set());
+        setFailedLocations(new Map());
+        onSuccess?.();
+        onClose?.();
     };
 
     if (!isOpen) return null;
@@ -141,7 +237,7 @@ export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess }) 
                         Tạo Nhiều Vị Trí Cùng Lúc
                     </h1>
                     <button
-                        onClick={onClose}
+                        onClick={handleClose}
                         className="p-2 hover:bg-gray-100 rounded-full transition-all"
                     >
                         <ComponentIcon name="close" size={20} color="#6b7280" />
@@ -151,10 +247,19 @@ export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess }) 
                 {/* Body */}
                 <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
                     {/* Thông tin chung */}
-                    <div className="bg-orange-50 border border-blue-100 rounded-lg p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <p className="text-orange-800 font-medium">
+                    <div className={`border rounded-lg p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-4 ${hasBackendErrors
+                        ? 'bg-red-50 border-red-200'
+                        : 'bg-orange-50 border-blue-100'
+                        }`}>
+                        <p className={`font-medium ${hasBackendErrors ? 'text-red-800' : 'text-orange-800'
+                            }`}>
                             Tạo nhiều vị trí cho cùng một kệ. Tổng số vị trí sẽ được tạo:{" "}
                             <span className="font-semibold">{totalPositions}</span>
+                            {hasBackendErrors && (
+                                <span className="block mt-2 text-red-600 font-medium">
+                                    Có lỗi cần sửa. Vui lòng sửa lỗi trước khi có thể đóng modal hoặc nhấn "Hủy" để bỏ qua.
+                                </span>
+                            )}
                         </p>
                     </div>
 
@@ -196,81 +301,108 @@ export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess }) 
                             Cấu hình hàng và cột
                         </h2>
 
-                        {rows.map((row, rowIndex) => (
-                            <div
-                                key={rowIndex}
-                                className="border rounded-lg p-4 shadow-sm bg-white space-y-4"
-                            >
-                                {/* Header hàng */}
-                                <div className="flex items-center justify-between">
-                                    <h3 className="font-medium text-slate-700">
-                                        Hàng {rowIndex + 1}
-                                    </h3>
-                                    {rows.length > 1 && (
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveRow(rowIndex)}
-                                            className="text-red-500 hover:text-red-600"
-                                        >
-                                            <ComponentIcon name="delete" size={18} color="red" />
-                                        </button>
-                                    )}
-                                </div>
+                        {rows.map((row, rowIndex) => {
+                            // Check if this row has any failed locations
+                            const rowHasErrors = row.columns.some((col, colIndex) => {
+                                const globalIndex = rows.slice(0, rowIndex).reduce((sum, r) => sum + r.columns.length, 0) + colIndex;
+                                return failedLocations.has(globalIndex);
+                            });
 
-                                {/* Nhập tên hàng */}
-                                <Input
-                                    placeholder="Tên hàng (VD: 1, 2, 3...)"
-                                    value={row.rowName}
-                                    onChange={(e) =>
-                                        handleRowNameChange(rowIndex, e.target.value)
-                                    }
-                                    className="h-10 border-slate-300 rounded-lg"
-                                />
-
-                                {/* Các cột */}
-                                <div className="space-y-2">
-                                    <Label className="text-sm text-slate-600">Các cột:</Label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {row.columns.map((col, colIndex) => (
-                                            <div key={colIndex} className="flex items-center gap-1">
-                                                <Input
-                                                    type="number"
-                                                    min="1"
-                                                    placeholder={`Cột ${colIndex + 1}`}
-                                                    value={col}
-                                                    onChange={(e) =>
-                                                        handleColumnChange(
-                                                            rowIndex,
-                                                            colIndex,
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    className="w-20 text-center h-9"
-                                                />
-                                                {row.columns.length > 1 && (
-                                                    <button
-                                                        onClick={() =>
-                                                            handleRemoveColumn(rowIndex, colIndex)
-                                                        }
-                                                        className="text-red-500 hover:text-red-600"
-                                                    >
-                                                        <ComponentIcon name="trash" size={18} color="red" />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        ))}
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            className="h-9 text-orange-600 border-orange-300 hover:bg-orange-50"
-                                            onClick={() => handleAddColumn(rowIndex)}
-                                        >
-                                            + Thêm Cột
-                                        </Button>
+                            return (
+                                <Card
+                                    key={rowIndex}
+                                    className={`p-4 shadow-sm space-y-4 ${rowHasErrors ? 'border-red-200 bg-red-50' : 'border-slate-200'
+                                        }`}
+                                >
+                                    {/* Header hàng */}
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center space-x-2">
+                                            <h3 className="font-medium text-slate-700">
+                                                Hàng {rowIndex + 1}
+                                            </h3>
+                                            {rowHasErrors && (
+                                                <span className="px-2 py-1 text-xs font-medium text-red-800 bg-red-100 rounded-full">
+                                                    Có lỗi
+                                                </span>
+                                            )}
+                                        </div>
+                                        {rows.length > 1 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveRow(rowIndex)}
+                                                className="text-red-500 hover:text-red-600"
+                                            >
+                                                <ComponentIcon name="delete" size={18} color="red" />
+                                            </button>
+                                        )}
                                     </div>
-                                </div>
-                            </div>
-                        ))}
+
+                                    {/* Nhập tên hàng */}
+                                    <Input
+                                        placeholder="Tên hàng (VD: 1, 2, 3...)"
+                                        value={row.rowName}
+                                        onChange={(e) =>
+                                            handleRowNameChange(rowIndex, e.target.value)
+                                        }
+                                        className="h-10 border-slate-300 rounded-lg"
+                                    />
+
+                                    {/* Các cột */}
+                                    <div className="space-y-2">
+                                        <Label className="text-sm text-slate-600">Các cột:</Label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {row.columns.map((col, colIndex) => {
+                                                const globalIndex = rows
+                                                    .slice(0, rowIndex)
+                                                    .reduce((sum, r) => sum + r.columns.length, 0) + colIndex;
+                                                const failedLocation = failedLocations.get(globalIndex);
+                                                const isDuplicateError = failedLocation?.error?.includes("tồn tại"); // chỉ lỗi trùng
+
+                                                return (
+                                                    <div key={colIndex} className="flex flex-col items-start gap-1">
+                                                        <div className="flex items-center gap-1">
+                                                            <Input
+                                                                type="number"
+                                                                min="1"
+                                                                placeholder={`Cột ${colIndex + 1}`}
+                                                                value={col}
+                                                                onChange={(e) =>
+                                                                    handleColumnChange(rowIndex, colIndex, e.target.value)
+                                                                }
+                                                                className={`w-20 text-center h-9 ${isDuplicateError ? "border-red-500" :
+                                                                    successfulLocations.has(globalIndex) ? "border-green-500 bg-green-50" : ""
+                                                                    }`}
+                                                            />
+                                                            {row.columns.length > 1 && (
+                                                                <button
+                                                                    onClick={() => handleRemoveColumn(rowIndex, colIndex)}
+                                                                    className="text-red-500 hover:text-red-600"
+                                                                >
+                                                                    <ComponentIcon name="trash" size={18} color="red" />
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                        {isDuplicateError && (
+                                                            <div className="text-xs text-red-600">
+                                                                Vị trí đã tồn tại
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                className="h-9 text-orange-600 border-orange-300 hover:bg-orange-50"
+                                                onClick={() => handleAddColumn(rowIndex)}
+                                            >
+                                                + Thêm Cột
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </Card>
+                            );
+                        })}
 
                         <div className="flex justify-center">
                             <Button
@@ -290,7 +422,7 @@ export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess }) 
                         type="button"
                         variant="outline"
                         className="h-10 px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg"
-                        onClick={onClose}
+                        onClick={handleReset}
                     >
                         Hủy
                     </Button>
@@ -300,7 +432,9 @@ export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess }) 
                         onClick={handleSubmit}
                         className="h-10 px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg disabled:opacity-50"
                     >
-                        {loading ? "Đang tạo..." : `Tạo ${totalPositions} Vị Trí`}
+                        {loading ? "Đang tạo..." :
+                            hasBackendErrors ? `Tạo ${totalPositions - successfulLocations.size} Vị Trí Còn Lại` :
+                                `Tạo ${totalPositions} Vị Trí`}
                     </Button>
                 </div>
             </div>
