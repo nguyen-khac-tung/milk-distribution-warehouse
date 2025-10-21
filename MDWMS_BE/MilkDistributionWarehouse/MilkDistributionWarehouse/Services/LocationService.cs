@@ -157,8 +157,11 @@ namespace MilkDistributionWarehouse.Services
             if (status != CommonStatus.Active && status != CommonStatus.Inactive && status != CommonStatus.Deleted)
                 return ("Trạng thái không hợp lệ.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
-            if (await _locationRepository.HasDependentPalletsOrStocktakingsAsync(locationId))
+            if (await _locationRepository.HasDependentPalletsAsync(locationId))
                 return ("Không thể cập nhật trạng thái vì vị trí này đang được sử dụng cho pallet hoặc kiểm kê hàng.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+            
+            if (await _locationRepository.InUsed(locationId))
+                return ("Không thể cập nhật trạng thái vì vị trí này hiện đang được sử dụng.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
             location.Status = status;
             location.UpdateAt = DateTime.Now;

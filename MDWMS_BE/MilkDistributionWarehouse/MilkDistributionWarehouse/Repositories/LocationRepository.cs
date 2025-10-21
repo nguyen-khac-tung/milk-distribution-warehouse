@@ -11,11 +11,12 @@ namespace MilkDistributionWarehouse.Repositories
         Task<Location?> CreateLocation(Location entity);
         Task<Location?> GetLocationById(int locationId);
         Task<Location?> UpdateLocation(Location entity);
-        Task<bool> HasDependentPalletsOrStocktakingsAsync(int locationId);
+        Task<bool> HasDependentPalletsAsync(int locationId);
         Task<List<Location>> GetActiveLocationsAsync();
         Task<List<string>> GetExistingLocationKeys(List<int> areaIds);
         Task<int> CreateLocationsBulk(List<Location> locations);
         Task<bool> IsDuplicateLocationCodeInAreaAsync(string locationCode, int areaId, int? excludeId = null);
+        Task<bool> InUsed(int locationId);
     }
 
     public class LocationRepository : ILocationRepository
@@ -71,10 +72,9 @@ namespace MilkDistributionWarehouse.Repositories
                 .FirstOrDefaultAsync(l => l.LocationId == locationId);
         }
 
-        public async Task<bool> HasDependentPalletsOrStocktakingsAsync(int locationId)
+        public async Task<bool> HasDependentPalletsAsync(int locationId)
         {
-            return await _context.Pallets.AnyAsync(p => p.LocationId == locationId && p.Status != CommonStatus.Deleted) ||
-                   await _context.StocktakingLocations.AnyAsync(sl => sl.LocationId == locationId && sl.Status != CommonStatus.Deleted);
+            return await _context.Pallets.AnyAsync(p => p.LocationId == locationId && p.Status != CommonStatus.Deleted);
         }
 
         public async Task<List<Location>> GetActiveLocationsAsync()
@@ -115,6 +115,11 @@ namespace MilkDistributionWarehouse.Repositories
             {
                 return 0;
             }
+        }
+        public async Task<bool> InUsed(int locationId)
+        {
+            return await _context.Locations
+                .AnyAsync(l => l.LocationId == locationId && l.IsAvailable == false);
         }
     }
 }
