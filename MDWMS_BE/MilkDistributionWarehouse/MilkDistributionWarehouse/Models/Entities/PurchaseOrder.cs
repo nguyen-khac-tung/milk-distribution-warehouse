@@ -25,11 +25,13 @@ public partial class PurchaseOrder
 
     public DateTime? UpdatedAt { get; set; }
 
-    public virtual User CreatedByNavigation { get; set; }
-
     public virtual User ApprovalByNavigation { get; set; }
-    public virtual User ArrivalConfirmedByNavagation { get; set; }
+
+    public virtual User ArrivalConfirmedByNavigation { get; set; }
+
     public virtual User AssignToNavigation { get; set; }
+
+    public virtual User CreatedByNavigation { get; set; }
 
     public virtual ICollection<GoodsReceiptNote> GoodsReceiptNotes { get; set; } = new List<GoodsReceiptNote>();
 

@@ -43,10 +43,13 @@ public partial class User
 
     public virtual ICollection<Pallet> Pallets { get; set; } = new List<Pallet>();
 
-    public virtual ICollection<PurchaseOrder> CreatedPurchaseOrders { get; set; } = new List<PurchaseOrder>();
-    public virtual ICollection<PurchaseOrder> ApprovalPurchaseOrders { get; set; } = new List<PurchaseOrder>();
-    public virtual ICollection<PurchaseOrder> ArrivalConfirmedPurchaseOrders { get; set; } = new List<PurchaseOrder>();
-    public virtual ICollection<PurchaseOrder> AssignToPurchaseOrders { get; set; } = new List<PurchaseOrder>();
+    public virtual ICollection<PurchaseOrder> PurchaseOrderApprovalByNavigations { get; set; } = new List<PurchaseOrder>();
+
+    public virtual ICollection<PurchaseOrder> PurchaseOrderArrivalConfirmedByNavigations { get; set; } = new List<PurchaseOrder>();
+
+    public virtual ICollection<PurchaseOrder> PurchaseOrderAssignToNavigations { get; set; } = new List<PurchaseOrder>();
+
+    public virtual ICollection<PurchaseOrder> PurchaseOrderCreatedByNavigations { get; set; } = new List<PurchaseOrder>();
 
     public virtual RefreshToken RefreshToken { get; set; }
 
