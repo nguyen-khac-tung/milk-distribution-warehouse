@@ -31,7 +31,7 @@ namespace MilkDistributionWarehouse.Controllers
             var (msg, pallet) = await _palletService.GetPalletById(id);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<PalletDto.PalletDetailDto>.ToResultOk(pallet);
+            return ApiResponse<PalletDto.PalletResponseDto>.ToResultOk(pallet);
         }
 
         [HttpPost("Create")]
@@ -39,8 +39,7 @@ namespace MilkDistributionWarehouse.Controllers
         {
             if (!ModelState.IsValid)
                 return ApiResponse<string>.ToResultError("Dữ liệu không hợp lệ.");
-            // giả định lấy userId từ token
-            int userId = 1;
+            int? userId = User.GetUserId();
             var (msg, created) = await _palletService.CreatePallet(dto, userId);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);

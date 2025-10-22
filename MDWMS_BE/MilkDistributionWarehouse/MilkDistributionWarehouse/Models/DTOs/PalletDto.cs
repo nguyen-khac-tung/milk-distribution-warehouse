@@ -7,23 +7,16 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public class PalletResponseDto
         {
             public Guid PalletId { get; set; }
-            public Guid? PurchaseOrderId { get; set; }
-            public int? PackageQuantity { get; set; }
-            public int? UnitsPerPackage { get; set; }
-            public int? CreateBy { get; set; }
-            public Guid? BatchId { get; set; }
-            public int? LocationId { get; set; }
-            public int? Status { get; set; }
-            public DateTime? CreateAt { get; set; }
-            public DateTime? UpdateAt { get; set; }
-        }
-
-        public class PalletDetailDto : PalletResponseDto
-        {
-            public string BatchCode { get; set; }
-            public string LocationCode { get; set; }
-            public string PurchaseOrderCode { get; set; }
+            public Guid PurchaseOrderId { get; set; }
+            public int PackageQuantity { get; set; }
+            public int UnitsPerPackage { get; set; }
+            public int CreateBy { get; set; }
             public string CreateByName { get; set; }
+            public Guid BatchId { get; set; }
+            public string BatchCode { get; set; }
+            public int LocationId { get; set; }
+            public string LocationCode { get; set; }
+            public int Status { get; set; }
         }
 
         public class PalletRequestDto
