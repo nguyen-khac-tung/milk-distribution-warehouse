@@ -488,10 +488,10 @@ const AreaLists = () => {
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                                                 <div
                                                     className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
-                                                    onClick={() => handleSort("areaName")}
+                                                    onClick={() => handleSort("areaCode")}
                                                 >
-                                                    <span>Tên khu vực</span>
-                                                    {sortField === "areaName" ? (
+                                                    <span>Mã khu vực</span>
+                                                    {sortField === "areaCode" ? (
                                                         sortAscending ? (
                                                             <ArrowUp className="h-4 w-4 text-orange-500" />
                                                         ) : (
@@ -505,10 +505,10 @@ const AreaLists = () => {
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                                                 <div
                                                     className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
-                                                    onClick={() => handleSort("areaCode")}
+                                                    onClick={() => handleSort("areaName")}
                                                 >
-                                                    <span>Mã khu vực</span>
-                                                    {sortField === "areaCode" ? (
+                                                    <span>Tên khu vực</span>
+                                                    {sortField === "areaName" ? (
                                                         sortAscending ? (
                                                             <ArrowUp className="h-4 w-4 text-orange-500" />
                                                         ) : (
@@ -540,23 +540,21 @@ const AreaLists = () => {
                                                     <TableCell className="px-6 py-4 text-slate-600 font-medium">
                                                         {index + 1}
                                                     </TableCell>
-                                                    <TableCell className="px-6 py-4 text-slate-700">{area?.areaName || "—"}</TableCell>
                                                     <TableCell className="px-6 py-4 text-slate-700 font-medium">{area?.areaCode || ''}</TableCell>
+                                                    <TableCell className="px-6 py-4 text-slate-700">{area?.areaName || "—"}</TableCell>
                                                     <TableCell className="px-6 py-4 text-slate-700">{area?.description || "—"}</TableCell>
                                                     <TableCell className="px-6 py-4 text-center">
                                                         <div className="flex justify-center">
-                                                            <PermissionWrapper 
+                                                            <PermissionWrapper
                                                                 requiredPermission={PERMISSIONS.AREA_UPDATE}
                                                                 hide={false}
                                                                 fallback={
-                                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center justify-center gap-1 ${
-                                                                        area?.status === 1 
-                                                                            ? 'bg-green-100 text-green-800' 
+                                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center justify-center gap-1 ${area?.status === 1
+                                                                            ? 'bg-green-100 text-green-800'
                                                                             : 'bg-red-100 text-red-800'
-                                                                    }`}>
-                                                                        <span className={`w-2 h-2 rounded-full ${
-                                                                            area?.status === 1 ? 'bg-green-500' : 'bg-red-500'
-                                                                        }`}></span>
+                                                                        }`}>
+                                                                        <span className={`w-2 h-2 rounded-full ${area?.status === 1 ? 'bg-green-500' : 'bg-red-500'
+                                                                            }`}></span>
                                                                         {area?.status === 1 ? 'Hoạt động' : 'Ngừng hoạt động'}
                                                                     </span>
                                                                 }
