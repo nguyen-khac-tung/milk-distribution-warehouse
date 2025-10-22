@@ -9,7 +9,8 @@ namespace MilkDistributionWarehouse.Services
 {
     public interface IPurchaseOrderService
     {
-        Task<(string, PageResult<PurchaseOrderDto>)> GetPurchaseOrders(PagedRequest request);
+        Task<(string, PageResult<PurchaseOrderDtoSaleRepresentative>)> GetPurchaseOrderSaleRepresentatives(PagedRequest request);
+        Task<(string, PageResult<PurchaseOrderDtoSaleManager>)> GetPurchaseOrderSaleManagers(PagedRequest request);
     }
 
     public class PurchaseOrderService : IPurchaseOrderService
@@ -22,18 +23,25 @@ namespace MilkDistributionWarehouse.Services
             _mapper = mapper;
         }
 
-        public async Task<(string, PageResult<PurchaseOrderDto>)> GetPurchaseOrders(PagedRequest request)
+        public async Task<(string, PageResult<TDto>)> GetPurchaseOrdersAsync<TDto>(PagedRequest request)
         {
             var purchaseOrderQuery = _purchaseOrderRepository.GetPurchaseOrder();
 
-            var purcharOrder = purchaseOrderQuery.ProjectTo<PurchaseOrderDto>(_mapper.ConfigurationProvider);
+            var projectedQuery = purchaseOrderQuery.ProjectTo<TDto>(_mapper.ConfigurationProvider);
 
-            var items = await purcharOrder.ToPagedResultAsync(request);
+            var items = await projectedQuery.ToPagedResultAsync(request);
 
             if (!items.Items.Any())
-                return ("Danh sách mua hàng trống.".ToMessageForUser(), new PageResult<PurchaseOrderDto>());
+                return ("Danh sách mua hàng trống.".ToMessageForUser(), new PageResult<TDto>());
 
             return ("", items);
         }
+
+        public async Task<(string, PageResult<PurchaseOrderDtoSaleRepresentative>)> GetPurchaseOrderSaleRepresentatives(PagedRequest request)
+            => await GetPurchaseOrdersAsync<PurchaseOrderDtoSaleRepresentative>(request);
+
+        public async Task<(string, PageResult<PurchaseOrderDtoSaleManager>)> GetPurchaseOrderSaleManagers(PagedRequest request)
+            => await GetPurchaseOrdersAsync<PurchaseOrderDtoSaleManager>(request);
+
     }
 }

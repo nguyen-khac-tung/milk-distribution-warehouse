@@ -17,13 +17,22 @@ namespace MilkDistributionWarehouse.Controllers
             _purchaseOrderService = purchaseOrderService;
         }
 
-        [HttpPost("GetPurchaseOrders")]
+        [HttpPost("GetPurchaseOrderSaleRepresentatives")]
         public async Task<IActionResult> GetPurchaseOrders(PagedRequest request)
         {
-            var (msg, purchaseOrderDto) = await _purchaseOrderService.GetPurchaseOrders(request);
+            var (msg, purchaseOrderDto) = await _purchaseOrderService.GetPurchaseOrderSaleRepresentatives(request);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<PageResult<PurchaseOrderDto>>.ToResultOk(purchaseOrderDto);
+            return ApiResponse<PageResult<PurchaseOrderDtoSaleRepresentative>>.ToResultOk(purchaseOrderDto);
+        }
+
+        [HttpPost("GetPurchaseOrderSaleManagers")]
+        public async Task<IActionResult> GetPurchaseOrderSaleManagers(PagedRequest request)
+        {
+            var (msg, purchaseOrderDto) = await _purchaseOrderService.GetPurchaseOrderSaleManagers(request);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<PageResult<PurchaseOrderDtoSaleManager>>.ToResultOk(purchaseOrderDto);
         }
     }
 }
