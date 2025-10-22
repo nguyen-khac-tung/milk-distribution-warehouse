@@ -63,6 +63,26 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                 permission: PERMISSIONS.DASHBOARD_VIEW
             },
             {
+                key: "purchase-orders-management",
+                icon: <ComponentIcon name="puscharorder" size={16} collapsed={collapsed} />,
+                label: "Quản lý đơn nhập",
+                permission: PERMISSIONS.PURCHASE_ORDER_VIEW,
+                children: [
+                    {
+                        key: "/purchase-orders",
+                        icon: <ComponentIcon name="cart" size={14} collapsed={collapsed} />,
+                        label: "Danh sách đơn nhập",
+                        permission: PERMISSIONS.PURCHASE_ORDER_VIEW,
+                    },
+                    {
+                        key: "/purchase-orders/create",
+                        icon: <ComponentIcon name="createpuscharorder" size={14} collapsed={collapsed} />,
+                        label: "Tạo đơn hàng",
+                        permission: PERMISSIONS.PURCHASE_ORDER_CREATE,
+                    }
+                ],
+            },
+            {
                 key: "/accounts",
                 icon: <UsergroupAddOutlined style={{ color: '#000000' }} />,
                 label: "Quản lý tài khoản",
@@ -138,26 +158,7 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                     },
                 ],
             },
-            {
-                key: "purchase-orders-management",
-                icon: <ComponentIcon name="puscharorder" size={16} collapsed={collapsed} />,
-                label: "Quản lý đơn nhập",
-                permission: PERMISSIONS.PURCHASE_ORDER_VIEW,
-                children: [
-                    {
-                        key: "/purchase-orders",
-                        icon: <ComponentIcon name="cart" size={14} collapsed={collapsed} />,
-                        label: "Danh sách đơn nhập",
-                        permission: PERMISSIONS.PURCHASE_ORDER_VIEW,
-                    },
-                    {
-                        key: "/purchase-orders/create",
-                        icon: <ComponentIcon name="createpuscharorder" size={14} collapsed={collapsed} />,
-                        label: "Tạo đơn hàng",
-                        permission: PERMISSIONS.PURCHASE_ORDER_CREATE,
-                    }
-                ],
-            },
+            
             {
                 key: "/reports",
                 icon: <BarChartOutlined style={{ color: '#000000' }} />,

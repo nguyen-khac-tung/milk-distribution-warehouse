@@ -1,12 +1,12 @@
 import React from "react"
 import { Building2, CheckCircle, XCircle } from "lucide-react"
 
-export default function StatsCards({ 
-  totalCount = 0, 
-  activeCount = 0, 
+export default function StatsCards({
+  totalCount = 0,
+  activeCount = 0,
   inactiveCount = 0,
-  totalLabel = "Tổng hàng hóa",
-  activeLabel = "Đang hoạt động", 
+  totalLabel = "Tổng mặt hàng",
+  activeLabel = "Đang hoạt động",
   inactiveLabel = "Không hoạt động",
   className = ""
 }) {
@@ -45,15 +45,15 @@ export default function StatsCards({
                 strokeDashoffset="100"
                 className="animate-draw"
               />
-              <circle cx="2" cy="24" r="1.5" fill="#f97316" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '0.5s'}} />
-              <circle cx="8" cy="18" r="1.5" fill="#f97316" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '0.8s'}} />
-              <circle cx="16" cy="22" r="1.5" fill="#f97316" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '1.1s'}} />
-              <circle cx="24" cy="16" r="1.5" fill="#f97316" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '1.4s'}} />
-              <circle cx="32" cy="20" r="2" fill="#f97316" className="opacity-0 animate-fadeIn hover:r-3 transition-all cursor-pointer" style={{animationDelay: '1.7s'}} />
-              <circle cx="40" cy="14" r="1.5" fill="#f97316" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '2s'}} />
-              <circle cx="48" cy="18" r="1.5" fill="#f97316" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '2.3s'}} />
-              <circle cx="56" cy="12" r="1.5" fill="#f97316" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '2.6s'}} />
-              <circle cx="62" cy="16" r="1.5" fill="#f97316" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '2.9s'}} />
+              <circle cx="2" cy="24" r="1.5" fill="#f97316" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{ animationDelay: '0.5s' }} />
+              <circle cx="8" cy="18" r="1.5" fill="#f97316" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{ animationDelay: '0.8s' }} />
+              <circle cx="16" cy="22" r="1.5" fill="#f97316" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{ animationDelay: '1.1s' }} />
+              <circle cx="24" cy="16" r="1.5" fill="#f97316" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{ animationDelay: '1.4s' }} />
+              <circle cx="32" cy="20" r="2" fill="#f97316" className="opacity-0 animate-fadeIn hover:r-3 transition-all cursor-pointer" style={{ animationDelay: '1.7s' }} />
+              <circle cx="40" cy="14" r="1.5" fill="#f97316" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{ animationDelay: '2s' }} />
+              <circle cx="48" cy="18" r="1.5" fill="#f97316" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{ animationDelay: '2.3s' }} />
+              <circle cx="56" cy="12" r="1.5" fill="#f97316" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{ animationDelay: '2.6s' }} />
+              <circle cx="62" cy="16" r="1.5" fill="#f97316" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{ animationDelay: '2.9s' }} />
             </svg>
             <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
               {totalCount} {totalLabel.toLowerCase()}
@@ -95,15 +95,15 @@ export default function StatsCards({
                 strokeDashoffset="100"
                 className="animate-draw"
               />
-              <circle cx="2" cy="20" r="1.5" fill="#22c55e" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '0.5s'}} />
-              <circle cx="8" cy="26" r="1.5" fill="#22c55e" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '0.8s'}} />
-              <circle cx="16" cy="22" r="1.5" fill="#22c55e" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '1.1s'}} />
-              <circle cx="24" cy="28" r="1.5" fill="#22c55e" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '1.4s'}} />
-              <circle cx="32" cy="24" r="2" fill="#22c55e" className="opacity-0 animate-fadeIn hover:r-3 transition-all cursor-pointer" style={{animationDelay: '1.7s'}} />
-              <circle cx="40" cy="30" r="1.5" fill="#22c55e" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '2s'}} />
-              <circle cx="48" cy="26" r="1.5" fill="#22c55e" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '2.3s'}} />
-              <circle cx="56" cy="32" r="1.5" fill="#22c55e" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '2.6s'}} />
-              <circle cx="62" cy="28" r="1.5" fill="#22c55e" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '2.9s'}} />
+              <circle cx="2" cy="20" r="1.5" fill="#22c55e" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{ animationDelay: '0.5s' }} />
+              <circle cx="8" cy="26" r="1.5" fill="#22c55e" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{ animationDelay: '0.8s' }} />
+              <circle cx="16" cy="22" r="1.5" fill="#22c55e" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{ animationDelay: '1.1s' }} />
+              <circle cx="24" cy="28" r="1.5" fill="#22c55e" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{ animationDelay: '1.4s' }} />
+              <circle cx="32" cy="24" r="2" fill="#22c55e" className="opacity-0 animate-fadeIn hover:r-3 transition-all cursor-pointer" style={{ animationDelay: '1.7s' }} />
+              <circle cx="40" cy="30" r="1.5" fill="#22c55e" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{ animationDelay: '2s' }} />
+              <circle cx="48" cy="26" r="1.5" fill="#22c55e" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{ animationDelay: '2.3s' }} />
+              <circle cx="56" cy="32" r="1.5" fill="#22c55e" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{ animationDelay: '2.6s' }} />
+              <circle cx="62" cy="28" r="1.5" fill="#22c55e" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{ animationDelay: '2.9s' }} />
             </svg>
             <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
               {activeCount} {activeLabel.toLowerCase()}
@@ -145,15 +145,15 @@ export default function StatsCards({
                 strokeDashoffset="100"
                 className="animate-draw"
               />
-              <circle cx="2" cy="28" r="1.5" fill="#ef4444" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '0.5s'}} />
-              <circle cx="8" cy="24" r="1.5" fill="#ef4444" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '0.8s'}} />
-              <circle cx="16" cy="26" r="1.5" fill="#ef4444" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '1.1s'}} />
-              <circle cx="24" cy="22" r="1.5" fill="#ef4444" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '1.4s'}} />
-              <circle cx="32" cy="24" r="2" fill="#ef4444" className="opacity-0 animate-fadeIn hover:r-3 transition-all cursor-pointer" style={{animationDelay: '1.7s'}} />
-              <circle cx="40" cy="20" r="1.5" fill="#ef4444" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '2s'}} />
-              <circle cx="48" cy="22" r="1.5" fill="#ef4444" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '2.3s'}} />
-              <circle cx="56" cy="18" r="1.5" fill="#ef4444" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '2.6s'}} />
-              <circle cx="62" cy="20" r="1.5" fill="#ef4444" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{animationDelay: '2.9s'}} />
+              <circle cx="2" cy="28" r="1.5" fill="#ef4444" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{ animationDelay: '0.5s' }} />
+              <circle cx="8" cy="24" r="1.5" fill="#ef4444" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{ animationDelay: '0.8s' }} />
+              <circle cx="16" cy="26" r="1.5" fill="#ef4444" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{ animationDelay: '1.1s' }} />
+              <circle cx="24" cy="22" r="1.5" fill="#ef4444" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{ animationDelay: '1.4s' }} />
+              <circle cx="32" cy="24" r="2" fill="#ef4444" className="opacity-0 animate-fadeIn hover:r-3 transition-all cursor-pointer" style={{ animationDelay: '1.7s' }} />
+              <circle cx="40" cy="20" r="1.5" fill="#ef4444" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{ animationDelay: '2s' }} />
+              <circle cx="48" cy="22" r="1.5" fill="#ef4444" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{ animationDelay: '2.3s' }} />
+              <circle cx="56" cy="18" r="1.5" fill="#ef4444" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{ animationDelay: '2.6s' }} />
+              <circle cx="62" cy="20" r="1.5" fill="#ef4444" className="opacity-0 animate-fadeIn hover:r-2 transition-all cursor-pointer" style={{ animationDelay: '2.9s' }} />
             </svg>
             <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
               {inactiveCount} {inactiveLabel.toLowerCase()}
