@@ -142,20 +142,20 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                 key: "purchase-orders-management",
                 icon: <ComponentIcon name="puscharorder" size={16} collapsed={collapsed} />,
                 label: "Quản lý đơn nhập",
-                permission: null, // Tạm thời không cần phân quyền
+                permission: PERMISSIONS.PURCHASE_ORDER_VIEW,
                 children: [
                     {
                         key: "/purchase-orders",
                         icon: <ComponentIcon name="cart" size={14} collapsed={collapsed} />,
                         label: "Danh sách đơn nhập",
-                        permission: null, // Tạm thời không cần phân quyền
+                        permission: PERMISSIONS.PURCHASE_ORDER_VIEW,
                     },
                     {
                         key: "/purchase-orders/create",
                         icon: <ComponentIcon name="createpuscharorder" size={14} collapsed={collapsed} />,
-                        label: "Tạo đơn nhập",
-                        permission: null, // Tạm thời không cần phân quyền
-                    },
+                        label: "Tạo đơn hàng",
+                        permission: PERMISSIONS.PURCHASE_ORDER_CREATE,
+                    }
                 ],
             },
             {

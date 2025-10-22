@@ -22,6 +22,7 @@ import UnauthorizedPage from "../pages/UnauthorizedPage";
 import ProtectedRoute from "../components/Common/ProtectedRoute";
 import RoleBasedRedirect from "../components/Common/RoleBasedRedirect";
 import PurchaseOrderList from "../pages/PurchaseOrderPage/PurchaseOrderList";
+import CreatePurchaseOrder from "../pages/PurchaseOrderPage/CreatePurchaseOrder";
 import { PERMISSIONS } from "../utils/permissions";
 
 export const routes = [
@@ -173,7 +174,18 @@ export const routes = [
     {
         path: "/purchase-orders",
         page: () => (
-            <PurchaseOrderList />
+            <ProtectedRoute requiredPermission={PERMISSIONS.PURCHASE_ORDER_VIEW}>
+                <PurchaseOrderList />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/purchase-orders/create",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.PURCHASE_ORDER_CREATE}>
+                <CreatePurchaseOrder />
+            </ProtectedRoute>
         ),
         isShowHeader: true,
     },
