@@ -489,8 +489,8 @@ export default function SuppliersPage() {
                                 hide={false}
                                 fallback={
                                   <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center justify-center gap-1 ${supplier?.status === 1
-                                      ? 'bg-green-100 text-green-800'
-                                      : 'bg-red-100 text-red-800'
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-red-100 text-red-800'
                                     }`}>
                                     <span className={`w-2 h-2 rounded-full ${supplier?.status === 1 ? 'bg-green-500' : 'bg-red-500'
                                       }`}></span>

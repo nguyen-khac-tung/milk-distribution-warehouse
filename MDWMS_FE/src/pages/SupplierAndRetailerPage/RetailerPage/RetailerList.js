@@ -491,6 +491,9 @@ export default function RetailersPage() {
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                         Số điện thoại
                       </TableHead>
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                        Địa chỉ
+                      </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-48">
                         Trạng thái
                       </TableHead>
@@ -511,6 +514,7 @@ export default function RetailersPage() {
                           </TableCell>
                           <TableCell className="px-6 py-4 text-slate-700 font-medium">{retailer?.retailerName || ''}</TableCell>
                           <TableCell className="px-6 py-4 text-slate-700">{retailer?.phone || ''}</TableCell>
+                          <TableCell className="px-6 py-4 text-slate-700">{retailer?.address || ''}</TableCell>
                           <TableCell className="px-6 py-4 text-center">
                             <div className="flex justify-center">
                               <PermissionWrapper 
@@ -586,7 +590,7 @@ export default function RetailersPage() {
                         actionText="Xóa bộ lọc"
                         onAction={clearAllFilters}
                         showAction={!!(searchQuery || statusFilter)}
-                        colSpan={5}
+                        colSpan={6}
                       />
                     )}
                   </TableBody>
