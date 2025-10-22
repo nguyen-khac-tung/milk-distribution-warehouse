@@ -18,6 +18,7 @@ namespace MilkDistributionWarehouse.Mapper
             CreateMap<UserCreateDto, User>()
                 .ForMember(dest => dest.UserId, opt => opt.Ignore())
                 .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.FullName.Trim()))
+                .ForMember(dest => dest.IsFirstLogin, opt => opt.MapFrom(_ => true))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => CommonStatus.Active))
                 .ForMember(dest => dest.CreateAt, opt => opt.MapFrom(_ => DateTime.Now))
                 .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => (DateTime?)null));

@@ -25,13 +25,13 @@ public partial class User
 
     public int? Status { get; set; }
 
+    public bool? IsFirstLogin { get; set; }
+
     public DateTime? CreateAt { get; set; }
 
     public DateTime? UpdateAt { get; set; }
 
     public virtual ICollection<Batch> Batches { get; set; } = new List<Batch>();
-
-    public virtual UserOtp EmailNavigation { get; set; }
 
     public virtual ICollection<GoodsIssueNote> GoodsIssueNotes { get; set; } = new List<GoodsIssueNote>();
 

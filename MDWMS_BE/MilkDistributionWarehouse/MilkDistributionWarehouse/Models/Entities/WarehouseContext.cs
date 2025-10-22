@@ -106,6 +106,7 @@ public partial class WarehouseContext : DbContext
             entity.Property(e => e.BatchCode)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+            entity.Property(e => e.Description).HasMaxLength(250);
 
             entity.HasOne(d => d.CreateByNavigation).WithMany(p => p.Batches)
                 .HasForeignKey(d => d.CreateBy)
@@ -290,9 +291,7 @@ public partial class WarehouseContext : DbContext
 
             entity.Property(e => e.PurchaseOderId).ValueGeneratedNever();
 
-            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.PurchaseOrders)
-                .HasForeignKey(d => d.CreatedBy)
-                .HasConstraintName("FK_PurchaseOrders_Users");
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.PurchaseOrders).HasForeignKey(d => d.CreatedBy);
 
             entity.HasOne(d => d.Supplier).WithMany(p => p.PurchaseOrders)
                 .HasForeignKey(d => d.SupplierId)
@@ -333,6 +332,7 @@ public partial class WarehouseContext : DbContext
         {
             entity.ToTable("Role");
 
+            entity.Property(e => e.Description).HasMaxLength(100);
             entity.Property(e => e.RoleName).HasMaxLength(100);
         });
 
@@ -445,6 +445,13 @@ public partial class WarehouseContext : DbContext
             entity.Property(e => e.Address).HasMaxLength(255);
             entity.Property(e => e.BrandName).HasMaxLength(150);
             entity.Property(e => e.CompanyName).HasMaxLength(255);
+            entity.Property(e => e.ContactPersonEmail)
+                .HasMaxLength(50)
+                .IsUnicode(false);
+            entity.Property(e => e.ContactPersonName).HasMaxLength(100);
+            entity.Property(e => e.ContactPersonPhone)
+                .HasMaxLength(20)
+                .IsUnicode(false);
             entity.Property(e => e.Email)
                 .HasMaxLength(50)
                 .IsUnicode(false);
@@ -453,13 +460,6 @@ public partial class WarehouseContext : DbContext
                 .IsUnicode(false);
             entity.Property(e => e.TaxCode)
                 .HasMaxLength(100)
-                .IsUnicode(false);
-            entity.Property(e => e.ContactPersonName).HasMaxLength(100);
-            entity.Property(e => e.ContactPersonPhone)
-                .HasMaxLength(20)
-                .IsUnicode(false);
-            entity.Property(e => e.ContactPersonEmail)
-                .HasMaxLength(50)
                 .IsUnicode(false);
         });
 
@@ -480,6 +480,7 @@ public partial class WarehouseContext : DbContext
             entity.Property(e => e.FullName)
                 .IsRequired()
                 .HasMaxLength(250);
+            entity.Property(e => e.IsFirstLogin).HasDefaultValue(false);
             entity.Property(e => e.Password)
                 .HasMaxLength(128)
                 .IsUnicode(false);
@@ -487,10 +488,6 @@ public partial class WarehouseContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false);
             entity.Property(e => e.Status).HasDefaultValue(1);
-
-            entity.HasOne(d => d.EmailNavigation).WithMany(p => p.Users)
-                .HasForeignKey(d => d.Email)
-                .HasConstraintName("FK_Users_UserOtp");
 
             entity.HasMany(d => d.Roles).WithMany(p => p.Users)
                 .UsingEntity<Dictionary<string, object>>(
