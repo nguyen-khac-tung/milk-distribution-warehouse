@@ -1,5 +1,33 @@
 import api from "./api";
 
+// Lấy danh sách Purchase Order cho Sales Managers
+export const getPurchaseOrderSaleManagers = async (searchParams = {}) => {
+    try {
+        const body = {
+            pageNumber: searchParams.pageNumber || 1,
+            pageSize: searchParams.pageSize || 10,
+            search: searchParams.search || "",
+            sortField: searchParams.sortField || "",
+            sortAscending: searchParams.sortAscending !== undefined ? searchParams.sortAscending : true,
+            filters: {
+                ...(searchParams.status && { status: searchParams.status }),
+                ...(searchParams.supplierId && { supplierId: searchParams.supplierId }),
+                ...(searchParams.approvalBy && { approvalBy: searchParams.approvalBy }),
+                ...(searchParams.createdBy && { createdBy: searchParams.createdBy }),
+                ...(searchParams.arrivalConfirmedBy && { arrivalConfirmedBy: searchParams.arrivalConfirmedBy }),
+                ...(searchParams.assignTo && { assignTo: searchParams.assignTo }),
+                ...(searchParams.fromDate && { fromDate: searchParams.fromDate }),
+                ...(searchParams.toDate && { toDate: searchParams.toDate })
+            }
+        };
+        const res = await api.post("/PurchaseOrder/GetPurchaseOrderSaleManagers", body);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching purchase orders for sales managers:", error);
+        return { data: [], totalCount: 0 };
+    }
+};
+
 // Lấy danh sách Purchase Order cho Sales Representative
 export const getPurchaseOrderSaleRepresentatives = async (searchParams = {}) => {
     try {

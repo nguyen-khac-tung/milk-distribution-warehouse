@@ -10,8 +10,12 @@ import EmptyState from "../../components/Common/EmptyState";
 import Pagination from "../../components/Common/Pagination";
 import PurchaseOrderFilterToggle from "../../components/PurchaseOrderComponents/PurchaseOrderFilterToggle";
 import PurchaseOrderStatsChart from "../../components/PurchaseOrderComponents/PurchaseOrderStatsChart";
-import { getPurchaseOrderSaleRepresentatives } from "../../services/PurchaseOrderService";
+import PurchaseOrderTable from "./PurchaseOrderTable";
+import { useFilterDisplayLogic } from "./FilterDisplayLogic";
+import { getPurchaseOrderSaleRepresentatives, getPurchaseOrderSaleManagers } from "../../services/PurchaseOrderService";
 import { getSuppliersDropdown } from "../../services/SupplierService";
+import { PERMISSIONS } from "../../utils/permissions";
+import { usePermissions } from "../../hooks/usePermissions";
 
 
 // Mapping status numbers to Vietnamese labels and colors
@@ -34,6 +38,7 @@ const sampleUsers = [
 
 export default function PurchaseOrderList() {
   const navigate = useNavigate();
+  const { hasPermission, userRoles } = usePermissions();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState("");
   const [sortAscending, setSortAscending] = useState(true);
@@ -82,8 +87,11 @@ export default function PurchaseOrderList() {
     try {
       setLoading(true);
       console.log("=== FETCHING PURCHASE ORDERS ===");
+      console.log("User roles:", userRoles);
       
-      const response = await getPurchaseOrderSaleRepresentatives({
+      // Chọn API dựa trên permissions của user
+      let response;
+      const requestParams = {
         pageNumber: pagination.current,
         pageSize: pagination.pageSize,
         search: searchQuery,
@@ -97,7 +105,22 @@ export default function PurchaseOrderList() {
         assignTo: assigneeFilter,
         fromDate: dateRangeFilter.fromDate,
         toDate: dateRangeFilter.toDate
-      });
+      };
+
+      // Kiểm tra permissions để chọn API phù hợp
+      if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_SM)) {
+        // Sales Manager - có quyền xem tất cả đơn hàng
+        console.log("Using Sales Manager API");
+        response = await getPurchaseOrderSaleManagers(requestParams);
+      } else if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS)) {
+        // Sales Representative - chỉ xem đơn hàng của mình
+        console.log("Using Sales Representative API");
+        response = await getPurchaseOrderSaleRepresentatives(requestParams);
+      } else {
+        // Fallback - mặc định dùng API cho representatives
+        console.log("Using default Sales Representative API");
+        response = await getPurchaseOrderSaleRepresentatives(requestParams);
+      }
       
       console.log("API response:", response);
       
@@ -131,9 +154,7 @@ export default function PurchaseOrderList() {
 
   // Trigger search/filter when filters change
   useEffect(() => {
-    if (searchQuery || statusFilter || supplierFilter || approverFilter || creatorFilter || confirmerFilter || assigneeFilter || dateRangeFilter.fromDate || dateRangeFilter.toDate) {
-      fetchData();
-    }
+    fetchData();
   }, [searchQuery, statusFilter, supplierFilter, approverFilter, creatorFilter, confirmerFilter, assigneeFilter, dateRangeFilter]);
 
   // Filter and sort data
@@ -196,12 +217,6 @@ export default function PurchaseOrderList() {
     });
   }, [filteredPurchaseOrders, sortField, sortAscending]);
 
-  // Paginate data
-  const paginatedPurchaseOrders = useMemo(() => {
-    const startIndex = (pagination.current - 1) * pagination.pageSize;
-    const endIndex = startIndex + pagination.pageSize;
-    return sortedPurchaseOrders.slice(startIndex, endIndex);
-  }, [sortedPurchaseOrders, pagination.current, pagination.pageSize]);
 
   // Update total count when filtered data changes
   React.useEffect(() => {
@@ -266,9 +281,8 @@ export default function PurchaseOrderList() {
     setConfirmerFilter("");
     setAssigneeFilter("");
     setDateRangeFilter({ fromDate: '', toDate: '' });
-    // Reset pagination and fetch data
     setPagination(prev => ({ ...prev, current: 1 }));
-    fetchData();
+    // fetchData() will be called automatically by useEffect when filters change
   };
 
   const handleRefresh = () => {
@@ -341,6 +355,10 @@ export default function PurchaseOrderList() {
     setPagination(prev => ({ ...prev, current: 1 }));
   };
 
+
+  // Use custom hook for filter display logic
+  const availableFieldsForFilter = useFilterDisplayLogic(purchaseOrders);
+
   // Calculate stats for chart
   const purchaseOrderStats = useMemo(() => {
     const totalOrders = purchaseOrders.length;
@@ -371,7 +389,9 @@ export default function PurchaseOrderList() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-600">Quản lý Đơn hàng nhập</h1>
-            <p className="text-slate-600 mt-1">Quản lý các đơn hàng nhập trong hệ thống</p>
+            <p className="text-slate-600 mt-1">
+              Quản lý các đơn hàng nhập trong hệ thống
+            </p>
           </div>
           <div className="flex space-x-3">
             <Button
@@ -385,6 +405,26 @@ export default function PurchaseOrderList() {
             </Button>
           </div>
         </div>
+
+        {/* Debug Info - chỉ hiển thị trong development */}
+        {/* {process.env.NODE_ENV === 'development' && (
+          <Card className="bg-yellow-50 border-yellow-200">
+            <div className="p-4">
+              <h3 className="text-sm font-medium text-yellow-800 mb-2">Debug Info</h3>
+              <div className="text-xs text-yellow-700 space-y-1">
+                <div><strong>User Roles:</strong> {userRoles?.join(', ') || 'None'}</div>
+                <div><strong>Has SM Permission:</strong> {hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_SM) ? 'Yes' : 'No'}</div>
+                <div><strong>Has RS Permission:</strong> {hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS) ? 'Yes' : 'No'}</div>
+                <div><strong>API Endpoint:</strong> {
+                  hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_SM) 
+                    ? 'GetPurchaseOrderSaleManagers' 
+                    : 'GetPurchaseOrderSaleRepresentatives'
+                }</div>
+                <div><strong>Data Count:</strong> {purchaseOrders.length} items</div>
+              </div>
+            </div>
+          </Card>
+        )} */}
 
         {/* Stats Chart */}
         <PurchaseOrderStatsChart
@@ -402,54 +442,55 @@ export default function PurchaseOrderList() {
             showStatusFilter={showStatusFilter}
             setShowStatusFilter={setShowStatusFilter}
             statusOptions={[
-              { value: "", label: "Tất cả trạng thái" },
+              { value: "", label: "Tất cả trạng thái đơn" },
               { value: "1", label: "Chờ duyệt" },
               { value: "2", label: "Đã xuất" },
               { value: "3", label: "Từ chối" },
-              { value: "4", label: "Đã duyệt" }
+              { value: "4", label: "Đã duyệt" },
+              { value: "5", label: "Đã hủy" }
             ]}
             onStatusFilter={handleStatusFilter}
             clearStatusFilter={clearStatusFilter}
-            // Supplier Filter
-            supplierFilter={supplierFilter}
-            setSupplierFilter={setSupplierFilter}
-            showSupplierFilter={showSupplierFilter}
-            setShowSupplierFilter={setShowSupplierFilter}
-            suppliers={suppliers}
-            onSupplierFilter={handleSupplierFilter}
-            clearSupplierFilter={clearSupplierFilter}
-            // Approver Filter
-            approverFilter={approverFilter}
-            setApproverFilter={setApproverFilter}
-            showApproverFilter={showApproverFilter}
-            setShowApproverFilter={setShowApproverFilter}
-            approvers={sampleUsers}
-            onApproverFilter={handleApproverFilter}
-            clearApproverFilter={clearApproverFilter}
-            // Creator Filter
-            creatorFilter={creatorFilter}
-            setCreatorFilter={setCreatorFilter}
-            showCreatorFilter={showCreatorFilter}
-            setShowCreatorFilter={setShowCreatorFilter}
-            creators={sampleUsers}
-            onCreatorFilter={handleCreatorFilter}
-            clearCreatorFilter={clearCreatorFilter}
-            // Confirmer Filter
-            confirmerFilter={confirmerFilter}
-            setConfirmerFilter={setConfirmerFilter}
-            showConfirmerFilter={showConfirmerFilter}
-            setShowConfirmerFilter={setShowConfirmerFilter}
-            confirmers={sampleUsers}
-            onConfirmerFilter={handleConfirmerFilter}
-            clearConfirmerFilter={clearConfirmerFilter}
-            // Assignee Filter
-            assigneeFilter={assigneeFilter}
-            setAssigneeFilter={setAssigneeFilter}
-            showAssigneeFilter={showAssigneeFilter}
-            setShowAssigneeFilter={setShowAssigneeFilter}
-            assignees={sampleUsers}
-            onAssigneeFilter={handleAssigneeFilter}
-            clearAssigneeFilter={clearAssigneeFilter}
+            // Supplier Filter - chỉ hiển thị nếu có supplier data
+            supplierFilter={availableFieldsForFilter.hasSupplier ? supplierFilter : ""}
+            setSupplierFilter={availableFieldsForFilter.hasSupplier ? setSupplierFilter : () => {}}
+            showSupplierFilter={availableFieldsForFilter.hasSupplier ? showSupplierFilter : false}
+            setShowSupplierFilter={availableFieldsForFilter.hasSupplier ? setShowSupplierFilter : () => {}}
+            suppliers={availableFieldsForFilter.hasSupplier ? suppliers : []}
+            onSupplierFilter={availableFieldsForFilter.hasSupplier ? handleSupplierFilter : () => {}}
+            clearSupplierFilter={availableFieldsForFilter.hasSupplier ? clearSupplierFilter : () => {}}
+            // Approver Filter - chỉ hiển thị nếu có approval data
+            approverFilter={availableFieldsForFilter.hasApprovalBy ? approverFilter : ""}
+            setApproverFilter={availableFieldsForFilter.hasApprovalBy ? setApproverFilter : () => {}}
+            showApproverFilter={availableFieldsForFilter.hasApprovalBy ? showApproverFilter : false}
+            setShowApproverFilter={availableFieldsForFilter.hasApprovalBy ? setShowApproverFilter : () => {}}
+            approvers={availableFieldsForFilter.hasApprovalBy ? sampleUsers : []}
+            onApproverFilter={availableFieldsForFilter.hasApprovalBy ? handleApproverFilter : () => {}}
+            clearApproverFilter={availableFieldsForFilter.hasApprovalBy ? clearApproverFilter : () => {}}
+            // Creator Filter - chỉ hiển thị nếu có creator data
+            creatorFilter={availableFieldsForFilter.hasCreatedBy ? creatorFilter : ""}
+            setCreatorFilter={availableFieldsForFilter.hasCreatedBy ? setCreatorFilter : () => {}}
+            showCreatorFilter={availableFieldsForFilter.hasCreatedBy ? showCreatorFilter : false}
+            setShowCreatorFilter={availableFieldsForFilter.hasCreatedBy ? setShowCreatorFilter : () => {}}
+            creators={availableFieldsForFilter.hasCreatedBy ? sampleUsers : []}
+            onCreatorFilter={availableFieldsForFilter.hasCreatedBy ? handleCreatorFilter : () => {}}
+            clearCreatorFilter={availableFieldsForFilter.hasCreatedBy ? clearCreatorFilter : () => {}}
+            // Confirmer Filter - chỉ hiển thị nếu có arrival confirmation data
+            confirmerFilter={availableFieldsForFilter.hasArrivalConfirmedBy ? confirmerFilter : ""}
+            setConfirmerFilter={availableFieldsForFilter.hasArrivalConfirmedBy ? setConfirmerFilter : () => {}}
+            showConfirmerFilter={availableFieldsForFilter.hasArrivalConfirmedBy ? showConfirmerFilter : false}
+            setShowConfirmerFilter={availableFieldsForFilter.hasArrivalConfirmedBy ? setShowConfirmerFilter : () => {}}
+            confirmers={availableFieldsForFilter.hasArrivalConfirmedBy ? sampleUsers : []}
+            onConfirmerFilter={availableFieldsForFilter.hasArrivalConfirmedBy ? handleConfirmerFilter : () => {}}
+            clearConfirmerFilter={availableFieldsForFilter.hasArrivalConfirmedBy ? clearConfirmerFilter : () => {}}
+            // Assignee Filter - chỉ hiển thị nếu có assign data
+            assigneeFilter={availableFieldsForFilter.hasAssignTo ? assigneeFilter : ""}
+            setAssigneeFilter={availableFieldsForFilter.hasAssignTo ? setAssigneeFilter : () => {}}
+            showAssigneeFilter={availableFieldsForFilter.hasAssignTo ? showAssigneeFilter : false}
+            setShowAssigneeFilter={availableFieldsForFilter.hasAssignTo ? setShowAssigneeFilter : () => {}}
+            assignees={availableFieldsForFilter.hasAssignTo ? sampleUsers : []}
+            onAssigneeFilter={availableFieldsForFilter.hasAssignTo ? handleAssigneeFilter : () => {}}
+            clearAssigneeFilter={availableFieldsForFilter.hasAssignTo ? clearAssigneeFilter : () => {}}
             // Date Range Filter
             dateRangeFilter={dateRangeFilter}
             setDateRangeFilter={setDateRangeFilter}
@@ -469,196 +510,19 @@ export default function PurchaseOrderList() {
           />
 
           {/* Table */}
-          <div className="w-full">
-            {loading ? (
-              <Loading size="large" text="Đang tải dữ liệu..." />
-            ) : (
-              <div className={`overflow-x-auto overflow-y-visible ${(filteredPurchaseOrders || []).length === 0 ? 'max-h-96' : ''}`}>
-                <Table className="w-full">
-                  <TableHeader>
-                    <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-16">
-                        STT
-                      </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                        <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("supplierId")}>
-                          <span>Tên nhà cung cấp</span>
-                          {sortField === "supplierId" ? (
-                            sortAscending ? (
-                              <ArrowUp className="h-4 w-4 text-orange-500" />
-                            ) : (
-                              <ArrowDown className="h-4 w-4 text-orange-500" />
-                            )
-                          ) : (
-                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
-                          )}
-                        </div>
-                      </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                        <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("approvalBy")}>
-                          <span>Người duyệt</span>
-                          {sortField === "approvalBy" ? (
-                            sortAscending ? (
-                              <ArrowUp className="h-4 w-4 text-orange-500" />
-                            ) : (
-                              <ArrowDown className="h-4 w-4 text-orange-500" />
-                            )
-                          ) : (
-                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
-                          )}
-                        </div>
-                      </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                        <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("createdBy")}>
-                          <span>Người tạo</span>
-                          {sortField === "createdBy" ? (
-                            sortAscending ? (
-                              <ArrowUp className="h-4 w-4 text-orange-500" />
-                            ) : (
-                              <ArrowDown className="h-4 w-4 text-orange-500" />
-                            )
-                          ) : (
-                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
-                          )}
-                        </div>
-                      </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                        <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("arrivalConfirmedBy")}>
-                          <span>Người xác nhận đến</span>
-                          {sortField === "arrivalConfirmedBy" ? (
-                            sortAscending ? (
-                              <ArrowUp className="h-4 w-4 text-orange-500" />
-                            ) : (
-                              <ArrowDown className="h-4 w-4 text-orange-500" />
-                            )
-                          ) : (
-                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
-                          )}
-                        </div>
-                      </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                        <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("assignTo")}>
-                          <span>Giao cho</span>
-                          {sortField === "assignTo" ? (
-                            sortAscending ? (
-                              <ArrowUp className="h-4 w-4 text-orange-500" />
-                            ) : (
-                              <ArrowDown className="h-4 w-4 text-orange-500" />
-                            )
-                          ) : (
-                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
-                          )}
-                        </div>
-                      </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                        <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("createdAt")}>
-                          <span>Thời gian tạo</span>
-                          {sortField === "createdAt" ? (
-                            sortAscending ? (
-                              <ArrowUp className="h-4 w-4 text-orange-500" />
-                            ) : (
-                              <ArrowDown className="h-4 w-4 text-orange-500" />
-                            )
-                          ) : (
-                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
-                          )}
-                        </div>
-                      </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                        <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("status")}>
-                          <span>Trạng thái</span>
-                          {sortField === "status" ? (
-                            sortAscending ? (
-                              <ArrowUp className="h-4 w-4 text-orange-500" />
-                            ) : (
-                              <ArrowDown className="h-4 w-4 text-orange-500" />
-                            )
-                          ) : (
-                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
-                          )}
-                        </div>
-                      </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
-                        Thao tác
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {(paginatedPurchaseOrders || []).length > 0 ? (
-                      (paginatedPurchaseOrders || []).map((order, index) => (
-                        <TableRow
-                          key={index}
-                          className="hover:bg-slate-50 border-b border-slate-200 min-h-[60px]"
-                        >
-                          <TableCell className="px-6 py-4 text-slate-600 font-medium text-center">
-                            {(pagination.current - 1) * pagination.pageSize + index + 1}
-                          </TableCell>
-                          <TableCell className="px-6 py-4 text-slate-700 text-center">
-                            {order.supplierName || order.supplierId || '-'}
-                          </TableCell>
-                          <TableCell className="px-6 py-4 text-slate-700 text-center">
-                            {order.approvalByName || order.approvalBy || '-'}
-                          </TableCell>
-                          <TableCell className="px-6 py-4 text-slate-700 text-center">
-                            {order.createdByName || order.createdBy || '-'}
-                          </TableCell>
-                          <TableCell className="px-6 py-4 text-slate-700 text-center">
-                            {order.arrivalConfirmedByName || order.arrivalConfirmedBy || '-'}
-                          </TableCell>
-                          <TableCell className="px-6 py-4 text-slate-700 text-center">
-                            {order.assignToName || order.assignTo || '-'}
-                          </TableCell>
-                          <TableCell className="px-6 py-4 text-slate-700 text-center">
-                            {order.createdAt ? new Date(order.createdAt).toLocaleDateString('vi-VN') : '-'}
-                          </TableCell>
-                          <TableCell className="px-6 py-4 text-center">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusConfig[order.status]?.color}`}>
-                              {statusConfig[order.status]?.label}
-                            </span>
-                          </TableCell>
-                          <TableCell className="px-6 py-4 text-center">
-                            <div className="flex items-center justify-center space-x-1">
-                              <button
-                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                title="Xem chi tiết"
-                                onClick={() => handleViewClick(order)}
-                              >
-                                <Eye className="h-4 w-4 text-orange-500" />
-                              </button>
-                              <button
-                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                title="Chỉnh sửa"
-                                onClick={() => handleEditClick(order)}
-                              >
-                                <Edit className="h-4 w-4 text-orange-500" />
-                              </button>
-                              <button
-                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                title="Xóa"
-                                onClick={() => handleDeleteClick(order)}
-                              >
-                                <Trash2 className="h-4 w-4 text-red-500" />
-                              </button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <EmptyState
-                        icon={Package}
-                        title="Không tìm thấy đơn hàng nào"
-                        description="Chưa có đơn hàng nào trong hệ thống"
-                        actionText="Xóa bộ lọc"
-                        onAction={clearAllFilters}
-                        showAction={false}
-                        colSpan={9}
-                      />
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </div>
+          <PurchaseOrderTable
+            purchaseOrders={purchaseOrders}
+            pagination={pagination}
+            sortField={sortField}
+            sortAscending={sortAscending}
+            statusConfig={statusConfig}
+            onSort={handleSort}
+            onView={handleViewClick}
+            onEdit={handleEditClick}
+            onDelete={handleDeleteClick}
+            onClearFilters={clearAllFilters}
+            loading={loading}
+          />
         </Card>
 
         {/* Pagination */}

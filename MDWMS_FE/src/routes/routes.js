@@ -174,7 +174,7 @@ export const routes = [
     {
         path: "/purchase-orders",
         page: () => (
-            <ProtectedRoute requiredPermission={PERMISSIONS.PURCHASE_ORDER_VIEW_RS}>
+            <ProtectedRoute requiredPermission={[PERMISSIONS.PURCHASE_ORDER_VIEW, PERMISSIONS.PURCHASE_ORDER_VIEW_RS, PERMISSIONS.PURCHASE_ORDER_VIEW_SM]} requireAll={false}>
                 <PurchaseOrderList />
             </ProtectedRoute>
         ),
