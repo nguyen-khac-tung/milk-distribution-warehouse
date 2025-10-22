@@ -147,7 +147,7 @@ namespace MilkDistributionWarehouse.Services
 
             if (user.GoodsIssueNotes.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử phiếu xuất hàng.".ToMessageForUser();
             if (user.GoodsReceiptNotes.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử phiếu nhập hàng.".ToMessageForUser();
-            if (user.CreatedPurchaseOrders.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử đơn đặt hàng mua.".ToMessageForUser();
+            if (user.PurchaseOrderCreatedByNavigations.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử đơn đặt hàng mua.".ToMessageForUser();
             if (user.SalesOrders.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử đơn hàng bán.".ToMessageForUser();
             if (user.Batches.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử các lô hàng.".ToMessageForUser();
             if (user.Pallets.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử các pallet.".ToMessageForUser();
