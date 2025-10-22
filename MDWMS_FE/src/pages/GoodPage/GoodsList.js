@@ -181,19 +181,14 @@ export default function GoodsPage() {
         unitMeasureId: searchParams.unitMeasureId || ""
       }
 
-      console.log("API Goods - Request params:", requestParams)
-
       const response = await getGoods(requestParams)
-      console.log("API Goods - Response:", response)
 
       if (response && response.data) {
         // API returns response.data.items (array) and response.data.totalCount
         const dataArray = Array.isArray(response.data.items) ? response.data.items : []
-        console.log("API Goods - Items count:", dataArray.length)
 
         // Load isDisable status cho tất cả items để ẩn/hiện nút edit đúng
         const enrichedData = await fetchGoodsDisableStatus(dataArray)
-        console.log("API Goods - Enriched with isDisable:", enrichedData.length, "items")
 
         setGoods(enrichedData)
         setPagination(prev => ({
@@ -201,7 +196,6 @@ export default function GoodsPage() {
           totalCount: response.data.totalCount || enrichedData.length
         }))
       } else {
-        console.log("API Goods - No data or success false")
         setGoods([])
         setPagination(prev => ({ ...prev, totalCount: 0 }))
       }

@@ -538,7 +538,7 @@ export default function PurchaseOrderList() {
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
                         <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("supplierId")}>
-                          <span>Mã nhà cung cấp</span>
+                          <span>Tên nhà cung cấp</span>
                           {sortField === "supplierId" ? (
                             sortAscending ? (
                               <ArrowUp className="h-4 w-4 text-orange-500" />
@@ -735,7 +735,6 @@ export default function PurchaseOrderList() {
           />
         )}
       </div>
-
     </div>
   );
 }

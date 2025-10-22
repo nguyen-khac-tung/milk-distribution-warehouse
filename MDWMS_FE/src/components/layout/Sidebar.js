@@ -66,13 +66,13 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                 key: "purchase-orders-management",
                 icon: <ComponentIcon name="puscharorder" size={16} collapsed={collapsed} />,
                 label: "Quản lý đơn nhập",
-                permission: PERMISSIONS.PURCHASE_ORDER_VIEW,
+                permission: [PERMISSIONS.PURCHASE_ORDER_VIEW, PERMISSIONS.PURCHASE_ORDER_VIEW_RS],
                 children: [
                     {
                         key: "/purchase-orders",
                         icon: <ComponentIcon name="cart" size={14} collapsed={collapsed} />,
                         label: "Danh sách đơn nhập",
-                        permission: PERMISSIONS.PURCHASE_ORDER_VIEW,
+                        permission: [PERMISSIONS.PURCHASE_ORDER_VIEW, PERMISSIONS.PURCHASE_ORDER_VIEW_RS],
                     },
                     {
                         key: "/purchase-orders/create",
@@ -158,7 +158,7 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                     },
                 ],
             },
-            
+
             {
                 key: "/reports",
                 icon: <BarChartOutlined style={{ color: '#000000' }} />,

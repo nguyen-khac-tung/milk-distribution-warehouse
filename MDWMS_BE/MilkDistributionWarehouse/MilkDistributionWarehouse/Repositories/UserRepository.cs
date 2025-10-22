@@ -58,7 +58,7 @@ namespace MilkDistributionWarehouse.Repositories
                 .Include(u => u.Pallets)
                 .Include(u => u.GoodsIssueNotes)
                 .Include(u => u.GoodsReceiptNotes)
-                .Include(u => u.PurchaseOrders)
+                .Include(u => u.CreatedPurchaseOrders)
                 .Include(u => u.SalesOrders)
                 .Include(u => u.StocktakingSheets)
                 .Where(u => u.UserId == userId && u.Status != CommonStatus.Deleted)

@@ -291,7 +291,21 @@ public partial class WarehouseContext : DbContext
 
             entity.Property(e => e.PurchaseOderId).ValueGeneratedNever();
 
-            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.PurchaseOrders).HasForeignKey(d => d.CreatedBy);
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.CreatedPurchaseOrders)
+                .HasForeignKey(d => d.CreatedBy)
+                .HasConstraintName("FK_PurchaseOrders_Users_CreatedBy");
+
+            entity.HasOne(d => d.ApprovalByNavigation).WithMany(p => p.ApprovalPurchaseOrders)
+                .HasForeignKey(d => d.ApprovalBy)
+                .HasConstraintName("FK_PurchaseOrders_Users_ApprovalBy");
+
+            entity.HasOne(d => d.ArrivalConfirmedByNavagation).WithMany(p => p.ArrivalConfirmedPurchaseOrders)
+                .HasForeignKey(d => d.ArrivalConfirmedBy)
+                .HasConstraintName("FK_PurchaseOrders_Users_ArrivalConfirmedBy");
+
+            entity.HasOne(d => d.AssignToNavigation).WithMany(p => p.AssignToPurchaseOrders)
+                .HasForeignKey(d => d.AssignTo)
+                .HasConstraintName("FK_PurchaseOrders_Users_AssignTo");
 
             entity.HasOne(d => d.Supplier).WithMany(p => p.PurchaseOrders)
                 .HasForeignKey(d => d.SupplierId)
