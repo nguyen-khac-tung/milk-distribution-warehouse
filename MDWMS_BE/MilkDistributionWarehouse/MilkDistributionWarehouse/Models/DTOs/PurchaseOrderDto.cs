@@ -1,4 +1,7 @@
-﻿namespace MilkDistributionWarehouse.Models.DTOs
+﻿using System.ComponentModel.DataAnnotations;
+using System.Runtime.InteropServices;
+
+namespace MilkDistributionWarehouse.Models.DTOs
 {
     public class PurchaseOrderDtoCommon
     {
@@ -27,8 +30,20 @@
         public string? ArrivalConfirmedByName { get; set; }
     }
 
+    public class PurchaseOrderDtoWarehouseManager : PurchaseOrderDtoSaleManager { }
+
+    public class PurchaseOrdersDetail : PurchaseOrderDtoSaleManager
+    {
+        [Required(ErrorMessage = "PurchaseOrderId is required")]
+        public Guid PurchaseOrderId { get; set; }
+        List<PurchaseOrderDetailDto> PurchaseOrderDetails { get; set; } = new();
+        public DateTime? UpdatedAt { get; set; }
+    }
+
     public class PurchaseOrderCreate
     {
+        public int SupplierId { get; set; }
 
+        List<PurchaseOrderDetailCreate> PurchaseOrderDetail { get; set; } = new();
     }
 }

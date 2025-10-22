@@ -16,6 +16,8 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
         public DateOnly ExpiryDate { get; set; }
 
+        public string? Description { get; set; }
+
         public int Status { get; set; }
     }
 
@@ -40,6 +42,9 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
         [Required(ErrorMessage = "Ngày hết hạn không được để trống")]
         public DateOnly ExpiryDate { get; set; }
+
+        [MaxLength(250, ErrorMessage = "Mô tả không được vượt quá 250 ký tự")]
+        public string? Description { get; set; }
     }
 
     public class BatchUpdateDto : BatchCreateDto

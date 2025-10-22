@@ -16,6 +16,4 @@ public partial class UserOtp
     public DateTime ExpiresAt { get; set; }
 
     public DateTime? UsedAt { get; set; }
-
-    public virtual ICollection<User> Users { get; set; } = new List<User>();
 }

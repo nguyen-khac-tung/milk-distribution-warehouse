@@ -62,6 +62,15 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<AuthenticationDto>.ToResultOk(authenDto, "Đặt lại mật khẩu thành công.");
         }
 
+        [HttpPut("ChangePassword")]
+        public async Task<IActionResult> ChangePassword(ChangePasswordDto changePasswordDto)
+        {
+            var (msg, authenDto) = await _iAuthService.ChangePassword(changePasswordDto);
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<AuthenticationDto>.ToResultOk(authenDto, "Đổi mật khẩu thành công.");
+        }
+
         [Authorize]
         [HttpPut("Logout")]
         public async Task<IActionResult> DoLogout()
@@ -70,16 +79,6 @@ namespace MilkDistributionWarehouse.Controllers
             if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
 
             return ApiResponse<string>.ToResultOkMessage();
-        }
-
-        [Authorize]
-        [HttpPut("ChangePassword")]
-        public async Task<IActionResult> ChangePassword(ChangePasswordDto changePasswordDto)
-        {
-            var (msg, authenDto) = await _iAuthService.ChangePassword(User.GetUserId(), changePasswordDto);
-            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
-
-            return ApiResponse<AuthenticationDto>.ToResultOk(authenDto, "Đổi mật khẩu thành công.");
         }
     }
 }

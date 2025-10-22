@@ -20,7 +20,7 @@ namespace MilkDistributionWarehouse.Services
         Task<string> RequestForgotPassword(string email);
         Task<string> VerifyForgotPasswordOtp(VerifyOtpDto verifyOtp);
         Task<(string, AuthenticationDto?)> ResetPassword(ResetPasswordDto resetPasswordDto);
-        Task<(string, AuthenticationDto?)> ChangePassword(int? userId, ChangePasswordDto changePasswordDto);
+        Task<(string, AuthenticationDto?)> ChangePassword(ChangePasswordDto changePasswordDto);
         Task<string> DoLogout(int? userId);
     }
 
@@ -122,14 +122,16 @@ namespace MilkDistributionWarehouse.Services
             return ("", authenDto);
         }
 
-        public async Task<(string, AuthenticationDto?)> ChangePassword(int? userId, ChangePasswordDto changePasswordDto)
+        public async Task<(string, AuthenticationDto?)> ChangePassword(ChangePasswordDto changePasswordDto)
         {
-            if (userId == null) return ("UserId is invalid.", null);
-            var user = await _userRepository.GetUserById(userId);
+            if (changePasswordDto.UserId == null) return ("UserId is invalid.", null);
+            var user = await _userRepository.GetUserById(changePasswordDto.UserId);
             if (user == null) return ("User not found", null);
 
             bool isOldPasswordCorrect = BCrypt.Net.BCrypt.Verify(changePasswordDto.OldPassword, user.Password);
             if(!isOldPasswordCorrect) return ("Mật khẩu cũ không chính xác!".ToMessageForUser(), null);
+
+            if (user.IsFirstLogin == true) user.IsFirstLogin = false; 
 
             user.Password = BCrypt.Net.BCrypt.HashPassword(changePasswordDto.NewPassword);
             var message = await _userRepository.UpdateUser(user);
@@ -194,6 +196,7 @@ namespace MilkDistributionWarehouse.Services
                     UserId = user.UserId,
                     Email = user.Email,
                     FullName = user.FullName,
+                    IsFirstLogin = user.IsFirstLogin,
                     Roles = user.Roles.Select(u => u.RoleName).ToList(),
                     JwtToken = GenerateJwtToken(user),
                     RefreshToken = await GenerateRefreshToken(user)

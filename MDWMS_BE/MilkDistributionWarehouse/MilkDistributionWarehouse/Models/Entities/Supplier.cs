@@ -20,8 +20,11 @@ public partial class Supplier
     public string TaxCode { get; set; }
 
     public string Address { get; set; }
+
     public string ContactPersonName { get; set; }
+
     public string ContactPersonPhone { get; set; }
+
     public string ContactPersonEmail { get; set; }
 
     public int? Status { get; set; }
