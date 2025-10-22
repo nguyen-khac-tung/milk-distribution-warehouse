@@ -11,8 +11,6 @@ export const getUnitMeasure = async (searchParams = {}) => {
             filters: searchParams.status ? { status: searchParams.status } : {}
         };
         const res = await api.post("UnitMeasure/UnitMeasures", body);
-        console.log("UnitMeasure API response:", res.data);
-        console.log("Search params received:", searchParams);
 
         return res.data;
     } catch (error) {
@@ -29,7 +27,6 @@ export const createUnitMeasure = async (data) => {
             description: data.description
         };
         const res = await api.post("/UnitMeasure/Create", body);
-        console.log("UnitMeasure API response:", res.data);
         return res.data;
     } catch (error) {
         console.error("Error creating unit measure:", error);
@@ -40,7 +37,6 @@ export const createUnitMeasure = async (data) => {
 export const deleteUnitMeasure = async (unitMeasureId) => {
     try {
         const res = await api.delete(`/UnitMeasure/Delete/${unitMeasureId}`);
-        console.log("UnitMeasure delete API response:", res.data);
         return res.data;
     } catch (error) {
         console.error("Error deleting unit measure:", error);
@@ -57,16 +53,7 @@ export const updateUnitMeasure = async (data) => {
     };
 
     try {
-        console.log("Sending update request:", body);
-        console.log("Data types:", {
-            name: typeof body.name,
-            description: typeof body.description,
-            unitMeasureId: typeof body.unitMeasureId,
-            status: typeof body.status
-        });
-
         const res = await api.put("/UnitMeasure/Update", body);
-        console.log("UnitMeasure update API response:", res.data);
         return res.data;
     } catch (error) {
         console.error("Error updating unit measure:", error);
@@ -86,14 +73,7 @@ export const updateUnitMeasureStatus = async (data) => {
     };
 
     try {
-        console.log("Sending status update request:", body);
-        console.log("Data types:", {
-            unitMeasureId: typeof body.unitMeasureId,
-            status: typeof body.status
-        });
-
         const res = await api.post("/UnitMeasure/UpdateUnitMeasureStatus", body);
-        console.log("UnitMeasure status update API response:", res.data);
         return res.data;
     } catch (error) {
         console.error("Error updating unit measure status:", error);
@@ -110,7 +90,6 @@ export const updateUnitMeasureStatus = async (data) => {
 export const getUnitMeasuresDropdown = async () => {
     try {
         const res = await api.get("/UnitMeasure/GetUnitMeasureDropDown");
-        console.log("Unit measures dropdown API response:", res.data);
         return res.data;
     } catch (error) {
         console.error("Error fetching unit measures dropdown:", error);

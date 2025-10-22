@@ -11,8 +11,6 @@ export const getStorageCondition = async (searchParams = {}) => {
             filters: searchParams.status ? { status: searchParams.status } : {}
         };
         const res = await api.post("/StorageCondition/StorageConditions", body);
-        console.log("StorageCondition API response:", res.data);
-        console.log("Search params received:", searchParams);
 
         return res.data;
     } catch (error) {
@@ -31,7 +29,6 @@ export const createStorageCondition = async (data) => {
             lightLevel: data.lightLevel,
         };
         const res = await api.post("/StorageCondition/Create", body);
-        console.log("StorageCondition API response:", res.data);
         return res.data;
     } catch (error) {
         console.error("Error creating storage condition:", error);
@@ -46,9 +43,7 @@ export const deleteStorageCondition = async (StorageConditionId) => {
             throw new Error("StorageConditionId is required");
         }
 
-        console.log("Deleting StorageCondition with ID:", StorageConditionId);
         const res = await api.delete(`/StorageCondition/Delete/${StorageConditionId}`);
-        console.log("StorageCondition delete API response:", res.data);
         return res.data;
     } catch (error) {
         console.error("Error deleting storage condition:", error);
@@ -74,19 +69,7 @@ export const updateStorageCondition = async (id, data) => {
     };
 
     try {
-        console.log("Sending update request for ID:", id);
-        console.log("Update data:", body);
-        console.log("Data types:", {
-            temperatureMin: typeof body.temperatureMin,
-            temperatureMax: typeof body.temperatureMax,
-            humidityMin: typeof body.humidityMin,
-            humidityMax: typeof body.humidityMax,
-            lightLevel: typeof body.lightLevel,
-            status: typeof body.status
-        });
-
         const res = await api.put(`/StorageCondition/Update/${id}`, body);
-        console.log("StorageCondition update API response:", res.data);
         return res.data;
     } catch (error) {
         console.error("Error updating storage condition:", error);
@@ -111,9 +94,7 @@ export const updateStorageConditionStatus = async (storageConditionId, status) =
             throw new Error("Status is required");
         }
 
-        console.log("Updating storage condition status:", { storageConditionId, status });
         const res = await api.put(`/StorageCondition/UpdateStatus/${storageConditionId}?status=${status}`);
-        console.log("Storage condition status update API response:", res.data);
         return res.data;
     } catch (error) {
         console.error("Error updating storage condition status:", error);
@@ -132,7 +113,6 @@ export const updateStorageConditionStatus = async (storageConditionId, status) =
 export const getStorageConditionsDropdown = async () => {
     try {
         const res = await api.get("/StorageCondition/StorageConditionsDropdown");
-        console.log("Storage conditions dropdown API response:", res.data);
         return res.data;
     } catch (error) {
         console.error("Error fetching storage conditions dropdown:", error);
