@@ -5,12 +5,12 @@ import { ROLES } from '../../utils/permissions';
 
 /// File này là Setup độ ưu tiên truy cập route theo role
 const RoleBasedRedirect = () => {
-    const { 
-        isAdministrator, 
-        isBusinessOwner, 
-        isSaleManager, 
-        isSalesRepresentative, 
-        isWarehouseManager, 
+    const {
+        isAdministrator,
+        isBusinessOwner,
+        isSaleManager,
+        isSalesRepresentative,
+        isWarehouseManager,
         isWarehouseStaff,
         hasPermission,
         userRoles
@@ -61,8 +61,18 @@ const RoleBasedRedirect = () => {
         return '/unauthorized';
     };
 
+    // Nếu user bắt buộc đổi mật khẩu lần đầu, ưu tiên chuyển tới trang đổi mật khẩu
+    try {
+        const forceChange = localStorage.getItem('forceChangePassword');
+        if (forceChange === 'true') {
+            return <Navigate to={'/change-password'} replace />;
+        }
+    } catch (e) {
+        console.warn('RoleBasedRedirect: error reading forceChangePassword', e);
+    }
+
     const defaultRoute = getDefaultRoute();
-    
+
     return <Navigate to={defaultRoute} replace />;
 };
 

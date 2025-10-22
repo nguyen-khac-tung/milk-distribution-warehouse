@@ -29,7 +29,9 @@ export function LoginForm() {
             console.log("Login response:", res);
 
             if (res.success) {
+                const { isFirstLogin } = res.data;
                 window.showToast("Đăng nhập thành công!", "success");
+                localStorage.setItem("forceChangePassword", isFirstLogin ? "true" : "false");
                 navigate("/");
             } else {
                 const m = cleanErrorMessage(res.message || "Sai email hoặc mật khẩu.");

@@ -27,6 +27,12 @@ export const login = async (data) => {
                 })
             );
 
+            // Nếu là đăng nhập lần đầu → lưu flag để FE hiển thị modal đổi mật khẩu
+            if (userData.isFirstLogin) {
+                localStorage.setItem("forceChangePassword", "true");
+            } else {
+                localStorage.setItem("forceChangePassword", "false");
+            }
             return {
                 success: true,
                 message: res.data.message || "Đăng nhập thành công",
@@ -153,3 +159,26 @@ export const resetPassword = async ({ email, newPassword, confirmNewPassword }) 
         throw new Error(message);
     }
 };
+
+// Đổi mật khẩu
+export const changePassword = async ({ userId, oldPassword, newPassword, confirmNewPassword }) => {
+    try {
+        const response = await api.put("/Authentication/ChangePassword", {
+            userId,
+            oldPassword,
+            newPassword,
+            confirmNewPassword,
+        });
+
+        return response.data;
+    } catch (error) {
+        console.error("Change Password API failed:", error);
+
+        const message =
+            error.response?.data?.message?.replace(/^\[.*?\]\s*/, "") ||
+            "Không thể đổi mật khẩu. Vui lòng thử lại!";
+
+        throw new Error(message);
+    }
+};
+
