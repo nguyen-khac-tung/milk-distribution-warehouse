@@ -52,7 +52,7 @@ export default function SuppliersPage() {
   })
   const [showPageSizeFilter, setShowPageSizeFilter] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
-  
+
   // Thống kê tổng (không thay đổi khi search/filter)
   const [totalStats, setTotalStats] = useState({
     totalCount: 0,
@@ -79,7 +79,7 @@ export default function SuppliersPage() {
 
         const activeCount = dataArray.filter((s) => s.status === 1).length
         const inactiveCount = dataArray.filter((s) => s.status === 2).length
-        
+
         setTotalStats({
           totalCount: totalCount,
           activeCount: activeCount,
@@ -132,7 +132,7 @@ export default function SuppliersPage() {
   useEffect(() => {
     // Fetch tổng thống kê khi component mount
     fetchTotalStats()
-    
+
     // Reset tất cả filter và sort về mặc định
     setSearchQuery("")
     setStatusFilter("")
@@ -143,7 +143,7 @@ export default function SuppliersPage() {
       pageSize: 10,
       totalCount: 0
     })
-    
+
     // Fetch dữ liệu hiển thị với không có sort/filter
     fetchData({
       pageNumber: 1,
@@ -208,14 +208,14 @@ export default function SuppliersPage() {
   const handleCreateSuccess = () => {
     // Refresh tổng thống kê
     fetchTotalStats()
-    
+
     // Reset về trang đầu và không có sort/filter để item mới hiển thị ở đầu
     setSearchQuery("")
     setStatusFilter("")
     setSortField("")
     setSortAscending(true)
     setPagination(prev => ({ ...prev, pageNumber: 1 }))
-    
+
     // Refresh data after successful creation
     fetchData({
       pageNumber: 1,
@@ -279,7 +279,7 @@ export default function SuppliersPage() {
 
       // Refresh tổng thống kê
       fetchTotalStats()
-      
+
       // Refresh data after deletion, keeping current page or going to previous page if needed
       await fetchData({
         pageNumber: targetPage,
@@ -303,21 +303,21 @@ export default function SuppliersPage() {
   const handleStatusChange = async (supplierId, newStatus) => {
     try {
       await updateSupplierStatus(supplierId, newStatus)
-      
+
       // Update local state
-      setSuppliers(prevSuppliers => 
-        prevSuppliers.map(supplier => 
-          supplier.supplierId === supplierId 
+      setSuppliers(prevSuppliers =>
+        prevSuppliers.map(supplier =>
+          supplier.supplierId === supplierId
             ? { ...supplier, status: newStatus }
             : supplier
         )
       )
-      
+
       const statusText = newStatus === 1 ? "kích hoạt" : "ngừng hoạt động"
       window.showToast(`Đã ${statusText} nhà cung cấp thành công`, "success")
     } catch (error) {
       console.error("Error updating supplier status:", error)
-      
+
       // Sử dụng extractErrorMessage để xử lý lỗi nhất quán
       const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật trạng thái")
       window.showToast(errorMessage, "error")
@@ -433,7 +433,7 @@ export default function SuppliersPage() {
               <div className="overflow-x-auto">
                 <Table className="w-full">
                   <TableHeader>
-                      <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
+                    <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-16">
                         STT
                       </TableHead>
@@ -453,6 +453,12 @@ export default function SuppliersPage() {
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                         Thương hiệu
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                        Tên người liên hệ
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                        Số điện thoại
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-48">
                         Trạng thái
@@ -474,20 +480,20 @@ export default function SuppliersPage() {
                           </TableCell>
                           <TableCell className="px-6 py-4 text-slate-700 font-medium">{supplier?.companyName || ''}</TableCell>
                           <TableCell className="px-6 py-4 text-slate-700">{supplier?.brandName || ''}</TableCell>
+                          <TableCell className="px-6 py-4 text-slate-700">{supplier?.contactPersonName || ''}</TableCell>
+                          <TableCell className="px-6 py-4 text-slate-700">{supplier?.contactPersonPhone || ''}</TableCell>
                           <TableCell className="px-6 py-4 text-center">
                             <div className="flex justify-center">
-                              <PermissionWrapper 
+                              <PermissionWrapper
                                 requiredPermission={PERMISSIONS.SUPPLIER_UPDATE}
                                 hide={false}
                                 fallback={
-                                  <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center justify-center gap-1 ${
-                                    supplier?.status === 1 
-                                      ? 'bg-green-100 text-green-800' 
+                                  <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center justify-center gap-1 ${supplier?.status === 1
+                                      ? 'bg-green-100 text-green-800'
                                       : 'bg-red-100 text-red-800'
-                                  }`}>
-                                    <span className={`w-2 h-2 rounded-full ${
-                                      supplier?.status === 1 ? 'bg-green-500' : 'bg-red-500'
-                                    }`}></span>
+                                    }`}>
+                                    <span className={`w-2 h-2 rounded-full ${supplier?.status === 1 ? 'bg-green-500' : 'bg-red-500'
+                                      }`}></span>
                                     {supplier?.status === 1 ? 'Hoạt động' : 'Ngừng hoạt động'}
                                   </span>
                                 }
@@ -513,7 +519,7 @@ export default function SuppliersPage() {
                                   <Eye className="h-4 w-4 text-orange-500" />
                                 </button>
                               </PermissionWrapper>
-                              
+
                               <PermissionWrapper requiredPermission={PERMISSIONS.SUPPLIER_UPDATE}>
                                 <button
                                   className="p-1.5 hover:bg-slate-100 rounded transition-colors"
@@ -523,7 +529,7 @@ export default function SuppliersPage() {
                                   <Edit className="h-4 w-4 text-orange-500" />
                                 </button>
                               </PermissionWrapper>
-                              
+
                               <PermissionWrapper requiredPermission={PERMISSIONS.SUPPLIER_DELETE}>
                                 <button
                                   className="p-1.5 hover:bg-slate-100 rounded transition-colors"
@@ -549,7 +555,7 @@ export default function SuppliersPage() {
                         actionText="Xóa bộ lọc"
                         onAction={clearAllFilters}
                         showAction={!!(searchQuery || statusFilter)}
-                        colSpan={5}
+                        colSpan={7}
                       />
                     )}
                   </TableBody>
