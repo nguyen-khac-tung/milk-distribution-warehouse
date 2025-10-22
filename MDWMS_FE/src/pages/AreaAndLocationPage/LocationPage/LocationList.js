@@ -33,7 +33,11 @@ const LocationList = () => {
         total: 0,
     });
     const [globalStats, setGlobalStats] = useState({ total: 0, available: 0, unavailable: 0 });
-
+    const [bulkFormData, setBulkFormData] = useState({
+        areaId: "",
+        rack: "",
+        rows: [{ rowName: "", columns: [""] }],
+    });
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showBulkModal, setShowBulkModal] = useState(false);
     const [itemToDelete, setItemToDelete] = useState(null);
@@ -530,7 +534,7 @@ const LocationList = () => {
             )
 
             const statusText = newStatus === 1 ? "kích hoạt" : "ngừng hoạt động"
-            window.showToast(`Đã ${statusText} nhà cung cấp thành công`, "success")
+            window.showToast(`Đã ${statusText} vị trí thành công`, "success")
         } catch (error) {
             console.error("Error updating area status:", error)
 
@@ -990,6 +994,8 @@ const LocationList = () => {
                     <BulkCreateLocationModal
                         isOpen={showBulkModal}
                         onClose={() => setShowBulkModal(false)}
+                        formData={bulkFormData}
+                        setFormData={setBulkFormData}
                     />
                 )}
             </PermissionWrapper>

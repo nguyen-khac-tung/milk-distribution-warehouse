@@ -129,8 +129,11 @@ namespace MilkDistributionWarehouse.Services
             if (locationExists == null)
                 return ("Không tìm thấy vị trí để xoá.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
-            if (await _locationRepository.HasDependentPalletsOrStocktakingsAsync(locationId))
-                return ("Không thể xoá vì vị trí này đang được sử dụng cho pallet hoặc kiểm kê hàng.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+            if (await _locationRepository.HasDependentPalletsAsync(locationId))
+                return ("Không thể xoá vì vị trí này đang được sử dụng.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+
+            if (await _locationRepository.InUsed(locationId))
+                return ("Không thể xóa vì vị trí này đang được sử dụng.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
             locationExists.Status = CommonStatus.Deleted;
             locationExists.UpdateAt = DateTime.Now;
@@ -157,8 +160,11 @@ namespace MilkDistributionWarehouse.Services
             if (status != CommonStatus.Active && status != CommonStatus.Inactive && status != CommonStatus.Deleted)
                 return ("Trạng thái không hợp lệ.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
-            if (await _locationRepository.HasDependentPalletsOrStocktakingsAsync(locationId))
-                return ("Không thể cập nhật trạng thái vì vị trí này đang được sử dụng cho pallet hoặc kiểm kê hàng.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+            if (await _locationRepository.HasDependentPalletsAsync(locationId))
+                return ("Không thể cập nhật trạng thái vì vị trí này đang được sử dụng cho pallet.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+            
+            if (await _locationRepository.InUsed(locationId))
+                return ("Không thể cập nhật trạng thái vì vị trí này hiện đang được sử dụng.".ToMessageForUser(), new LocationDto.LocationResponseDto());
 
             location.Status = status;
             location.UpdateAt = DateTime.Now;

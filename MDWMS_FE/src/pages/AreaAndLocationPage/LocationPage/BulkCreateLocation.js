@@ -9,15 +9,20 @@ import { createMultipleLocations } from "../../../services/LocationServices";
 import CustomDropdown from "../../../components/Common/CustomDropdown";
 import { extractErrorMessage, cleanErrorMessage } from "../../../utils/Validation";
 
-export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess }) {
+export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess, formData, setFormData }) {
     const [areas, setAreas] = useState([]);
     const [loadingData, setLoadingData] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [areaId, setAreaId] = useState("");
-    const [rack, setRack] = useState("");
-    const [rows, setRows] = useState([
-        { rowName: "", columns: [""] } // Hàng mặc định
-    ]);
+    // const [areaId, setAreaId] = useState("");
+    // const [rack, setRack] = useState("");
+    // const [rows, setRows] = useState([
+    //     { rowName: "", columns: [""] }
+    // ]);
+    const { areaId, rack, rows } = formData;
+    const setAreaId = (val) => setFormData((prev) => ({ ...prev, areaId: val }));
+    const setRack = (val) => setFormData((prev) => ({ ...prev, rack: val }));
+    const setRows = (val) => setFormData((prev) => ({ ...prev, rows: val }));
+
     const [errors, setErrors] = useState({});
     const [hasBackendErrors, setHasBackendErrors] = useState(false);
     const [successfulLocations, setSuccessfulLocations] = useState(new Set());
@@ -95,11 +100,9 @@ export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess }) 
         try {
             setLoading(true);
 
-            // Chuẩn hóa dữ liệu và gọi API tạo nhiều vị trí trong MỘT lần
             const locations = [];
-            const locationIndexMap = new Map(); // Map để track index của từng location
-            const parsedAreaId = parseInt(areaId);
-            let locationIndex = 0;
+            const locationKeyMap = new Map(); // map index request -> key `${row}-${col}`
+            let i = 0;
 
             for (const row of rows) {
                 const parsedRow = parseInt(row.rowName);
@@ -109,95 +112,66 @@ export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess }) 
                     const parsedCol = parseInt(col);
                     if (Number.isNaN(parsedCol)) continue;
 
-                    const location = {
-                        areaId: parsedAreaId,
+                    const key = `${parsedRow}-${parsedCol}`;
+
+                    //Bỏ qua vị trí đã thành công
+                    if (successfulLocations.has(key)) continue;
+
+                    locations.push({
+                        areaId: parseInt(areaId),
                         rack,
                         row: parsedRow,
                         column: parsedCol,
                         isAvailable: true,
-                    };
+                    });
 
-                    locations.push(location);
-                    locationIndexMap.set(locationIndex, { row: parsedRow, column: parsedCol });
-                    locationIndex++;
+                    locationKeyMap.set(i, key);
+                    i++;
                 }
             }
 
             if (locations.length === 0) {
-                window.showToast("Vui lòng nhập hàng/cột hợp lệ để tạo vị trí", "error");
+                window.showToast("Không có vị trí mới hoặc bị lỗi cần tạo lại.", "info");
                 return;
             }
 
             const response = await createMultipleLocations(locations);
             const failedItems = response?.failedItems || response?.data?.failedItems || [];
-            // Process response
-            const newErrors = {};
-            const newFailedLocations = new Map();
-            const newSuccessfulLocations = new Set();
 
-            // Mark all locations as successful initially
-            for (let i = 0; i < locations.length; i++) {
-                newSuccessfulLocations.add(i);
-            }
+            const newSuccess = new Set(successfulLocations);
+            const newFailed = new Map(failedLocations);
 
-            // Process failed items from backend response
-            if (failedItems.length > 0) {
-                failedItems.forEach(failedItem => {
-                    const index = failedItem.index;
-                    const errorMessage = cleanErrorMessage(failedItem.error);
+            // Mặc định: tất cả vị trí mới coi như thành công
+            locationKeyMap.forEach((key) => {
+                newSuccess.add(key);
+                newFailed.delete(key);
+            });
 
-                    // Remove from successful and add to failed
-                    newSuccessfulLocations.delete(index);
-                    newFailedLocations.set(index, {
-                        code: failedItem.code,
-                        error: errorMessage,
-                        row: locationIndexMap.get(index)?.row,
-                        column: locationIndexMap.get(index)?.column
-                    });
+            // Cập nhật lại các lỗi
+            failedItems.forEach((item) => {
+                const key = locationKeyMap.get(item.index);
+                const msg = cleanErrorMessage(item.error);
+                newFailed.set(key, { error: msg });
+                newSuccess.delete(key);
+            });
 
-                    // Add to errors for display
-                    newErrors[`${index}-location`] = errorMessage;
-                });
-            }
+            setSuccessfulLocations(newSuccess);
+            setFailedLocations(newFailed);
+            setHasBackendErrors(newFailed.size > 0);
 
-            // Update states
-            setErrors(newErrors);
-            setHasBackendErrors(newFailedLocations.size > 0);
-            setSuccessfulLocations(newSuccessfulLocations);
-            setFailedLocations(newFailedLocations);
-
-            // Show appropriate message
-            const totalSuccess = newSuccessfulLocations.size;
-            const totalFailed = newFailedLocations.size;
-
-            if (totalFailed === 0) {
-                // All locations created successfully
-                window.showToast(`Tạo thành công ${totalSuccess} vị trí!`, "success");
-                setHasBackendErrors(false);
-                setSuccessfulLocations(new Set());
-                setFailedLocations(new Map());
+            if (failedItems.length === 0) {
+                window.showToast(`Tạo thành công ${locations.length} vị trí mới!`, "success");
                 onSuccess?.();
                 onClose?.();
             } else {
-                // Some locations failed
-                let toastMessage = `Tạo thành công ${totalSuccess}/${locations.length} vị trí.\n\nCòn ${totalFailed} vị trí cần sửa lỗi trước khi có thể đóng modal.`;
-
-                const duplicateErrors = Array.from(newFailedLocations.values()).filter(item =>
-                    item.error.includes('đã tồn tại') || item.error.includes('duplicate') ||
-                    item.error.includes('already exists') || item.error.includes('trùng lặp')
+                window.showToast(
+                    `Tạo thành công ${locations.length - failedItems.length}/${locations.length} vị trí. Còn ${failedItems.length} lỗi.`,
+                    "warning"
                 );
-
-                if (duplicateErrors.length > 0) {
-                    toastMessage += `\n\nCó ${duplicateErrors.length} vị trí bị trùng với dữ liệu trong hệ thống.`;
-                }
-
-                window.showToast(toastMessage, "warning");
             }
-
         } catch (error) {
-            console.error("Error in bulk create locations:", error);
             const msg = extractErrorMessage(error, "Có lỗi xảy ra khi tạo vị trí");
-            window.showToast(`Lỗi: ${msg}`, "error");
+            window.showToast(msg, "error");
         } finally {
             setLoading(false);
         }
@@ -215,14 +189,15 @@ export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess }) 
 
     // Handle reset
     const handleReset = () => {
-        setRows([{ rowName: "", columns: [""] }]);
-        setAreaId("");
-        setRack("");
+        setFormData({
+            areaId: "",
+            rack: "",
+            rows: [{ rowName: "", columns: [""] }],
+        });
         setErrors({});
         setHasBackendErrors(false);
         setSuccessfulLocations(new Set());
         setFailedLocations(new Map());
-        onSuccess?.();
         onClose?.();
     };
 
@@ -352,11 +327,11 @@ export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess }) 
                                         <Label className="text-sm text-slate-600">Các cột:</Label>
                                         <div className="flex flex-wrap gap-2">
                                             {row.columns.map((col, colIndex) => {
-                                                const globalIndex = rows
-                                                    .slice(0, rowIndex)
-                                                    .reduce((sum, r) => sum + r.columns.length, 0) + colIndex;
-                                                const failedLocation = failedLocations.get(globalIndex);
-                                                const isDuplicateError = failedLocation?.error?.includes("tồn tại"); // chỉ lỗi trùng
+                                                // tạo key cố định theo hàng–cột (VD: "1-2")
+                                                const rowValue = row.rowName;
+                                                const key = `${rowValue}-${col}`;
+                                                const failedLocation = failedLocations.get(key);
+                                                const isDuplicateError = failedLocation?.error?.includes("tồn tại");
 
                                                 return (
                                                     <div key={colIndex} className="flex flex-col items-start gap-1">
@@ -369,8 +344,11 @@ export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess }) 
                                                                 onChange={(e) =>
                                                                     handleColumnChange(rowIndex, colIndex, e.target.value)
                                                                 }
-                                                                className={`w-20 text-center h-9 ${isDuplicateError ? "border-red-500" :
-                                                                    successfulLocations.has(globalIndex) ? "border-green-500 bg-green-50" : ""
+                                                                className={`w-20 text-center h-9 ${isDuplicateError
+                                                                    ? "border-red-500"
+                                                                    : successfulLocations.has(key)
+                                                                        ? "border-green-500 bg-green-50"
+                                                                        : ""
                                                                     }`}
                                                             />
                                                             {row.columns.length > 1 && (
@@ -383,9 +361,7 @@ export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess }) 
                                                             )}
                                                         </div>
                                                         {isDuplicateError && (
-                                                            <div className="text-xs text-red-600">
-                                                                Vị trí đã tồn tại
-                                                            </div>
+                                                            <div className="text-xs text-red-600">Vị trí đã tồn tại</div>
                                                         )}
                                                     </div>
                                                 );

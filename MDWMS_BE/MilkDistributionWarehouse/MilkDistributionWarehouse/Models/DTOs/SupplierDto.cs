@@ -13,23 +13,23 @@ namespace MilkDistributionWarehouse.Models.DTOs
         [JsonPropertyOrder(2)]
         public string BrandName { get; set; }
         [JsonPropertyOrder(3)]
+        public string ContactPersonName { get; set; }
+        [JsonPropertyOrder(4)]
+        public string ContactPersonPhone { get; set; }
+        [JsonPropertyOrder(5)]
         public int Status { get; set; }
     }
 
     public class SupplierDetail : SupplierDto
     {
-        [JsonPropertyOrder(4)]
-        public string Email { get; set; }
-        [JsonPropertyOrder(5)]
-        public string Phone { get; set; }
         [JsonPropertyOrder(6)]
-        public string TaxCode { get; set; }
+        public string Email { get; set; }
         [JsonPropertyOrder(7)]
-        public string Address { get; set; }
+        public string Phone { get; set; }
         [JsonPropertyOrder(8)]
-        public string ContactPersonName { get; set; }
+        public string TaxCode { get; set; }
         [JsonPropertyOrder(9)]
-        public string ContactPersonPhone { get; set; }
+        public string Address { get; set; }
         [JsonPropertyOrder(10)]
         public string ContactPersonEmail { get; set; }
         [JsonPropertyOrder(11)]
@@ -80,10 +80,10 @@ namespace MilkDistributionWarehouse.Models.DTOs
         [Required]
         public int SupplierId { get; set; }
     }
-    
+
     public class SupplierDropDown
     {
-        public int SupplierId { get; set; } 
+        public int SupplierId { get; set; }
         public string CompanyName { get; set; }
     }
 
