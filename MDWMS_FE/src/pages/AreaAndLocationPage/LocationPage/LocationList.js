@@ -69,6 +69,9 @@ const LocationList = () => {
         PERMISSIONS.LOCATION_DELETE
     ]);
 
+    // Ẩn cột hoạt động khi có checkbox được chọn
+    const shouldShowActionColumn = hasAnyActionPermission && selectedLocations.length === 0;
+
     // Kiểm tra quyền in
     const hasPrintPermission = hasAnyPermission([PERMISSIONS.LOCATION_PRINT]);
 
@@ -821,7 +824,7 @@ const LocationList = () => {
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-48">
                                                 Trạng thái
                                             </TableHead>
-                                            {hasAnyActionPermission && (
+                                            {shouldShowActionColumn && (
                                                 <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
                                                     Hoạt động
                                                 </TableHead>
@@ -889,7 +892,7 @@ const LocationList = () => {
                                                             </PermissionWrapper>
                                                         </div>
                                                     </TableCell>
-                                                    {hasAnyActionPermission && (
+                                                    {shouldShowActionColumn && (
                                                         <TableCell className="px-6 py-4 text-center">
                                                             <div className="flex items-center justify-center space-x-1">
                                                                 <PermissionWrapper requiredPermission={PERMISSIONS.LOCATION_PRINT}>
@@ -932,7 +935,7 @@ const LocationList = () => {
                                             ))
                                         ) : (
                                             <TableRow>
-                                                <TableCell colSpan={hasPrintPermission ? (hasAnyActionPermission ? 10 : 9) : (hasAnyActionPermission ? 9 : 8)}>
+                                                <TableCell colSpan={hasPrintPermission ? (shouldShowActionColumn ? 10 : 9) : (shouldShowActionColumn ? 9 : 8)}>
                                                     <div className="flex flex-col items-center justify-center text-center min-h-[260px]">
                                                         <EmptyState
                                                             icon={Folder}
