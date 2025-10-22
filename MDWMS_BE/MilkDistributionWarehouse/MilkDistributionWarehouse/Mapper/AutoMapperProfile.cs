@@ -191,6 +191,14 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => (DateTime?)null));
             CreateMap<BatchUpdateDto, Batch>()
                 .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => DateTime.Now));
+
+            //Map PurchaseOrder
+            CreateMap<PurchaseOrder, PurchaseOrderDto>()
+                .ForMember(dest => dest.SupplierName, opt => opt.MapFrom(src => src.Supplier.CompanyName.Trim()))
+                .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => src.CreatedByNavigation.FullName.Trim()))
+                .ForMember(dest => dest.ApprovalByName, opt => opt.MapFrom(src => src.CreatedByNavigation.FullName.Trim()));
+            //CreateMap<PurchaseOrder, PurchaseOrderCreate>()
+            //    .ForMember(dest => dest.)
         }
     }
 }

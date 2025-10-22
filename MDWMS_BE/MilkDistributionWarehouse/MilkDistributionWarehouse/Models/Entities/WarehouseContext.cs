@@ -294,6 +294,10 @@ public partial class WarehouseContext : DbContext
                 .HasForeignKey(d => d.CreatedBy)
                 .HasConstraintName("FK_PurchaseOrders_Users");
 
+            entity.HasOne(d => d.ApprovalByNavigation).WithMany(p => p.PurchaseOrders)
+                .HasForeignKey(d => d.ApprovalBy)
+                .HasConstraintName("");
+
             entity.HasOne(d => d.Supplier).WithMany(p => p.PurchaseOrders)
                 .HasForeignKey(d => d.SupplierId)
                 .HasConstraintName("FK_ImportOrders_Suppliers");

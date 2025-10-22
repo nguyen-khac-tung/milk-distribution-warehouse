@@ -7,6 +7,7 @@ namespace MilkDistributionWarehouse.Repositories
 {
     public interface IPurchaseOrderRepositoy
     {
+        IQueryable<PurchaseOrder> GetPurchaseOrder();
         Task<bool> HasActivePurchaseOrder(int supplierId);
         Task<bool> IsAllPurchaseOrderDraftOrEmpty(int supplierId);
     }
@@ -16,6 +17,11 @@ namespace MilkDistributionWarehouse.Repositories
         public PurchaseOrderRepository(WarehouseContext context)
         {
             _context = context;
+        }
+
+        public IQueryable<PurchaseOrder> GetPurchaseOrder()
+        {
+            return _context.PurchaseOrders.OrderByDescending(po => po.CreatedAt).AsNoTracking();
         }
 
         public async Task<bool> HasActivePurchaseOrder(int supplierId)
