@@ -6,7 +6,7 @@ namespace MilkDistributionWarehouse.Repositories
 {
     public interface IPurchaseOrderDetailRepository
     {
-        Task<List<PurchaseOderDetail>> GetPurchaseOrderDetailByPurchaseOrderId(Guid purchaseOrderId);
+        IQueryable<PurchaseOderDetail> GetPurchaseOrderDetail();
     }
 
     public class PurchaseOrderDetailReposotory : IPurchaseOrderDetailRepository
@@ -17,9 +17,9 @@ namespace MilkDistributionWarehouse.Repositories
             _context = context;
         }
 
-        public async Task<List<PurchaseOderDetail>> GetPurchaseOrderDetailByPurchaseOrderId(Guid purchaseOrderId)
+        public IQueryable<PurchaseOderDetail> GetPurchaseOrderDetail()
         {
-            return await _context.PurchaseOderDetails.Where(pod => pod.PurchaseOderId == purchaseOrderId).ToListAsync();
+            return _context.PurchaseOderDetails.AsNoTracking();
         }
 
     }
