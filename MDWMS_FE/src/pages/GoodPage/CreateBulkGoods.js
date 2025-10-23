@@ -45,7 +45,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
   // Check for duplicates when goodsList changes
   useEffect(() => {
     if (isCheckingDuplicates.current) return
-    
+
     isCheckingDuplicates.current = true
     const newErrors = { ...errors }
     let hasDuplicates = false
@@ -67,7 +67,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
       setErrors(newErrors)
       setHasBackendErrors(hasDuplicates)
     }
-    
+
     isCheckingDuplicates.current = false
   }, [goodsList])
 
@@ -104,7 +104,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
       unitMeasureId: "",
     }]
     setGoodsList(newGoodsList)
-    
+
     // Re-check for duplicates after adding new row
     const newErrors = { ...errors }
     newGoodsList.forEach((goods, index) => {
@@ -121,12 +121,12 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
 
   const removeGoodsRow = (index) => {
     console.log('Removing goods at index:', index, 'Current goodsList length:', goodsList.length)
-    
+
     if (goodsList.length > 1) {
       const newList = goodsList.filter((_, i) => i !== index)
       console.log('New list after removal:', newList)
       setGoodsList(newList)
-      
+
       // Update successfulGoods set to remove the deleted index and re-index remaining indices
       const newSuccessfulGoods = new Set()
       successfulGoods.forEach(successIndex => {
@@ -141,13 +141,13 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
       })
       console.log('Updated successfulGoods:', newSuccessfulGoods)
       setSuccessfulGoods(newSuccessfulGoods)
-      
+
       // Clear errors for removed row and re-index remaining errors
       const newErrors = {}
       Object.keys(errors).forEach(key => {
         const [errorIndex, field] = key.split('-')
         const errorIndexNum = parseInt(errorIndex)
-        
+
         if (errorIndexNum < index) {
           // Keep errors for rows before the removed row
           newErrors[key] = errors[key]
@@ -157,7 +157,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
         }
         // Skip errors for the removed row (errorIndexNum === index)
       })
-      
+
       // Re-check for duplicates after removing row
       newList.forEach((goods, newIndex) => {
         if (goods.goodsCode) {
@@ -167,7 +167,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
           }
         }
       })
-      
+
       setErrors(newErrors)
       setHasBackendErrors(Object.keys(newErrors).length > 0)
     } else {
@@ -186,9 +186,9 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
       const newErrors = { ...errors }
       delete newErrors[errorKey]
       setErrors(newErrors)
-      
+
       // Check if there are still backend errors
-      const remainingBackendErrors = Object.keys(newErrors).some(key => 
+      const remainingBackendErrors = Object.keys(newErrors).some(key =>
         key.includes('-') && !key.includes('required')
       )
       setHasBackendErrors(remainingBackendErrors)
@@ -212,7 +212,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
 
     goodsList.forEach((goods, index) => {
       const requiredFields = ['goodsCode', 'goodsName', 'categoryId', 'supplierId', 'storageConditionId', 'unitMeasureId']
-      
+
       requiredFields.forEach(field => {
         if (!goods[field]) {
           newErrors[`${index}-${field}`] = "Trường này là bắt buộc"
@@ -243,25 +243,25 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
 
     try {
       setLoading(true)
-      
+
       // Create goods one by one
       const results = []
       const errors = []
       const newErrors = {}
-      
+
       for (let i = 0; i < goodsList.length; i++) {
         // Skip already successful goods
         if (successfulGoods.has(i)) {
           results.push({ index: i, success: true, data: null })
           continue
         }
-        
+
         try {
           const response = await createGood(goodsList[i])
           results.push({ index: i, success: true, data: response })
         } catch (error) {
           console.error(`Error creating good ${i + 1}:`, error)
-          
+
           // Extract backend error details
           let backendErrors = {}
           if (error.response?.data?.errors) {
@@ -279,11 +279,11 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
           } else if (error.response?.data?.message) {
             // If it's a single error message, convert to field errors
             const errorMessage = error.response.data.message.toLowerCase()
-            
+
             // Check for duplicate goods code errors
-            if (errorMessage.includes('goodsCode') || errorMessage.includes('mã hàng hóa') || 
-                errorMessage.includes('đã tồn tại') || errorMessage.includes('duplicate') ||
-                errorMessage.includes('already exists') || errorMessage.includes('trùng lặp')) {
+            if (errorMessage.includes('goodsCode') || errorMessage.includes('mã hàng hóa') ||
+              errorMessage.includes('đã tồn tại') || errorMessage.includes('duplicate') ||
+              errorMessage.includes('already exists') || errorMessage.includes('trùng lặp')) {
               backendErrors.goodsCode = cleanErrorMessage(error.response.data.message)
             } else if (errorMessage.includes('goodsName') || errorMessage.includes('tên hàng hóa')) {
               backendErrors.goodsName = cleanErrorMessage(error.response.data.message)
@@ -308,7 +308,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
               backendErrors.general = cleanErrorMessage(errorData.error)
             }
           }
-          
+
           // Add backend errors to form errors
           Object.keys(backendErrors).forEach(field => {
             if (field === 'general') {
@@ -319,7 +319,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
               newErrors[`${i}-${field}`] = backendErrors[field]
             }
           })
-          
+
           // If no specific field errors, add general error
           if (Object.keys(backendErrors).length === 0) {
             const errorMessage = extractErrorMessage(error, "Lỗi khi tạo hàng hóa")
@@ -330,7 +330,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
 
       // Update errors state
       setErrors(prevErrors => ({ ...prevErrors, ...newErrors }))
-      
+
       // Check if there are backend errors
       const hasBackendErrorsNow = Object.keys(newErrors).length > 0
       setHasBackendErrors(hasBackendErrorsNow)
@@ -338,7 +338,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
       // Show results
       const newSuccessfulGoods = new Set([...successfulGoods, ...results.map(r => r.index)])
       setSuccessfulGoods(newSuccessfulGoods)
-      
+
       if (results.length === goodsList.length) {
         // All goods created successfully
         window.showToast(`Đã tạo thành công ${results.length} hàng hóa!`, "success")
@@ -350,19 +350,19 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
       } else {
         // Some goods failed to create - don't close modal
         const errorMessages = errors.map(err => `Hàng hóa ${err.index + 1}: ${err.error}`).join('\n')
-        const duplicateErrors = errors.filter(err => 
-          err.error.includes('đã tồn tại') || err.error.includes('duplicate') || 
+        const duplicateErrors = errors.filter(err =>
+          err.error.includes('đã tồn tại') || err.error.includes('duplicate') ||
           err.error.includes('already exists') || err.error.includes('trùng lặp')
         )
-        
+
         let toastMessage = `Tạo thành công ${results.length}/${goodsList.length} hàng hóa.\n\nCòn ${goodsList.length - results.length} hàng hóa cần sửa lỗi trước khi có thể đóng modal.`
-        
+
         if (duplicateErrors.length > 0) {
           toastMessage += `\n\n Có ${duplicateErrors.length} hàng hóa bị trùng mã với dữ liệu trong hệ thống.`
         }
-        
+
         window.showToast(toastMessage, "warning")
-        
+
         setHasBackendErrors(true)
       }
 
@@ -427,11 +427,11 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
             {/* Instructions */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-800">
-                <strong>Hướng dẫn:</strong> Điền thông tin cho từng hàng hóa. Bạn có thể thêm/xóa hàng hóa bằng các nút bên dưới. 
+                <strong>Hướng dẫn:</strong> Điền thông tin cho từng hàng hóa. Bạn có thể thêm/xóa hàng hóa bằng các nút bên dưới.
                 Tất cả các trường có dấu <span className="text-red-500">*</span> là bắt buộc.
                 {hasBackendErrors && (
                   <span className="block mt-2 text-red-600 font-medium">
-                     Có lỗi cần sửa. Vui lòng sửa lỗi trước khi có thể đóng modal hoặc nhấn "Hủy" để bỏ qua.
+                    Có lỗi cần sửa. Vui lòng sửa lỗi trước khi có thể đóng modal hoặc nhấn "Hủy" để bỏ qua.
                   </span>
                 )}
               </p>
@@ -489,172 +489,170 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                       </div>
                     </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Goods Code */}
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-slate-700">
-                        Mã hàng hóa <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        placeholder="Nhập mã hàng hóa..."
-                        value={goods.goodsCode}
-                        onChange={(e) => updateGoodsRow(index, 'goodsCode', e.target.value)}
-                        disabled={isSuccessful}
-                        className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 ${
-                          errors[`${index}-goodsCode`] ? 'border-red-500' : ''
-                        } ${isSuccessful ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                      />
-                      {errors[`${index}-goodsCode`] && (
-                        <p className="text-sm text-red-500">
-                          {errors[`${index}-goodsCode`].includes('đã tồn tại trong danh sách') 
-                            ? errors[`${index}-goodsCode`]
-                            : `${errors[`${index}-goodsCode`]}`
-                          }
-                        </p>
-                      )}
-                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Goods Code */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-slate-700">
+                          Mã hàng hóa <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          placeholder="Nhập mã hàng hóa..."
+                          value={goods.goodsCode}
+                          onChange={(e) => updateGoodsRow(index, 'goodsCode', e.target.value)}
+                          disabled={isSuccessful}
+                          className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 ${errors[`${index}-goodsCode`] ? 'border-red-500' : ''
+                            } ${isSuccessful ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                        />
+                        {errors[`${index}-goodsCode`] && (
+                          <p className="text-sm text-red-500">
+                            {errors[`${index}-goodsCode`].includes('đã tồn tại trong danh sách')
+                              ? errors[`${index}-goodsCode`]
+                              : `${errors[`${index}-goodsCode`]}`
+                            }
+                          </p>
+                        )}
+                      </div>
 
-                    {/* Goods Name */}
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-slate-700">
-                        Tên hàng hóa <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        placeholder="Nhập tên hàng hóa..."
-                        value={goods.goodsName}
-                        onChange={(e) => updateGoodsRow(index, 'goodsName', e.target.value)}
-                        disabled={isSuccessful}
-                        className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 ${
-                          errors[`${index}-goodsName`] ? 'border-red-500' : ''
-                        } ${isSuccessful ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                      />
-                      {errors[`${index}-goodsName`] && (
-                        <p className="text-sm text-red-500">
-                          {errors[`${index}-goodsName`].includes('Trường này là bắt buộc') 
-                            ? errors[`${index}-goodsName`]
-                            : `${errors[`${index}-goodsName`]}`
-                          }
-                        </p>
-                      )}
-                    </div>
+                      {/* Goods Name */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-slate-700">
+                          Tên hàng hóa <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          placeholder="Nhập tên hàng hóa..."
+                          value={goods.goodsName}
+                          onChange={(e) => updateGoodsRow(index, 'goodsName', e.target.value)}
+                          disabled={isSuccessful}
+                          className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 ${errors[`${index}-goodsName`] ? 'border-red-500' : ''
+                            } ${isSuccessful ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                        />
+                        {errors[`${index}-goodsName`] && (
+                          <p className="text-sm text-red-500">
+                            {errors[`${index}-goodsName`].includes('Trường này là bắt buộc')
+                              ? errors[`${index}-goodsName`]
+                              : `${errors[`${index}-goodsName`]}`
+                            }
+                          </p>
+                        )}
+                      </div>
 
-                    {/* Category */}
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-slate-700">
-                        Danh mục <span className="text-red-500">*</span>
-                      </Label>
-                      <CustomDropdown
-                        value={goods.categoryId}
-                        onChange={(value) => updateGoodsRow(index, 'categoryId', value)}
-                        disabled={isSuccessful}
-                        options={[
-                          { value: "", label: "Chọn danh mục..." },
-                          ...categories.map((category) => ({
-                            value: category.categoryId.toString(),
-                            label: category.categoryName
-                          }))
-                        ]}
-                        placeholder="Chọn danh mục..."
-                        loading={loadingData}
-                      />
-                      {errors[`${index}-categoryId`] && (
-                        <p className="text-sm text-red-500">
-                          {errors[`${index}-categoryId`].includes('Trường này là bắt buộc') 
-                            ? errors[`${index}-categoryId`]
-                            : `${errors[`${index}-categoryId`]}`
-                          }
-                        </p>
-                      )}
-                    </div>
+                      {/* Category */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-slate-700">
+                          Danh mục <span className="text-red-500">*</span>
+                        </Label>
+                        <CustomDropdown
+                          value={goods.categoryId}
+                          onChange={(value) => updateGoodsRow(index, 'categoryId', value)}
+                          disabled={isSuccessful}
+                          options={[
+                            { value: "", label: "Chọn danh mục..." },
+                            ...categories.map((category) => ({
+                              value: category.categoryId.toString(),
+                              label: category.categoryName
+                            }))
+                          ]}
+                          placeholder="Chọn danh mục..."
+                          loading={loadingData}
+                        />
+                        {errors[`${index}-categoryId`] && (
+                          <p className="text-sm text-red-500">
+                            {errors[`${index}-categoryId`].includes('Trường này là bắt buộc')
+                              ? errors[`${index}-categoryId`]
+                              : `${errors[`${index}-categoryId`]}`
+                            }
+                          </p>
+                        )}
+                      </div>
 
-                    {/* Supplier */}
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-slate-700">
-                        Nhà cung cấp <span className="text-red-500">*</span>
-                      </Label>
-                      <CustomDropdown
-                        value={goods.supplierId}
-                        onChange={(value) => updateGoodsRow(index, 'supplierId', value)}
-                        disabled={isSuccessful}
-                        options={[
-                          { value: "", label: "Chọn nhà cung cấp..." },
-                          ...suppliers.map((supplier) => ({
-                            value: supplier.supplierId.toString(),
-                            label: supplier.companyName
-                          }))
-                        ]}
-                        placeholder="Chọn nhà cung cấp..."
-                        loading={loadingData}
-                      />
-                      {errors[`${index}-supplierId`] && (
-                        <p className="text-sm text-red-500">
-                          {errors[`${index}-supplierId`].includes('Trường này là bắt buộc') 
-                            ? errors[`${index}-supplierId`]
-                            : `${errors[`${index}-supplierId`]}`
-                          }
-                        </p>
-                      )}
-                    </div>
+                      {/* Supplier */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-slate-700">
+                          Nhà cung cấp <span className="text-red-500">*</span>
+                        </Label>
+                        <CustomDropdown
+                          value={goods.supplierId}
+                          onChange={(value) => updateGoodsRow(index, 'supplierId', value)}
+                          disabled={isSuccessful}
+                          options={[
+                            { value: "", label: "Chọn nhà cung cấp..." },
+                            ...suppliers.map((supplier) => ({
+                              value: supplier.supplierId.toString(),
+                              label: supplier.companyName
+                            }))
+                          ]}
+                          placeholder="Chọn nhà cung cấp..."
+                          loading={loadingData}
+                        />
+                        {errors[`${index}-supplierId`] && (
+                          <p className="text-sm text-red-500">
+                            {errors[`${index}-supplierId`].includes('Trường này là bắt buộc')
+                              ? errors[`${index}-supplierId`]
+                              : `${errors[`${index}-supplierId`]}`
+                            }
+                          </p>
+                        )}
+                      </div>
 
-                    {/* Storage Condition */}
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-slate-700">
-                        Điều kiện bảo quản <span className="text-red-500">*</span>
-                      </Label>
-                      <CustomDropdown
-                        value={goods.storageConditionId}
-                        onChange={(value) => updateGoodsRow(index, 'storageConditionId', value)}
-                        disabled={isSuccessful}
-                        options={[
-                          { value: "", label: "Chọn điều kiện bảo quản..." },
-                          ...storageConditions.map((condition) => ({
-                            value: condition.storageConditionId?.toString() || condition.id?.toString() || "",
-                            label: condition.lightLevel || `- Nhiệt độ: ${condition.temperatureMin}°C đến ${condition.temperatureMax}°C - Độ ẩm: ${condition.humidityMin}% đến ${condition.humidityMax}%`
-                          }))
-                        ]}
-                        placeholder="Chọn điều kiện bảo quản..."
-                        loading={loadingData}
-                      />
-                      {errors[`${index}-storageConditionId`] && (
-                        <p className="text-sm text-red-500">
-                          {errors[`${index}-storageConditionId`].includes('Trường này là bắt buộc') 
-                            ? errors[`${index}-storageConditionId`]
-                            : `${errors[`${index}-storageConditionId`]}`
-                          }
-                        </p>
-                      )}
-                    </div>
+                      {/* Storage Condition */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-slate-700">
+                          Điều kiện bảo quản <span className="text-red-500">*</span>
+                        </Label>
+                        <CustomDropdown
+                          value={goods.storageConditionId}
+                          onChange={(value) => updateGoodsRow(index, 'storageConditionId', value)}
+                          disabled={isSuccessful}
+                          options={[
+                            { value: "", label: "Chọn điều kiện bảo quản..." },
+                            ...storageConditions.map((condition) => ({
+                              value: condition.storageConditionId?.toString() || condition.id?.toString() || "",
+                              label: condition.lightLevel || `- Nhiệt độ: ${condition.temperatureMin}°C đến ${condition.temperatureMax}°C - Độ ẩm: ${condition.humidityMin}% đến ${condition.humidityMax}%`
+                            }))
+                          ]}
+                          placeholder="Chọn điều kiện bảo quản..."
+                          loading={loadingData}
+                        />
+                        {errors[`${index}-storageConditionId`] && (
+                          <p className="text-sm text-red-500">
+                            {errors[`${index}-storageConditionId`].includes('Trường này là bắt buộc')
+                              ? errors[`${index}-storageConditionId`]
+                              : `${errors[`${index}-storageConditionId`]}`
+                            }
+                          </p>
+                        )}
+                      </div>
 
-                    {/* Unit Measure */}
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-slate-700">
-                        Đơn vị đo <span className="text-red-500">*</span>
-                      </Label>
-                      <CustomDropdown
-                        value={goods.unitMeasureId}
-                        onChange={(value) => updateGoodsRow(index, 'unitMeasureId', value)}
-                        disabled={isSuccessful}
-                        options={[
-                          { value: "", label: "Chọn đơn vị đo..." },
-                          ...unitMeasures.map((unit) => ({
-                            value: unit.unitMeasureId.toString(),
-                            label: unit.name
-                          }))
-                        ]}
-                        placeholder="Chọn đơn vị đo..."
-                        loading={loadingData}
-                      />
-                      {errors[`${index}-unitMeasureId`] && (
-                        <p className="text-sm text-red-500">
-                          {errors[`${index}-unitMeasureId`].includes('Trường này là bắt buộc') 
-                            ? errors[`${index}-unitMeasureId`]
-                            : `${errors[`${index}-unitMeasureId`]}`
-                          }
-                        </p>
-                      )}
+                      {/* Unit Measure */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-slate-700">
+                          Đơn vị đo <span className="text-red-500">*</span>
+                        </Label>
+                        <CustomDropdown
+                          value={goods.unitMeasureId}
+                          onChange={(value) => updateGoodsRow(index, 'unitMeasureId', value)}
+                          disabled={isSuccessful}
+                          options={[
+                            { value: "", label: "Chọn đơn vị đo..." },
+                            ...unitMeasures.map((unit) => ({
+                              value: unit.unitMeasureId.toString(),
+                              label: unit.name
+                            }))
+                          ]}
+                          placeholder="Chọn đơn vị đo..."
+                          loading={loadingData}
+                        />
+                        {errors[`${index}-unitMeasureId`] && (
+                          <p className="text-sm text-red-500">
+                            {errors[`${index}-unitMeasureId`].includes('Trường này là bắt buộc')
+                              ? errors[`${index}-unitMeasureId`]
+                              : `${errors[`${index}-unitMeasureId`]}`
+                            }
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </Card>
+                  </Card>
                 )
               })}
             </div>
@@ -687,7 +685,8 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                 disabled={loading || loadingData}
                 className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
               >
-                {loading ? "Đang tạo..." : loadingData ? "Đang tải..." : hasBackendErrors ? `Tạo ${goodsList.length - successfulGoods.size} hàng hóa còn lại` : `Tạo ${goodsList.length} hàng hóa`}
+                Thêm
+                {/* {loading ? "Đang tạo..." : loadingData ? "Đang tải..." : hasBackendErrors ? `Tạo ${goodsList.length - successfulGoods.size} hàng hóa còn lại` : `Tạo ${goodsList.length} hàng hóa`} */}
               </Button>
             </div>
           </form>

@@ -441,7 +441,9 @@ export default function AdminPage() {
       </TableCell>
       <TableCell className="px-6 py-4">
         <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200">
-          {employee.roles && employee.roles.length > 0 ? employee.roles.join(", ") : "N/A"}
+          {employee.roles && employee.roles.length > 0
+            ? employee.roles.map(role => role.description).join(", ")
+            : "N/A"}
         </span>
       </TableCell>
       <TableCell className="px-6 py-4">
