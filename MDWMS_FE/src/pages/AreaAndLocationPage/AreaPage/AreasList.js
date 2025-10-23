@@ -332,7 +332,7 @@ const AreaLists = () => {
             )
 
             const statusText = newStatus === 1 ? "kích hoạt" : "ngừng hoạt động"
-            window.showToast(`Đã ${statusText} nhà cung cấp thành công`, "success")
+            window.showToast(`Đã ${statusText} khu vực thành công`, "success")
         } catch (error) {
             console.error("Error updating area status:", error)
 

@@ -408,7 +408,7 @@ export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess, fo
                         <div className="flex justify-center">
                             <Button
                                 type="button"
-                                className="bg-orange-300 hover:bg-orange-400 text-white px-6 py-2 rounded-lg"
+                                className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg"
                                 onClick={handleAddRow}
                             >
                                 + Thêm Hàng
