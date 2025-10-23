@@ -12,10 +12,11 @@ import PurchaseOrderFilterToggle from "../../components/PurchaseOrderComponents/
 import PurchaseOrderStatsChart from "../../components/PurchaseOrderComponents/PurchaseOrderStatsChart";
 import PurchaseOrderTable from "./PurchaseOrderTable";
 import { useFilterDisplayLogic } from "./FilterDisplayLogic";
-import { getPurchaseOrderSaleRepresentatives, getPurchaseOrderSaleManagers } from "../../services/PurchaseOrderService";
+import { getPurchaseOrderSaleRepresentatives, getPurchaseOrderSaleManagers, getPurchaseOrderWarehouseManagers, getPurchaseOrderWarehouseStaff } from "../../services/PurchaseOrderService";
 import { getSuppliersDropdown } from "../../services/SupplierService";
 import { PERMISSIONS } from "../../utils/permissions";
 import { usePermissions } from "../../hooks/usePermissions";
+import PermissionWrapper from "../../components/Common/PermissionWrapper";
 
 
 // Mapping status numbers to Vietnamese labels and colors
@@ -109,16 +110,18 @@ export default function PurchaseOrderList() {
 
       // Kiểm tra permissions để chọn API phù hợp
       if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_SM)) {
-        // Sales Manager - có quyền xem tất cả đơn hàng
-        console.log("Using Sales Manager API");
         response = await getPurchaseOrderSaleManagers(requestParams);
+      } else if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WM)) {
+        // Warehouse Manager - có quyền xem đơn hàng cho quản lý kho
+        response = await getPurchaseOrderWarehouseManagers(requestParams);
+      } else if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WS)) {
+        // Warehouse Staff - có quyền xem đơn hàng được giao
+        response = await getPurchaseOrderWarehouseStaff(requestParams);
       } else if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS)) {
         // Sales Representative - chỉ xem đơn hàng của mình
-        console.log("Using Sales Representative API");
         response = await getPurchaseOrderSaleRepresentatives(requestParams);
       } else {
         // Fallback - mặc định dùng API cho representatives
-        console.log("Using default Sales Representative API");
         response = await getPurchaseOrderSaleRepresentatives(requestParams);
       }
       
@@ -152,9 +155,16 @@ export default function PurchaseOrderList() {
     fetchData();
   }, []);
 
-  // Trigger search/filter when filters change
+  // Trigger search/filter when filters change (skip initial load)
   useEffect(() => {
-    fetchData();
+    // Skip if this is the initial load (when all filters are empty/default)
+    const isInitialLoad = !searchQuery && !statusFilter && !supplierFilter && 
+                         !approverFilter && !creatorFilter && !confirmerFilter && 
+                         !assigneeFilter && !dateRangeFilter.fromDate && !dateRangeFilter.toDate;
+    
+    if (!isInitialLoad) {
+      fetchData();
+    }
   }, [searchQuery, statusFilter, supplierFilter, approverFilter, creatorFilter, confirmerFilter, assigneeFilter, dateRangeFilter]);
 
   // Filter and sort data
@@ -356,10 +366,49 @@ export default function PurchaseOrderList() {
   };
 
 
-  // Use custom hook for filter display logic
-  const availableFieldsForFilter = useFilterDisplayLogic(purchaseOrders);
+  // Logic để hiển thị filter dựa trên role
+  const getFilterConfig = () => {
+    // Mặc định hiển thị tất cả 7 nút filter
+    const defaultConfig = {
+      showSupplier: true,
+      showApprover: true,
+      showCreator: true,
+      showConfirmer: true,
+      showAssignee: true,
+      showDateRange: true
+    };
 
-  // Calculate stats for chart
+    if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_SM)) {
+      // Sales Manager - ẩn Assignee (không có quyền giao việc)
+      return {
+        ...defaultConfig,
+        showAssignee: false
+      };
+    } else if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WM)) {
+      return {
+        ...defaultConfig,
+      };
+    } else if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WS)) {
+      // Warehouse Staff - filter cơ bản cho nhân viên kho
+      return {
+        ...defaultConfig,
+        showApprover: false,
+        showCreator: false,
+      };
+    } else if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS)) {
+      // Sales Representative - filter cơ bản
+      return {
+        ...defaultConfig,
+        showConfirmer: false,
+        showAssignee: false
+      };
+    }
+    
+    return defaultConfig;
+  };
+
+  const filterConfig = getFilterConfig();
+
   const purchaseOrderStats = useMemo(() => {
     const totalOrders = purchaseOrders.length;
     const pendingOrders = purchaseOrders.filter(order => order.status === 1).length;
@@ -394,37 +443,19 @@ export default function PurchaseOrderList() {
             </p>
           </div>
           <div className="flex space-x-3">
-            <Button
-              className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
-              onClick={() => {
-                navigate("/purchase-orders/create");
-              }}
-            >
-              <Plus className="mr-2 h-4 w-4 text-white" />
-              Thêm đơn hàng
-            </Button>
+            <PermissionWrapper requiredPermission={PERMISSIONS.PURCHASE_ORDER_CREATE}>
+              <Button
+                className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
+                onClick={() => {
+                  navigate("/purchase-orders/create");
+                }}
+              >
+                <Plus className="mr-2 h-4 w-4 text-white" />
+                Thêm đơn hàng
+              </Button>
+            </PermissionWrapper>
           </div>
         </div>
-
-        {/* Debug Info - chỉ hiển thị trong development */}
-        {/* {process.env.NODE_ENV === 'development' && (
-          <Card className="bg-yellow-50 border-yellow-200">
-            <div className="p-4">
-              <h3 className="text-sm font-medium text-yellow-800 mb-2">Debug Info</h3>
-              <div className="text-xs text-yellow-700 space-y-1">
-                <div><strong>User Roles:</strong> {userRoles?.join(', ') || 'None'}</div>
-                <div><strong>Has SM Permission:</strong> {hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_SM) ? 'Yes' : 'No'}</div>
-                <div><strong>Has RS Permission:</strong> {hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS) ? 'Yes' : 'No'}</div>
-                <div><strong>API Endpoint:</strong> {
-                  hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_SM) 
-                    ? 'GetPurchaseOrderSaleManagers' 
-                    : 'GetPurchaseOrderSaleRepresentatives'
-                }</div>
-                <div><strong>Data Count:</strong> {purchaseOrders.length} items</div>
-              </div>
-            </div>
-          </Card>
-        )} */}
 
         {/* Stats Chart */}
         <PurchaseOrderStatsChart
@@ -451,46 +482,51 @@ export default function PurchaseOrderList() {
             ]}
             onStatusFilter={handleStatusFilter}
             clearStatusFilter={clearStatusFilter}
-            // Supplier Filter - chỉ hiển thị nếu có supplier data
-            supplierFilter={availableFieldsForFilter.hasSupplier ? supplierFilter : ""}
-            setSupplierFilter={availableFieldsForFilter.hasSupplier ? setSupplierFilter : () => {}}
-            showSupplierFilter={availableFieldsForFilter.hasSupplier ? showSupplierFilter : false}
-            setShowSupplierFilter={availableFieldsForFilter.hasSupplier ? setShowSupplierFilter : () => {}}
-            suppliers={availableFieldsForFilter.hasSupplier ? suppliers : []}
-            onSupplierFilter={availableFieldsForFilter.hasSupplier ? handleSupplierFilter : () => {}}
-            clearSupplierFilter={availableFieldsForFilter.hasSupplier ? clearSupplierFilter : () => {}}
-            // Approver Filter - chỉ hiển thị nếu có approval data
-            approverFilter={availableFieldsForFilter.hasApprovalBy ? approverFilter : ""}
-            setApproverFilter={availableFieldsForFilter.hasApprovalBy ? setApproverFilter : () => {}}
-            showApproverFilter={availableFieldsForFilter.hasApprovalBy ? showApproverFilter : false}
-            setShowApproverFilter={availableFieldsForFilter.hasApprovalBy ? setShowApproverFilter : () => {}}
-            approvers={availableFieldsForFilter.hasApprovalBy ? sampleUsers : []}
-            onApproverFilter={availableFieldsForFilter.hasApprovalBy ? handleApproverFilter : () => {}}
-            clearApproverFilter={availableFieldsForFilter.hasApprovalBy ? clearApproverFilter : () => {}}
-            // Creator Filter - chỉ hiển thị nếu có creator data
-            creatorFilter={availableFieldsForFilter.hasCreatedBy ? creatorFilter : ""}
-            setCreatorFilter={availableFieldsForFilter.hasCreatedBy ? setCreatorFilter : () => {}}
-            showCreatorFilter={availableFieldsForFilter.hasCreatedBy ? showCreatorFilter : false}
-            setShowCreatorFilter={availableFieldsForFilter.hasCreatedBy ? setShowCreatorFilter : () => {}}
-            creators={availableFieldsForFilter.hasCreatedBy ? sampleUsers : []}
-            onCreatorFilter={availableFieldsForFilter.hasCreatedBy ? handleCreatorFilter : () => {}}
-            clearCreatorFilter={availableFieldsForFilter.hasCreatedBy ? clearCreatorFilter : () => {}}
-            // Confirmer Filter - chỉ hiển thị nếu có arrival confirmation data
-            confirmerFilter={availableFieldsForFilter.hasArrivalConfirmedBy ? confirmerFilter : ""}
-            setConfirmerFilter={availableFieldsForFilter.hasArrivalConfirmedBy ? setConfirmerFilter : () => {}}
-            showConfirmerFilter={availableFieldsForFilter.hasArrivalConfirmedBy ? showConfirmerFilter : false}
-            setShowConfirmerFilter={availableFieldsForFilter.hasArrivalConfirmedBy ? setShowConfirmerFilter : () => {}}
-            confirmers={availableFieldsForFilter.hasArrivalConfirmedBy ? sampleUsers : []}
-            onConfirmerFilter={availableFieldsForFilter.hasArrivalConfirmedBy ? handleConfirmerFilter : () => {}}
-            clearConfirmerFilter={availableFieldsForFilter.hasArrivalConfirmedBy ? clearConfirmerFilter : () => {}}
-            // Assignee Filter - chỉ hiển thị nếu có assign data
-            assigneeFilter={availableFieldsForFilter.hasAssignTo ? assigneeFilter : ""}
-            setAssigneeFilter={availableFieldsForFilter.hasAssignTo ? setAssigneeFilter : () => {}}
-            showAssigneeFilter={availableFieldsForFilter.hasAssignTo ? showAssigneeFilter : false}
-            setShowAssigneeFilter={availableFieldsForFilter.hasAssignTo ? setShowAssigneeFilter : () => {}}
-            assignees={availableFieldsForFilter.hasAssignTo ? sampleUsers : []}
-            onAssigneeFilter={availableFieldsForFilter.hasAssignTo ? handleAssigneeFilter : () => {}}
-            clearAssigneeFilter={availableFieldsForFilter.hasAssignTo ? clearAssigneeFilter : () => {}}
+            // Supplier Filter - hiển thị theo config
+            supplierFilter={filterConfig.showSupplier ? supplierFilter : ""}
+            setSupplierFilter={filterConfig.showSupplier ? setSupplierFilter : () => {}}
+            showSupplierFilter={filterConfig.showSupplier ? showSupplierFilter : false}
+            setShowSupplierFilter={filterConfig.showSupplier ? setShowSupplierFilter : () => {}}
+            suppliers={suppliers}
+            onSupplierFilter={filterConfig.showSupplier ? handleSupplierFilter : () => {}}
+            clearSupplierFilter={filterConfig.showSupplier ? clearSupplierFilter : () => {}}
+            showSupplier={filterConfig.showSupplier}
+            // Approver Filter - hiển thị theo config
+            approverFilter={filterConfig.showApprover ? approverFilter : ""}
+            setApproverFilter={filterConfig.showApprover ? setApproverFilter : () => {}}
+            showApproverFilter={filterConfig.showApprover ? showApproverFilter : false}
+            setShowApproverFilter={filterConfig.showApprover ? setShowApproverFilter : () => {}}
+            approvers={filterConfig.showApprover ? sampleUsers : []}
+            onApproverFilter={filterConfig.showApprover ? handleApproverFilter : () => {}}
+            clearApproverFilter={filterConfig.showApprover ? clearApproverFilter : () => {}}
+            showApprover={filterConfig.showApprover}
+            // Creator Filter - hiển thị theo config
+            creatorFilter={filterConfig.showCreator ? creatorFilter : ""}
+            setCreatorFilter={filterConfig.showCreator ? setCreatorFilter : () => {}}
+            showCreatorFilter={filterConfig.showCreator ? showCreatorFilter : false}
+            setShowCreatorFilter={filterConfig.showCreator ? setShowCreatorFilter : () => {}}
+            creators={filterConfig.showCreator ? sampleUsers : []}
+            onCreatorFilter={filterConfig.showCreator ? handleCreatorFilter : () => {}}
+            clearCreatorFilter={filterConfig.showCreator ? clearCreatorFilter : () => {}}
+            showCreator={filterConfig.showCreator}
+            // Confirmer Filter - hiển thị theo config
+            confirmerFilter={filterConfig.showConfirmer ? confirmerFilter : ""}
+            setConfirmerFilter={filterConfig.showConfirmer ? setConfirmerFilter : () => {}}
+            showConfirmerFilter={filterConfig.showConfirmer ? showConfirmerFilter : false}
+            setShowConfirmerFilter={filterConfig.showConfirmer ? setShowConfirmerFilter : () => {}}
+            confirmers={filterConfig.showConfirmer ? sampleUsers : []}
+            onConfirmerFilter={filterConfig.showConfirmer ? handleConfirmerFilter : () => {}}
+            clearConfirmerFilter={filterConfig.showConfirmer ? clearConfirmerFilter : () => {}}
+            showConfirmer={filterConfig.showConfirmer}
+            // Assignee Filter - hiển thị theo config
+            assigneeFilter={filterConfig.showAssignee ? assigneeFilter : ""}
+            setAssigneeFilter={filterConfig.showAssignee ? setAssigneeFilter : () => {}}
+            showAssigneeFilter={filterConfig.showAssignee ? showAssigneeFilter : false}
+            setShowAssigneeFilter={filterConfig.showAssignee ? setShowAssigneeFilter : () => {}}
+            assignees={filterConfig.showAssignee ? sampleUsers : []}
+            onAssigneeFilter={filterConfig.showAssignee ? handleAssigneeFilter : () => {}}
+            clearAssigneeFilter={filterConfig.showAssignee ? clearAssigneeFilter : () => {}}
+            showAssignee={filterConfig.showAssignee}
             // Date Range Filter
             dateRangeFilter={dateRangeFilter}
             setDateRangeFilter={setDateRangeFilter}
