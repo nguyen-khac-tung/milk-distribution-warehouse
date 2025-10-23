@@ -69,7 +69,7 @@ namespace MilkDistributionWarehouse.Services
 
             if (await _palletRepository.ExistsAsync(dto.LocationId))
                 return ("Đã tồn tại pallet ở vị trí này.".ToMessageForUser(), new PalletDto.PalletResponseDto());
-            
+
             var entity = _mapper.Map<Pallet>(dto);
             entity.PalletId = Guid.NewGuid();
             entity.CreateBy = userId;
@@ -81,7 +81,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Cập nhật trạng thái vị trí thất bại.".ToMessageForUser(), new PalletDto.PalletResponseDto());
 
             var created = await _palletRepository.CreatePallet(entity);
-            var createdResponse =await _palletRepository.GetPalletById(created.PalletId);
+            var createdResponse = await _palletRepository.GetPalletById(created.PalletId);
             return ("", _mapper.Map<PalletDto.PalletResponseDto>(createdResponse));
         }
 
@@ -93,6 +93,15 @@ namespace MilkDistributionWarehouse.Services
 
             if (await _palletRepository.ExistsAsync(dto.LocationId, palletId))
                 return ("Có pallet khác đã sử dụng vị trí này.".ToMessageForUser(), new PalletDto.PalletResponseDto());
+
+            if (!await _palletRepository.ExistsLocation(dto.LocationId))
+                return ("Vị trí này không tồn tại trong hệ thống hoặc .".ToMessageForUser(), new PalletDto.PalletResponseDto());
+
+            if (!await _palletRepository.ExistsPurchaseOrder(dto.PurchaseOrderId))
+                return ("Đơn mua này không tồn tại trong hệ thống.".ToMessageForUser(), new PalletDto.PalletResponseDto());
+
+            if (!await _palletRepository.ExistsBatch(dto.BatchId))
+                return ("Lô này không tồn tại trong hệ thống.".ToMessageForUser(), new PalletDto.PalletResponseDto());
 
             _mapper.Map(dto, pallet);
             pallet.UpdateAt = DateTime.Now;
@@ -113,6 +122,11 @@ namespace MilkDistributionWarehouse.Services
 
             pallet.Status = CommonStatus.Deleted;
             pallet.UpdateAt = DateTime.Now;
+
+            var updateIsAvail = await _locationRepository.UpdateIsAvailableAsync(pallet.LocationId, true);
+
+            if (!updateIsAvail)
+                return ("Cập nhật trạng thái vị trí khi xóa pallet thất bại.".ToMessageForUser(), new PalletDto.PalletResponseDto());
 
             var deleted = await _palletRepository.UpdatePallet(pallet);
             return ("", _mapper.Map<PalletDto.PalletResponseDto>(deleted));
