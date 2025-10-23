@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Microsoft.AspNetCore.Mvc.TagHelpers;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
+using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
 using MilkDistributionWarehouse.Utilities;
 using System.Threading.Tasks;
@@ -14,6 +16,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, PageResult<PurchaseOrderDtoSaleManager>?)> GetPurchaseOrderSaleManagers(PagedRequest request);
         Task<(string, PageResult<PurchaseOrderDtoWarehouseManager>?)> GetPurchaseOrderWarehouseManager(PagedRequest request);
         Task<(string, PageResult<PurchaseOrderDtoWarehouseStaff>?)> GetPurchaseOrderWarehouseStaff(PagedRequest request, int? userId);
+        Task<(string, PurchaseOrderCreate?)> CreatePurchaseOrder(PurchaseOrderCreate create, int? userId);
         Task<(string, PurchaseOrdersDetail?)> GetPurchaseOrderDetailById(Guid purchaseOrderId);
     }
 
@@ -21,12 +24,17 @@ namespace MilkDistributionWarehouse.Services
     {
         private readonly IPurchaseOrderRepositoy _purchaseOrderRepository;
         private readonly IPurchaseOrderDetailService _purchaseOrderDetailService;
+        private readonly IPurchaseOrderDetailRepository _purchaseOrderDetailRepository;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
-        public PurchaseOrderService(IPurchaseOrderRepositoy purchaseOrderRepository, IMapper mapper, IPurchaseOrderDetailService purchaseOrderDetailService)
+        public PurchaseOrderService(IPurchaseOrderRepositoy purchaseOrderRepository, IMapper mapper, IPurchaseOrderDetailService purchaseOrderDetailService,
+            IPurchaseOrderDetailRepository purchaseOrderDetailRepository, IUnitOfWork unitOfWork)
         {
             _purchaseOrderRepository = purchaseOrderRepository;
             _mapper = mapper;
             _purchaseOrderDetailService = purchaseOrderDetailService;
+            _purchaseOrderDetailRepository = purchaseOrderDetailRepository;
+            _unitOfWork = unitOfWork;
         }
 
         private async Task<(string, PageResult<TDto>?)> GetPurchaseOrdersAsync<TDto>(PagedRequest request, int? userId, string? userRole, params int[] excludedStatuses)
@@ -47,12 +55,12 @@ namespace MilkDistributionWarehouse.Services
                         break;
                     case "Warehouse Manager":
                         purchaseOrderQuery = purchaseOrderQuery
-                            .Where(pod => pod.Status != null 
+                            .Where(pod => pod.Status != null
                             && excludedStatuses.Contains((int)pod.Status));
                         break;
                     case "Sale Manager":
                         purchaseOrderQuery = purchaseOrderQuery
-                            .Where(pod => pod.Status != null 
+                            .Where(pod => pod.Status != null
                             && !excludedStatuses.Contains((int)pod.Status));
                         break;
                     default:
@@ -81,7 +89,7 @@ namespace MilkDistributionWarehouse.Services
             {
                 PurchaseOrderStatus.Draft
             };
-            
+
             return await GetPurchaseOrdersAsync<PurchaseOrderDtoSaleManager>(request, null, "Sale Manager", excludedStatus);
         }
 
@@ -89,7 +97,7 @@ namespace MilkDistributionWarehouse.Services
         {
             var excludedStatus = new int[]
                         {
-                          PurchaseOrderStatus.Approved,  
+                          PurchaseOrderStatus.Approved,
                           PurchaseOrderStatus.GoodsReceived,
                           PurchaseOrderStatus.AssignedForReceiving,
                           PurchaseOrderStatus.Receiving,
@@ -130,6 +138,47 @@ namespace MilkDistributionWarehouse.Services
             purchaseOrderMapDetal.PurchaseOrderDetails = purchaseOrderDetail;
 
             return ("", purchaseOrderMapDetal);
+        }
+
+        public async Task<(string, PurchaseOrderCreate?)> CreatePurchaseOrder(PurchaseOrderCreate create, int? userId)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+                if (create == null)
+                    return ("PurchaseOrder data create is null.", default);
+
+                var purchaseOrderCreate = _mapper.Map<PurchaseOrder>(create);
+
+                purchaseOrderCreate.CreatedBy = userId;
+
+                var resultPOCreate = await _purchaseOrderRepository.CreatePurchaseOrder(purchaseOrderCreate);
+
+                if (resultPOCreate == null)
+                    return ("Lưu đơn đặt hàng thất bại.".ToMessageForUser(), default);
+
+                var purchaseOrderDetailCreate = _mapper.Map<List<PurchaseOderDetail>>(create.PurchaseOrderDetailCreate);
+
+                foreach (var poDetail in purchaseOrderDetailCreate)
+                {
+                    poDetail.PurchaseOderId = resultPOCreate.PurchaseOderId;
+                }
+
+                var resultPODetailCreate = await _purchaseOrderDetailRepository.CreatePODetailBulk(purchaseOrderDetailCreate);
+
+                if (resultPODetailCreate == 0)
+                    return ("Lưu đơn đặt hàng thất bại.".ToMessageForUser(), default);
+
+                await _unitOfWork.CommitTransactionAsync();
+
+                return ("", create);
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }           
+
         }
     }
 }

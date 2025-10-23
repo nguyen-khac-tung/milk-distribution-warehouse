@@ -194,37 +194,36 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => DateTime.Now));
 
             //Map PurchaseOrder
+            CreateMap<PurchaseOrder, PurchaseOrderDtoCommon>()
+                .ForMember(dest => dest.SupplierName, opt => opt.MapFrom(src => src.Supplier.CompanyName.Trim()));
             CreateMap<PurchaseOrder, PurchaseOrderDtoSaleRepresentative>()
-                .ForMember(dest => dest.SupplierName, opt => opt.MapFrom(src => src.Supplier.CompanyName.Trim()))
+                .IncludeBase<PurchaseOrder, PurchaseOrderDtoCommon>()
                 .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => src.CreatedByNavigation.FullName.Trim()))
                 .ForMember(dest => dest.ApprovalByName, opt => opt.MapFrom(src => src.ApprovalByNavigation.FullName.Trim()));
             CreateMap<PurchaseOrder, PurchaseOrderDtoSaleManager>()
-                .ForMember(dest => dest.SupplierName, opt => opt.MapFrom(src => src.Supplier.CompanyName.Trim()))
-                .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => src.CreatedByNavigation.FullName.Trim()))
-                .ForMember(dest => dest.ApprovalByName, opt => opt.MapFrom(src => src.ApprovalByNavigation.FullName.Trim()))
+                .IncludeBase<PurchaseOrder, PurchaseOrderDtoSaleRepresentative>()
                 .ForMember(dest => dest.ArrivalConfirmedByName, opt => opt.MapFrom(src => src.ArrivalConfirmedByNavigation.FullName.Trim()));
             CreateMap<PurchaseOrder, PurchaseOrderDtoWarehouseManager>()
-                .ForMember(dest => dest.SupplierName, opt => opt.MapFrom(src => src.Supplier.CompanyName.Trim()))
-                .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => src.CreatedByNavigation.FullName.Trim()))
-                .ForMember(dest => dest.ApprovalByName, opt => opt.MapFrom(src => src.ApprovalByNavigation.FullName.Trim()))
-                .ForMember(dest => dest.ArrivalConfirmedByName, opt => opt.MapFrom(src => src.ArrivalConfirmedByNavigation.FullName.Trim()))
+                .IncludeBase<PurchaseOrder, PurchaseOrderDtoSaleManager>()
                 .ForMember(dest => dest.AssignToByName, opt => opt.MapFrom(src => src.AssignToNavigation.FullName.Trim()));
             CreateMap<PurchaseOrder, PurchaseOrderDtoWarehouseStaff>()
-                .ForMember(dest => dest.SupplierName, opt => opt.MapFrom(src => src.Supplier.CompanyName.Trim()))
+                .IncludeBase<PurchaseOrder, PurchaseOrderDtoCommon>()
                 .ForMember(dest => dest.ArrivalConfirmedByName, opt => opt.MapFrom(src => src.ArrivalConfirmedByNavigation.FullName.Trim()))
                 .ForMember(dest => dest.AssignToByName, opt => opt.MapFrom(src => src.AssignToNavigation.FullName.Trim()));
             CreateMap<PurchaseOrder, PurchaseOrdersDetail>()
-                .ForMember(dest => dest.SupplierName, opt => opt.MapFrom(src => src.Supplier.CompanyName.Trim()))
-                .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => src.CreatedByNavigation.FullName.Trim()))
-                .ForMember(dest => dest.ApprovalByName, opt => opt.MapFrom(src => src.ApprovalByNavigation.FullName.Trim()))
-                .ForMember(dest => dest.ArrivalConfirmedByName, opt => opt.MapFrom(src => src.ArrivalConfirmedByNavigation.FullName.Trim()))
-                .ForMember(dest => dest.AssignToByName, opt => opt.MapFrom(src => src.AssignToNavigation.FullName.Trim()));
-            //CreateMap<PurchaseOrder, PurchaseOrderCreate>()
-            //.ForMember(dest => dest.)
+                .IncludeBase<PurchaseOrder, PurchaseOrderDtoWarehouseManager>();
+
+            CreateMap<PurchaseOrderCreate, PurchaseOrder>()
+                .ForMember(dest => dest.PurchaseOderId, opt => opt.MapFrom(_ => Guid.NewGuid()))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => PurchaseOrderStatus.Draft))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now))
+                .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(_ => (DateTime?)null));
 
             //Map PurchaseOderDetail
             CreateMap<PurchaseOderDetail, PurchaseOrderDetailDto>()
                 .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Goods.GoodsName.Trim()));
+            CreateMap<PurchaseOrderDetailCreate, PurchaseOderDetail>()
+                .ForMember(dest => dest.PurchaseOderId, opt => opt.Ignore());
         }
     }
 }

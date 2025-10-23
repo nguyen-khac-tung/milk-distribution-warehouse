@@ -1,4 +1,6 @@
-﻿namespace MilkDistributionWarehouse.Models.DTOs
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace MilkDistributionWarehouse.Models.DTOs
 {
     public class PurchaseOrderDetailDto
     {
@@ -11,7 +13,10 @@
 
     public class PurchaseOrderDetailCreate
     {
+        [Required(ErrorMessage ="Hàng hoá không được bỏ trống.")]
         public int GoodsId { get; set; }
+        [Required(ErrorMessage = "Số lượng không được bỏ trống.")]
+        [Range(1, int.MaxValue, ErrorMessage = "Số lượng phải lớn hơn 0.")]
         public int Quantity { get; set; }
     }
 

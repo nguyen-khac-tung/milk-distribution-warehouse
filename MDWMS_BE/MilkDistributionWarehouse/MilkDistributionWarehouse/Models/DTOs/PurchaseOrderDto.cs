@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using MilkDistributionWarehouse.Utilities;
+using System.ComponentModel.DataAnnotations;
 using System.Runtime.InteropServices;
 
 namespace MilkDistributionWarehouse.Models.DTOs
@@ -52,7 +53,8 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
     public class PurchaseOrderCreate
     {
+        [Required(ErrorMessage ="Nhà cung cấp không được bỏ trống.")]
         public int SupplierId { get; set; }
-        public List<PurchaseOrderDetailCreate> PurchaseOrderDetail { get; set; } = new();
+        public List<PurchaseOrderDetailCreate> PurchaseOrderDetailCreate { get; set; } = new();
     }
 }
