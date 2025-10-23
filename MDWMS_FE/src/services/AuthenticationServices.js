@@ -15,7 +15,7 @@ export const login = async (data) => {
         if (res.data?.success && res.data?.data) {
             const userData = res.data.data;
 
-            console.log("isFirstLogin:", userData.isFirstLogin);
+            // console.log("isFirstLogin:", userData.isFirstLogin);
 
             if (userData.isFirstLogin === true) {
                 localStorage.setItem("tempUserId", userData.userId.toString());
@@ -42,11 +42,11 @@ export const login = async (data) => {
                         roles: userData.roles,
                     })
                 );
-                console.log("localStorage after saving:", {
-                    accessToken: localStorage.getItem("accessToken"),
-                    refreshToken: localStorage.getItem("refreshToken"),
-                    userInfo: localStorage.getItem("userInfo")
-                });
+                // console.log("localStorage after saving:", {
+                //     accessToken: localStorage.getItem("accessToken"),
+                //     refreshToken: localStorage.getItem("refreshToken"),
+                //     userInfo: localStorage.getItem("userInfo")
+                // });
             }
 
             return {
@@ -113,19 +113,19 @@ export const validateAndRefreshToken = async () => {
     try {
         const accessToken = localStorage.getItem("accessToken");
         const refreshToken = localStorage.getItem("refreshToken");
-        
+
         // Nếu không có token nào
         if (!accessToken && !refreshToken) {
             return false;
         }
-        
+
         // Nếu có accessToken, kiểm tra xem có hết hạn không
         if (accessToken) {
             try {
                 // Decode JWT để kiểm tra expiry
                 const payload = JSON.parse(atob(accessToken.split('.')[1]));
                 const currentTime = Math.floor(Date.now() / 1000);
-                
+
                 // Nếu token chưa hết hạn, return true
                 if (payload.exp > currentTime) {
                     return true;
@@ -134,7 +134,7 @@ export const validateAndRefreshToken = async () => {
                 console.log("Access token invalid, trying to refresh...");
             }
         }
-        
+
         // Nếu accessToken hết hạn hoặc không có, thử refresh
         if (refreshToken) {
             try {
@@ -151,7 +151,7 @@ export const validateAndRefreshToken = async () => {
                 return false;
             }
         }
-        
+
         return false;
     } catch (error) {
         console.error("Token validation error:", error);

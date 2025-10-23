@@ -64,7 +64,7 @@ const getEmployeeStats = (employees) => {
 
   const roleStats = allRoles.map(roleName => {
     const count = employees.filter(emp =>
-      emp.roles && emp.roles.some(role => role.includes(roleName))
+      emp.roles && emp.roles.some(role => role.roleName?.includes(roleName))
     ).length
 
     return {
@@ -358,7 +358,7 @@ export default function AdminPage() {
 
         let matchesRole = true
         if (roleFilter) {
-          matchesRole = employee.roles && employee.roles.some(role => role.includes(roleFilter))
+          matchesRole = employee.roles && employee.roles.some(role => role.roleName?.includes(roleFilter));
         }
 
         return matchesSearch && matchesStatus && matchesRole
@@ -441,7 +441,9 @@ export default function AdminPage() {
       </TableCell>
       <TableCell className="px-6 py-4">
         <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200">
-          {employee.roles && employee.roles.length > 0 ? employee.roles.join(", ") : "N/A"}
+          {employee.roles && employee.roles.length > 0
+            ? employee.roles.map(role => role.description).join(", ")
+            : "N/A"}
         </span>
       </TableCell>
       <TableCell className="px-6 py-4">

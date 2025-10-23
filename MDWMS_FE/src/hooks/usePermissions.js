@@ -5,14 +5,14 @@ import { ROLES, PERMISSIONS, ROLE_PERMISSIONS } from '../utils/permissions';
 ///FILE NÀY TRUNG TÂM XỬ LÝ PHÂN QUYỀN MINH NHÉ
 export const usePermissions = () => {
     const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
-    const userRoles = userInfo.roles || [];
+    const userRoles = (userInfo.roles || []).map(role => role.roleName?.trim());
 
     const hasPermission = useMemo(() => {
         return (permission) => {
             if (!permission) return true;
-            
+
             // Kiểm tra quyền theo role (bao gồm cả Admin)
-            return userRoles.some(role => 
+            return userRoles.some(role =>
                 ROLE_PERMISSIONS[role]?.includes(permission)
             );
         };
@@ -49,15 +49,15 @@ export const usePermissions = () => {
                 '/reports': [PERMISSIONS.REPORT_VIEW],
                 '/settings': [PERMISSIONS.SETTINGS_VIEW]
             };
-            
+
             const requiredPermissions = routePermissions[route];
             if (!requiredPermissions) return true;
-            
+
             // Kiểm tra role trực tiếp
             if (requiredPermissions.some(p => Object.values(ROLES).includes(p))) {
                 return requiredPermissions.some(role => userRoles.includes(role));
             }
-            
+
             // Kiểm tra permission
             return hasAnyPermission(requiredPermissions);
         };
@@ -89,7 +89,7 @@ export const usePermissions = () => {
 
     return {
         hasPermission,
-        hasAnyPermission, 
+        hasAnyPermission,
         hasAllPermissions,
         canAccessRoute,
         userRoles,

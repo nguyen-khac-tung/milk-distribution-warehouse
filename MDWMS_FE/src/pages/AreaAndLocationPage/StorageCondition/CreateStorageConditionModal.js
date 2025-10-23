@@ -22,7 +22,7 @@ export default function CreateStorageCondition({ isOpen, onClose, onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
+
     // Basic validation - only check if required fields are filled
     if (!formData.lightLevel) {
       window.showToast("Vui lòng chọn mức độ ánh sáng", "error")
@@ -72,78 +72,78 @@ export default function CreateStorageCondition({ isOpen, onClose, onSuccess }) {
             <X className="h-5 w-5 text-gray-500" />
           </button>
         </div>
-        
+
         {/* Content */}
         <div className="p-6">
           <form className="space-y-6" onSubmit={handleSubmit}>
             {/* Row 1: Temperature Range */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="temperatureMin" className="text-sm font-medium text-slate-700">
-                    Nhiệt độ tối thiểu (°C) <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="temperatureMin"
-                    type="number"
-                    step="0.1"
-                    placeholder="Nhập nhiệt độ tối thiểu..."
-                    value={formData.temperatureMin === 0 ? "" : formData.temperatureMin}
-                    onChange={(e) => setFormData({ ...formData, temperatureMin: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 })}
-                    className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                    required
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="temperatureMin" className="text-sm font-medium text-slate-700">
+                  Nhiệt độ tối thiểu (°C) <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="temperatureMin"
+                  type="number"
+                  step="0.1"
+                  placeholder="Nhập nhiệt độ tối thiểu..."
+                  value={formData.temperatureMin === 0 ? "" : formData.temperatureMin}
+                  onChange={(e) => setFormData({ ...formData, temperatureMin: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 })}
+                  className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                  required
+                />
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="temperatureMax" className="text-sm font-medium text-slate-700">
-                    Nhiệt độ tối đa (°C) <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="temperatureMax"
-                    type="number"
-                    step="0.1"
-                    placeholder="Nhập nhiệt độ tối đa..."
-                    value={formData.temperatureMax === 0 ? "" : formData.temperatureMax}
-                    onChange={(e) => setFormData({ ...formData, temperatureMax: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 })}
-                    className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                    required
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="temperatureMax" className="text-sm font-medium text-slate-700">
+                  Nhiệt độ tối đa (°C) <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="temperatureMax"
+                  type="number"
+                  step="0.1"
+                  placeholder="Nhập nhiệt độ tối đa..."
+                  value={formData.temperatureMax === 0 ? "" : formData.temperatureMax}
+                  onChange={(e) => setFormData({ ...formData, temperatureMax: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 })}
+                  className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                  required
+                />
+              </div>
             </div>
 
             {/* Row 2: Humidity Range */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="humidityMin" className="text-sm font-medium text-slate-700">
-                    Độ ẩm tối thiểu (%) <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="humidityMin"
-                    type="number"
-                    step="0.1"
-                    placeholder="Nhập độ ẩm tối thiểu..."
-                    value={formData.humidityMin === 0 ? "" : formData.humidityMin}
-                    onChange={(e) => setFormData({ ...formData, humidityMin: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 })}
-                    className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                    required
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="humidityMin" className="text-sm font-medium text-slate-700">
+                  Độ ẩm tối thiểu (%) <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="humidityMin"
+                  type="number"
+                  step="0.1"
+                  placeholder="Nhập độ ẩm tối thiểu..."
+                  value={formData.humidityMin === 0 ? "" : formData.humidityMin}
+                  onChange={(e) => setFormData({ ...formData, humidityMin: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 })}
+                  className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                  required
+                />
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="humidityMax" className="text-sm font-medium text-slate-700">
-                    Độ ẩm tối đa (%) <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="humidityMax"
-                    type="number"
-                    step="0.1"
-                    placeholder="Nhập độ ẩm tối đa..."
-                    value={formData.humidityMax === 0 ? "" : formData.humidityMax}
-                    onChange={(e) => setFormData({ ...formData, humidityMax: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 })}
-                    className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                    required
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="humidityMax" className="text-sm font-medium text-slate-700">
+                  Độ ẩm tối đa (%) <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="humidityMax"
+                  type="number"
+                  step="0.1"
+                  placeholder="Nhập độ ẩm tối đa..."
+                  value={formData.humidityMax === 0 ? "" : formData.humidityMax}
+                  onChange={(e) => setFormData({ ...formData, humidityMax: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 })}
+                  className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                  required
+                />
+              </div>
             </div>
 
             {/* Row 3: Light Level */}
