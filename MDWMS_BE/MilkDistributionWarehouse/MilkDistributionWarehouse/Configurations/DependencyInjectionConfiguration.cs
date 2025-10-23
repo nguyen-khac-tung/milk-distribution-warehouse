@@ -81,6 +81,10 @@ namespace MilkDistributionWarehouse.Configurations
             //Pallet
             services.AddScoped<IPalletRepository, PalletRepository>();
             services.AddScoped<IPalletService, PalletService>();
+
+            //BackOrder
+            services.AddScoped<IBackOrderRepository, BackOrderRepository>();
+            services.AddScoped<IBackOrderService, BackOrderService>();
         }
     }
 }
