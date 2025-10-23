@@ -134,7 +134,7 @@ const HeaderBar = memo(({ onToggleSidebar, sidebarCollapsed }) => {
                                     {user?.fullName || "Người dùng"}
                                 </span>
                                 <span style={{ fontSize: 14, color: "#6b7280", marginTop: 2 }}>
-                                    {user?.roles?.[0] || "Admin"}
+                                    {user?.roles?.[0]?.description || "Admin"}
                                 </span>
                             </div>
                         </div>

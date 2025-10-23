@@ -15,7 +15,7 @@ export const login = async (data) => {
         if (res.data?.success && res.data?.data) {
             const userData = res.data.data;
 
-            console.log("isFirstLogin:", userData.isFirstLogin);
+            // console.log("isFirstLogin:", userData.isFirstLogin);
 
             if (userData.isFirstLogin === true) {
                 localStorage.setItem("tempUserId", userData.userId.toString());
@@ -42,11 +42,11 @@ export const login = async (data) => {
                         roles: userData.roles,
                     })
                 );
-                console.log("localStorage after saving:", {
-                    accessToken: localStorage.getItem("accessToken"),
-                    refreshToken: localStorage.getItem("refreshToken"),
-                    userInfo: localStorage.getItem("userInfo")
-                });
+                // console.log("localStorage after saving:", {
+                //     accessToken: localStorage.getItem("accessToken"),
+                //     refreshToken: localStorage.getItem("refreshToken"),
+                //     userInfo: localStorage.getItem("userInfo")
+                // });
             }
 
             return {

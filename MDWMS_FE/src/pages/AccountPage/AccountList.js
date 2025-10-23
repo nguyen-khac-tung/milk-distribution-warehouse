@@ -64,7 +64,7 @@ const getEmployeeStats = (employees) => {
 
   const roleStats = allRoles.map(roleName => {
     const count = employees.filter(emp =>
-      emp.roles && emp.roles.some(role => role.includes(roleName))
+      emp.roles && emp.roles.some(role => role.roleName?.includes(roleName))
     ).length
 
     return {
@@ -358,7 +358,7 @@ export default function AdminPage() {
 
         let matchesRole = true
         if (roleFilter) {
-          matchesRole = employee.roles && employee.roles.some(role => role.includes(roleFilter))
+          matchesRole = employee.roles && employee.roles.some(role => role.roleName?.includes(roleFilter));
         }
 
         return matchesSearch && matchesStatus && matchesRole
@@ -449,8 +449,8 @@ export default function AdminPage() {
           requiredPermission={PERMISSIONS.ACCOUNT_UPDATE}
           fallback={
             <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${employee.status === 1
-                ? 'bg-green-100 text-green-800 border border-green-200'
-                : 'bg-red-100 text-red-800 border border-red-200'
+              ? 'bg-green-100 text-green-800 border border-green-200'
+              : 'bg-red-100 text-red-800 border border-red-200'
               }`}>
               {employee.status === 1 ? 'Hoạt động' : 'Ngừng hoạt động'}
             </span>
