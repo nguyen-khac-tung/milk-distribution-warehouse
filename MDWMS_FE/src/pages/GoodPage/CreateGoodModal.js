@@ -74,14 +74,14 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
       setLoading(true)
       const response = await createGood(formData)
       console.log("Good created:", response)
-      window.showToast("Thêm hàng hóa thành công!", "success")
+      window.showToast("Thêm mặt hàng thành công!", "success")
       onSuccess && onSuccess()
       onClose && onClose()
     } catch (error) {
       console.error("Error creating good:", error)
 
       // Sử dụng extractErrorMessage để xử lý lỗi từ API
-      const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi thêm hàng hóa")
+      const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi thêm mặt hàng")
       window.showToast(`Lỗi: ${errorMessage}`, "error")
     } finally {
       setLoading(false)
@@ -107,7 +107,7 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
       <div className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-slate-800">Thêm hàng hóa mới</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Thêm mặt hàng mới</h1>
           <button
             onClick={onClose}
             className="p-1 hover:bg-gray-100 rounded-full transition-colors"
@@ -124,11 +124,11 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="goodsCode" className="text-sm font-medium text-slate-700">
-                  Mã hàng hóa <span className="text-red-500">*</span>
+                  Mã mặt hàng <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="goodsCode"
-                  placeholder="Nhập mã hàng hóa..."
+                  placeholder="Nhập mã mặt hàng..."
                   value={formData.goodsCode}
                   onChange={(e) => setFormData({ ...formData, goodsCode: e.target.value })}
                   className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
@@ -138,11 +138,11 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
 
               <div className="space-y-2">
                 <Label htmlFor="goodsName" className="text-sm font-medium text-slate-700">
-                  Tên hàng hóa <span className="text-red-500">*</span>
+                  Tên mặt hàng <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="goodsName"
-                  placeholder="Nhập tên hàng hóa..."
+                  placeholder="Nhập tên mặt hàng..."
                   value={formData.goodsName}
                   onChange={(e) => setFormData({ ...formData, goodsName: e.target.value })}
                   className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"

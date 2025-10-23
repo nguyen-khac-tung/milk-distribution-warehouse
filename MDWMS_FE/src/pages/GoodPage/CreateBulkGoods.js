@@ -34,6 +34,21 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
   const [hasBackendErrors, setHasBackendErrors] = useState(false)
   const [successfulGoods, setSuccessfulGoods] = useState(new Set())
   const isCheckingDuplicates = useRef(false)
+  
+  // Default values state
+  const [defaultValues, setDefaultValues] = useState({
+    categoryId: "",
+    supplierId: "",
+    storageConditionId: "",
+    unitMeasureId: ""
+  })
+  const [useDefaults, setUseDefaults] = useState(false)
+  const [defaultFields, setDefaultFields] = useState({
+    category: false,
+    supplier: false,
+    storageCondition: false,
+    unitMeasure: false
+  })
 
   // Load data for dropdowns
   useEffect(() => {
@@ -41,6 +56,39 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
       loadDropdownData()
     }
   }, [isOpen])
+
+  // Apply default values to first goods item when defaults change
+  useEffect(() => {
+    if (useDefaults && goodsList.length > 0) {
+      const firstGoods = goodsList[0]
+      const updatedGoods = { ...firstGoods }
+      
+      if (defaultFields.category && defaultValues.categoryId) {
+        updatedGoods.categoryId = defaultValues.categoryId
+      }
+      if (defaultFields.supplier && defaultValues.supplierId) {
+        updatedGoods.supplierId = defaultValues.supplierId
+      }
+      if (defaultFields.storageCondition && defaultValues.storageConditionId) {
+        updatedGoods.storageConditionId = defaultValues.storageConditionId
+      }
+      if (defaultFields.unitMeasure && defaultValues.unitMeasureId) {
+        updatedGoods.unitMeasureId = defaultValues.unitMeasureId
+      }
+
+      const shouldUpdate = 
+        firstGoods.categoryId !== updatedGoods.categoryId ||
+        firstGoods.supplierId !== updatedGoods.supplierId ||
+        firstGoods.storageConditionId !== updatedGoods.storageConditionId ||
+        firstGoods.unitMeasureId !== updatedGoods.unitMeasureId
+
+      if (shouldUpdate) {
+        const updatedGoodsList = [...goodsList]
+        updatedGoodsList[0] = updatedGoods
+        setGoodsList(updatedGoodsList)
+      }
+    }
+  }, [defaultValues, useDefaults, defaultFields])
 
   // Check for duplicates when goodsList changes
   useEffect(() => {
@@ -54,7 +102,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
       if (goods.goodsCode) {
         const duplicateIndex = goodsList.findIndex((g, i) => i !== index && g.goodsCode === goods.goodsCode)
         if (duplicateIndex !== -1) {
-          newErrors[`${index}-goodsCode`] = "Mã hàng hóa đã tồn tại trong danh sách"
+          newErrors[`${index}-goodsCode`] = "Mã mặt hàng đã tồn tại trong danh sách"
           hasDuplicates = true
         } else {
           // Clear duplicate error if no longer duplicate
@@ -95,14 +143,15 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
   }
 
   const addGoodsRow = () => {
-    const newGoodsList = [...goodsList, {
+    const newGoods = {
       goodsCode: "",
       goodsName: "",
-      categoryId: "",
-      supplierId: "",
-      storageConditionId: "",
-      unitMeasureId: "",
-    }]
+      categoryId: (useDefaults && defaultFields.category) ? defaultValues.categoryId : "",
+      supplierId: (useDefaults && defaultFields.supplier) ? defaultValues.supplierId : "",
+      storageConditionId: (useDefaults && defaultFields.storageCondition) ? defaultValues.storageConditionId : "",
+      unitMeasureId: (useDefaults && defaultFields.unitMeasure) ? defaultValues.unitMeasureId : "",
+    }
+    const newGoodsList = [...goodsList, newGoods]
     setGoodsList(newGoodsList)
 
     // Re-check for duplicates after adding new row
@@ -111,7 +160,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
       if (goods.goodsCode) {
         const duplicateIndex = newGoodsList.findIndex((g, i) => i !== index && g.goodsCode === goods.goodsCode)
         if (duplicateIndex !== -1) {
-          newErrors[`${index}-goodsCode`] = "Mã hàng hóa đã tồn tại trong danh sách"
+          newErrors[`${index}-goodsCode`] = "Mã mặt hàng đã tồn tại trong danh sách"
         }
       }
     })
@@ -163,7 +212,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
         if (goods.goodsCode) {
           const duplicateIndex = newList.findIndex((g, i) => i !== newIndex && g.goodsCode === goods.goodsCode)
           if (duplicateIndex !== -1) {
-            newErrors[`${newIndex}-goodsCode`] = "Mã hàng hóa đã tồn tại trong danh sách"
+            newErrors[`${newIndex}-goodsCode`] = "Mã mặt hàng đã tồn tại trong danh sách"
           }
         }
       })
@@ -199,7 +248,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
       const duplicateIndex = newList.findIndex((g, i) => i !== index && g.goodsCode === value)
       if (duplicateIndex !== -1) {
         const newErrors = { ...errors }
-        newErrors[`${index}-goodsCode`] = "Mã hàng hóa đã tồn tại trong danh sách"
+        newErrors[`${index}-goodsCode`] = "Mã mặt hàng đã tồn tại trong danh sách"
         setErrors(newErrors)
         setHasBackendErrors(true)
       }
@@ -223,7 +272,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
       // Check for duplicate goods codes
       const duplicateIndex = goodsList.findIndex((g, i) => i !== index && g.goodsCode === goods.goodsCode)
       if (duplicateIndex !== -1 && goods.goodsCode) {
-        newErrors[`${index}-goodsCode`] = "Mã hàng hóa đã tồn tại trong danh sách"
+        newErrors[`${index}-goodsCode`] = "Mã mặt hàng đã tồn tại trong danh sách"
         isValid = false
       }
     })
@@ -281,11 +330,11 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
             const errorMessage = error.response.data.message.toLowerCase()
 
             // Check for duplicate goods code errors
-            if (errorMessage.includes('goodsCode') || errorMessage.includes('mã hàng hóa') ||
+            if (errorMessage.includes('goodsCode') || errorMessage.includes('mã mặt hàng') ||
               errorMessage.includes('đã tồn tại') || errorMessage.includes('duplicate') ||
               errorMessage.includes('already exists') || errorMessage.includes('trùng lặp')) {
               backendErrors.goodsCode = cleanErrorMessage(error.response.data.message)
-            } else if (errorMessage.includes('goodsName') || errorMessage.includes('tên hàng hóa')) {
+            } else if (errorMessage.includes('goodsName') || errorMessage.includes('tên mặt hàng')) {
               backendErrors.goodsName = cleanErrorMessage(error.response.data.message)
             } else if (errorMessage.includes('category') || errorMessage.includes('danh mục')) {
               backendErrors.categoryId = cleanErrorMessage(error.response.data.message)
@@ -322,7 +371,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
 
           // If no specific field errors, add general error
           if (Object.keys(backendErrors).length === 0) {
-            const errorMessage = extractErrorMessage(error, "Lỗi khi tạo hàng hóa")
+            const errorMessage = extractErrorMessage(error, "Lỗi khi tạo mặt hàng")
             errors.push({ index: i, error: errorMessage })
           }
         }
@@ -341,9 +390,23 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
 
       if (results.length === goodsList.length) {
         // All goods created successfully
-        window.showToast(`Đã tạo thành công ${results.length} hàng hóa!`, "success")
+        window.showToast(`Đã tạo thành công ${results.length} mặt hàng!`, "success")
         setHasBackendErrors(false)
         setSuccessfulGoods(new Set())
+        // Reset default values
+        setDefaultValues({
+          categoryId: "",
+          supplierId: "",
+          storageConditionId: "",
+          unitMeasureId: ""
+        })
+        setUseDefaults(false)
+        setDefaultFields({
+          category: false,
+          supplier: false,
+          storageCondition: false,
+          unitMeasure: false
+        })
         // Call onSuccess to refresh the list before closing
         onSuccess && onSuccess()
         onClose && onClose()
@@ -355,10 +418,10 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
           err.error.includes('already exists') || err.error.includes('trùng lặp')
         )
 
-        let toastMessage = `Tạo thành công ${results.length}/${goodsList.length} hàng hóa.\n\nCòn ${goodsList.length - results.length} hàng hóa cần sửa lỗi trước khi có thể đóng modal.`
+        let toastMessage = `Tạo thành công ${results.length}/${goodsList.length} mặt hàng.\n\nCòn ${goodsList.length - results.length} mặt hàng cần sửa lỗi trước khi có thể đóng modal.`
 
         if (duplicateErrors.length > 0) {
-          toastMessage += `\n\n Có ${duplicateErrors.length} hàng hóa bị trùng mã với dữ liệu trong hệ thống.`
+          toastMessage += `\n\n Có ${duplicateErrors.length} mặt hàng bị trùng mã với dữ liệu trong hệ thống.`
         }
 
         window.showToast(toastMessage, "warning")
@@ -368,7 +431,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
 
     } catch (error) {
       console.error("Error in bulk create:", error)
-      const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi tạo hàng hóa")
+      const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi tạo mặt hàng")
       window.showToast(`Lỗi: ${errorMessage}`, "error")
     } finally {
       setLoading(false)
@@ -379,14 +442,27 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
     setGoodsList([{
       goodsCode: "",
       goodsName: "",
-      categoryId: "",
-      supplierId: "",
-      storageConditionId: "",
-      unitMeasureId: "",
+      categoryId: (useDefaults && defaultFields.category) ? defaultValues.categoryId : "",
+      supplierId: (useDefaults && defaultFields.supplier) ? defaultValues.supplierId : "",
+      storageConditionId: (useDefaults && defaultFields.storageCondition) ? defaultValues.storageConditionId : "",
+      unitMeasureId: (useDefaults && defaultFields.unitMeasure) ? defaultValues.unitMeasureId : "",
     }])
     setErrors({})
     setHasBackendErrors(false)
     setSuccessfulGoods(new Set())
+    setDefaultValues({
+      categoryId: "",
+      supplierId: "",
+      storageConditionId: "",
+      unitMeasureId: ""
+    })
+    setUseDefaults(false)
+    setDefaultFields({
+      category: false,
+      supplier: false,
+      storageCondition: false,
+      unitMeasure: false
+    })
     // Call onSuccess to refresh the list when resetting
     onSuccess && onSuccess()
     onClose && onClose()
@@ -397,6 +473,20 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
       window.showToast("Vui lòng sửa lỗi trước khi đóng modal hoặc nhấn Hủy để bỏ qua", "warning")
       return
     }
+    // Reset default values when closing
+    setDefaultValues({
+      categoryId: "",
+      supplierId: "",
+      storageConditionId: "",
+      unitMeasureId: ""
+    })
+    setUseDefaults(false)
+    setDefaultFields({
+      category: false,
+      supplier: false,
+      storageCondition: false,
+      unitMeasure: false
+    })
     // Call onSuccess to refresh the list when closing modal
     onSuccess && onSuccess()
     onClose && onClose()
@@ -411,7 +501,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
             <Package className="h-6 w-6 text-orange-500" />
-            <h1 className="text-2xl font-bold text-slate-800">Thêm nhiều hàng hóa</h1>
+            <h1 className="text-2xl font-bold text-slate-800">Thêm nhiều mặt hàng</h1>
           </div>
           <button
             onClick={handleClose}
@@ -424,11 +514,159 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
         {/* Content */}
         <div className="p-6">
           <form className="space-y-6" onSubmit={handleSubmit}>
+            {/* Default Values Setup */}
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-orange-800">Thiết lập giá trị mặc định</h3>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="useDefaults"
+                    checked={useDefaults}
+                    onChange={(e) => setUseDefaults(e.target.checked)}
+                    className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="useDefaults" className="text-sm font-medium text-orange-800">
+                    Sử dụng giá trị mặc định
+                  </label>
+                </div>
+              </div>
+              
+              {useDefaults && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Default Category */}
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="defaultCategory"
+                        checked={defaultFields.category}
+                        onChange={(e) => setDefaultFields(prev => ({ ...prev, category: e.target.checked }))}
+                        className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                      />
+                      <Label htmlFor="defaultCategory" className="text-sm font-medium text-orange-700">
+                        Danh mục mặc định
+                      </Label>
+                    </div>
+                    <CustomDropdown
+                      value={defaultValues.categoryId}
+                      onChange={(value) => setDefaultValues(prev => ({ ...prev, categoryId: value }))}
+                      disabled={!defaultFields.category}
+                      options={[
+                        { value: "", label: "Chọn danh mục mặc định..." },
+                        ...categories.map((category) => ({
+                          value: category.categoryId.toString(),
+                          label: category.categoryName
+                        }))
+                      ]}
+                      placeholder="Chọn danh mục mặc định..."
+                      loading={loadingData}
+                    />
+                  </div>
+
+                  {/* Default Supplier */}
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="defaultSupplier"
+                        checked={defaultFields.supplier}
+                        onChange={(e) => setDefaultFields(prev => ({ ...prev, supplier: e.target.checked }))}
+                        className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                      />
+                      <Label htmlFor="defaultSupplier" className="text-sm font-medium text-orange-700">
+                        Nhà cung cấp mặc định
+                      </Label>
+                    </div>
+                    <CustomDropdown
+                      value={defaultValues.supplierId}
+                      onChange={(value) => setDefaultValues(prev => ({ ...prev, supplierId: value }))}
+                      disabled={!defaultFields.supplier}
+                      options={[
+                        { value: "", label: "Chọn nhà cung cấp mặc định..." },
+                        ...suppliers.map((supplier) => ({
+                          value: supplier.supplierId.toString(),
+                          label: supplier.companyName
+                        }))
+                      ]}
+                      placeholder="Chọn nhà cung cấp mặc định..."
+                      loading={loadingData}
+                    />
+                  </div>
+
+                  {/* Default Storage Condition */}
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="defaultStorageCondition"
+                        checked={defaultFields.storageCondition}
+                        onChange={(e) => setDefaultFields(prev => ({ ...prev, storageCondition: e.target.checked }))}
+                        className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                      />
+                      <Label htmlFor="defaultStorageCondition" className="text-sm font-medium text-orange-700">
+                        Điều kiện bảo quản mặc định
+                      </Label>
+                    </div>
+                    <CustomDropdown
+                      value={defaultValues.storageConditionId}
+                      onChange={(value) => setDefaultValues(prev => ({ ...prev, storageConditionId: value }))}
+                      disabled={!defaultFields.storageCondition}
+                      options={[
+                        { value: "", label: "Chọn điều kiện bảo quản mặc định..." },
+                        ...storageConditions.map((condition) => ({
+                          value: condition.storageConditionId?.toString() || condition.id?.toString() || "",
+                          label: condition.lightLevel || `- Nhiệt độ: ${condition.temperatureMin}°C đến ${condition.temperatureMax}°C - Độ ẩm: ${condition.humidityMin}% đến ${condition.humidityMax}%`
+                        }))
+                      ]}
+                      placeholder="Chọn điều kiện bảo quản mặc định..."
+                      loading={loadingData}
+                    />
+                  </div>
+
+                  {/* Default Unit Measure */}
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="defaultUnitMeasure"
+                        checked={defaultFields.unitMeasure}
+                        onChange={(e) => setDefaultFields(prev => ({ ...prev, unitMeasure: e.target.checked }))}
+                        className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                      />
+                      <Label htmlFor="defaultUnitMeasure" className="text-sm font-medium text-orange-700">
+                        Đơn vị đo mặc định
+                      </Label>
+                    </div>
+                    <CustomDropdown
+                      value={defaultValues.unitMeasureId}
+                      onChange={(value) => setDefaultValues(prev => ({ ...prev, unitMeasureId: value }))}
+                      disabled={!defaultFields.unitMeasure}
+                      options={[
+                        { value: "", label: "Chọn đơn vị đo mặc định..." },
+                        ...unitMeasures.map((unit) => ({
+                          value: unit.unitMeasureId.toString(),
+                          label: unit.name
+                        }))
+                      ]}
+                      placeholder="Chọn đơn vị đo mặc định..."
+                      loading={loadingData}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Instructions */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-800">
-                <strong>Hướng dẫn:</strong> Điền thông tin cho từng hàng hóa. Bạn có thể thêm/xóa hàng hóa bằng các nút bên dưới.
+                <strong>Hướng dẫn:</strong> Điền thông tin cho từng mặt hàng. Bạn có thể thêm/xóa mặt hàng bằng các nút bên dưới.
                 Tất cả các trường có dấu <span className="text-red-500">*</span> là bắt buộc.
+                {useDefaults && (
+                  <span className="block mt-2 text-orange-600 font-medium">
+                    ✓ Đã bật chế độ sử dụng giá trị mặc định. Các mặt hàng mới sẽ tự động điền sẵn các trường đã chọn checkbox.
+                  </span>
+                )}
                 {hasBackendErrors && (
                   <span className="block mt-2 text-red-600 font-medium">
                     Có lỗi cần sửa. Vui lòng sửa lỗi trước khi có thể đóng modal hoặc nhấn "Hủy" để bỏ qua.
@@ -447,7 +685,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-2">
                         <h3 className="text-lg font-semibold text-slate-700">
-                          Hàng hóa {index + 1}
+                          Mặt hàng {index + 1}
                         </h3>
                         {isSuccessful && (
                           <span className="px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full">
@@ -493,10 +731,10 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                       {/* Goods Code */}
                       <div className="space-y-2">
                         <Label className="text-sm font-medium text-slate-700">
-                          Mã hàng hóa <span className="text-red-500">*</span>
+                          Mã mặt hàng <span className="text-red-500">*</span>
                         </Label>
                         <Input
-                          placeholder="Nhập mã hàng hóa..."
+                          placeholder="Nhập mã mặt hàng..."
                           value={goods.goodsCode}
                           onChange={(e) => updateGoodsRow(index, 'goodsCode', e.target.value)}
                           disabled={isSuccessful}
@@ -516,10 +754,10 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                       {/* Goods Name */}
                       <div className="space-y-2">
                         <Label className="text-sm font-medium text-slate-700">
-                          Tên hàng hóa <span className="text-red-500">*</span>
+                          Tên mặt hàng <span className="text-red-500">*</span>
                         </Label>
                         <Input
-                          placeholder="Nhập tên hàng hóa..."
+                          placeholder="Nhập tên mặt hàng..."
                           value={goods.goodsName}
                           onChange={(e) => updateGoodsRow(index, 'goodsName', e.target.value)}
                           disabled={isSuccessful}
@@ -666,7 +904,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                 className="h-[38px] px-6 border-orange-500 text-orange-500 hover:bg-orange-50"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Thêm hàng hóa
+                Thêm mặt hàng
               </Button>
             </div>
 

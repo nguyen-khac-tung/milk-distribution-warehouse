@@ -82,7 +82,7 @@ export default function PurchaseOrderList() {
   const fetchDataWithParams = async (params) => {
     try {
       setLoading(true);
-      
+
       // Đếm số lần gọi API
       setApiCallCount(prev => {
         const newCount = prev + 1;
@@ -146,7 +146,7 @@ export default function PurchaseOrderList() {
       fromDate: dateRangeFilter.fromDate,
       toDate: dateRangeFilter.toDate
     };
-    
+
     return await fetchDataWithParams(requestParams);
   };
 
@@ -167,7 +167,7 @@ export default function PurchaseOrderList() {
     if (!hasInitialLoad) return;
 
     // Chỉ gọi fetchData() khi có filter thực sự active (không phải empty string)
-    const hasActiveFilters = searchQuery.trim() || 
+    const hasActiveFilters = searchQuery.trim() ||
       (statusFilter && statusFilter !== "") ||
       (supplierFilter && supplierFilter !== "") ||
       (approverFilter && approverFilter !== "") ||
@@ -298,7 +298,7 @@ export default function PurchaseOrderList() {
   const clearAllFilters = () => {
     console.log("=== CLEAR ALL FILTERS ===");
     console.log("API Call Count before clear:", apiCallCount);
-    
+
     // Reset tất cả filters về giá trị mặc định
     setSearchQuery("");
     setStatusFilter("");
@@ -308,10 +308,10 @@ export default function PurchaseOrderList() {
     setConfirmerFilter("");
     setAssigneeFilter("");
     setDateRangeFilter({ fromDate: '', toDate: '' });
-    
+
     // Reset pagination về trang đầu
     setPagination(prev => ({ ...prev, current: 1 }));
-    
+
     // Reset các show states về false
     setShowStatusFilter(false);
     setShowSupplierFilter(false);
@@ -320,10 +320,10 @@ export default function PurchaseOrderList() {
     setShowConfirmerFilter(false);
     setShowAssigneeFilter(false);
     setShowDateRangeFilter(false);
-    
+
     // Reset hasInitialLoad để load lại dữ liệu ban đầu
     setHasInitialLoad(false);
-    
+
     // Gọi fetchData() với params rỗng để đảm bảo load tất cả dữ liệu
     const emptyParams = {
       pageNumber: 1,
@@ -340,7 +340,7 @@ export default function PurchaseOrderList() {
       fromDate: "",
       toDate: ""
     };
-    
+
     // Gọi API trực tiếp với params rỗng
     setTimeout(() => {
       fetchDataWithParams(emptyParams);
@@ -497,7 +497,7 @@ export default function PurchaseOrderList() {
         { status: PURCHASE_ORDER_STATUS.Inspected, count: inspectedOrders, percentage: totalOrders > 0 ? Math.round((inspectedOrders / totalOrders) * 100) : 0 }
       ]
     };
-    
+
     return stats;
   }, [purchaseOrders]);
 

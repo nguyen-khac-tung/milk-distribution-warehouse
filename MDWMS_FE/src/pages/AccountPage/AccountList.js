@@ -10,6 +10,7 @@ import Pagination from "../../components/Common/Pagination"
 import EmptyState from "../../components/Common/EmptyState"
 import { StatusToggle } from "../../components/Common/SwitchToggle/StatusToggle"
 import { getUserList, updateUserStatus, deleteUser } from "../../services/AccountService"
+import { getRoleList } from "../../services/RoleService"
 import { extractErrorMessage } from "../../utils/Validation"
 import CreateAccountModal from "./CreateAccountModal"
 import UpdateAccountModal from "./UpdateAccountModal"
@@ -53,22 +54,26 @@ const getEmployeeStats = (employees) => {
   const activeUsers = employees.filter(emp => emp.status === 1).length
   const inactiveUsers = employees.filter(emp => emp.status === 2).length
 
-  const allRoles = [
-    "Warehouse Manager",
-    "Warehouse Staff",
-    "Administrator",
-    "Business Owner",
-    "Sales Representative",
-    "Sale Manager"
-  ]
+  // Get unique roles from actual data
+  const uniqueRoles = employees.reduce((acc, emp) => {
+    if (emp.roles && Array.isArray(emp.roles)) {
+      emp.roles.forEach(role => {
+        const roleName = role.roleName || role.description || 'Unknown Role'
+        if (!acc.find(r => r.roleName === roleName)) {
+          acc.push({ roleName, count: 0, percentage: 0 })
+        }
+      })
+    }
+    return acc
+  }, [])
 
-  const roleStats = allRoles.map(roleName => {
+  const roleStats = uniqueRoles.map(role => {
     const count = employees.filter(emp =>
-      emp.roles && emp.roles.some(role => role.roleName?.includes(roleName))
+      emp.roles && emp.roles.some(r => (r.roleName || r.description) === role.roleName)
     ).length
 
     return {
-      roleName,
+      roleName: role.roleName,
       count,
       percentage: totalUsers > 0 ? Math.round((count / totalUsers) * 100) : 0
     }
@@ -156,6 +161,8 @@ export default function AdminPage() {
 
         // Refresh all users for stats
         fetchAllUsersForStats()
+        // Refresh roles
+        fetchRoles()
 
         // Refresh data after status change
         fetchData({
@@ -239,21 +246,26 @@ export default function AdminPage() {
 
       if (response?.data?.items) {
         setAllUsersForStats(response.data.items)
-
-        const uniqueRoles = new Set()
-        response.data.items.forEach(user => {
-          if (user.roles && Array.isArray(user.roles)) {
-            user.roles.forEach(role => uniqueRoles.add(role))
-          }
-        })
-        setAvailableRoles(Array.from(uniqueRoles))
       } else {
         setAllUsersForStats([])
-        setAvailableRoles([])
       }
     } catch (err) {
       console.error("Error fetching all users for stats:", err)
       setAllUsersForStats([])
+    }
+  }
+
+  // Fetch roles from API
+  const fetchRoles = async () => {
+    try {
+      const response = await getRoleList()
+      if (response?.data) {
+        setAvailableRoles(response.data)
+      } else {
+        setAvailableRoles([])
+      }
+    } catch (err) {
+      console.error("Error fetching roles:", err)
       setAvailableRoles([])
     }
   }
@@ -282,6 +294,8 @@ export default function AdminPage() {
 
         // Refresh all users for stats
         fetchAllUsersForStats()
+        // Refresh roles
+        fetchRoles()
 
         // Refresh data after deletion, keeping current page or going to previous page if needed
         fetchData({
@@ -313,6 +327,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     fetchAllUsersForStats()
+    fetchRoles()
   }, [])
 
   useEffect(() => {
@@ -358,7 +373,11 @@ export default function AdminPage() {
 
         let matchesRole = true
         if (roleFilter) {
-          matchesRole = employee.roles && employee.roles.some(role => role.roleName?.includes(roleFilter));
+          matchesRole = employee.roles && employee.roles.some(role => 
+            role.roleName === roleFilter || 
+            role.description === roleFilter ||
+            role.roleId?.toString() === roleFilter
+          );
         }
 
         return matchesSearch && matchesStatus && matchesRole
@@ -556,7 +575,10 @@ export default function AdminPage() {
             setRoleFilter={setRoleFilter}
             showRoleFilter={showRoleFilter}
             setShowRoleFilter={setShowRoleFilter}
-            roles={availableRoles}
+            roles={availableRoles.map(role => ({
+              value: role.roleName || role.roleId,
+              label: role.description || role.roleName || role.roleId
+            }))}
             onRoleFilter={handleRoleFilter}
             clearRoleFilter={clearRoleFilter}
             onClearAll={clearAllFilters}
@@ -627,6 +649,8 @@ export default function AdminPage() {
           onSuccess={() => {
             // Refresh all users for stats
             fetchAllUsersForStats()
+            // Refresh roles
+            fetchRoles()
 
             // Reset to first page and refresh data
             setPagination(prev => ({ ...prev, pageNumber: 1 }))
@@ -652,6 +676,8 @@ export default function AdminPage() {
           onSuccess={() => {
             // Refresh all users for stats
             fetchAllUsersForStats()
+            // Refresh roles
+            fetchRoles()
 
             // Refresh data after update
             fetchData({
