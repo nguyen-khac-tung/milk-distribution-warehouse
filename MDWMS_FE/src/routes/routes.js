@@ -54,12 +54,7 @@ export const routes = [
     {
         path: "/",
         page: () => {
-            if (localStorage.getItem("accessToken")) {
-                return <RoleBasedRedirect />;
-            } else {
-                window.location.href = "/login";
-                return null;
-            }
+            return <RoleBasedRedirect />;
         },
     },
     {
