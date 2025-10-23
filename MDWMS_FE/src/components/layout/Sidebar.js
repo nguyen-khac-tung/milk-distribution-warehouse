@@ -107,36 +107,6 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                 ],
             },
             {
-                key: "/accounts",
-                icon: <UsergroupAddOutlined style={{ color: '#000000' }} />,
-                label: "Quản lý tài khoản",
-                permission: PERMISSIONS.ACCOUNT_VIEW
-            },
-            {
-                key: "/categories",
-                icon: <ComponentIcon name="category" size={16} collapsed={collapsed} />,
-                label: "Quản lý danh mục",
-                permission: PERMISSIONS.CATEGORY_VIEW
-            },
-            {
-                key: "/unit-measures",
-                icon: <ComponentIcon name="unitMeasure" size={16} collapsed={collapsed} />,
-                label: "Quản lý đơn vị",
-                permission: PERMISSIONS.UNIT_MEASURE_VIEW
-            },
-            {
-                key: "/goods",
-                icon: <ComponentIcon name="milk" size={16} collapsed={collapsed} />,
-                label: "Quản lý hàng hóa",
-                permission: PERMISSIONS.GOODS_VIEW
-            },
-            {
-                key: "/batches",
-                icon: <ComponentIcon name="batch" size={16} collapsed={collapsed} />,
-                label: "Quản lý lô hàng",
-                permission: PERMISSIONS.BATCH_VIEW
-            },
-            {
                 key: "partner-management",
                 icon: <ComponentIcon name="partner" size={16} collapsed={collapsed} />,
                 label: "Quản lý đối tác",
@@ -155,6 +125,38 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                         permission: PERMISSIONS.RETAILER_VIEW
                     },
                 ],
+            },
+            {
+                key: "/goods",
+                icon: <ComponentIcon name="milk" size={16} collapsed={collapsed} />,
+                label: "Quản lý hàng hóa",
+                permission: PERMISSIONS.GOODS_VIEW
+            },
+            {
+                key: "/categories",
+                icon: <ComponentIcon name="category" size={16} collapsed={collapsed} />,
+                label: "Quản lý danh mục",
+                permission: PERMISSIONS.CATEGORY_VIEW
+            },
+            {
+                key: "/unit-measures",
+                icon: <ComponentIcon name="unitMeasure" size={16} collapsed={collapsed} />,
+                label: "Quản lý đơn vị",
+                permission: PERMISSIONS.UNIT_MEASURE_VIEW
+            },
+            
+            {
+                key: "/batches",
+                icon: <ComponentIcon name="batch" size={16} collapsed={collapsed} />,
+                label: "Quản lý lô hàng",
+                permission: PERMISSIONS.BATCH_VIEW
+            },
+            
+            {
+                key: "/accounts",
+                icon: <UsergroupAddOutlined style={{ color: '#000000' }} />,
+                label: "Quản lý tài khoản",
+                permission: PERMISSIONS.ACCOUNT_VIEW
             },
             {
                 key: "location-management",
