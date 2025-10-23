@@ -7,7 +7,7 @@ namespace MilkDistributionWarehouse.Repositories
     public interface IPurchaseOrderRepositoy
     {
         IQueryable<PurchaseOrder> GetPurchaseOrder();
-        Task<PurchaseOrder?> GetPurchaseOrderByPurchaseOrderId(Guid purchaseOrderId);
+        IQueryable<PurchaseOrder?> GetPurchaseOrderByPurchaseOrderId(Guid purchaseOrderId);
         Task<PurchaseOrder?> CreatePurchaseOrder(PurchaseOrder create);
         Task<PurchaseOrder?> UpdatePurchaseOrder(PurchaseOrder update);
         Task<bool> HasActivePurchaseOrder(int supplierId);
@@ -26,9 +26,9 @@ namespace MilkDistributionWarehouse.Repositories
             return _context.PurchaseOrders.OrderByDescending(po => po.CreatedAt).AsNoTracking();
         }
 
-        public async Task<PurchaseOrder?> GetPurchaseOrderByPurchaseOrderId(Guid purchaseOrderId)
+        public IQueryable<PurchaseOrder?> GetPurchaseOrderByPurchaseOrderId(Guid purchaseOrderId)
         {
-            return await _context.PurchaseOrders.FirstOrDefaultAsync(po => po.PurchaseOderId == purchaseOrderId);
+            return _context.PurchaseOrders.AsNoTracking();
         }
 
         public async Task<PurchaseOrder?> CreatePurchaseOrder(PurchaseOrder create)
