@@ -22,7 +22,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, List<GoodsDropDown>)> GetGoodsDropDown();
         Task<(string, GoodsUpdateStatus)> UpdateGoodsStatus(GoodsUpdateStatus update);
         Task<(string, GoodsBulkdResponse)> CreateGoodsBulk(GoodsBulkCreate create);
-        Task<(string, List<GoodsDropDown>?)> GetGoodsDropDownBySupplierId(int supplierId);
+        Task<(string, List<GoodsDropDownAndUnitMeasure>?)> GetGoodsDropDownBySupplierId(int supplierId);
     }
     public class GoodsService : IGoodsService
     {
@@ -326,17 +326,18 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
-        public async Task<(string, List<GoodsDropDown>?)> GetGoodsDropDownBySupplierId(int supplierId)
+        public async Task<(string, List<GoodsDropDownAndUnitMeasure>?)> GetGoodsDropDownBySupplierId(int supplierId)
         {
             var cacheKey = _cacheService.GenerateDropdownCacheKey("goods", "supplier", supplierId);
 
             var result = await _cacheService.GetOrCreatedAsync(cacheKey, async () =>
             {
-                var goodsQuery = await _goodRepository.GetGoods()
-                    .Where(g => g.Status == CommonStatus.Active && g.SupplierId == supplierId)
-                    .ToListAsync();
+                var goodsQuery = _goodRepository.GetGoods()
+                    .Where(g => g.Status == CommonStatus.Active && g.SupplierId == supplierId);
 
-                return _mapper.Map<List<GoodsDropDown>>(goodsQuery);
+                var goodsDropDowns = goodsQuery.ProjectTo<GoodsDropDownAndUnitMeasure>(_mapper.ConfigurationProvider);
+
+                return await goodsDropDowns.ToListAsync();
             }, 30, 10);
 
             if (!result.Any())

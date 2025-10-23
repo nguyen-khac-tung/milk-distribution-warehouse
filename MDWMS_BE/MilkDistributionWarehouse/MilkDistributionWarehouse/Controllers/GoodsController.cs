@@ -35,7 +35,7 @@ namespace MilkDistributionWarehouse.Controllers
             var (msg, goodss) = await _goodsService.GetGoodsDropDownBySupplierId(supplierId);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<List<GoodsDropDown>>.ToResultOk(goodss);
+            return ApiResponse<List<GoodsDropDownAndUnitMeasure>>.ToResultOk(goodss);
         }
 
         [HttpPost("Goods")]
