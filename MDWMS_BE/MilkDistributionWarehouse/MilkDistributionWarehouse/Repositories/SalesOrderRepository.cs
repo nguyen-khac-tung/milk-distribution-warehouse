@@ -9,6 +9,7 @@ namespace MilkDistributionWarehouse.Repositories
 
     public interface ISalesOrderRepository
     {
+        IQueryable<SalesOrder> GetSalesOrderBySaleRepresentative(int? userId);
         Task<bool> HasActiveSalesOrder(int retailerId);
         Task<bool> IsAllSalesOrderDraffOrEmpty(int retailerId);
     }
@@ -18,6 +19,18 @@ namespace MilkDistributionWarehouse.Repositories
         public SalesOrderRepository(WarehouseContext context)
         {
             _context = context;
+        }
+
+        public IQueryable<SalesOrder> GetSalesOrderBySaleRepresentative(int? userId)
+        {
+            return _context.SalesOrders
+                .Include(s => s.Retailer)
+                .Include(s => s.CreatedByNavigation)
+                .Include(s => s.ApprovalByNavigation)
+                .Include(s => s.AcknowledgedByNavigation)
+                .Include(s => s.AssignToNavigation)
+                .Where(s => s.CreatedBy == userId)
+                .AsNoTracking();
         }
 
         public async Task<bool> HasActiveSalesOrder(int retailerId)

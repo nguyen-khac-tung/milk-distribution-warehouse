@@ -10,6 +10,7 @@ namespace MilkDistributionWarehouse.Mapper
         public AutoMapperProfile()
         {
             //Map User
+            CreateMap<User, UserBasicDto>();
             CreateMap<User, UserProfileDto>();
             CreateMap<User, UserDto>()
                 .ForMember(dest => dest.Roles, opt => opt.MapFrom(src => src.Roles));
@@ -237,6 +238,26 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.DisplayName, opt => opt.MapFrom(src =>
                     $"Pallet - {(src.Batch != null ? src.Batch.BatchCode : "N/A")} ({(src.Location != null ? src.Location.LocationCode : "N/A")})"));
 
+            //Map SalesOrder
+            CreateMap<SalesOrder, SalesOrderDtoSaleRepresentative>()
+                .ForMember(dest => dest.Retailer, opt => opt.MapFrom(src => src.Retailer))
+                .ForMember(dest => dest.CreatedBy, opt => opt.MapFrom(src => src.CreatedByNavigation))
+                .ForMember(dest => dest.ApprovalBy, opt => opt.MapFrom(src => src.ApprovalByNavigation));
+            CreateMap<SalesOrder, SalesOrderDtoSaleManager>()
+                .ForMember(dest => dest.Retailer, opt => opt.MapFrom(src => src.Retailer))
+                .ForMember(dest => dest.CreatedBy, opt => opt.MapFrom(src => src.CreatedByNavigation))
+                .ForMember(dest => dest.ApprovalBy, opt => opt.MapFrom(src => src.ApprovalByNavigation))
+                .ForMember(dest => dest.AcknowledgedBy, opt => opt.MapFrom(src => src.AcknowledgedByNavigation));
+            CreateMap<SalesOrder, SalesOrderDtoWarehouseManager>()
+                .ForMember(dest => dest.Retailer, opt => opt.MapFrom(src => src.Retailer))
+                .ForMember(dest => dest.CreatedBy, opt => opt.MapFrom(src => src.CreatedByNavigation))
+                .ForMember(dest => dest.ApprovalBy, opt => opt.MapFrom(src => src.ApprovalByNavigation))
+                .ForMember(dest => dest.AcknowledgedBy, opt => opt.MapFrom(src => src.AcknowledgedByNavigation))
+                .ForMember(dest => dest.AssignTo, opt => opt.MapFrom(src => src.AssignToNavigation));
+            CreateMap<SalesOrder, SalesOrderDtoWarehouseStaff>()
+                .ForMember(dest => dest.Retailer, opt => opt.MapFrom(src => src.Retailer))
+                .ForMember(dest => dest.AcknowledgedBy, opt => opt.MapFrom(src => src.AcknowledgedByNavigation))
+                .ForMember(dest => dest.AssignTo, opt => opt.MapFrom(src => src.AssignToNavigation));
         }
     }
 }
