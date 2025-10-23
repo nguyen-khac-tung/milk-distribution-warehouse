@@ -72,8 +72,6 @@ namespace MilkDistributionWarehouse.Services
             if (user == null) return ("Không tìm thấy người dùng!".ToMessageForUser(), null);
 
             var userDetail = _mapper.Map<UserDetailDto>(user);
-            userDetail.Roles = user.Roles.Select(r => r.RoleName).ToList();
-
             return ("", userDetail);
         }
 
@@ -147,8 +145,12 @@ namespace MilkDistributionWarehouse.Services
 
             if (user.GoodsIssueNotes.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử phiếu xuất hàng.".ToMessageForUser();
             if (user.GoodsReceiptNotes.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử phiếu nhập hàng.".ToMessageForUser();
-            if (user.PurchaseOrderCreatedByNavigations.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử đơn đặt hàng mua.".ToMessageForUser();
-            if (user.SalesOrders.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử đơn hàng bán.".ToMessageForUser();
+            if (user.PurchaseOrderCreatedByNavigations.Any() || user.PurchaseOrderApprovalByNavigations.Any() 
+                || user.PurchaseOrderArrivalConfirmedByNavigations.Any() || user.PurchaseOrderAssignToNavigations.Any()) 
+                return "Không thể xóa do người dùng này có liên quan đến lịch sử đơn đặt hàng mua.".ToMessageForUser();
+            if (user.SalesOrderCreatedByNavigations.Any() || user.SalesOrderAcknowledgedByNavigations.Any() 
+                || user.SalesOrderApprovalByNavigations.Any() || user.SalesOrderAssignToNavigations.Any()) 
+                return "Không thể xóa do người dùng này có liên quan đến lịch sử đơn hàng bán.".ToMessageForUser();
             if (user.Batches.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử các lô hàng.".ToMessageForUser();
             if (user.Pallets.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử các pallet.".ToMessageForUser();
             if (user.StocktakingSheets.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử phiếu kiểm kê.".ToMessageForUser();

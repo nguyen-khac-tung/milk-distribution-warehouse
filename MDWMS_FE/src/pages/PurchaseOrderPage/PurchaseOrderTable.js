@@ -2,6 +2,8 @@ import React from 'react';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
 import { ArrowUp, ArrowDown, ArrowUpDown, Eye, Edit, Trash2 } from 'lucide-react';
 import EmptyState from '../../components/Common/EmptyState';
+import PermissionWrapper from '../../components/Common/PermissionWrapper';
+import { PERMISSIONS } from '../../utils/permissions';
 import { Package } from 'lucide-react';
 
 const PurchaseOrderTable = ({
@@ -36,7 +38,7 @@ const PurchaseOrderTable = ({
       hasApprovalByName: firstItem.approvalByName !== undefined,
       hasCreatedByName: firstItem.createdByName !== undefined,
       hasArrivalConfirmedByName: firstItem.arrivalConfirmedByName !== undefined,
-      hasAssignToName: firstItem.assignToName !== undefined,
+      hasAssignToName: firstItem.assignToName !== undefined || firstItem.assignToByName !== undefined,
       hasCreatedAt: firstItem.createdAt !== undefined
     };
     
@@ -48,9 +50,6 @@ const PurchaseOrderTable = ({
     if (firstItem.arrivalConfirmedBy !== undefined || firstItem.arrivalConfirmedByName !== undefined) {
       fields.hasArrivalConfirmedByName = true;
     }
-    
-
-    
     return fields;
   }, [purchaseOrders]);
 
@@ -125,20 +124,22 @@ const PurchaseOrderTable = ({
                     </div>
                   </TableHead>
                 )}
-                <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                  <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("createdBy")}>
-                    <span>Người tạo</span>
-                    {sortField === "createdBy" ? (
-                      sortAscending ? (
-                        <ArrowUp className="h-4 w-4 text-orange-500" />
+                {availableFields.hasCreatedByName && (
+                  <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                    <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("createdBy")}>
+                      <span>Người tạo</span>
+                      {sortField === "createdBy" ? (
+                        sortAscending ? (
+                          <ArrowUp className="h-4 w-4 text-orange-500" />
+                        ) : (
+                          <ArrowDown className="h-4 w-4 text-orange-500" />
+                        )
                       ) : (
-                        <ArrowDown className="h-4 w-4 text-orange-500" />
-                      )
-                    ) : (
-                      <ArrowUpDown className="h-4 w-4 text-slate-400" />
-                    )}
-                  </div>
-                </TableHead>
+                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                      )}
+                    </div>
+                  </TableHead>
+                )}
                 {availableFields.hasArrivalConfirmedByName && (
                   <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
                     <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("arrivalConfirmedBy")}>
@@ -222,9 +223,11 @@ const PurchaseOrderTable = ({
                         {order.approvalByName || order.approvalBy || '-'}
                       </TableCell>
                     )}
-                    <TableCell className="px-6 py-4 text-slate-700 text-center">
-                      {order.createdByName || order.createdBy || '-'}
-                    </TableCell>
+                    {availableFields.hasCreatedByName && (
+                      <TableCell className="px-6 py-4 text-slate-700 text-center">
+                        {order.createdByName || order.createdBy || '-'}
+                      </TableCell>
+                    )}
                     {availableFields.hasArrivalConfirmedByName && (
                       <TableCell className="px-6 py-4 text-slate-700 text-center">
                         {order.arrivalConfirmedByName || order.arrivalConfirmedBy || '-'}
@@ -232,7 +235,7 @@ const PurchaseOrderTable = ({
                     )}
                     {availableFields.hasAssignToName && (
                       <TableCell className="px-6 py-4 text-slate-700 text-center">
-                        {order.assignToName || order.assignTo || '-'}
+                        {order.assignToName || order.assignToByName || order.assignTo || '-'}
                       </TableCell>
                     )}
                     <TableCell className="px-6 py-4 text-slate-700 text-center">
@@ -245,27 +248,33 @@ const PurchaseOrderTable = ({
                     </TableCell>
                     <TableCell className="px-6 py-4 text-center">
                       <div className="flex items-center justify-center space-x-1">
-                        <button
-                          className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                          title="Xem chi tiết"
-                          onClick={() => handleViewClick(order)}
-                        >
-                          <Eye className="h-4 w-4 text-orange-500" />
-                        </button>
-                        <button
-                          className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                          title="Chỉnh sửa"
-                          onClick={() => handleEditClick(order)}
-                        >
-                          <Edit className="h-4 w-4 text-orange-500" />
-                        </button>
-                        <button
-                          className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                          title="Xóa"
-                          onClick={() => handleDeleteClick(order)}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </button>
+                        <PermissionWrapper requiredPermission={PERMISSIONS.PURCHASE_ORDER_VIEW_DETAILS}>
+                          <button
+                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                            title="Xem chi tiết"
+                            onClick={() => handleViewClick(order)}
+                          >
+                            <Eye className="h-4 w-4 text-orange-500" />
+                          </button>
+                        </PermissionWrapper>
+                        <PermissionWrapper requiredPermission={PERMISSIONS.PURCHASE_ORDER_UPDATE}>
+                          <button
+                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                            title="Chỉnh sửa"
+                            onClick={() => handleEditClick(order)}
+                          >
+                            <Edit className="h-4 w-4 text-orange-500" />
+                          </button>
+                        </PermissionWrapper>
+                        <PermissionWrapper requiredPermission={PERMISSIONS.PURCHASE_ORDER_DELETE}>
+                          <button
+                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                            title="Xóa"
+                            onClick={() => handleDeleteClick(order)}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </button>
+                        </PermissionWrapper>
                       </div>
                     </TableCell>
                   </TableRow>

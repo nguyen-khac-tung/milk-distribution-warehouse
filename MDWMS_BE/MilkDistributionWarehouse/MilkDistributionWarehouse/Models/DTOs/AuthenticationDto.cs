@@ -73,7 +73,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public string Email { get; set; }
         public string FullName { get; set; }
         public bool? IsFirstLogin { get; set; }
-        public List<string> Roles { get; set; } = new List<string>(); 
+        public List<RoleDto> Roles { get; set; }
     }
 
     public class JwtTokenDto

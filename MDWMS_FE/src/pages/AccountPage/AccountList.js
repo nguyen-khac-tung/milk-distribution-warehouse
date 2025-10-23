@@ -449,8 +449,8 @@ export default function AdminPage() {
           requiredPermission={PERMISSIONS.ACCOUNT_UPDATE}
           fallback={
             <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${employee.status === 1
-                ? 'bg-green-100 text-green-800 border border-green-200'
-                : 'bg-red-100 text-red-800 border border-red-200'
+              ? 'bg-green-100 text-green-800 border border-green-200'
+              : 'bg-red-100 text-red-800 border border-red-200'
               }`}>
               {employee.status === 1 ? 'Hoạt động' : 'Ngừng hoạt động'}
             </span>

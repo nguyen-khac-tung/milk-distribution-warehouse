@@ -8,11 +8,11 @@ import {
   Calendar, 
   RefreshCw,
   Building2,      // Supplier icon
-  UserCheck,       // Approver icon
-  UserPlus,        // Creator icon
-  UserCheck2,      // Confirmer icon
-  UserCog,         // Assignee icon
-  Clock            // Date range icon
+  Shield,         // Approver icon
+  User,           // Creator icon
+  CheckCircle,    // Confirmer icon
+  Users,          // Assignee icon
+  Clock           // Date range icon
 } from "lucide-react";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
@@ -44,6 +44,7 @@ export default function PurchaseOrderFilterToggle({
   suppliers = [],
   onSupplierFilter,
   clearSupplierFilter,
+  showSupplier = true, // Prop để kiểm tra có hiển thị filter hay không
   // Approver Filter (Người duyệt)
   approverFilter,
   setApproverFilter,
@@ -52,6 +53,7 @@ export default function PurchaseOrderFilterToggle({
   approvers = [],
   onApproverFilter,
   clearApproverFilter,
+  showApprover = true, // Prop để kiểm tra có hiển thị filter hay không
   // Creator Filter (Người tạo)
   creatorFilter,
   setCreatorFilter,
@@ -60,6 +62,7 @@ export default function PurchaseOrderFilterToggle({
   creators = [],
   onCreatorFilter,
   clearCreatorFilter,
+  showCreator = true, // Prop để kiểm tra có hiển thị filter hay không
   // Confirmer Filter (Người xác nhận đến)
   confirmerFilter,
   setConfirmerFilter,
@@ -68,6 +71,7 @@ export default function PurchaseOrderFilterToggle({
   confirmers = [],
   onConfirmerFilter,
   clearConfirmerFilter,
+  showConfirmer = true, // Prop để kiểm tra có hiển thị filter hay không
   // Assignee Filter (Người được giao)
   assigneeFilter,
   setAssigneeFilter,
@@ -76,6 +80,7 @@ export default function PurchaseOrderFilterToggle({
   assignees = [],
   onAssigneeFilter,
   clearAssigneeFilter,
+  showAssignee = true, // Prop để kiểm tra có hiển thị filter hay không
   // Date Range Filter
   dateRangeFilter,
   setDateRangeFilter,
@@ -283,7 +288,7 @@ export default function PurchaseOrderFilterToggle({
                     </div>
 
                   {/* Supplier Filter */}
-                  {suppliers.length > 0 && (
+                  {showSupplier && suppliers.length > 0 && (
                     <div className="relative supplier-filter-dropdown flex-1 min-w-[160px]">
                       <button
                         onClick={() => setShowSupplierFilter(!showSupplierFilter)}
@@ -326,7 +331,7 @@ export default function PurchaseOrderFilterToggle({
                 {/* Second Row - Additional Filters */}
                 <div className="flex flex-wrap gap-2 sm:gap-3 relative overflow-visible">
                   {/* Approver Filter */}
-                  {approvers.length > 0 && (
+                  {showApprover && approvers.length > 0 && (
                     <div className="relative approver-filter-dropdown flex-1 min-w-[150px]">
                       <button
                         onClick={() => setShowApproverFilter(!showApproverFilter)}
@@ -334,7 +339,7 @@ export default function PurchaseOrderFilterToggle({
                           focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
                           ${approverFilter ? 'bg-[#d97706] text-white hover:bg-[#d97706]' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
                       >
-                        <UserCheck className="h-4 w-4 flex-shrink-0" />
+                        <Shield className="h-4 w-4 flex-shrink-0" />
                         <span className="text-sm font-medium truncate">
                           {approverFilter ? approvers.find(a => a.userId.toString() === approverFilter)?.fullName || "Chọn người duyệt đơn" : "Tất cả người duyệt đơn"}
                         </span>
@@ -365,7 +370,7 @@ export default function PurchaseOrderFilterToggle({
                     </div>
                   )}
                   {/* Creator Filter */}
-                  {creators.length > 0 && (
+                  {showCreator && creators.length > 0 && (
                     <div className="relative creator-filter-dropdown flex-1 min-w-[140px]">
                       <button
                         onClick={() => setShowCreatorFilter(!showCreatorFilter)}
@@ -373,7 +378,7 @@ export default function PurchaseOrderFilterToggle({
                           focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
                           ${creatorFilter ? 'bg-[#d97706] text-white hover:bg-[#d97706]' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
                       >
-                        <UserPlus className="h-4 w-4 flex-shrink-0" />
+                        <User className="h-4 w-4 flex-shrink-0" />
                         <span className="text-sm font-medium truncate">
                           {creatorFilter ? creators.find(c => c.userId.toString() === creatorFilter)?.fullName || "Chọn người tạo đơn" : "Tất cả người tạo đơn"}
                         </span>
@@ -405,7 +410,7 @@ export default function PurchaseOrderFilterToggle({
                   )}
 
                   {/* Confirmer Filter */}
-                  {confirmers.length > 0 && (
+                  {showConfirmer && confirmers.length > 0 && (
                     <div className="relative confirmer-filter-dropdown flex-1 min-w-[160px]">
                       <button
                         onClick={() => setShowConfirmerFilter(!showConfirmerFilter)}
@@ -413,7 +418,7 @@ export default function PurchaseOrderFilterToggle({
                           focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
                           ${confirmerFilter ? 'bg-[#d97706] text-white hover:bg-[#d97706]' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
                       >
-                        <UserCheck2 className="h-4 w-4 flex-shrink-0" />
+                        <CheckCircle className="h-4 w-4 flex-shrink-0" />
                         <span className="text-sm font-medium truncate">
                           {confirmerFilter ? confirmers.find(c => c.userId.toString() === confirmerFilter)?.fullName || "Chọn người xác nhận đơn" : "Tất cả người xác nhận đơn"}
                         </span>
@@ -445,7 +450,7 @@ export default function PurchaseOrderFilterToggle({
                   )}
 
                   {/* Assignee Filter */}
-                  {assignees.length > 0 && (
+                  {showAssignee && (
                     <div className="relative assignee-filter-dropdown flex-1 min-w-[170px]">
                       <button
                         onClick={() => setShowAssigneeFilter(!showAssigneeFilter)}
@@ -453,7 +458,7 @@ export default function PurchaseOrderFilterToggle({
                           focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
                           ${assigneeFilter ? 'bg-[#d97706] text-white hover:bg-[#d97706]' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
                       >
-                        <UserCog className="h-4 w-4 flex-shrink-0" />
+                        <Users className="h-4 w-4 flex-shrink-0" />
                         <span className="text-sm font-medium truncate">
                           {assigneeFilter ? assignees.find(a => a.userId.toString() === assigneeFilter)?.fullName || "Chọn người được giao" : "Tất cả người được giao"}
                         </span>
@@ -469,7 +474,7 @@ export default function PurchaseOrderFilterToggle({
                             >
                               Tất cả người được giao đơn
                             </button>
-                            {assignees.map((assignee) => (
+                            {assignees.length > 0 ? assignees.map((assignee) => (
                               <button
                                 key={assignee.userId}
                                 onClick={() => { onAssigneeFilter(assignee.userId.toString()); setShowAssigneeFilter(false); }}
@@ -477,7 +482,11 @@ export default function PurchaseOrderFilterToggle({
                               >
                                 {assignee.fullName}
                               </button>
-                            ))}
+                            )) : (
+                              <div className="px-3 py-2 text-sm text-slate-500">
+                                Không có dữ liệu
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}

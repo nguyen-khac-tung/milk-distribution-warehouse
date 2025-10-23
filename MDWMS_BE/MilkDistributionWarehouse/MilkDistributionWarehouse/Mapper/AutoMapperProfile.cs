@@ -12,9 +12,9 @@ namespace MilkDistributionWarehouse.Mapper
             //Map User
             CreateMap<User, UserProfileDto>();
             CreateMap<User, UserDto>()
-                .ForMember(dest => dest.Roles, opt => opt.MapFrom(src => src.Roles.Select(r => r.RoleName)));
+                .ForMember(dest => dest.Roles, opt => opt.MapFrom(src => src.Roles));
             CreateMap<User, UserDetailDto>()
-                .ForMember(dest => dest.Roles, opt => opt.MapFrom(src => src.Roles.Select(r => r.RoleName)));
+                .ForMember(dest => dest.Roles, opt => opt.MapFrom(src => src.Roles));
             CreateMap<UserCreateDto, User>()
                 .ForMember(dest => dest.UserId, opt => opt.Ignore())
                 .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.FullName.Trim()))
