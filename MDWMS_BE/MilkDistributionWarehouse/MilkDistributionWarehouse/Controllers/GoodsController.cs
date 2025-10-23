@@ -29,6 +29,15 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<List<GoodsDropDown>>.ToResultOk(goodss);
         }
 
+        [HttpGet("GetGoodsDropDownBySupplierId/{supplierId}")]
+        public async Task<IActionResult> GetGoodsDropDown(int supplierId)
+        {
+            var (msg, goodss) = await _goodsService.GetGoodsDropDownBySupplierId(supplierId);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<List<GoodsDropDownAndUnitMeasure>>.ToResultOk(goodss);
+        }
+
         [HttpPost("Goods")]
         [Authorize(Roles = "Sale Manager, Sales Representative")]
         public async Task<IActionResult> GetGoodss([FromBody] PagedRequest request)
