@@ -53,7 +53,7 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
     }, [collapsed, location.pathname, getOpenKeysFromPath]);
 
     const { hasPermission, userRoles } = usePermissions();
-    
+
     const menuItems = useMemo(() => {
         const allMenuItems = [
             {
@@ -79,8 +79,30 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                     {
                         key: "/purchase-orders/create",
                         icon: <ComponentIcon name="createpuscharorder" size={14} collapsed={collapsed} />,
-                        label: "Tạo đơn hàng",
+                        label: "Tạo đơn nhập",
                         permission: PERMISSIONS.PURCHASE_ORDER_CREATE,
+                    }
+                ],
+            },
+            {
+                key: "sales-orders-management",
+                icon: <ComponentIcon name="puscharorder" size={16} collapsed={collapsed} />,
+                label: "Quản lý đơn xuất",
+                permission: [PERMISSIONS.PURCHASE_ORDER_VIEW],
+                requireAll: false,
+                children: [
+                    {
+                        key: "/sales-orders",
+                        icon: <ComponentIcon name="cart" size={14} collapsed={collapsed} />,
+                        label: "Danh sách đơn xuất",
+                        permission: [PERMISSIONS.PURCHASE_ORDER_VIEW],
+                        requireAll: false,
+                    },
+                    {
+                        key: "/sales-orders/create",
+                        icon: <ComponentIcon name="createpuscharorder" size={14} collapsed={collapsed} />,
+                        label: "Tạo đơn xuất",
+                        permission: [PERMISSIONS.PURCHASE_ORDER_VIEW],
                     }
                 ],
             },
