@@ -1,4 +1,5 @@
-﻿using BCrypt.Net;
+﻿using AutoMapper;
+using BCrypt.Net;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.IdentityModel.Tokens;
 using MilkDistributionWarehouse.Constants;
@@ -31,18 +32,21 @@ namespace MilkDistributionWarehouse.Services
         private readonly IRefreshTokenRepository _refreshTokenRepository;
         private readonly IUserOtpRepository _userOtpRepository;
         private readonly EmailUtility _emailUtility;
+        private readonly IMapper _mapper;
         private readonly IConfiguration _iConfig;
 
         public AuthenticatonService(IUserRepository userRepository,
                                     IRefreshTokenRepository refreshTokenRepository,
                                     IUserOtpRepository userOtpRepository,
                                     EmailUtility emailUtility,
+                                    IMapper mapper,
                                     IConfiguration configuration)
         {
             _userRepository = userRepository;
             _refreshTokenRepository = refreshTokenRepository;
             _userOtpRepository = userOtpRepository;
             _emailUtility = emailUtility;
+            _mapper = mapper;
             _iConfig = configuration;
         }
 
@@ -197,7 +201,7 @@ namespace MilkDistributionWarehouse.Services
                     Email = user.Email,
                     FullName = user.FullName,
                     IsFirstLogin = user.IsFirstLogin,
-                    Roles = user.Roles.Select(u => u.RoleName).ToList(),
+                    Roles = _mapper.Map<List<RoleDto>>(user.Roles),
                     JwtToken = GenerateJwtToken(user),
                     RefreshToken = await GenerateRefreshToken(user)
                 };

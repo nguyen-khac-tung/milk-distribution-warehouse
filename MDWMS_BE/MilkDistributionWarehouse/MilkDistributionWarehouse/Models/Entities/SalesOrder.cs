@@ -27,6 +27,12 @@ public partial class SalesOrder
 
     public DateTime? CreatedAt { get; set; }
 
+    public virtual User AcknowledgedByNavigation { get; set; }
+
+    public virtual User ApprovalByNavigation { get; set; }
+
+    public virtual User AssignToNavigation { get; set; }
+
     public virtual User CreatedByNavigation { get; set; }
 
     public virtual ICollection<GoodsIssueNote> GoodsIssueNotes { get; set; } = new List<GoodsIssueNote>();
