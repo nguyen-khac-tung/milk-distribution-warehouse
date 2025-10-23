@@ -77,6 +77,10 @@ namespace MilkDistributionWarehouse.Configurations
             //PurchaseOrderDetail
             services.AddScoped<IPurchaseOrderDetailRepository, PurchaseOrderDetailReposotory>();
             services.AddScoped<IPurchaseOrderDetailService, PurchaseOrderDetailService>();
+
+            //Pallet
+            services.AddScoped<IPalletRepository, PalletRepository>();
+            services.AddScoped<IPalletService, PalletService>();
         }
     }
 }
