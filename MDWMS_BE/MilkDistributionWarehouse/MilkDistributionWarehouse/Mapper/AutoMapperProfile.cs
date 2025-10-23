@@ -41,7 +41,17 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.StorageConditionId, opt => opt.Ignore())
                 .ForMember(dest => dest.Status, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
-                .ForMember(dest => dest.UpdateAt, opt => opt.Ignore());
+                .ForMember(dest => dest.UpdateAt, opt => opt.Ignore())
+                .ForMember(dest => dest.LightLevel, opt => opt.MapFrom((src, dest) =>
+                {
+                    return src.LightLevel switch
+                    {
+                        LightStorageConditionStatus.Low => "Thấp",
+                        LightStorageConditionStatus.Normal => "Bình thường",
+                        LightStorageConditionStatus.High => "Cao",
+                        _ => src.LightLevel
+                    };
+                }));
 
             // Map UnitMeasure
             CreateMap<UnitMeasure, UnitMeasureDto>();

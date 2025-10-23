@@ -336,7 +336,7 @@ export default function UpdateAccount({ isOpen, onClose, onSuccess, userData }) 
                       { value: 0, label: "Chọn chức vụ..." },
                       ...roles.map(role => ({
                         value: role.roleId,
-                        label: role.roleName
+                        label: role.description
                       }))
                     ]}
                     placeholder="Chọn chức vụ..."

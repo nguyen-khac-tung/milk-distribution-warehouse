@@ -89,7 +89,7 @@ export default function PurchaseOrderList() {
       setLoading(true);
       console.log("=== FETCHING PURCHASE ORDERS ===");
       console.log("User roles:", userRoles);
-      
+
       // Chọn API dựa trên permissions của user
       let response;
       const requestParams = {
@@ -124,9 +124,9 @@ export default function PurchaseOrderList() {
         // Fallback - mặc định dùng API cho representatives
         response = await getPurchaseOrderSaleRepresentatives(requestParams);
       }
-      
+
       console.log("API response:", response);
-      
+
       if (response && response.data && response.data.items && Array.isArray(response.data.items)) {
         setPurchaseOrders(response.data.items);
         setPagination(prev => ({
@@ -158,10 +158,10 @@ export default function PurchaseOrderList() {
   // Trigger search/filter when filters change (skip initial load)
   useEffect(() => {
     // Skip if this is the initial load (when all filters are empty/default)
-    const isInitialLoad = !searchQuery && !statusFilter && !supplierFilter && 
-                         !approverFilter && !creatorFilter && !confirmerFilter && 
-                         !assigneeFilter && !dateRangeFilter.fromDate && !dateRangeFilter.toDate;
-    
+    const isInitialLoad = !searchQuery && !statusFilter && !supplierFilter &&
+      !approverFilter && !creatorFilter && !confirmerFilter &&
+      !assigneeFilter && !dateRangeFilter.fromDate && !dateRangeFilter.toDate;
+
     if (!isInitialLoad) {
       fetchData();
     }
@@ -403,7 +403,7 @@ export default function PurchaseOrderList() {
         showAssignee: false
       };
     }
-    
+
     return defaultConfig;
   };
 
@@ -451,7 +451,7 @@ export default function PurchaseOrderList() {
                 }}
               >
                 <Plus className="mr-2 h-4 w-4 text-white" />
-                Thêm đơn hàng
+                Tạo đơn hàng mới
               </Button>
             </PermissionWrapper>
           </div>
@@ -484,48 +484,48 @@ export default function PurchaseOrderList() {
             clearStatusFilter={clearStatusFilter}
             // Supplier Filter - hiển thị theo config
             supplierFilter={filterConfig.showSupplier ? supplierFilter : ""}
-            setSupplierFilter={filterConfig.showSupplier ? setSupplierFilter : () => {}}
+            setSupplierFilter={filterConfig.showSupplier ? setSupplierFilter : () => { }}
             showSupplierFilter={filterConfig.showSupplier ? showSupplierFilter : false}
-            setShowSupplierFilter={filterConfig.showSupplier ? setShowSupplierFilter : () => {}}
+            setShowSupplierFilter={filterConfig.showSupplier ? setShowSupplierFilter : () => { }}
             suppliers={suppliers}
-            onSupplierFilter={filterConfig.showSupplier ? handleSupplierFilter : () => {}}
-            clearSupplierFilter={filterConfig.showSupplier ? clearSupplierFilter : () => {}}
+            onSupplierFilter={filterConfig.showSupplier ? handleSupplierFilter : () => { }}
+            clearSupplierFilter={filterConfig.showSupplier ? clearSupplierFilter : () => { }}
             showSupplier={filterConfig.showSupplier}
             // Approver Filter - hiển thị theo config
             approverFilter={filterConfig.showApprover ? approverFilter : ""}
-            setApproverFilter={filterConfig.showApprover ? setApproverFilter : () => {}}
+            setApproverFilter={filterConfig.showApprover ? setApproverFilter : () => { }}
             showApproverFilter={filterConfig.showApprover ? showApproverFilter : false}
-            setShowApproverFilter={filterConfig.showApprover ? setShowApproverFilter : () => {}}
+            setShowApproverFilter={filterConfig.showApprover ? setShowApproverFilter : () => { }}
             approvers={filterConfig.showApprover ? sampleUsers : []}
-            onApproverFilter={filterConfig.showApprover ? handleApproverFilter : () => {}}
-            clearApproverFilter={filterConfig.showApprover ? clearApproverFilter : () => {}}
+            onApproverFilter={filterConfig.showApprover ? handleApproverFilter : () => { }}
+            clearApproverFilter={filterConfig.showApprover ? clearApproverFilter : () => { }}
             showApprover={filterConfig.showApprover}
             // Creator Filter - hiển thị theo config
             creatorFilter={filterConfig.showCreator ? creatorFilter : ""}
-            setCreatorFilter={filterConfig.showCreator ? setCreatorFilter : () => {}}
+            setCreatorFilter={filterConfig.showCreator ? setCreatorFilter : () => { }}
             showCreatorFilter={filterConfig.showCreator ? showCreatorFilter : false}
-            setShowCreatorFilter={filterConfig.showCreator ? setShowCreatorFilter : () => {}}
+            setShowCreatorFilter={filterConfig.showCreator ? setShowCreatorFilter : () => { }}
             creators={filterConfig.showCreator ? sampleUsers : []}
-            onCreatorFilter={filterConfig.showCreator ? handleCreatorFilter : () => {}}
-            clearCreatorFilter={filterConfig.showCreator ? clearCreatorFilter : () => {}}
+            onCreatorFilter={filterConfig.showCreator ? handleCreatorFilter : () => { }}
+            clearCreatorFilter={filterConfig.showCreator ? clearCreatorFilter : () => { }}
             showCreator={filterConfig.showCreator}
             // Confirmer Filter - hiển thị theo config
             confirmerFilter={filterConfig.showConfirmer ? confirmerFilter : ""}
-            setConfirmerFilter={filterConfig.showConfirmer ? setConfirmerFilter : () => {}}
+            setConfirmerFilter={filterConfig.showConfirmer ? setConfirmerFilter : () => { }}
             showConfirmerFilter={filterConfig.showConfirmer ? showConfirmerFilter : false}
-            setShowConfirmerFilter={filterConfig.showConfirmer ? setShowConfirmerFilter : () => {}}
+            setShowConfirmerFilter={filterConfig.showConfirmer ? setShowConfirmerFilter : () => { }}
             confirmers={filterConfig.showConfirmer ? sampleUsers : []}
-            onConfirmerFilter={filterConfig.showConfirmer ? handleConfirmerFilter : () => {}}
-            clearConfirmerFilter={filterConfig.showConfirmer ? clearConfirmerFilter : () => {}}
+            onConfirmerFilter={filterConfig.showConfirmer ? handleConfirmerFilter : () => { }}
+            clearConfirmerFilter={filterConfig.showConfirmer ? clearConfirmerFilter : () => { }}
             showConfirmer={filterConfig.showConfirmer}
             // Assignee Filter - hiển thị theo config
             assigneeFilter={filterConfig.showAssignee ? assigneeFilter : ""}
-            setAssigneeFilter={filterConfig.showAssignee ? setAssigneeFilter : () => {}}
+            setAssigneeFilter={filterConfig.showAssignee ? setAssigneeFilter : () => { }}
             showAssigneeFilter={filterConfig.showAssignee ? showAssigneeFilter : false}
-            setShowAssigneeFilter={filterConfig.showAssignee ? setShowAssigneeFilter : () => {}}
+            setShowAssigneeFilter={filterConfig.showAssignee ? setShowAssigneeFilter : () => { }}
             assignees={filterConfig.showAssignee ? sampleUsers : []}
-            onAssigneeFilter={filterConfig.showAssignee ? handleAssigneeFilter : () => {}}
-            clearAssigneeFilter={filterConfig.showAssignee ? clearAssigneeFilter : () => {}}
+            onAssigneeFilter={filterConfig.showAssignee ? handleAssigneeFilter : () => { }}
+            clearAssigneeFilter={filterConfig.showAssignee ? clearAssigneeFilter : () => { }}
             showAssignee={filterConfig.showAssignee}
             // Date Range Filter
             dateRangeFilter={dateRangeFilter}
