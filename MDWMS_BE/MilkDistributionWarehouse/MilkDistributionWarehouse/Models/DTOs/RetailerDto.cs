@@ -12,19 +12,19 @@ namespace MilkDistributionWarehouse.Models.DTOs
         [JsonPropertyOrder(2)]
         public string Phone { get; set; }
         [JsonPropertyOrder(3)]
+        public string Address { get; set; }
+        [JsonPropertyOrder(4)]
         public int Status { get; set; }
     }
 
     public class RetailerDetail : RetailerDto
     {
-        [JsonPropertyOrder(4)]
-        public string Email { get; set; }
         [JsonPropertyOrder(5)]
-        public string Phone { get; set; }
+        public string Email { get; set; }
         [JsonPropertyOrder(6)]
-        public string TaxCode { get; set; }
+        public string Phone { get; set; }
         [JsonPropertyOrder(7)]
-        public string Address { get; set; }
+        public string TaxCode { get; set; }
         [JsonPropertyOrder(8)]
         public bool IsDisable { get; set; }
     }

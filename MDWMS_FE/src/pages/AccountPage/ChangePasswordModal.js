@@ -22,10 +22,13 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
   const [errors, setErrors] = useState({})
   const [userId, setUserId] = useState(null)
 
-  // Lấy userId từ localStorage
   useEffect(() => {
+    const tempUserId = localStorage.getItem("tempUserId")
     const savedUser = localStorage.getItem("userInfo")
-    if (savedUser) {
+    
+    if (tempUserId) {
+      setUserId(tempUserId)
+    } else if (savedUser) {
       try {
         const userData = JSON.parse(savedUser)
         setUserId(userData?.userId || userData?.id)
@@ -37,7 +40,6 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: "" }))
     }
@@ -85,6 +87,7 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
       setLoading(true)
 
       const response = await updatePassword({
+        userId: userId,
         currentPassword: formData.currentPassword,
         newPassword: formData.newPassword,
         confirmPassword: formData.confirmPassword
@@ -92,6 +95,8 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
 
       if (response && response.success !== false) {
         window.showToast("Đổi mật khẩu thành công!", "success")
+        // Xóa tempUserId nếu có (lần đầu đăng nhập)
+        localStorage.removeItem("tempUserId")
         onClose()
         // Reset form
         setFormData({

@@ -23,6 +23,7 @@ import ProtectedRoute from "../components/Common/ProtectedRoute";
 import RoleBasedRedirect from "../components/Common/RoleBasedRedirect";
 import PurchaseOrderList from "../pages/PurchaseOrderPage/PurchaseOrderList";
 import CreatePurchaseOrder from "../pages/PurchaseOrderPage/CreatePurchaseOrder";
+import ChangePasswordPage from "../pages/AuthenticationPage/ChangePasswordPage"
 import { PERMISSIONS } from "../utils/permissions";
 
 export const routes = [
@@ -47,14 +48,13 @@ export const routes = [
         page: UnauthorizedPage,
     },
     {
+        path: "/change-password",
+        page: ChangePasswordPage,
+    },
+    {
         path: "/",
         page: () => {
-            if (localStorage.getItem("accessToken")) {
-                return <RoleBasedRedirect />;
-            } else {
-                window.location.href = "/login";
-                return null;
-            }
+            return <RoleBasedRedirect />;
         },
     },
     {
@@ -174,7 +174,7 @@ export const routes = [
     {
         path: "/purchase-orders",
         page: () => (
-            <ProtectedRoute requiredPermission={PERMISSIONS.PURCHASE_ORDER_VIEW}>
+            <ProtectedRoute requiredPermission={[PERMISSIONS.PURCHASE_ORDER_VIEW, PERMISSIONS.PURCHASE_ORDER_VIEW_RS, PERMISSIONS.PURCHASE_ORDER_VIEW_SM]} requireAll={false}>
                 <PurchaseOrderList />
             </ProtectedRoute>
         ),

@@ -147,7 +147,7 @@ namespace MilkDistributionWarehouse.Services
 
             if (user.GoodsIssueNotes.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử phiếu xuất hàng.".ToMessageForUser();
             if (user.GoodsReceiptNotes.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử phiếu nhập hàng.".ToMessageForUser();
-            if (user.PurchaseOrders.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử đơn đặt hàng mua.".ToMessageForUser();
+            if (user.PurchaseOrderCreatedByNavigations.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử đơn đặt hàng mua.".ToMessageForUser();
             if (user.SalesOrders.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử đơn hàng bán.".ToMessageForUser();
             if (user.Batches.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử các lô hàng.".ToMessageForUser();
             if (user.Pallets.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử các pallet.".ToMessageForUser();
@@ -185,21 +185,21 @@ namespace MilkDistributionWarehouse.Services
         private async Task SendUserCredentialByEmail(string email, string password)
         {
             string emailBody = $@"
-                <table cellpadding=""0"" cellspacing=""0"" border=""0"" style=""font-family: Arial, sans-serif;"">
-                    <tr>
-                        <td>
-                            <h3>Chào mừng bạn đến với hệ thống,</h3>
-                            <p>Tài khoản của bạn đã được tạo thành công. Dưới đây là thông tin đăng nhập của bạn:</p>
-                            <p><strong>Email (Tên đăng nhập):</strong> {email}</p>
-                            <p><strong>Mật khẩu:</strong> <h2>{password}</h2></p>
-                            <p>Vui lòng đăng nhập vào hệ thống và đổi mật khẩu của bạn để đảm bảo an toàn.</p>
-                            <br>
-                            <p>Trân trọng,</p>
-                            <p>Đội ngũ quản trị hệ thống.</p>
-                        </td>
-                    </tr>
-                </table>";
-            await _emailUtility.SendMail(email, "Thông tin tài khoản của bạn", emailBody);
+            <table cellpadding=""0"" cellspacing=""0"" border=""0"" style=""font-family: Arial, sans-serif;"">
+                <tr>
+                    <td>
+                        <h3>Chào mừng bạn đến với hệ thống kho sữa Hoàng Hà,</h3>
+                        <p>Tài khoản của bạn đã được tạo thành công. Dưới đây là thông tin đăng nhập của bạn:</p>
+                        <p><strong>Email (Tên đăng nhập):</strong> {email}</p>
+                        <p><strong>Mật khẩu:</strong> <h2>{password}</h2></p>
+                        <p>Vui lòng đăng nhập vào hệ thống theo đường link http://localhost:3000/login và đổi mật khẩu của bạn để đảm bảo an toàn.</p>
+                        <br>
+                        <p>Trân trọng,</p>
+                        <p>Đội ngũ quản trị hệ thống kho sữa Hoàng Hà.</p>
+                    </td>
+                </tr>
+            </table>";
+            await _emailUtility.SendMail(email, "Thông tin tài khoản hệ thống kho sữa Hoàng Hà của bạn", emailBody);
         }
     }
 }

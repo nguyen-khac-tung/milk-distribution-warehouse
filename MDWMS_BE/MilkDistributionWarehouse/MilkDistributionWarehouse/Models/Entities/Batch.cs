@@ -15,6 +15,8 @@ public partial class Batch
 
     public DateOnly? ManufacturingDate { get; set; }
 
+    public string Description { get; set; }
+
     public DateOnly? ExpiryDate { get; set; }
 
     public DateTime? CreateAt { get; set; }

@@ -11,8 +11,6 @@ export const getRetailers = async (searchParams = {}) => {
             filters: searchParams.status ? { status: searchParams.status } : {}
         };
         const res = await api.post("/Retailer/Retailers", body);
-        console.log("Retailer API response:", res.data);
-        console.log("Search params received:", searchParams);
 
         return res.data;
     } catch (error) {
@@ -24,7 +22,6 @@ export const getRetailers = async (searchParams = {}) => {
 export const getRetailerDetail = async (retailerId) => {
     try {
         const res = await api.get(`/Retailer/GetRetailerByRetailerId/${retailerId}`);
-        console.log("Get retailer detail response:", res.data);
         return res.data;
     } catch (error) {
         console.error("Error fetching retailer detail:", error);
@@ -36,7 +33,6 @@ export const getRetailerDetail = async (retailerId) => {
 export const createRetailer = async (retailerData) => {
     try {
         const res = await api.post('/Retailer/Create', retailerData);
-        console.log("Create retailer response:", res.data);
         return res.data;
     } catch (error) {
         console.error("Error creating retailer:", error);
@@ -48,7 +44,6 @@ export const createRetailer = async (retailerData) => {
 export const updateRetailer = async (retailerData) => {
     try {
         const res = await api.put('/Retailer/Update', retailerData);
-        console.log("Update retailer response:", res.data);
         return res.data;
     } catch (error) {
         console.error("Error updating retailer:", error);
@@ -60,7 +55,6 @@ export const updateRetailer = async (retailerData) => {
 export const deleteRetailer = async (retailerId) => {
     try {
         const res = await api.delete(`/Retailer/Delete/${retailerId}`);
-        console.log("Delete retailer response:", res.data);
         return res.data;
     } catch (error) {
         console.error("Error deleting retailer:", error);
@@ -76,9 +70,7 @@ export const updateRetailerStatus = async (data) => {
             status: data.status
         };
 
-        console.log("Sending status update request:", body);
         const res = await api.put("/Retailer/UpdateStatus", body);
-        console.log("Retailer status update API response:", res.data);
         return res.data;
     } catch (error) {
         console.error("Error updating retailer status:", error);
@@ -94,7 +86,6 @@ export const updateRetailerStatus = async (data) => {
 export const getRetailersDropdown = async () => {
     try {
         const res = await api.get("/Retailer/GetRetailersDropDown");
-        console.log("Retailers dropdown API response:", res.data);
         return res.data;
     } catch (error) {
         console.error("Error fetching retailers dropdown:", error);

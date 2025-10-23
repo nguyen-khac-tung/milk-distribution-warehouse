@@ -50,6 +50,8 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
     public class ChangePasswordDto
     {
+        public int? UserId { get; set; }
+
         [Required(ErrorMessage = "Mật khẩu không được để trống!")]
         public string OldPassword { get; set; }
 
@@ -70,6 +72,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int UserId { get; set; }
         public string Email { get; set; }
         public string FullName { get; set; }
+        public bool? IsFirstLogin { get; set; }
         public List<string> Roles { get; set; } = new List<string>(); 
     }
 

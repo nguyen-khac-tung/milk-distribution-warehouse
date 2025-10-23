@@ -1,4 +1,5 @@
 import api from "./api";
+import { refreshApi } from "./axiosConfig";
 
 // Đăng nhập
 export const login = async (data) => {
@@ -14,23 +15,45 @@ export const login = async (data) => {
         if (res.data?.success && res.data?.data) {
             const userData = res.data.data;
 
-            // Lưu token và thông tin người dùng
-            localStorage.setItem("accessToken", userData.jwtToken);
-            localStorage.setItem("refreshToken", userData.refreshToken);
-            localStorage.setItem(
-                "userInfo",
-                JSON.stringify({
-                    userId: userData.userId,
-                    email: userData.email,
-                    fullName: userData.fullName,
-                    roles: userData.roles,
-                })
-            );
+            console.log("isFirstLogin:", userData.isFirstLogin);
+
+            if (userData.isFirstLogin === true) {
+                localStorage.setItem("tempUserId", userData.userId.toString());
+                return {
+                    success: true,
+                    message: "Lần đầu đăng nhập, vui lòng đổi mật khẩu",
+                    data: userData,
+                    isFirstLogin: true,
+                    redirectTo: "/change-password"
+                };
+            }
+
+            // Chỉ lưu token và thông tin người dùng khi isFirstLogin = false
+            if (userData.isFirstLogin === false) {
+                console.log("Normal login - saving tokens to localStorage");
+                localStorage.setItem("accessToken", userData.jwtToken);
+                localStorage.setItem("refreshToken", userData.refreshToken);
+                localStorage.setItem(
+                    "userInfo",
+                    JSON.stringify({
+                        userId: userData.userId,
+                        email: userData.email,
+                        fullName: userData.fullName,
+                        roles: userData.roles,
+                    })
+                );
+                console.log("localStorage after saving:", {
+                    accessToken: localStorage.getItem("accessToken"),
+                    refreshToken: localStorage.getItem("refreshToken"),
+                    userInfo: localStorage.getItem("userInfo")
+                });
+            }
 
             return {
                 success: true,
                 message: res.data.message || "Đăng nhập thành công",
                 data: userData,
+                isFirstLogin: false
             };
         } else {
             return {
@@ -63,7 +86,7 @@ export const refreshAccessToken = async () => {
         const refreshToken = localStorage.getItem("refreshToken");
         if (!refreshToken) throw new Error("Không tìm thấy refresh token.");
 
-        const res = await api.post("/Authentication/RefreshToken", {
+        const res = await refreshApi.post("/Authentication/RefreshToken", {
             token: refreshToken,
         });
 
@@ -82,6 +105,57 @@ export const refreshAccessToken = async () => {
             throw new Error(error.response.data.message);
         }
         throw error;
+    }
+};
+
+// Kiểm tra và làm mới token nếu cần (sử dụng lại logic interceptor)
+export const validateAndRefreshToken = async () => {
+    try {
+        const accessToken = localStorage.getItem("accessToken");
+        const refreshToken = localStorage.getItem("refreshToken");
+        
+        // Nếu không có token nào
+        if (!accessToken && !refreshToken) {
+            return false;
+        }
+        
+        // Nếu có accessToken, kiểm tra xem có hết hạn không
+        if (accessToken) {
+            try {
+                // Decode JWT để kiểm tra expiry
+                const payload = JSON.parse(atob(accessToken.split('.')[1]));
+                const currentTime = Math.floor(Date.now() / 1000);
+                
+                // Nếu token chưa hết hạn, return true
+                if (payload.exp > currentTime) {
+                    return true;
+                }
+            } catch (error) {
+                console.log("Access token invalid, trying to refresh...");
+            }
+        }
+        
+        // Nếu accessToken hết hạn hoặc không có, thử refresh
+        if (refreshToken) {
+            try {
+                console.log("Attempting to refresh token...");
+                const newToken = await refreshAccessToken();
+                console.log("Token refreshed successfully");
+                return true;
+            } catch (error) {
+                console.error("Token refresh failed:", error);
+                // Xóa tất cả token nếu refresh thất bại
+                localStorage.removeItem("accessToken");
+                localStorage.removeItem("refreshToken");
+                localStorage.removeItem("userInfo");
+                return false;
+            }
+        }
+        
+        return false;
+    } catch (error) {
+        console.error("Token validation error:", error);
+        return false;
     }
 };
 

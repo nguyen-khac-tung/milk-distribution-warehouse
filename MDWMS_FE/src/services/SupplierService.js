@@ -11,8 +11,6 @@ export const getSuppliers = async (searchParams = {}) => {
             filters: searchParams.status ? { status: searchParams.status } : {}
         };
         const res = await api.post("/Supplier/Suppliers", body);
-        console.log("Supplier API response:", res.data);
-        console.log("Search params received:", searchParams);
 
         return res.data;
     } catch (error) {
@@ -24,7 +22,6 @@ export const getSuppliers = async (searchParams = {}) => {
 export const getSuppliersDropdown = async () => {
     try {
         const res = await api.get("/Supplier/GetSupplierDropDown");
-        console.log("Supplier API response:", res.data);
 
         return res.data;
     } catch (error) {
@@ -36,7 +33,6 @@ export const getSuppliersDropdown = async () => {
 export const getSupplierDetail = async (supplierId) => {
     try {
         const res = await api.get(`/Supplier/GetSupplierBySupplierId/${supplierId}`);
-        console.log("Get supplier detail response:", res.data);
         return res.data;
     } catch (error) {
         console.error("Error fetching supplier detail:", error);
@@ -48,7 +44,6 @@ export const getSupplierDetail = async (supplierId) => {
 export const createSupplier = async (supplierData) => {
     try {
         const res = await api.post('/Supplier/Create', supplierData);
-        console.log("Create supplier response:", res.data);
         return res.data;
     } catch (error) {
         console.error("Error creating supplier:", error);
@@ -60,7 +55,6 @@ export const createSupplier = async (supplierData) => {
 export const updateSupplier = async (supplierData) => {
     try {
         const res = await api.put('/Supplier/Update', supplierData);
-        console.log("Update supplier response:", res.data);
         return res.data;
     } catch (error) {
         console.error("Error updating supplier:", error);
@@ -72,7 +66,6 @@ export const updateSupplier = async (supplierData) => {
 export const deleteSupplier = async (supplierId) => {
     try {
         const res = await api.delete(`/Supplier/Delete/${supplierId}`);
-        console.log("Delete supplier response:", res.data);
         return res.data;
     } catch (error) {
         console.error("Error deleting supplier:", error);
@@ -87,7 +80,6 @@ export const updateSupplierStatus = async (supplierId, status) => {
             SupplierId: supplierId,
             Status: status 
         });
-        console.log("Update supplier status response:", res.data);
         return res.data;
     } catch (error) {
         console.error("Error updating supplier status:", error);

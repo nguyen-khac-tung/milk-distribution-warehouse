@@ -13,8 +13,6 @@ export const getCategory = async (searchParams = {}) => {
 
 
         const res = await api.post("/Category/Categories", body);
-        console.log("Category API response:", res.data);
-        console.log("Search params received:", searchParams);
 
         return res.data;
     } catch (error) {
@@ -31,7 +29,6 @@ export const createCategory = async (data) => {
             description: data.description
         };
         const res = await api.post("/Category/Create", body);
-        console.log("Category API response:", res.data);
         return res.data;
     } catch (error) {
         console.error("Error creating category:", error);
@@ -42,7 +39,6 @@ export const createCategory = async (data) => {
 export const deleteCategory = async (categoryId) => {
     try {
         const res = await api.delete(`/Category/Delete/${categoryId}`);
-        console.log("Category delete API response:", res.data);
         return res.data;
     } catch (error) {
         console.error("Error deleting category:", error);
@@ -59,16 +55,7 @@ export const updateCategory = async (data) => {
     };
 
     try {
-        console.log("Sending update request:", body);
-        console.log("Data types:", {
-            categoryName: typeof body.categoryName,
-            description: typeof body.description,
-            categoryId: typeof body.categoryId,
-            status: typeof body.status
-        });
-
         const res = await api.put("/Category/Update", body);
-        console.log("Category update API response:", res.data);
         return res.data;
     } catch (error) {
         console.error("Error updating category:", error);
@@ -88,9 +75,7 @@ export const updateCategoryStatus = async (data) => {
             status: data.status
         };
 
-        console.log("Sending status update request:", body);
         const res = await api.put("/Category/UpdateStatus", body);
-        console.log("Category status update API response:", res.data);
         return res.data;
     } catch (error) {
         console.error("Error updating category status:", error);
@@ -106,7 +91,6 @@ export const updateCategoryStatus = async (data) => {
 export const getCategoriesDropdown = async () => {
     try {
         const res = await api.get("/Category/GetCategoriesDropDown");
-        console.log("Categories dropdown API response:", res.data);
         return res.data;
     } catch (error) {
         console.error("Error fetching categories dropdown:", error);

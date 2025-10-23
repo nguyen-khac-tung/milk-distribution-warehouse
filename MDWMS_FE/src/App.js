@@ -10,7 +10,7 @@ function App() {
         {routes.map((route) => {
           const Page = route.page;
           // Các trang authentication không sử dụng Layout
-          const isAuthPage = ['/login', '/forgot-password', '/verify-otp', '/reset-password', '/unauthorized'].includes(route.path);
+          const isAuthPage = ['/login', '/forgot-password', '/verify-otp', '/reset-password', '/unauthorized', '/change-password'].includes(route.path);
           
           return (
             <Route
