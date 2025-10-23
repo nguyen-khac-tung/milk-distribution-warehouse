@@ -297,6 +297,9 @@ const BatchList = () => {
                                                 Tên hàng hóa
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                                Mô tả
+                                            </TableHead>
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                                                 Ngày sản xuất
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
@@ -316,7 +319,21 @@ const BatchList = () => {
                                                 <TableRow key={batch.batchId} className="hover:bg-slate-50 border-b border-slate-200">
                                                     <TableCell className="px-6 py-4 text-slate-600 font-medium">{index + 1}</TableCell>
                                                     <TableCell className="font-medium text-slate-900 px-6 py-3 text-left">{batch?.batchCode || ''}</TableCell>
-                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">{batch?.goodsName || ''}</TableCell>
+                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">
+                                                        {batch?.goodsName
+                                                            ? batch.goodsName.length > 20
+                                                                ? batch.goodsName.slice(0, 20) + "..."
+                                                                : batch.goodsName
+                                                            : ""}
+                                                    </TableCell>
+
+                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">
+                                                        {batch?.description
+                                                            ? batch.description.length > 30
+                                                                ? batch.description.slice(0, 30) + "..."
+                                                                : batch.description
+                                                            : ""}
+                                                    </TableCell>
                                                     <TableCell className="text-slate-700 px-6 py-3 text-left">{batch?.manufacturingDate || ''}</TableCell>
                                                     <TableCell className="text-slate-700 px-6 py-3 text-left">{batch?.expiryDate || ''}</TableCell>
                                                     <TableCell className="px-6 py-4 text-center">

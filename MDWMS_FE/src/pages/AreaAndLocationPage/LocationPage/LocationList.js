@@ -48,7 +48,6 @@ const LocationList = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("");
     const [showStatusFilter, setShowStatusFilter] = useState(false);
-    const [statusTypeFilter, setStatusTypeFilter] = useState("");
     const [showStatusTypeFilter, setShowStatusTypeFilter] = useState(false);
     const [showConditionFilter, setShowConditionFilter] = useState(false);
     const [conditionFilter, setConditionFilter] = useState("");
@@ -244,10 +243,9 @@ const LocationList = () => {
     };
 
     useEffect(() => {
-        if (didMountRef.current) return; // Guard against React 18 StrictMode double-invoke in dev
+        if (didMountRef.current) return;
         didMountRef.current = true;
         fetchLocations(1, 10);
-        // Also fetch global stats once on mount
         fetchStats();
         // Load areas for dropdown
         (async () => {
@@ -291,7 +289,6 @@ const LocationList = () => {
         fetchLocations(1, pagination.pageSize, params);
     }, [pagination.pageSize]);
 
-    // Debounced search effect: only searchQuery; skip first run on mount to avoid duplicate with initial fetch
     useEffect(() => {
         if (skipFirstSearchRef.current) {
             skipFirstSearchRef.current = false;
@@ -309,7 +306,6 @@ const LocationList = () => {
         }, 500);
 
         return () => clearTimeout(timeoutId);
-        // Only depend on searchQuery to avoid triggering twice when clicking filters
     }, [searchQuery]);
 
     const handleStatusFilter = (value) => {
@@ -415,7 +411,6 @@ const LocationList = () => {
     const handleSort = (field) => {
         if (sortField === field) {
             if (sortAscending === true) {
-                // Second click: descending
                 setSortAscending(false);
                 fetchLocations(pagination.current, pagination.pageSize, {
                     search: searchQuery,
@@ -428,7 +423,6 @@ const LocationList = () => {
                     sortAscending: false,
                 });
             } else {
-                // Third click: clear sorting
                 setSortField("");
                 setSortAscending(true);
                 fetchLocations(pagination.current, pagination.pageSize, {
@@ -443,7 +437,6 @@ const LocationList = () => {
                 });
             }
         } else {
-            // First click on a different column: ascending
             setSortField(field);
             setSortAscending(true);
             fetchLocations(pagination.current, pagination.pageSize, {
@@ -510,7 +503,7 @@ const LocationList = () => {
                 status: statusFilter !== "" ? Number(statusFilter) : undefined
             }
         });
-        fetchStats(); // Cập nhật tổng stats
+        fetchStats();
     };
 
     // Handle update cancel
@@ -557,7 +550,6 @@ const LocationList = () => {
                     status: statusFilter !== "" ? Number(statusFilter) : undefined
                 }
             });
-            // refresh global stats
             fetchStats();
         } catch (error) {
             window.showToast("Có lỗi xảy ra khi xóa vị trí", "error");
@@ -620,8 +612,6 @@ const LocationList = () => {
                                     format="CODE128"
                                 />
                             </div>
-
-                            {/* <p className="text-lg text-gray-600 mt-2">{location?.locationCode}</p> */}
                         </div>
                     ))}
                 </div>

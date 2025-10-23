@@ -41,7 +41,7 @@ const ProtectedRoute = ({
         // console.log("Has PURCHASE_ORDER_VIEW:", hasPermission('PurchaseOrder.View'));
         // console.log("Has PURCHASE_ORDER_VIEW_RS:", hasPermission('PurchaseOrder.ViewListRS'));
         // console.log("Has PURCHASE_ORDER_VIEW_SM:", hasPermission('PurchaseOrder.ViewListSM'));
-        
+
         // Kiểm tra role
         if (requiredRole) {
             return userRoles.includes(requiredRole);
