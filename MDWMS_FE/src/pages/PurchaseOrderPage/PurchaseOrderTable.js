@@ -5,13 +5,13 @@ import EmptyState from '../../components/Common/EmptyState';
 import PermissionWrapper from '../../components/Common/PermissionWrapper';
 import { PERMISSIONS } from '../../utils/permissions';
 import { Package } from 'lucide-react';
+import StatusDisplay from '../../components/PurchaseOrderComponents/StatusDisplay';
 
 const PurchaseOrderTable = ({
   purchaseOrders,
   pagination,
   sortField,
   sortAscending,
-  statusConfig,
   onSort,
   onView,
   onEdit,
@@ -242,9 +242,7 @@ const PurchaseOrderTable = ({
                       {order.createdAt ? new Date(order.createdAt).toLocaleDateString('vi-VN') : '-'}
                     </TableCell>
                     <TableCell className="px-6 py-4 text-center">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusConfig[order.status]?.color}`}>
-                        {statusConfig[order.status]?.label}
-                      </span>
+                      <StatusDisplay status={order.status} />
                     </TableCell>
                     <TableCell className="px-6 py-4 text-center">
                       <div className="flex items-center justify-center space-x-1">

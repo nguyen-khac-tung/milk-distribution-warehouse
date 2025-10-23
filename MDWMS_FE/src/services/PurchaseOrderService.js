@@ -20,6 +20,7 @@ export const getPurchaseOrderSaleManagers = async (searchParams = {}) => {
                 ...(searchParams.toDate && { toDate: searchParams.toDate })
             }
         };
+        
         const res = await api.post("/PurchaseOrder/GetPurchaseOrderSaleManagers", body);
         return res.data;
     } catch (error) {
@@ -48,6 +49,13 @@ export const getPurchaseOrderSaleRepresentatives = async (searchParams = {}) => 
                 ...(searchParams.toDate && { toDate: searchParams.toDate })
             }
         };
+        
+        // Log dữ liệu search được gửi đi
+        console.log("=== PURCHASE ORDER SALE REPRESENTATIVES SEARCH DATA ===");
+        console.log("Original searchParams:", searchParams);
+        console.log("Request body:", body);
+        console.log("API endpoint: /PurchaseOrder/GetPurchaseOrderSaleRepresentatives");
+        
         const res = await api.post("/PurchaseOrder/GetPurchaseOrderSaleRepresentatives", body);
         return res.data;
     } catch (error) {
@@ -76,6 +84,13 @@ export const getPurchaseOrderWarehouseManagers = async (searchParams = {}) => {
                 ...(searchParams.toDate && { toDate: searchParams.toDate })
             }
         };
+        
+        // Log dữ liệu search được gửi đi
+        console.log("=== PURCHASE ORDER WAREHOUSE MANAGERS SEARCH DATA ===");
+        console.log("Original searchParams:", searchParams);
+        console.log("Request body:", body);
+        console.log("API endpoint: /PurchaseOrder/GetPurchaseOrderWarehouseManagers");
+        
         const res = await api.post("/PurchaseOrder/GetPurchaseOrderWarehouseManagers", body);
         return res.data;
     } catch (error) {
@@ -104,6 +119,13 @@ export const getPurchaseOrderWarehouseStaff = async (searchParams = {}) => {
                 ...(searchParams.toDate && { toDate: searchParams.toDate })
             }
         };
+        
+        // Log dữ liệu search được gửi đi
+        console.log("=== PURCHASE ORDER WAREHOUSE STAFF SEARCH DATA ===");
+        console.log("Original searchParams:", searchParams);
+        console.log("Request body:", body);
+        console.log("API endpoint: /PurchaseOrder/GetPurchaseOrderWarehouseStaff");
+        
         const res = await api.post("/PurchaseOrder/GetPurchaseOrderWarehouseStaff", body);
         return res.data;
     } catch (error) {
