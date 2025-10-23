@@ -72,8 +72,6 @@ namespace MilkDistributionWarehouse.Services
             if (user == null) return ("Không tìm thấy người dùng!".ToMessageForUser(), null);
 
             var userDetail = _mapper.Map<UserDetailDto>(user);
-            userDetail.Roles = user.Roles.Select(r => r.RoleName).ToList();
-
             return ("", userDetail);
         }
 

@@ -53,7 +53,13 @@ public partial class User
 
     public virtual RefreshToken RefreshToken { get; set; }
 
-    public virtual ICollection<SalesOrder> SalesOrders { get; set; } = new List<SalesOrder>();
+    public virtual ICollection<SalesOrder> SalesOrderAcknowledgedByNavigations { get; set; } = new List<SalesOrder>();
+
+    public virtual ICollection<SalesOrder> SalesOrderApprovalByNavigations { get; set; } = new List<SalesOrder>();
+
+    public virtual ICollection<SalesOrder> SalesOrderAssignToNavigations { get; set; } = new List<SalesOrder>();
+
+    public virtual ICollection<SalesOrder> SalesOrderCreatedByNavigations { get; set; } = new List<SalesOrder>();
 
     public virtual ICollection<StocktakingArea> StocktakingAreas { get; set; } = new List<StocktakingArea>();
 
