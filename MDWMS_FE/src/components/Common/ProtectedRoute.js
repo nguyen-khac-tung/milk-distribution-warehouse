@@ -12,7 +12,17 @@ const ProtectedRoute = ({
 }) => {
     const { hasPermission, hasAnyPermission, hasAllPermissions, userRoles } = usePermissions();
 
+    // Kiểm tra xem user đã đăng nhập chưa
+    const isAuthenticated = () => {
+        const token = localStorage.getItem("accessToken");
+        return !!token;
+    };
+
     const hasAccess = () => {
+        // Nếu chưa đăng nhập, redirect về login
+        if (!isAuthenticated()) {
+            return false;
+        }
         // // Debug tạm thời
         // console.log("=== PROTECTED ROUTE DEBUG ===");
         // console.log("Required permission:", requiredPermission);
@@ -47,6 +57,11 @@ const ProtectedRoute = ({
 
         return true;
     };
+
+    // Nếu chưa đăng nhập, redirect về login
+    if (!isAuthenticated()) {
+        return <Navigate to="/login" replace />;
+    }
 
     return hasAccess() ? children : fallback;
 };

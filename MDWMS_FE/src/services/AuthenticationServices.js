@@ -14,23 +14,45 @@ export const login = async (data) => {
         if (res.data?.success && res.data?.data) {
             const userData = res.data.data;
 
-            // Lưu token và thông tin người dùng
-            localStorage.setItem("accessToken", userData.jwtToken);
-            localStorage.setItem("refreshToken", userData.refreshToken);
-            localStorage.setItem(
-                "userInfo",
-                JSON.stringify({
-                    userId: userData.userId,
-                    email: userData.email,
-                    fullName: userData.fullName,
-                    roles: userData.roles,
-                })
-            );
+            console.log("isFirstLogin:", userData.isFirstLogin);
+            
+            if (userData.isFirstLogin === true) {
+                localStorage.setItem("tempUserId", userData.userId.toString());
+                return {
+                    success: true,
+                    message: "Lần đầu đăng nhập, vui lòng đổi mật khẩu",
+                    data: userData,
+                    isFirstLogin: true,
+                    redirectTo: "/change-password"
+                };
+            }
+
+            // Chỉ lưu token và thông tin người dùng khi isFirstLogin = false
+            if (userData.isFirstLogin === false) {
+                console.log("Normal login - saving tokens to localStorage");
+                localStorage.setItem("accessToken", userData.jwtToken);
+                localStorage.setItem("refreshToken", userData.refreshToken);
+                localStorage.setItem(
+                    "userInfo",
+                    JSON.stringify({
+                        userId: userData.userId,
+                        email: userData.email,
+                        fullName: userData.fullName,
+                        roles: userData.roles,
+                    })
+                );
+                console.log("localStorage after saving:", {
+                    accessToken: localStorage.getItem("accessToken"),
+                    refreshToken: localStorage.getItem("refreshToken"),
+                    userInfo: localStorage.getItem("userInfo")
+                });
+            }
 
             return {
                 success: true,
                 message: res.data.message || "Đăng nhập thành công",
                 data: userData,
+                isFirstLogin: false
             };
         } else {
             return {

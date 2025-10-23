@@ -23,6 +23,7 @@ import ProtectedRoute from "../components/Common/ProtectedRoute";
 import RoleBasedRedirect from "../components/Common/RoleBasedRedirect";
 import PurchaseOrderList from "../pages/PurchaseOrderPage/PurchaseOrderList";
 import CreatePurchaseOrder from "../pages/PurchaseOrderPage/CreatePurchaseOrder";
+import ChangePasswordPage from "../pages/AuthenticationPage/ChangePasswordPage"
 import { PERMISSIONS } from "../utils/permissions";
 
 export const routes = [
@@ -45,6 +46,10 @@ export const routes = [
     {
         path: "/unauthorized",
         page: UnauthorizedPage,
+    },
+    {
+        path: "/change-password",
+        page: ChangePasswordPage,
     },
     {
         path: "/",

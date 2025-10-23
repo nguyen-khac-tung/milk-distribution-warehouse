@@ -29,8 +29,15 @@ export function LoginForm() {
             console.log("Login response:", res);
 
             if (res.success) {
-                window.showToast("Đăng nhập thành công!", "success");
-                navigate("/");
+                if (res.isFirstLogin === true) {
+                    // Lần đầu đăng nhập, chuyển đến trang đổi mật khẩu
+                    window.showToast(res.message, "info");
+                    navigate("/change-password");
+                } else {
+                    // Đăng nhập bình thường
+                    window.showToast("Đăng nhập thành công!", "success");
+                    navigate("/");
+                }
             } else {
                 const m = cleanErrorMessage(res.message || "Sai email hoặc mật khẩu.");
                 setErrorMessage(m);
