@@ -470,24 +470,45 @@ export default function PurchaseOrderList() {
 
   const purchaseOrderStats = useMemo(() => {
     const totalOrders = purchaseOrders.length;
-    const pendingOrders = purchaseOrders.filter(order => order.status === 1).length;
-    const approvedOrders = purchaseOrders.filter(order => order.status === 4).length;
-    const rejectedOrders = purchaseOrders.filter(order => order.status === 3).length;
-    const shippedOrders = purchaseOrders.filter(order => order.status === 2).length;
+    const draftOrders = purchaseOrders.filter(order => order.status === PURCHASE_ORDER_STATUS.Draft).length;
+    const pendingOrders = purchaseOrders.filter(order => order.status === PURCHASE_ORDER_STATUS.PendingApproval).length;
+    const approvedOrders = purchaseOrders.filter(order => order.status === PURCHASE_ORDER_STATUS.Approved).length;
+    const rejectedOrders = purchaseOrders.filter(order => order.status === PURCHASE_ORDER_STATUS.Rejected).length;
+    const completedOrders = purchaseOrders.filter(order => order.status === PURCHASE_ORDER_STATUS.Completed).length;
+    const goodsReceivedOrders = purchaseOrders.filter(order => order.status === PURCHASE_ORDER_STATUS.GoodsReceived).length;
+    const assignedOrders = purchaseOrders.filter(order => order.status === PURCHASE_ORDER_STATUS.AssignedForReceiving).length;
+    const receivingOrders = purchaseOrders.filter(order => order.status === PURCHASE_ORDER_STATUS.Receiving).length;
+    const inspectedOrders = purchaseOrders.filter(order => order.status === PURCHASE_ORDER_STATUS.Inspected).length;
 
-    return {
+    const stats = {
       totalOrders,
+      draftOrders,
       pendingOrders,
       approvedOrders,
       rejectedOrders,
-      shippedOrders,
+      completedOrders,
+      goodsReceivedOrders,
+      assignedOrders,
+      receivingOrders,
+      inspectedOrders,
       statusStats: [
-        { status: 1, count: pendingOrders, percentage: totalOrders > 0 ? Math.round((pendingOrders / totalOrders) * 100) : 0 },
-        { status: 2, count: shippedOrders, percentage: totalOrders > 0 ? Math.round((shippedOrders / totalOrders) * 100) : 0 },
-        { status: 3, count: rejectedOrders, percentage: totalOrders > 0 ? Math.round((rejectedOrders / totalOrders) * 100) : 0 },
-        { status: 4, count: approvedOrders, percentage: totalOrders > 0 ? Math.round((approvedOrders / totalOrders) * 100) : 0 }
+        { status: PURCHASE_ORDER_STATUS.Draft, count: draftOrders, percentage: totalOrders > 0 ? Math.round((draftOrders / totalOrders) * 100) : 0 },
+        { status: PURCHASE_ORDER_STATUS.PendingApproval, count: pendingOrders, percentage: totalOrders > 0 ? Math.round((pendingOrders / totalOrders) * 100) : 0 },
+        { status: PURCHASE_ORDER_STATUS.Approved, count: approvedOrders, percentage: totalOrders > 0 ? Math.round((approvedOrders / totalOrders) * 100) : 0 },
+        { status: PURCHASE_ORDER_STATUS.Rejected, count: rejectedOrders, percentage: totalOrders > 0 ? Math.round((rejectedOrders / totalOrders) * 100) : 0 },
+        { status: PURCHASE_ORDER_STATUS.Completed, count: completedOrders, percentage: totalOrders > 0 ? Math.round((completedOrders / totalOrders) * 100) : 0 },
+        { status: PURCHASE_ORDER_STATUS.GoodsReceived, count: goodsReceivedOrders, percentage: totalOrders > 0 ? Math.round((goodsReceivedOrders / totalOrders) * 100) : 0 },
+        { status: PURCHASE_ORDER_STATUS.AssignedForReceiving, count: assignedOrders, percentage: totalOrders > 0 ? Math.round((assignedOrders / totalOrders) * 100) : 0 },
+        { status: PURCHASE_ORDER_STATUS.Receiving, count: receivingOrders, percentage: totalOrders > 0 ? Math.round((receivingOrders / totalOrders) * 100) : 0 },
+        { status: PURCHASE_ORDER_STATUS.Inspected, count: inspectedOrders, percentage: totalOrders > 0 ? Math.round((inspectedOrders / totalOrders) * 100) : 0 }
       ]
     };
+    
+    // Debug: Log the calculated stats
+    console.log('PurchaseOrderList - purchaseOrderStats calculated:', stats);
+    console.log('PurchaseOrderList - purchaseOrders data:', purchaseOrders);
+    
+    return stats;
   }, [purchaseOrders]);
 
   return (
