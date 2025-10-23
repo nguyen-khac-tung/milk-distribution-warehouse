@@ -56,6 +56,62 @@ export const getPurchaseOrderSaleRepresentatives = async (searchParams = {}) => 
     }
 };
 
+// Lấy danh sách Purchase Order cho Warehouse Managers
+export const getPurchaseOrderWarehouseManagers = async (searchParams = {}) => {
+    try {
+        const body = {
+            pageNumber: searchParams.pageNumber || 1,
+            pageSize: searchParams.pageSize || 10,
+            search: searchParams.search || "",
+            sortField: searchParams.sortField || "",
+            sortAscending: searchParams.sortAscending !== undefined ? searchParams.sortAscending : true,
+            filters: {
+                ...(searchParams.status && { status: searchParams.status }),
+                ...(searchParams.supplierId && { supplierId: searchParams.supplierId }),
+                ...(searchParams.approvalBy && { approvalBy: searchParams.approvalBy }),
+                ...(searchParams.createdBy && { createdBy: searchParams.createdBy }),
+                ...(searchParams.arrivalConfirmedBy && { arrivalConfirmedBy: searchParams.arrivalConfirmedBy }),
+                ...(searchParams.assignTo && { assignTo: searchParams.assignTo }),
+                ...(searchParams.fromDate && { fromDate: searchParams.fromDate }),
+                ...(searchParams.toDate && { toDate: searchParams.toDate })
+            }
+        };
+        const res = await api.post("/PurchaseOrder/GetPurchaseOrderWarehouseManagers", body);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching purchase orders for warehouse managers:", error);
+        return { data: [], totalCount: 0 };
+    }
+};
+
+// Lấy danh sách Purchase Order cho Warehouse Staff
+export const getPurchaseOrderWarehouseStaff = async (searchParams = {}) => {
+    try {
+        const body = {
+            pageNumber: searchParams.pageNumber || 1,
+            pageSize: searchParams.pageSize || 10,
+            search: searchParams.search || "",
+            sortField: searchParams.sortField || "",
+            sortAscending: searchParams.sortAscending !== undefined ? searchParams.sortAscending : true,
+            filters: {
+                ...(searchParams.status && { status: searchParams.status }),
+                ...(searchParams.supplierId && { supplierId: searchParams.supplierId }),
+                ...(searchParams.approvalBy && { approvalBy: searchParams.approvalBy }),
+                ...(searchParams.createdBy && { createdBy: searchParams.createdBy }),
+                ...(searchParams.arrivalConfirmedBy && { arrivalConfirmedBy: searchParams.arrivalConfirmedBy }),
+                ...(searchParams.assignTo && { assignTo: searchParams.assignTo }),
+                ...(searchParams.fromDate && { fromDate: searchParams.fromDate }),
+                ...(searchParams.toDate && { toDate: searchParams.toDate })
+            }
+        };
+        const res = await api.post("/PurchaseOrder/GetPurchaseOrderWarehouseStaff", body);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching purchase orders for warehouse staff:", error);
+        return { data: [], totalCount: 0 };
+    }
+};
+
 // // Tạo Purchase Order
 // export const createPurchaseOrder = async (data) => {
 //     try {

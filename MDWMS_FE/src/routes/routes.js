@@ -174,7 +174,7 @@ export const routes = [
     {
         path: "/purchase-orders",
         page: () => (
-            <ProtectedRoute requiredPermission={[PERMISSIONS.PURCHASE_ORDER_VIEW, PERMISSIONS.PURCHASE_ORDER_VIEW_RS, PERMISSIONS.PURCHASE_ORDER_VIEW_SM]} requireAll={false}>
+            <ProtectedRoute requiredPermission={[PERMISSIONS.PURCHASE_ORDER_VIEW]} requireAll={false}>
                 <PurchaseOrderList />
             </ProtectedRoute>
         ),
@@ -182,6 +182,25 @@ export const routes = [
     },
     {
         path: "/purchase-orders/create",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.PURCHASE_ORDER_CREATE}>
+                <CreatePurchaseOrder />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    //đơn xuất
+    {
+        path: "/sale-orders",
+        page: () => (
+            <ProtectedRoute requiredPermission={[PERMISSIONS.PURCHASE_ORDER_VIEW]} requireAll={false}>
+                <PurchaseOrderList />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/sales-orders/create",
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.PURCHASE_ORDER_CREATE}>
                 <CreatePurchaseOrder />

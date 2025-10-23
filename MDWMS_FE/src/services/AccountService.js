@@ -10,12 +10,7 @@ export const getUserList = async (searchParams = {}) => {
             sortAscending: searchParams.sortAscending !== undefined ? searchParams.sortAscending : true,
             filters: searchParams.filters || {}
         };
-
-        console.log("User API - Search params received:", searchParams);
-        console.log("User API - Request body sent:", body);
-
         const res = await api.post("/User/GetUserList", body);
-        console.log("User API - Response received:", res.data);
 
         return res.data;
     } catch (error) {
@@ -37,11 +32,8 @@ export const createUser = async (userData) => {
             roleId: userData.roleId
         };
 
-        console.log("Create User API - Request body sent:", body);
 
         const res = await api.post("/User/CreateUser", body);
-        console.log("Create User API - Response received:", res.data);
-
         // Return the response data directly
         return res.data;
     } catch (error) {
