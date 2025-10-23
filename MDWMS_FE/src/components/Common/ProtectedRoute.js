@@ -46,10 +46,17 @@ const ProtectedRoute = ({
         if (requiredRole) {
             return userRoles.includes(requiredRole);
         }
-
-        // Kiểm tra permission đơn lẻ
+        // Kiểm tra permission đơn lẻ hoặc array
         if (requiredPermission) {
-            return hasPermission(requiredPermission);
+            if (Array.isArray(requiredPermission)) {
+                const hasAny = hasAnyPermission(requiredPermission);
+                console.log("Has any permission:", hasAny);
+                return requireAll
+                    ? hasAllPermissions(requiredPermission)
+                    : hasAny;
+            } else {
+                return hasPermission(requiredPermission);
+            }
         }
 
         // Kiểm tra nhiều permissions

@@ -1,5 +1,19 @@
 import React, { useState } from "react";
-import { Search, Filter, ChevronDown, ChevronUp, Settings, Calendar, RefreshCw } from "lucide-react";
+import { 
+  Search, 
+  Filter, 
+  ChevronDown, 
+  ChevronUp, 
+  Settings, 
+  Calendar, 
+  RefreshCw,
+  Building2,      // Supplier icon
+  UserCheck,       // Approver icon
+  UserPlus,        // Creator icon
+  UserCheck2,      // Confirmer icon
+  UserCog,         // Assignee icon
+  Clock            // Date range icon
+} from "lucide-react";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import ClearFiltersButton from "../Common/ClearFiltersButton";
@@ -13,11 +27,12 @@ export default function PurchaseOrderFilterToggle({
   showStatusFilter,
   setShowStatusFilter,
   statusOptions = [
-    { value: "", label: "Tất cả trạng thái" },
+    { value: "", label: "Tất cả trạng thái đơn" },
     { value: "1", label: "Chờ duyệt" },
     { value: "2", label: "Đã xuất" },
     { value: "3", label: "Từ chối" },
-    { value: "4", label: "Đã duyệt" }
+    { value: "4", label: "Đã duyệt" },
+    { value: "5", label: "Đã hủy" }
   ],
   onStatusFilter,
   clearStatusFilter,
@@ -68,7 +83,7 @@ export default function PurchaseOrderFilterToggle({
   setShowDateRangeFilter,
   onDateRangeFilter,
   clearDateRangeFilter,
-  searchWidth = "w-80",
+  searchWidth = "w-[450px]",
   showToggle = true,
   defaultOpen = true,
   onClearAll = null,
@@ -215,10 +230,10 @@ export default function PurchaseOrderFilterToggle({
           <div className="flex flex-col lg:flex-row lg:items-center gap-4">
             <div className="flex-1 w-full lg:w-5/6">
               <div className="space-y-3">
-                {/* First Row - Search and Main Filters */}
+                {/* First Row - Search and 2 Main Filters */}
                 <div className="flex flex-wrap gap-2 sm:gap-3 relative overflow-visible">
                   {/* Search Bar */}
-                  <div className="relative flex-shrink-0 w-full sm:w-80">
+                  <div className={`relative flex-shrink-0 ${searchWidth}`}>
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <Input
                       placeholder={searchPlaceholder}
@@ -276,6 +291,7 @@ export default function PurchaseOrderFilterToggle({
                           focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
                           ${supplierFilter ? 'bg-[#d97706] text-white hover:bg-[#d97706]' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
                       >
+                        <Building2 className="h-4 w-4 flex-shrink-0" />
                         <span className="text-sm font-medium truncate">
                           {supplierFilter ? suppliers.find(s => s.supplierId.toString() === supplierFilter)?.companyName || "Chọn nhà cung cấp" : "Tất cả nhà cung cấp"}
                         </span>
@@ -305,7 +321,10 @@ export default function PurchaseOrderFilterToggle({
                       )}
                     </div>
                   )}
+                </div>
 
+                {/* Second Row - Additional Filters */}
+                <div className="flex flex-wrap gap-2 sm:gap-3 relative overflow-visible">
                   {/* Approver Filter */}
                   {approvers.length > 0 && (
                     <div className="relative approver-filter-dropdown flex-1 min-w-[150px]">
@@ -315,8 +334,9 @@ export default function PurchaseOrderFilterToggle({
                           focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
                           ${approverFilter ? 'bg-[#d97706] text-white hover:bg-[#d97706]' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
                       >
+                        <UserCheck className="h-4 w-4 flex-shrink-0" />
                         <span className="text-sm font-medium truncate">
-                          {approverFilter ? approvers.find(a => a.userId.toString() === approverFilter)?.fullName || "Chọn người duyệt" : "Tất cả người duyệt"}
+                          {approverFilter ? approvers.find(a => a.userId.toString() === approverFilter)?.fullName || "Chọn người duyệt đơn" : "Tất cả người duyệt đơn"}
                         </span>
                         <ChevronDown className="h-4 w-4 flex-shrink-0" />
                       </button>
@@ -328,7 +348,7 @@ export default function PurchaseOrderFilterToggle({
                               onClick={() => { clearApproverFilter(); setShowApproverFilter(false); }}
                               className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 text-slate-700"
                             >
-                              Tất cả người duyệt
+                              Tất cả người duyệt đơn
                             </button>
                             {approvers.map((approver) => (
                               <button
@@ -344,10 +364,6 @@ export default function PurchaseOrderFilterToggle({
                       )}
                     </div>
                   )}
-                </div>
-
-                {/* Second Row - Additional Filters */}
-                <div className="flex flex-wrap gap-2 sm:gap-3 relative overflow-visible">
                   {/* Creator Filter */}
                   {creators.length > 0 && (
                     <div className="relative creator-filter-dropdown flex-1 min-w-[140px]">
@@ -357,8 +373,9 @@ export default function PurchaseOrderFilterToggle({
                           focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
                           ${creatorFilter ? 'bg-[#d97706] text-white hover:bg-[#d97706]' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
                       >
+                        <UserPlus className="h-4 w-4 flex-shrink-0" />
                         <span className="text-sm font-medium truncate">
-                          {creatorFilter ? creators.find(c => c.userId.toString() === creatorFilter)?.fullName || "Chọn người tạo" : "Tất cả người tạo"}
+                          {creatorFilter ? creators.find(c => c.userId.toString() === creatorFilter)?.fullName || "Chọn người tạo đơn" : "Tất cả người tạo đơn"}
                         </span>
                         <ChevronDown className="h-4 w-4 flex-shrink-0" />
                       </button>
@@ -370,7 +387,7 @@ export default function PurchaseOrderFilterToggle({
                               onClick={() => { clearCreatorFilter(); setShowCreatorFilter(false); }}
                               className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 text-slate-700"
                             >
-                              Tất cả người tạo
+                              Tất cả người tạo đơn
                             </button>
                             {creators.map((creator) => (
                               <button
@@ -396,8 +413,9 @@ export default function PurchaseOrderFilterToggle({
                           focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
                           ${confirmerFilter ? 'bg-[#d97706] text-white hover:bg-[#d97706]' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
                       >
+                        <UserCheck2 className="h-4 w-4 flex-shrink-0" />
                         <span className="text-sm font-medium truncate">
-                          {confirmerFilter ? confirmers.find(c => c.userId.toString() === confirmerFilter)?.fullName || "Chọn người xác nhận" : "Tất cả người xác nhận"}
+                          {confirmerFilter ? confirmers.find(c => c.userId.toString() === confirmerFilter)?.fullName || "Chọn người xác nhận đơn" : "Tất cả người xác nhận đơn"}
                         </span>
                         <ChevronDown className="h-4 w-4 flex-shrink-0" />
                       </button>
@@ -409,7 +427,7 @@ export default function PurchaseOrderFilterToggle({
                               onClick={() => { clearConfirmerFilter(); setShowConfirmerFilter(false); }}
                               className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 text-slate-700"
                             >
-                              Tất cả người xác nhận
+                              Tất cả người xác nhận đơn
                             </button>
                             {confirmers.map((confirmer) => (
                               <button
@@ -435,6 +453,7 @@ export default function PurchaseOrderFilterToggle({
                           focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
                           ${assigneeFilter ? 'bg-[#d97706] text-white hover:bg-[#d97706]' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
                       >
+                        <UserCog className="h-4 w-4 flex-shrink-0" />
                         <span className="text-sm font-medium truncate">
                           {assigneeFilter ? assignees.find(a => a.userId.toString() === assigneeFilter)?.fullName || "Chọn người được giao" : "Tất cả người được giao"}
                         </span>
@@ -448,7 +467,7 @@ export default function PurchaseOrderFilterToggle({
                               onClick={() => { clearAssigneeFilter(); setShowAssigneeFilter(false); }}
                               className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 text-slate-700"
                             >
-                              Tất cả người được giao
+                              Tất cả người được giao đơn
                             </button>
                             {assignees.map((assignee) => (
                               <button
@@ -473,7 +492,7 @@ export default function PurchaseOrderFilterToggle({
                       focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
                       ${dateRangeFilter ? 'bg-white text-slate-700 hover:bg-slate-50' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
                     >
-                      <Calendar className="h-4 w-4 flex-shrink-0" />
+                      <Clock className="h-4 w-4 flex-shrink-0" />
                       <span className="text-sm font-medium truncate">
                         {dateRangeFilter && dateRangeFilter.fromDate && dateRangeFilter.toDate 
                           ? `${dateRangeFilter.fromDate} - ${dateRangeFilter.toDate}` 

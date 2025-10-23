@@ -53,6 +53,7 @@ export const login = async (data) => {
                 success: true,
                 message: res.data.message || "Đăng nhập thành công",
                 data: userData,
+                isFirstLogin: false
             };
         } else {
             return {

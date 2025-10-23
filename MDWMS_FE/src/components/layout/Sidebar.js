@@ -53,7 +53,7 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
     }, [collapsed, location.pathname, getOpenKeysFromPath]);
 
     const { hasPermission, userRoles } = usePermissions();
-
+    
     const menuItems = useMemo(() => {
         const allMenuItems = [
             {
@@ -66,13 +66,15 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                 key: "purchase-orders-management",
                 icon: <ComponentIcon name="puscharorder" size={16} collapsed={collapsed} />,
                 label: "Quản lý đơn nhập",
-                permission: [PERMISSIONS.PURCHASE_ORDER_VIEW, PERMISSIONS.PURCHASE_ORDER_VIEW_RS],
+                permission: [PERMISSIONS.PURCHASE_ORDER_VIEW, PERMISSIONS.PURCHASE_ORDER_VIEW_RS, PERMISSIONS.PURCHASE_ORDER_VIEW_SM],
+                requireAll: false,
                 children: [
                     {
                         key: "/purchase-orders",
                         icon: <ComponentIcon name="cart" size={14} collapsed={collapsed} />,
                         label: "Danh sách đơn nhập",
-                        permission: [PERMISSIONS.PURCHASE_ORDER_VIEW, PERMISSIONS.PURCHASE_ORDER_VIEW_RS],
+                        permission: [PERMISSIONS.PURCHASE_ORDER_VIEW, PERMISSIONS.PURCHASE_ORDER_VIEW_RS, PERMISSIONS.PURCHASE_ORDER_VIEW_SM],
+                        requireAll: false,
                     },
                     {
                         key: "/purchase-orders/create",
@@ -288,13 +290,10 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                                         key={child.key}
                                         className={`submenu-item ${isChildActive ? 'active' : ''}`}
                                         onClick={(e) => {
-                                            // Ngăn event bubbling để không ảnh hưởng đến menu cha
                                             e.stopPropagation();
-                                            // Sử dụng navigate thay vì Link để tránh reload trang
                                             handleChildMenuClick(child.key);
                                         }}
                                         onMouseDown={(e) => {
-                                            // Ngăn event bubbling để không đóng sidebar
                                             e.stopPropagation();
                                         }}
                                         style={{
@@ -309,7 +308,6 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                                             whiteSpace: 'nowrap',
                                             overflow: 'hidden',
                                         }}
-                                    /* Hover effects handled by CSS for better performance */
                                     >
                                         <div style={{ marginRight: 8, display: 'flex', alignItems: 'center' }}>
                                             {React.cloneElement(child.icon, {
