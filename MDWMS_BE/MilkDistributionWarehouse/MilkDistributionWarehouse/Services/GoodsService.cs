@@ -22,6 +22,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, List<GoodsDropDown>)> GetGoodsDropDown();
         Task<(string, GoodsUpdateStatus)> UpdateGoodsStatus(GoodsUpdateStatus update);
         Task<(string, GoodsBulkdResponse)> CreateGoodsBulk(GoodsBulkCreate create);
+        Task<(string, List<GoodsDropDown>?)> GetGoodsDropDownBySupplierId(int supplierId);
     }
     public class GoodsService : IGoodsService
     {
@@ -30,9 +31,11 @@ namespace MilkDistributionWarehouse.Services
         private readonly IUnitMeasureRepository _unitMeasureRepository;
         private readonly IStorageConditionRepository _storageConditionRepository;
         private readonly IMapper _mapper;
-        private IUnitOfWork _unitOfWork;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly ICacheService _cacheService;
         public GoodsService(IGoodsRepository goodRepository, IMapper mapper, ICategoryRepository categoryRepository,
-            IUnitMeasureRepository unitMeasureRepository, IStorageConditionRepository storageConditionRepository, IUnitOfWork unitOfWork)
+            IUnitMeasureRepository unitMeasureRepository, IStorageConditionRepository storageConditionRepository,
+            IUnitOfWork unitOfWork, ICacheService cacheService)
         {
             _goodRepository = goodRepository;
             _mapper = mapper;
@@ -40,6 +43,7 @@ namespace MilkDistributionWarehouse.Services
             _unitMeasureRepository = unitMeasureRepository;
             _storageConditionRepository = storageConditionRepository;
             _unitOfWork = unitOfWork;
+            _cacheService = cacheService;
         }
 
         public async Task<(string, PageResult<GoodsDto>)> GetGoods(PagedRequest request)
@@ -103,6 +107,8 @@ namespace MilkDistributionWarehouse.Services
             if (createResult == null)
                 return ("Tạo mới sản phẩm thất bại.".ToMessageForUser(), new GoodsDto());
 
+            _cacheService.InvalidateDropdownCache("goods", "supplier", createResult.SupplierId);
+
             return ("", _mapper.Map<GoodsDto>(createResult));
         }
 
@@ -121,10 +127,14 @@ namespace MilkDistributionWarehouse.Services
 
             _mapper.Map(update, goodsExist);
 
+            _cacheService.InvalidateDropdownCache("goods", "supplier", goodsExist.SupplierId);
+
             var updateResult = await _goodRepository.UpdateGoods(goodsExist);
 
             if (updateResult == null)
                 return ("Cập nhật hàng hoá thất bại.".ToMessageForUser(), new GoodsDto());
+            
+            _cacheService.InvalidateDropdownCache("goods", "supplier", updateResult.SupplierId);
 
             return ("", _mapper.Map<GoodsDto>(goodsExist));
         }
@@ -159,12 +169,16 @@ namespace MilkDistributionWarehouse.Services
                     return (activateError, new GoodsUpdateStatus());
             }
 
+            _cacheService.InvalidateDropdownCache("goods", "supplier", goodsExist.SupplierId);
+
             goodsExist.Status = update.Status;
             goodsExist.UpdateAt = DateTime.Now;
 
             var updateResult = await _goodRepository.UpdateGoods(goodsExist);
             if (updateResult == null)
                 return ("Cập nhật hàng hoá thất bại.".ToMessageForUser(), new GoodsUpdateStatus());
+
+            _cacheService.InvalidateDropdownCache("goods", "supplier", updateResult.SupplierId);
 
             return ("", update);
         }
@@ -186,8 +200,11 @@ namespace MilkDistributionWarehouse.Services
             goodsExist.UpdateAt = DateTime.Now;
 
             var resultDelete = await _goodRepository.UpdateGoods(goodsExist);
+            
             if (resultDelete == null)
                 return ("Xoá hàng hoá thất bại.".ToMessageForUser(), new GoodsDto());
+
+            _cacheService.InvalidateDropdownCache("goods", "supplier", goodsExist.SupplierId);
 
             return ("", _mapper.Map<GoodsDto>(goodsExist));
         }
@@ -275,7 +292,7 @@ namespace MilkDistributionWarehouse.Services
 
                     var validation = ValidationGoods(goodDto, existingCodesSet);
 
-                    if(validation != null)
+                    if (validation != null)
                     {
                         result.FailedItems.Add(new FailedItem
                         {
@@ -293,14 +310,14 @@ namespace MilkDistributionWarehouse.Services
                     existingCodesSet.Add(goodDto.GoodsCode);
                 }
 
-                if(validGoods.Any())
+                if (validGoods.Any())
                 {
                     await _unitOfWork.Goods.CreateGoodsBulk(validGoods);
                     result.TotalInserted = validGoods.Count;
                 }
                 await _unitOfWork.CommitTransactionAsync();
 
-                return ("",  result);
+                return ("", result);
             }
             catch
             {
@@ -309,13 +326,29 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
+        public async Task<(string, List<GoodsDropDown>?)> GetGoodsDropDownBySupplierId(int supplierId)
+        {
+            var cacheKey = _cacheService.GenerateDropdownCacheKey("goods", "supplier", supplierId);
+
+            var result = await _cacheService.GetOrCreatedAsync(cacheKey, async () =>
+            {
+                var goodsQuery = await _goodRepository.GetGoods()
+                    .Where(g => g.Status == CommonStatus.Active && g.SupplierId == supplierId)
+                    .ToListAsync();
+
+                return _mapper.Map<List<GoodsDropDown>>(goodsQuery);
+            }, 30, 10);
+
+            if (!result.Any())
+                return ("Danh sách thả xuống hàng hoá trống.".ToMessageForUser(), default);
+
+            return ("", result);
+        }
         private string? ValidationGoods(GoodsCreateBulkDto create, HashSet<string> existingGoodsCode)
         {
-            // Kiểm tra mã sản phẩm trùng
             if (existingGoodsCode.Contains(create.GoodsCode))
                 return "Mã sản phẩm đã tồn tại trong hệ thống";
 
-            // Kiểm tra tên sản phẩm
             if (string.IsNullOrWhiteSpace(create.GoodsName))
                 return "Tên sản phẩm không được để trống";
 
@@ -325,7 +358,6 @@ namespace MilkDistributionWarehouse.Services
             if (!Regex.IsMatch(create.GoodsName, @"^[\p{L}0-9\s_\-.,]+$"))
                 return "Tên sản phẩm không được chứa các ký tự đặc biệt";
 
-            // Kiểm tra các trường bắt buộc khác
             if (create.CategoryId <= 0)
                 return "Loại sản phẩm không được để trống";
 
@@ -338,9 +370,9 @@ namespace MilkDistributionWarehouse.Services
             if (create.UnitMeasureId <= 0)
                 return "Đơn vị sản phẩm không được để trống";
 
-            // Không có lỗi
             return null;
         }
+
 
 
     }
