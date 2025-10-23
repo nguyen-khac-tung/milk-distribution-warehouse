@@ -10,7 +10,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public string FullName { get; set; }
         public int Status { get; set; }
         public DateTime? CreateAt { get; set; }
-        public List<string> Roles { get; set; } = new List<string>();
+        public List<RoleDto> Roles { get; set; }
     }
 
     public class UserDetailDto : UserDto

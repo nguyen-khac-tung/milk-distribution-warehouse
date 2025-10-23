@@ -59,7 +59,10 @@ namespace MilkDistributionWarehouse.Repositories
                 .Include(u => u.GoodsIssueNotes)
                 .Include(u => u.GoodsReceiptNotes)
                 .Include(u => u.PurchaseOrderCreatedByNavigations)
-                .Include(u => u.SalesOrders)
+                .Include(u => u.SalesOrderCreatedByNavigations)
+                .Include(u => u.SalesOrderAcknowledgedByNavigations)
+                .Include(u => u.SalesOrderApprovalByNavigations)
+                .Include(u => u.SalesOrderAssignToNavigations)
                 .Include(u => u.StocktakingSheets)
                 .Where(u => u.UserId == userId && u.Status != CommonStatus.Deleted)
                 .FirstOrDefaultAsync();
