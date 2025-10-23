@@ -18,6 +18,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, PalletDto.PalletResponseDto)> UpdatePallet(Guid palletId, PalletDto.PalletRequestDto dto);
         Task<(string, PalletDto.PalletResponseDto)> DeletePallet(Guid palletId);
         Task<(string, List<PalletDto.PalletActiveDto>)> GetPalletDropdown();
+        Task<(string, PalletDto.PalletUpdateStatusDto)> UpdateGoodsStatus(PalletDto.PalletUpdateStatusDto update);
     }
 
     public class PalletService : IPalletService
@@ -56,16 +57,16 @@ namespace MilkDistributionWarehouse.Services
         public async Task<(string, PalletDto.PalletResponseDto)> CreatePallet(PalletDto.PalletRequestDto dto, int? userId)
         {
             if (userId == null)
-                return ("Bạn phải đăng nhập để có thể tạo pallet.".ToMessageForUser(), new PalletDto.PalletResponseDto());
-
-            if (!await _palletRepository.ExistsBatch(dto.BatchId))
-                return ("Lô này không tồn tại trong hệ thống.".ToMessageForUser(), new PalletDto.PalletResponseDto());
+                return ("The user is not logged into the system.".ToMessageForUser(), new PalletDto.PalletResponseDto());
 
             if (!await _palletRepository.ExistsLocation(dto.LocationId))
-                return ("Vị trí này không tồn tại trong hệ thống hoặc .".ToMessageForUser(), new PalletDto.PalletResponseDto());
+                return ("Location do not exist.", new PalletDto.PalletResponseDto());
 
             if (!await _palletRepository.ExistsPurchaseOrder(dto.PurchaseOrderId))
-                return ("Đơn mua này không tồn tại trong hệ thống.".ToMessageForUser(), new PalletDto.PalletResponseDto());
+                return ("Purcase order do not exist.", new PalletDto.PalletResponseDto());
+
+            if (!await _palletRepository.ExistsBatch(dto.BatchId))
+                return ("Batch do not exist.", new PalletDto.PalletResponseDto());
 
             if (await _palletRepository.ExistsAsync(dto.LocationId))
                 return ("Đã tồn tại pallet ở vị trí này.".ToMessageForUser(), new PalletDto.PalletResponseDto());
@@ -76,7 +77,6 @@ namespace MilkDistributionWarehouse.Services
             entity.CreateAt = DateTime.Now;
             entity.Status = CommonStatus.Active;
             var updateIsAvail = await _locationRepository.UpdateIsAvailableAsync(dto.LocationId, false);
-
             if (!updateIsAvail)
                 return ("Cập nhật trạng thái vị trí thất bại.".ToMessageForUser(), new PalletDto.PalletResponseDto());
 
@@ -89,22 +89,43 @@ namespace MilkDistributionWarehouse.Services
         {
             var pallet = await _palletRepository.GetPalletById(palletId);
             if (pallet == null)
-                return ("Không tìm thấy pallet bạn đã chọn trên hệ thống.".ToMessageForUser(), new PalletDto.PalletResponseDto());
+                return ("Pallet do not exist.", new PalletDto.PalletResponseDto());
 
             if (await _palletRepository.ExistsAsync(dto.LocationId, palletId))
                 return ("Có pallet khác đã sử dụng vị trí này.".ToMessageForUser(), new PalletDto.PalletResponseDto());
 
             if (!await _palletRepository.ExistsLocation(dto.LocationId))
-                return ("Vị trí này không tồn tại trong hệ thống hoặc .".ToMessageForUser(), new PalletDto.PalletResponseDto());
+                return ("Location do not exist.", new PalletDto.PalletResponseDto());
 
             if (!await _palletRepository.ExistsPurchaseOrder(dto.PurchaseOrderId))
-                return ("Đơn mua này không tồn tại trong hệ thống.".ToMessageForUser(), new PalletDto.PalletResponseDto());
+                return ("Purcase order do not exist.", new PalletDto.PalletResponseDto());
 
             if (!await _palletRepository.ExistsBatch(dto.BatchId))
-                return ("Lô này không tồn tại trong hệ thống.".ToMessageForUser(), new PalletDto.PalletResponseDto());
+                return ("Batch do not exist.", new PalletDto.PalletResponseDto());
 
+            // Capture old location BEFORE mapping the DTO onto the entity.
+            var oldLocationId = pallet.LocationId;
+
+            // Map incoming changes to the existing entity.
             _mapper.Map(dto, pallet);
+
+            // If location changed, free the old location first.
+            if (oldLocationId != dto.LocationId)
+            {
+                var updateIsAvailOld = await _locationRepository.UpdateIsAvailableAsync(oldLocationId, true);
+                if (!updateIsAvailOld)
+                    return ("Cập nhật trạng thái vị trí cũ thất bại.".ToMessageForUser(), new PalletDto.PalletResponseDto());
+            }
+
             pallet.UpdateAt = DateTime.Now;
+
+            // If location changed, occupy the new location.
+            if (oldLocationId != dto.LocationId)
+            {
+                var updateIsAvailNew = await _locationRepository.UpdateIsAvailableAsync(dto.LocationId, false);
+                if (!updateIsAvailNew)
+                    return ("Cập nhật trạng thái vị trí mới thất bại.".ToMessageForUser(), new PalletDto.PalletResponseDto());
+            }
 
             var updated = await _palletRepository.UpdatePallet(pallet);
             var updateResponse = await _palletRepository.GetPalletById(updated.PalletId);
@@ -115,7 +136,7 @@ namespace MilkDistributionWarehouse.Services
         {
             var pallet = await _palletRepository.GetPalletById(palletId);
             if (pallet == null)
-                return ("Không tìm thấy pallet bạn đã chọn trên hệ thống.".ToMessageForUser(), new PalletDto.PalletResponseDto());
+                return ("Pallet do not exist.", new PalletDto.PalletResponseDto());
 
             //if (await _palletRepository.HasDependencies(palletId))
             //    return ("Không thể xoá pallet do đang được sử dụng.".ToMessageForUser(), new PalletDto.PalletResponseDto());
@@ -140,6 +161,32 @@ namespace MilkDistributionWarehouse.Services
 
             var dto = _mapper.Map<List<PalletDto.PalletActiveDto>>(pallets);
             return ("", dto);
+        }
+
+        public async Task<(string, PalletDto.PalletUpdateStatusDto)> UpdateGoodsStatus(PalletDto.PalletUpdateStatusDto update)
+        {
+            var palletExist = await _palletRepository.GetPalletById(update.PalletId);
+            if (palletExist == null)
+            {
+                return ("Pallet do not exist.", new PalletDto.PalletUpdateStatusDto());
+            }
+
+            if (palletExist.Status == update.Status)
+            {
+                return ("Trạng thái hiện tại và trạng thái update đang giống nhau.".ToMessageForUser(), new PalletDto.PalletUpdateStatusDto());
+            }
+
+            palletExist.Status = update.Status;
+            palletExist.UpdateAt = DateTime.Now;
+
+            var updatedPallet = await _palletRepository.UpdatePallet(palletExist);
+            if (updatedPallet == null)
+            {
+                return ("Update pallet status failed.", new PalletDto.PalletUpdateStatusDto());
+            }
+
+            var resultDto = _mapper.Map<PalletDto.PalletUpdateStatusDto>(updatedPallet);
+            return ("", resultDto);
         }
     }
 }

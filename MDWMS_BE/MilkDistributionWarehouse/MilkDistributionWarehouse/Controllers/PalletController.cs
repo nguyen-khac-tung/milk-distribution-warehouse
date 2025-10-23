@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Services;
 using MilkDistributionWarehouse.Utilities;
+using static MilkDistributionWarehouse.Models.DTOs.PalletDto;
 
 namespace MilkDistributionWarehouse.Controllers
 {
@@ -73,6 +75,15 @@ namespace MilkDistributionWarehouse.Controllers
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<List<PalletDto.PalletActiveDto>>.ToResultOk(pallets);
+        }
+
+        [HttpPut("UpdateStatus")]
+        public async Task<IActionResult> UpdateStatus(PalletDto.PalletUpdateStatusDto update)
+        {
+            var (msg, pallets) = await _palletService.UpdateGoodsStatus(update);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<PalletUpdateStatusDto>.ToResultOk(pallets);
         }
     }
 }
