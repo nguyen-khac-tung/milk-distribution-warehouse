@@ -74,8 +74,6 @@ namespace MilkDistributionWarehouse.Configurations
             //UnitOfWork
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-            //PurchaseOrderDetail
-            services.AddScoped<IPurchaseOrderDetailRepository, PurchaseOrderDetailReposotory>();
         }
     }
 }

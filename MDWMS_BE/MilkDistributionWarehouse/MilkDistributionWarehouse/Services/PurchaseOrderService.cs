@@ -16,13 +16,11 @@ namespace MilkDistributionWarehouse.Services
     public class PurchaseOrderService : IPurchaseOrderService
     {
         private readonly IPurchaseOrderRepositoy _purchaseOrderRepository;
-        private readonly IPurchaseOrderDetailRepository _purchaseOrderDetailRepository;
         private readonly IMapper _mapper;
-        public PurchaseOrderService(IPurchaseOrderRepositoy purchaseOrderRepository, IMapper mapper, IPurchaseOrderDetailRepository purchaseOrderDetailRepository)
+        public PurchaseOrderService(IPurchaseOrderRepositoy purchaseOrderRepository, IMapper mapper)
         {
             _purchaseOrderRepository = purchaseOrderRepository;
             _mapper = mapper;
-            _purchaseOrderDetailRepository = purchaseOrderDetailRepository;
         }
 
         public async Task<(string, PageResult<TDto>)> GetPurchaseOrdersAsync<TDto>(PagedRequest request)
@@ -45,9 +43,5 @@ namespace MilkDistributionWarehouse.Services
         public async Task<(string, PageResult<PurchaseOrderDtoSaleManager>)> GetPurchaseOrderSaleManagers(PagedRequest request)
             => await GetPurchaseOrdersAsync<PurchaseOrderDtoSaleManager>(request);
 
-        //public (string, PurchaseOrderDetailDto) GetPurchaseOrderDetailById(Guid purchaseOrderId)
-        //{
-            
-        //}
     }
 }
