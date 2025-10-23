@@ -18,7 +18,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, PalletDto.PalletResponseDto)> UpdatePallet(Guid palletId, PalletDto.PalletRequestDto dto);
         Task<(string, PalletDto.PalletResponseDto)> DeletePallet(Guid palletId);
         Task<(string, List<PalletDto.PalletActiveDto>)> GetPalletDropdown();
-        Task<(string, PalletDto.PalletUpdateStatusDto)> UpdateGoodsStatus(PalletDto.PalletUpdateStatusDto update);
+        Task<(string, PalletDto.PalletUpdateStatusDto)> UpdatePalletStatus(PalletDto.PalletUpdateStatusDto update);
     }
 
     public class PalletService : IPalletService
@@ -163,7 +163,7 @@ namespace MilkDistributionWarehouse.Services
             return ("", dto);
         }
 
-        public async Task<(string, PalletDto.PalletUpdateStatusDto)> UpdateGoodsStatus(PalletDto.PalletUpdateStatusDto update)
+        public async Task<(string, PalletDto.PalletUpdateStatusDto)> UpdatePalletStatus(PalletDto.PalletUpdateStatusDto update)
         {
             var palletExist = await _palletRepository.GetPalletById(update.PalletId);
             if (palletExist == null)
@@ -175,7 +175,12 @@ namespace MilkDistributionWarehouse.Services
             {
                 return ("Trạng thái hiện tại và trạng thái update đang giống nhau.".ToMessageForUser(), new PalletDto.PalletUpdateStatusDto());
             }
-
+            if(update.Status == CommonStatus.Deleted)
+            {
+                var updateIsAvailOld = await _locationRepository.UpdateIsAvailableAsync(palletExist.LocationId, true);
+                if (!updateIsAvailOld)
+                    return ("Cập nhật trạng thái vị trí cũ thất bại.".ToMessageForUser(), new PalletDto.PalletUpdateStatusDto());
+            }
             palletExist.Status = update.Status;
             palletExist.UpdateAt = DateTime.Now;
 

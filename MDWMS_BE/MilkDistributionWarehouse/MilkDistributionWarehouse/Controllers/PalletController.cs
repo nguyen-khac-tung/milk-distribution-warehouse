@@ -80,7 +80,7 @@ namespace MilkDistributionWarehouse.Controllers
         [HttpPut("UpdateStatus")]
         public async Task<IActionResult> UpdateStatus(PalletDto.PalletUpdateStatusDto update)
         {
-            var (msg, pallets) = await _palletService.UpdateGoodsStatus(update);
+            var (msg, pallets) = await _palletService.UpdatePalletStatus(update);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<PalletUpdateStatusDto>.ToResultOk(pallets);
