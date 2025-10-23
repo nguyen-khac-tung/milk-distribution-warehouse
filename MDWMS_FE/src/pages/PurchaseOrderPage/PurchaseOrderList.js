@@ -123,7 +123,6 @@ export default function PurchaseOrderList() {
         setPagination(prev => ({ ...prev, total: 0 }));
       }
     } catch (error) {
-      console.error("Error fetching purchase orders:", error);
       setPurchaseOrders([]);
       setPagination(prev => ({ ...prev, total: 0 }));
     } finally {
@@ -266,18 +265,13 @@ export default function PurchaseOrderList() {
   };
 
   const handleViewClick = (order) => {
-    console.log("Viewing purchase order:", order);
-    // TODO: Implement view modal
+    navigate(`/purchase-orders/${order.purchaseOderId}`);
   };
 
   const handleEditClick = (order) => {
-    console.log("Editing purchase order:", order);
-    // TODO: Implement edit modal
   };
 
   const handleDeleteClick = (order) => {
-    console.log("Deleting purchase order:", order);
-    // TODO: Implement delete modal
   };
 
   const handlePageChange = (newPage) => {
@@ -503,10 +497,6 @@ export default function PurchaseOrderList() {
         { status: PURCHASE_ORDER_STATUS.Inspected, count: inspectedOrders, percentage: totalOrders > 0 ? Math.round((inspectedOrders / totalOrders) * 100) : 0 }
       ]
     };
-    
-    // Debug: Log the calculated stats
-    console.log('PurchaseOrderList - purchaseOrderStats calculated:', stats);
-    console.log('PurchaseOrderList - purchaseOrders data:', purchaseOrders);
     
     return stats;
   }, [purchaseOrders]);

@@ -20,8 +20,6 @@ export default function PurchaseOrderStatsChart({
   },
   className = ""
 }) {
-  // Debug: Log purchaseOrderStats to see if data is being passed correctly
-  console.log('PurchaseOrderStatsChart - purchaseOrderStats:', purchaseOrderStats);
   // State for toggle
   const [isDetailsExpanded, setIsDetailsExpanded] = useState(false)
   

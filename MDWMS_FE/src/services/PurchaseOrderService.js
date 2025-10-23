@@ -50,12 +50,6 @@ export const getPurchaseOrderSaleRepresentatives = async (searchParams = {}) => 
             }
         };
         
-        // Log dữ liệu search được gửi đi
-        console.log("=== PURCHASE ORDER SALE REPRESENTATIVES SEARCH DATA ===");
-        console.log("Original searchParams:", searchParams);
-        console.log("Request body:", body);
-        console.log("API endpoint: /PurchaseOrder/GetPurchaseOrderSaleRepresentatives");
-        
         const res = await api.post("/PurchaseOrder/GetPurchaseOrderSaleRepresentatives", body);
         return res.data;
     } catch (error) {
@@ -85,12 +79,6 @@ export const getPurchaseOrderWarehouseManagers = async (searchParams = {}) => {
             }
         };
         
-        // Log dữ liệu search được gửi đi
-        console.log("=== PURCHASE ORDER WAREHOUSE MANAGERS SEARCH DATA ===");
-        console.log("Original searchParams:", searchParams);
-        console.log("Request body:", body);
-        console.log("API endpoint: /PurchaseOrder/GetPurchaseOrderWarehouseManagers");
-        
         const res = await api.post("/PurchaseOrder/GetPurchaseOrderWarehouseManagers", body);
         return res.data;
     } catch (error) {
@@ -119,12 +107,6 @@ export const getPurchaseOrderWarehouseStaff = async (searchParams = {}) => {
                 ...(searchParams.toDate && { toDate: searchParams.toDate })
             }
         };
-        
-        // Log dữ liệu search được gửi đi
-        console.log("=== PURCHASE ORDER WAREHOUSE STAFF SEARCH DATA ===");
-        console.log("Original searchParams:", searchParams);
-        console.log("Request body:", body);
-        console.log("API endpoint: /PurchaseOrder/GetPurchaseOrderWarehouseStaff");
         
         const res = await api.post("/PurchaseOrder/GetPurchaseOrderWarehouseStaff", body);
         return res.data;
@@ -167,16 +149,16 @@ export const getPurchaseOrderWarehouseStaff = async (searchParams = {}) => {
 //     }
 // };
 
-// // Lấy chi tiết Purchase Order
-// export const getPurchaseOrderDetail = async (id) => {
-//     try {
-//         const res = await api.get(`/PurchaseOrder/GetById/${id}`);
-//         return res.data;
-//     } catch (error) {
-//         console.error("Error fetching purchase order detail:", error);
-//         throw error;
-//     }
-// };
+// Lấy chi tiết Purchase Order
+export const getPurchaseOrderDetail = async (id) => {
+    try {
+        const res = await api.get(`/PurchaseOrder/GetPurchaseOrder/${id}`);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching purchase order detail:", error);
+        throw error;
+    }
+};
 
 // // Submit request
 // export const submitPurchaseOrderRequest = async (id) => {
