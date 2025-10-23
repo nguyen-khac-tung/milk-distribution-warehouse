@@ -7,12 +7,14 @@ import { getBatchDetail, updateBatch } from "../../services/BatchService";
 import { getGoodsDropdown } from "../../services/GoodService";
 import { extractErrorMessage } from "../../utils/Validation";
 import CustomDropdown from "../../components/Common/CustomDropdown";
+import { Textarea } from "../../components/ui/textarea";
 
 const UpdateBatchModal = ({ isOpen, onClose, onSuccess, batchId, batchData }) => {
     const [formData, setFormData] = useState({
         batchId: 0,
         batchCode: "",
         goodsId: "",
+        description: "",
         manufacturingDate: "",
         expiryDate: "",
     });
@@ -52,6 +54,7 @@ const UpdateBatchModal = ({ isOpen, onClose, onSuccess, batchId, batchData }) =>
                 batchId: data.batchId || 0,
                 batchCode: data.batchCode || "",
                 goodsId: data.goodsId && data.goodsId > 0 ? data.goodsId.toString() : "",
+                description: data.description || "",
                 manufacturingDate: data.manufacturingDate || "",
                 expiryDate: data.expiryDate || "",
             });
@@ -73,6 +76,7 @@ const UpdateBatchModal = ({ isOpen, onClose, onSuccess, batchId, batchData }) =>
                 batchId: formData.batchId,
                 batchCode: formData.batchCode,
                 goodsId: parseInt(formData.goodsId || 0),
+                description: formData.description,
                 manufacturingDate: formData.manufacturingDate,
                 expiryDate: formData.expiryDate,
             });
@@ -121,15 +125,6 @@ const UpdateBatchModal = ({ isOpen, onClose, onSuccess, batchId, batchData }) =>
                                     ]}
                                 />
                             </div>
-                            {/* <div className="space-y-2">
-                                <Label htmlFor="goodsId" className="text-sm font-medium text-slate-700">Hàng hóa</Label>
-                                <select id="goodsId" value={formData.goodsId} onChange={(e) => setFormData({ ...formData, goodsId: e.target.value })} className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg px-3 text-sm">
-                                    <option value="">Chọn hàng hóa...</option>
-                                    {goodsOptions.map(g => (
-                                        <option key={g.goodsId} value={g.goodsId}>{g.goodsName}</option>
-                                    ))}
-                                </select>
-                            </div> */}
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -147,6 +142,22 @@ const UpdateBatchModal = ({ isOpen, onClose, onSuccess, batchId, batchData }) =>
                                     <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Description */}
+                        <div className="space-y-2">
+                            <Label htmlFor="description" className="text-sm font-medium text-slate-700">
+                                Mô tả
+                            </Label>
+                            <Textarea
+                                id="description"
+                                placeholder="Nhập mô tả lô hàng..."
+                                value={formData.description}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, description: e.target.value })
+                                }
+                                rows={3}
+                            />
                         </div>
 
                         <div className="flex gap-4 justify-end pt-6">
