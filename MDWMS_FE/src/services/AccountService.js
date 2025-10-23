@@ -136,7 +136,6 @@ export const updateUser = async (userData) => {
 export const updatePassword = async (passwordData) => {
     try {
         const body = {
-            userId: passwordData.userId || 0,
             oldPassword: passwordData.currentPassword,
             newPassword: passwordData.newPassword,
             confirmNewPassword: passwordData.confirmPassword

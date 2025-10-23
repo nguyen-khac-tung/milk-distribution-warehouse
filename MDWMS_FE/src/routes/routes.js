@@ -23,7 +23,6 @@ import ProtectedRoute from "../components/Common/ProtectedRoute";
 import RoleBasedRedirect from "../components/Common/RoleBasedRedirect";
 import PurchaseOrderList from "../pages/PurchaseOrderPage/PurchaseOrderList";
 import CreatePurchaseOrder from "../pages/PurchaseOrderPage/CreatePurchaseOrder";
-import ChangePasswordPage from "../pages/AuthenticationPage/ChangePasswordPage"
 import { PERMISSIONS } from "../utils/permissions";
 
 export const routes = [
@@ -46,10 +45,6 @@ export const routes = [
     {
         path: "/unauthorized",
         page: UnauthorizedPage,
-    },
-    {
-        path: "/change-password",
-        page: ChangePasswordPage,
     },
     {
         path: "/",
@@ -179,7 +174,7 @@ export const routes = [
     {
         path: "/purchase-orders",
         page: () => (
-            <ProtectedRoute requiredPermission={[PERMISSIONS.PURCHASE_ORDER_VIEW, PERMISSIONS.PURCHASE_ORDER_VIEW_RS, PERMISSIONS.PURCHASE_ORDER_VIEW_SM]} requireAll={false}>
+            <ProtectedRoute requiredPermission={PERMISSIONS.PURCHASE_ORDER_VIEW_RS}>
                 <PurchaseOrderList />
             </ProtectedRoute>
         ),

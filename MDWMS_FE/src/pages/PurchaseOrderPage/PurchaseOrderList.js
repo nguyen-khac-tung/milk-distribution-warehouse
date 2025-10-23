@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
@@ -10,13 +10,150 @@ import EmptyState from "../../components/Common/EmptyState";
 import Pagination from "../../components/Common/Pagination";
 import PurchaseOrderFilterToggle from "../../components/PurchaseOrderComponents/PurchaseOrderFilterToggle";
 import PurchaseOrderStatsChart from "../../components/PurchaseOrderComponents/PurchaseOrderStatsChart";
-import PurchaseOrderTable from "./PurchaseOrderTable";
-import { useFilterDisplayLogic } from "./FilterDisplayLogic";
-import { getPurchaseOrderSaleRepresentatives, getPurchaseOrderSaleManagers } from "../../services/PurchaseOrderService";
-import { getSuppliersDropdown } from "../../services/SupplierService";
-import { PERMISSIONS } from "../../utils/permissions";
-import { usePermissions } from "../../hooks/usePermissions";
 
+// Dữ liệu cứng cho Purchase Orders
+const hardcodedPurchaseOrders = [
+  {
+    purchaseOrderId: "9788C239-7C4B-4A24-9879-19932E799571",
+    status: 1,
+    supplierId: 1,
+    approvalBy: null,
+    createdBy: 6,
+    arrivalConfirmedBy: null,
+    assignTo: 2,
+    createdAt: "10/3/25 21:09",
+    updatedAt: "10/3/25 21:09",
+    supplierName: "Nhà cung cấp A",
+    managerName: "Nguyen Van A",
+    creatorName: "representative 6"
+  },
+  {
+    purchaseOrderId: "492210FE-F6EF-429B-9DE6-515DE60F93D8",
+    status: 2,
+    supplierId: 4,
+    approvalBy: 1,
+    createdBy: 6,
+    arrivalConfirmedBy: null,
+    assignTo: 3,
+    createdAt: "10/1/25 21:09",
+    updatedAt: "10/2/25 21:09",
+    supplierName: "Nhà cung cấp D",
+    managerName: "Nguyen Van A",
+    creatorName: "representative 6"
+  },
+  {
+    purchaseOrderId: "A1EAFF57-C3A3-4CC2-B97A-791EC2E931E2",
+    status: 3,
+    supplierId: 1,
+    approvalBy: 1,
+    createdBy: 6,
+    arrivalConfirmedBy: 2,
+    assignTo: 2,
+    createdAt: "9/23/25 21:09",
+    updatedAt: "9/28/25 21:09",
+    supplierName: "Nhà cung cấp A",
+    managerName: "Nguyen Van A",
+    creatorName: "representative 6"
+  },
+  {
+    purchaseOrderId: "DC3AE54B-A59D-414F-A8ED-99FD31E26394",
+    status: 4,
+    supplierId: 3,
+    approvalBy: 1,
+    createdBy: 6,
+    arrivalConfirmedBy: 4,
+    assignTo: 4,
+    createdAt: "9/28/25 21:09",
+    updatedAt: "10/1/25 21:09",
+    supplierName: "Nhà cung cấp C",
+    managerName: "Nguyen Van A",
+    creatorName: "representative 6"
+  },
+  {
+    purchaseOrderId: "174C1291-225C-45EE-BD46-BE04AFD75C21",
+    status: 3,
+    supplierId: 1,
+    approvalBy: 1,
+    createdBy: 6,
+    arrivalConfirmedBy: 2,
+    assignTo: 2,
+    createdAt: "9/23/25 21:09",
+    updatedAt: "9/28/25 21:09",
+    supplierName: "Nhà cung cấp A",
+    managerName: "Nguyen Van A",
+    creatorName: "representative 6"
+  },
+  {
+    purchaseOrderId: "22DCCCFC-8DC7-4890-A3D3-C31FA42E836F",
+    status: 2,
+    supplierId: 4,
+    approvalBy: 1,
+    createdBy: 6,
+    arrivalConfirmedBy: null,
+    assignTo: 3,
+    createdAt: "10/1/25 21:09",
+    updatedAt: "10/2/25 21:09",
+    supplierName: "Nhà cung cấp D",
+    managerName: "Nguyen Van A",
+    creatorName: "representative 6"
+  },
+  {
+    purchaseOrderId: "78B2C96F-93B6-4A85-A782-DA46359DAF77",
+    status: 4,
+    supplierId: 3,
+    approvalBy: 1,
+    createdBy: 6,
+    arrivalConfirmedBy: 4,
+    assignTo: 4,
+    createdAt: "9/28/25 21:09",
+    updatedAt: "10/1/25 21:09",
+    supplierName: "Nhà cung cấp C",
+    managerName: "Nguyen Van A",
+    creatorName: "representative 6"
+  },
+  {
+    purchaseOrderId: "FFD00FA4-EAE3-42D6-B3F7-DE8F656DE8A2",
+    status: 1,
+    supplierId: 1,
+    approvalBy: null,
+    createdBy: 6,
+    arrivalConfirmedBy: null,
+    assignTo: 2,
+    createdAt: "10/3/25 21:09",
+    updatedAt: "10/3/25 21:09",
+    supplierName: "Nhà cung cấp A",
+    managerName: "Nguyen Van A",
+    creatorName: "representative 6"
+  },
+  {
+    purchaseOrderId: "80E46A9D-198C-465C-9E37-E94856375788",
+    status: 3,
+    supplierId: 2,
+    approvalBy: 1,
+    createdBy: 6,
+    arrivalConfirmedBy: 3,
+    assignTo: 3,
+    createdAt: "9/18/25 21:09",
+    updatedAt: "9/23/25 21:09",
+    supplierName: "Nhà cung cấp B",
+    managerName: "Nguyen Van A",
+    creatorName: "representative 6"
+  },
+  {
+    purchaseOrderId: "552AC0E2-DFC3-4A2F-9A96-FB7112BDBAFE",
+    status: 3,
+    supplierId: 2,
+    approvalBy: 1,
+    createdBy: 6,
+    arrivalConfirmedBy: 3,
+    assignTo: 3,
+    createdAt: "9/18/25 21:09",
+    updatedAt: "9/23/25 21:09",
+    supplierName: "Nhà cung cấp B",
+    managerName: "Nguyen Van A",
+    creatorName: "representative 6"
+  }
+];
 
 // Mapping status numbers to Vietnamese labels and colors
 const statusConfig = {
@@ -26,7 +163,14 @@ const statusConfig = {
   4: { label: "Đã duyệt", color: "bg-green-100 text-green-800" }
 };
 
-// Sample data for users (temporary until we have user API)
+// Sample data for filters
+const sampleSuppliers = [
+  { supplierId: 1, companyName: "Nhà cung cấp A" },
+  { supplierId: 2, companyName: "Nhà cung cấp B" },
+  { supplierId: 3, companyName: "Nhà cung cấp C" },
+  { supplierId: 4, companyName: "Nhà cung cấp D" }
+];
+
 const sampleUsers = [
   { userId: 1, fullName: "Nguyen Van A" },
   { userId: 2, fullName: "Tran Thi B" },
@@ -38,17 +182,15 @@ const sampleUsers = [
 
 export default function PurchaseOrderList() {
   const navigate = useNavigate();
-  const { hasPermission, userRoles } = usePermissions();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState("");
   const [sortAscending, setSortAscending] = useState(true);
-  const [loading, setLoading] = useState(true);
-  const [purchaseOrders, setPurchaseOrders] = useState([]);
-  const [suppliers, setSuppliers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [purchaseOrders, setPurchaseOrders] = useState(hardcodedPurchaseOrders);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
-    total: 0
+    total: hardcodedPurchaseOrders.length
   });
 
   // Filter states
@@ -71,112 +213,23 @@ export default function PurchaseOrderList() {
   const [dateRangeFilter, setDateRangeFilter] = useState({ fromDate: '', toDate: '' });
   const [showDateRangeFilter, setShowDateRangeFilter] = useState(false);
 
-  // Fetch data from API
-  const fetchSuppliers = async () => {
-    try {
-      const response = await getSuppliersDropdown();
-      if (response && response.data && Array.isArray(response.data)) {
-        setSuppliers(response.data);
-      }
-    } catch (error) {
-      console.error("Error fetching suppliers:", error);
-    }
-  };
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      console.log("=== FETCHING PURCHASE ORDERS ===");
-      console.log("User roles:", userRoles);
-      
-      // Chọn API dựa trên permissions của user
-      let response;
-      const requestParams = {
-        pageNumber: pagination.current,
-        pageSize: pagination.pageSize,
-        search: searchQuery,
-        sortField: sortField,
-        sortAscending: sortAscending,
-        status: statusFilter,
-        supplierId: supplierFilter,
-        approvalBy: approverFilter,
-        createdBy: creatorFilter,
-        arrivalConfirmedBy: confirmerFilter,
-        assignTo: assigneeFilter,
-        fromDate: dateRangeFilter.fromDate,
-        toDate: dateRangeFilter.toDate
-      };
-
-      // Kiểm tra permissions để chọn API phù hợp
-      if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_SM)) {
-        // Sales Manager - có quyền xem tất cả đơn hàng
-        console.log("Using Sales Manager API");
-        response = await getPurchaseOrderSaleManagers(requestParams);
-      } else if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS)) {
-        // Sales Representative - chỉ xem đơn hàng của mình
-        console.log("Using Sales Representative API");
-        response = await getPurchaseOrderSaleRepresentatives(requestParams);
-      } else {
-        // Fallback - mặc định dùng API cho representatives
-        console.log("Using default Sales Representative API");
-        response = await getPurchaseOrderSaleRepresentatives(requestParams);
-      }
-      
-      console.log("API response:", response);
-      
-      if (response && response.data && response.data.items && Array.isArray(response.data.items)) {
-        setPurchaseOrders(response.data.items);
-        setPagination(prev => ({
-          ...prev,
-          total: response.data.totalCount || 0
-        }));
-        console.log("Data loaded successfully:", response.data.items.length, "items");
-      } else {
-        console.log("No data received or data is not array");
-        console.log("Response structure:", response);
-        setPurchaseOrders([]);
-        setPagination(prev => ({ ...prev, total: 0 }));
-      }
-    } catch (error) {
-      console.error("Error fetching purchase orders:", error);
-      setPurchaseOrders([]);
-      setPagination(prev => ({ ...prev, total: 0 }));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Initial load
-  useEffect(() => {
-    fetchSuppliers();
-    fetchData();
-  }, []);
-
-  // Trigger search/filter when filters change
-  useEffect(() => {
-    fetchData();
-  }, [searchQuery, statusFilter, supplierFilter, approverFilter, creatorFilter, confirmerFilter, assigneeFilter, dateRangeFilter]);
-
   // Filter and sort data
   const filteredPurchaseOrders = useMemo(() => {
-    if (!Array.isArray(purchaseOrders)) {
-      return [];
-    }
     return purchaseOrders.filter(order => {
       const searchLower = searchQuery.toLowerCase();
       const matchesSearch = (
-        (order.purchaseOrderId || '').toLowerCase().includes(searchLower) ||
-        (order.supplierName || '').toLowerCase().includes(searchLower) ||
-        (order.creatorName || '').toLowerCase().includes(searchLower) ||
-        (statusConfig[order.status]?.label || '').toLowerCase().includes(searchLower)
+        order.purchaseOrderId.toLowerCase().includes(searchLower) ||
+        order.supplierName.toLowerCase().includes(searchLower) ||
+        order.creatorName.toLowerCase().includes(searchLower) ||
+        statusConfig[order.status]?.label.toLowerCase().includes(searchLower)
       );
 
-      const matchesStatus = !statusFilter || (order.status || '').toString() === statusFilter;
-      const matchesSupplier = !supplierFilter || (order.supplierId || '').toString() === supplierFilter;
-      const matchesApprover = !approverFilter || (order.approvalBy || '').toString() === approverFilter;
-      const matchesCreator = !creatorFilter || (order.createdBy || '').toString() === creatorFilter;
-      const matchesConfirmer = !confirmerFilter || (order.arrivalConfirmedBy || '').toString() === confirmerFilter;
-      const matchesAssignee = !assigneeFilter || (order.assignTo || '').toString() === assigneeFilter;
+      const matchesStatus = !statusFilter || order.status.toString() === statusFilter;
+      const matchesSupplier = !supplierFilter || order.supplierId.toString() === supplierFilter;
+      const matchesApprover = !approverFilter || order.approvalBy?.toString() === approverFilter;
+      const matchesCreator = !creatorFilter || order.createdBy.toString() === creatorFilter;
+      const matchesConfirmer = !confirmerFilter || order.arrivalConfirmedBy?.toString() === confirmerFilter;
+      const matchesAssignee = !assigneeFilter || order.assignTo.toString() === assigneeFilter;
 
       // Date range filter
       let matchesDateRange = true;
@@ -217,15 +270,21 @@ export default function PurchaseOrderList() {
     });
   }, [filteredPurchaseOrders, sortField, sortAscending]);
 
+  // Paginate data
+  const paginatedPurchaseOrders = useMemo(() => {
+    const startIndex = (pagination.current - 1) * pagination.pageSize;
+    const endIndex = startIndex + pagination.pageSize;
+    return sortedPurchaseOrders.slice(startIndex, endIndex);
+  }, [sortedPurchaseOrders, pagination.current, pagination.pageSize]);
 
   // Update total count when filtered data changes
   React.useEffect(() => {
     setPagination(prev => ({
       ...prev,
-      total: (filteredPurchaseOrders || []).length,
+      total: filteredPurchaseOrders.length,
       current: 1 // Reset to first page when filter changes
     }));
-  }, [(filteredPurchaseOrders || []).length]);
+  }, [filteredPurchaseOrders.length]);
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -253,12 +312,10 @@ export default function PurchaseOrderList() {
 
   const handlePageChange = (newPage) => {
     setPagination(prev => ({ ...prev, current: newPage }));
-    fetchData();
   };
 
   const handlePageSizeChange = (newPageSize) => {
     setPagination(prev => ({ ...prev, pageSize: newPageSize, current: 1 }));
-    fetchData();
   };
 
   // Filter handlers
@@ -269,7 +326,6 @@ export default function PurchaseOrderList() {
 
   const clearStatusFilter = () => {
     setStatusFilter("");
-    setPagination(prev => ({ ...prev, current: 1 }));
   };
 
   const clearAllFilters = () => {
@@ -281,18 +337,11 @@ export default function PurchaseOrderList() {
     setConfirmerFilter("");
     setAssigneeFilter("");
     setDateRangeFilter({ fromDate: '', toDate: '' });
-    setPagination(prev => ({ ...prev, current: 1 }));
-    // fetchData() will be called automatically by useEffect when filters change
-  };
-
-  const handleRefresh = () => {
-    fetchData();
   };
 
   const handlePageSizeChangeFilter = (newPageSize) => {
     setPagination(prev => ({ ...prev, pageSize: newPageSize, current: 1 }));
     setShowPageSizeFilter(false);
-    fetchData();
   };
 
   // New filter handlers
@@ -303,7 +352,6 @@ export default function PurchaseOrderList() {
 
   const clearSupplierFilter = () => {
     setSupplierFilter("");
-    setPagination(prev => ({ ...prev, current: 1 }));
   };
 
   const handleApproverFilter = (value) => {
@@ -313,7 +361,6 @@ export default function PurchaseOrderList() {
 
   const clearApproverFilter = () => {
     setApproverFilter("");
-    setPagination(prev => ({ ...prev, current: 1 }));
   };
 
   const handleCreatorFilter = (value) => {
@@ -323,7 +370,6 @@ export default function PurchaseOrderList() {
 
   const clearCreatorFilter = () => {
     setCreatorFilter("");
-    setPagination(prev => ({ ...prev, current: 1 }));
   };
 
   const handleConfirmerFilter = (value) => {
@@ -333,7 +379,6 @@ export default function PurchaseOrderList() {
 
   const clearConfirmerFilter = () => {
     setConfirmerFilter("");
-    setPagination(prev => ({ ...prev, current: 1 }));
   };
 
   const handleAssigneeFilter = (value) => {
@@ -343,7 +388,6 @@ export default function PurchaseOrderList() {
 
   const clearAssigneeFilter = () => {
     setAssigneeFilter("");
-    setPagination(prev => ({ ...prev, current: 1 }));
   };
 
   const handleDateRangeFilter = (value) => {
@@ -352,12 +396,7 @@ export default function PurchaseOrderList() {
 
   const clearDateRangeFilter = () => {
     setDateRangeFilter({ fromDate: '', toDate: '' });
-    setPagination(prev => ({ ...prev, current: 1 }));
   };
-
-
-  // Use custom hook for filter display logic
-  const availableFieldsForFilter = useFilterDisplayLogic(purchaseOrders);
 
   // Calculate stats for chart
   const purchaseOrderStats = useMemo(() => {
@@ -389,9 +428,7 @@ export default function PurchaseOrderList() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-600">Quản lý Đơn hàng nhập</h1>
-            <p className="text-slate-600 mt-1">
-              Quản lý các đơn hàng nhập trong hệ thống
-            </p>
+            <p className="text-slate-600 mt-1">Quản lý các đơn hàng nhập trong hệ thống</p>
           </div>
           <div className="flex space-x-3">
             <Button
@@ -405,26 +442,6 @@ export default function PurchaseOrderList() {
             </Button>
           </div>
         </div>
-
-        {/* Debug Info - chỉ hiển thị trong development */}
-        {/* {process.env.NODE_ENV === 'development' && (
-          <Card className="bg-yellow-50 border-yellow-200">
-            <div className="p-4">
-              <h3 className="text-sm font-medium text-yellow-800 mb-2">Debug Info</h3>
-              <div className="text-xs text-yellow-700 space-y-1">
-                <div><strong>User Roles:</strong> {userRoles?.join(', ') || 'None'}</div>
-                <div><strong>Has SM Permission:</strong> {hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_SM) ? 'Yes' : 'No'}</div>
-                <div><strong>Has RS Permission:</strong> {hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS) ? 'Yes' : 'No'}</div>
-                <div><strong>API Endpoint:</strong> {
-                  hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_SM) 
-                    ? 'GetPurchaseOrderSaleManagers' 
-                    : 'GetPurchaseOrderSaleRepresentatives'
-                }</div>
-                <div><strong>Data Count:</strong> {purchaseOrders.length} items</div>
-              </div>
-            </div>
-          </Card>
-        )} */}
 
         {/* Stats Chart */}
         <PurchaseOrderStatsChart
@@ -442,55 +459,54 @@ export default function PurchaseOrderList() {
             showStatusFilter={showStatusFilter}
             setShowStatusFilter={setShowStatusFilter}
             statusOptions={[
-              { value: "", label: "Tất cả trạng thái đơn" },
+              { value: "", label: "Tất cả trạng thái" },
               { value: "1", label: "Chờ duyệt" },
               { value: "2", label: "Đã xuất" },
               { value: "3", label: "Từ chối" },
-              { value: "4", label: "Đã duyệt" },
-              { value: "5", label: "Đã hủy" }
+              { value: "4", label: "Đã duyệt" }
             ]}
             onStatusFilter={handleStatusFilter}
             clearStatusFilter={clearStatusFilter}
-            // Supplier Filter - chỉ hiển thị nếu có supplier data
-            supplierFilter={availableFieldsForFilter.hasSupplier ? supplierFilter : ""}
-            setSupplierFilter={availableFieldsForFilter.hasSupplier ? setSupplierFilter : () => {}}
-            showSupplierFilter={availableFieldsForFilter.hasSupplier ? showSupplierFilter : false}
-            setShowSupplierFilter={availableFieldsForFilter.hasSupplier ? setShowSupplierFilter : () => {}}
-            suppliers={availableFieldsForFilter.hasSupplier ? suppliers : []}
-            onSupplierFilter={availableFieldsForFilter.hasSupplier ? handleSupplierFilter : () => {}}
-            clearSupplierFilter={availableFieldsForFilter.hasSupplier ? clearSupplierFilter : () => {}}
-            // Approver Filter - chỉ hiển thị nếu có approval data
-            approverFilter={availableFieldsForFilter.hasApprovalBy ? approverFilter : ""}
-            setApproverFilter={availableFieldsForFilter.hasApprovalBy ? setApproverFilter : () => {}}
-            showApproverFilter={availableFieldsForFilter.hasApprovalBy ? showApproverFilter : false}
-            setShowApproverFilter={availableFieldsForFilter.hasApprovalBy ? setShowApproverFilter : () => {}}
-            approvers={availableFieldsForFilter.hasApprovalBy ? sampleUsers : []}
-            onApproverFilter={availableFieldsForFilter.hasApprovalBy ? handleApproverFilter : () => {}}
-            clearApproverFilter={availableFieldsForFilter.hasApprovalBy ? clearApproverFilter : () => {}}
-            // Creator Filter - chỉ hiển thị nếu có creator data
-            creatorFilter={availableFieldsForFilter.hasCreatedBy ? creatorFilter : ""}
-            setCreatorFilter={availableFieldsForFilter.hasCreatedBy ? setCreatorFilter : () => {}}
-            showCreatorFilter={availableFieldsForFilter.hasCreatedBy ? showCreatorFilter : false}
-            setShowCreatorFilter={availableFieldsForFilter.hasCreatedBy ? setShowCreatorFilter : () => {}}
-            creators={availableFieldsForFilter.hasCreatedBy ? sampleUsers : []}
-            onCreatorFilter={availableFieldsForFilter.hasCreatedBy ? handleCreatorFilter : () => {}}
-            clearCreatorFilter={availableFieldsForFilter.hasCreatedBy ? clearCreatorFilter : () => {}}
-            // Confirmer Filter - chỉ hiển thị nếu có arrival confirmation data
-            confirmerFilter={availableFieldsForFilter.hasArrivalConfirmedBy ? confirmerFilter : ""}
-            setConfirmerFilter={availableFieldsForFilter.hasArrivalConfirmedBy ? setConfirmerFilter : () => {}}
-            showConfirmerFilter={availableFieldsForFilter.hasArrivalConfirmedBy ? showConfirmerFilter : false}
-            setShowConfirmerFilter={availableFieldsForFilter.hasArrivalConfirmedBy ? setShowConfirmerFilter : () => {}}
-            confirmers={availableFieldsForFilter.hasArrivalConfirmedBy ? sampleUsers : []}
-            onConfirmerFilter={availableFieldsForFilter.hasArrivalConfirmedBy ? handleConfirmerFilter : () => {}}
-            clearConfirmerFilter={availableFieldsForFilter.hasArrivalConfirmedBy ? clearConfirmerFilter : () => {}}
-            // Assignee Filter - chỉ hiển thị nếu có assign data
-            assigneeFilter={availableFieldsForFilter.hasAssignTo ? assigneeFilter : ""}
-            setAssigneeFilter={availableFieldsForFilter.hasAssignTo ? setAssigneeFilter : () => {}}
-            showAssigneeFilter={availableFieldsForFilter.hasAssignTo ? showAssigneeFilter : false}
-            setShowAssigneeFilter={availableFieldsForFilter.hasAssignTo ? setShowAssigneeFilter : () => {}}
-            assignees={availableFieldsForFilter.hasAssignTo ? sampleUsers : []}
-            onAssigneeFilter={availableFieldsForFilter.hasAssignTo ? handleAssigneeFilter : () => {}}
-            clearAssigneeFilter={availableFieldsForFilter.hasAssignTo ? clearAssigneeFilter : () => {}}
+            // Supplier Filter
+            supplierFilter={supplierFilter}
+            setSupplierFilter={setSupplierFilter}
+            showSupplierFilter={showSupplierFilter}
+            setShowSupplierFilter={setShowSupplierFilter}
+            suppliers={sampleSuppliers}
+            onSupplierFilter={handleSupplierFilter}
+            clearSupplierFilter={clearSupplierFilter}
+            // Approver Filter
+            approverFilter={approverFilter}
+            setApproverFilter={setApproverFilter}
+            showApproverFilter={showApproverFilter}
+            setShowApproverFilter={setShowApproverFilter}
+            approvers={sampleUsers}
+            onApproverFilter={handleApproverFilter}
+            clearApproverFilter={clearApproverFilter}
+            // Creator Filter
+            creatorFilter={creatorFilter}
+            setCreatorFilter={setCreatorFilter}
+            showCreatorFilter={showCreatorFilter}
+            setShowCreatorFilter={setShowCreatorFilter}
+            creators={sampleUsers}
+            onCreatorFilter={handleCreatorFilter}
+            clearCreatorFilter={clearCreatorFilter}
+            // Confirmer Filter
+            confirmerFilter={confirmerFilter}
+            setConfirmerFilter={setConfirmerFilter}
+            showConfirmerFilter={showConfirmerFilter}
+            setShowConfirmerFilter={setShowConfirmerFilter}
+            confirmers={sampleUsers}
+            onConfirmerFilter={handleConfirmerFilter}
+            clearConfirmerFilter={clearConfirmerFilter}
+            // Assignee Filter
+            assigneeFilter={assigneeFilter}
+            setAssigneeFilter={setAssigneeFilter}
+            showAssigneeFilter={showAssigneeFilter}
+            setShowAssigneeFilter={setShowAssigneeFilter}
+            assignees={sampleUsers}
+            onAssigneeFilter={handleAssigneeFilter}
+            clearAssigneeFilter={clearAssigneeFilter}
             // Date Range Filter
             dateRangeFilter={dateRangeFilter}
             setDateRangeFilter={setDateRangeFilter}
@@ -499,7 +515,6 @@ export default function PurchaseOrderList() {
             onDateRangeFilter={handleDateRangeFilter}
             clearDateRangeFilter={clearDateRangeFilter}
             onClearAll={clearAllFilters}
-            onRefresh={handleRefresh}
             pageSize={pagination.pageSize}
             setPageSize={setPagination}
             showPageSizeFilter={showPageSizeFilter}
@@ -510,19 +525,200 @@ export default function PurchaseOrderList() {
           />
 
           {/* Table */}
-          <PurchaseOrderTable
-            purchaseOrders={purchaseOrders}
-            pagination={pagination}
-            sortField={sortField}
-            sortAscending={sortAscending}
-            statusConfig={statusConfig}
-            onSort={handleSort}
-            onView={handleViewClick}
-            onEdit={handleEditClick}
-            onDelete={handleDeleteClick}
-            onClearFilters={clearAllFilters}
-            loading={loading}
-          />
+          <div className="w-full">
+            {loading ? (
+              <Loading size="large" text="Đang tải dữ liệu..." />
+            ) : (
+              <div className={`overflow-x-auto overflow-y-visible ${filteredPurchaseOrders.length === 0 ? 'max-h-96' : ''}`}>
+                <Table className="w-full">
+                  <TableHeader>
+                    <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-16">
+                        STT
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                        <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("supplierId")}>
+                          <span>Tên nhà cung cấp</span>
+                          {sortField === "supplierId" ? (
+                            sortAscending ? (
+                              <ArrowUp className="h-4 w-4 text-orange-500" />
+                            ) : (
+                              <ArrowDown className="h-4 w-4 text-orange-500" />
+                            )
+                          ) : (
+                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                          )}
+                        </div>
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                        <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("approvalBy")}>
+                          <span>Người duyệt</span>
+                          {sortField === "approvalBy" ? (
+                            sortAscending ? (
+                              <ArrowUp className="h-4 w-4 text-orange-500" />
+                            ) : (
+                              <ArrowDown className="h-4 w-4 text-orange-500" />
+                            )
+                          ) : (
+                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                          )}
+                        </div>
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                        <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("createdBy")}>
+                          <span>Người tạo</span>
+                          {sortField === "createdBy" ? (
+                            sortAscending ? (
+                              <ArrowUp className="h-4 w-4 text-orange-500" />
+                            ) : (
+                              <ArrowDown className="h-4 w-4 text-orange-500" />
+                            )
+                          ) : (
+                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                          )}
+                        </div>
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                        <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("arrivalConfirmedBy")}>
+                          <span>Người xác nhận đến</span>
+                          {sortField === "arrivalConfirmedBy" ? (
+                            sortAscending ? (
+                              <ArrowUp className="h-4 w-4 text-orange-500" />
+                            ) : (
+                              <ArrowDown className="h-4 w-4 text-orange-500" />
+                            )
+                          ) : (
+                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                          )}
+                        </div>
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                        <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("assignTo")}>
+                          <span>Giao cho</span>
+                          {sortField === "assignTo" ? (
+                            sortAscending ? (
+                              <ArrowUp className="h-4 w-4 text-orange-500" />
+                            ) : (
+                              <ArrowDown className="h-4 w-4 text-orange-500" />
+                            )
+                          ) : (
+                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                          )}
+                        </div>
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                        <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("createdAt")}>
+                          <span>Thời gian tạo</span>
+                          {sortField === "createdAt" ? (
+                            sortAscending ? (
+                              <ArrowUp className="h-4 w-4 text-orange-500" />
+                            ) : (
+                              <ArrowDown className="h-4 w-4 text-orange-500" />
+                            )
+                          ) : (
+                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                          )}
+                        </div>
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                        <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("status")}>
+                          <span>Trạng thái</span>
+                          {sortField === "status" ? (
+                            sortAscending ? (
+                              <ArrowUp className="h-4 w-4 text-orange-500" />
+                            ) : (
+                              <ArrowDown className="h-4 w-4 text-orange-500" />
+                            )
+                          ) : (
+                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                          )}
+                        </div>
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
+                        Thao tác
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedPurchaseOrders.length > 0 ? (
+                      paginatedPurchaseOrders.map((order, index) => (
+                        <TableRow
+                          key={index}
+                          className="hover:bg-slate-50 border-b border-slate-200 min-h-[60px]"
+                        >
+                          <TableCell className="px-6 py-4 text-slate-600 font-medium text-center">
+                            {(pagination.current - 1) * pagination.pageSize + index + 1}
+                          </TableCell>
+                          <TableCell className="px-6 py-4 text-slate-700 text-center">
+                            {order.supplierId}
+                          </TableCell>
+                          <TableCell className="px-6 py-4 text-slate-700 text-center">
+                            {order.approvalBy || '-'}
+                          </TableCell>
+                          <TableCell className="px-6 py-4 text-slate-700 text-center">
+                            {order.createdBy}
+                          </TableCell>
+                          <TableCell className="px-6 py-4 text-slate-700 text-center">
+                            {order.arrivalConfirmedBy || '-'}
+                          </TableCell>
+                          <TableCell className="px-6 py-4 text-slate-700 text-center">
+                            {order.assignTo}
+                          </TableCell>
+                          <TableCell className="px-6 py-4 text-slate-700 text-center">
+                            {order.createdAt}
+                          </TableCell>
+                          <TableCell className="px-6 py-4 text-center">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusConfig[order.status]?.color}`}>
+                              {statusConfig[order.status]?.label}
+                            </span>
+                          </TableCell>
+                          <TableCell className="px-6 py-4 text-center">
+                            <div className="flex items-center justify-center space-x-1">
+                              <button
+                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                title="Xem chi tiết"
+                                onClick={() => handleViewClick(order)}
+                              >
+                                <Eye className="h-4 w-4 text-orange-500" />
+                              </button>
+                              <button
+                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                title="Chỉnh sửa"
+                                onClick={() => handleEditClick(order)}
+                              >
+                                <Edit className="h-4 w-4 text-orange-500" />
+                              </button>
+                              <button
+                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                title="Xóa"
+                                onClick={() => handleDeleteClick(order)}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <EmptyState
+                        icon={Package}
+                        title="Không tìm thấy đơn hàng nào"
+                        description={
+                          searchQuery || statusFilter || supplierFilter || approverFilter || creatorFilter || confirmerFilter || assigneeFilter || dateRangeFilter.fromDate || dateRangeFilter.toDate
+                            ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
+                            : "Chưa có đơn hàng nào trong hệ thống"
+                        }
+                        actionText="Xóa bộ lọc"
+                        onAction={clearAllFilters}
+                        showAction={!!(searchQuery || statusFilter || supplierFilter || approverFilter || creatorFilter || confirmerFilter || assigneeFilter || dateRangeFilter.fromDate || dateRangeFilter.toDate)}
+                        colSpan={9}
+                      />
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
         </Card>
 
         {/* Pagination */}
