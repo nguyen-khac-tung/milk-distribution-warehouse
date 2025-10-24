@@ -20,7 +20,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public string? CreatedByName { get; set; }
         public int? ApprovalBy { get; set; }
         public string? ApprovalByName { get; set; }
-        public bool IsDisableUpdate => (Status != PurchaseOrderStatus.Draft && Status != PurchaseOrderStatus.Rejected);
+        public bool IsDisable => (Status != PurchaseOrderStatus.Draft && Status != PurchaseOrderStatus.Rejected);
     }
 
     public class PurchaseOrderDtoSaleManager : PurchaseOrderDtoSaleRepresentative

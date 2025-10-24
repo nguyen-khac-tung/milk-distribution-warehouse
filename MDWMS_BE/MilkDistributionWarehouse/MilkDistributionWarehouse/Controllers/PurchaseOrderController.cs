@@ -94,10 +94,10 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpDelete("DeletePurchaseOrder/{purchaseOrderId}")]
+        [Authorize(Roles = "Sales Representative")]
         public async Task<IActionResult> DeletePurchaseOrder(Guid purchaseOrderId)
         {
-            //var (msg, purchaseOrderDelete) = await _purchaseOrderService.DeletePurchaseOrder(purchaseOrderId, User.GetUserId());
-            var (msg, purchaseOrderDelete) = await _purchaseOrderService.DeletePurchaseOrder(purchaseOrderId, 5);
+            var (msg, purchaseOrderDelete) = await _purchaseOrderService.DeletePurchaseOrder(purchaseOrderId, User.GetUserId());
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<PurchaseOrder>.ToResultOk(purchaseOrderDelete);
