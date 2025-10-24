@@ -47,7 +47,10 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
         public class PalletUpdateStatusDto
         {
+            [Required]
             public Guid PalletId { get; set; }
+            [Required]
+            [Range(1, 3, ErrorMessage = "Status chỉ được phép là 1, 2 hoặc 3.")]
             public int Status { get; set; }
         }
     }

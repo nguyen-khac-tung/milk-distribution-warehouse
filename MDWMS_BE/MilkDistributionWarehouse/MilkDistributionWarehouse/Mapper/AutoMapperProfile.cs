@@ -241,6 +241,7 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.LocationCode, opt => opt.MapFrom(src => src.Location != null ? src.Location.LocationCode : null))
                 .ForMember(dest => dest.CreateByName, opt => opt.MapFrom(src => src.CreateByNavigation != null ? src.CreateByNavigation.FullName : null));
             CreateMap<PalletDto.PalletRequestDto, Pallet>();
+            CreateMap<Pallet, PalletDto.PalletUpdateStatusDto>();
             CreateMap<Pallet, PalletDto.PalletActiveDto>()
                 .ForMember(dest => dest.DisplayName, opt => opt.MapFrom(src =>
                     $"Pallet - {(src.Batch != null ? src.Batch.BatchCode : "N/A")} ({(src.Location != null ? src.Location.LocationCode : "N/A")})"));
