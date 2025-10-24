@@ -80,5 +80,15 @@ namespace MilkDistributionWarehouse.Controllers
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<PurchaseOrderCreate>.ToResultOk(purchaseOrderCreate);
         }
+
+        [HttpPut("UpdatePurchaseOrder")]
+        public async Task<IActionResult> UpdatePurchaseOrder(PurchaseOrderUpdate update)
+        {
+            //var(msg, purchaseOrderUpdate) = await _purchaseOrderService.UpdatePurchaseOrder(update, User.GetUserId());
+            var(msg, purchaseOrderUpdate) = await _purchaseOrderService.UpdatePurchaseOrder(update, 5);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<PurchaseOrderUpdate>.ToResultOk(purchaseOrderUpdate);
+        }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Mvc.TagHelpers;
+using Microsoft.EntityFrameworkCore;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
@@ -18,6 +19,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, PageResult<PurchaseOrderDtoWarehouseStaff>?)> GetPurchaseOrderWarehouseStaff(PagedRequest request, int? userId);
         Task<(string, PurchaseOrderCreate?)> CreatePurchaseOrder(PurchaseOrderCreate create, int? userId);
         Task<(string, PurchaseOrdersDetail?)> GetPurchaseOrderDetailById(Guid purchaseOrderId);
+        Task<(string, PurchaseOrderUpdate?)> UpdatePurchaseOrder(PurchaseOrderUpdate update, int? userId);
     }
 
     public class PurchaseOrderService : IPurchaseOrderService
@@ -176,9 +178,82 @@ namespace MilkDistributionWarehouse.Services
             catch
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                throw;
-            }           
+                return ("Lưu đơn hàng thất bại.".ToMessageForUser(), default);
+            }
 
+        }
+
+        public async Task<(string, PurchaseOrderUpdate?)> UpdatePurchaseOrder(PurchaseOrderUpdate update, int? userId)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+                if (update == null)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ("PurchaseOrder data update is invalid.", default);
+                }    
+
+                var purchaseOrderExist = await _purchaseOrderRepository.GetPurchaseOrderByPurchaserOrderId(update.PurchaseOderId);
+
+                if (purchaseOrderExist == null)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ("PurchaseOrder is not exist.", default);
+                }
+
+                if (purchaseOrderExist.Status != PurchaseOrderStatus.Draft && purchaseOrderExist.Status != PurchaseOrderStatus.Rejected)
+                    throw new Exception("Chỉ được cập nhật khi đơn hàng ở trạng thái Nháp hoặc Bị từ chối.");
+                
+                if (purchaseOrderExist.CreatedBy != userId)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ("No PO update permission.", default);
+                }    
+
+                var purchaseOrderDetails = await _purchaseOrderDetailRepository.GetPurchaseOrderDetail()
+                    .Where(pod => pod.PurchaseOderId == update.PurchaseOderId)
+                    .ToListAsync();
+
+                if (!purchaseOrderDetails.Any())
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ("List purchase order detail is null.", default);
+                }    
+
+                var resultDeletePODetail = await _purchaseOrderDetailRepository.DeletePODetailBulk(purchaseOrderDetails);
+
+                if (resultDeletePODetail == 0)
+                    return ("Delete PO Details is failed.", default);
+
+                var newDetails = _mapper.Map<List<PurchaseOderDetail>>(update.PurchaseOrderDetailUpdates);
+
+                newDetails.ForEach(pod =>
+                {
+                    pod.PurchaseOderId = update.PurchaseOderId;
+                    pod.PurchaseOrderDetailId = 0;
+                });
+
+                var resultCreatePODetail = await _purchaseOrderDetailRepository.CreatePODetailBulk(newDetails);
+
+                if (resultCreatePODetail == 0)
+                    return ("Create PO Details is failed.", default);
+
+                purchaseOrderExist.UpdatedAt = DateTime.Now;
+                var resultUpdatePO = await _purchaseOrderRepository.UpdatePurchaseOrder(purchaseOrderExist);
+
+                if (resultUpdatePO == null)
+                    throw new Exception("Cập nhật đơn hàng thất bại");
+
+                await _unitOfWork.CommitTransactionAsync();
+
+                return ("", update);
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ($"{ex.Message}".ToMessageForUser(), default);
+            }
         }
     }
 }

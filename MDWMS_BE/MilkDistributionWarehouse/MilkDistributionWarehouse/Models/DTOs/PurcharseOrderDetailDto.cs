@@ -20,4 +20,8 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int Quantity { get; set; }
     }
 
+    public class PurchaseOrderDetailUpdate : PurchaseOrderDetailCreate
+    {
+        public int PurchaseOrderDetailId { get; set; }
+    }
 }

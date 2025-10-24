@@ -9,6 +9,7 @@ namespace MilkDistributionWarehouse.Repositories
     {
         IQueryable<PurchaseOderDetail> GetPurchaseOrderDetail();
         Task<int> CreatePODetailBulk(List<PurchaseOderDetail> creates);
+        Task<int> DeletePODetailBulk(List<PurchaseOderDetail> poDetailsToDelete);
     }
 
     public class PurchaseOrderDetailReposotory : IPurchaseOrderDetailRepository
@@ -24,13 +25,14 @@ namespace MilkDistributionWarehouse.Repositories
             return _context.PurchaseOderDetails.AsNoTracking();
         }
 
-        public async Task<int> CreatePODetailBulk(List<PurchaseOderDetail> creates)
+
+        public async Task<int> CreatePODetailBulk(List<PurchaseOderDetail> poDetailsToCreate)
         {
             try
             {
-                await _context.PurchaseOderDetails.AddRangeAsync(creates);
+                await _context.PurchaseOderDetails.AddRangeAsync(poDetailsToCreate);
                 await _context.SaveChangesAsync();
-                return creates.Count();
+                return poDetailsToCreate.Count();
             }
             catch
             {
@@ -38,5 +40,18 @@ namespace MilkDistributionWarehouse.Repositories
             }
         }
 
+        public async Task<int> DeletePODetailBulk(List<PurchaseOderDetail> poDetailsToDelete)
+        {
+            try
+            {
+                _context.PurchaseOderDetails.RemoveRange(poDetailsToDelete);
+                await _context.SaveChangesAsync();
+                return poDetailsToDelete.Count();
+            }
+            catch
+            {
+                return 0;
+            }
+        }
     }
 }

@@ -209,7 +209,6 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.AssignToByName, opt => opt.MapFrom(src => src.AssignToNavigation.FullName.Trim()));
             CreateMap<PurchaseOrder, PurchaseOrdersDetail>()
                 .IncludeBase<PurchaseOrder, PurchaseOrderDtoWarehouseManager>();
-
             CreateMap<PurchaseOrderCreate, PurchaseOrder>()
                 .ForMember(dest => dest.PurchaseOderId, opt => opt.MapFrom(_ => Guid.NewGuid()))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => PurchaseOrderStatus.Draft))
@@ -221,6 +220,10 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Goods.GoodsName.Trim()));
             CreateMap<PurchaseOrderDetailCreate, PurchaseOderDetail>()
                 .ForMember(dest => dest.PurchaseOderId, opt => opt.Ignore());
+            CreateMap<PurchaseOrderDetailUpdate, PurchaseOderDetail>()
+                .IncludeBase<PurchaseOrderDetailCreate, PurchaseOderDetail>()
+                .ForMember(dest => dest.PurchaseOrderDetailId, opt => opt.Ignore());
+
         }
     }
 }
