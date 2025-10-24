@@ -33,7 +33,7 @@ namespace MilkDistributionWarehouse.Controllers
             var (msg, pallet) = await _palletService.GetPalletById(id);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<PalletDto.PalletResponseDto>.ToResultOk(pallet);
+            return ApiResponse<PalletDto.PlalletDetailDto>.ToResultOk(pallet);
         }
 
         [HttpPost("Create")]

@@ -13,7 +13,7 @@ namespace MilkDistributionWarehouse.Services
     public interface IPalletService
     {
         Task<(string, PageResult<PalletDto.PalletResponseDto>)> GetPallets(PagedRequest request);
-        Task<(string, PalletDto.PalletResponseDto)> GetPalletById(Guid palletId);
+        Task<(string, PalletDto.PlalletDetailDto)> GetPalletById(Guid palletId);
         Task<(string, PalletDto.PalletResponseDto)> CreatePallet(PalletDto.PalletRequestDto dto, int? userId);
         Task<(string, PalletDto.PalletResponseDto)> UpdatePallet(Guid palletId, PalletDto.PalletRequestDto dto);
         Task<(string, PalletDto.PalletResponseDto)> DeletePallet(Guid palletId);
@@ -45,13 +45,13 @@ namespace MilkDistributionWarehouse.Services
             return ("", pagedResult);
         }
 
-        public async Task<(string, PalletDto.PalletResponseDto)> GetPalletById(Guid palletId)
+        public async Task<(string, PalletDto.PlalletDetailDto)> GetPalletById(Guid palletId)
         {
             var pallet = await _palletRepository.GetPalletById(palletId);
             if (pallet == null)
-                return ("Không tìm thấy pallet.".ToMessageForUser(), new PalletDto.PalletResponseDto());
+                return ("Không tìm thấy pallet.".ToMessageForUser(), new PalletDto.PlalletDetailDto());
 
-            return ("", _mapper.Map<PalletDto.PalletResponseDto>(pallet));
+            return ("", _mapper.Map<PalletDto.PlalletDetailDto>(pallet));
         }
 
         public async Task<(string, PalletDto.PalletResponseDto)> CreatePallet(PalletDto.PalletRequestDto dto, int? userId)

@@ -53,5 +53,12 @@ namespace MilkDistributionWarehouse.Models.DTOs
             [Range(1, 3, ErrorMessage = "Status chỉ được phép là 1, 2 hoặc 3.")]
             public int Status { get; set; }
         }
+
+        public class PlalletDetailDto : PalletResponseDto
+        {
+            public BatchDto BatchInfo { get; set; }
+            public LocationDto.LocationResponseDto LocationDto { get; set; }
+            public PurchaseOrderDtoCommon PurchaseOrderDto { get; set; }
+        }
     }
 }
