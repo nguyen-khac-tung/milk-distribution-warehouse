@@ -80,7 +80,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
       }
     } catch (error) {
       console.error("Error loading good data:", error)
-      const errorMessage = extractErrorMessage(error, "Lỗi khi tải thông tin hàng hóa")
+      const errorMessage = extractErrorMessage(error, "Lỗi khi tải thông tin mặt hàng")
       window.showToast(errorMessage, "error")
     } finally {
       setLoadingData(false)
@@ -125,14 +125,14 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
       setLoading(true)
       const response = await updateGood(formData)
       console.log("Good updated:", response)
-      window.showToast("Cập nhật hàng hóa thành công!", "success")
+      window.showToast("Cập nhật mặt hàng thành công!", "success")
       onSuccess && onSuccess()
       onClose && onClose()
     } catch (error) {
       console.error("Error updating good:", error)
 
       // Sử dụng extractErrorMessage để xử lý lỗi từ API
-      const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật hàng hóa")
+      const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật mặt hàng")
       window.showToast(`Lỗi: ${errorMessage}`, "error")
     } finally {
       setLoading(false)
@@ -160,7 +160,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
       <div className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-slate-800">Cập nhật hàng hóa</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Cập nhật mặt hàng</h1>
           <button
             onClick={onClose}
             className="p-1 hover:bg-gray-100 rounded-full transition-colors"
@@ -177,11 +177,11 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
             <div className="grid grid-cols-1 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="goodsName" className="text-sm font-medium text-slate-700">
-                  Tên hàng hóa <span className="text-red-500">*</span>
+                  Tên mặt hàng <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="goodsName"
-                  placeholder="Nhập tên hàng hóa..."
+                  placeholder="Nhập tên mặt hàng..."
                   value={formData.goodsName}
                   onChange={(e) => setFormData({ ...formData, goodsName: e.target.value })}
                   className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"

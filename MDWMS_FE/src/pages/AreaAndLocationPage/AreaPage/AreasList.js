@@ -1,14 +1,14 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Button } from "../../../components/ui/button";
 import { getAreas, deleteArea, getAreaDetail, updateAreaStatus } from "../../../services/AreaServices";
-import { Edit, Trash2, ChevronDown, Plus, Eye, ArrowUpDown, ArrowDown, ArrowUp, Folder } from "lucide-react";
+import { Edit, Trash2, Plus, Eye, ArrowUpDown, ArrowDown, ArrowUp, Folder } from "lucide-react";
 import DeleteModal from "../../../components/Common/DeleteModal";
 import SearchFilterToggle from "../../../components/Common/SearchFilterToggle";
 import Pagination from "../../../components/Common/Pagination";
 import Loading from "../../../components/Common/Loading";
 import CreateAreaModal from "./CreateAreaModal";
 import UpdateAreaModal from "./UpdateAreaModal";
-import { Card, CardContent } from "../../../components/ui/card";
+import { Card } from "../../../components/ui/card";
 import { Table as CustomTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
 import { extractErrorMessage } from "../../../utils/Validation";
 import { ModalAreaDetail } from "./ViewAreaModal";
@@ -59,7 +59,7 @@ const AreaLists = () => {
         try {
             const res = await getAreas({
                 pageNumber: 1,
-                pageSize: 1000, // Lấy tất cả để tính stats
+                pageSize: 1000,
                 search: "",
                 filters: {},
             });
@@ -92,10 +92,8 @@ const AreaLists = () => {
                 pageSize,
                 search: params.search,
                 filters: params.filters,
-                // Align with common list components
                 sortField: params.sortField || "",
                 sortAscending: typeof params.sortAscending === 'boolean' ? params.sortAscending : undefined,
-                // Backward compatibility if API expects sortOrder
                 sortOrder: typeof params.sortAscending === 'boolean' ? (params.sortAscending ? 'asc' : 'desc') : (params.sortOrder || "")
             });
 
@@ -124,10 +122,10 @@ const AreaLists = () => {
     const skipFirstSearchRef = useRef(true);
 
     useEffect(() => {
-        if (didMountRef.current) return; // Guard against React 18 StrictMode double-invoke in dev
+        if (didMountRef.current) return;
         didMountRef.current = true;
         fetchAreas(pagination.current, pagination.pageSize);
-        fetchTotalStats(); // Load tổng stats
+        fetchTotalStats();
     }, []);
 
     // Close filters when clicking outside
@@ -147,7 +145,6 @@ const AreaLists = () => {
         }
     }, [showStatusFilter, showPageSizeFilter]);
 
-    // Debounced search effect; skip first run to avoid duplicate with initial fetch
     useEffect(() => {
         if (skipFirstSearchRef.current) {
             skipFirstSearchRef.current = false;
@@ -289,7 +286,7 @@ const AreaLists = () => {
             sortField,
             sortAscending
         });
-        fetchTotalStats(); // Cập nhật tổng stats
+        fetchTotalStats();
     };
 
     // Handle update success
@@ -305,7 +302,7 @@ const AreaLists = () => {
             sortField,
             sortAscending
         });
-        fetchTotalStats(); // Cập nhật tổng stats
+        fetchTotalStats();
     };
 
     // Handle update cancel
@@ -335,7 +332,7 @@ const AreaLists = () => {
             )
 
             const statusText = newStatus === 1 ? "kích hoạt" : "ngừng hoạt động"
-            window.showToast(`Đã ${statusText} nhà cung cấp thành công`, "success")
+            window.showToast(`Đã ${statusText} khu vực thành công`, "success")
         } catch (error) {
             console.error("Error updating area status:", error)
 
@@ -353,8 +350,6 @@ const AreaLists = () => {
             setShowViewModal(true)
 
             const response = await getAreaDetail(area.areaId)
-            // console.log("API Response Area:", response)
-            // console.log("API Response Area:", response)
 
             if (response && response.data) {
                 const areaDetailData = {
@@ -364,19 +359,11 @@ const AreaLists = () => {
                     ...response.data
                 }
                 setAreaDetail(areaDetailData)
-                // console.log("Area detail set:", areaDetailData)
-                // console.log("Area detail set:", areaDetailData)
             } else {
                 setAreaDetail(area)
-                // console.log("Using fallback area data:", area)
-                // console.log("Using fallback area data:", area)
             }
         } catch (error) {
-            // console.error("Error loading area detail:", error)
-            // console.error("Error loading area detail:", error)
             setAreaDetail(area)
-            // console.log("Using fallback area data due to error:", area)
-            // console.log("Using fallback area data due to error:", area)
         } finally {
             setLoadingDetail(false)
         }
@@ -550,8 +537,8 @@ const AreaLists = () => {
                                                                 hide={false}
                                                                 fallback={
                                                                     <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center justify-center gap-1 ${area?.status === 1
-                                                                            ? 'bg-green-100 text-green-800'
-                                                                            : 'bg-red-100 text-red-800'
+                                                                        ? 'bg-green-100 text-green-800'
+                                                                        : 'bg-red-100 text-red-800'
                                                                         }`}>
                                                                         <span className={`w-2 h-2 rounded-full ${area?.status === 1 ? 'bg-green-500' : 'bg-red-500'
                                                                             }`}></span>

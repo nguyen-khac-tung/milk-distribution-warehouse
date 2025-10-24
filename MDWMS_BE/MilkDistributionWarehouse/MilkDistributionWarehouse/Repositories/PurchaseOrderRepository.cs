@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.Entities;
+using System.Threading.Tasks;
 
 namespace MilkDistributionWarehouse.Repositories
 {
@@ -10,8 +11,10 @@ namespace MilkDistributionWarehouse.Repositories
         IQueryable<PurchaseOrder?> GetPurchaseOrderByPurchaseOrderId(Guid purchaseOrderId);
         Task<PurchaseOrder?> CreatePurchaseOrder(PurchaseOrder create);
         Task<PurchaseOrder?> UpdatePurchaseOrder(PurchaseOrder update);
+        Task<PurchaseOrder?> DeletePurchaseOrder(PurchaseOrder purchaseOrder);
         Task<bool> HasActivePurchaseOrder(int supplierId);
         Task<bool> IsAllPurchaseOrderDraftOrEmpty(int supplierId);
+        Task<PurchaseOrder?> GetPurchaseOrderByPurchaserOrderId(Guid purchaseOrderId);
     }
     public class PurchaseOrderRepository : IPurchaseOrderRepositoy
     {
@@ -29,6 +32,11 @@ namespace MilkDistributionWarehouse.Repositories
         public IQueryable<PurchaseOrder?> GetPurchaseOrderByPurchaseOrderId(Guid purchaseOrderId)
         {
             return _context.PurchaseOrders.AsNoTracking();
+        }
+
+        public async Task<PurchaseOrder?> GetPurchaseOrderByPurchaserOrderId(Guid purchaseOrderId)
+        {
+            return await _context.PurchaseOrders.FirstOrDefaultAsync(po => po.PurchaseOderId == purchaseOrderId);
         }
 
         public async Task<PurchaseOrder?> CreatePurchaseOrder(PurchaseOrder create)
@@ -52,6 +60,20 @@ namespace MilkDistributionWarehouse.Repositories
                 _context.PurchaseOrders.Update(update);
                 await _context.SaveChangesAsync();
                 return update;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public async Task<PurchaseOrder?> DeletePurchaseOrder(PurchaseOrder purchaseOrder)
+        {
+            try
+            {
+                _context.PurchaseOrders.Remove(purchaseOrder);
+                await _context.SaveChangesAsync();  
+                return purchaseOrder;
             }
             catch
             {
