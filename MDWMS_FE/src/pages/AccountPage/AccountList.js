@@ -208,7 +208,7 @@ export default function AdminPage() {
         filters.status = statusFilter
       }
       if (roleFilter) {
-        filters.roleName = roleFilter
+        filters.roleId = roleFilter
       }
 
       const response = await getUserList({
@@ -217,7 +217,10 @@ export default function AdminPage() {
         search: searchParams.search !== undefined ? searchParams.search : searchQuery,
         sortField: searchParams.sortField || sortColumn || "",
         sortAscending: searchParams.sortAscending !== undefined ? searchParams.sortAscending : sortDirection === "asc",
-        filters: filters
+        filters: {
+          ...(statusFilter ? { status: parseInt(statusFilter) } : {}),
+          ...(roleFilter ? { roleId: parseInt(roleFilter) } : {})
+        }
       })
 
       if (response?.data?.items) {
@@ -383,8 +386,8 @@ export default function AdminPage() {
 
         let matchesRole = true
         if (roleFilter) {
-          matchesRole = employee.roles && employee.roles.some(role => 
-            role.roleName === roleFilter || 
+          matchesRole = employee.roles && employee.roles.some(role =>
+            role.roleId === roleFilter ||
             role.description === roleFilter ||
             role.roleId?.toString() === roleFilter
           );
@@ -586,7 +589,7 @@ export default function AdminPage() {
             showRoleFilter={showRoleFilter}
             setShowRoleFilter={setShowRoleFilter}
             roles={availableRoles.map(role => ({
-              value: role.roleName || role.roleId,
+              value: role.roleId,
               label: role.description || role.roleName || role.roleId
             }))}
             onRoleFilter={handleRoleFilter}

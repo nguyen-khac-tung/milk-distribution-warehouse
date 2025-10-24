@@ -325,7 +325,7 @@ export default function SearchFilterToggle({
                         {roles.map((role) => {
                           const roleValue = typeof role === 'object' ? role.value || role.roleName || role.roleId : role
                           const roleLabel = typeof role === 'object' ? role.label || role.description || role.roleName : role
-                          
+
                           return (
                             <button
                               key={roleValue}
