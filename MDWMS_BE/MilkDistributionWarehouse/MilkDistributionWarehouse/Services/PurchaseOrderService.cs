@@ -127,7 +127,7 @@ namespace MilkDistributionWarehouse.Services
 
             var purchaseOrderMap = purchaseOrderQuery.ProjectTo<PurchaseOrdersDetail>(_mapper.ConfigurationProvider);
 
-            var purchaseOrderMapDetal = purchaseOrderMap.FirstOrDefault(pod => pod.PurchaseOderId == purchaseOrderId);
+            var purchaseOrderMapDetal = await purchaseOrderMap.FirstOrDefaultAsync(pod => pod.PurchaseOderId == purchaseOrderId);
 
             if (purchaseOrderMapDetal == null)
                 return ("PurchaseOrder is not found.", default);

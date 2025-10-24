@@ -234,7 +234,6 @@ namespace MilkDistributionWarehouse.Mapper
                 .IncludeBase<PurchaseOrderDetailCreate, PurchaseOderDetail>()
                 .ForMember(dest => dest.PurchaseOrderDetailId, opt => opt.Ignore());
 
-
             //Map Pallet
             CreateMap<Pallet, PalletDto.PalletResponseDto>()
                 .ForMember(dest => dest.CreateByName, opt => opt.MapFrom(src => src.CreateByNavigation != null ? src.CreateByNavigation.FullName : null))
