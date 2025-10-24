@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MilkDistributionWarehouse.Models.DTOs;
+using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Services;
 using MilkDistributionWarehouse.Utilities;
 using System.Threading.Tasks;
@@ -69,6 +70,26 @@ namespace MilkDistributionWarehouse.Controllers
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<PurchaseOrdersDetail>.ToResultOk(purchaseOrderDetail);
+        }
+
+        [HttpPost("CreatePurchaseOrder")]
+        [Authorize(Roles = "Sales Representative")]
+        public async Task<IActionResult> CreatePurchaseOrder(PurchaseOrderCreate create)
+        {
+            var (msg, purchaseOrderCreate) = await _purchaseOrderService.CreatePurchaseOrder(create, User.GetUserId());
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<PurchaseOrderCreate>.ToResultOk(purchaseOrderCreate);
+        }
+
+        [HttpPut("UpdatePurchaseOrder")]
+        [Authorize(Roles = "Sales Representative")]
+        public async Task<IActionResult> UpdatePurchaseOrder(PurchaseOrderUpdate update)
+        {
+            var(msg, purchaseOrderUpdate) = await _purchaseOrderService.UpdatePurchaseOrder(update, User.GetUserId());
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<PurchaseOrderUpdate>.ToResultOk(purchaseOrderUpdate);
         }
     }
 }
