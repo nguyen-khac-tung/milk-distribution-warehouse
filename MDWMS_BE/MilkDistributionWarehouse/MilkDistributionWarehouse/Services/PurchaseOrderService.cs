@@ -20,6 +20,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, PurchaseOrderCreate?)> CreatePurchaseOrder(PurchaseOrderCreate create, int? userId);
         Task<(string, PurchaseOrdersDetail?)> GetPurchaseOrderDetailById(Guid purchaseOrderId);
         Task<(string, PurchaseOrderUpdate?)> UpdatePurchaseOrder(PurchaseOrderUpdate update, int? userId);
+        Task<(string, PurchaseOrder?)> DeletePurchaseOrder(Guid purchaseOrderId, int? userId);
     }
 
     public class PurchaseOrderService : IPurchaseOrderService
@@ -248,6 +249,54 @@ namespace MilkDistributionWarehouse.Services
                 await _unitOfWork.CommitTransactionAsync();
 
                 return ("", update);
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ($"{ex.Message}".ToMessageForUser(), default);
+            }
+        }
+
+        public async Task<(string, PurchaseOrder?)> DeletePurchaseOrder(Guid purchaseOrderId, int? userId)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                if (Guid.Empty == purchaseOrderId)
+                    return ("PurchaseOrderId is invalid.", default);
+
+                var purchaseOrderExist = await _purchaseOrderRepository.GetPurchaseOrderByPurchaserOrderId(purchaseOrderId);
+
+                if (purchaseOrderExist == null)
+                    return ("PurchaseOrder is not exist.", default);
+
+                if (purchaseOrderExist.CreatedBy != userId)
+                    return ("No PO delete permission.", default);
+
+                if (purchaseOrderExist.Status != PurchaseOrderStatus.Draft && purchaseOrderExist.Status != PurchaseOrderStatus.Rejected)
+                    throw new Exception("Chỉ được xoá khi đơn hàng ở trạng thái Nháp hoặc Bị từ chối.");
+
+                var podExist = await _purchaseOrderDetailRepository.GetPurchaseOrderDetail()
+                    .Where(pod => pod.PurchaseOderId == purchaseOrderId)
+                    .ToListAsync();
+
+                if (!podExist.Any())
+                    return ("List purchase order detail is null.", default);
+
+                var resultDeletePOD = await _purchaseOrderDetailRepository.DeletePODetailBulk(podExist);
+
+                if(resultDeletePOD == 0)
+                    throw new Exception("Xoá đơn đặt hàng thất bại.");
+
+                var resultDeletePO = await _purchaseOrderRepository.DeletePurchaseOrder(purchaseOrderExist);
+
+                if (resultDeletePO == null)
+                    throw new Exception("Xoá đơn đặt hàng thất bại.");
+
+                await _unitOfWork.CommitTransactionAsync();
+
+                return ("", purchaseOrderExist);
             }
             catch (Exception ex)
             {

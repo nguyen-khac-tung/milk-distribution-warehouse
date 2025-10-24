@@ -7,6 +7,7 @@ using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Services;
 using MilkDistributionWarehouse.Utilities;
 using System.Threading.Tasks;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace MilkDistributionWarehouse.Controllers
 {
@@ -22,7 +23,7 @@ namespace MilkDistributionWarehouse.Controllers
 
         [HttpPost("GetPurchaseOrderSaleRepresentatives")]
         [Authorize(Roles = "Sales Representative")]
-        public async Task<IActionResult> GetPurchaseOrderSaleRepresentatives(PagedRequest request)
+        public async Task<IActionResult> GetPurchaseOrderSaleRepresentatives([FromBody] PagedRequest request)
         {
             //var (msg, purchaseOrderDto) = await _purchaseOrderService.GetPurchaseOrderSaleRepresentatives(request, User.GetUserId(), User.GetUserRole());
             var (msg, purchaseOrderDto) = await _purchaseOrderService.GetPurchaseOrderSaleRepresentatives(request, 5);
@@ -33,7 +34,7 @@ namespace MilkDistributionWarehouse.Controllers
 
         [HttpPost("GetPurchaseOrderSaleManagers")]
         [Authorize(Roles = "Sale Manager")]
-        public async Task<IActionResult> GetPurchaseOrderSaleManagers(PagedRequest request)
+        public async Task<IActionResult> GetPurchaseOrderSaleManagers([FromBody] PagedRequest request)
         {
             //var (msg, purchaseOrderDto) = await _purchaseOrderService.GetPurchaseOrderSaleManagers(request, User.GetUserId());
             var (msg, purchaseOrderDto) = await _purchaseOrderService.GetPurchaseOrderSaleManagers(request);
@@ -44,7 +45,7 @@ namespace MilkDistributionWarehouse.Controllers
 
         [HttpPost("GetPurchaseOrderWarehouseManagers")]
         [Authorize(Roles = "Warehouse Manager")]
-        public async Task<IActionResult> GetPurchaseOrderWarehouseManagers(PagedRequest request)
+        public async Task<IActionResult> GetPurchaseOrderWarehouseManagers([FromBody] PagedRequest request)
         {
             var (msg, purchaseOrderDto) = await _purchaseOrderService.GetPurchaseOrderWarehouseManager(request);
             if (!string.IsNullOrEmpty(msg))
@@ -54,7 +55,7 @@ namespace MilkDistributionWarehouse.Controllers
 
         [HttpPost("GetPurchaseOrderWarehouseStaff")]
         [Authorize(Roles = "Warehouse Staff")]
-        public async Task<IActionResult> GetPurchaseOrderWarehouseStaff(PagedRequest request)
+        public async Task<IActionResult> GetPurchaseOrderWarehouseStaff([FromBody] PagedRequest request)
         {
             var (msg, purchaseOrderDto) = await _purchaseOrderService.GetPurchaseOrderWarehouseStaff(request, User.GetUserId());
             if (!string.IsNullOrEmpty(msg))
@@ -74,7 +75,7 @@ namespace MilkDistributionWarehouse.Controllers
 
         [HttpPost("CreatePurchaseOrder")]
         [Authorize(Roles = "Sales Representative")]
-        public async Task<IActionResult> CreatePurchaseOrder(PurchaseOrderCreate create)
+        public async Task<IActionResult> CreatePurchaseOrder([FromBody] PurchaseOrderCreate create)
         {
             var (msg, purchaseOrderCreate) = await _purchaseOrderService.CreatePurchaseOrder(create, User.GetUserId());
             if (!string.IsNullOrEmpty(msg))
@@ -84,12 +85,22 @@ namespace MilkDistributionWarehouse.Controllers
 
         [HttpPut("UpdatePurchaseOrder")]
         [Authorize(Roles = "Sales Representative")]
-        public async Task<IActionResult> UpdatePurchaseOrder(PurchaseOrderUpdate update)
+        public async Task<IActionResult> UpdatePurchaseOrder([FromBody] PurchaseOrderUpdate update)
         {
-            var(msg, purchaseOrderUpdate) = await _purchaseOrderService.UpdatePurchaseOrder(update, User.GetUserId());
+            var (msg, purchaseOrderUpdate) = await _purchaseOrderService.UpdatePurchaseOrder(update, User.GetUserId());
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<PurchaseOrderUpdate>.ToResultOk(purchaseOrderUpdate);
+        }
+
+        [HttpDelete("DeletePurchaseOrder/{purchaseOrderId}")]
+        public async Task<IActionResult> DeletePurchaseOrder(Guid purchaseOrderId)
+        {
+            //var (msg, purchaseOrderDelete) = await _purchaseOrderService.DeletePurchaseOrder(purchaseOrderId, User.GetUserId());
+            var (msg, purchaseOrderDelete) = await _purchaseOrderService.DeletePurchaseOrder(purchaseOrderId, 5);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<PurchaseOrder>.ToResultOk(purchaseOrderDelete);
         }
     }
 }
