@@ -41,6 +41,9 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
         if (pathname.startsWith('/purchase-orders')) {
             keys.push('purchase-orders-management');
         }
+        if (pathname.startsWith('/pallets')) {
+            // Pallet không có submenu, không cần thêm key
+        }
         return keys;
     }, []);
 
@@ -150,6 +153,12 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                 icon: <ComponentIcon name="batch" size={16} collapsed={collapsed} />,
                 label: "Quản lý lô hàng",
                 permission: PERMISSIONS.BATCH_VIEW
+            },
+            {
+                key: "/pallets",
+                icon: <ComponentIcon name="pallet" size={16} collapsed={collapsed} />,
+                label: "Quản lý kệ kê hàng",
+                permission: PERMISSIONS.PALLET_VIEW
             },
             
             {

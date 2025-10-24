@@ -37,6 +37,9 @@ export const IconMap = [
   { keywords: ['europeanNameBadge'], icon: 'openmoji:european-name-badge' },
   { keywords: ['schoolboyRunaway'], icon: 'arcticons:schoolboy-runaway' },
   { keywords: ['batch', 'lot', 'shipment'], icon: 'mdi:package-variant-closed' },
+  { keywords: ['pallet'], icon: 'la:pallet' },
+  { keywords: ['user', 'person', 'people'], icon: 'mdi:account' },
+  { keywords: ['shoppingCart', 'cart', 'order'], icon: 'mdi:cart' },
   { keywords: ['bell'], icon: 'noto:bell' },
   { keywords: ['boy'], icon: 'fluent-emoji-flat:boy-light' },
   { keywords: ['girl'], icon: 'fluent-emoji-flat:girl-light' },
@@ -95,6 +98,9 @@ export const ComponentIcon = ({ name, color = "#000000", size = 20, collapsed = 
   const isEuropeanNameBadgeIcon = name === 'europeanNameBadge';
   const isSchoolboyRunawayIcon = name === 'schoolboyRunaway';
   const isBatchIcon = name === 'batch';
+  const isPalletIcon = name === 'pallet';
+  const isUserIcon = name === 'user';
+  const isShoppingCartIcon = name === 'shoppingCart';
   const isTrashIcon = name === 'trash' || name === 'delete';
   const isCartIcon = name === 'cart';
   const isPurchaseOrder = name === 'puscharorder';
@@ -106,7 +112,7 @@ export const ComponentIcon = ({ name, color = "#000000", size = 20, collapsed = 
     isMapPinIcon || isBoxIcon || isCloseIcon || isQrcodeIcon || isProductVariantIcon ||
     isPhoneIcon || isEmailIcon || isTaxIcon || isCalendarIcon || isStreamlineplumpIcon || isFormkitdownIcon || isBellIcon || isBoyIcon || isGirlIcon
     || isCalendarzxIcon || isCrownIcon || isServerNetworkIcon || isPeopleIcon || isEuropeanNameBadgeIcon
-    || isSchoolboyRunawayIcon || isBatchIcon || isTrashIcon || isCartIcon || isPurchaseOrder
+    || isSchoolboyRunawayIcon || isBatchIcon || isPalletIcon || isUserIcon || isShoppingCartIcon || isTrashIcon || isCartIcon || isPurchaseOrder
     || isCPOrder;
 
   return (

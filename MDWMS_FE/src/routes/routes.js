@@ -24,6 +24,7 @@ import RoleBasedRedirect from "../components/Common/RoleBasedRedirect";
 import PurchaseOrderList from "../pages/PurchaseOrderPage/PurchaseOrderList";
 import CreatePurchaseOrder from "../pages/PurchaseOrderPage/CreatePurchaseOrder";
 import PurchaseOrderDetail from "../pages/PurchaseOrderPage/PurchaseOrderDetail";
+import PalletList from "../pages/PalletPage/PalletList";
 import ChangePasswordPage from "../pages/AuthenticationPage/ChangePasswordPage"
 import { PERMISSIONS } from "../utils/permissions";
 
@@ -105,6 +106,15 @@ export const routes = [
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.BATCH_VIEW}>
                 <BatchList />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/pallets",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.PALLET_VIEW}>
+                <PalletList />
             </ProtectedRoute>
         ),
         isShowHeader: true,
