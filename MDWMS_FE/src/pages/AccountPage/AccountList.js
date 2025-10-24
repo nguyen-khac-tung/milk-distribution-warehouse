@@ -1,4 +1,3 @@
-"use client"
 import { useState, useEffect } from "react"
 import { Button } from "../../components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
@@ -18,16 +17,7 @@ import { AccountDetail } from "./ViewAccountModal"
 import DeleteModal from "../../components/Common/DeleteModal"
 import PermissionWrapper from "../../components/Common/PermissionWrapper"
 import { PERMISSIONS } from "../../utils/permissions"
-import {
-  Plus,
-  Eye,
-  Edit,
-  Trash2,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
-  Users,
-} from "lucide-react"
+import { Plus, Eye, Edit, Trash2, ArrowUpDown, ArrowUp, ArrowDown, Users } from "lucide-react"
 const DEFAULT_PAGE_SIZE = 10
 const PAGE_SIZE_OPTIONS = [10, 20, 30, 40]
 
@@ -54,7 +44,6 @@ const getEmployeeStats = (employees) => {
   const activeUsers = employees.filter(emp => emp.status === 1).length
   const inactiveUsers = employees.filter(emp => emp.status === 2).length
 
-  // Get unique roles from actual data
   const uniqueRoles = employees.reduce((acc, emp) => {
     if (emp.roles && Array.isArray(emp.roles)) {
       emp.roles.forEach(role => {
@@ -136,7 +125,7 @@ export default function AdminPage() {
     setShowPageSizeFilter(false)
   }
   const handleRoleFilter = (value) => {
-    setRoleFilter(value)
+    setRoleFilter(value !== null && value !== undefined ? String(value) : value)
     setShowRoleFilter(false)
   }
   const clearRoleFilter = () => {
@@ -152,12 +141,12 @@ export default function AdminPage() {
   }
   const handleStatusChange = async (id, newStatus, name) => {
     try {
-      console.log(`Updating user ${id} (${name}) status to ${newStatus}`)
+      // console.log(`Updating user ${id} (${name}) status to ${newStatus}`)
       const response = await updateUserStatus(id, newStatus)
       if (response && response.success !== false) {
         const statusText = newStatus === 1 ? "kích hoạt" : "ngừng hoạt động"
         window.showToast(`Đã ${statusText} người dùng "${name}" thành công`, "success")
-        console.log(`Successfully updated user ${name} status to ${newStatus}`)
+        // console.log(`Successfully updated user ${name} status to ${newStatus}`)
 
         // Refresh all users for stats
         fetchAllUsersForStats()
@@ -173,12 +162,12 @@ export default function AdminPage() {
           sortAscending: sortDirection === "asc"
         })
       } else {
-        console.error(`Failed to update user ${name} status:`, response?.message)
+        // console.error(`Failed to update user ${name} status:`, response?.message)
         const errorMessage = extractErrorMessage({ response: { data: response } }, "Có lỗi xảy ra khi cập nhật trạng thái người dùng")
         window.showToast(errorMessage, "error")
       }
     } catch (error) {
-      console.error("Error updating user status:", error)
+      // console.error("Error updating user status:", error)
       const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật trạng thái người dùng")
       window.showToast(errorMessage, "error")
     }
@@ -205,10 +194,10 @@ export default function AdminPage() {
       // Tạo filters object từ statusFilter và roleFilter
       const filters = {}
       if (statusFilter) {
-        filters.status = statusFilter
+        filters.status = String(statusFilter)
       }
       if (roleFilter) {
-        filters.roleId = roleFilter
+        filters.roleId = String(roleFilter)
       }
 
       const response = await getUserList({
@@ -217,10 +206,7 @@ export default function AdminPage() {
         search: searchParams.search !== undefined ? searchParams.search : searchQuery,
         sortField: searchParams.sortField || sortColumn || "",
         sortAscending: searchParams.sortAscending !== undefined ? searchParams.sortAscending : sortDirection === "asc",
-        filters: {
-          ...(statusFilter ? { status: parseInt(statusFilter) } : {}),
-          ...(roleFilter ? { roleId: parseInt(roleFilter) } : {})
-        }
+        filters,
       })
 
       if (response?.data?.items) {
@@ -237,7 +223,7 @@ export default function AdminPage() {
         }))
       }
     } catch (err) {
-      console.error("Error fetching users:", err)
+      // console.error("Error fetching users:", err)
       setError("Không thể tải danh sách người dùng")
       setAllEmployees([])
     } finally {
@@ -263,7 +249,7 @@ export default function AdminPage() {
         setAllUsersForStats([])
       }
     } catch (err) {
-      console.error("Error fetching all users for stats:", err)
+      // console.error("Error fetching all users for stats:", err)
       setAllUsersForStats([])
     }
   }
@@ -278,7 +264,7 @@ export default function AdminPage() {
         setAvailableRoles([])
       }
     } catch (err) {
-      console.error("Error fetching roles:", err)
+      // console.error("Error fetching roles:", err)
       setAvailableRoles([])
     }
   }
@@ -287,12 +273,12 @@ export default function AdminPage() {
     if (!userToDelete) return
 
     try {
-      console.log(`Deleting user ${userToDelete.userId || userToDelete.id} (${userToDelete.fullName})`)
+      // console.log(`Deleting user ${userToDelete.userId || userToDelete.id} (${userToDelete.fullName})`)
       const response = await deleteUser(userToDelete.userId || userToDelete.id)
 
       if (response && response.success !== false) {
         window.showToast(`Đã xóa người dùng "${userToDelete.fullName}" thành công`, "success")
-        console.log(`Successfully deleted user ${userToDelete.fullName}`)
+        // console.log(`Successfully deleted user ${userToDelete.fullName}`)
 
         // Calculate if current page will be empty after deletion
         const currentPageItemCount = allEmployees.length
@@ -319,12 +305,12 @@ export default function AdminPage() {
           sortAscending: sortDirection === "asc"
         })
       } else {
-        console.error(`Failed to delete user ${userToDelete.fullName}:`, response?.message)
+        // console.error(`Failed to delete user ${userToDelete.fullName}:`, response?.message)
         const errorMessage = extractErrorMessage({ response: { data: response } }, "Có lỗi xảy ra khi xóa người dùng")
         window.showToast(errorMessage, "error")
       }
     } catch (error) {
-      console.error("Error deleting user:", error)
+      // console.error("Error deleting user:", error)
       const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi xóa người dùng")
       window.showToast(errorMessage, "error")
     } finally {
@@ -387,9 +373,8 @@ export default function AdminPage() {
         let matchesRole = true
         if (roleFilter) {
           matchesRole = employee.roles && employee.roles.some(role =>
-            role.roleId === roleFilter ||
-            role.description === roleFilter ||
-            role.roleId?.toString() === roleFilter
+            String(role.roleId) === String(roleFilter) ||
+            role.description === roleFilter
           );
         }
 
@@ -589,8 +574,8 @@ export default function AdminPage() {
             showRoleFilter={showRoleFilter}
             setShowRoleFilter={setShowRoleFilter}
             roles={availableRoles.map(role => ({
-              value: role.roleId,
-              label: role.description || role.roleName || role.roleId
+              value: String(role.roleId),
+              label: role.description || role.roleName || String(role.roleId)
             }))}
             onRoleFilter={handleRoleFilter}
             clearRoleFilter={clearRoleFilter}
