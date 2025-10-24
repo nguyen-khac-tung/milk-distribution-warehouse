@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Microsoft.IdentityModel.Tokens;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
@@ -147,11 +148,11 @@ namespace MilkDistributionWarehouse.Services
 
             if (user.GoodsIssueNotes.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử phiếu xuất hàng.".ToMessageForUser();
             if (user.GoodsReceiptNotes.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử phiếu nhập hàng.".ToMessageForUser();
-            if (user.PurchaseOrderCreatedByNavigations.Any() || user.PurchaseOrderApprovalByNavigations.Any() 
-                || user.PurchaseOrderArrivalConfirmedByNavigations.Any() || user.PurchaseOrderAssignToNavigations.Any()) 
+            if (user.PurchaseOrderCreatedByNavigations.Any() || user.PurchaseOrderApprovalByNavigations.Any()
+                || user.PurchaseOrderArrivalConfirmedByNavigations.Any() || user.PurchaseOrderAssignToNavigations.Any())
                 return "Không thể xóa do người dùng này có liên quan đến lịch sử đơn đặt hàng mua.".ToMessageForUser();
-            if (user.SalesOrderCreatedByNavigations.Any() || user.SalesOrderAcknowledgedByNavigations.Any() 
-                || user.SalesOrderApprovalByNavigations.Any() || user.SalesOrderAssignToNavigations.Any()) 
+            if (user.SalesOrderCreatedByNavigations.Any() || user.SalesOrderAcknowledgedByNavigations.Any()
+                || user.SalesOrderApprovalByNavigations.Any() || user.SalesOrderAssignToNavigations.Any())
                 return "Không thể xóa do người dùng này có liên quan đến lịch sử đơn hàng bán.".ToMessageForUser();
             if (user.Batches.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử các lô hàng.".ToMessageForUser();
             if (user.Pallets.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử các pallet.".ToMessageForUser();
@@ -163,6 +164,20 @@ namespace MilkDistributionWarehouse.Services
             if (msg.Length > 0) return "Xoá người dùng thất bại.".ToMessageForUser();
 
             return "";
+        }
+
+        private async Task<IQueryable<UserDto>> FilterByRole(PagedRequest request, IQueryable<UserDto> userDtos)
+        {
+            if (request.Filters != null && request.Filters.Any())
+            {
+                var filter = request.Filters.Where(f => f.Key.ToLower() == "roleid").FirstOrDefault();
+                if (!filter.Key.IsNullOrEmpty())
+                {
+                    userDtos = userDtos.Where(u => u.Roles.Any(r => r.RoleId.ToString() == filter.Value));
+                    request.Filters.Remove(filter.Key);
+                }
+            }
+            return userDtos;
         }
 
         private async Task AddRoleToUser(User? user, Role? role)
