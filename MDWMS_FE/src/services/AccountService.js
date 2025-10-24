@@ -5,16 +5,34 @@ export const getUserList = async (searchParams = {}) => {
         const body = {
             pageNumber: searchParams.pageNumber || 1,
             pageSize: searchParams.pageSize || 10,
-            search: searchParams.search || "",
-            sortField: searchParams.sortField || "",
-            sortAscending: searchParams.sortAscending !== undefined ? searchParams.sortAscending : true,
-            filters: searchParams.filters || {}
+            Search: searchParams.search || "",
+            SortField: searchParams.sortField || "",
+            SortAscending: searchParams.sortAscending !== undefined ? searchParams.sortAscending : true, // Đổi thành SortAscending (uppercase)
+            Filters: searchParams.filters || {} // Đổi thành Filters (uppercase)
         };
+        
+        // Console log để debug dữ liệu filter và search
+        console.log("Search params:", searchParams);
+        console.log("Search term:", body.Search);
+        console.log("Filters:", body.Filters);
+        console.log("Request body:", body);
+        console.log("Request body JSON:", JSON.stringify(body, null, 2));
+        
         const res = await api.post("/User/GetUserList", body);
 
         return res.data;
     } catch (error) {
+        // Xử lý trường hợp backend trả về 400 khi danh sách trống
+        if (error.response?.status === 400 && 
+            error.response?.data?.message?.includes("Danh sách người dùng trống")) {
+            console.log("Backend trả về danh sách trống - đây là bình thường");
+            return { data: [], totalCount: 0 };
+        }
+        
+        // Chỉ log error thực sự
         console.error("Error fetching user list:", error);
+        console.error("Error response:", error.response?.data);
+        console.error("Error status:", error.response?.status);
         return { data: [], totalCount: 0 };
     }
 };

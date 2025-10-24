@@ -202,12 +202,22 @@ export default function AdminPage() {
       setLoading(true)
       setError(null)
 
+      // Tạo filters object từ statusFilter và roleFilter
+      const filters = {}
+      if (statusFilter) {
+        filters.status = statusFilter
+      }
+      if (roleFilter) {
+        filters.roleName = roleFilter
+      }
+
       const response = await getUserList({
         pageNumber: searchParams.pageNumber !== undefined ? searchParams.pageNumber : pagination.pageNumber,
         pageSize: searchParams.pageSize !== undefined ? searchParams.pageSize : pagination.pageSize,
         search: searchParams.search !== undefined ? searchParams.search : searchQuery,
         sortField: searchParams.sortField || sortColumn || "",
-        sortAscending: searchParams.sortAscending !== undefined ? searchParams.sortAscending : sortDirection === "asc"
+        sortAscending: searchParams.sortAscending !== undefined ? searchParams.sortAscending : sortDirection === "asc",
+        filters: filters
       })
 
       if (response?.data?.items) {
