@@ -3,7 +3,7 @@ import NotFoundPage from "../pages/NotFoundPage";
 import Dashboard from "../pages/AccountPage/Dashboard/Dashboard";
 import Products from "../pages/GoodPage/GoodsList";
 import Reports from "../pages/Reports";
-import Settings from "../pages/Settings";
+// import Settings from "../pages/Settings";
 import Areas from "../pages/AreaAndLocationPage/AreaPage/AreasList";
 import Locations from "../pages/AreaAndLocationPage/LocationPage/LocationList";
 import LoginPage from "../pages/AuthenticationPage/LoginPage/LoginPage";
@@ -163,15 +163,15 @@ export const routes = [
         ),
         isShowHeader: true,
     },
-    {
-        path: "/settings",
-        page: () => (
-            <ProtectedRoute requiredPermission={PERMISSIONS.SETTINGS_VIEW}>
-                <Settings />
-            </ProtectedRoute>
-        ),
-        isShowHeader: true,
-    },
+    // {
+    //     path: "/settings",
+    //     page: () => (
+    //         <ProtectedRoute requiredPermission={PERMISSIONS.SETTINGS_VIEW}>
+    //             <Settings />
+    //         </ProtectedRoute>
+    //     ),
+    //     isShowHeader: true,
+    // },
     {
         path: "/purchase-orders",
         page: () => (
