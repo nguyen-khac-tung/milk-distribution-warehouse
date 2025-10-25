@@ -116,16 +116,16 @@ export const getPurchaseOrderWarehouseStaff = async (searchParams = {}) => {
     }
 };
 
-// // Tạo Purchase Order
-// export const createPurchaseOrder = async (data) => {
-//     try {
-//         const res = await api.post("/PurchaseOrder/Create", data);
-//         return res.data;
-//     } catch (error) {
-//         console.error("Error creating purchase order:", error);
-//         throw error;
-//     }
-// };
+// Tạo Purchase Order
+export const createPurchaseOrder = async (data) => {
+    try {
+        const res = await api.post("/PurchaseOrder/CreatePurchaseOrder", data);
+        return res.data;
+    } catch (error) {
+        console.error("Error creating purchase order:", error);
+        throw error;
+    }
+};
 
 // // Cập nhật Purchase Order
 // export const updatePurchaseOrder = async (id, data) => {
@@ -204,3 +204,13 @@ export const getPurchaseOrderDetail = async (id) => {
 //     }
 // };
 
+// Lấy danh sách hàng hóa theo nhà cung cấp
+export const getGoodsDropDownBySupplierId = async (supplierId) => {
+    try {
+        const res = await api.get(`/Goods/GetGoodsDropDownBySupplierId/${supplierId}`);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching goods by supplier:", error);
+        throw error;
+    }
+};
