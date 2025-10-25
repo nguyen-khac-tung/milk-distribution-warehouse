@@ -371,6 +371,21 @@ const LocationList = () => {
         });
     };
 
+    const handleClearAll = () => {
+        setSearchQuery("");
+        setStatusFilter("");
+        setConditionFilter("");
+        setAreaFilter("");
+        setShowStatusFilter(false);
+        setShowConditionFilter(false);
+        setShowAreaFilter(false);
+
+        fetchLocations(1, pagination.pageSize, {
+            search: "",
+            filters: {},
+        });
+    };
+
     const clearAreaFilter = () => {
         setAreaFilter("");
         handleFilterChange({
@@ -480,14 +495,19 @@ const LocationList = () => {
     };
 
     const handleClearAllFilters = () => {
-        setSearchQuery("")
-        setStatusFilter("")
-        setShowStatusFilter(false)
-        setConditionFilter("")
-        setShowConditionFilter(false)
-        setAreaFilter("")
-        setShowAreaFilter(false)
-    }
+        setSearchQuery("");
+        setStatusFilter("");
+        setConditionFilter("");
+        setAreaFilter("");
+        setShowStatusFilter(false);
+        setShowConditionFilter(false);
+        setShowAreaFilter(false);
+
+        fetchLocations(1, pagination.pageSize, {
+            search: "",
+            filters: {},
+        });
+    };
 
     const clearAllFilters = handleClearAllFilters
 
@@ -730,15 +750,7 @@ const LocationList = () => {
                         clearAreaFilter={clearAreaFilter}
 
                         // Khác
-                        onClearAll={() => {
-                            setSearchQuery("");
-                            setStatusFilter("");
-                            setConditionFilter("");
-                            setShowStatusFilter(false);
-                            setShowConditionFilter(false);
-                            setAreaFilter("");
-                            setShowAreaFilter(false);
-                        }}
+                        onClearAll={handleClearAll}
                         searchWidth="w-80"
                         showToggle={true}
                         defaultOpen={true}

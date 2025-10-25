@@ -305,6 +305,23 @@ const AreaLists = () => {
         fetchTotalStats();
     };
 
+    // Handle clear all filters
+    const handleClearAll = () => {
+        setSearchQuery("");
+        setStatusFilter("");
+        setShowStatusFilter(false);
+        setSearchLoading(true);
+
+        fetchAreas(1, pagination.pageSize, {
+            search: "",
+            filters: {},
+            sortField: "",
+            sortAscending: true,
+        });
+
+        setPagination((p) => ({ ...p, current: 1 }));
+    };
+
     // Handle update cancel
     const handleUpdateCancel = () => {
         setShowUpdateModal(false);
@@ -447,11 +464,7 @@ const AreaLists = () => {
                         ]}
                         onStatusFilter={handleStatusFilter}
                         clearStatusFilter={clearStatusFilter}
-                        onClearAll={() => {
-                            setSearchQuery("");
-                            setStatusFilter("");
-                            setShowStatusFilter(false);
-                        }}
+                        onClearAll={handleClearAll}
                         searchWidth="w-80"
                         showToggle={true}
                         defaultOpen={true}

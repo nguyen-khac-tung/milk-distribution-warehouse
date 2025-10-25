@@ -140,6 +140,14 @@ const BatchList = () => {
 
     const clearAllFilters = handleClearAllFilters
 
+    const handleClearAll = () => {
+        setSearchQuery("");
+        setStatusFilter("");
+        setShowStatusFilter(false);
+        setSearchLoading(true);
+        fetchBatches({ pageNumber: 1, search: "", status: "" });
+    };
+
     const handleSort = (field) => {
         if (sortField === field) {
             if (sortAscending === true) {
@@ -252,11 +260,7 @@ const BatchList = () => {
                         ]}
                         onStatusFilter={handleStatusFilter}
                         clearStatusFilter={clearStatusFilter}
-                        onClearAll={() => {
-                            setSearchQuery("");
-                            setStatusFilter("");
-                            setShowStatusFilter(false);
-                        }}
+                        onClearAll={handleClearAll}
                         searchWidth="w-80"
                         showToggle={true}
                         defaultOpen={true}
