@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 import { Card } from "../../components/ui/card"
 import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
@@ -7,49 +7,70 @@ import { Label } from "../../components/ui/label"
 import FloatingDropdown from "../../components/PurchaseOrderComponents/FloatingDropdown"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
 import { Plus, Trash2, ArrowLeft, Save, X } from "lucide-react"
-import { createPurchaseOrder, getGoodsDropDownBySupplierId } from "../../services/PurchaseOrderService"
+import { updatePurchaseOrder, getGoodsDropDownBySupplierId, getPurchaseOrderDetail } from "../../services/PurchaseOrderService"
 import { getSuppliersDropdown } from "../../services/SupplierService"
 
-export default function CreatePurchaseOrder({
-    isEditMode = false,
-    initialData = null
-}) {
+export default function UpdatePurchaseOrder() {
     const navigate = useNavigate();
+    const { id } = useParams();
     const [suppliers, setSuppliers] = useState([]);
     const [goods, setGoods] = useState([]);
     const [suppliersLoading, setSuppliersLoading] = useState(false);
     const [goodsLoading, setGoodsLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [formData, setFormData] = useState({
-        supplierName: initialData?.supplierName || ""
+        supplierName: ""
     });
 
-    const [items, setItems] = useState(
-        initialData?.items || [
-            { id: 1, goodsName: "", quantity: "" },
-        ],
-    )
+    const [items, setItems] = useState([
+        { id: 1, goodsName: "", quantity: "" },
+    ])
 
-    // Load suppliers on component mount
+    // Load initial data
     useEffect(() => {
-        const loadSuppliers = async () => {
-            setSuppliersLoading(true);
+        const loadInitialData = async () => {
+            setLoading(true);
             try {
-                const response = await getSuppliersDropdown();
-                const suppliersData = response?.data || response?.items || response || [];
+                // Load suppliers
+                const suppliersResponse = await getSuppliersDropdown();
+                const suppliersData = suppliersResponse?.data || suppliersResponse?.items || suppliersResponse || [];
                 setSuppliers(suppliersData);
+
+                // Load purchase order detail
+                const orderResponse = await getPurchaseOrderDetail(id);
+                const orderData = orderResponse?.data || orderResponse;
+                
+                if (orderData) {
+                    // Set supplier
+                    const supplier = suppliersData.find(s => s.supplierId === orderData.supplierId);
+                    if (supplier) {
+                        setFormData({ supplierName: supplier.companyName });
+                        // Load goods for this supplier
+                        await loadGoodsBySupplier(orderData.supplierId);
+                    }
+
+                    // Set items
+                    if (orderData.purchaseOrderDetails && orderData.purchaseOrderDetails.length > 0) {
+                        const formattedItems = orderData.purchaseOrderDetails.map((detail, index) => ({
+                            id: index + 1,
+                            goodsName: detail.goodsName || "",
+                            quantity: detail.quantity || "",
+                            purchaseOrderDetailId: detail.purchaseOrderDetailId
+                        }));
+                        setItems(formattedItems);
+                    }
+                }
             } catch (error) {
-                console.error("Error loading suppliers:", error);
-                setSuppliers([]);
+                console.error("Error loading initial data:", error);
             } finally {
-                setSuppliersLoading(false);
+                setLoading(false);
             }
         };
 
-        loadSuppliers();
-    }, []);
+        loadInitialData();
+    }, [id]);
 
     const addItem = (e) => {
-        // Ngăn chặn mọi event propagation
         if (e) {
             e.preventDefault();
             e.stopPropagation();
@@ -62,12 +83,15 @@ export default function CreatePurchaseOrder({
         const updatedItems = [...items, newItem];
         setItems(updatedItems);
     }
+
     const removeItem = (id) => {
         setItems(items.filter((item) => item.id !== id))
     }
+
     const updateItem = (id, field, value) => {
         setItems(items.map((item) => (item.id === id ? { ...item, [field]: value } : item)))
     }
+
     const handleInputChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
         if (field === "supplierName" && value) {
@@ -77,6 +101,7 @@ export default function CreatePurchaseOrder({
             }
         }
     }
+
     const loadGoodsBySupplier = async (supplierId) => {
         setGoodsLoading(true);
         try {
@@ -90,6 +115,7 @@ export default function CreatePurchaseOrder({
             setGoodsLoading(false);
         }
     };
+
     // Create options for dropdowns
     const supplierOptions = suppliers.map(supplier => ({
         value: supplier.companyName,
@@ -103,43 +129,55 @@ export default function CreatePurchaseOrder({
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!formData.supplierName) {
-            console.log("Vui lòng chọn nhà cung cấp");
-            return;
-        }
-        const selectedSupplier = suppliers.find(supplier => supplier.companyName === formData.supplierName);
-        if (!selectedSupplier) {
-            console.log("Không tìm thấy nhà cung cấp");
-            return;
-        }
+        
         const validItems = items.filter(item => item.goodsName && item.quantity);
         if (validItems.length === 0) {
             console.log("Vui lòng thêm ít nhất một hàng hóa với đầy đủ thông tin");
             return;
         }
+        
         try {
             const itemsWithIds = validItems.map(item => {
                 const selectedGood = goods.find(good => good.goodsName === item.goodsName);
                 return {
                     goodsId: selectedGood ? parseInt(selectedGood.goodsId) : null,
-                    quantity: parseInt(item.quantity)
+                    quantity: parseInt(item.quantity),
+                    purchaseOrderDetailId: item.purchaseOrderDetailId || 0
                 };
             }).filter(item => item.goodsId);
+
             if (itemsWithIds.length === 0) {
                 console.log("Không tìm thấy hàng hóa hợp lệ");
                 return;
             }
+
+            // Cấu trúc đúng theo API documentation
             const submitData = {
-                supplierId: parseInt(selectedSupplier.supplierId),
-                purchaseOrderDetailCreate: itemsWithIds
+                purchaseOderId: id, // Lưu ý: có typo "purchaseOderId" (thiếu 'r')
+                purchaseOrderDetailUpdates: itemsWithIds
             };
-            await createPurchaseOrder(submitData);
-            window.showToast("Tạo đơn nhập thành công!", "success");
+
+            console.log("=== UPDATE DATA ===");
+            console.log("Submit data:", submitData);
+            console.log("Items with IDs:", itemsWithIds);
+            console.log("Purchase Order ID:", id);
+
+            await updatePurchaseOrder(submitData);
+            window.showToast("Cập nhật đơn nhập thành công!", "success");
             navigate("/purchase-orders");
         } catch (error) {
-            console.error("Lỗi khi tạo đơn nhập:", error);
+            console.error("Lỗi khi cập nhật đơn nhập:", error);
         }
     }
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -151,7 +189,7 @@ export default function CreatePurchaseOrder({
                             Quay Lại
                         </Button>
                         <h1 className="text-2xl font-bold text-slate-600">
-                            {isEditMode ? "Cập Nhật Đơn Nhập Hàng" : "Tạo Đơn Nhập Hàng Mới"}
+                            Cập Nhật Đơn Nhập Hàng
                         </h1>
                     </div>
                 </div>
@@ -176,6 +214,7 @@ export default function CreatePurchaseOrder({
                                         options={supplierOptions}
                                         placeholder="Chọn nhà cung cấp"
                                         loading={suppliersLoading}
+                                        disabled={true}
                                     />
                                 </div>
                             </div>
@@ -268,7 +307,7 @@ export default function CreatePurchaseOrder({
                                 onClick={handleSubmit}
                                 className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
                             >
-                                {isEditMode ? "Cập Nhật Đơn Nhập" : "Tạo Đơn Nhập"}
+                                Cập Nhật Đơn Nhập
                             </Button>
                         </div>
                     </div>

@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "../../components/ui/card";
-import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
 import { Search, Plus, Edit, Trash2, Eye, ArrowUp, ArrowDown, ArrowUpDown, Package } from "lucide-react";
@@ -12,8 +11,9 @@ import PurchaseOrderFilterToggle from "../../components/PurchaseOrderComponents/
 import PurchaseOrderStatsChart from "../../components/PurchaseOrderComponents/PurchaseOrderStatsChart";
 import StatusDisplay, { PURCHASE_ORDER_STATUS, STATUS_LABELS } from "../../components/PurchaseOrderComponents/StatusDisplay";
 import PurchaseOrderTable from "./PurchaseOrderTable";
-import { useFilterDisplayLogic } from "./FilterDisplayLogic";
-import { getPurchaseOrderSaleRepresentatives, getPurchaseOrderSaleManagers, getPurchaseOrderWarehouseManagers, getPurchaseOrderWarehouseStaff } from "../../services/PurchaseOrderService";
+import DeleteModal from "../../components/Common/DeleteModal";
+import { extractErrorMessage } from "../../utils/Validation";
+import { getPurchaseOrderSaleRepresentatives, getPurchaseOrderSaleManagers, getPurchaseOrderWarehouseManagers, getPurchaseOrderWarehouseStaff, deletePurchaseOrder } from "../../services/PurchaseOrderService";
 import { getSuppliersDropdown } from "../../services/SupplierService";
 import { PERMISSIONS } from "../../utils/permissions";
 import { usePermissions } from "../../hooks/usePermissions";
@@ -66,6 +66,11 @@ export default function PurchaseOrderList() {
   const [showDateRangeFilter, setShowDateRangeFilter] = useState(false);
   const [hasInitialLoad, setHasInitialLoad] = useState(false);
   const [apiCallCount, setApiCallCount] = useState(0);
+  
+  // Delete modal states
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedPurchaseOrder, setSelectedPurchaseOrder] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Fetch data from API
   const fetchSuppliers = async () => {
@@ -113,16 +118,24 @@ export default function PurchaseOrderList() {
       }
 
       if (response && response.data && response.data.items && Array.isArray(response.data.items)) {
+        console.log("=== PAGINATION UPDATE ===");
+        console.log("Total count:", response.data.totalCount);
+        console.log("Page number:", response.data.pageNumber);
+        console.log("Total pages:", response.data.totalPages);
+        
         setPurchaseOrders(response.data.items);
         setPagination(prev => ({
           ...prev,
-          total: response.data.totalCount || 0
+          total: response.data.totalCount || 0,
+          current: response.data.pageNumber || 1
         }));
       } else {
+        console.log("No valid data found");
         setPurchaseOrders([]);
-        setPagination(prev => ({ ...prev, total: 0 }));
+        setPagination(prev => ({ ...prev, total: 0, current: 1 }));
       }
     } catch (error) {
+      console.error("Error fetching purchase orders:", error);
       setPurchaseOrders([]);
       setPagination(prev => ({ ...prev, total: 0 }));
     } finally {
@@ -146,6 +159,7 @@ export default function PurchaseOrderList() {
       fromDate: dateRangeFilter.fromDate,
       toDate: dateRangeFilter.toDate
     };
+    
 
     return await fetchDataWithParams(requestParams);
   };
@@ -246,14 +260,6 @@ export default function PurchaseOrderList() {
   }, [filteredPurchaseOrders, sortField, sortAscending]);
 
 
-  // Update total count when filtered data changes
-  React.useEffect(() => {
-    setPagination(prev => ({
-      ...prev,
-      total: (filteredPurchaseOrders || []).length,
-      current: 1 // Reset to first page when filter changes
-    }));
-  }, [(filteredPurchaseOrders || []).length]);
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -269,19 +275,111 @@ export default function PurchaseOrderList() {
   };
 
   const handleEditClick = (order) => {
+    // Navigate to update page with order ID
+    navigate(`/purchase-orders/update/${order.purchaseOderId}`);
   };
 
   const handleDeleteClick = (order) => {
+    setSelectedPurchaseOrder(order);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedPurchaseOrder) return;
+    
+    console.log("=== DELETE CONFIRM ===");
+    console.log("Selected purchase order:", selectedPurchaseOrder);
+    console.log("All keys:", Object.keys(selectedPurchaseOrder));
+    
+    setDeleteLoading(true);
+    try {
+      const orderId = selectedPurchaseOrder.purchaseOderId;  
+      
+      if (!orderId) {
+        console.error("No valid ID found. Available fields:", Object.keys(selectedPurchaseOrder));
+        throw new Error("Không tìm thấy ID của đơn nhập");
+      }
+      
+      await deletePurchaseOrder(orderId);
+      
+      // Show success message
+      if (window.showToast) {
+        window.showToast("Xóa đơn nhập thành công!", "success");
+      }
+      
+      // Close modal and refresh data
+      setShowDeleteModal(false);
+      setSelectedPurchaseOrder(null);
+      
+      // Refresh the list
+      fetchData();
+      
+    } catch (error) {
+      console.error("Error deleting purchase order:", error);
+      
+      // Extract error message from backend using utility function
+      const errorMessage = extractErrorMessage(error);
+      
+      // Show specific error message
+      if (window.showToast) {
+        window.showToast(errorMessage, "error");
+      }
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
+    setSelectedPurchaseOrder(null);
   };
 
   const handlePageChange = (newPage) => {
+    // Update pagination state first
     setPagination(prev => ({ ...prev, current: newPage }));
-    fetchData();
+    
+    // Call fetchData with the new page number directly
+    const requestParams = {
+      pageNumber: newPage, // Use the new page directly
+      pageSize: pagination.pageSize,
+      search: searchQuery,
+      sortField: sortField,
+      sortAscending: sortAscending,
+      status: statusFilter,
+      supplierId: supplierFilter,
+      approvalBy: approverFilter,
+      createdBy: creatorFilter,
+      arrivalConfirmedBy: confirmerFilter,
+      assignTo: assigneeFilter,
+      fromDate: dateRangeFilter.fromDate,
+      toDate: dateRangeFilter.toDate
+    };
+    
+    fetchDataWithParams(requestParams);
   };
 
   const handlePageSizeChange = (newPageSize) => {
+    // Update pagination state first
     setPagination(prev => ({ ...prev, pageSize: newPageSize, current: 1 }));
-    fetchData();
+    
+    // Call fetchData with the new page size directly
+    const requestParams = {
+      pageNumber: 1, // Reset to page 1 when changing page size
+      pageSize: newPageSize,
+      search: searchQuery,
+      sortField: sortField,
+      sortAscending: sortAscending,
+      status: statusFilter,
+      supplierId: supplierFilter,
+      approvalBy: approverFilter,
+      createdBy: creatorFilter,
+      arrivalConfirmedBy: confirmerFilter,
+      assignTo: assigneeFilter,
+      fromDate: dateRangeFilter.fromDate,
+      toDate: dateRangeFilter.toDate
+    };
+    
+    fetchDataWithParams(requestParams);
   };
 
   // Filter handlers
@@ -648,6 +746,14 @@ export default function PurchaseOrderList() {
             className="bg-gray-50"
           />
         )}
+
+        {/* Delete Confirmation Modal */}
+        <DeleteModal
+          isOpen={showDeleteModal}
+          onClose={handleDeleteCancel}
+          onConfirm={handleDeleteConfirm}
+          itemName="đơn nhập hàng này"
+        />
       </div>
     </div>
   );

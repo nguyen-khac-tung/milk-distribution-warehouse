@@ -138,16 +138,6 @@ export const createPurchaseOrder = async (data) => {
 //     }
 // };
 
-// // Xóa Purchase Order
-// export const deletePurchaseOrder = async (id) => {
-//     try {
-//         const res = await api.delete(`/PurchaseOrder/Delete/${id}`);
-//         return res.data;
-//     } catch (error) {
-//         console.error("Error deleting purchase order:", error);
-//         throw error;
-//     }
-// };
 
 // Lấy chi tiết Purchase Order
 export const getPurchaseOrderDetail = async (id) => {
@@ -214,3 +204,26 @@ export const getGoodsDropDownBySupplierId = async (supplierId) => {
         throw error;
     }
 };
+
+// Xóa đơn nhập hàng
+export const deletePurchaseOrder = async (purchaseOrderId) => {
+    try {
+        const res = await api.delete(`/PurchaseOrder/DeletePurchaseOrder/${purchaseOrderId}`);
+        return res.data;
+    } catch (error) {
+        console.error("Error deleting purchase order:", error);
+        throw error;
+    }
+};
+
+// Cập nhật đơn nhập hàng
+export const updatePurchaseOrder = async (updateData) => {
+    try {
+        const res = await api.put('/PurchaseOrder/UpdatePurchaseOrder', updateData);
+        return res.data;
+    } catch (error) {
+        console.error("Error updating purchase order:", error);
+        throw error;
+    }
+};
+

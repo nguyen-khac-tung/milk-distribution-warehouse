@@ -69,16 +69,15 @@ const PurchaseOrderTable = ({
     onDelete(order);
   };
 
-  // Calculate paginated data
+  // Use all data from backend (pagination is handled by backend)
   const paginatedPurchaseOrders = React.useMemo(() => {
     if (!purchaseOrders || !Array.isArray(purchaseOrders)) {
       return [];
     }
     
-    const startIndex = (pagination.current - 1) * pagination.pageSize;
-    const endIndex = startIndex + pagination.pageSize;
-    return purchaseOrders.slice(startIndex, endIndex);
-  }, [purchaseOrders, pagination.current, pagination.pageSize]);
+    // Backend already handles pagination, so return all data
+    return purchaseOrders;
+  }, [purchaseOrders]);
 
   return (
     <div className="w-full">
@@ -255,24 +254,28 @@ const PurchaseOrderTable = ({
                             <Eye className="h-4 w-4 text-orange-500" />
                           </button>
                         </PermissionWrapper>
-                        <PermissionWrapper requiredPermission={PERMISSIONS.PURCHASE_ORDER_UPDATE}>
-                          <button
-                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                            title="Chỉnh sửa"
-                            onClick={() => handleEditClick(order)}
-                          >
-                            <Edit className="h-4 w-4 text-orange-500" />
-                          </button>
-                        </PermissionWrapper>
-                        <PermissionWrapper requiredPermission={PERMISSIONS.PURCHASE_ORDER_DELETE}>
-                          <button
-                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                            title="Xóa"
-                            onClick={() => handleDeleteClick(order)}
-                          >
-                            <Trash2 className="h-4 w-4 text-red-500" />
-                          </button>
-                        </PermissionWrapper>
+                        {!order.isDisable && (
+                          <PermissionWrapper requiredPermission={PERMISSIONS.PURCHASE_ORDER_UPDATE}>
+                            <button
+                              className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                              title="Chỉnh sửa"
+                              onClick={() => handleEditClick(order)}
+                            >
+                              <Edit className="h-4 w-4 text-orange-500" />
+                            </button>
+                          </PermissionWrapper>
+                        )}
+                        {!order.isDisable && (
+                          <PermissionWrapper requiredPermission={PERMISSIONS.PURCHASE_ORDER_DELETE}>
+                            <button
+                              className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                              title="Xóa"
+                              onClick={() => handleDeleteClick(order)}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </button>
+                          </PermissionWrapper>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
