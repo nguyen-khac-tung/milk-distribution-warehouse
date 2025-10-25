@@ -3,7 +3,7 @@ import NotFoundPage from "../pages/NotFoundPage";
 import Dashboard from "../pages/AccountPage/Dashboard/Dashboard";
 import Products from "../pages/GoodPage/GoodsList";
 import Reports from "../pages/Reports";
-import Settings from "../pages/Settings";
+// import Settings from "../pages/Settings";
 import Areas from "../pages/AreaAndLocationPage/AreaPage/AreasList";
 import Locations from "../pages/AreaAndLocationPage/LocationPage/LocationList";
 import LoginPage from "../pages/AuthenticationPage/LoginPage/LoginPage";
@@ -23,6 +23,8 @@ import ProtectedRoute from "../components/Common/ProtectedRoute";
 import RoleBasedRedirect from "../components/Common/RoleBasedRedirect";
 import PurchaseOrderList from "../pages/PurchaseOrderPage/PurchaseOrderList";
 import CreatePurchaseOrder from "../pages/PurchaseOrderPage/CreatePurchaseOrder";
+import PurchaseOrderDetail from "../pages/PurchaseOrderPage/PurchaseOrderDetail";
+import PalletList from "../pages/PalletPage/PalletList";
 import ChangePasswordPage from "../pages/AuthenticationPage/ChangePasswordPage"
 import { PERMISSIONS } from "../utils/permissions";
 
@@ -109,6 +111,15 @@ export const routes = [
         isShowHeader: true,
     },
     {
+        path: "/pallets",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.PALLET_VIEW}>
+                <PalletList />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
         path: "/suppliers",
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.SUPPLIER_VIEW}>
@@ -162,15 +173,15 @@ export const routes = [
         ),
         isShowHeader: true,
     },
-    {
-        path: "/settings",
-        page: () => (
-            <ProtectedRoute requiredPermission={PERMISSIONS.SETTINGS_VIEW}>
-                <Settings />
-            </ProtectedRoute>
-        ),
-        isShowHeader: true,
-    },
+    // {
+    //     path: "/settings",
+    //     page: () => (
+    //         <ProtectedRoute requiredPermission={PERMISSIONS.SETTINGS_VIEW}>
+    //             <Settings />
+    //         </ProtectedRoute>
+    //     ),
+    //     isShowHeader: true,
+    // },
     {
         path: "/purchase-orders",
         page: () => (
@@ -185,6 +196,15 @@ export const routes = [
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.PURCHASE_ORDER_CREATE}>
                 <CreatePurchaseOrder />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/purchase-orders/:id",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.PURCHASE_ORDER_VIEW_DETAILS}>
+                <PurchaseOrderDetail />
             </ProtectedRoute>
         ),
         isShowHeader: true,

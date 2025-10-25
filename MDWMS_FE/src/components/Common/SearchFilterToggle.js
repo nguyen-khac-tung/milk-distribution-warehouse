@@ -302,7 +302,13 @@ export default function SearchFilterToggle({
                       ${roleFilter ? 'bg-[#d97706] text-white hover:bg-[#d97706]' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
                   >
                     <span className="text-sm font-medium truncate">
-                      {roleFilter ? roleFilter : "Tất cả chức vụ"}
+                      {roleFilter ? (roles.find(r => {
+                        const rValue = typeof r === 'object' ? r.value || r.roleName || r.roleId : r
+                        return rValue === roleFilter
+                      })?.label || roles.find(r => {
+                        const rValue = typeof r === 'object' ? r.value || r.roleName || r.roleId : r
+                        return rValue === roleFilter
+                      })?.description || roleFilter) : "Tất cả chức vụ"}
                     </span>
                     <ChevronDown className="h-4 w-4 flex-shrink-0" />
                   </button>
@@ -316,15 +322,20 @@ export default function SearchFilterToggle({
                         >
                           Tất cả chức vụ
                         </button>
-                        {roles.map((role) => (
-                          <button
-                            key={role}
-                            onClick={() => { onRoleFilter(role); setShowRoleFilter(false); }}
-                            className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${roleFilter === role ? 'bg-orange-500 text-white' : 'text-slate-700'}`}
-                          >
-                            {role}
-                          </button>
-                        ))}
+                        {roles.map((role) => {
+                          const roleValue = typeof role === 'object' ? role.value || role.roleName || role.roleId : role
+                          const roleLabel = typeof role === 'object' ? role.label || role.description || role.roleName : role
+
+                          return (
+                            <button
+                              key={roleValue}
+                              onClick={() => { onRoleFilter(roleValue); setShowRoleFilter(false); }}
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${roleFilter === roleValue ? 'bg-orange-500 text-white' : 'text-slate-700'}`}
+                            >
+                              {roleLabel}
+                            </button>
+                          )
+                        })}
                       </div>
                     </div>
                   )}

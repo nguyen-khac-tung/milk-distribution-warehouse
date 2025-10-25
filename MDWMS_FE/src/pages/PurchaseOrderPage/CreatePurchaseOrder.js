@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { Card } from "../../components/ui/card"
 import { Button } from "../../components/ui/button"
@@ -7,29 +7,66 @@ import { Label } from "../../components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
 import { Plus, Trash2, ArrowLeft, Save, X } from "lucide-react"
+import { createPurchaseOrder, getGoodsDropDownBySupplierId } from "../../services/PurchaseOrderService"
+import { getSuppliersDropdown } from "../../services/SupplierService"
 
 export default function CreatePurchaseOrder({
     isEditMode = false,
     initialData = null
 }) {
     const navigate = useNavigate();
+    const [suppliers, setSuppliers] = useState([]);
+    const [goods, setGoods] = useState([]);
+    const [formData, setFormData] = useState({
+        supplierName: initialData?.supplierName || ""
+    });
+
     const [items, setItems] = useState(
         initialData?.items || [
-            { id: 1, goodsName: "", quantity: "", unitsPerPackage: "", note: "" },
+            { id: 1, goodsName: "", quantity: "" },
         ],
     )
 
-    const addItem = () => {
-        setItems([
-            ...items,
-            {
-                id: items.length + 1,
-                goodsName: "",
-                quantity: "",
-                unitsPerPackage: "",
-                note: "",
-            },
-        ])
+    // Load suppliers on component mount
+    useEffect(() => {
+        const loadSuppliers = async () => {
+            try {
+                const response = await getSuppliersDropdown();
+                console.log("Suppliers response:", response);
+                // Try different possible response structures
+                const suppliersData = response?.data || response?.items || response || [];
+                setSuppliers(suppliersData);
+            } catch (error) {
+                console.error("Error loading suppliers:", error);
+                setSuppliers([]);
+            }
+        };
+
+        loadSuppliers();
+    }, []);
+
+    const addItem = (e) => {
+        // Ngăn chặn mọi event propagation
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        console.log("=== THÊM HÀNG HÓA ===");
+        console.log("Trước khi thêm:", items);
+
+        // Chỉ thêm vào local state, không gọi API
+        const newItem = {
+            id: Date.now(), // Sử dụng timestamp để tránh trùng ID
+            goodsName: "",
+            quantity: "",
+        };
+
+        const updatedItems = [...items, newItem];
+        setItems(updatedItems);
+
+        console.log("Sau khi thêm:", updatedItems);
+        console.log("=== KHÔNG GỌI API ===");
     }
 
     const removeItem = (id) => {
@@ -38,6 +75,95 @@ export default function CreatePurchaseOrder({
 
     const updateItem = (id, field, value) => {
         setItems(items.map((item) => (item.id === id ? { ...item, [field]: value } : item)))
+    }
+
+    const handleInputChange = (field, value) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+        
+        // Load goods when supplier changes
+        if (field === "supplierName" && value) {
+            // Find supplier ID by name
+            const selectedSupplier = suppliers.find(supplier => supplier.companyName === value);
+            if (selectedSupplier) {
+                loadGoodsBySupplier(selectedSupplier.supplierId);
+            }
+        }
+    }
+
+    // Load goods by supplier ID
+    const loadGoodsBySupplier = async (supplierId) => {
+        try {
+            const response = await getGoodsDropDownBySupplierId(supplierId);
+            console.log("Goods response:", response);
+            // Try different possible response structures
+            const goodsData = response?.data || response?.items || response || [];
+            setGoods(goodsData);
+        } catch (error) {
+            console.error("Error loading goods by supplier:", error);
+            setGoods([]);
+        }
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        console.log("=== BẮT ĐẦU TẠO ĐƠN NHẬP ===");
+        console.log("Form data:", formData);
+        console.log("Items:", items);
+
+        // Validate form
+        if (!formData.supplierName) {
+            console.log("Vui lòng chọn nhà cung cấp");
+            return;
+        }
+
+        // Find supplier ID by name
+        const selectedSupplier = suppliers.find(supplier => supplier.companyName === formData.supplierName);
+        if (!selectedSupplier) {
+            console.log("Không tìm thấy nhà cung cấp");
+            return;
+        }
+
+        // Validate items - chỉ lấy những item có đầy đủ thông tin
+        const validItems = items.filter(item => item.goodsName && item.quantity);
+        console.log("Valid items:", validItems);
+
+        if (validItems.length === 0) {
+            console.log("Vui lòng thêm ít nhất một hàng hóa với đầy đủ thông tin");
+            return;
+        }
+
+        try {
+            // Convert goods names to IDs
+            const itemsWithIds = validItems.map(item => {
+                const selectedGood = goods.find(good => good.goodsName === item.goodsName);
+                return {
+                    goodsId: selectedGood ? parseInt(selectedGood.goodsId) : null,
+                    quantity: parseInt(item.quantity)
+                };
+            }).filter(item => item.goodsId);
+
+            if (itemsWithIds.length === 0) {
+                console.log("Không tìm thấy hàng hóa hợp lệ");
+                return;
+            }
+
+            // Chuẩn bị dữ liệu để gửi API
+            const submitData = {
+                supplierId: parseInt(selectedSupplier.supplierId),
+                purchaseOrderDetailCreate: itemsWithIds
+            };
+
+
+            // Gọi API tạo đơn nhập
+            await createPurchaseOrder(submitData);
+
+
+            // Chuyển về trang danh sách sau khi tạo thành công
+            navigate("/purchase-orders");
+        } catch (error) {
+            console.error("Lỗi khi tạo đơn nhập:", error);
+        }
     }
 
     return (
@@ -59,7 +185,6 @@ export default function CreatePurchaseOrder({
 
             {/* Main Content */}
             <div className="space-y-6">
-
                 {/* Form Card */}
                 <Card className="bg-white border border-gray-200 shadow-sm">
                     <div className="p-6 space-y-6">
@@ -71,56 +196,28 @@ export default function CreatePurchaseOrder({
                                     <Label htmlFor="supplier" className="text-slate-600 font-medium">
                                         Nhà Cung Cấp *
                                     </Label>
-                                    <Select defaultValue={initialData?.supplier || ""}>
+                                    <Select value={formData.supplierName} onValueChange={(value) => handleInputChange("supplierName", value)}>
                                         <SelectTrigger id="supplier" className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg">
                                             <SelectValue placeholder="Chọn nhà cung cấp" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="ncc1">Công ty TNHH Sữa Việt Nam</SelectItem>
-                                            <SelectItem value="ncc2">Công ty CP Sữa TH True Milk</SelectItem>
-                                            <SelectItem value="ncc3">Công ty TNHH Sữa Vinamilk</SelectItem>
-                                            <SelectItem value="ncc4">Công ty CP Sữa Mộc Châu</SelectItem>
+                                            {suppliers.length > 0 ? (
+                                                suppliers.map((supplier) => (
+                                                    <SelectItem key={supplier.supplierId} value={supplier.companyName}>
+                                                        {supplier.companyName}
+                                                    </SelectItem>
+                                                ))
+                                            ) : (
+                                                <>
+                                                    <SelectItem value="Công ty TNHH Sữa Việt Nam">Công ty TNHH Sữa Việt Nam</SelectItem>
+                                                    <SelectItem value="Công ty CP Sữa TH True Milk">Công ty CP Sữa TH True Milk</SelectItem>
+                                                    <SelectItem value="Công ty TNHH Sữa Vinamilk">Công ty TNHH Sữa Vinamilk</SelectItem>
+                                                    <SelectItem value="Công ty CP Sữa Mộc Châu">Công ty CP Sữa Mộc Châu</SelectItem>
+                                                </>
+                                            )}
                                         </SelectContent>
                                     </Select>
                                 </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="poNumber" className="text-slate-600 font-medium">
-                                        Số PO *
-                                    </Label>
-                                    <Input
-                                        id="poNumber"
-                                        placeholder="Nhập số PO"
-                                        defaultValue={initialData?.poNumber || ""}
-                                        className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="orderDate" className="text-slate-600 font-medium">
-                                        Ngày Đặt Hàng *
-                                    </Label>
-                                    <Input
-                                        id="orderDate"
-                                        type="date"
-                                        defaultValue={initialData?.orderDate || ""}
-                                        className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="expectedDate" className="text-slate-600 font-medium">
-                                        Ngày Dự Kiến Nhập *
-                                    </Label>
-                                    <Input
-                                        id="expectedDate"
-                                        type="date"
-                                        defaultValue={initialData?.expectedDate || ""}
-                                        className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                                    />
-                                </div>
-
-
                             </div>
                         </div>
 
@@ -128,7 +225,11 @@ export default function CreatePurchaseOrder({
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <h3 className="text-lg font-semibold text-slate-600">Chi Tiết Hàng Hóa</h3>
-                                <Button onClick={addItem} className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white">
+                                <Button
+                                    type="button"
+                                    onClick={(e) => addItem(e)}
+                                    className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
+                                >
                                     <Plus className="mr-2 h-4 w-4 text-white" />
                                     Thêm Hàng
                                 </Button>
@@ -141,8 +242,6 @@ export default function CreatePurchaseOrder({
                                             <TableHead className="text-slate-600 font-semibold">STT</TableHead>
                                             <TableHead className="text-slate-600 font-semibold">Tên Hàng Hóa</TableHead>
                                             <TableHead className="text-slate-600 font-semibold">Số Lượng</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold">Đơn Vị</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold">Ghi Chú</TableHead>
                                             {items.length > 1 && (
                                                 <TableHead className="text-right text-slate-600 font-semibold">Hành Động</TableHead>
                                             )}
@@ -153,12 +252,27 @@ export default function CreatePurchaseOrder({
                                             <TableRow key={item.id} className="border-b border-gray-200 hover:bg-gray-50">
                                                 <TableCell className="text-slate-700">{index + 1}</TableCell>
                                                 <TableCell>
-                                                    <Input
-                                                        placeholder="Tên hàng"
-                                                        value={item.goodsName}
-                                                        onChange={(e) => updateItem(item.id, "goodsName", e.target.value)}
-                                                        className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                                                    />
+                                                    <Select value={item.goodsName} onValueChange={(value) => updateItem(item.id, "goodsName", value)}>
+                                                        <SelectTrigger className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg">
+                                                            <SelectValue placeholder="Chọn hàng hóa" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {goods.length > 0 ? (
+                                                                goods.map((good) => (
+                                                                    <SelectItem key={good.goodsId} value={good.goodsName}>
+                                                                        {good.goodsName}
+                                                                    </SelectItem>
+                                                                ))
+                                                            ) : (
+                                                                <>
+                                                                    <SelectItem value="Sữa tươi Vinamilk 100%">Sữa tươi Vinamilk 100%</SelectItem>
+                                                                    <SelectItem value="Sữa chua Vinamilk">Sữa chua Vinamilk</SelectItem>
+                                                                    <SelectItem value="Sữa TH True Milk">Sữa TH True Milk</SelectItem>
+                                                                    <SelectItem value="Sữa Mộc Châu">Sữa Mộc Châu</SelectItem>
+                                                                </>
+                                                            )}
+                                                        </SelectContent>
+                                                    </Select>
                                                 </TableCell>
                                                 <TableCell>
                                                     <Input
@@ -169,26 +283,10 @@ export default function CreatePurchaseOrder({
                                                         className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                                                     />
                                                 </TableCell>
-                                                <TableCell>
-                                                    <Input
-                                                        type="number"
-                                                        placeholder="0"
-                                                        value={item.unitsPerPackage}
-                                                        onChange={(e) => updateItem(item.id, "unitsPerPackage", e.target.value)}
-                                                        className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                                                    />
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Input
-                                                        placeholder="Ghi chú"
-                                                        value={item.note}
-                                                        onChange={(e) => updateItem(item.id, "note", e.target.value)}
-                                                        className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                                                    />
-                                                </TableCell>
                                                 {items.length > 1 && (
                                                     <TableCell className="text-right">
                                                         <Button
+                                                            type="button"
                                                             variant="ghost"
                                                             size="sm"
                                                             onClick={() => removeItem(item.id)}
@@ -205,32 +303,12 @@ export default function CreatePurchaseOrder({
                             </div>
                         </div>
 
-                        {/* Notes */}
-                        <div className="space-y-2">
-                            <Label htmlFor="notes" className="text-slate-600 font-medium">
-                                Ghi Chú
-                            </Label>
-                            <textarea
-                                id="notes"
-                                placeholder="Nhập ghi chú..."
-                                defaultValue={initialData?.notes || ""}
-                                className="w-full h-[38px] rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500"
-                                rows={3}
-                            />
-                        </div>
 
                         {/* Actions */}
                         <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
                             <Button
                                 type="button"
-                                variant="outline"
-                                className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
-                                onClick={() => navigate("/purchase-orders")}
-                            >
-                                Hủy
-                            </Button>
-                            <Button 
-                                type="submit"
+                                onClick={handleSubmit}
                                 className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
                             >
                                 {isEditMode ? "Cập Nhật Đơn Nhập" : "Tạo Đơn Nhập"}

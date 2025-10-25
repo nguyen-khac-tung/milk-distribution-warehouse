@@ -17,16 +17,54 @@ namespace MilkDistributionWarehouse.Controllers
             _salesOrderService = salesOrderService;
         }
 
-        //[Authorize(Roles = "Sales Representative")]
-        [HttpPost("GetSalesOrderListSaleRepresentatives")]
-        public async Task<IActionResult> GetSalesOrderListSaleRepresentatives(PagedRequest request)
+        [Authorize(Roles = "Sales Representative")]
+        [HttpPost("GetSalesOrderListSalesRepresentatives")]
+        public async Task<IActionResult> GetSalesOrderListSalesRepresentatives(PagedRequest request)
         {
-            var (msg, salesOrders) = await _salesOrderService.GetSalesOrderListSaleRepresentatives(request, User.GetUserId());
+            var (msg, salesOrders) = await _salesOrderService.GetSalesOrderList<SalesOrderDtoSalesRepresentative>(request, User.GetUserId());
             if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
 
-            return ApiResponse<PageResult<SalesOrderDtoSaleRepresentative>>.ToResultOk(salesOrders);
+            return ApiResponse<PageResult<SalesOrderDtoSalesRepresentative>>.ToResultOk(salesOrders);
         }
 
+        [Authorize(Roles = "Sale Manager")]
+        [HttpPost("GetSalesOrderListSaleManager")]
+        public async Task<IActionResult> GetSalesOrderListSaleManager(PagedRequest request)
+        {
+            var (msg, salesOrders) = await _salesOrderService.GetSalesOrderList<SalesOrderDtoSaleManager>(request, User.GetUserId());
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
 
+            return ApiResponse<PageResult<SalesOrderDtoSaleManager>>.ToResultOk(salesOrders);
+        }
+
+        [Authorize(Roles = "Warehouse Manager")]
+        [HttpPost("GetSalesOrderListWarehouseManager")]
+        public async Task<IActionResult> GetSalesOrderListWarehouseManager(PagedRequest request)
+        {
+            var (msg, salesOrders) = await _salesOrderService.GetSalesOrderList<SalesOrderDtoWarehouseManager>(request, User.GetUserId());
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<PageResult<SalesOrderDtoWarehouseManager>>.ToResultOk(salesOrders);
+        }
+
+        [Authorize(Roles = "Warehouse Staff")]
+        [HttpPost("GetSalesOrderListWarehouseStaff")]
+        public async Task<IActionResult> GetSalesOrderListWarehouseStaff(PagedRequest request)
+        {
+            var (msg, salesOrders) = await _salesOrderService.GetSalesOrderList<SalesOrderDtoWarehouseStaff>(request, User.GetUserId());
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<PageResult<SalesOrderDtoWarehouseStaff>>.ToResultOk(salesOrders);
+        }
+
+        //[Authorize(Roles = "Warehouse Staff")]
+        [HttpGet("GetSalesOrderDeatail/{salesOrderId}")]
+        public async Task<IActionResult> GetSalesOrderDeatail(Guid? salesOrderId)
+        {
+            var (msg, salesOrder) = await _salesOrderService.GetSalesOrderDeatail(salesOrderId);
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<SalesOrderDetailDto>.ToResultOk(salesOrder);
+        }
     }
 }

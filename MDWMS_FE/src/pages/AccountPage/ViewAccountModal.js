@@ -171,7 +171,9 @@ export function AccountDetail({ userId, onClose }) {
                   <div className="rounded-lg bg-white p-4 border border-gray-200">
                     <div className="flex items-center gap-2">
                       <span className="text-lg font-bold text-slate-800">
-                        {user.roles && user.roles.length > 0 ? user.roles.join(", ") : 'N/A'}
+                        {user.roles && user.roles.length > 0
+                          ? user.roles.map(role => role.description).join(", ")
+                          : "N/A"}
                       </span>
                     </div>
                     <p className="mt-2 text-xs text-slate-500">Vai trò trong hệ thống</p>

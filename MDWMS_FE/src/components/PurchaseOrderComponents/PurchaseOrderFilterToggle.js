@@ -111,6 +111,15 @@ export default function PurchaseOrderFilterToggle({
   };
 
   const handleClearAll = () => {
+    // Đóng tất cả dropdown filters
+    setShowStatusFilter(false);
+    setShowSupplierFilter(false);
+    setShowApproverFilter(false);
+    setShowCreatorFilter(false);
+    setShowConfirmerFilter(false);
+    setShowAssigneeFilter(false);
+    setShowDateRangeFilter(false);
+    
     if (onClearAll) {
       onClearAll();
     } else {
@@ -140,7 +149,7 @@ export default function PurchaseOrderFilterToggle({
     }
   };
 
-  const hasActiveFilters = searchQuery || statusFilter || supplierFilter || approverFilter || creatorFilter || confirmerFilter || assigneeFilter || dateRangeFilter;
+  const hasActiveFilters = searchQuery || statusFilter || supplierFilter || approverFilter || creatorFilter || confirmerFilter || assigneeFilter || dateRangeFilter?.fromDate || dateRangeFilter?.toDate;
 
   return (
     <>

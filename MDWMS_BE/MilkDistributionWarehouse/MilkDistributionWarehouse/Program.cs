@@ -86,6 +86,9 @@ namespace MilkDistributionWarehouse
 
             // Add dependency injection configuration
             builder.Services.AddDependencyInjection();
+            
+            // Add cache
+            builder.Services.AddMemoryCache();
             #endregion
 
 

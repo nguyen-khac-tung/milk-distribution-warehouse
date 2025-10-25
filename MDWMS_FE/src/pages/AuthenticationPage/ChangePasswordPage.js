@@ -126,12 +126,12 @@ export default function ChangePasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "linear-gradient(135deg, #FFF3E0, #fcf7f8)" }}>
-      <div className="w-full max-w-4xl">
-        <div className="w-full h-[500px] bg-gradient-to-br from-orange-100 to-pink-100 rounded-2xl shadow-2xl flex">
+    <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "linear-gradient(135deg, #FFF3E0, #fcf7f8)" }}>
+      <div className="w-full max-w-6xl">
+        <div className="w-full h-[600px] bg-gradient-to-br from-orange-100 to-pink-100 rounded-2xl shadow-2xl flex overflow-hidden">
           {/* Left side - Form */}
-          <div className="flex-1 flex items-center justify-center p-8">
-            <div className="w-full max-w-md">
+          <div className="flex-1 flex items-center justify-center p-12">
+            <div className="w-full max-w-lg mx-4">
               {/* Form */}
               <form onSubmit={handleSubmit} className="space-y-6">
               {/* Current Password */}
@@ -251,8 +251,8 @@ export default function ChangePasswordPage() {
           </div>
 
           {/* Right side - User Guide */}
-          <div className="hidden lg:flex flex-1 items-center justify-center p-8">
-            <div className="text-center max-w-md">
+          <div className="hidden lg:flex flex-1 items-center justify-center p-12">
+            <div className="text-center max-w-lg mx-4">
               <Lock className="w-24 h-24 text-orange-400 mx-auto mb-6" />
               <h3 className="text-2xl font-bold text-gray-700 mb-4">Hướng dẫn đổi mật khẩu</h3>
               <div className="text-left space-y-3 text-gray-600">
@@ -281,7 +281,7 @@ export default function ChangePasswordPage() {
                   <p className="text-sm">Nhấn "Đổi mật khẩu" để hoàn tất</p>
                 </div>
               </div>
-              <div className="mt-6 p-4 bg-orange-50 rounded-lg border border-orange-200">
+              <div className="mt-8 p-6 pb-8 bg-orange-50 rounded-lg border border-orange-200">
                 <p className="text-sm text-orange-700 mb-3">
                   <strong>Yêu cầu mật khẩu mạnh:</strong>
                 </p>

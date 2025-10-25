@@ -9,7 +9,8 @@ namespace MilkDistributionWarehouse.Repositories
 
     public interface ISalesOrderRepository
     {
-        IQueryable<SalesOrder> GetSalesOrderBySaleRepresentative(int? userId);
+        IQueryable<SalesOrder> GetAllSalesOrders();
+        Task<SalesOrder?> GetSalesOrderById(Guid? id);
         Task<bool> HasActiveSalesOrder(int retailerId);
         Task<bool> IsAllSalesOrderDraffOrEmpty(int retailerId);
     }
@@ -21,7 +22,7 @@ namespace MilkDistributionWarehouse.Repositories
             _context = context;
         }
 
-        public IQueryable<SalesOrder> GetSalesOrderBySaleRepresentative(int? userId)
+        public IQueryable<SalesOrder> GetAllSalesOrders()
         {
             return _context.SalesOrders
                 .Include(s => s.Retailer)
@@ -29,8 +30,24 @@ namespace MilkDistributionWarehouse.Repositories
                 .Include(s => s.ApprovalByNavigation)
                 .Include(s => s.AcknowledgedByNavigation)
                 .Include(s => s.AssignToNavigation)
-                .Where(s => s.CreatedBy == userId)
                 .AsNoTracking();
+        }
+
+        public async Task<SalesOrder?> GetSalesOrderById(Guid? id)
+        {
+            return await _context.SalesOrders
+                .Include(s => s.Retailer)
+                .Include(s => s.CreatedByNavigation)
+                .Include(s => s.ApprovalByNavigation)
+                .Include(s => s.AcknowledgedByNavigation)
+                .Include(s => s.AssignToNavigation)
+                .Include(s => s.SalesOrderDetails)
+                    .ThenInclude(d => d.Goods)
+                        .ThenInclude(g => g.Supplier)
+                .Include(s => s.SalesOrderDetails)
+                    .ThenInclude(d => d.Goods)
+                        .ThenInclude(g => g.UnitMeasure)
+                .Where(s => s.SalesOrderId == id).FirstOrDefaultAsync();
         }
 
         public async Task<bool> HasActiveSalesOrder(int retailerId)

@@ -12,11 +12,21 @@ export default function ClearFiltersButton({
   className = ""
 }) {
 
+  const handleClick = () => {
+    
+    if (onClear) {
+      console.log("Calling onClear function");
+      onClear();
+    } else {
+      console.log("No onClear function provided");
+    }
+  };
+
   return (
     <Button
       variant={variant}
       size={size}
-      onClick={onClear}
+      onClick={handleClick}
       className={`flex items-center space-x-2 text-slate-600 hover:text-orange-500 hover:border-orange-500 transition-colors ${className}`}
     >
       {showIcon && (

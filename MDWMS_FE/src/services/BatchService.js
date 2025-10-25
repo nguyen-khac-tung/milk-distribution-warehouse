@@ -46,6 +46,7 @@ export const createBatch = async (data) => {
         const body = {
             batchCode: data.batchCode,
             goodsId: data.goodsId,
+            description: data.description,
             manufacturingDate: data.manufacturingDate,
             expiryDate: data.expiryDate,
         };
@@ -69,6 +70,7 @@ export const updateBatch = async (data) => {
             batchId: data.batchId,
             batchCode: data.batchCode,
             goodsId: data.goodsId,
+            description: data.description,
             manufacturingDate: data.manufacturingDate,
             expiryDate: data.expiryDate,
         };
