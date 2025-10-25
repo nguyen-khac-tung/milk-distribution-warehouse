@@ -13,13 +13,19 @@ public partial class Batch
 
     public int? GoodsId { get; set; }
 
-    public DateTime? ManufacturingDate { get; set; }
+    public DateOnly? ManufacturingDate { get; set; }
 
-    public DateTime? ExpiryDate { get; set; }
+    public string Description { get; set; }
+
+    public DateOnly? ExpiryDate { get; set; }
 
     public DateTime? CreateAt { get; set; }
 
+    public DateTime? UpdateAt { get; set; }
+
     public int? CreateBy { get; set; }
+
+    public int? Status { get; set; }
 
     public virtual User CreateByNavigation { get; set; }
 
