@@ -43,9 +43,12 @@ namespace MilkDistributionWarehouse.Repositories
             return await _context.Pallets
                 .Include(p => p.CreateByNavigation)
                 .Include(p => p.Batch)
+                    .ThenInclude(b => b.Goods)
                 .Include(p => p.Location)
+                    .ThenInclude(l => l.Area)
                 .Include(p => p.PurchaseOrder)
-                .FirstOrDefaultAsync(p => p.PalletId == palletId && p.Status != CommonStatus.Deleted);
+                    .ThenInclude(po => po.Supplier)
+                .FirstOrDefaultAsync(p => p.PalletId == palletId);
         }
 
         public async Task<Pallet?> CreatePallet(Pallet entity)
