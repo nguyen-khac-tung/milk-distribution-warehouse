@@ -21,6 +21,8 @@ public partial class PurchaseOrder
 
     public int? AssignTo { get; set; }
 
+    public string Note { get; set; }
+
     public DateTime? CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
@@ -34,8 +36,6 @@ public partial class PurchaseOrder
     public virtual User CreatedByNavigation { get; set; }
 
     public virtual ICollection<GoodsReceiptNote> GoodsReceiptNotes { get; set; } = new List<GoodsReceiptNote>();
-
-    public virtual ICollection<Pallet> Pallets { get; set; } = new List<Pallet>();
 
     public virtual ICollection<PurchaseOderDetail> PurchaseOderDetails { get; set; } = new List<PurchaseOderDetail>();
 
