@@ -57,8 +57,8 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public class PlalletDetailDto : PalletResponseDto
         {
             public BatchDto BatchInfo { get; set; }
-            public LocationDto.LocationResponseDto LocationDto { get; set; }
-            public PurchaseOrderDtoCommon PurchaseOrderDto { get; set; }
+            public LocationDto.LocationPalletDto LocationDto { get; set; }
+            public PurchaseOrderDtoPallet PurchaseOrderDto { get; set; }
         }
     }
 }

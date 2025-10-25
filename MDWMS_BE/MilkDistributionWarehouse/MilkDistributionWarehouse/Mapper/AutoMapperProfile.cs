@@ -191,7 +191,8 @@ namespace MilkDistributionWarehouse.Mapper
             //Map Batch
             CreateMap<Batch, BatchDropDownDto>();
             CreateMap<Batch, BatchDto>()
-                .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Goods.GoodsName));
+                .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Goods != null ? src.Goods.GoodsName : null))
+                .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description != null ? src.Description.Trim() : null));
             CreateMap<BatchCreateDto, Batch>()
                 .ForMember(dest => dest.BatchId, opt => opt.MapFrom(_ => Guid.NewGuid()))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => CommonStatus.Active))
@@ -224,6 +225,10 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => PurchaseOrderStatus.Draft))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now))
                 .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(_ => (DateTime?)null));
+            CreateMap<PurchaseOrder, PurchaseOrderDtoPallet>()
+                .ForMember(dest => dest.PurchaseOderId, opt => opt.MapFrom(src => src.PurchaseOderId))
+                .ForMember(dest => dest.SupplierId, opt => opt.MapFrom(src => src.SupplierId ?? 0))
+                .ForMember(dest => dest.SupplierName, opt => opt.MapFrom(src => src.Supplier != null ? src.Supplier.CompanyName : null));
 
             //Map PurchaseOderDetail
             CreateMap<PurchaseOderDetail, PurchaseOrderDetailDto>()
@@ -246,9 +251,12 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.LocationDto, opt => opt.MapFrom(src => src.Location))
                 .ForMember(dest => dest.PurchaseOrderDto, opt => opt.MapFrom(src => src.PurchaseOrder));
 
-            CreateMap<Location, LocationDto.LocationResponseDto>()
+            CreateMap<Location, LocationDto.LocationPalletDto>()
+                .ForMember(dest => dest.LocationId, opt => opt.MapFrom(src => src.LocationId))
+                .ForMember(dest => dest.AreaId, opt => opt.MapFrom(src => src.AreaId))
                 .ForMember(dest => dest.AreaName, opt => opt.MapFrom(src => src.Area != null ? src.Area.AreaName : null))
-                .ForMember(dest => dest.AreaCode, opt => opt.MapFrom(src => src.Area != null ? src.Area.AreaCode : null));
+                .ForMember(dest => dest.AreaCode, opt => opt.MapFrom(src => src.Area != null ? src.Area.AreaCode : null))
+                .ForMember(dest => dest.LocationCode, opt => opt.MapFrom(src => src.LocationCode));
 
             CreateMap<Batch, BatchDto>()
                 .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Goods != null ? src.Goods.GoodsName : null));
