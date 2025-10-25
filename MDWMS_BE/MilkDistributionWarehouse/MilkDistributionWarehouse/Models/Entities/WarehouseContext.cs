@@ -294,6 +294,7 @@ public partial class WarehouseContext : DbContext
             entity.HasKey(e => e.PurchaseOderId).HasName("PK_ImportOrders");
 
             entity.Property(e => e.PurchaseOderId).ValueGeneratedNever();
+            entity.Property(e => e.Note).HasMaxLength(255);
 
             entity.HasOne(d => d.ApprovalByNavigation).WithMany(p => p.PurchaseOrderApprovalByNavigations).HasForeignKey(d => d.ApprovalBy);
 
