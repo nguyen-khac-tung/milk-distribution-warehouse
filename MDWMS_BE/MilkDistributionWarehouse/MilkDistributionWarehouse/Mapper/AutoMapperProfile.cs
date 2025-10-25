@@ -255,8 +255,8 @@ namespace MilkDistributionWarehouse.Mapper
             CreateMap<Pallet, PalletDto.PlalletDetailDto>()
                .IncludeBase<Pallet, PalletDto.PalletResponseDto>()
                .ForMember(dest => dest.BatchInfo, opt => opt.MapFrom(src => src.Batch))
-               .ForMember(dest => dest.LocationDto, opt => opt.MapFrom(src => src.Location))
-               .ForMember(dest => dest.PurchaseOrderDto, opt => opt.MapFrom(src => src.PurchaseOrder));
+               .ForMember(dest => dest.LocationDto, opt => opt.MapFrom(src => src.Location));
+               //.ForMember(dest => dest.PurchaseOrderDto, opt => opt.MapFrom(src => src.PurchaseOrder));
             CreateMap<PalletUpdateStatusDto, Pallet>();
             CreateMap<Pallet, PalletUpdateStatusDto>().ReverseMap();
 
