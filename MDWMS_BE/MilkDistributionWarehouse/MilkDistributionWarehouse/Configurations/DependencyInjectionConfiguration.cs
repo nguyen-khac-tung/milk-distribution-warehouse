@@ -65,6 +65,7 @@ namespace MilkDistributionWarehouse.Configurations
             services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
 
             //SalesOrder
+            services.AddScoped<ISalesOrderService, SalesOrderService>();
             services.AddScoped<ISalesOrderRepository, SalesOrderRepository>();
 
             //Role
@@ -84,6 +85,10 @@ namespace MilkDistributionWarehouse.Configurations
             //Pallet
             services.AddScoped<IPalletRepository, PalletRepository>();
             services.AddScoped<IPalletService, PalletService>();
+
+            //SalesOrderDetail
+            services.AddScoped<ISalesOrderDetailService, SalesOrderDetailService>();
+            services.AddScoped<ISalesOrderDetailRepository, SalesOrderDetailRepository>();
         }
     }
 }

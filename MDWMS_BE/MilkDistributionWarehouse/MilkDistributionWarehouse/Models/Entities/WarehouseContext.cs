@@ -265,13 +265,13 @@ public partial class WarehouseContext : DbContext
                 .HasForeignKey(d => d.CreateBy)
                 .HasConstraintName("FK_Pallets_Users");
 
+            entity.HasOne(d => d.GoodsReceiptNote).WithMany(p => p.Pallets)
+                .HasForeignKey(d => d.GoodsReceiptNoteId)
+                .HasConstraintName("FK_Pallets_GoodsReceiptNotes");
+
             entity.HasOne(d => d.Location).WithMany(p => p.Pallets)
                 .HasForeignKey(d => d.LocationId)
                 .HasConstraintName("FK_Pallets_Locations");
-
-            entity.HasOne(d => d.PurchaseOrder).WithMany(p => p.Pallets)
-                .HasForeignKey(d => d.PurchaseOrderId)
-                .HasConstraintName("FK_Pallets_ImportOrders");
         });
 
         modelBuilder.Entity<PurchaseOderDetail>(entity =>
@@ -496,6 +496,8 @@ public partial class WarehouseContext : DbContext
 
         modelBuilder.Entity<User>(entity =>
         {
+            entity.HasIndex(e => e.Email, "IX_Users").IsUnique();
+
             entity.Property(e => e.Address).HasMaxLength(50);
             entity.Property(e => e.Email)
                 .HasMaxLength(150)

@@ -90,10 +90,11 @@ namespace MilkDistributionWarehouse.Services
             if (userRole == null) return ("Selected role is null.", null);
 
             var newUser = _mapper.Map<User>(userCreate);
-            await AddRoleToUser(newUser, userRole);
+            msg = await AssignRoleToUser(newUser, userRole);
+            if (msg.Length > 0) return (msg, null);
+
             var password = GenerateRandomPassword();
             newUser.Password = BCrypt.Net.BCrypt.HashPassword(password);
-
             msg = await _userRepository.CreateUser(newUser);
             if (msg.Length > 0) return ("Thêm mới người dùng thất bại.", null);
 
@@ -116,7 +117,8 @@ namespace MilkDistributionWarehouse.Services
             if (userRole == null) return ("Selected role is null.", null);
 
             _mapper.Map(userUpdate, userExist);
-            await AddRoleToUser(userExist, userRole);
+            msg = await AssignRoleToUser(userExist, userRole);
+            if (msg.Length > 0) return (msg, null);
 
             msg = await _userRepository.UpdateUser(userExist);
             if (msg.Length > 0) return ("Cập nhật người dùng thất bại.", null);
@@ -180,8 +182,17 @@ namespace MilkDistributionWarehouse.Services
             return userDtos;
         }
 
-        private async Task AddRoleToUser(User? user, Role? role)
+        private async Task<string> AssignRoleToUser(User? user, Role? role)
         {
+            int[] roleRestricted = [RoleType.WarehouseManager, RoleType.SaleManager, RoleType.BusinessOwner, RoleType.Administrator];
+            if(roleRestricted.Contains(role.RoleId))
+            {
+                var users = await _userRepository.GetUsersByRoleId(role.RoleId);
+                var otherActiveUserExists = users.Any(u => u.UserId != user.UserId && u.Status == CommonStatus.Active);
+                if (otherActiveUserExists)
+                    return $"Vai trò {role.Description} đã được gán cho một tài khoản khác đang hoạt động.".ToMessageForUser();
+            }
+
             user.Roles.Clear();
             user.Roles.Add(role);
 
@@ -190,8 +201,8 @@ namespace MilkDistributionWarehouse.Services
                 var roleAdministrator = await _roleRepository.GetRoleById(RoleType.Administrator);
                 user.Roles.Add(roleAdministrator);
             }
+            return "";
         }
-
 
         private string GenerateRandomPassword()
         {

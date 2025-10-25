@@ -35,8 +35,6 @@ public partial class PurchaseOrder
 
     public virtual ICollection<GoodsReceiptNote> GoodsReceiptNotes { get; set; } = new List<GoodsReceiptNote>();
 
-    public virtual ICollection<Pallet> Pallets { get; set; } = new List<Pallet>();
-
     public virtual ICollection<PurchaseOderDetail> PurchaseOderDetails { get; set; } = new List<PurchaseOderDetail>();
 
     public virtual Supplier Supplier { get; set; }
