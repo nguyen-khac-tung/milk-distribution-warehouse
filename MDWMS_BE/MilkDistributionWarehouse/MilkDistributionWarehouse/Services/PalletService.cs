@@ -60,14 +60,13 @@ namespace MilkDistributionWarehouse.Services
             if (userId == null)
                 return ("The user is not logged into the system.".ToMessageForUser(), new PalletDto.PalletResponseDto());
 
-            // If LocationId provided, validate it and ensure no existing pallet at that location
             if (dto.LocationId.HasValue)
             {
                 if (!await _palletRepository.ExistsLocation(dto.LocationId))
-                    return ("Location do not exist.", new PalletDto.PalletResponseDto());
+                    return ("Vị trí không tồn tại.".ToMessageForUser(), new());
 
-                if (await _palletRepository.ExistsAsync(dto.LocationId))
-                    return ("Đã tồn tại pallet ở vị trí này.".ToMessageForUser(), new PalletDto.PalletResponseDto());
+                if (!await _palletRepository.IsLocationAvailable(dto.LocationId))
+                    return ("Vị trí này đã có pallet khác.".ToMessageForUser(), new());
             }
 
             if (dto.GoodsReceiptNoteId.HasValue && !await _palletRepository.ExistsGoodRecieveNote(dto.GoodsReceiptNoteId))
@@ -108,14 +107,15 @@ namespace MilkDistributionWarehouse.Services
             if (pallet == null)
                 return ("Pallet do not exist.", new PalletDto.PalletResponseDto());
 
-            // If LocationId provided, validate and check conflicts
             if (dto.LocationId.HasValue)
             {
-                if (await _palletRepository.ExistsAsync(dto.LocationId, palletId))
-                    return ("Có pallet khác đã sử dụng vị trí này.".ToMessageForUser(), new PalletDto.PalletResponseDto());
-
                 if (!await _palletRepository.ExistsLocation(dto.LocationId))
-                    return ("Location do not exist.", new PalletDto.PalletResponseDto());
+                    return ("Vị trí không tồn tại.".ToMessageForUser(), new());
+                if (dto.LocationId != pallet.LocationId)
+                {
+                    if (!await _palletRepository.IsLocationAvailable(dto.LocationId))
+                        return ("Vị trí mới đã có pallet khác.".ToMessageForUser(), new());
+                }
             }
 
             if (dto.GoodsReceiptNoteId.HasValue && !await _palletRepository.ExistsGoodRecieveNote(dto.GoodsReceiptNoteId))

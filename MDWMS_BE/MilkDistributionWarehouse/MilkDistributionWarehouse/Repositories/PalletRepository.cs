@@ -12,7 +12,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<Pallet?> UpdatePallet(Pallet entity);
         Task<bool> HasDependencies(Guid palletId);
         Task<List<Pallet>> GetActivePalletsAsync();
-        Task<bool> ExistsAsync(int? locationId, Guid? excludePalletId = null);
+        Task<bool> IsLocationAvailable(int? locationId);
         Task<bool> ExistsBatch(Guid? batchId);
         Task<bool> ExistsLocation(int? locationId);
         Task<bool> ExistsGoodRecieveNote(Guid? goodRcNoteId);
@@ -32,7 +32,6 @@ namespace MilkDistributionWarehouse.Repositories
             return _context.Pallets
                 .Include(p => p.Batch)
                 .Include(p => p.Location)
-                //.Include(p => p.PurchaseOrder)
                 .Where(p => p.Status != CommonStatus.Deleted)
                 .OrderByDescending(p => p.CreateAt)
                 .AsNoTracking();
@@ -81,19 +80,13 @@ namespace MilkDistributionWarehouse.Repositories
                 .ToListAsync();
         }
 
-        public async Task<bool> ExistsAsync(int? locationId, Guid? excludePalletId = null)
+        public Task<bool> IsLocationAvailable(int? locationId)
         {
-            if (!locationId.HasValue)
-                return false;
+            if (!locationId.HasValue) return Task.FromResult(false);
 
-            var query = _context.Pallets
-                .Where(p => p.Status != CommonStatus.Deleted
-                            && p.LocationId == locationId.Value);
-
-            if (excludePalletId.HasValue)
-                query = query.Where(p => p.PalletId != excludePalletId.Value);
-
-            return await query.AnyAsync();
+            return _context.Locations
+                .AsNoTracking()
+                .AnyAsync(l => l.LocationId == locationId.Value && l.IsAvailable == true && l.Status != CommonStatus.Deleted);
         }
 
         public Task<bool> ExistsBatch(Guid? batchId)
@@ -111,7 +104,7 @@ namespace MilkDistributionWarehouse.Repositories
 
             return _context.Locations
                 .AsNoTracking()
-                .AnyAsync(l => l.LocationId == locationId.Value && l.Status != CommonStatus.Deleted && l.IsAvailable == true);
+                .AnyAsync(l => l.LocationId == locationId.Value && l.Status != CommonStatus.Deleted);
         }
 
         public Task<bool> ExistsGoodRecieveNote(Guid? goodRcNoteId)
