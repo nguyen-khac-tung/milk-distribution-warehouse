@@ -15,6 +15,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public string CreateByName { get; set; }
             public Guid BatchId { get; set; }
             public string BatchCode { get; set; }
+            public int GoodId { get; set; }
             public int LocationId { get; set; }
             public string LocationCode { get; set; }
             public int Status { get; set; }
