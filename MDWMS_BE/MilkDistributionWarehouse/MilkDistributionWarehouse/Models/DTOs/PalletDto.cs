@@ -54,7 +54,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public int Status { get; set; }
         }
 
-        public class PlalletDetailDto
+        public class PalletDetailDto
         {
             public Guid PalletId { get; set; }
             public Guid GoodsReceiptNoteId { get; set; }
