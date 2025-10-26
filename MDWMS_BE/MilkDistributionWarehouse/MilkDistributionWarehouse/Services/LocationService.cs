@@ -11,13 +11,14 @@ namespace MilkDistributionWarehouse.Services
 {
     public interface ILocationService
     {
-        Task<(string, PageResult<LocationDto.LocationResponseDto>)> GetLocations(PagedRequest request);
-        Task<(string, LocationDto.LocationResponseDto)> GetLocationDetail(int locationId);
-        Task<(string, LocationDto.LocationResponseDto)> CreateLocation(LocationDto.LocationRequestDto dto);
-        Task<(string, LocationDto.LocationResponseDto)> UpdateLocation(int locationId, LocationDto.LocationRequestDto dto);
-        Task<(string, LocationDto.LocationResponseDto)> DeleteLocation(int locationId);
-        Task<(string, LocationDto.LocationResponseDto)> UpdateStatus(int locationId, int status);
-        Task<(string, List<LocationDto.LocationActiveDto>)> GetActiveLocations();
+        Task<(string, PageResult<LocationResponseDto>)> GetLocations(PagedRequest request);
+        Task<(string, LocationResponseDto)> GetLocationDetail(int locationId);
+        Task<(string, LocationResponseDto)> CreateLocation(LocationRequestDto dto);
+        Task<(string, LocationResponseDto)> UpdateLocation(int locationId, LocationRequestDto dto);
+        Task<(string, LocationResponseDto)> DeleteLocation(int locationId);
+        Task<(string, LocationResponseDto)> UpdateStatus(int locationId, int status);
+        Task<(string, List<LocationActiveDto>)> GetActiveLocations();
+        Task<(string, LocationActiveDto)> GetLocationsPallet(string locationcode);
         Task<(string, LocationBulkResponse)> CreateLocationsBulk(LocationBulkCreate create);
     }
 
@@ -36,44 +37,44 @@ namespace MilkDistributionWarehouse.Services
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<(string, PageResult<LocationDto.LocationResponseDto>)> GetLocations(PagedRequest request)
+        public async Task<(string, PageResult<LocationResponseDto>)> GetLocations(PagedRequest request)
         {
             var locations = _locationRepository.GetLocations();
 
             if (locations == null)
-                return ("Không có vị trí nào trong hệ thống.".ToMessageForUser(), new PageResult<LocationDto.LocationResponseDto>());
+                return ("Không có vị trí nào trong hệ thống.".ToMessageForUser(), new PageResult<LocationResponseDto>());
 
-            var locationDtos = locations.ProjectTo<LocationDto.LocationResponseDto>(_mapper.ConfigurationProvider);
+            var locationDtos = locations.ProjectTo<LocationResponseDto>(_mapper.ConfigurationProvider);
             var pagedResult = await locationDtos.ToPagedResultAsync(request);
 
             return ("", pagedResult);
         }
 
-        public async Task<(string, LocationDto.LocationResponseDto)> GetLocationDetail(int locationId)
+        public async Task<(string, LocationResponseDto)> GetLocationDetail(int locationId)
         {
             if (locationId <= 0)
-                return ("Mã vị trí không hợp lệ.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+                return ("Mã vị trí không hợp lệ.".ToMessageForUser(), new LocationResponseDto());
 
             var location = await _locationRepository.GetLocationById(locationId);
             if (location == null || location.Status == CommonStatus.Deleted)
-                return ("Không tìm thấy vị trí hoặc vị trí đã bị xóa.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+                return ("Không tìm thấy vị trí hoặc vị trí đã bị xóa.".ToMessageForUser(), new LocationResponseDto());
 
-            var dto = _mapper.Map<LocationDto.LocationResponseDto>(location);
+            var dto = _mapper.Map<LocationResponseDto>(location);
             return ("", dto);
         }
 
-        public async Task<(string, LocationDto.LocationResponseDto)> CreateLocation(LocationDto.LocationRequestDto dto)
+        public async Task<(string, LocationResponseDto)> CreateLocation(LocationRequestDto dto)
         {
             if (dto == null)
-                return ("Dữ liệu vị trí không hợp lệ.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+                return ("Dữ liệu vị trí không hợp lệ.".ToMessageForUser(), new LocationResponseDto());
 
             var areaExists = await _areaRepository.GetAreaById(dto.AreaId);
             if (areaExists == null)
-                return ("Khu vực được chọn không tồn tại hoặc đã bị xoá.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+                return ("Khu vực được chọn không tồn tại hoặc đã bị xoá.".ToMessageForUser(), new LocationResponseDto());
 
-            var locationCode = $"{dto.Rack}-R{dto.Row:D2}-C{dto.Column:D2}";
+            var locationCode = $"{areaExists.AreaCode}-{dto.Rack}-R{dto.Row:D2}-C{dto.Column:D2}";
             if (await _locationRepository.IsDuplicateLocationCodeInAreaAsync(locationCode, dto.AreaId))
-                return ("Đã tồn tại vị trí có cùng mã trong khu vực này.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+                return ("Đã tồn tại vị trí có cùng mã trong khu vực này.".ToMessageForUser(), new LocationResponseDto());
 
             var entity = _mapper.Map<Location>(dto);
             entity.LocationCode = locationCode;
@@ -82,32 +83,32 @@ namespace MilkDistributionWarehouse.Services
 
             var createdEntity = await _locationRepository.CreateLocation(entity);
             if (createdEntity == null)
-                return ("Tạo vị trí thất bại.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+                return ("Tạo vị trí thất bại.".ToMessageForUser(), new LocationResponseDto());
 
             var createdWithArea = await _locationRepository.GetLocationById(createdEntity.LocationId);
-            return ("", _mapper.Map<LocationDto.LocationResponseDto>(createdWithArea));
+            return ("", _mapper.Map<LocationResponseDto>(createdWithArea));
         }
 
 
-        public async Task<(string, LocationDto.LocationResponseDto)> UpdateLocation(int locationId, LocationDto.LocationRequestDto dto)
+        public async Task<(string, LocationResponseDto)> UpdateLocation(int locationId, LocationRequestDto dto)
         {
             if (dto == null)
-                return ("Dữ liệu cập nhật vị trí không hợp lệ.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+                return ("Dữ liệu cập nhật vị trí không hợp lệ.".ToMessageForUser(), new LocationResponseDto());
 
             var locationExists = await _locationRepository.GetLocationById(locationId);
             if (locationExists == null)
-                return ("Không tìm thấy vị trí cần cập nhật.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+                return ("Không tìm thấy vị trí cần cập nhật.".ToMessageForUser(), new LocationResponseDto());
 
             if (locationExists.Status == CommonStatus.Deleted)
-                return ("Vị trí này đã bị xóa, không thể cập nhật thông tin.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+                return ("Vị trí này đã bị xóa, không thể cập nhật thông tin.".ToMessageForUser(), new LocationResponseDto());
 
             var areaExists = await _areaRepository.GetAreaById(dto.AreaId);
             if (areaExists == null)
-                return ("Khu vực được chọn không tồn tại hoặc đã bị xoá.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+                return ("Khu vực được chọn không tồn tại hoặc đã bị xoá.".ToMessageForUser(), new LocationResponseDto());
 
-            var locationCode = $"{dto.Rack}-R{dto.Row:D2}-C{dto.Column:D2}";
+            var locationCode = $"{areaExists.AreaCode}-{dto.Rack}-R{dto.Row:D2}-C{dto.Column:D2}";
             if (await _locationRepository.IsDuplicateLocationCodeInAreaAsync(locationCode, dto.AreaId, locationId))
-                return ("Đã tồn tại vị trí có cùng mã trong khu vực này.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+                return ("Đã tồn tại vị trí có cùng mã trong khu vực này.".ToMessageForUser(), new LocationResponseDto());
 
             _mapper.Map(dto, locationExists);
             locationExists.LocationCode = locationCode;
@@ -115,77 +116,89 @@ namespace MilkDistributionWarehouse.Services
 
             var updatedEntity = await _locationRepository.UpdateLocation(locationExists);
             if (updatedEntity == null)
-                return ("Cập nhật vị trí thất bại.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+                return ("Cập nhật vị trí thất bại.".ToMessageForUser(), new LocationResponseDto());
 
             var updatedWithArea = await _locationRepository.GetLocationById(updatedEntity.LocationId);
-            return ("", _mapper.Map<LocationDto.LocationResponseDto>(updatedWithArea));
+            return ("", _mapper.Map<LocationResponseDto>(updatedWithArea));
         }
-        public async Task<(string, LocationDto.LocationResponseDto)> DeleteLocation(int locationId)
+        public async Task<(string, LocationResponseDto)> DeleteLocation(int locationId)
         {
             if (locationId <= 0)
-                return ("Mã vị trí không hợp lệ.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+                return ("Mã vị trí không hợp lệ.".ToMessageForUser(), new LocationResponseDto());
 
             var locationExists = await _locationRepository.GetLocationById(locationId);
             if (locationExists == null)
-                return ("Không tìm thấy vị trí để xoá.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+                return ("Không tìm thấy vị trí để xoá.".ToMessageForUser(), new LocationResponseDto());
 
             if (await _locationRepository.HasDependentPalletsAsync(locationId))
-                return ("Không thể xoá vì vị trí này đang được sử dụng.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+                return ("Không thể xoá vì vị trí này đang được sử dụng.".ToMessageForUser(), new LocationResponseDto());
 
             if (await _locationRepository.InUsed(locationId))
-                return ("Không thể xóa vì vị trí này đang được sử dụng.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+                return ("Không thể xóa vì vị trí này đang được sử dụng.".ToMessageForUser(), new LocationResponseDto());
 
             locationExists.Status = CommonStatus.Deleted;
             locationExists.UpdateAt = DateTime.Now;
 
             var deletedEntity = await _locationRepository.UpdateLocation(locationExists);
             if (deletedEntity == null)
-                return ("Xoá vị trí thất bại.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+                return ("Xoá vị trí thất bại.".ToMessageForUser(), new LocationResponseDto());
             var deletedWithArea = await _locationRepository.GetLocationById(deletedEntity.LocationId);
-            return ("", _mapper.Map<LocationDto.LocationResponseDto>(deletedWithArea));
+            return ("", _mapper.Map<LocationResponseDto>(deletedWithArea));
         }
 
-        public async Task<(string, LocationDto.LocationResponseDto)> UpdateStatus(int locationId, int status)
+        public async Task<(string, LocationResponseDto)> UpdateStatus(int locationId, int status)
         {
             if (locationId <= 0)
-                return ("Mã vị trí không hợp lệ.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+                return ("Mã vị trí không hợp lệ.".ToMessageForUser(), new LocationResponseDto());
 
             var location = await _locationRepository.GetLocationById(locationId);
             if (location == null)
-                return ("Không tìm thấy vị trí cần cập nhật trạng thái.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+                return ("Không tìm thấy vị trí cần cập nhật trạng thái.".ToMessageForUser(), new LocationResponseDto());
 
             if (location.Status == CommonStatus.Deleted)
-                return ("Vị trí này đã bị xóa, không thể cập nhật trạng thái.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+                return ("Vị trí này đã bị xóa, không thể cập nhật trạng thái.".ToMessageForUser(), new LocationResponseDto());
 
             if (status != CommonStatus.Active && status != CommonStatus.Inactive && status != CommonStatus.Deleted)
-                return ("Trạng thái không hợp lệ.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+                return ("Trạng thái không hợp lệ.".ToMessageForUser(), new LocationResponseDto());
 
             if (await _locationRepository.HasDependentPalletsAsync(locationId))
-                return ("Không thể cập nhật trạng thái vì vị trí này đang được sử dụng cho pallet.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+                return ("Không thể cập nhật trạng thái vì vị trí này đang được sử dụng cho pallet.".ToMessageForUser(), new LocationResponseDto());
             
             if (await _locationRepository.InUsed(locationId))
-                return ("Không thể cập nhật trạng thái vì vị trí này hiện đang được sử dụng.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+                return ("Không thể cập nhật trạng thái vì vị trí này hiện đang được sử dụng.".ToMessageForUser(), new LocationResponseDto());
 
             location.Status = status;
             location.UpdateAt = DateTime.Now;
 
             var updatedEntity = await _locationRepository.UpdateLocation(location);
             if (updatedEntity == null)
-                return ("Cập nhật trạng thái thất bại.".ToMessageForUser(), new LocationDto.LocationResponseDto());
+                return ("Cập nhật trạng thái thất bại.".ToMessageForUser(), new LocationResponseDto());
             var updatedWithArea = await _locationRepository.GetLocationById(updatedEntity.LocationId);
-            return ("", _mapper.Map<LocationDto.LocationResponseDto>(updatedWithArea));
+            return ("", _mapper.Map<LocationResponseDto>(updatedWithArea));
         }
 
-        public async Task<(string, List<LocationDto.LocationActiveDto>)> GetActiveLocations()
+        public async Task<(string, List<LocationActiveDto>)> GetActiveLocations()
         {
             var locations = await _locationRepository.GetActiveLocationsAsync();
 
             if (locations == null || !locations.Any())
-                return ("Không có vị trí nào đang hoạt động.".ToMessageForUser(), new List<LocationDto.LocationActiveDto>());
+                return ("Không có vị trí nào đang hoạt động.".ToMessageForUser(), new List<LocationActiveDto>());
 
-            var dtoList = _mapper.Map<List<LocationDto.LocationActiveDto>>(locations);
+            var dtoList = _mapper.Map<List<LocationActiveDto>>(locations);
             return ("", dtoList);
         }
+
+        public async Task<(string, LocationActiveDto)> GetLocationsPallet(string locationcode)
+        {
+            var location = await _locationRepository.GetLocationPallet(locationcode);
+
+            if (location == null)
+                return ("Không có vị trí này trong hệ thống hoặc vị trí này đã bị dỡ bỏ!".ToMessageForUser(), new LocationActiveDto());
+
+            var dtoList = _mapper.Map<LocationActiveDto>(location);
+            return ("", dtoList);
+        }
+
         public async Task<(string, LocationBulkResponse)> CreateLocationsBulk(LocationBulkCreate create)
         {
             var result = new LocationBulkResponse();
