@@ -42,7 +42,6 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public class PalletActiveDto
         {
             public Guid PalletId { get; set; }
-            public string DisplayName { get; set; }
         }
 
         public class PalletUpdateStatusDto

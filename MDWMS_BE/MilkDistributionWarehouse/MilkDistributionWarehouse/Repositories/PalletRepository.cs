@@ -74,6 +74,8 @@ namespace MilkDistributionWarehouse.Repositories
         {
             return await _context.Pallets
                 .Where(p => p.Status == CommonStatus.Active)
+                .Include(p => p.Batch)
+                .Include(p => p.Location)
                 .OrderBy(p => p.CreateAt)
                 .AsNoTracking()
                 .ToListAsync();
