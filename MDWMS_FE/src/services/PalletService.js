@@ -127,3 +127,42 @@ export const createPallet = async (palletData) => {
     }
 };
 
+// Cập nhật kệ kê hàng
+export const updatePallet = async (palletId, palletData) => {
+    console.log("updatePallet called with:", { palletId, palletData });
+
+    // Validate palletId is a valid UUID
+    if (!palletId) {
+        throw new Error('palletId is required');
+    }
+
+    if (typeof palletId !== 'string') {
+        throw new Error(`Invalid palletId type: ${typeof palletId}, expected string`);
+    }
+
+    // Check if it's a valid UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(palletId)) {
+        throw new Error(`Invalid palletId format: ${palletId}, expected UUID`);
+    }
+
+    const body = {
+        batchId: palletData.batchId,
+        locationId: parseInt(palletData.locationId),
+        packageQuantity: parseInt(palletData.packageQuantity),
+        unitsPerPackage: parseInt(palletData.unitsPerPackage),
+        goodsReceiptNoteId: palletData.goodsReceiptNoteId
+    };
+
+    try {
+        const res = await api.put(`/Pallet/Update/${palletId}`, body);
+        return res.data;
+    } catch (error) {
+        console.error("Error updating pallet:", error);
+        console.error("Error response:", error.response?.data);
+        console.error("Error status:", error.response?.status);
+        console.error("Request body was:", body);
+        throw error;
+    }
+};
+

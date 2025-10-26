@@ -6,13 +6,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { ArrowLeft, Package, User, Calendar, CheckCircle, XCircle, Clock, Truck, CheckSquare, Trash2, Key, Building2, FileText, Hash, Shield, ShoppingCart, Users, UserCheck, UserX, TruckIcon, UserPlus, Store, UserCircle, UserCog, UserCheck2, UserX2, UserMinus } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { getPurchaseOrderDetail } from '../../services/PurchaseOrderService';
+import ApprovalConfirmationModal from '../../components/PurchaseOrderComponents/ApprovalConfirmationModal';
+import { PURCHASE_ORDER_STATUS } from '../../utils/permissions';
+import { usePermissions } from '../../hooks/usePermissions';
+import { PERMISSIONS } from '../../utils/permissions';
 
 const PurchaseOrderDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { hasPermission } = usePermissions();
     const [loading, setLoading] = useState(true);
     const [purchaseOrder, setPurchaseOrder] = useState(null);
     const [error, setError] = useState(null);
+
+    // Modal states
+    const [showApprovalModal, setShowApprovalModal] = useState(false);
+    const [approvalLoading, setApprovalLoading] = useState(false);
 
     useEffect(() => {
         const fetchPurchaseOrderDetail = async () => {
@@ -76,7 +85,30 @@ const PurchaseOrderDetail = () => {
         };
         return statusIcons[status] || <Clock className="h-4 w-4" />;
     };
-
+    const handleApprovalConfirm = async () => {
+        setApprovalLoading(true);
+        try {
+            if (window.showToast) {
+                window.showToast("Duyệt đơn hàng thành công!", "success");
+            }
+            setShowApprovalModal(false);
+            const response = await getPurchaseOrderDetail(id);
+            if (response && response.success) {
+                setPurchaseOrder(response.data);
+            }
+        } catch (error) {
+            console.error("Error approving purchase order:", error);
+            if (window.showToast) {
+                window.showToast("Có lỗi xảy ra khi duyệt đơn hàng", "error");
+            }
+        } finally {
+            setApprovalLoading(false);
+        }
+    };
+    const canApprove = () => {
+        return hasPermission(PERMISSIONS.PURCHASE_ORDER_APPROVAL_REQUEST) &&
+            purchaseOrder?.status === PURCHASE_ORDER_STATUS.PendingApproval;
+    };
     if (loading) {
         return <Loading />;
     }
@@ -102,7 +134,6 @@ const PurchaseOrderDetail = () => {
             </div>
         );
     }
-
     if (!purchaseOrder) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -142,7 +173,6 @@ const PurchaseOrderDetail = () => {
                         </div>
                     </div>
                 </div>
-
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Main Content - Left Side */}
                     <div className="lg:col-span-2">
@@ -151,7 +181,6 @@ const PurchaseOrderDetail = () => {
                             <div className="text-center mb-6">
                                 <h1 className="text-2xl font-bold text-gray-900 uppercase">ĐƠN NHẬP HÀNG</h1>
                             </div>
-
                             {/* General Information */}
                             <div className="bg-gray-200 rounded-lg p-4 mb-6">
                                 <div className="flex items-center space-x-2 mb-3">
@@ -168,7 +197,6 @@ const PurchaseOrderDetail = () => {
                                     </span>
                                 </div>
                             </div>
-
                             {/* Product List Table */}
                             <div className="bg-white border border-gray-300 rounded-lg overflow-hidden flex-1 flex flex-col">
                                 <Table className="flex-1">
@@ -211,17 +239,25 @@ const PurchaseOrderDetail = () => {
                                     </TableBody>
                                 </Table>
                             </div>
+                            {/* Action Button at bottom of card */}
+                            {canApprove() && (
+                                <div className="mt-6 flex justify-center">
+                                    <Button
+                                        onClick={() => setShowApprovalModal(true)}
+                                        className="bg-green-600 hover:bg-green-700 text-white h-[38px] px-8"
+                                    >
+                                        <CheckCircle className="h-4 w-4 mr-2" />
+                                        Xác nhận chờ duyệt
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                     </div>
-
-                    {/* Status Sidebar - Right Side */}
                     <div className="bg-gray-200 rounded-lg p-6 h-full">
                         <div className="flex items-center space-x-2 mb-4">
                             <Shield className="h-5 w-5 text-blue-600" />
                             <h3 className="font-bold text-gray-800">Tình trạng</h3>
                         </div>
-
-                        {/* Created By */}
                         <div className="mb-4">
                             <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center space-x-2">
@@ -244,8 +280,6 @@ const PurchaseOrderDetail = () => {
                                 />
                             </div>
                         </div>
-
-                        {/* Approved By */}
                         <div className="mb-4">
                             <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center space-x-2">
@@ -268,8 +302,6 @@ const PurchaseOrderDetail = () => {
                                 />
                             </div>
                         </div>
-
-                        {/* Rejected By */}
                         <div className="mb-4">
                             <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center space-x-2">
@@ -292,7 +324,6 @@ const PurchaseOrderDetail = () => {
                                 />
                             </div>
                         </div>
-
                         {/* Assign To */}
                         <div className="mb-4">
                             <div className="flex items-center justify-between mb-2">
@@ -316,7 +347,6 @@ const PurchaseOrderDetail = () => {
                                 />
                             </div>
                         </div>
-
                         {/* Entered By */}
                         <div className="mb-4">
                             <div className="flex items-center justify-between mb-2">
@@ -343,6 +373,14 @@ const PurchaseOrderDetail = () => {
                     </div>
                 </div>
             </div>
+            {/* Approval Confirmation Modal */}
+            <ApprovalConfirmationModal
+                isOpen={showApprovalModal}
+                onClose={() => setShowApprovalModal(false)}
+                onConfirm={handleApprovalConfirm}
+                purchaseOrder={purchaseOrder}
+                loading={approvalLoading}
+            />
         </div>
     );
 };

@@ -43,6 +43,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[GoodsPacking]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[GoodsReceiptNoteDetails]",
          "ObjectType": 0
       },
