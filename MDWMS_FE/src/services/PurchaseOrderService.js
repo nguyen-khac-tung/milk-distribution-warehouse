@@ -230,23 +230,11 @@ export const updatePurchaseOrder = async (updateData) => {
 // Lấy đơn nháp theo nhà cung cấp
 export const getDraftPurchaseOrdersBySupplier = async (supplierId) => {
     try {
-        const body = {
-            pageNumber: 1,
-            pageSize: 100,
-            search: "",
-            sortField: "",
-            sortAscending: true,
-            filters: {
-                status: 1, // Draft status
-                supplierId: supplierId
-            }
-        };
-        
-        const res = await api.post("/PurchaseOrder/GetPurchaseOrderSaleManagers", body);
+        const res = await api.get(`/PurchaseOrder/GetPurchaseOrderBySupplierId/${supplierId}`);
         return res.data;
     } catch (error) {
         console.error("Error fetching draft purchase orders by supplier:", error);
-        return { data: [], totalCount: 0 };
+        return { data: [] };
     }
 };
 
