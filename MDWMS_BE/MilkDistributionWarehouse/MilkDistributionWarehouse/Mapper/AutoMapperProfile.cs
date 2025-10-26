@@ -212,12 +212,17 @@ namespace MilkDistributionWarehouse.Mapper
             //Map PurchaseOrder
             CreateMap<PurchaseOrder, PurchaseOrderDtoCommon>()
                 .ForMember(dest => dest.SupplierName, opt => opt.MapFrom(src => src.Supplier.CompanyName.Trim()));
+            CreateMap<PurchaseOrder, PurchaseOrderDetailBySupplier>()
+                .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => src.CreatedByNavigation.FullName.Trim()))
+                .ForMember(dest => dest.SupplierName, opt => opt.MapFrom(src => src.Supplier.CompanyName.Trim()));
             CreateMap<PurchaseOrder, PurchaseOrderDtoSaleRepresentative>()
                 .IncludeBase<PurchaseOrder, PurchaseOrderDtoCommon>()
                 .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => src.CreatedByNavigation.FullName.Trim()))
                 .ForMember(dest => dest.ApprovalByName, opt => opt.MapFrom(src => src.ApprovalByNavigation.FullName.Trim()));
             CreateMap<PurchaseOrder, PurchaseOrderDtoSaleManager>()
-                .IncludeBase<PurchaseOrder, PurchaseOrderDtoSaleRepresentative>()
+                .IncludeBase<PurchaseOrder, PurchaseOrderDtoCommon>()
+                .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => src.CreatedByNavigation.FullName.Trim()))
+                .ForMember(dest => dest.ApprovalByName, opt => opt.MapFrom(src => src.ApprovalByNavigation.FullName.Trim()))
                 .ForMember(dest => dest.ArrivalConfirmedByName, opt => opt.MapFrom(src => src.ArrivalConfirmedByNavigation.FullName.Trim()));
             CreateMap<PurchaseOrder, PurchaseOrderDtoWarehouseManager>()
                 .IncludeBase<PurchaseOrder, PurchaseOrderDtoSaleManager>()
@@ -237,6 +242,7 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.PurchaseOderId, opt => opt.MapFrom(src => src.PurchaseOderId))
                 .ForMember(dest => dest.SupplierId, opt => opt.MapFrom(src => src.SupplierId ?? 0))
                 .ForMember(dest => dest.SupplierName, opt => opt.MapFrom(src => src.Supplier != null ? src.Supplier.CompanyName : null));
+            
 
             //Map PurchaseOderDetail
             CreateMap<PurchaseOderDetail, PurchaseOrderDetailDto>()
@@ -256,7 +262,7 @@ namespace MilkDistributionWarehouse.Mapper
                .IncludeBase<Pallet, PalletDto.PalletResponseDto>()
                .ForMember(dest => dest.BatchInfo, opt => opt.MapFrom(src => src.Batch))
                .ForMember(dest => dest.LocationDto, opt => opt.MapFrom(src => src.Location));
-               //.ForMember(dest => dest.PurchaseOrderDto, opt => opt.MapFrom(src => src.PurchaseOrder));
+            //.ForMember(dest => dest.PurchaseOrderDto, opt => opt.MapFrom(src => src.PurchaseOrder));
             CreateMap<PalletUpdateStatusDto, Pallet>();
             CreateMap<Pallet, PalletUpdateStatusDto>().ReverseMap();
 

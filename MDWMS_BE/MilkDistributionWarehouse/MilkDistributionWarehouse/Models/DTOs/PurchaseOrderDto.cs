@@ -43,8 +43,12 @@ namespace MilkDistributionWarehouse.Models.DTOs
         }
     }
 
-    public class PurchaseOrderDtoSaleManager : PurchaseOrderDtoSaleRepresentative
+    public class PurchaseOrderDtoSaleManager : PurchaseOrderDtoCommon
     {
+        public int? CreatedBy { get; set; }
+        public string? CreatedByName { get; set; }
+        public int? ApprovalBy { get; set; }
+        public string? ApprovalByName { get; set; }
         public int? ArrivalConfirmedBy { get; set; }
         public string? ArrivalConfirmedByName { get; set; }
     }
@@ -70,6 +74,17 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public DateTime? UpdatedAt { get; set; }
         public bool IsDisableButton { get; set; }
 
+    }
+
+    public class PurchaseOrderDetailBySupplier
+    {
+        public Guid PurchaseOderId { get; set; }
+        public int SupplierId { get; set; }
+        public string? SupplierName { get; set; }
+        public int? CreatedBy { get; set; }
+        public string? CreatedByName { get; set; }
+        public int Status { get; set; }
+        public List<PurchaseOrderDetailDto>? PurchaseOrderDetails { get; set; } = new();
     }
 
     public class PurchaseOrderCreate
