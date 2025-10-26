@@ -100,5 +100,15 @@ namespace MilkDistributionWarehouse.Controllers
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<PurchaseOrder>.ToResultOk(purchaseOrderDelete);
         }
+
+        [HttpGet("GetPurchaseOrderBySupplierId/{supplierId}")]
+        [Authorize(Roles = "Sales Representative")]
+        public async Task<IActionResult> GetPurchaseOrderBySupplierId(int supplierId)
+        {
+            var (msg, purchaseOrderDetail) = await _purchaseOrderService.GetPurchaseOrderDetailBySupplierId(supplierId, User.GetUserId());
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<List<PurchaseOrderDetailBySupplier>>.ToResultOk(purchaseOrderDetail);
+        }
     }
 }

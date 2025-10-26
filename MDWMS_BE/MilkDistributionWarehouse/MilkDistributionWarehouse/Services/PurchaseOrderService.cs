@@ -21,6 +21,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, PurchaseOrdersDetail?)> GetPurchaseOrderDetailById(Guid purchaseOrderId, int? userId, List<string>? roles);
         Task<(string, PurchaseOrderUpdate?)> UpdatePurchaseOrder(PurchaseOrderUpdate update, int? userId);
         Task<(string, PurchaseOrder?)> DeletePurchaseOrder(Guid purchaseOrderId, int? userId);
+        Task<(string, List<PurchaseOrderDetailBySupplier>?)> GetPurchaseOrderDetailBySupplierId(int supplierId, int? userId);
     }
 
     public class PurchaseOrderService : IPurchaseOrderService
@@ -87,12 +88,12 @@ namespace MilkDistributionWarehouse.Services
 
             item.Items.ForEach(po =>
             {
-                if(po.CreatedBy != userId)
+                if (po.CreatedBy != userId)
                 {
                     po.IsDisableDelete = true;
                     po.IsDisableUpdate = true;
-                } 
-                    
+                }
+
             });
             return (msg, item);
         }
@@ -135,7 +136,7 @@ namespace MilkDistributionWarehouse.Services
             var role = roles?.FirstOrDefault();
 
 
-            var purchaseOrderQuery = _purchaseOrderRepository.GetPurchaseOrderByPurchaseOrderId(purchaseOrderId);
+            var purchaseOrderQuery = _purchaseOrderRepository.GetPurchaseOrderByPurchaseOrderId();
 
             var purchaseOrderMap = purchaseOrderQuery.ProjectTo<PurchaseOrdersDetail>(_mapper.ConfigurationProvider);
 
@@ -151,7 +152,7 @@ namespace MilkDistributionWarehouse.Services
                 switch (role)
                 {
                     case RoleNames.SalesRepresentative:
-                        isDisableButton = purchaseOrderMapDetal.CreatedBy != userId 
+                        isDisableButton = purchaseOrderMapDetal.CreatedBy != userId
                             && (purchaseOrderMapDetal.Status != PurchaseOrderStatus.Draft || purchaseOrderMapDetal.Status != PurchaseOrderStatus.Rejected);
                         break;
                     case RoleNames.SalesManager:
@@ -169,7 +170,7 @@ namespace MilkDistributionWarehouse.Services
             }
 
             purchaseOrderMapDetal.IsDisableButton = isDisableButton;
-            
+
             var (msg, purchaseOrderDetail) = await _purchaseOrderDetailService.GetPurchaseOrderDetailByPurchaseOrderId(purchaseOrderId);
 
             purchaseOrderMapDetal.PurchaseOrderDetails = purchaseOrderDetail;
@@ -185,7 +186,7 @@ namespace MilkDistributionWarehouse.Services
                 if (create == null)
                     return ("PurchaseOrder data create is null.", default);
 
-                create.Note = $"[{userName}] - " + create.Note; 
+                create.Note = $"[{userName}] - " + create.Note;
 
                 var purchaseOrderCreate = _mapper.Map<PurchaseOrder>(create);
 
@@ -229,7 +230,7 @@ namespace MilkDistributionWarehouse.Services
                 {
                     await _unitOfWork.RollbackTransactionAsync();
                     return ("PurchaseOrder data update is invalid.", default);
-                }    
+                }
 
                 var purchaseOrderExist = await _purchaseOrderRepository.GetPurchaseOrderByPurchaserOrderId(update.PurchaseOderId);
 
@@ -241,12 +242,12 @@ namespace MilkDistributionWarehouse.Services
 
                 if (purchaseOrderExist.Status != PurchaseOrderStatus.Draft && purchaseOrderExist.Status != PurchaseOrderStatus.Rejected)
                     throw new Exception("Chỉ được cập nhật khi đơn hàng ở trạng thái Nháp hoặc Bị từ chối.");
-                
+
                 if (purchaseOrderExist.CreatedBy != userId)
                 {
                     await _unitOfWork.RollbackTransactionAsync();
                     return ("No PO update permission.", default);
-                }    
+                }
 
                 var purchaseOrderDetails = await _purchaseOrderDetailRepository.GetPurchaseOrderDetail()
                     .Where(pod => pod.PurchaseOderId == update.PurchaseOderId)
@@ -256,7 +257,7 @@ namespace MilkDistributionWarehouse.Services
                 {
                     await _unitOfWork.RollbackTransactionAsync();
                     return ("List purchase order detail is null.", default);
-                }    
+                }
 
                 var resultDeletePODetail = await _purchaseOrderDetailRepository.DeletePODetailBulk(purchaseOrderDetails);
 
@@ -322,7 +323,7 @@ namespace MilkDistributionWarehouse.Services
 
                 var resultDeletePOD = await _purchaseOrderDetailRepository.DeletePODetailBulk(podExist);
 
-                if(resultDeletePOD == 0)
+                if (resultDeletePOD == 0)
                     throw new Exception("Xoá đơn đặt hàng thất bại.");
 
                 var resultDeletePO = await _purchaseOrderRepository.DeletePurchaseOrder(purchaseOrderExist);
@@ -341,5 +342,26 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
+        public async Task<(string, List<PurchaseOrderDetailBySupplier>?)> GetPurchaseOrderDetailBySupplierId(int supplierId, int? userId)
+        {
+            var purchaseOrderQuery = _purchaseOrderRepository.GetPurchaseOrderByPurchaseOrderId();
+
+            var purchaseOrderMap = purchaseOrderQuery.ProjectTo<PurchaseOrderDetailBySupplier>(_mapper.ConfigurationProvider);
+
+            var purchaseOrderMapDetal = await purchaseOrderMap
+                .Where(pod => pod.SupplierId == supplierId
+                    && pod.CreatedBy == userId && pod.Status == PurchaseOrderStatus.Draft).ToListAsync();
+
+            if (!purchaseOrderMapDetal.Any())
+                return ("PurchaseOrder is not found.", default);
+
+            foreach (var po in purchaseOrderMapDetal)
+            {
+                var (msg, purchaseOrderDetail) = await _purchaseOrderDetailService.GetPurchaseOrderDetailByPurchaseOrderId(po.PurchaseOderId);
+                po.PurchaseOrderDetails = purchaseOrderDetail;
+            }
+
+            return ("", purchaseOrderMapDetal);
+        }
     }
 }

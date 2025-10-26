@@ -8,7 +8,7 @@ namespace MilkDistributionWarehouse.Repositories
     public interface IPurchaseOrderRepositoy
     {
         IQueryable<PurchaseOrder> GetPurchaseOrder();
-        IQueryable<PurchaseOrder?> GetPurchaseOrderByPurchaseOrderId(Guid purchaseOrderId);
+        IQueryable<PurchaseOrder?> GetPurchaseOrderByPurchaseOrderId();
         Task<PurchaseOrder?> CreatePurchaseOrder(PurchaseOrder create);
         Task<PurchaseOrder?> UpdatePurchaseOrder(PurchaseOrder update);
         Task<PurchaseOrder?> DeletePurchaseOrder(PurchaseOrder purchaseOrder);
@@ -29,7 +29,7 @@ namespace MilkDistributionWarehouse.Repositories
             return _context.PurchaseOrders.OrderByDescending(po => po.CreatedAt).AsNoTracking();
         }
 
-        public IQueryable<PurchaseOrder?> GetPurchaseOrderByPurchaseOrderId(Guid purchaseOrderId)
+        public IQueryable<PurchaseOrder?> GetPurchaseOrderByPurchaseOrderId()
         {
             return _context.PurchaseOrders.AsNoTracking();
         }
@@ -72,7 +72,7 @@ namespace MilkDistributionWarehouse.Repositories
             try
             {
                 _context.PurchaseOrders.Remove(purchaseOrder);
-                await _context.SaveChangesAsync();  
+                await _context.SaveChangesAsync();
                 return purchaseOrder;
             }
             catch
@@ -84,7 +84,7 @@ namespace MilkDistributionWarehouse.Repositories
         public async Task<bool> HasActivePurchaseOrder(int supplierId)
         {
             return await _context.PurchaseOrders
-                .AnyAsync(po => po.SupplierId == supplierId 
+                .AnyAsync(po => po.SupplierId == supplierId
                 && po.Status != PurchaseOrderStatus.Draft && po.Status != PurchaseOrderStatus.Completed);
         }
 
