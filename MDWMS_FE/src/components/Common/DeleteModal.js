@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "../ui/button";
 
 export default function DeleteModal({ isOpen, onClose, onConfirm, itemName }) {
@@ -17,8 +18,8 @@ export default function DeleteModal({ isOpen, onClose, onConfirm, itemName }) {
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm" style={{ top: 0, left: 0, right: 0, bottom: 0 }}>
       <div className="w-full max-w-lg mx-4 bg-white rounded-xl shadow-2xl border border-gray-100">
         {/* Header */}
         <div className="p-8 text-center">
@@ -68,6 +69,7 @@ export default function DeleteModal({ isOpen, onClose, onConfirm, itemName }) {
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

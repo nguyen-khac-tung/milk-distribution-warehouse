@@ -105,12 +105,6 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.Area, opt => opt.Ignore())
                 .ForMember(dest => dest.Pallets, opt => opt.Ignore())
                 .ForMember(dest => dest.StocktakingLocations, opt => opt.Ignore());
-            CreateMap<Location, LocationDto.LocationPalletDto>()
-                .ForMember(dest => dest.LocationId, opt => opt.MapFrom(src => src.LocationId))
-                .ForMember(dest => dest.AreaId, opt => opt.MapFrom(src => src.AreaId))
-                .ForMember(dest => dest.AreaName, opt => opt.MapFrom(src => src.Area != null ? src.Area.AreaName : null))
-                .ForMember(dest => dest.AreaCode, opt => opt.MapFrom(src => src.Area != null ? src.Area.AreaCode : null))
-                .ForMember(dest => dest.LocationCode, opt => opt.MapFrom(src => src.LocationCode));
 
             // Map Area
             CreateMap<Area, AreaDto.AreaResponseDto>();
@@ -238,11 +232,6 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => PurchaseOrderStatus.Draft))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now))
                 .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(_ => (DateTime?)null));
-            CreateMap<PurchaseOrder, PurchaseOrderDtoPallet>()
-                .ForMember(dest => dest.PurchaseOderId, opt => opt.MapFrom(src => src.PurchaseOderId))
-                .ForMember(dest => dest.SupplierId, opt => opt.MapFrom(src => src.SupplierId ?? 0))
-                .ForMember(dest => dest.SupplierName, opt => opt.MapFrom(src => src.Supplier != null ? src.Supplier.CompanyName : null));
-            
 
             //Map PurchaseOderDetail
             CreateMap<PurchaseOderDetail, PurchaseOrderDetailDto>()
@@ -254,17 +243,23 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.PurchaseOrderDetailId, opt => opt.Ignore());
 
             //Map Pallet
-            CreateMap<Pallet, PalletDto.PalletResponseDto>()
+            CreateMap<Pallet, PalletResponseDto>()
                 .ForMember(dest => dest.CreateByName, opt => opt.MapFrom(src => src.CreateByNavigation != null ? src.CreateByNavigation.FullName : null))
                 .ForMember(dest => dest.BatchCode, opt => opt.MapFrom(src => src.Batch != null ? src.Batch.BatchCode : null))
                 .ForMember(dest => dest.LocationCode, opt => opt.MapFrom(src => src.Location != null ? src.Location.LocationCode : null));
-            CreateMap<Pallet, PalletDto.PlalletDetailDto>()
-               .IncludeBase<Pallet, PalletDto.PalletResponseDto>()
-               .ForMember(dest => dest.BatchInfo, opt => opt.MapFrom(src => src.Batch))
-               .ForMember(dest => dest.LocationDto, opt => opt.MapFrom(src => src.Location));
-            //.ForMember(dest => dest.PurchaseOrderDto, opt => opt.MapFrom(src => src.PurchaseOrder));
+            CreateMap<Pallet, PalletDetailDto>()
+                .ForMember(dest => dest.CreateByName, opt => opt.MapFrom(src => src.CreateByNavigation != null ? src.CreateByNavigation.FullName : null))
+                .ForMember(dest => dest.BatchCode, opt => opt.MapFrom(src => src.Batch != null ? src.Batch.BatchCode : null))
+                .ForMember(dest => dest.ManufacturingDate, opt => opt.MapFrom(src => src.Batch != null ? src.Batch.ManufacturingDate : null))
+                .ForMember(dest => dest.ExpiryDate, opt => opt.MapFrom(src => src.Batch != null ? src.Batch.ExpiryDate : null))
+                .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Batch != null && src.Batch.Goods != null ? src.Batch.Goods.GoodsName : null))
+                .ForMember(dest => dest.AreaName, opt => opt.MapFrom(src => src.Location != null && src.Location.Area != null ? src.Location.Area.AreaName : null))
+                .ForMember(dest => dest.AreaCode, opt => opt.MapFrom(src => src.Location != null && src.Location.Area != null ? src.Location.Area.AreaCode : null))
+                .ForMember(dest => dest.LocationCode, opt => opt.MapFrom(src => src.Location != null ? src.Location.LocationCode : null));
             CreateMap<PalletUpdateStatusDto, Pallet>();
             CreateMap<Pallet, PalletUpdateStatusDto>().ReverseMap();
+            CreateMap<PalletRequestDto, Pallet>();
+            CreateMap<Pallet, PalletActiveDto>();
 
             //Map SalesOrder
             CreateMap<SalesOrder, SalesOrderDtoSalesRepresentative>()

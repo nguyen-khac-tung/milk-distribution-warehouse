@@ -138,16 +138,6 @@ export const createPurchaseOrder = async (data) => {
 //     }
 // };
 
-// // Xóa Purchase Order
-// export const deletePurchaseOrder = async (id) => {
-//     try {
-//         const res = await api.delete(`/PurchaseOrder/Delete/${id}`);
-//         return res.data;
-//     } catch (error) {
-//         console.error("Error deleting purchase order:", error);
-//         throw error;
-//     }
-// };
 
 // Lấy chi tiết Purchase Order
 export const getPurchaseOrderDetail = async (id) => {
@@ -214,3 +204,49 @@ export const getGoodsDropDownBySupplierId = async (supplierId) => {
         throw error;
     }
 };
+
+// Xóa đơn nhập hàng
+export const deletePurchaseOrder = async (purchaseOrderId) => {
+    try {
+        const res = await api.delete(`/PurchaseOrder/DeletePurchaseOrder/${purchaseOrderId}`);
+        return res.data;
+    } catch (error) {
+        console.error("Error deleting purchase order:", error);
+        throw error;
+    }
+};
+
+// Cập nhật đơn nhập hàng
+export const updatePurchaseOrder = async (updateData) => {
+    try {
+        const res = await api.put('/PurchaseOrder/UpdatePurchaseOrder', updateData);
+        return res.data;
+    } catch (error) {
+        console.error("Error updating purchase order:", error);
+        throw error;
+    }
+};
+
+// Lấy đơn nháp theo nhà cung cấp
+export const getDraftPurchaseOrdersBySupplier = async (supplierId) => {
+    try {
+        const body = {
+            pageNumber: 1,
+            pageSize: 100,
+            search: "",
+            sortField: "",
+            sortAscending: true,
+            filters: {
+                status: 1, // Draft status
+                supplierId: supplierId
+            }
+        };
+        
+        const res = await api.post("/PurchaseOrder/GetPurchaseOrderSaleManagers", body);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching draft purchase orders by supplier:", error);
+        return { data: [], totalCount: 0 };
+    }
+};
+

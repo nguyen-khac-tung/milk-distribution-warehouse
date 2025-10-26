@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { getPallets, updatePalletStatus } from "../../services/PalletService";
+import { getPallets, updatePalletStatus, deletePallet } from "../../services/PalletService";
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
-import { Plus, Edit, Trash2, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Eye, Package } from "lucide-react";
+import { Edit, Trash2, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Eye, Package } from "lucide-react";
 import Loading from "../../components/Common/Loading";
 import SearchFilterToggle from "../../components/Common/SearchFilterToggle";
 import { extractErrorMessage } from "../../utils/Validation";
@@ -13,8 +13,8 @@ import { PERMISSIONS } from "../../utils/permissions";
 import StatsCards from "../../components/Common/StatsCards";
 import { StatusToggle } from "../../components/Common/SwitchToggle/StatusToggle";
 import { PalletDetail } from "./ViewPalletModal";
+import DeleteModal from "../../components/Common/DeleteModal";
 
-// Type definition for Pallet
 const Pallet = {
     palletId: "",
     purchaseOrderId: "",
@@ -39,7 +39,6 @@ export default function PalletList() {
     const [pallets, setPallets] = useState([])
     const [loading, setLoading] = useState(true)
     const [searchLoading, setSearchLoading] = useState(false)
-    const [showCreateModal, setShowCreateModal] = useState(false)
     const [showUpdateModal, setShowUpdateModal] = useState(false)
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [showViewModal, setShowViewModal] = useState(false)
@@ -54,34 +53,27 @@ export default function PalletList() {
     })
     const [showPageSizeFilter, setShowPageSizeFilter] = useState(false)
     const [isInitialized, setIsInitialized] = useState(false)
-
-    // Thống kê tổng (không thay đổi khi search/filter)
     const [totalStats, setTotalStats] = useState({
         totalCount: 0,
         activeCount: 0,
         inactiveCount: 0
     })
-
-    // Fetch tổng thống kê (không có search/filter)
     const fetchTotalStats = async () => {
         try {
             const response = await getPallets({
                 pageNumber: 1,
-                pageSize: 1000, // Lấy tất cả để đếm
+                pageSize: 1000,
                 search: "",
                 sortField: "",
                 sortAscending: true,
-                status: "" // Không filter theo status
+                status: ""
             })
-
             if (response && response.data) {
                 // API returns response.data.items (array) and response.data.totalCount
                 const dataArray = Array.isArray(response.data.items) ? response.data.items : []
                 const totalCount = response.data.totalCount || dataArray.length
-
                 const activeCount = dataArray.filter((p) => p.status === 1).length
                 const inactiveCount = dataArray.filter((p) => p.status === 2).length
-
                 setTotalStats({
                     totalCount: totalCount,
                     activeCount: activeCount,
@@ -92,12 +84,9 @@ export default function PalletList() {
             console.error("Error fetching total stats:", error)
         }
     }
-
-    // Fetch data from API
     const fetchData = async (searchParams = {}) => {
         try {
             setLoading(true)
-
             const response = await getPallets({
                 pageNumber: searchParams.pageNumber !== undefined ? searchParams.pageNumber : 1,
                 pageSize: searchParams.pageSize !== undefined ? searchParams.pageSize : 10,
@@ -108,7 +97,6 @@ export default function PalletList() {
             })
 
             if (response && response.data) {
-                // API returns response.data.items (array) and response.data.totalCount
                 const dataArray = Array.isArray(response.data.items) ? response.data.items : []
                 setPallets(dataArray)
                 setPagination(prev => ({
@@ -120,7 +108,6 @@ export default function PalletList() {
                 setPagination(prev => ({ ...prev, totalCount: 0 }))
             }
         } catch (error) {
-            console.error("Error fetching pallets:", error)
             setPallets([])
             setPagination(prev => ({ ...prev, totalCount: 0 }))
         } finally {
@@ -128,38 +115,38 @@ export default function PalletList() {
             setSearchLoading(false)
         }
     }
-
-    // Initial load
     useEffect(() => {
-        // Fetch tổng thống kê khi component mount
-        fetchTotalStats()
+        const initializeData = async () => {
+            // Fetch tổng thống kê
+            await fetchTotalStats()
 
-        // Reset tất cả filter và sort về mặc định
-        setSearchQuery("")
-        setStatusFilter("")
-        setSortField("")
-        setSortAscending(true)
-        setPagination({
-            pageNumber: 1,
-            pageSize: 10,
-            totalCount: 0
-        })
+            // Reset tất cả filter và sort về mặc định
+            setSearchQuery("")
+            setStatusFilter("")
+            setSortField("")
+            setSortAscending(true)
+            setPagination({
+                pageNumber: 1,
+                pageSize: 10,
+                totalCount: 0
+            })
 
-        // Fetch dữ liệu hiển thị với không có sort/filter
-        fetchData({
-            pageNumber: 1,
-            pageSize: 10,
-            search: "",
-            sortField: "",
-            sortAscending: true,
-            status: ""
-        })
+            // Fetch dữ liệu hiển thị
+            await fetchData({
+                pageNumber: 1,
+                pageSize: 10,
+                search: "",
+                sortField: "",
+                sortAscending: true,
+                status: ""
+            })
 
-        // Mark as initialized after initial load
-        setIsInitialized(true)
+            // Mark as initialized after all data is loaded
+            setIsInitialized(true)
+        }
+
+        initializeData()
     }, [])
-
-    // Close status filter dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (showStatusFilter && !event.target.closest('.status-filter-dropdown')) {
@@ -169,115 +156,77 @@ export default function PalletList() {
                 setShowPageSizeFilter(false)
             }
         }
-
         document.addEventListener('mousedown', handleClickOutside)
         return () => {
             document.removeEventListener('mousedown', handleClickOutside)
         }
     }, [showStatusFilter, showPageSizeFilter])
 
-    // Combined effect for search, filters, and sort
     useEffect(() => {
-        // Skip if not initialized yet (avoid calling API during initial state setup)
         if (!isInitialized) return
-
         const timeoutId = setTimeout(() => {
             setSearchLoading(true)
-            fetchData({
+            const params = {
                 pageNumber: 1,
                 pageSize: pagination.pageSize,
                 search: searchQuery || "",
                 sortField: sortField,
                 sortAscending: sortAscending,
                 status: statusFilter
-            })
+            }
+            fetchData(params)
             setPagination(prev => ({ ...prev, pageNumber: 1 }))
-        }, searchQuery ? 500 : 0) // Only debounce for search, immediate for filters
+        }, searchQuery ? 500 : 0)
 
         return () => clearTimeout(timeoutId)
     }, [searchQuery, statusFilter, sortField, sortAscending, isInitialized])
-
-    // Remove client-side filtering since backend already handles search and filter
     const filteredPallets = useMemo(() => {
-        // Just return the pallets from API as they are already filtered
         return Array.isArray(pallets) ? pallets : []
     }, [pallets])
 
     const activeCount = Array.isArray(pallets) ? pallets.filter((p) => p.status === 1).length : 0
     const inactiveCount = Array.isArray(pallets) ? pallets.filter((p) => p.status === 2).length : 0
 
-    const handleCreateSuccess = () => {
-        // Refresh tổng thống kê
-        fetchTotalStats()
-
-        // Reset về trang đầu và không có sort/filter để item mới hiển thị ở đầu
-        setSearchQuery("")
-        setStatusFilter("")
-        setSortField("")
-        setSortAscending(true)
-        setPagination(prev => ({ ...prev, pageNumber: 1 }))
-
-        // Refresh data after successful creation
-        fetchData({
-            pageNumber: 1,
-            pageSize: pagination.pageSize,
-            search: "",
-            sortField: "",
-            sortAscending: true,
-            status: ""
-        })
-    }
-
     const handleViewClick = (pallet) => {
         setItemToView(pallet)
         setShowViewModal(true)
     }
-
     const handleUpdateClick = (pallet) => {
         setUpdatePalletId(pallet.palletId)
         setShowUpdateModal(true)
     }
-
     const handleDeleteClick = (pallet) => {
         setItemToDelete(pallet)
         setShowDeleteModal(true)
     }
-
     const handleViewClose = () => {
         setShowViewModal(false)
         setItemToView(null)
         setViewPalletId(null)
     }
-
     const handleViewPallet = (palletId) => {
         setViewPalletId(palletId)
         setShowViewModal(true)
     }
-
     const handleUpdateSuccess = () => {
         setShowUpdateModal(false)
         setUpdatePalletId(null)
         fetchData()
     }
-
     const handleUpdateCancel = () => {
         setShowUpdateModal(false)
         setUpdatePalletId(null)
     }
-
     const handleDeleteConfirm = async () => {
         try {
-            console.log("Deleting pallet:", itemToDelete)
-            // await deletePallet(itemToDelete?.palletId)
+            await deletePallet(itemToDelete?.palletId)
+
             window.showToast(`Đã xóa kệ kê hàng: ${itemToDelete?.batchCode || ''}`, "success")
             setShowDeleteModal(false)
             setItemToDelete(null)
 
-            // Calculate if current page will be empty after deletion
             const currentPageItemCount = pallets.length
             const willPageBeEmpty = currentPageItemCount <= 1
-
-            // If current page will be empty and we're not on page 1, go to previous page
             let targetPage = pagination.pageNumber
             if (willPageBeEmpty && pagination.pageNumber > 1) {
                 targetPage = pagination.pageNumber - 1
@@ -298,7 +247,8 @@ export default function PalletList() {
             })
         } catch (error) {
             console.error("Error deleting pallet:", error)
-            window.showToast("Có lỗi xảy ra khi xóa kệ kê hàng", "error")
+            const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi xóa kệ kê hàng")
+            window.showToast(errorMessage, "error")
         }
     }
 
@@ -310,8 +260,6 @@ export default function PalletList() {
     const handleStatusChange = async (palletId, newStatus) => {
         try {
             await updatePalletStatus(palletId, newStatus)
-
-            // Update local state
             setPallets(prevPallets =>
                 prevPallets.map(pallet =>
                     pallet.palletId === palletId
@@ -324,36 +272,27 @@ export default function PalletList() {
             window.showToast(`Đã cập nhật kệ kê hàng thành ${statusText}`, "success")
         } catch (error) {
             console.error("Error updating pallet status:", error)
-
-            // Sử dụng extractErrorMessage để xử lý lỗi nhất quán
             const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật trạng thái")
             window.showToast(errorMessage, "error")
         }
     }
-
     const handleStatusFilter = (status) => {
         setStatusFilter(status)
         setShowStatusFilter(false)
     }
-
     const clearStatusFilter = () => {
         setStatusFilter("")
         setShowStatusFilter(false)
     }
-
     const handleClearAllFilters = () => {
         setSearchQuery("")
         setStatusFilter("")
         setShowStatusFilter(false)
     }
-
     const clearAllFilters = handleClearAllFilters
-
     const handlePageSizeChange = (newPageSize) => {
         setPagination(prev => ({ ...prev, pageSize: newPageSize, pageNumber: 1 }))
         setShowPageSizeFilter(false)
-
-        // Refresh data with new page size
         fetchData({
             pageNumber: 1,
             pageSize: newPageSize,
@@ -363,18 +302,14 @@ export default function PalletList() {
             status: statusFilter
         })
     }
-
     const handleSort = (field) => {
         if (sortField === field) {
-            // Nếu đang sort field này, đảo ngược thứ tự
             setSortAscending(!sortAscending)
         } else {
-            // Nếu chưa sort field này, set field mới và mặc định ascending
             setSortField(field)
             setSortAscending(true)
         }
     }
-
     return (
         <div className="min-h-screen">
             <div className="max-w-7xl mx-auto space-y-6">
@@ -384,15 +319,6 @@ export default function PalletList() {
                         <h1 className="text-2xl font-bold text-slate-600">Quản lý Kệ Kê Hàng</h1>
                         <p className="text-slate-600 mt-1">Quản lý các kệ kê hàng trong hệ thống</p>
                     </div>
-                    <PermissionWrapper requiredPermission={PERMISSIONS.PALLET_CREATE}>
-                        <Button
-                            className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
-                            onClick={() => setShowCreateModal(true)}
-                        >
-                            <Plus className="mr-2 h-4 w-4 text-white" />
-                            Thêm kệ kê hàng
-                        </Button>
-                    </PermissionWrapper>
                 </div>
 
                 {/* Stats Cards */}
@@ -680,10 +606,18 @@ export default function PalletList() {
                 />
             )}
 
-            {/* TODO: Add modals for Create, Update, Delete Kệ Kê Hàng */}
-            {/* Create Kệ Kê Hàng Modal */}
-            {/* Update Kệ Kê Hàng Modal */}
             {/* Delete Confirmation Modal */}
+            {showDeleteModal && (
+                <DeleteModal
+                    isOpen={showDeleteModal}
+                    onClose={handleDeleteCancel}
+                    onConfirm={handleDeleteConfirm}
+                    itemName={"kệ kê hàng"}
+                />
+            )}
+
+            {/* TODO: Add modals for Update Kệ Kê Hàng */}
+            {/* Update Kệ Kê Hàng Modal */}
         </div>
     )
 }

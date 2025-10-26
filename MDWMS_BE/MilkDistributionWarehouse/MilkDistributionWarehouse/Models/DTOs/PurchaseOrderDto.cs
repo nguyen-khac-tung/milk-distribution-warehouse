@@ -15,13 +15,6 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public DateTime? CreatedAt { get; set; }
     }
 
-    public class PurchaseOrderDtoPallet
-    {
-        public Guid PurchaseOderId { get; set; }
-        public int SupplierId { get; set; }
-        public string? SupplierName { get; set; }
-    }
-
     public class PurchaseOrderDtoSaleRepresentative : PurchaseOrderDtoCommon
     {
         public int? CreatedBy { get; set; }

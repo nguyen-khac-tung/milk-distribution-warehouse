@@ -20,7 +20,6 @@ export const getPallets = async (searchParams = {}) => {
                 ...(searchParams.toDate && { toDate: searchParams.toDate })
             }
         };
-
         const res = await api.post("/Pallet/Pallets", body);
         return res.data;
     } catch (error) {
@@ -65,10 +64,62 @@ export const updatePalletStatus = async (palletId, status) => {
     };
 
     try {
-        ;
-        return { success: true, message: "Status updated successfully (simulated)" };
+        const res = await api.put('/Pallet/UpdateStatus', body);
+        return res.data;
     } catch (error) {
         console.error("Error updating pallet status:", error);
+        console.error("Error response:", error.response?.data);
+        console.error("Error status:", error.response?.status);
+        console.error("Request body was:", body);
+        throw error;
+    }
+};
+
+// Xóa kệ kê hàng
+export const deletePallet = async (palletId) => {
+    console.log("deletePallet called with:", { palletId });
+
+    // Validate palletId is a valid UUID
+    if (!palletId) {
+        throw new Error('palletId is required');
+    }
+
+    if (typeof palletId !== 'string') {
+        throw new Error(`Invalid palletId type: ${typeof palletId}, expected string`);
+    }
+
+    // Check if it's a valid UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(palletId)) {
+        throw new Error(`Invalid palletId format: ${palletId}, expected UUID`);
+    }
+
+    try {
+        const res = await api.delete(`/Pallet/Delete/${palletId}`);
+        return res.data;
+    } catch (error) {
+        console.error("Error deleting pallet:", error);
+        console.error("Error response:", error.response?.data);
+        console.error("Error status:", error.response?.status);
+        throw error;
+    }
+};
+
+// Tạo kệ kê hàng
+export const createPallet = async (palletData) => {
+    const body = {
+        batchId: palletData.batchId,
+        locationId: parseInt(palletData.locationId),
+        packageQuantity: parseInt(palletData.packageQuantity),
+        unitsPerPackage: parseInt(palletData.unitsPerPackage),
+        purchaseOrderId: palletData.purchaseOrderId
+    };
+
+    try {
+        const res = await api.post('/Pallet/Create', body);
+        return res.data;
+    } catch (error) {
+        console.error("Error creating pallet:", error);
         console.error("Error response:", error.response?.data);
         console.error("Error status:", error.response?.status);
         console.error("Request body was:", body);
