@@ -33,8 +33,6 @@ public partial class Pallet
 
     public virtual GoodsReceiptNote GoodsReceiptNote { get; set; }
 
-    public virtual PurchaseOrder PurchaseOrder { get; set; }
-
     public virtual Location Location { get; set; }
     
     public virtual ICollection<StocktakingPallet> StocktakingPallets { get; set; } = new List<StocktakingPallet>();
