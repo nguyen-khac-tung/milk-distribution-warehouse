@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
@@ -23,7 +24,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, UserDto?)> UpdateUser(UserUpdateDto userUpdate);
         Task<string> UpdateUserStatus(UserStatusUpdateDto userUpdate);
         Task<string> DeleteUser(int? userId);
-
+        Task<(string, List<UserDropDown>?)> GetUserDropDownByRoleName(string roleName);
     }
 
     public class UserService : IUserService
@@ -175,6 +176,22 @@ namespace MilkDistributionWarehouse.Services
             if (msg.Length > 0) return "Xoá người dùng thất bại.".ToMessageForUser();
 
             return "";
+        }
+
+        public async Task<(string, List<UserDropDown>?)> GetUserDropDownByRoleName(string? roleName)
+        {
+            if (string.IsNullOrEmpty(roleName))
+                return ("RoleName is invalid.", default);
+
+            var users = await _userRepository.GetUsers()
+                       .Where(u => u.Status == CommonStatus.Active && u.Roles.Any(r => r.RoleName.Equals(roleName))).ToListAsync();
+
+            var userDropDowns = _mapper.Map<List<UserDropDown>>(users);
+
+            if (!userDropDowns.Any())
+                return ("Danh sách người dùng trống.".ToMessageForUser(), default);
+
+            return ("", userDropDowns);
         }
 
         private async Task<IQueryable<UserDto>> FilterByRole(PagedRequest request, IQueryable<UserDto> userDtos)
