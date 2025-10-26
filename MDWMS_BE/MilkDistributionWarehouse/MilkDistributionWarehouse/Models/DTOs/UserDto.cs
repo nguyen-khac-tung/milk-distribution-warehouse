@@ -75,4 +75,9 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int Status { get; set; }
     }
 
+    public class UserDropDown
+    {
+        public int UserId { get; set; }
+        public string FullName { get; set; }
+    }
 }
