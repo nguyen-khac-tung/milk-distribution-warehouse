@@ -55,19 +55,19 @@ export default function CreatePurchaseOrder({
             e.preventDefault();
             e.stopPropagation();
         }
-        
+
         // Chỉ kiểm tra khi đã có danh sách hàng hóa từ nhà cung cấp
         if (goods.length > 0) {
             // Đếm số mặt hàng đã được chọn
             const selectedGoodsCount = items.filter(item => item.goodsName && item.goodsName !== "").length;
-            
+
             // Kiểm tra xem còn mặt hàng nào để thêm không
             if (selectedGoodsCount >= goods.length) {
                 window.showToast("Đã thêm hết tất cả mặt hàng từ nhà cung cấp này!", "error");
                 return;
             }
         }
-        
+
         const newItem = {
             id: Date.now(),
             goodsName: "",
@@ -89,7 +89,7 @@ export default function CreatePurchaseOrder({
             }
         }
         setItems(items.map((item) => (item.id === id ? { ...item, [field]: value } : item)))
-        
+
         // Xóa lỗi validation khi người dùng sửa
         if (fieldErrors[`${id}-${field}`]) {
             const newErrors = { ...fieldErrors };
@@ -130,7 +130,7 @@ export default function CreatePurchaseOrder({
         const selectedGoodsNames = items
             .filter(item => item.id !== currentItemId && item.goodsName)
             .map(item => item.goodsName);
-        
+
         return goods
             .filter(good => !selectedGoodsNames.includes(good.goodsName))
             .map(good => ({
@@ -146,11 +146,11 @@ export default function CreatePurchaseOrder({
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         // Reset validation errors
         setFieldErrors({});
         const newFieldErrors = {};
-        
+
         // Kiểm tra từng mặt hàng
         items.forEach((item, index) => {
             const rowNumber = index + 1;
@@ -161,7 +161,7 @@ export default function CreatePurchaseOrder({
                 newFieldErrors[`${item.id}-quantity`] = "Vui lòng nhập số lượng lớn hơn 0";
             }
         });
-        
+
         // Kiểm tra nhà cung cấp
         if (!formData.supplierName) {
             window.showToast("Vui lòng chọn nhà cung cấp", "error");
@@ -170,24 +170,24 @@ export default function CreatePurchaseOrder({
             }
             return;
         }
-        
+
         if (Object.keys(newFieldErrors).length > 0) {
             setFieldErrors(newFieldErrors);
             return;
         }
-        
+
         const selectedSupplier = suppliers.find(supplier => supplier.companyName === formData.supplierName);
         if (!selectedSupplier) {
             window.showToast("Không tìm thấy nhà cung cấp", "error");
             return;
         }
-        
+
         const validItems = items.filter(item => item.goodsName && item.quantity);
         if (validItems.length === 0) {
             window.showToast("Vui lòng thêm ít nhất một hàng hóa với đầy đủ thông tin", "error");
             return;
         }
-        
+
         try {
             const itemsWithIds = validItems.map(item => {
                 const selectedGood = goods.find(good => good.goodsName === item.goodsName);
@@ -196,7 +196,7 @@ export default function CreatePurchaseOrder({
                     quantity: parseInt(item.quantity)
                 };
             }).filter(item => item.goodsId);
-            
+
             if (itemsWithIds.length === 0) {
                 console.log("Không tìm thấy hàng hóa hợp lệ");
                 window.showToast("Không tìm thấy hàng hóa hợp lệ!", "error");
@@ -206,20 +206,20 @@ export default function CreatePurchaseOrder({
             // Kiểm tra đơn nháp của nhà cung cấp
             const draftOrdersResponse = await getDraftPurchaseOrdersBySupplier(parseInt(selectedSupplier.supplierId));
             const draftOrders = draftOrdersResponse?.data || [];
-            
+
             if (draftOrders.length > 0) {
                 // Tìm đơn nháp gần nhất
                 const latestDraftOrder = draftOrders[0];
-                
+
                 // Lấy chi tiết đơn nháp
                 const draftOrderDetail = await getPurchaseOrderDetail(latestDraftOrder.purchaseOderId);
                 const existingItems = draftOrderDetail?.data?.purchaseOrderDetails || draftOrderDetail?.purchaseOrderDetails || [];
-                
+
                 // Kết hợp các sản phẩm mới với sản phẩm cũ
                 const allItemsMap = new Map();
                 let hasMergedItems = false; // Đánh dấu có sản phẩm bị cộng
                 let hasNewItems = false; // Đánh dấu có sản phẩm mới thêm vào
-                
+
                 // Thêm tất cả sản phẩm cũ vào map
                 existingItems.forEach(item => {
                     allItemsMap.set(item.goodsId, {
@@ -228,7 +228,7 @@ export default function CreatePurchaseOrder({
                         quantity: item.quantity
                     });
                 });
-                
+
                 // Cộng hoặc thêm sản phẩm mới
                 itemsWithIds.forEach(newItem => {
                     if (allItemsMap.has(newItem.goodsId)) {
@@ -245,22 +245,22 @@ export default function CreatePurchaseOrder({
                         console.log(`Đã thêm sản phẩm mới: ${newItem.goodsId} với số lượng ${newItem.quantity}`);
                     }
                 });
-                
+
                 // Chuyển map thành mảng cho API update
                 const itemsToUpdate = Array.from(allItemsMap.values()).map(item => ({
                     purchaseOrderDetailId: item.purchaseOrderDetailId || 0,
                     goodsId: item.goodsId,
                     quantity: item.quantity
                 }));
-                
+
                 // Cập nhật đơn nháp với tất cả sản phẩm
                 const updateData = {
                     purchaseOderId: latestDraftOrder.purchaseOderId,
                     purchaseOrderDetailUpdates: itemsToUpdate
                 };
-                
+
                 await updatePurchaseOrder(updateData);
-                
+
                 // Hiển thị thông báo chi tiết
                 let message = "Đã bổ sung vào đơn nháp thành công! ";
                 if (hasMergedItems && hasNewItems) {
@@ -270,7 +270,7 @@ export default function CreatePurchaseOrder({
                 } else if (hasNewItems) {
                     message += "Đã thêm sản phẩm mới vào đơn nháp.";
                 }
-                
+
                 window.showToast(message, "success");
             } else {
                 // Không có đơn nháp - tạo đơn mới
@@ -281,7 +281,7 @@ export default function CreatePurchaseOrder({
                 await createPurchaseOrder(submitData);
                 window.showToast("Tạo đơn nhập thành công!", "success");
             }
-            
+
             navigate("/purchase-orders");
         } catch (error) {
             console.error("Lỗi khi xử lý đơn nhập:", error);
@@ -317,7 +317,7 @@ export default function CreatePurchaseOrder({
                             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                                 <div className="space-y-2 md:col-span-1">
                                     <Label htmlFor="supplier" className="text-slate-600 font-medium">
-                                        Nhà Cung Cấp *
+                                        Nhà Cung Cấp <span className="text-red-500">*</span>
                                     </Label>
                                     <FloatingDropdown
                                         value={formData.supplierName}
@@ -350,38 +350,38 @@ export default function CreatePurchaseOrder({
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                                                                 {items.map((item, index) => (
-                                             <TableRow key={item.id} className="border-b border-gray-200 hover:bg-gray-50">
-                                                 <TableCell className="text-slate-700">{index + 1}</TableCell>
-                                                 <TableCell className="relative" style={{ overflow: 'visible', zIndex: 'auto' }}>
-                                                     <div>
-                                                         <FloatingDropdown
-                                                             value={item.goodsName}
-                                                             onChange={(value) => updateItem(item.id, "goodsName", value)}
-                                                             options={getAvailableGoodsOptions(item.id)}
-                                                             placeholder={formData.supplierName ? "Chọn hàng hóa" : "Chọn nhà cung cấp trước"}
-                                                             loading={goodsLoading}
-                                                             disabled={!formData.supplierName}
-                                                         />
-                                                         {fieldErrors[`${item.id}-goodsName`] && (
-                                                             <p className="text-red-500 text-xs mt-1">{fieldErrors[`${item.id}-goodsName`]}</p>
-                                                         )}
-                                                     </div>
-                                                 </TableCell>
-                                                 <TableCell>
-                                                     <div>
-                                                         <Input
-                                                             type="number"
-                                                             placeholder="0"
-                                                             value={item.quantity}
-                                                             onChange={(e) => updateItem(item.id, "quantity", e.target.value)}
-                                                             className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${fieldErrors[`${item.id}-quantity`] ? 'border-red-500' : ''}`}
-                                                         />
-                                                         {fieldErrors[`${item.id}-quantity`] && (
-                                                             <p className="text-red-500 text-xs mt-1">{fieldErrors[`${item.id}-quantity`]}</p>
-                                                         )}
-                                                     </div>
-                                                 </TableCell>
+                                        {items.map((item, index) => (
+                                            <TableRow key={item.id} className="border-b border-gray-200 hover:bg-gray-50">
+                                                <TableCell className="text-slate-700">{index + 1}</TableCell>
+                                                <TableCell className="relative" style={{ overflow: 'visible', zIndex: 'auto' }}>
+                                                    <div>
+                                                        <FloatingDropdown
+                                                            value={item.goodsName}
+                                                            onChange={(value) => updateItem(item.id, "goodsName", value)}
+                                                            options={getAvailableGoodsOptions(item.id)}
+                                                            placeholder={formData.supplierName ? "Chọn hàng hóa" : "Chọn nhà cung cấp trước"}
+                                                            loading={goodsLoading}
+                                                            disabled={!formData.supplierName}
+                                                        />
+                                                        {fieldErrors[`${item.id}-goodsName`] && (
+                                                            <p className="text-red-500 text-xs mt-1">{fieldErrors[`${item.id}-goodsName`]}</p>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div>
+                                                        <Input
+                                                            type="number"
+                                                            placeholder="0"
+                                                            value={item.quantity}
+                                                            onChange={(e) => updateItem(item.id, "quantity", e.target.value)}
+                                                            className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${fieldErrors[`${item.id}-quantity`] ? 'border-red-500' : ''}`}
+                                                        />
+                                                        {fieldErrors[`${item.id}-quantity`] && (
+                                                            <p className="text-red-500 text-xs mt-1">{fieldErrors[`${item.id}-quantity`]}</p>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
                                                 <TableCell>
                                                     <div className="h-[38px] flex items-center px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600">
                                                         {(() => {
@@ -411,30 +411,30 @@ export default function CreatePurchaseOrder({
                                     </TableBody>
                                 </Table>
                             </div>
-                            
-                                                         {/* Add Item Text - Centered below table */}
-                             <div className="flex justify-center">
-                                 <button
-                                     type="button"
-                                     onClick={(e) => addItem(e)}
-                                     className="text-orange-500 hover:text-orange-600 font-medium cursor-pointer flex items-center gap-2"
-                                 >
-                                     <Plus className="h-4 w-4" />
-                                     Thêm mặt hàng
-                                 </button>
-                                                           </div>
-                              
-                              {/* Actions */}
-                             <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-4">
-                                 <Button
-                                     type="button"
-                                     onClick={handleSubmit}
-                                     className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
-                                 >
-                                     {isEditMode ? "Cập Nhật Đơn Nhập" : "Tạo Đơn Nhập"}
-                                 </Button>
-                             </div>
-                         </div>
+
+                            {/* Add Item Text - Centered below table */}
+                            <div className="flex justify-center">
+                                <button
+                                    type="button"
+                                    onClick={(e) => addItem(e)}
+                                    className="text-orange-500 hover:text-orange-600 font-medium cursor-pointer flex items-center gap-2"
+                                >
+                                    <Plus className="h-4 w-4" />
+                                    Thêm mặt hàng
+                                </button>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-4">
+                                <Button
+                                    type="button"
+                                    onClick={handleSubmit}
+                                    className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
+                                >
+                                    {isEditMode ? "Cập Nhật Đơn Nhập" : "Tạo Đơn Nhập"}
+                                </Button>
+                            </div>
+                        </div>
                     </div>
                 </Card>
             </div>

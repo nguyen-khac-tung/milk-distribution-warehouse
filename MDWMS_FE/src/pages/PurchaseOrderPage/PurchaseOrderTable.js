@@ -95,6 +95,20 @@ const PurchaseOrderTable = ({
                 <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-16">
                   STT
                 </TableHead>
+                <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                  <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("purchaseOderId")}>
+                    <span>Mã đơn hàng</span>
+                    {sortField === "purchaseOderId" ? (
+                      sortAscending ? (
+                        <ArrowUp className="h-4 w-4 text-orange-500" />
+                      ) : (
+                        <ArrowDown className="h-4 w-4 text-orange-500" />
+                      )
+                    ) : (
+                      <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                    )}
+                  </div>
+                </TableHead>
                 <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                   <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("supplierId")}>
                     <span>Tên nhà cung cấp</span>
@@ -188,18 +202,7 @@ const PurchaseOrderTable = ({
                   </div>
                 </TableHead>
                 <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                  <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("status")}>
-                    <span>Trạng thái</span>
-                    {sortField === "status" ? (
-                      sortAscending ? (
-                        <ArrowUp className="h-4 w-4 text-orange-500" />
-                      ) : (
-                        <ArrowDown className="h-4 w-4 text-orange-500" />
-                      )
-                    ) : (
-                      <ArrowUpDown className="h-4 w-4 text-slate-400" />
-                    )}
-                  </div>
+                  <span>Trạng thái</span>
                 </TableHead>
                 <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
                   Thao tác
@@ -215,6 +218,13 @@ const PurchaseOrderTable = ({
                   >
                     <TableCell className="px-6 py-4 text-slate-600 font-medium text-center">
                       {(pagination.current - 1) * pagination.pageSize + index + 1}
+                    </TableCell>
+                    <TableCell className="px-6 py-4 text-slate-700 text-center">
+                      {order.purchaseOderId ? (
+                        <span className="font-mono text-sm bg-orange-100 text-orange-800 px-2 py-1 rounded border border-orange-200">
+                          {order.purchaseOderId.split('-').pop()}
+                        </span>
+                      ) : '-'}
                     </TableCell>
                     <TableCell className="px-6 py-4 text-slate-700 text-left">
                       {order.supplierName || order.supplierId || '-'}
@@ -349,7 +359,7 @@ const PurchaseOrderTable = ({
                   actionText="Xóa bộ lọc"
                   onAction={onClearFilters}
                   showAction={false}
-                  colSpan={5 + Object.values(availableFields).filter(Boolean).length + 2}
+                  colSpan={6 + Object.values(availableFields).filter(Boolean).length + 2}
                 />
               )}
             </TableBody>
