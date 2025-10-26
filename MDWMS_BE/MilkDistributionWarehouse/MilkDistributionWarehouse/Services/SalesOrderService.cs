@@ -43,7 +43,7 @@ namespace MilkDistributionWarehouse.Services
 
             if (userRoles.Contains(RoleType.WarehouseManager))
             {
-                int[] statusAllowed = [SalesOrderStatus.Approved, SalesOrderStatus.AssignedForPicking, SalesOrderStatus.Picking, SalesOrderStatus.Completed]; 
+                int[] statusAllowed = [SalesOrderStatus.Approved, SalesOrderStatus.AssignedForPicking, SalesOrderStatus.Picking, SalesOrderStatus.Completed];
                 salesOrders = salesOrders.Where(s => s.Status != null && statusAllowed.Contains((int)s.Status));
             }
 
@@ -51,6 +51,18 @@ namespace MilkDistributionWarehouse.Services
             {
                 int[] statusAllowed = [SalesOrderStatus.AssignedForPicking, SalesOrderStatus.Picking, SalesOrderStatus.Completed];
                 salesOrders = salesOrders.Where(s => s.Status != null && statusAllowed.Contains((int)s.Status) && s.AssignTo == userId);
+            }
+
+            if (request.Filters != null && request.Filters.Any())
+            {
+                var fromDate = request.Filters.FirstOrDefault(f => f.Key.ToLower() == "fromdate");
+                var toDate = request.Filters.FirstOrDefault(f => f.Key.ToLower() == "todate");
+                DateTime.TryParse(fromDate.Value, out DateTime startDate);
+                DateTime.TryParse(toDate.Value, out DateTime endDate);
+                salesOrders = salesOrders.Where(s => (startDate == default || s.EstimatedTimeDeparture >= startDate) &&
+                                                     (endDate == default || s.EstimatedTimeDeparture <= endDate));
+                if(fromDate.Key != null) request.Filters.Remove(fromDate.Key);
+                if(toDate.Key != null) request.Filters.Remove(toDate.Key);
             }
 
             var salesOrderDtos = salesOrders.ProjectTo<T>(_mapper.ConfigurationProvider);
@@ -63,9 +75,9 @@ namespace MilkDistributionWarehouse.Services
 
         public async Task<(string, SalesOrderDetailDto?)> GetSalesOrderDeatail(Guid? saleOrderId)
         {
-            if(saleOrderId == null) return ("SaleOrderId is invalid.", null);
+            if (saleOrderId == null) return ("SaleOrderId is invalid.", null);
             var salesOrder = await _salesOrderRepository.GetSalesOrderById(saleOrderId);
-            if(salesOrder == null) return ("Không tìm thấy đơn bán hàng này.", null);
+            if (salesOrder == null) return ("Không tìm thấy đơn bán hàng này.", null);
 
             var salesOrderDetail = _mapper.Map<SalesOrderDetailDto>(salesOrder);
             return ("", salesOrderDetail);
