@@ -16,20 +16,11 @@ import DeleteModal from "../../components/Common/DeleteModal";
 import { extractErrorMessage } from "../../utils/Validation";
 import { getPurchaseOrderSaleRepresentatives, getPurchaseOrderSaleManagers, getPurchaseOrderWarehouseManagers, getPurchaseOrderWarehouseStaff, deletePurchaseOrder } from "../../services/PurchaseOrderService";
 import { getSuppliersDropdown } from "../../services/SupplierService";
+import { getUserDropDownByRoleName } from "../../services/AccountService";
 import { PERMISSIONS } from "../../utils/permissions";
 import { usePermissions } from "../../hooks/usePermissions";
 import PermissionWrapper from "../../components/Common/PermissionWrapper";
 
-
-
-const sampleUsers = [
-  { userId: 1, fullName: "Nguyen Van A" },
-  { userId: 2, fullName: "Tran Thi B" },
-  { userId: 3, fullName: "Le Van C" },
-  { userId: 4, fullName: "Pham Thi D" },
-  { userId: 5, fullName: "Hoang Van E" },
-  { userId: 6, fullName: "representative 6" }
-];
 
 export default function PurchaseOrderList() {
   const navigate = useNavigate();
@@ -40,6 +31,10 @@ export default function PurchaseOrderList() {
   const [loading, setLoading] = useState(true);
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
+  const [approvers, setApprovers] = useState([]);
+  const [creators, setCreators] = useState([]);
+  const [confirmers, setConfirmers] = useState([]);
+  const [assignees, setAssignees] = useState([]);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -83,6 +78,34 @@ export default function PurchaseOrderList() {
     } catch (error) {
       console.error("Error fetching suppliers:", error);
     }
+  };
+
+  // Fetch users by role name
+  const fetchUsersByRole = async (roleName, setter) => {
+    try {
+      const response = await getUserDropDownByRoleName(roleName);
+      if (response && response.data && Array.isArray(response.data)) {
+        setter(response.data);
+      }
+    } catch (error) {
+      console.error(`Error fetching users for role ${roleName}:`, error);
+      setter([]);
+    }
+  };
+
+  // Fetch all users for filters
+  const fetchAllUsers = async () => {
+    // Fetch approvers (Sales Manager role)
+    await fetchUsersByRole("Sale Manager", setApprovers);
+    
+    // Fetch creators (Sales Representative role)
+    await fetchUsersByRole("Sales Representative", setCreators);
+    
+    // Fetch confirmers (Warehouse Manager role)
+    await fetchUsersByRole("Warehouse Manager", setConfirmers);
+    
+    // Fetch assignees (Warehouse Staff role)
+    await fetchUsersByRole("Warehouse Staff", setAssignees);
   };
 
   const fetchDataWithParams = async (params) => {
@@ -168,6 +191,7 @@ export default function PurchaseOrderList() {
   // Initial load
   useEffect(() => {
     fetchSuppliers();
+    fetchAllUsers();
     if (!hasInitialLoad) {
       console.log("=== INITIAL LOAD START ===");
       console.log("API Call Count before initial load:", apiCallCount);
@@ -669,7 +693,7 @@ export default function PurchaseOrderList() {
             setApproverFilter={filterConfig.showApprover ? setApproverFilter : () => { }}
             showApproverFilter={filterConfig.showApprover ? showApproverFilter : false}
             setShowApproverFilter={filterConfig.showApprover ? setShowApproverFilter : () => { }}
-            approvers={filterConfig.showApprover ? sampleUsers : []}
+            approvers={filterConfig.showApprover ? approvers : []}
             onApproverFilter={filterConfig.showApprover ? handleApproverFilter : () => { }}
             clearApproverFilter={filterConfig.showApprover ? clearApproverFilter : () => { }}
             showApprover={filterConfig.showApprover}
@@ -678,7 +702,7 @@ export default function PurchaseOrderList() {
             setCreatorFilter={filterConfig.showCreator ? setCreatorFilter : () => { }}
             showCreatorFilter={filterConfig.showCreator ? showCreatorFilter : false}
             setShowCreatorFilter={filterConfig.showCreator ? setShowCreatorFilter : () => { }}
-            creators={filterConfig.showCreator ? sampleUsers : []}
+            creators={filterConfig.showCreator ? creators : []}
             onCreatorFilter={filterConfig.showCreator ? handleCreatorFilter : () => { }}
             clearCreatorFilter={filterConfig.showCreator ? clearCreatorFilter : () => { }}
             showCreator={filterConfig.showCreator}
@@ -687,7 +711,7 @@ export default function PurchaseOrderList() {
             setConfirmerFilter={filterConfig.showConfirmer ? setConfirmerFilter : () => { }}
             showConfirmerFilter={filterConfig.showConfirmer ? showConfirmerFilter : false}
             setShowConfirmerFilter={filterConfig.showConfirmer ? setShowConfirmerFilter : () => { }}
-            confirmers={filterConfig.showConfirmer ? sampleUsers : []}
+            confirmers={filterConfig.showConfirmer ? confirmers : []}
             onConfirmerFilter={filterConfig.showConfirmer ? handleConfirmerFilter : () => { }}
             clearConfirmerFilter={filterConfig.showConfirmer ? clearConfirmerFilter : () => { }}
             showConfirmer={filterConfig.showConfirmer}
@@ -696,7 +720,7 @@ export default function PurchaseOrderList() {
             setAssigneeFilter={filterConfig.showAssignee ? setAssigneeFilter : () => { }}
             showAssigneeFilter={filterConfig.showAssignee ? showAssigneeFilter : false}
             setShowAssigneeFilter={filterConfig.showAssignee ? setShowAssigneeFilter : () => { }}
-            assignees={filterConfig.showAssignee ? sampleUsers : []}
+            assignees={filterConfig.showAssignee ? assignees : []}
             onAssigneeFilter={filterConfig.showAssignee ? handleAssigneeFilter : () => { }}
             clearAssigneeFilter={filterConfig.showAssignee ? clearAssigneeFilter : () => { }}
             showAssignee={filterConfig.showAssignee}
