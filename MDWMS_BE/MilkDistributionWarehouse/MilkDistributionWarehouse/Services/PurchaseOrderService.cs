@@ -17,8 +17,8 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, PageResult<PurchaseOrderDtoSaleManager>?)> GetPurchaseOrderSaleManagers(PagedRequest request);
         Task<(string, PageResult<PurchaseOrderDtoWarehouseManager>?)> GetPurchaseOrderWarehouseManager(PagedRequest request);
         Task<(string, PageResult<PurchaseOrderDtoWarehouseStaff>?)> GetPurchaseOrderWarehouseStaff(PagedRequest request, int? userId);
-        Task<(string, PurchaseOrderCreate?)> CreatePurchaseOrder(PurchaseOrderCreate create, int? userId);
-        Task<(string, PurchaseOrdersDetail?)> GetPurchaseOrderDetailById(Guid purchaseOrderId);
+        Task<(string, PurchaseOrderCreate?)> CreatePurchaseOrder(PurchaseOrderCreate create, int? userId, string? userName);
+        Task<(string, PurchaseOrdersDetail?)> GetPurchaseOrderDetailById(Guid purchaseOrderId, int? userId, List<string>? roles);
         Task<(string, PurchaseOrderUpdate?)> UpdatePurchaseOrder(PurchaseOrderUpdate update, int? userId);
         Task<(string, PurchaseOrder?)> DeletePurchaseOrder(Guid purchaseOrderId, int? userId);
     }
@@ -48,23 +48,23 @@ namespace MilkDistributionWarehouse.Services
             {
                 switch (userRole)
                 {
-                    case "Sales Representative":
-                        purchaseOrderQuery = purchaseOrderQuery.Where(pod => pod.CreatedBy == userId);
-                        break;
-                    case "Warehouse Staff":
-                        purchaseOrderQuery = purchaseOrderQuery
-                            .Where(pod => pod.AssignTo == userId
-                            && (pod.Status != null && excludedStatuses.Contains((int)pod.Status)));
-                        break;
-                    case "Warehouse Manager":
-                        purchaseOrderQuery = purchaseOrderQuery
-                            .Where(pod => pod.Status != null
-                            && excludedStatuses.Contains((int)pod.Status));
-                        break;
-                    case "Sale Manager":
+                    case RoleNames.SalesManager:
                         purchaseOrderQuery = purchaseOrderQuery
                             .Where(pod => pod.Status != null
                             && !excludedStatuses.Contains((int)pod.Status));
+                        break;
+                    //case RoleNames.SalesRepresentative:
+                    //    purchaseOrderQuery = purchaseOrderQuery.Where(pod => pod.CreatedBy == userId);
+                    //    break;
+                    case RoleNames.WarehouseManager:
+                        purchaseOrderQuery = purchaseOrderQuery
+                            .Where(pod => pod.Status != null
+                            && !excludedStatuses.Contains((int)pod.Status));
+                        break;
+                    case RoleNames.WarehouseStaff:
+                        purchaseOrderQuery = purchaseOrderQuery
+                            .Where(pod => pod.AssignTo == userId
+                            && (pod.Status != null && excludedStatuses.Contains((int)pod.Status)));
                         break;
                     default:
                         break;
@@ -83,7 +83,18 @@ namespace MilkDistributionWarehouse.Services
 
         public async Task<(string, PageResult<PurchaseOrderDtoSaleRepresentative>?)> GetPurchaseOrderSaleRepresentatives(PagedRequest request, int? userId)
         {
-            return await GetPurchaseOrdersAsync<PurchaseOrderDtoSaleRepresentative>(request, userId, "Sales Representative");
+            var (msg, item) = await GetPurchaseOrdersAsync<PurchaseOrderDtoSaleRepresentative>(request, userId, RoleNames.SalesRepresentative);
+
+            item.Items.ForEach(po =>
+            {
+                if(po.CreatedBy != userId)
+                {
+                    po.IsDisableDelete = true;
+                    po.IsDisableUpdate = true;
+                } 
+                    
+            });
+            return (msg, item);
         }
 
         public async Task<(string, PageResult<PurchaseOrderDtoSaleManager>?)> GetPurchaseOrderSaleManagers(PagedRequest request)
@@ -93,21 +104,18 @@ namespace MilkDistributionWarehouse.Services
                 PurchaseOrderStatus.Draft
             };
 
-            return await GetPurchaseOrdersAsync<PurchaseOrderDtoSaleManager>(request, null, "Sale Manager", excludedStatus);
+            return await GetPurchaseOrdersAsync<PurchaseOrderDtoSaleManager>(request, null, RoleNames.SalesManager, excludedStatus);
         }
 
         public async Task<(string, PageResult<PurchaseOrderDtoWarehouseManager>?)> GetPurchaseOrderWarehouseManager(PagedRequest request)
         {
             var excludedStatus = new int[]
                         {
-                          PurchaseOrderStatus.Approved,
-                          PurchaseOrderStatus.GoodsReceived,
-                          PurchaseOrderStatus.AssignedForReceiving,
-                          PurchaseOrderStatus.Receiving,
-                          PurchaseOrderStatus.Inspected,
-                          PurchaseOrderStatus.Completed
+                          PurchaseOrderStatus.Draft,
+                          PurchaseOrderStatus.Rejected,
+                          PurchaseOrderStatus.PendingApproval,
                         };
-            return await GetPurchaseOrdersAsync<PurchaseOrderDtoWarehouseManager>(request, null, "Warehouse Manager", excludedStatus);
+            return await GetPurchaseOrdersAsync<PurchaseOrderDtoWarehouseManager>(request, null, RoleNames.WarehouseManager, excludedStatus);
         }
 
         public async Task<(string, PageResult<PurchaseOrderDtoWarehouseStaff>?)> GetPurchaseOrderWarehouseStaff(PagedRequest request, int? userId)
@@ -119,11 +127,14 @@ namespace MilkDistributionWarehouse.Services
                           PurchaseOrderStatus.Inspected,
                           PurchaseOrderStatus.Completed
                         };
-            return await GetPurchaseOrdersAsync<PurchaseOrderDtoWarehouseStaff>(request, userId, "Warehouse Staff", excludedStatus);
+            return await GetPurchaseOrdersAsync<PurchaseOrderDtoWarehouseStaff>(request, userId, RoleNames.WarehouseStaff, excludedStatus);
         }
 
-        public async Task<(string, PurchaseOrdersDetail?)> GetPurchaseOrderDetailById(Guid purchaseOrderId)
+        public async Task<(string, PurchaseOrdersDetail?)> GetPurchaseOrderDetailById(Guid purchaseOrderId, int? userId, List<string>? roles)
         {
+            var role = roles?.FirstOrDefault();
+
+
             var purchaseOrderQuery = _purchaseOrderRepository.GetPurchaseOrderByPurchaseOrderId(purchaseOrderId);
 
             var purchaseOrderMap = purchaseOrderQuery.ProjectTo<PurchaseOrdersDetail>(_mapper.ConfigurationProvider);
@@ -133,23 +144,48 @@ namespace MilkDistributionWarehouse.Services
             if (purchaseOrderMapDetal == null)
                 return ("PurchaseOrder is not found.", default);
 
-            var (msg, purchaseOrderDetail) = await _purchaseOrderDetailService.GetPurchaseOrderDetailByPurchaseOrderId(purchaseOrderId);
+            bool isDisableButton = false;
 
-            if (!string.IsNullOrEmpty(msg))
-                return (msg, default);
+            if (role != null)
+            {
+                switch (role)
+                {
+                    case RoleNames.SalesRepresentative:
+                        isDisableButton = purchaseOrderMapDetal.CreatedBy != userId 
+                            && (purchaseOrderMapDetal.Status != PurchaseOrderStatus.Draft || purchaseOrderMapDetal.Status != PurchaseOrderStatus.Rejected);
+                        break;
+                    case RoleNames.SalesManager:
+                        isDisableButton = purchaseOrderMapDetal.Status != PurchaseOrderStatus.PendingApproval;
+                        break;
+                    case RoleNames.WarehouseManager:
+                        isDisableButton = false;
+                        break;
+                    case RoleNames.WarehouseStaff:
+                        isDisableButton = purchaseOrderMapDetal.AssignTo == userId;
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            purchaseOrderMapDetal.IsDisableButton = isDisableButton;
+            
+            var (msg, purchaseOrderDetail) = await _purchaseOrderDetailService.GetPurchaseOrderDetailByPurchaseOrderId(purchaseOrderId);
 
             purchaseOrderMapDetal.PurchaseOrderDetails = purchaseOrderDetail;
 
             return ("", purchaseOrderMapDetal);
         }
 
-        public async Task<(string, PurchaseOrderCreate?)> CreatePurchaseOrder(PurchaseOrderCreate create, int? userId)
+        public async Task<(string, PurchaseOrderCreate?)> CreatePurchaseOrder(PurchaseOrderCreate create, int? userId, string? userName)
         {
             try
             {
                 await _unitOfWork.BeginTransactionAsync();
                 if (create == null)
                     return ("PurchaseOrder data create is null.", default);
+
+                create.Note = $"[{userName}] - " + create.Note; 
 
                 var purchaseOrderCreate = _mapper.Map<PurchaseOrder>(create);
 
@@ -304,5 +340,6 @@ namespace MilkDistributionWarehouse.Services
                 return ($"{ex.Message}".ToMessageForUser(), default);
             }
         }
+
     }
 }

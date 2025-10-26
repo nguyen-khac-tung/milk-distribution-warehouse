@@ -8,6 +8,10 @@ namespace MilkDistributionWarehouse.Models.Entities;
 
 public partial class WarehouseContext : DbContext
 {
+    public WarehouseContext()
+    {
+    }
+
     public WarehouseContext(DbContextOptions<WarehouseContext> options)
         : base(options)
     {

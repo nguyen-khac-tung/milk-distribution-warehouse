@@ -107,4 +107,14 @@
         public const int Available = 1;
         public const int Unavailable = 2;
     }
+
+    public static class RoleNames
+    {
+        public const string SalesRepresentative = "Sales Representative";
+        public const string SalesManager = "Sale Manager";
+        public const string WarehouseManager = "Warehouse Manager";
+        public const string WarehouseStaff = "Warehouse Staff";
+        public const string Administrator = "Administrator";
+        public const string BusinessOwner = "Business Owner";
+    }
 }
