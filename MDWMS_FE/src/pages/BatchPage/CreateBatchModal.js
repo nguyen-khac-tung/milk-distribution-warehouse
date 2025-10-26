@@ -7,11 +7,13 @@ import { createBatch } from "../../services/BatchService";
 import { getGoodsDropdown } from "../../services/GoodService";
 import { extractErrorMessage } from "../../utils/Validation";
 import CustomDropdown from "../../components/Common/CustomDropdown";
+import { Textarea } from "../../components/ui/textarea";
 
 const CreateBatchModal = ({ isOpen, onClose, onSuccess }) => {
     const [formData, setFormData] = useState({
         batchCode: "",
         goodsId: "",
+        description: "",
         manufacturingDate: "",
         expiryDate: "",
     });
@@ -23,6 +25,7 @@ const CreateBatchModal = ({ isOpen, onClose, onSuccess }) => {
             setFormData({
                 batchCode: "",
                 goodsId: "",
+                description: "",
                 manufacturingDate: "",
                 expiryDate: "",
             });
@@ -53,6 +56,7 @@ const CreateBatchModal = ({ isOpen, onClose, onSuccess }) => {
             await createBatch({
                 batchCode: formData.batchCode,
                 goodsId: parseInt(formData.goodsId),
+                description: formData.description,
                 manufacturingDate: formData.manufacturingDate,
                 expiryDate: formData.expiryDate,
             });
@@ -120,6 +124,22 @@ const CreateBatchModal = ({ isOpen, onClose, onSuccess }) => {
                                     <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Description */}
+                        <div className="space-y-2">
+                            <Label htmlFor="description" className="text-sm font-medium text-slate-700">
+                                Mô tả
+                            </Label>
+                            <Textarea
+                                id="description"
+                                placeholder="Nhập mô tả lô hàng..."
+                                value={formData.description}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, description: e.target.value })
+                                }
+                                rows={3}
+                            />
                         </div>
 
                         <div className="flex gap-4 justify-end pt-6">

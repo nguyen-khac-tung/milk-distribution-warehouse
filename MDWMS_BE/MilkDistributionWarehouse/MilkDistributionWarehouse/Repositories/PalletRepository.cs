@@ -12,10 +12,10 @@ namespace MilkDistributionWarehouse.Repositories
         Task<Pallet?> UpdatePallet(Pallet entity);
         Task<bool> HasDependencies(Guid palletId);
         Task<List<Pallet>> GetActivePalletsAsync();
-        Task<bool> ExistsAsync(int locationId, Guid? excludePalletId = null);
+        Task<bool> IsLocationAvailable(int? locationId);
         Task<bool> ExistsBatch(Guid? batchId);
         Task<bool> ExistsLocation(int? locationId);
-        Task<bool> ExistsPurchaseOrder(Guid? purchaseOrderId);
+        Task<bool> ExistsGoodRecieveNote(Guid? goodRcNoteId);
     }
 
     public class PalletRepository : IPalletRepository
@@ -32,7 +32,6 @@ namespace MilkDistributionWarehouse.Repositories
             return _context.Pallets
                 .Include(p => p.Batch)
                 .Include(p => p.Location)
-                .Include(p => p.PurchaseOrder)
                 .Where(p => p.Status != CommonStatus.Deleted)
                 .OrderByDescending(p => p.CreateAt)
                 .AsNoTracking();
@@ -43,9 +42,11 @@ namespace MilkDistributionWarehouse.Repositories
             return await _context.Pallets
                 .Include(p => p.CreateByNavigation)
                 .Include(p => p.Batch)
+                    .ThenInclude(b => b.Goods)
                 .Include(p => p.Location)
-                .Include(p => p.PurchaseOrder)
-                .FirstOrDefaultAsync(p => p.PalletId == palletId && p.Status != CommonStatus.Deleted);
+                    .ThenInclude(l => l.Area)
+                .Include(p => p.GoodsReceiptNote)
+                .FirstOrDefaultAsync(p => p.PalletId == palletId);
         }
 
         public async Task<Pallet?> CreatePallet(Pallet entity)
@@ -72,25 +73,26 @@ namespace MilkDistributionWarehouse.Repositories
         {
             return await _context.Pallets
                 .Where(p => p.Status == CommonStatus.Active)
+                .Include(p => p.Batch)
+                .Include(p => p.Location)
                 .OrderBy(p => p.CreateAt)
                 .AsNoTracking()
                 .ToListAsync();
         }
 
-        public async Task<bool> ExistsAsync(int locationId, Guid? excludePalletId = null)
+        public Task<bool> IsLocationAvailable(int? locationId)
         {
-            var query = _context.Pallets
-                .Where(p => p.Status != CommonStatus.Deleted
-                            && p.LocationId == locationId);
+            if (!locationId.HasValue) return Task.FromResult(false);
 
-            if (excludePalletId.HasValue)
-                query = query.Where(p => p.PalletId != excludePalletId.Value);
-
-            return await query.AnyAsync();
+            return _context.Locations
+                .AsNoTracking()
+                .AnyAsync(l => l.LocationId == locationId.Value && l.IsAvailable == true && l.Status != CommonStatus.Deleted);
         }
 
         public Task<bool> ExistsBatch(Guid? batchId)
         {
+            if (!batchId.HasValue) return Task.FromResult(false);
+
             return _context.Batchs
                 .AsNoTracking()
                 .AnyAsync(b => b.BatchId == batchId.Value && b.Status != CommonStatus.Deleted);
@@ -98,16 +100,20 @@ namespace MilkDistributionWarehouse.Repositories
 
         public Task<bool> ExistsLocation(int? locationId)
         {
+            if (!locationId.HasValue) return Task.FromResult(false);
+
             return _context.Locations
                 .AsNoTracking()
-                .AnyAsync(l => l.LocationId == locationId.Value && l.Status != CommonStatus.Deleted && l.IsAvailable == true);
+                .AnyAsync(l => l.LocationId == locationId.Value && l.Status != CommonStatus.Deleted);
         }
 
-        public Task<bool> ExistsPurchaseOrder(Guid? purchaseOrderId)
+        public Task<bool> ExistsGoodRecieveNote(Guid? goodRcNoteId)
         {
-            return _context.PurchaseOrders
+            if (!goodRcNoteId.HasValue) return Task.FromResult(false);
+
+            return _context.GoodsReceiptNotes
                 .AsNoTracking()
-                .AnyAsync(po => po.PurchaseOderId == purchaseOrderId.Value);
+                .AnyAsync(po => po.GoodsReceiptNoteId == goodRcNoteId.Value);
         }
     }
 }

@@ -28,7 +28,14 @@ export default function UpdateStorageCondition({ isOpen, onClose, onSuccess, sto
         temperatureMax: storageConditionData.temperatureMax ?? 0,
         humidityMin: storageConditionData.humidityMin ?? 0,
         humidityMax: storageConditionData.humidityMax ?? 0,
-        lightLevel: storageConditionData.lightLevel || "",
+        lightLevel:
+          storageConditionData.lightLevel === "Bình thường"
+            ? "Normal"
+            : storageConditionData.lightLevel === "Thấp"
+              ? "Low"
+              : storageConditionData.lightLevel === "Cao"
+                ? "High"
+                : storageConditionData.lightLevel || "",
       })
     }
   }, [isOpen, storageConditionData])

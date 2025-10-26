@@ -101,6 +101,12 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public string GoodsName { get; set; }
     }
 
+    public class GoodsDropDownAndUnitMeasure : GoodsDropDown
+    {
+        public int UnitMeasureId { get; set; }
+        public string Name { get; set; }
+    }
+
     public class GoodsUpdateStatus
     {
         public int GoodsId { get; set; }

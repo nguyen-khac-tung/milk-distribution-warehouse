@@ -219,6 +219,31 @@ export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess, fo
                     </button>
                 </div>
 
+                <div className="px-6 pt-3">
+                    <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-100 rounded-lg text-slate-700">
+                        <ComponentIcon name="info" size={20} color="#2563eb" />
+                        <div className="text-sm leading-relaxed">
+                            <p className="font-medium text-blue-800">Hướng dẫn nhanh:</p>
+                            <ul className="list-disc list-inside space-y-1 mt-1">
+                                <li>
+                                    Chọn <strong>Khu vực</strong> và nhập <strong>Tên kệ</strong>.
+                                </li>
+                                <li>
+                                    Thêm <strong>Hàng</strong> (ví dụ: 1, 2, 3...) và các{" "}
+                                    <strong>Cột</strong> (ví dụ: 1 → n) tương ứng.
+                                </li>
+                                <li>
+                                    Mỗi ô sẽ tương ứng với một vị trí trong kho — ví dụ: “A1-Hàng 2-Cột 3”.
+                                </li>
+                                <li>
+                                    Nhấn <strong>Thêm</strong> để tạo vị trí. Hệ thống sẽ báo nếu có{" "}
+                                    <span className="text-red-600 font-medium">vị trí trùng</span> hoặc{" "}
+                                    <span className="text-green-600 font-medium">tạo thành công</span>.
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
                 {/* Body */}
                 <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
                     {/* Thông tin chung */}
@@ -383,7 +408,7 @@ export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess, fo
                         <div className="flex justify-center">
                             <Button
                                 type="button"
-                                className="bg-orange-300 hover:bg-orange-400 text-white px-6 py-2 rounded-lg"
+                                className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg"
                                 onClick={handleAddRow}
                             >
                                 + Thêm Hàng
@@ -408,9 +433,10 @@ export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess, fo
                         onClick={handleSubmit}
                         className="h-10 px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg disabled:opacity-50"
                     >
-                        {loading ? "Đang tạo..." :
+                        Thêm
+                        {/* {loading ? "Đang tạo..." :
                             hasBackendErrors ? `Tạo ${totalPositions - successfulLocations.size} Vị Trí Còn Lại` :
-                                `Tạo ${totalPositions} Vị Trí`}
+                                `Tạo ${totalPositions} Vị Trí`} */}
                     </Button>
                 </div>
             </div>

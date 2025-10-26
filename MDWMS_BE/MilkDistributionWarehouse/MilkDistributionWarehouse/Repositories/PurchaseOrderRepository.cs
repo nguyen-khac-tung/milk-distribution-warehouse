@@ -1,17 +1,20 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.Entities;
+using System.Threading.Tasks;
 
 namespace MilkDistributionWarehouse.Repositories
 {
     public interface IPurchaseOrderRepositoy
     {
         IQueryable<PurchaseOrder> GetPurchaseOrder();
-        IQueryable<PurchaseOrder?> GetPurchaseOrderByPurchaseOrderId(Guid purchaseOrderId);
+        IQueryable<PurchaseOrder?> GetPurchaseOrderByPurchaseOrderId();
         Task<PurchaseOrder?> CreatePurchaseOrder(PurchaseOrder create);
         Task<PurchaseOrder?> UpdatePurchaseOrder(PurchaseOrder update);
+        Task<PurchaseOrder?> DeletePurchaseOrder(PurchaseOrder purchaseOrder);
         Task<bool> HasActivePurchaseOrder(int supplierId);
         Task<bool> IsAllPurchaseOrderDraftOrEmpty(int supplierId);
+        Task<PurchaseOrder?> GetPurchaseOrderByPurchaserOrderId(Guid purchaseOrderId);
     }
     public class PurchaseOrderRepository : IPurchaseOrderRepositoy
     {
@@ -26,9 +29,14 @@ namespace MilkDistributionWarehouse.Repositories
             return _context.PurchaseOrders.OrderByDescending(po => po.CreatedAt).AsNoTracking();
         }
 
-        public IQueryable<PurchaseOrder?> GetPurchaseOrderByPurchaseOrderId(Guid purchaseOrderId)
+        public IQueryable<PurchaseOrder?> GetPurchaseOrderByPurchaseOrderId()
         {
             return _context.PurchaseOrders.AsNoTracking();
+        }
+
+        public async Task<PurchaseOrder?> GetPurchaseOrderByPurchaserOrderId(Guid purchaseOrderId)
+        {
+            return await _context.PurchaseOrders.FirstOrDefaultAsync(po => po.PurchaseOderId == purchaseOrderId);
         }
 
         public async Task<PurchaseOrder?> CreatePurchaseOrder(PurchaseOrder create)
@@ -59,10 +67,24 @@ namespace MilkDistributionWarehouse.Repositories
             }
         }
 
+        public async Task<PurchaseOrder?> DeletePurchaseOrder(PurchaseOrder purchaseOrder)
+        {
+            try
+            {
+                _context.PurchaseOrders.Remove(purchaseOrder);
+                await _context.SaveChangesAsync();
+                return purchaseOrder;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         public async Task<bool> HasActivePurchaseOrder(int supplierId)
         {
             return await _context.PurchaseOrders
-                .AnyAsync(po => po.SupplierId == supplierId 
+                .AnyAsync(po => po.SupplierId == supplierId
                 && po.Status != PurchaseOrderStatus.Draft && po.Status != PurchaseOrderStatus.Completed);
         }
 

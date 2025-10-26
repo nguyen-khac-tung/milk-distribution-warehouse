@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "../../components/ui/card";
-import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
 import { Search, Plus, Edit, Trash2, Eye, ArrowUp, ArrowDown, ArrowUpDown, Package } from "lucide-react";
@@ -10,24 +9,18 @@ import EmptyState from "../../components/Common/EmptyState";
 import Pagination from "../../components/Common/Pagination";
 import PurchaseOrderFilterToggle from "../../components/PurchaseOrderComponents/PurchaseOrderFilterToggle";
 import PurchaseOrderStatsChart from "../../components/PurchaseOrderComponents/PurchaseOrderStatsChart";
+import StatusDisplay, { PURCHASE_ORDER_STATUS, STATUS_LABELS } from "../../components/PurchaseOrderComponents/StatusDisplay";
 import PurchaseOrderTable from "./PurchaseOrderTable";
-import { useFilterDisplayLogic } from "./FilterDisplayLogic";
-import { getPurchaseOrderSaleRepresentatives, getPurchaseOrderSaleManagers, getPurchaseOrderWarehouseManagers, getPurchaseOrderWarehouseStaff } from "../../services/PurchaseOrderService";
+import DeleteModal from "../../components/Common/DeleteModal";
+import { extractErrorMessage } from "../../utils/Validation";
+import { getPurchaseOrderSaleRepresentatives, getPurchaseOrderSaleManagers, getPurchaseOrderWarehouseManagers, getPurchaseOrderWarehouseStaff, deletePurchaseOrder } from "../../services/PurchaseOrderService";
 import { getSuppliersDropdown } from "../../services/SupplierService";
 import { PERMISSIONS } from "../../utils/permissions";
 import { usePermissions } from "../../hooks/usePermissions";
 import PermissionWrapper from "../../components/Common/PermissionWrapper";
 
 
-// Mapping status numbers to Vietnamese labels and colors
-const statusConfig = {
-  1: { label: "Chờ duyệt", color: "bg-yellow-100 text-yellow-800" },
-  2: { label: "Đã xuất", color: "bg-blue-100 text-blue-800" },
-  3: { label: "Từ chối", color: "bg-red-100 text-red-800" },
-  4: { label: "Đã duyệt", color: "bg-green-100 text-green-800" }
-};
 
-// Sample data for users (temporary until we have user API)
 const sampleUsers = [
   { userId: 1, fullName: "Nguyen Van A" },
   { userId: 2, fullName: "Tran Thi B" },
@@ -71,6 +64,13 @@ export default function PurchaseOrderList() {
   const [showAssigneeFilter, setShowAssigneeFilter] = useState(false);
   const [dateRangeFilter, setDateRangeFilter] = useState({ fromDate: '', toDate: '' });
   const [showDateRangeFilter, setShowDateRangeFilter] = useState(false);
+  const [hasInitialLoad, setHasInitialLoad] = useState(false);
+  const [apiCallCount, setApiCallCount] = useState(0);
+  
+  // Delete modal states
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedPurchaseOrder, setSelectedPurchaseOrder] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Fetch data from API
   const fetchSuppliers = async () => {
@@ -84,61 +84,55 @@ export default function PurchaseOrderList() {
     }
   };
 
-  const fetchData = async () => {
+  const fetchDataWithParams = async (params) => {
     try {
       setLoading(true);
-      console.log("=== FETCHING PURCHASE ORDERS ===");
-      console.log("User roles:", userRoles);
+
+      // Đếm số lần gọi API
+      setApiCallCount(prev => {
+        const newCount = prev + 1;
+        console.log(`=== API CALL #${newCount} ===`);
+        console.log("API Call Count:", newCount);
+        console.log("Params:", params);
+        return newCount;
+      });
 
       // Chọn API dựa trên permissions của user
       let response;
-      const requestParams = {
-        pageNumber: pagination.current,
-        pageSize: pagination.pageSize,
-        search: searchQuery,
-        sortField: sortField,
-        sortAscending: sortAscending,
-        status: statusFilter,
-        supplierId: supplierFilter,
-        approvalBy: approverFilter,
-        createdBy: creatorFilter,
-        arrivalConfirmedBy: confirmerFilter,
-        assignTo: assigneeFilter,
-        fromDate: dateRangeFilter.fromDate,
-        toDate: dateRangeFilter.toDate
-      };
 
       // Kiểm tra permissions để chọn API phù hợp
       if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_SM)) {
-        response = await getPurchaseOrderSaleManagers(requestParams);
+        response = await getPurchaseOrderSaleManagers(params);
       } else if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WM)) {
         // Warehouse Manager - có quyền xem đơn hàng cho quản lý kho
-        response = await getPurchaseOrderWarehouseManagers(requestParams);
+        response = await getPurchaseOrderWarehouseManagers(params);
       } else if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WS)) {
         // Warehouse Staff - có quyền xem đơn hàng được giao
-        response = await getPurchaseOrderWarehouseStaff(requestParams);
+        response = await getPurchaseOrderWarehouseStaff(params);
       } else if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS)) {
         // Sales Representative - chỉ xem đơn hàng của mình
-        response = await getPurchaseOrderSaleRepresentatives(requestParams);
+        response = await getPurchaseOrderSaleRepresentatives(params);
       } else {
         // Fallback - mặc định dùng API cho representatives
-        response = await getPurchaseOrderSaleRepresentatives(requestParams);
+        response = await getPurchaseOrderSaleRepresentatives(params);
       }
 
-      console.log("API response:", response);
-
       if (response && response.data && response.data.items && Array.isArray(response.data.items)) {
+        console.log("=== PAGINATION UPDATE ===");
+        console.log("Total count:", response.data.totalCount);
+        console.log("Page number:", response.data.pageNumber);
+        console.log("Total pages:", response.data.totalPages);
+        
         setPurchaseOrders(response.data.items);
         setPagination(prev => ({
           ...prev,
-          total: response.data.totalCount || 0
+          total: response.data.totalCount || 0,
+          current: response.data.pageNumber || 1
         }));
-        console.log("Data loaded successfully:", response.data.items.length, "items");
       } else {
-        console.log("No data received or data is not array");
-        console.log("Response structure:", response);
+        console.log("No valid data found");
         setPurchaseOrders([]);
-        setPagination(prev => ({ ...prev, total: 0 }));
+        setPagination(prev => ({ ...prev, total: 0, current: 1 }));
       }
     } catch (error) {
       console.error("Error fetching purchase orders:", error);
@@ -149,23 +143,61 @@ export default function PurchaseOrderList() {
     }
   };
 
+  const fetchData = async () => {
+    const requestParams = {
+      pageNumber: pagination.current,
+      pageSize: pagination.pageSize,
+      search: searchQuery,
+      sortField: sortField,
+      sortAscending: sortAscending,
+      status: statusFilter,
+      supplierId: supplierFilter,
+      approvalBy: approverFilter,
+      createdBy: creatorFilter,
+      arrivalConfirmedBy: confirmerFilter,
+      assignTo: assigneeFilter,
+      fromDate: dateRangeFilter.fromDate,
+      toDate: dateRangeFilter.toDate
+    };
+    
+
+    return await fetchDataWithParams(requestParams);
+  };
+
   // Initial load
   useEffect(() => {
     fetchSuppliers();
-    fetchData();
-  }, []);
+    if (!hasInitialLoad) {
+      console.log("=== INITIAL LOAD START ===");
+      console.log("API Call Count before initial load:", apiCallCount);
+      fetchData();
+      setHasInitialLoad(true);
+    }
+  }, [hasInitialLoad]);
 
   // Trigger search/filter when filters change (skip initial load)
   useEffect(() => {
-    // Skip if this is the initial load (when all filters are empty/default)
-    const isInitialLoad = !searchQuery && !statusFilter && !supplierFilter &&
-      !approverFilter && !creatorFilter && !confirmerFilter &&
-      !assigneeFilter && !dateRangeFilter.fromDate && !dateRangeFilter.toDate;
+    // Chỉ gọi API sau khi đã load dữ liệu ban đầu
+    if (!hasInitialLoad) return;
 
-    if (!isInitialLoad) {
+    // Chỉ gọi fetchData() khi có filter thực sự active (không phải empty string)
+    const hasActiveFilters = searchQuery.trim() ||
+      (statusFilter && statusFilter !== "") ||
+      (supplierFilter && supplierFilter !== "") ||
+      (approverFilter && approverFilter !== "") ||
+      (creatorFilter && creatorFilter !== "") ||
+      (confirmerFilter && confirmerFilter !== "") ||
+      (assigneeFilter && assigneeFilter !== "") ||
+      (dateRangeFilter.fromDate && dateRangeFilter.fromDate !== "") ||
+      (dateRangeFilter.toDate && dateRangeFilter.toDate !== "");
+
+    // Chỉ gọi API khi có filter thực sự active
+    if (hasActiveFilters) {
+      console.log("=== FILTER CHANGE DETECTED ===");
+      console.log("API Call Count before filter:", apiCallCount);
       fetchData();
     }
-  }, [searchQuery, statusFilter, supplierFilter, approverFilter, creatorFilter, confirmerFilter, assigneeFilter, dateRangeFilter]);
+  }, [hasInitialLoad, searchQuery, statusFilter, supplierFilter, approverFilter, creatorFilter, confirmerFilter, assigneeFilter, dateRangeFilter]);
 
   // Filter and sort data
   const filteredPurchaseOrders = useMemo(() => {
@@ -178,7 +210,7 @@ export default function PurchaseOrderList() {
         (order.purchaseOrderId || '').toLowerCase().includes(searchLower) ||
         (order.supplierName || '').toLowerCase().includes(searchLower) ||
         (order.creatorName || '').toLowerCase().includes(searchLower) ||
-        (statusConfig[order.status]?.label || '').toLowerCase().includes(searchLower)
+        (STATUS_LABELS[order.status] || '').toLowerCase().includes(searchLower)
       );
 
       const matchesStatus = !statusFilter || (order.status || '').toString() === statusFilter;
@@ -228,14 +260,6 @@ export default function PurchaseOrderList() {
   }, [filteredPurchaseOrders, sortField, sortAscending]);
 
 
-  // Update total count when filtered data changes
-  React.useEffect(() => {
-    setPagination(prev => ({
-      ...prev,
-      total: (filteredPurchaseOrders || []).length,
-      current: 1 // Reset to first page when filter changes
-    }));
-  }, [(filteredPurchaseOrders || []).length]);
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -247,28 +271,115 @@ export default function PurchaseOrderList() {
   };
 
   const handleViewClick = (order) => {
-    console.log("Viewing purchase order:", order);
-    // TODO: Implement view modal
+    navigate(`/purchase-orders/${order.purchaseOderId}`);
   };
 
   const handleEditClick = (order) => {
-    console.log("Editing purchase order:", order);
-    // TODO: Implement edit modal
+    // Navigate to update page with order ID
+    navigate(`/purchase-orders/update/${order.purchaseOderId}`);
   };
 
   const handleDeleteClick = (order) => {
-    console.log("Deleting purchase order:", order);
-    // TODO: Implement delete modal
+    setSelectedPurchaseOrder(order);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedPurchaseOrder) return;
+    
+    console.log("=== DELETE CONFIRM ===");
+    console.log("Selected purchase order:", selectedPurchaseOrder);
+    console.log("All keys:", Object.keys(selectedPurchaseOrder));
+    
+    setDeleteLoading(true);
+    try {
+      const orderId = selectedPurchaseOrder.purchaseOderId;  
+      
+      if (!orderId) {
+        console.error("No valid ID found. Available fields:", Object.keys(selectedPurchaseOrder));
+        throw new Error("Không tìm thấy ID của đơn nhập");
+      }
+      
+      await deletePurchaseOrder(orderId);
+      
+      // Show success message
+      if (window.showToast) {
+        window.showToast("Xóa đơn nhập thành công!", "success");
+      }
+      
+      // Close modal and refresh data
+      setShowDeleteModal(false);
+      setSelectedPurchaseOrder(null);
+      
+      // Refresh the list
+      fetchData();
+      
+    } catch (error) {
+      console.error("Error deleting purchase order:", error);
+      
+      // Extract error message from backend using utility function
+      const errorMessage = extractErrorMessage(error);
+      
+      // Show specific error message
+      if (window.showToast) {
+        window.showToast(errorMessage, "error");
+      }
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
+    setSelectedPurchaseOrder(null);
   };
 
   const handlePageChange = (newPage) => {
+    // Update pagination state first
     setPagination(prev => ({ ...prev, current: newPage }));
-    fetchData();
+    
+    // Call fetchData with the new page number directly
+    const requestParams = {
+      pageNumber: newPage, // Use the new page directly
+      pageSize: pagination.pageSize,
+      search: searchQuery,
+      sortField: sortField,
+      sortAscending: sortAscending,
+      status: statusFilter,
+      supplierId: supplierFilter,
+      approvalBy: approverFilter,
+      createdBy: creatorFilter,
+      arrivalConfirmedBy: confirmerFilter,
+      assignTo: assigneeFilter,
+      fromDate: dateRangeFilter.fromDate,
+      toDate: dateRangeFilter.toDate
+    };
+    
+    fetchDataWithParams(requestParams);
   };
 
   const handlePageSizeChange = (newPageSize) => {
+    // Update pagination state first
     setPagination(prev => ({ ...prev, pageSize: newPageSize, current: 1 }));
-    fetchData();
+    
+    // Call fetchData with the new page size directly
+    const requestParams = {
+      pageNumber: 1, // Reset to page 1 when changing page size
+      pageSize: newPageSize,
+      search: searchQuery,
+      sortField: sortField,
+      sortAscending: sortAscending,
+      status: statusFilter,
+      supplierId: supplierFilter,
+      approvalBy: approverFilter,
+      createdBy: creatorFilter,
+      arrivalConfirmedBy: confirmerFilter,
+      assignTo: assigneeFilter,
+      fromDate: dateRangeFilter.fromDate,
+      toDate: dateRangeFilter.toDate
+    };
+    
+    fetchDataWithParams(requestParams);
   };
 
   // Filter handlers
@@ -283,6 +394,10 @@ export default function PurchaseOrderList() {
   };
 
   const clearAllFilters = () => {
+    console.log("=== CLEAR ALL FILTERS ===");
+    console.log("API Call Count before clear:", apiCallCount);
+
+    // Reset tất cả filters về giá trị mặc định
     setSearchQuery("");
     setStatusFilter("");
     setSupplierFilter("");
@@ -291,8 +406,44 @@ export default function PurchaseOrderList() {
     setConfirmerFilter("");
     setAssigneeFilter("");
     setDateRangeFilter({ fromDate: '', toDate: '' });
+
+    // Reset pagination về trang đầu
     setPagination(prev => ({ ...prev, current: 1 }));
-    // fetchData() will be called automatically by useEffect when filters change
+
+    // Reset các show states về false
+    setShowStatusFilter(false);
+    setShowSupplierFilter(false);
+    setShowApproverFilter(false);
+    setShowCreatorFilter(false);
+    setShowConfirmerFilter(false);
+    setShowAssigneeFilter(false);
+    setShowDateRangeFilter(false);
+
+    // Reset hasInitialLoad để load lại dữ liệu ban đầu
+    setHasInitialLoad(false);
+
+    // Gọi fetchData() với params rỗng để đảm bảo load tất cả dữ liệu
+    const emptyParams = {
+      pageNumber: 1,
+      pageSize: pagination.pageSize,
+      search: "",
+      sortField: sortField,
+      sortAscending: sortAscending,
+      status: "",
+      supplierId: "",
+      approvalBy: "",
+      createdBy: "",
+      arrivalConfirmedBy: "",
+      assignTo: "",
+      fromDate: "",
+      toDate: ""
+    };
+
+    // Gọi API trực tiếp với params rỗng
+    setTimeout(() => {
+      fetchDataWithParams(emptyParams);
+      setHasInitialLoad(true);
+    }, 50);
   };
 
   const handleRefresh = () => {
@@ -411,24 +562,41 @@ export default function PurchaseOrderList() {
 
   const purchaseOrderStats = useMemo(() => {
     const totalOrders = purchaseOrders.length;
-    const pendingOrders = purchaseOrders.filter(order => order.status === 1).length;
-    const approvedOrders = purchaseOrders.filter(order => order.status === 4).length;
-    const rejectedOrders = purchaseOrders.filter(order => order.status === 3).length;
-    const shippedOrders = purchaseOrders.filter(order => order.status === 2).length;
+    const draftOrders = purchaseOrders.filter(order => order.status === PURCHASE_ORDER_STATUS.Draft).length;
+    const pendingOrders = purchaseOrders.filter(order => order.status === PURCHASE_ORDER_STATUS.PendingApproval).length;
+    const approvedOrders = purchaseOrders.filter(order => order.status === PURCHASE_ORDER_STATUS.Approved).length;
+    const rejectedOrders = purchaseOrders.filter(order => order.status === PURCHASE_ORDER_STATUS.Rejected).length;
+    const completedOrders = purchaseOrders.filter(order => order.status === PURCHASE_ORDER_STATUS.Completed).length;
+    const goodsReceivedOrders = purchaseOrders.filter(order => order.status === PURCHASE_ORDER_STATUS.GoodsReceived).length;
+    const assignedOrders = purchaseOrders.filter(order => order.status === PURCHASE_ORDER_STATUS.AssignedForReceiving).length;
+    const receivingOrders = purchaseOrders.filter(order => order.status === PURCHASE_ORDER_STATUS.Receiving).length;
+    const inspectedOrders = purchaseOrders.filter(order => order.status === PURCHASE_ORDER_STATUS.Inspected).length;
 
-    return {
+    const stats = {
       totalOrders,
+      draftOrders,
       pendingOrders,
       approvedOrders,
       rejectedOrders,
-      shippedOrders,
+      completedOrders,
+      goodsReceivedOrders,
+      assignedOrders,
+      receivingOrders,
+      inspectedOrders,
       statusStats: [
-        { status: 1, count: pendingOrders, percentage: totalOrders > 0 ? Math.round((pendingOrders / totalOrders) * 100) : 0 },
-        { status: 2, count: shippedOrders, percentage: totalOrders > 0 ? Math.round((shippedOrders / totalOrders) * 100) : 0 },
-        { status: 3, count: rejectedOrders, percentage: totalOrders > 0 ? Math.round((rejectedOrders / totalOrders) * 100) : 0 },
-        { status: 4, count: approvedOrders, percentage: totalOrders > 0 ? Math.round((approvedOrders / totalOrders) * 100) : 0 }
+        { status: PURCHASE_ORDER_STATUS.Draft, count: draftOrders, percentage: totalOrders > 0 ? Math.round((draftOrders / totalOrders) * 100) : 0 },
+        { status: PURCHASE_ORDER_STATUS.PendingApproval, count: pendingOrders, percentage: totalOrders > 0 ? Math.round((pendingOrders / totalOrders) * 100) : 0 },
+        { status: PURCHASE_ORDER_STATUS.Approved, count: approvedOrders, percentage: totalOrders > 0 ? Math.round((approvedOrders / totalOrders) * 100) : 0 },
+        { status: PURCHASE_ORDER_STATUS.Rejected, count: rejectedOrders, percentage: totalOrders > 0 ? Math.round((rejectedOrders / totalOrders) * 100) : 0 },
+        { status: PURCHASE_ORDER_STATUS.Completed, count: completedOrders, percentage: totalOrders > 0 ? Math.round((completedOrders / totalOrders) * 100) : 0 },
+        { status: PURCHASE_ORDER_STATUS.GoodsReceived, count: goodsReceivedOrders, percentage: totalOrders > 0 ? Math.round((goodsReceivedOrders / totalOrders) * 100) : 0 },
+        { status: PURCHASE_ORDER_STATUS.AssignedForReceiving, count: assignedOrders, percentage: totalOrders > 0 ? Math.round((assignedOrders / totalOrders) * 100) : 0 },
+        { status: PURCHASE_ORDER_STATUS.Receiving, count: receivingOrders, percentage: totalOrders > 0 ? Math.round((receivingOrders / totalOrders) * 100) : 0 },
+        { status: PURCHASE_ORDER_STATUS.Inspected, count: inspectedOrders, percentage: totalOrders > 0 ? Math.round((inspectedOrders / totalOrders) * 100) : 0 }
       ]
     };
+
+    return stats;
   }, [purchaseOrders]);
 
   return (
@@ -474,11 +642,15 @@ export default function PurchaseOrderList() {
             setShowStatusFilter={setShowStatusFilter}
             statusOptions={[
               { value: "", label: "Tất cả trạng thái đơn" },
-              { value: "1", label: "Chờ duyệt" },
-              { value: "2", label: "Đã xuất" },
-              { value: "3", label: "Từ chối" },
-              { value: "4", label: "Đã duyệt" },
-              { value: "5", label: "Đã hủy" }
+              { value: "1", label: STATUS_LABELS[PURCHASE_ORDER_STATUS.Draft] },
+              { value: "2", label: STATUS_LABELS[PURCHASE_ORDER_STATUS.PendingApproval] },
+              { value: "3", label: STATUS_LABELS[PURCHASE_ORDER_STATUS.Rejected] },
+              { value: "4", label: STATUS_LABELS[PURCHASE_ORDER_STATUS.Approved] },
+              { value: "5", label: STATUS_LABELS[PURCHASE_ORDER_STATUS.GoodsReceived] },
+              { value: "6", label: STATUS_LABELS[PURCHASE_ORDER_STATUS.AssignedForReceiving] },
+              { value: "7", label: STATUS_LABELS[PURCHASE_ORDER_STATUS.Receiving] },
+              { value: "8", label: STATUS_LABELS[PURCHASE_ORDER_STATUS.Inspected] },
+              { value: "9", label: STATUS_LABELS[PURCHASE_ORDER_STATUS.Completed] }
             ]}
             onStatusFilter={handleStatusFilter}
             clearStatusFilter={clearStatusFilter}
@@ -535,6 +707,7 @@ export default function PurchaseOrderList() {
             onDateRangeFilter={handleDateRangeFilter}
             clearDateRangeFilter={clearDateRangeFilter}
             onClearAll={clearAllFilters}
+            showClearButton={true}
             onRefresh={handleRefresh}
             pageSize={pagination.pageSize}
             setPageSize={setPagination}
@@ -551,7 +724,6 @@ export default function PurchaseOrderList() {
             pagination={pagination}
             sortField={sortField}
             sortAscending={sortAscending}
-            statusConfig={statusConfig}
             onSort={handleSort}
             onView={handleViewClick}
             onEdit={handleEditClick}
@@ -574,6 +746,14 @@ export default function PurchaseOrderList() {
             className="bg-gray-50"
           />
         )}
+
+        {/* Delete Confirmation Modal */}
+        <DeleteModal
+          isOpen={showDeleteModal}
+          onClose={handleDeleteCancel}
+          onConfirm={handleDeleteConfirm}
+          itemName="đơn nhập hàng này"
+        />
       </div>
     </div>
   );

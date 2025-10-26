@@ -8,6 +8,10 @@ namespace MilkDistributionWarehouse.Models.Entities;
 
 public partial class WarehouseContext : DbContext
 {
+    public WarehouseContext()
+    {
+    }
+
     public WarehouseContext(DbContextOptions<WarehouseContext> options)
         : base(options)
     {
@@ -261,13 +265,13 @@ public partial class WarehouseContext : DbContext
                 .HasForeignKey(d => d.CreateBy)
                 .HasConstraintName("FK_Pallets_Users");
 
+            entity.HasOne(d => d.GoodsReceiptNote).WithMany(p => p.Pallets)
+                .HasForeignKey(d => d.GoodsReceiptNoteId)
+                .HasConstraintName("FK_Pallets_GoodsReceiptNotes");
+
             entity.HasOne(d => d.Location).WithMany(p => p.Pallets)
                 .HasForeignKey(d => d.LocationId)
                 .HasConstraintName("FK_Pallets_Locations");
-
-            entity.HasOne(d => d.PurchaseOrder).WithMany(p => p.Pallets)
-                .HasForeignKey(d => d.PurchaseOrderId)
-                .HasConstraintName("FK_Pallets_ImportOrders");
         });
 
         modelBuilder.Entity<PurchaseOderDetail>(entity =>
@@ -290,6 +294,7 @@ public partial class WarehouseContext : DbContext
             entity.HasKey(e => e.PurchaseOderId).HasName("PK_ImportOrders");
 
             entity.Property(e => e.PurchaseOderId).ValueGeneratedNever();
+            entity.Property(e => e.Note).HasMaxLength(255);
 
             entity.HasOne(d => d.ApprovalByNavigation).WithMany(p => p.PurchaseOrderApprovalByNavigations).HasForeignKey(d => d.ApprovalBy);
 
@@ -491,6 +496,8 @@ public partial class WarehouseContext : DbContext
 
         modelBuilder.Entity<User>(entity =>
         {
+            entity.HasIndex(e => e.Email, "IX_Users").IsUnique();
+
             entity.Property(e => e.Address).HasMaxLength(50);
             entity.Property(e => e.Email)
                 .HasMaxLength(150)

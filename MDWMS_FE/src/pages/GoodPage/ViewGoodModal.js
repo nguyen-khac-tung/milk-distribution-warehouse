@@ -10,9 +10,9 @@ export function ProductDetail({ product, onClose }) {
   const getStatusBadge = (status) => {
     switch (status) {
       case 1:
-        return <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Đang hoạt động</span>
+        return <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Đang phân phối</span>
       case 2:
-        return <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">Ngừng hoạt động</span>
+        return <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">Ngừng phân phối</span>
       default:
         return <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Không xác định</span>
     }

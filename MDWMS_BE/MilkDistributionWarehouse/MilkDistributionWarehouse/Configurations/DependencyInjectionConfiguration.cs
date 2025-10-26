@@ -35,7 +35,7 @@ namespace MilkDistributionWarehouse.Configurations
 
             //Location
             services.AddScoped<ILocationRepository, LocationRepository>();
-            services.AddScoped<ILocationService,  LocationService>();
+            services.AddScoped<ILocationService, LocationService>();
 
             //Area
             services.AddScoped<IAreaRepository, AreaRepository>();
@@ -65,6 +65,7 @@ namespace MilkDistributionWarehouse.Configurations
             services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
 
             //SalesOrder
+            services.AddScoped<ISalesOrderService, SalesOrderService>();
             services.AddScoped<ISalesOrderRepository, SalesOrderRepository>();
 
             //Role
@@ -78,9 +79,16 @@ namespace MilkDistributionWarehouse.Configurations
             services.AddScoped<IPurchaseOrderDetailRepository, PurchaseOrderDetailReposotory>();
             services.AddScoped<IPurchaseOrderDetailService, PurchaseOrderDetailService>();
 
+            //Cache
+            services.AddScoped<ICacheService, CacheService>();
+
             //Pallet
             services.AddScoped<IPalletRepository, PalletRepository>();
             services.AddScoped<IPalletService, PalletService>();
+
+            //SalesOrderDetail
+            services.AddScoped<ISalesOrderDetailService, SalesOrderDetailService>();
+            services.AddScoped<ISalesOrderDetailRepository, SalesOrderDetailRepository>();
 
             //BackOrder
             services.AddScoped<IBackOrderRepository, BackOrderRepository>();

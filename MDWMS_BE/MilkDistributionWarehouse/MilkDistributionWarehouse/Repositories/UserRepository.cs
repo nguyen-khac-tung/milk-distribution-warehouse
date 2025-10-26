@@ -11,6 +11,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<User?> GetUserById(int? userId);
         Task<User?> GetUserByIdWithAssociations(int? userId);
         Task<User?> GetUserByEmail(string email);
+        Task<List<User>?> GetUsersByRoleId(int? roleId);
         Task<string> CreateUser(User user);
         Task<string> UpdateUser(User user);
 
@@ -65,6 +66,14 @@ namespace MilkDistributionWarehouse.Repositories
                 .Include(u => u.SalesOrderAssignToNavigations)
                 .Include(u => u.StocktakingSheets)
                 .Where(u => u.UserId == userId && u.Status != CommonStatus.Deleted)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<List<User>?> GetUsersByRoleId(int? roleId)
+        {
+            return await _context.Roles
+                .Where(r => r.RoleId == roleId)
+                .Select(r => r.Users.ToList())
                 .FirstOrDefaultAsync();
         }
 
