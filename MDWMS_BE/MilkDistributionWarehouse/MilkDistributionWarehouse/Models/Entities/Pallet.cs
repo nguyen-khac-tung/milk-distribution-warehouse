@@ -9,7 +9,7 @@ public partial class Pallet
 {
     public Guid PalletId { get; set; }
 
-    public Guid? PurchaseOrderId { get; set; }
+    public Guid? GoodsReceiptNoteId { get; set; }
 
     public int? PackageQuantity { get; set; }
 
@@ -31,9 +31,9 @@ public partial class Pallet
 
     public virtual User CreateByNavigation { get; set; }
 
+    public virtual GoodsReceiptNote GoodsReceiptNote { get; set; }
+
     public virtual Location Location { get; set; }
-
-    public virtual PurchaseOrder PurchaseOrder { get; set; }
-
+    
     public virtual ICollection<StocktakingPallet> StocktakingPallets { get; set; } = new List<StocktakingPallet>();
 }

@@ -23,6 +23,7 @@ import ProtectedRoute from "../components/Common/ProtectedRoute";
 import RoleBasedRedirect from "../components/Common/RoleBasedRedirect";
 import PurchaseOrderList from "../pages/PurchaseOrderPage/PurchaseOrderList";
 import CreatePurchaseOrder from "../pages/PurchaseOrderPage/CreatePurchaseOrder";
+import UpdatePurchaseOrder from "../pages/PurchaseOrderPage/UpdatePurchaseOrder";
 import PurchaseOrderDetail from "../pages/PurchaseOrderPage/PurchaseOrderDetail";
 import PalletList from "../pages/PalletPage/PalletList";
 import ChangePasswordPage from "../pages/AuthenticationPage/ChangePasswordPage"
@@ -196,6 +197,15 @@ export const routes = [
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.PURCHASE_ORDER_CREATE}>
                 <CreatePurchaseOrder />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/purchase-orders/update/:id",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.PURCHASE_ORDER_UPDATE}>
+                <UpdatePurchaseOrder />
             </ProtectedRoute>
         ),
         isShowHeader: true,

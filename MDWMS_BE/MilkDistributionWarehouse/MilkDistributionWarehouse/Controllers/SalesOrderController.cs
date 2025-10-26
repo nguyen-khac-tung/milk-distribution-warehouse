@@ -57,7 +57,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<PageResult<SalesOrderDtoWarehouseStaff>>.ToResultOk(salesOrders);
         }
 
-        //[Authorize(Roles = "Warehouse Staff")]
+        [Authorize(Roles = "Sale Manager, Sales Representative, Warehouse Staff, Warehouse Manager")]
         [HttpGet("GetSalesOrderDeatail/{salesOrderId}")]
         public async Task<IActionResult> GetSalesOrderDeatail(Guid? salesOrderId)
         {

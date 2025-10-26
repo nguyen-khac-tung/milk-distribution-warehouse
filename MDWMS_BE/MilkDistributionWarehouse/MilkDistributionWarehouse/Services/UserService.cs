@@ -7,6 +7,7 @@ using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
 using MilkDistributionWarehouse.Utilities;
 using Online_Learning.Services.Ultilities;
+using System.Data;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using static System.Net.WebRequestMethods;
@@ -89,10 +90,11 @@ namespace MilkDistributionWarehouse.Services
             var userRole = await _roleRepository.GetRoleById(userCreate.RoleId);
             if (userRole == null) return ("Selected role is null.", null);
 
-            var newUser = _mapper.Map<User>(userCreate);
-            msg = await AssignRoleToUser(newUser, userRole);
+            msg = await ValidateUniqueActiveRole(null, userRole);
             if (msg.Length > 0) return (msg, null);
 
+            var newUser = _mapper.Map<User>(userCreate);
+            await AssignRoleToUser(newUser, userRole);
             var password = GenerateRandomPassword();
             newUser.Password = BCrypt.Net.BCrypt.HashPassword(password);
             msg = await _userRepository.CreateUser(newUser);
@@ -110,16 +112,17 @@ namespace MilkDistributionWarehouse.Services
             if (userDuplicatedEmail != null && userUpdate.UserId != userDuplicatedEmail.UserId)
                 return ("Email này đã có người dùng khác sử dụng.".ToMessageForUser(), null);
 
-            var userExist = await _userRepository.GetUserById(userUpdate.UserId);
-            if (userExist == null) return ("Updated user is null.", null);
-
             var userRole = await _roleRepository.GetRoleById(userUpdate.RoleId);
             if (userRole == null) return ("Selected role is null.", null);
 
-            _mapper.Map(userUpdate, userExist);
-            msg = await AssignRoleToUser(userExist, userRole);
+            msg = await ValidateUniqueActiveRole(userUpdate.UserId, userRole);
             if (msg.Length > 0) return (msg, null);
 
+            var userExist = await _userRepository.GetUserById(userUpdate.UserId);
+            if (userExist == null) return ("Updated user is null.", null);
+
+            _mapper.Map(userUpdate, userExist);
+            await AssignRoleToUser(userExist, userRole);
             msg = await _userRepository.UpdateUser(userExist);
             if (msg.Length > 0) return ("Cập nhật người dùng thất bại.", null);
 
@@ -132,8 +135,14 @@ namespace MilkDistributionWarehouse.Services
             var userExist = await _userRepository.GetUserById(userUpdate.UserId);
             if (userExist == null) return "Updated user is null.";
 
-            if (userUpdate.Status != CommonStatus.Active && userUpdate.Status != CommonStatus.Inactive)
-                return "Updated status is not found.";
+            if (userUpdate.Status == CommonStatus.Active)
+            {
+                foreach (var role in userExist.Roles)
+                {
+                    msg = await ValidateUniqueActiveRole(userExist.UserId, role);
+                    if (msg.Length > 0) return msg;
+                }
+            }
 
             userExist.Status = userUpdate.Status;
             msg = await _userRepository.UpdateUser(userExist);
@@ -182,17 +191,20 @@ namespace MilkDistributionWarehouse.Services
             return userDtos;
         }
 
-        private async Task<string> AssignRoleToUser(User? user, Role? role)
+        private async Task<string> ValidateUniqueActiveRole(int? userId, Role? role)
         {
-            int[] roleRestricted = [RoleType.WarehouseManager, RoleType.SaleManager, RoleType.BusinessOwner, RoleType.Administrator];
-            if(roleRestricted.Contains(role.RoleId))
-            {
-                var users = await _userRepository.GetUsersByRoleId(role.RoleId);
-                var otherActiveUserExists = users.Any(u => u.UserId != user.UserId && u.Status == CommonStatus.Active);
-                if (otherActiveUserExists)
-                    return $"Vai trò {role.Description} đã được gán cho một tài khoản khác đang hoạt động.".ToMessageForUser();
-            }
+            var roleRestricted = new List<int?>() { RoleType.WarehouseManager, RoleType.SaleManager, RoleType.BusinessOwner, RoleType.Administrator };
+            if (roleRestricted.All(roleReStricted => roleReStricted != role?.RoleId)) return "";
 
+            var users = await _userRepository.GetUsersByRoleId(role.RoleId);
+            var otherActiveUserExists = users.Any(u => u.UserId != userId && u.Status == CommonStatus.Active);
+            if (otherActiveUserExists)
+                return $"Vai trò {role.Description} đã được gán cho một tài khoản khác đang hoạt động.".ToMessageForUser();
+            return "";
+        }
+
+        private async Task AssignRoleToUser(User? user, Role? role)
+        {
             user.Roles.Clear();
             user.Roles.Add(role);
 
@@ -201,7 +213,6 @@ namespace MilkDistributionWarehouse.Services
                 var roleAdministrator = await _roleRepository.GetRoleById(RoleType.Administrator);
                 user.Roles.Add(roleAdministrator);
             }
-            return "";
         }
 
         private string GenerateRandomPassword()

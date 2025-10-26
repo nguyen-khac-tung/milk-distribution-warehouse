@@ -69,16 +69,15 @@ const PurchaseOrderTable = ({
     onDelete(order);
   };
 
-  // Calculate paginated data
+  // Use all data from backend (pagination is handled by backend)
   const paginatedPurchaseOrders = React.useMemo(() => {
     if (!purchaseOrders || !Array.isArray(purchaseOrders)) {
       return [];
     }
     
-    const startIndex = (pagination.current - 1) * pagination.pageSize;
-    const endIndex = startIndex + pagination.pageSize;
-    return purchaseOrders.slice(startIndex, endIndex);
-  }, [purchaseOrders, pagination.current, pagination.pageSize]);
+    // Backend already handles pagination, so return all data
+    return purchaseOrders;
+  }, [purchaseOrders]);
 
   return (
     <div className="w-full">
@@ -220,7 +219,13 @@ const PurchaseOrderTable = ({
                     </TableCell>
                     {availableFields.hasApprovalByName && (
                       <TableCell className="px-6 py-4 text-slate-700 text-center">
-                        {order.approvalByName || order.approvalBy || '-'}
+                        {order.approvalByName || order.approvalBy ? (
+                          <span className="text-green-600 font-medium">
+                            {order.approvalByName || order.approvalBy}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 italic text-sm">Chưa duyệt</span>
+                        )}
                       </TableCell>
                     )}
                     {availableFields.hasCreatedByName && (
@@ -230,12 +235,24 @@ const PurchaseOrderTable = ({
                     )}
                     {availableFields.hasArrivalConfirmedByName && (
                       <TableCell className="px-6 py-4 text-slate-700 text-center">
-                        {order.arrivalConfirmedByName || order.arrivalConfirmedBy || '-'}
+                        {order.arrivalConfirmedByName || order.arrivalConfirmedBy ? (
+                          <span className="text-blue-600 font-medium">
+                            {order.arrivalConfirmedByName || order.arrivalConfirmedBy}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 italic text-sm">Chưa xác nhận</span>
+                        )}
                       </TableCell>
                     )}
                     {availableFields.hasAssignToName && (
                       <TableCell className="px-6 py-4 text-slate-700 text-center">
-                        {order.assignToName || order.assignToByName || order.assignTo || '-'}
+                        {order.assignToName || order.assignToByName || order.assignTo ? (
+                          <span className="text-purple-600 font-medium">
+                            {order.assignToName || order.assignToByName || order.assignTo}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 italic text-sm">Chưa phân công</span>
+                        )}
                       </TableCell>
                     )}
                     <TableCell className="px-6 py-4 text-slate-700 text-center">
@@ -255,24 +272,28 @@ const PurchaseOrderTable = ({
                             <Eye className="h-4 w-4 text-orange-500" />
                           </button>
                         </PermissionWrapper>
-                        <PermissionWrapper requiredPermission={PERMISSIONS.PURCHASE_ORDER_UPDATE}>
-                          <button
-                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                            title="Chỉnh sửa"
-                            onClick={() => handleEditClick(order)}
-                          >
-                            <Edit className="h-4 w-4 text-orange-500" />
-                          </button>
-                        </PermissionWrapper>
-                        <PermissionWrapper requiredPermission={PERMISSIONS.PURCHASE_ORDER_DELETE}>
-                          <button
-                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                            title="Xóa"
-                            onClick={() => handleDeleteClick(order)}
-                          >
-                            <Trash2 className="h-4 w-4 text-red-500" />
-                          </button>
-                        </PermissionWrapper>
+                        {!order.isDisable && (
+                          <PermissionWrapper requiredPermission={PERMISSIONS.PURCHASE_ORDER_UPDATE}>
+                            <button
+                              className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                              title="Chỉnh sửa"
+                              onClick={() => handleEditClick(order)}
+                            >
+                              <Edit className="h-4 w-4 text-orange-500" />
+                            </button>
+                          </PermissionWrapper>
+                        )}
+                        {!order.isDisable && (
+                          <PermissionWrapper requiredPermission={PERMISSIONS.PURCHASE_ORDER_DELETE}>
+                            <button
+                              className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                              title="Xóa"
+                              onClick={() => handleDeleteClick(order)}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </button>
+                          </PermissionWrapper>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

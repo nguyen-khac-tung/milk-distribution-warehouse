@@ -25,8 +25,7 @@ namespace MilkDistributionWarehouse.Controllers
         [Authorize(Roles = "Sales Representative")]
         public async Task<IActionResult> GetPurchaseOrderSaleRepresentatives([FromBody] PagedRequest request)
         {
-            //var (msg, purchaseOrderDto) = await _purchaseOrderService.GetPurchaseOrderSaleRepresentatives(request, User.GetUserId(), User.GetUserRole());
-            var (msg, purchaseOrderDto) = await _purchaseOrderService.GetPurchaseOrderSaleRepresentatives(request, 5);
+            var (msg, purchaseOrderDto) = await _purchaseOrderService.GetPurchaseOrderSaleRepresentatives(request, User.GetUserId());
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<PageResult<PurchaseOrderDtoSaleRepresentative>>.ToResultOk(purchaseOrderDto);
@@ -36,7 +35,6 @@ namespace MilkDistributionWarehouse.Controllers
         [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> GetPurchaseOrderSaleManagers([FromBody] PagedRequest request)
         {
-            //var (msg, purchaseOrderDto) = await _purchaseOrderService.GetPurchaseOrderSaleManagers(request, User.GetUserId());
             var (msg, purchaseOrderDto) = await _purchaseOrderService.GetPurchaseOrderSaleManagers(request);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
@@ -67,7 +65,7 @@ namespace MilkDistributionWarehouse.Controllers
         [Authorize(Roles = "Sale Manager, Sales Representative, Warehouse Staff, Warehouse Manager")]
         public async Task<IActionResult> GetPurchaseOrderByPurchaseOrderId(Guid purchaseOrderId)
         {
-            var (msg, purchaseOrderDetail) = await _purchaseOrderService.GetPurchaseOrderDetailById(purchaseOrderId);
+            var (msg, purchaseOrderDetail) = await _purchaseOrderService.GetPurchaseOrderDetailById(purchaseOrderId, User.GetUserId(), User.GetUserRole());
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<PurchaseOrdersDetail>.ToResultOk(purchaseOrderDetail);
@@ -77,7 +75,7 @@ namespace MilkDistributionWarehouse.Controllers
         [Authorize(Roles = "Sales Representative")]
         public async Task<IActionResult> CreatePurchaseOrder([FromBody] PurchaseOrderCreate create)
         {
-            var (msg, purchaseOrderCreate) = await _purchaseOrderService.CreatePurchaseOrder(create, User.GetUserId());
+            var (msg, purchaseOrderCreate) = await _purchaseOrderService.CreatePurchaseOrder(create, User.GetUserId(), User.GetUserName());
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<PurchaseOrderCreate>.ToResultOk(purchaseOrderCreate);
@@ -101,6 +99,16 @@ namespace MilkDistributionWarehouse.Controllers
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<PurchaseOrder>.ToResultOk(purchaseOrderDelete);
+        }
+
+        [HttpGet("GetPurchaseOrderBySupplierId/{supplierId}")]
+        [Authorize(Roles = "Sales Representative")]
+        public async Task<IActionResult> GetPurchaseOrderBySupplierId(int supplierId)
+        {
+            var (msg, purchaseOrderDetail) = await _purchaseOrderService.GetPurchaseOrderDetailBySupplierId(supplierId, User.GetUserId());
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<List<PurchaseOrderDetailBySupplier>>.ToResultOk(purchaseOrderDetail);
         }
     }
 }
