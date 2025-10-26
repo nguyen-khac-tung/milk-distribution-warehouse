@@ -14,6 +14,7 @@ import StatsCards from "../../components/Common/StatsCards";
 import { StatusToggle } from "../../components/Common/SwitchToggle/StatusToggle";
 import { PalletDetail } from "./ViewPalletModal";
 import DeleteModal from "../../components/Common/DeleteModal";
+import UpdatePalletModal from "../../components/PalletComponents/UpdatePalletModal";
 
 const Pallet = {
     palletId: "",
@@ -195,6 +196,13 @@ export default function PalletList() {
         setUpdatePalletId(pallet.palletId)
         setShowUpdateModal(true)
     }
+    
+    const handleUpdateSuccess = () => {
+        setShowUpdateModal(false)
+        setUpdatePalletId(null)
+        // Refresh the pallet list
+        fetchData()
+    }
     const handleDeleteClick = (pallet) => {
         setItemToDelete(pallet)
         setShowDeleteModal(true)
@@ -207,11 +215,6 @@ export default function PalletList() {
     const handleViewPallet = (palletId) => {
         setViewPalletId(palletId)
         setShowViewModal(true)
-    }
-    const handleUpdateSuccess = () => {
-        setShowUpdateModal(false)
-        setUpdatePalletId(null)
-        fetchData()
     }
     const handleUpdateCancel = () => {
         setShowUpdateModal(false)
@@ -616,8 +619,18 @@ export default function PalletList() {
                 />
             )}
 
-            {/* TODO: Add modals for Update Kệ Kê Hàng */}
             {/* Update Kệ Kê Hàng Modal */}
+            {showUpdateModal && (
+                <UpdatePalletModal
+                    isOpen={showUpdateModal}
+                    onClose={() => {
+                        setShowUpdateModal(false)
+                        setUpdatePalletId(null)
+                    }}
+                    pallet={pallets.find(p => p.palletId === updatePalletId)}
+                    onSuccess={handleUpdateSuccess}
+                />
+            )}
         </div>
     )
 }
