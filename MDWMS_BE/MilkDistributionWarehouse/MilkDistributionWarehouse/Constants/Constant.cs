@@ -59,14 +59,13 @@
     /// </summary>
     public static class SalesOrderStatus
     {
-        public const int Deleted = 1;
-        public const int Draft = 2;
-        public const int PendingApproval = 3;
-        public const int Rejected = 4;
-        public const int Approved = 5;
-        public const int AssignedForPicking = 6;
-        public const int Picking = 7;
-        public const int Completed = 8;
+        public const int Draft = 1;
+        public const int PendingApproval = 2;
+        public const int Rejected = 3;
+        public const int Approved = 4;
+        public const int AssignedForPicking = 5;
+        public const int Picking = 6;
+        public const int Completed = 7;
     }
 
     /// <summary>

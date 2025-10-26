@@ -38,11 +38,8 @@ namespace MilkDistributionWarehouse.Services
             var userRoles = user.Roles.Select(r => r.RoleId).ToList();
             var salesOrders = _salesOrderRepository.GetAllSalesOrders();
 
-            if (userRoles.Contains(RoleType.SalesRepresentative))
-                salesOrders = salesOrders.Where(s => s.Status != null && s.Status != SalesOrderStatus.Deleted);
-
             if (userRoles.Contains(RoleType.SaleManager))
-                salesOrders = salesOrders.Where(s => s.Status != null && s.Status != SalesOrderStatus.Draft && s.Status != SalesOrderStatus.Deleted);
+                salesOrders = salesOrders.Where(s => s.Status != null && s.Status != SalesOrderStatus.Draft);
 
             if (userRoles.Contains(RoleType.WarehouseManager))
             {
