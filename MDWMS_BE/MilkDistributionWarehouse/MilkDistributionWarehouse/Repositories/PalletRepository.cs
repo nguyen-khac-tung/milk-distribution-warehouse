@@ -32,7 +32,7 @@ namespace MilkDistributionWarehouse.Repositories
             return _context.Pallets
                 .Include(p => p.Batch)
                 .Include(p => p.Location)
-                .Include(p => p.PurchaseOrder)
+                //.Include(p => p.PurchaseOrder)
                 .Where(p => p.Status != CommonStatus.Deleted)
                 .OrderByDescending(p => p.CreateAt)
                 .AsNoTracking();
@@ -46,8 +46,8 @@ namespace MilkDistributionWarehouse.Repositories
                     .ThenInclude(b => b.Goods)
                 .Include(p => p.Location)
                     .ThenInclude(l => l.Area)
-                .Include(p => p.PurchaseOrder)
-                    .ThenInclude(po => po.Supplier)
+                //.Include(p => p.PurchaseOrder)
+                    //.ThenInclude(po => po.Supplier)
                 .FirstOrDefaultAsync(p => p.PalletId == palletId);
         }
 
