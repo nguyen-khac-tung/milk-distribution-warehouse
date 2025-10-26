@@ -3,9 +3,10 @@ import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '.
 import { ArrowUp, ArrowDown, ArrowUpDown, Eye, Edit, Trash2 } from 'lucide-react';
 import EmptyState from '../../components/Common/EmptyState';
 import PermissionWrapper from '../../components/Common/PermissionWrapper';
-import { PERMISSIONS } from '../../utils/permissions';
+import { PERMISSIONS, canPerformPurchaseOrderAction } from '../../utils/permissions';
 import { Package } from 'lucide-react';
 import StatusDisplay from '../../components/PurchaseOrderComponents/StatusDisplay';
+import { usePermissions } from '../../hooks/usePermissions';
 
 const PurchaseOrderTable = ({
   purchaseOrders,
@@ -19,6 +20,7 @@ const PurchaseOrderTable = ({
   onClearFilters,
   loading
 }) => {
+  const { hasPermission } = usePermissions();
   // Detect available fields in data
   const availableFields = React.useMemo(() => {
     if (!purchaseOrders || purchaseOrders.length === 0) {
@@ -263,7 +265,8 @@ const PurchaseOrderTable = ({
                     </TableCell>
                     <TableCell className="px-6 py-4 text-center">
                       <div className="flex items-center justify-center space-x-1">
-                        <PermissionWrapper requiredPermission={PERMISSIONS.PURCHASE_ORDER_VIEW_DETAILS}>
+                        {/* View button - always visible for Sales Representative */}
+                        {canPerformPurchaseOrderAction('view', order, hasPermission) && (
                           <button
                             className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                             title="Xem chi tiết"
@@ -271,28 +274,68 @@ const PurchaseOrderTable = ({
                           >
                             <Eye className="h-4 w-4 text-orange-500" />
                           </button>
-                        </PermissionWrapper>
-                        {!order.isDisable && (
-                          <PermissionWrapper requiredPermission={PERMISSIONS.PURCHASE_ORDER_UPDATE}>
-                            <button
-                              className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                              title="Chỉnh sửa"
-                              onClick={() => handleEditClick(order)}
-                            >
-                              <Edit className="h-4 w-4 text-orange-500" />
-                            </button>
-                          </PermissionWrapper>
                         )}
-                        {!order.isDisable && (
-                          <PermissionWrapper requiredPermission={PERMISSIONS.PURCHASE_ORDER_DELETE}>
-                            <button
-                              className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                              title="Xóa"
-                              onClick={() => handleDeleteClick(order)}
-                            >
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            </button>
-                          </PermissionWrapper>
+                        
+                        {/* Edit button - conditional based on API flags for Sales Representative */}
+                        {canPerformPurchaseOrderAction('edit', order, hasPermission) && (
+                          <button
+                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                            title="Chỉnh sửa"
+                            onClick={() => handleEditClick(order)}
+                          >
+                            <Edit className="h-4 w-4 text-orange-500" />
+                          </button>
+                        )}
+                        
+                        {/* Delete button - conditional based on API flags for Sales Representative */}
+                        {canPerformPurchaseOrderAction('delete', order, hasPermission) && (
+                          <button
+                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                            title="Xóa"
+                            onClick={() => handleDeleteClick(order)}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </button>
+                        )}
+                        
+                        {/* Fallback for other roles using existing permission system */}
+                        {!hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS) && 
+                         !hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_SM) && 
+                         !hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WM) && 
+                         !hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WS) && (
+                          <>
+                            <PermissionWrapper requiredPermission={PERMISSIONS.PURCHASE_ORDER_VIEW_DETAILS}>
+                              <button
+                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                title="Xem chi tiết"
+                                onClick={() => handleViewClick(order)}
+                              >
+                                <Eye className="h-4 w-4 text-orange-500" />
+                              </button>
+                            </PermissionWrapper>
+                            {!order.isDisable && (
+                              <PermissionWrapper requiredPermission={PERMISSIONS.PURCHASE_ORDER_UPDATE}>
+                                <button
+                                  className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                  title="Chỉnh sửa"
+                                  onClick={() => handleEditClick(order)}
+                                >
+                                  <Edit className="h-4 w-4 text-orange-500" />
+                                </button>
+                              </PermissionWrapper>
+                            )}
+                            {!order.isDisable && (
+                              <PermissionWrapper requiredPermission={PERMISSIONS.PURCHASE_ORDER_DELETE}>
+                                <button
+                                  className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                  title="Xóa"
+                                  onClick={() => handleDeleteClick(order)}
+                                >
+                                  <Trash2 className="h-4 w-4 text-red-500" />
+                                </button>
+                              </PermissionWrapper>
+                            )}
+                          </>
                         )}
                       </div>
                     </TableCell>
