@@ -6,7 +6,7 @@
         public int RetailerId { get; set; }
         public RetailerContactDto RetailerContact { get; set; }
         public DateTime? EstimatedTimeDeparture { get; set; }
-        public int? Status { get; set; }
+        public int Status { get; set; }
         public DateTime? CreatedAt { get; set; }
     }
 
