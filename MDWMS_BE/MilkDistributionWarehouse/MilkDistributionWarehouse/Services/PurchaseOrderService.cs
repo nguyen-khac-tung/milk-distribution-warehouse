@@ -86,7 +86,7 @@ namespace MilkDistributionWarehouse.Services
         {
             var (msg, item) = await GetPurchaseOrdersAsync<PurchaseOrderDtoSaleRepresentative>(request, userId, RoleNames.SalesRepresentative);
 
-            item.Items.ForEach(po =>
+            item?.Items.ForEach(po =>
             {
                 if (po.CreatedBy != userId)
                 {
