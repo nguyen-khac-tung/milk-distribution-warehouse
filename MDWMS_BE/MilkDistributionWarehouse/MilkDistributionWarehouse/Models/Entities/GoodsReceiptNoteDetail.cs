@@ -13,21 +13,15 @@ public partial class GoodsReceiptNoteDetail
 
     public int GoodsId { get; set; }
 
-    public int? ExpectedQuantity { get; set; }
+    public string GoodsPackingId { get; set; }
 
-    public int? UnitsPerPackage { get; set; }
+    public int? ExpectedPackageQuantity { get; set; }
 
     public int? DeliveredPackageQuantity { get; set; }
 
-    public int? DeliveredQuantity { get; set; }
-
     public int? RejectPackageQuantity { get; set; }
 
-    public int? RejectQuantity { get; set; }
-
     public int? ActualPackageQuantity { get; set; }
-
-    public int? ActualQuantity { get; set; }
 
     public int? Status { get; set; }
 

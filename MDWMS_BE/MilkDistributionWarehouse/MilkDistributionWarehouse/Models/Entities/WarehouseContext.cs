@@ -8,10 +8,6 @@ namespace MilkDistributionWarehouse.Models.Entities;
 
 public partial class WarehouseContext : DbContext
 {
-    public WarehouseContext()
-    {
-    }
-
     public WarehouseContext(DbContextOptions<WarehouseContext> options)
         : base(options)
     {
@@ -30,6 +26,8 @@ public partial class WarehouseContext : DbContext
     public virtual DbSet<GoodsIssueNote> GoodsIssueNotes { get; set; }
 
     public virtual DbSet<GoodsIssueNoteDetail> GoodsIssueNoteDetails { get; set; }
+
+    public virtual DbSet<GoodsPacking> GoodsPackings { get; set; }
 
     public virtual DbSet<GoodsReceiptNote> GoodsReceiptNotes { get; set; }
 
@@ -151,7 +149,7 @@ public partial class WarehouseContext : DbContext
 
             entity.HasOne(d => d.UnitMeasure).WithMany(p => p.Goods)
                 .HasForeignKey(d => d.UnitMeasureId)
-                .HasConstraintName("FK_Products_UnitMeasures");
+                .HasConstraintName("FK_Goods_UnitMeasures");
         });
 
         modelBuilder.Entity<GoodsIssueNote>(entity =>
@@ -179,6 +177,21 @@ public partial class WarehouseContext : DbContext
             entity.HasOne(d => d.GoodsIssueNote).WithMany(p => p.GoodsIssueNoteDetails)
                 .HasForeignKey(d => d.GoodsIssueNoteId)
                 .HasConstraintName("FK_GoodsIssueNoteDetails_GoodsIssueNotes");
+
+            entity.HasOne(d => d.GoodsPacking).WithMany(p => p.GoodsIssueNoteDetails)
+                .HasForeignKey(d => d.GoodsPackingId)
+                .HasConstraintName("FK_GoodsIssueNoteDetails_GoodsPacking");
+        });
+
+        modelBuilder.Entity<GoodsPacking>(entity =>
+        {
+            entity.ToTable("GoodsPacking");
+
+            entity.Property(e => e.GoodsPackingId).ValueGeneratedNever();
+
+            entity.HasOne(d => d.Goods).WithMany(p => p.GoodsPackings)
+                .HasForeignKey(d => d.GoodsId)
+                .HasConstraintName("FK_GoodsPacking_Goods");
         });
 
         modelBuilder.Entity<GoodsReceiptNote>(entity =>
@@ -202,6 +215,9 @@ public partial class WarehouseContext : DbContext
             entity.HasKey(e => e.GoodsReceiptNoteDetailId).HasName("PK_ImportInspections");
 
             entity.Property(e => e.GoodsReceiptNoteDetailId).ValueGeneratedNever();
+            entity.Property(e => e.GoodsPackingId)
+                .HasMaxLength(10)
+                .IsFixedLength();
             entity.Property(e => e.Note).HasMaxLength(255);
 
             entity.HasOne(d => d.Goods).WithMany(p => p.GoodsReceiptNoteDetails)
@@ -265,6 +281,10 @@ public partial class WarehouseContext : DbContext
                 .HasForeignKey(d => d.CreateBy)
                 .HasConstraintName("FK_Pallets_Users");
 
+            entity.HasOne(d => d.GoodsPacking).WithMany(p => p.Pallets)
+                .HasForeignKey(d => d.GoodsPackingId)
+                .HasConstraintName("FK_Pallets_GoodsPacking");
+
             entity.HasOne(d => d.GoodsReceiptNote).WithMany(p => p.Pallets)
                 .HasForeignKey(d => d.GoodsReceiptNoteId)
                 .HasConstraintName("FK_Pallets_GoodsReceiptNotes");
@@ -282,6 +302,10 @@ public partial class WarehouseContext : DbContext
                 .HasForeignKey(d => d.GoodsId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ImportOderDetails_Products");
+
+            entity.HasOne(d => d.GoodsPacking).WithMany(p => p.PurchaseOderDetails)
+                .HasForeignKey(d => d.GoodsPackingId)
+                .HasConstraintName("FK_PurchaseOderDetails_GoodsPacking");
 
             entity.HasOne(d => d.PurchaseOder).WithMany(p => p.PurchaseOderDetails)
                 .HasForeignKey(d => d.PurchaseOderId)
@@ -383,6 +407,10 @@ public partial class WarehouseContext : DbContext
             entity.HasOne(d => d.Goods).WithMany(p => p.SalesOrderDetails)
                 .HasForeignKey(d => d.GoodsId)
                 .HasConstraintName("FK_ExportOrderDetails_Products");
+
+            entity.HasOne(d => d.GoodsPacking).WithMany(p => p.SalesOrderDetails)
+                .HasForeignKey(d => d.GoodsPackingId)
+                .HasConstraintName("FK_SalesOrderDetails_GoodsPacking");
 
             entity.HasOne(d => d.SalesOrder).WithMany(p => p.SalesOrderDetails)
                 .HasForeignKey(d => d.SalesOrderId)

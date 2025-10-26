@@ -11,15 +11,15 @@ public partial class Pallet
 
     public Guid? GoodsReceiptNoteId { get; set; }
 
-    public int? PackageQuantity { get; set; }
-
-    public int? UnitsPerPackage { get; set; }
-
-    public int? CreateBy { get; set; }
-
     public Guid? BatchId { get; set; }
 
+    public int? GoodsPackingId { get; set; }
+
+    public int? PackageQuantity { get; set; }
+
     public int? LocationId { get; set; }
+
+    public int? CreateBy { get; set; }
 
     public int? Status { get; set; }
 
@@ -31,9 +31,11 @@ public partial class Pallet
 
     public virtual User CreateByNavigation { get; set; }
 
+    public virtual GoodsPacking GoodsPacking { get; set; }
+
     public virtual GoodsReceiptNote GoodsReceiptNote { get; set; }
 
     public virtual Location Location { get; set; }
-    
+
     public virtual ICollection<StocktakingPallet> StocktakingPallets { get; set; } = new List<StocktakingPallet>();
 }
