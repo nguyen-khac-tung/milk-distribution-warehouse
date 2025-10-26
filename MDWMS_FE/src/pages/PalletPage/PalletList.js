@@ -3,7 +3,7 @@ import { getPallets, updatePalletStatus, deletePallet } from "../../services/Pal
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
-import { Plus, Edit, Trash2, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Eye, Package } from "lucide-react";
+import { Edit, Trash2, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Eye, Package } from "lucide-react";
 import Loading from "../../components/Common/Loading";
 import SearchFilterToggle from "../../components/Common/SearchFilterToggle";
 import { extractErrorMessage } from "../../utils/Validation";
@@ -14,7 +14,6 @@ import StatsCards from "../../components/Common/StatsCards";
 import { StatusToggle } from "../../components/Common/SwitchToggle/StatusToggle";
 import { PalletDetail } from "./ViewPalletModal";
 import DeleteModal from "../../components/Common/DeleteModal";
-import CreatePalletModal from "./CreatePalletModal";
 
 const Pallet = {
     palletId: "",
@@ -40,7 +39,6 @@ export default function PalletList() {
     const [pallets, setPallets] = useState([])
     const [loading, setLoading] = useState(true)
     const [searchLoading, setSearchLoading] = useState(false)
-    const [showCreateModal, setShowCreateModal] = useState(false)
     const [showUpdateModal, setShowUpdateModal] = useState(false)
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [showViewModal, setShowViewModal] = useState(false)
@@ -121,7 +119,7 @@ export default function PalletList() {
         const initializeData = async () => {
             // Fetch tổng thống kê
             await fetchTotalStats()
-            
+
             // Reset tất cả filter và sort về mặc định
             setSearchQuery("")
             setStatusFilter("")
@@ -132,7 +130,7 @@ export default function PalletList() {
                 pageSize: 10,
                 totalCount: 0
             })
-            
+
             // Fetch dữ liệu hiển thị
             await fetchData({
                 pageNumber: 1,
@@ -142,11 +140,11 @@ export default function PalletList() {
                 sortAscending: true,
                 status: ""
             })
-            
+
             // Mark as initialized after all data is loaded
             setIsInitialized(true)
         }
-        
+
         initializeData()
     }, [])
     useEffect(() => {
@@ -189,22 +187,6 @@ export default function PalletList() {
     const activeCount = Array.isArray(pallets) ? pallets.filter((p) => p.status === 1).length : 0
     const inactiveCount = Array.isArray(pallets) ? pallets.filter((p) => p.status === 2).length : 0
 
-    const handleCreateSuccess = () => {
-        fetchTotalStats()
-        setSearchQuery("")
-        setStatusFilter("")
-        setSortField("")
-        setSortAscending(true)
-        setPagination(prev => ({ ...prev, pageNumber: 1 }))
-        fetchData({
-            pageNumber: 1,
-            pageSize: pagination.pageSize,
-            search: "",
-            sortField: "",
-            sortAscending: true,
-            status: ""
-        })
-    }
     const handleViewClick = (pallet) => {
         setItemToView(pallet)
         setShowViewModal(true)
@@ -238,11 +220,11 @@ export default function PalletList() {
     const handleDeleteConfirm = async () => {
         try {
             await deletePallet(itemToDelete?.palletId)
-            
+
             window.showToast(`Đã xóa kệ kê hàng: ${itemToDelete?.batchCode || ''}`, "success")
             setShowDeleteModal(false)
             setItemToDelete(null)
-            
+
             const currentPageItemCount = pallets.length
             const willPageBeEmpty = currentPageItemCount <= 1
             let targetPage = pagination.pageNumber
@@ -250,10 +232,10 @@ export default function PalletList() {
                 targetPage = pagination.pageNumber - 1
                 setPagination(prev => ({ ...prev, pageNumber: targetPage }))
             }
-            
+
             // Refresh tổng thống kê
             fetchTotalStats()
-            
+
             // Refresh data after deletion, keeping current page or going to previous page if needed
             await fetchData({
                 pageNumber: targetPage,
@@ -337,15 +319,6 @@ export default function PalletList() {
                         <h1 className="text-2xl font-bold text-slate-600">Quản lý Kệ Kê Hàng</h1>
                         <p className="text-slate-600 mt-1">Quản lý các kệ kê hàng trong hệ thống</p>
                     </div>
-                    <PermissionWrapper requiredPermission={PERMISSIONS.PALLET_CREATE}>
-                        <Button
-                            className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
-                            onClick={() => setShowCreateModal(true)}
-                        >
-                            <Plus className="mr-2 h-4 w-4 text-white" />
-                            Thêm kệ kê hàng
-                        </Button>
-                    </PermissionWrapper>
                 </div>
 
                 {/* Stats Cards */}
@@ -640,15 +613,6 @@ export default function PalletList() {
                     onClose={handleDeleteCancel}
                     onConfirm={handleDeleteConfirm}
                     itemName={"kệ kê hàng"}
-                />
-            )}
-
-            {/* Create Kệ Kê Hàng Modal */}
-            {showCreateModal && (
-                <CreatePalletModal
-                    isOpen={showCreateModal}
-                    onClose={() => setShowCreateModal(false)}
-                    onSuccess={handleCreateSuccess}
                 />
             )}
 

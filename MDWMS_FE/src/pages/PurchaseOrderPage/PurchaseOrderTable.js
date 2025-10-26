@@ -219,7 +219,13 @@ const PurchaseOrderTable = ({
                     </TableCell>
                     {availableFields.hasApprovalByName && (
                       <TableCell className="px-6 py-4 text-slate-700 text-center">
-                        {order.approvalByName || order.approvalBy || '-'}
+                        {order.approvalByName || order.approvalBy ? (
+                          <span className="text-green-600 font-medium">
+                            {order.approvalByName || order.approvalBy}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 italic text-sm">Chưa duyệt</span>
+                        )}
                       </TableCell>
                     )}
                     {availableFields.hasCreatedByName && (
@@ -229,12 +235,24 @@ const PurchaseOrderTable = ({
                     )}
                     {availableFields.hasArrivalConfirmedByName && (
                       <TableCell className="px-6 py-4 text-slate-700 text-center">
-                        {order.arrivalConfirmedByName || order.arrivalConfirmedBy || '-'}
+                        {order.arrivalConfirmedByName || order.arrivalConfirmedBy ? (
+                          <span className="text-blue-600 font-medium">
+                            {order.arrivalConfirmedByName || order.arrivalConfirmedBy}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 italic text-sm">Chưa xác nhận</span>
+                        )}
                       </TableCell>
                     )}
                     {availableFields.hasAssignToName && (
                       <TableCell className="px-6 py-4 text-slate-700 text-center">
-                        {order.assignToName || order.assignToByName || order.assignTo || '-'}
+                        {order.assignToName || order.assignToByName || order.assignTo ? (
+                          <span className="text-purple-600 font-medium">
+                            {order.assignToName || order.assignToByName || order.assignTo}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 italic text-sm">Chưa phân công</span>
+                        )}
                       </TableCell>
                     )}
                     <TableCell className="px-6 py-4 text-slate-700 text-center">

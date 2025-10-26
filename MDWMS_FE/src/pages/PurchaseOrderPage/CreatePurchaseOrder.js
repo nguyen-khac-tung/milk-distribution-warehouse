@@ -7,7 +7,7 @@ import { Label } from "../../components/ui/label"
 import FloatingDropdown from "../../components/PurchaseOrderComponents/FloatingDropdown"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
 import { Plus, Trash2, ArrowLeft, Save, X } from "lucide-react"
-import { createPurchaseOrder, getGoodsDropDownBySupplierId } from "../../services/PurchaseOrderService"
+import { createPurchaseOrder, getGoodsDropDownBySupplierId, getDraftPurchaseOrdersBySupplier, updatePurchaseOrder, getPurchaseOrderDetail } from "../../services/PurchaseOrderService"
 import { getSuppliersDropdown } from "../../services/SupplierService"
 
 export default function CreatePurchaseOrder({
@@ -117,6 +117,7 @@ export default function CreatePurchaseOrder({
             console.log("Vui lòng thêm ít nhất một hàng hóa với đầy đủ thông tin");
             return;
         }
+        
         try {
             const itemsWithIds = validItems.map(item => {
                 const selectedGood = goods.find(good => good.goodsName === item.goodsName);
@@ -125,19 +126,68 @@ export default function CreatePurchaseOrder({
                     quantity: parseInt(item.quantity)
                 };
             }).filter(item => item.goodsId);
+            
             if (itemsWithIds.length === 0) {
                 console.log("Không tìm thấy hàng hóa hợp lệ");
                 return;
             }
-            const submitData = {
-                supplierId: parseInt(selectedSupplier.supplierId),
-                purchaseOrderDetailCreate: itemsWithIds
-            };
-            await createPurchaseOrder(submitData);
-            window.showToast("Tạo đơn nhập thành công!", "success");
+
+            // Kiểm tra đơn nháp của nhà cung cấp
+            const draftOrdersResponse = await getDraftPurchaseOrdersBySupplier(parseInt(selectedSupplier.supplierId));
+            const draftOrders = draftOrdersResponse?.data || [];
+            
+            if (draftOrders.length > 0) {
+                // Tìm đơn nháp gần nhất
+                const latestDraftOrder = draftOrders[0];
+                
+                // Lấy chi tiết đơn nháp
+                const draftOrderDetail = await getPurchaseOrderDetail(latestDraftOrder.purchaseOrderId);
+                const existingItems = draftOrderDetail?.purchaseOrderDetails || [];
+                
+                // Kiểm tra từng sản phẩm mới
+                const itemsToUpdate = [];
+                const itemsToAdd = [];
+                
+                for (const newItem of itemsWithIds) {
+                    const existingItem = existingItems.find(existing => existing.goodsId === newItem.goodsId);
+                    
+                    if (existingItem) {
+                        // Cùng sản phẩm - cập nhật số lượng
+                        itemsToUpdate.push({
+                            purchaseOrderDetailId: existingItem.purchaseOrderDetailId,
+                            goodsId: newItem.goodsId,
+                            quantity: existingItem.quantity + newItem.quantity
+                        });
+                    } else {
+                        // Sản phẩm mới - thêm vào danh sách
+                        itemsToAdd.push(newItem);
+                    }
+                }
+                
+                // Cập nhật đơn nháp
+                const updateData = {
+                    purchaseOrderId: latestDraftOrder.purchaseOrderId,
+                    supplierId: parseInt(selectedSupplier.supplierId),
+                    purchaseOrderDetailUpdate: itemsToUpdate,
+                    purchaseOrderDetailCreate: itemsToAdd
+                };
+                
+                await updatePurchaseOrder(updateData);
+                window.showToast("Đã cập nhật đơn nháp thành công!", "success");
+            } else {
+                // Không có đơn nháp - tạo đơn mới
+                const submitData = {
+                    supplierId: parseInt(selectedSupplier.supplierId),
+                    purchaseOrderDetailCreate: itemsWithIds
+                };
+                await createPurchaseOrder(submitData);
+                window.showToast("Tạo đơn nhập thành công!", "success");
+            }
+            
             navigate("/purchase-orders");
         } catch (error) {
-            console.error("Lỗi khi tạo đơn nhập:", error);
+            console.error("Lỗi khi xử lý đơn nhập:", error);
+            window.showToast("Có lỗi xảy ra khi xử lý đơn nhập!", "error");
         }
     }
     return (
@@ -165,8 +215,8 @@ export default function CreatePurchaseOrder({
                         {/* Header Information */}
                         <div>
                             <h3 className="text-lg font-semibold text-slate-600 mb-4">Thông Tin Đơn Hàng</h3>
-                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                <div className="space-y-2">
+                            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                                <div className="space-y-2 md:col-span-1">
                                     <Label htmlFor="supplier" className="text-slate-600 font-medium">
                                         Nhà Cung Cấp *
                                     </Label>
@@ -185,14 +235,6 @@ export default function CreatePurchaseOrder({
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <h3 className="text-lg font-semibold text-slate-600">Chi Tiết Hàng Hóa</h3>
-                                <Button
-                                    type="button"
-                                    onClick={(e) => addItem(e)}
-                                    className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
-                                >
-                                    <Plus className="mr-2 h-4 w-4 text-white" />
-                                    Thêm Hàng
-                                </Button>
                             </div>
 
                             <div className="rounded-lg border border-gray-200 bg-white" style={{ overflow: 'visible' }}>
@@ -259,6 +301,18 @@ export default function CreatePurchaseOrder({
                                         ))}
                                     </TableBody>
                                 </Table>
+                            </div>
+                            
+                            {/* Add Item Text - Centered below table */}
+                            <div className="flex justify-center">
+                                <button
+                                    type="button"
+                                    onClick={(e) => addItem(e)}
+                                    className="text-orange-500 hover:text-orange-600 font-medium cursor-pointer flex items-center gap-2"
+                                >
+                                    <Plus className="h-4 w-4" />
+                                    Thêm mặt hàng
+                                </button>
                             </div>
                         </div>
                         {/* Actions */}
