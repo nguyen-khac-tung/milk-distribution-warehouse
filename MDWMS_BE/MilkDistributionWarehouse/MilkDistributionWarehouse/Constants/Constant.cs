@@ -106,6 +106,7 @@
     {
         public const int Available = 1;
         public const int Unavailable = 2;
+        public const int Completed = 3;
     }
 
     public static class RoleNames

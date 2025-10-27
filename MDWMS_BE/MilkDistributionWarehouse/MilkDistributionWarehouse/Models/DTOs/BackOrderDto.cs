@@ -39,7 +39,10 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
         public class BackOrderUpdateStatusDto
         {
+            [Required(ErrorMessage = "BackOrderId không được để trống")]
             public Guid BackOrderId { get; set; }
+            [Required]
+            [Range(1, 3, ErrorMessage = "Status chỉ được phép là 1, 2 hoặc 3.")]
             public int Status { get; set; }
         }
     }

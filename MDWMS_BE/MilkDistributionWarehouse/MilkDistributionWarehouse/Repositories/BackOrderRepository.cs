@@ -29,7 +29,7 @@ namespace MilkDistributionWarehouse.Repositories
             return _context.BackOrders
                 .Include(bo => bo.Goods)
                 .Include(bo => bo.Retailer)
-                .Where(bo => bo.Status != CommonStatus.Deleted)
+                .Where(bo => bo.Status != BackOrderStatus.Completed)
                 .OrderByDescending(bo => bo.CreatedAt)
                 .AsNoTracking();
         }
@@ -39,7 +39,7 @@ namespace MilkDistributionWarehouse.Repositories
             return await _context.BackOrders
                 .Include(bo => bo.Goods)
                 .Include(bo => bo.Retailer)
-                .FirstOrDefaultAsync(bo => bo.BackOrderId == backOrderId && bo.Status != CommonStatus.Deleted);
+                .FirstOrDefaultAsync(bo => bo.BackOrderId == backOrderId);
         }
 
         public async Task<BackOrder?> CreateBackOrder(BackOrder entity)
@@ -60,7 +60,9 @@ namespace MilkDistributionWarehouse.Repositories
         public async Task<List<BackOrder>> GetActiveBackOrdersAsync()
         {
             return await _context.BackOrders
-                .Where(bo => bo.Status == CommonStatus.Active)
+                .Where(bo => bo.Status != BackOrderStatus.Completed)
+                .Include(bo => bo.Goods)
+                .Include(bo => bo.Retailer)
                 .OrderBy(bo => bo.CreatedAt)
                 .AsNoTracking()
                 .ToListAsync();

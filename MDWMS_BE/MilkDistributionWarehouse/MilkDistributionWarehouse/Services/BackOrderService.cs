@@ -66,7 +66,7 @@ namespace MilkDistributionWarehouse.Services
             entity.BackOrderId = Guid.NewGuid();
             entity.CreatedBy = userId;
             entity.CreatedAt = DateTime.Now;
-            entity.Status = CommonStatus.Active;
+            entity.Status = BackOrderStatus.Unavailable;
             var created = await _backOrderRepository.CreateBackOrder(entity);
             var createdResponse = await _backOrderRepository.GetBackOrderById(created.BackOrderId);
             return ("", _mapper.Map<BackOrderDto.BackOrderResponseDto>(createdResponse));
@@ -98,7 +98,7 @@ namespace MilkDistributionWarehouse.Services
             if (backOrder == null)
                 return ("Back order do not exist.", new BackOrderDto.BackOrderResponseDto());
 
-            backOrder.Status = CommonStatus.Deleted;
+            backOrder.Status = BackOrderStatus.Completed;
             backOrder.UpdateAt = DateTime.Now;
 
             var deleted = await _backOrderRepository.UpdateBackOrder(backOrder);
@@ -109,7 +109,7 @@ namespace MilkDistributionWarehouse.Services
         {
             var backOrders = await _backOrderRepository.GetActiveBackOrdersAsync();
             if (!backOrders.Any())
-                return ("Không có back order hoạt động.", new List<BackOrderDto.BackOrderActiveDto>());
+                return ("Không có back order cần xử lý.", new List<BackOrderDto.BackOrderActiveDto>());
 
             var dto = _mapper.Map<List<BackOrderDto.BackOrderActiveDto>>(backOrders);
             return ("", dto);

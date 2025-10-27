@@ -24,7 +24,7 @@ namespace MilkDistributionWarehouse.Controllers
             var (msg, result) = await _backOrderService.GetBackOrders(request);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<PageResult<BackOrderDto.BackOrderResponseDto>>.ToResultOk(result);
+            return ApiResponse<PageResult<BackOrderResponseDto>>.ToResultOk(result);
         }
 
         [HttpGet("BackOrderDetail/{id}")]
@@ -33,11 +33,11 @@ namespace MilkDistributionWarehouse.Controllers
             var (msg, backOrder) = await _backOrderService.GetBackOrderById(id);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<BackOrderDto.BackOrderResponseDto>.ToResultOk(backOrder);
+            return ApiResponse<BackOrderResponseDto>.ToResultOk(backOrder);
         }
 
         [HttpPost("Create")]
-        public async Task<IActionResult> CreateBackOrder([FromBody] BackOrderDto.BackOrderRequestDto dto)
+        public async Task<IActionResult> CreateBackOrder([FromBody] BackOrderRequestDto dto)
         {
             if (!ModelState.IsValid)
                 return ApiResponse<string>.ToResultError("Dữ liệu không hợp lệ.");
@@ -45,18 +45,18 @@ namespace MilkDistributionWarehouse.Controllers
             var (msg, created) = await _backOrderService.CreateBackOrder(dto, userId);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<BackOrderDto.BackOrderResponseDto>.ToResultOk(created);
+            return ApiResponse<BackOrderResponseDto>.ToResultOk(created);
         }
 
         [HttpPut("Update/{id}")]
-        public async Task<IActionResult> UpdateBackOrder(Guid id, [FromBody] BackOrderDto.BackOrderRequestDto dto)
+        public async Task<IActionResult> UpdateBackOrder(Guid id, [FromBody] BackOrderRequestDto dto)
         {
             if (!ModelState.IsValid)
                 return ApiResponse<string>.ToResultError("Dữ liệu không hợp lệ.");
             var (msg, updated) = await _backOrderService.UpdateBackOrder(id, dto);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<BackOrderDto.BackOrderResponseDto>.ToResultOk(updated);
+            return ApiResponse<BackOrderResponseDto>.ToResultOk(updated);
         }
 
         [HttpDelete("Delete/{id}")]
@@ -65,7 +65,7 @@ namespace MilkDistributionWarehouse.Controllers
             var (msg, deleted) = await _backOrderService.DeleteBackOrder(id);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<BackOrderDto.BackOrderResponseDto>.ToResultOk(deleted);
+            return ApiResponse<BackOrderResponseDto>.ToResultOk(deleted);
         }
 
         [HttpGet("GetBackOrderDropdown")]
@@ -74,11 +74,11 @@ namespace MilkDistributionWarehouse.Controllers
             var (msg, backOrders) = await _backOrderService.GetBackOrderDropdown();
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<List<BackOrderDto.BackOrderActiveDto>>.ToResultOk(backOrders);
+            return ApiResponse<List<BackOrderActiveDto>>.ToResultOk(backOrders);
         }
 
         [HttpPut("UpdateStatus")]
-        public async Task<IActionResult> UpdateStatus(BackOrderDto.BackOrderUpdateStatusDto update)
+        public async Task<IActionResult> UpdateStatus(BackOrderUpdateStatusDto update)
         {
             var (msg, backOrders) = await _backOrderService.UpdateStatus(update);
             if (!string.IsNullOrEmpty(msg))
