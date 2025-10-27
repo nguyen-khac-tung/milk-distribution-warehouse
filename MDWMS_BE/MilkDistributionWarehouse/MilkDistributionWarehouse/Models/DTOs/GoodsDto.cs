@@ -61,6 +61,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
         [JsonPropertyOrder(18)]
         public string? LightLevel { get; set; }
+        public List<GoodsPackingDto> GoodsPackings { get;set; }
         [JsonPropertyOrder(19)]
         public bool IsDisable { get; set; }
     }
@@ -87,6 +88,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
         [MaxLength(255, ErrorMessage = "Độ dài mã sản phẩm không được vượt quá 255 ký tự")]
         [RegularExpression(@"^[a-zA-Z0-9\s_-]+$", ErrorMessage = "Mã sản phẩm không được chứa các ký tự đặc biệt")]
         public string GoodsCode { get; set; }
+        public List<GoodsPackingCreate> GoodsPackingCreates { get; set; }
     }
 
     public class GoodsUpdate : GoodsCommonChange

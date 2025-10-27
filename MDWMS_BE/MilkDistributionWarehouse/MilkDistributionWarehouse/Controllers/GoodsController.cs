@@ -80,7 +80,7 @@ namespace MilkDistributionWarehouse.Controllers
         [Authorize(Roles = "Sale Manager")]
         public async Task<IActionResult> UpdateGoods([FromBody] GoodsUpdate update)
         {
-            var(msg, goods) = await _goodsService.UpdateGoods_1(update);
+            var(msg, goods) = await _goodsService.UpdateGoods(update);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<GoodsDto>.ToResultOk(goods);
