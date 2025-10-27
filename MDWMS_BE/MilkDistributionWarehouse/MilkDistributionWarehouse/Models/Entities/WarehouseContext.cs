@@ -213,15 +213,16 @@ public partial class WarehouseContext : DbContext
             entity.HasKey(e => e.GoodsReceiptNoteDetailId).HasName("PK_ImportInspections");
 
             entity.Property(e => e.GoodsReceiptNoteDetailId).ValueGeneratedNever();
-            entity.Property(e => e.GoodsPackingId)
-                .HasMaxLength(10)
-                .IsFixedLength();
             entity.Property(e => e.Note).HasMaxLength(255);
 
             entity.HasOne(d => d.Goods).WithMany(p => p.GoodsReceiptNoteDetails)
                 .HasForeignKey(d => d.GoodsId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ImportInspections_Products");
+
+            entity.HasOne(d => d.GoodsPacking).WithMany(p => p.GoodsReceiptNoteDetails)
+                .HasForeignKey(d => d.GoodsPackingId)
+                .HasConstraintName("FK_GoodsReceiptNoteDetails_GoodsPacking");
 
             entity.HasOne(d => d.GoodsReceiptNote).WithMany(p => p.GoodsReceiptNoteDetails)
                 .HasForeignKey(d => d.GoodsReceiptNoteId)
@@ -269,7 +270,10 @@ public partial class WarehouseContext : DbContext
 
         modelBuilder.Entity<Pallet>(entity =>
         {
-            entity.Property(e => e.PalletId).ValueGeneratedNever();
+            entity.Property(e => e.PalletId)
+                .HasMaxLength(26)
+                .IsUnicode(false)
+                .IsFixedLength();
 
             entity.HasOne(d => d.Batch).WithMany(p => p.Pallets)
                 .HasForeignKey(d => d.BatchId)
@@ -456,6 +460,10 @@ public partial class WarehouseContext : DbContext
 
             entity.Property(e => e.StocktakingPalletId).ValueGeneratedNever();
             entity.Property(e => e.Note).HasMaxLength(200);
+            entity.Property(e => e.PalletId)
+                .HasMaxLength(26)
+                .IsUnicode(false)
+                .IsFixedLength();
 
             entity.HasOne(d => d.Pallet).WithMany(p => p.StocktakingPallets)
                 .HasForeignKey(d => d.PalletId)

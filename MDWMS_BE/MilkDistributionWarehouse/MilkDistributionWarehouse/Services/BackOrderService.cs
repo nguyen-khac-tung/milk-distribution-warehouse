@@ -1,0 +1,144 @@
+﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using Microsoft.EntityFrameworkCore;
+using MilkDistributionWarehouse.Constants;
+using MilkDistributionWarehouse.Models.DTOs;
+using MilkDistributionWarehouse.Models.Entities;
+using MilkDistributionWarehouse.Repositories;
+using MilkDistributionWarehouse.Utilities;
+
+namespace MilkDistributionWarehouse.Services
+{
+    public interface IBackOrderService
+    {
+        Task<(string, PageResult<BackOrderDto.BackOrderResponseDto>)> GetBackOrders(PagedRequest request);
+        Task<(string, BackOrderDto.BackOrderResponseDto)> GetBackOrderById(Guid backOrderId);
+        Task<(string, BackOrderDto.BackOrderResponseDto)> CreateBackOrder(BackOrderDto.BackOrderRequestDto dto, int? userId);
+        Task<(string, BackOrderDto.BackOrderResponseDto)> UpdateBackOrder(Guid backOrderId, BackOrderDto.BackOrderRequestDto dto);
+        Task<(string, BackOrderDto.BackOrderResponseDto)> DeleteBackOrder(Guid backOrderId);
+        Task<(string, List<BackOrderDto.BackOrderActiveDto>)> GetBackOrderDropdown();
+        Task<(string, BackOrderDto.BackOrderUpdateStatusDto)> UpdateStatus(BackOrderDto.BackOrderUpdateStatusDto update);
+    }
+
+    public class BackOrderService : IBackOrderService
+    {
+        private readonly IBackOrderRepository _backOrderRepository;
+        private readonly IMapper _mapper;
+
+        public BackOrderService(IBackOrderRepository backOrderRepository, IMapper mapper)
+        {
+            _backOrderRepository = backOrderRepository;
+            _mapper = mapper;
+        }
+
+        public async Task<(string, PageResult<BackOrderDto.BackOrderResponseDto>)> GetBackOrders(PagedRequest request)
+        {
+            var backOrders = _backOrderRepository.GetBackOrders();
+            if (backOrders == null)
+                return ("Không có back order nào.".ToMessageForUser(), new PageResult<BackOrderDto.BackOrderResponseDto>());
+
+            var backOrderDtos = backOrders.ProjectTo<BackOrderDto.BackOrderResponseDto>(_mapper.ConfigurationProvider);
+            var pagedResult = await backOrderDtos.ToPagedResultAsync(request);
+            return ("", pagedResult);
+        }
+
+        public async Task<(string, BackOrderDto.BackOrderResponseDto)> GetBackOrderById(Guid backOrderId)
+        {
+            var backOrder = await _backOrderRepository.GetBackOrderById(backOrderId);
+            if (backOrder == null)
+                return ("Không tìm thấy back order.".ToMessageForUser(), new BackOrderDto.BackOrderResponseDto());
+
+            return ("", _mapper.Map<BackOrderDto.BackOrderResponseDto>(backOrder));
+        }
+
+        public async Task<(string, BackOrderDto.BackOrderResponseDto)> CreateBackOrder(BackOrderDto.BackOrderRequestDto dto, int? userId)
+        {
+            if (userId == null)
+                return ("The user is not logged into the system.".ToMessageForUser(), new BackOrderDto.BackOrderResponseDto());
+
+            if (!await _backOrderRepository.ExistsRetailer(dto.RetailerId))
+                return ("Retailer do not exist.", new BackOrderDto.BackOrderResponseDto());
+
+            if (!await _backOrderRepository.ExistsGoods(dto.GoodsId))
+                return ("Goods do not exist.", new BackOrderDto.BackOrderResponseDto());
+
+            var entity = _mapper.Map<BackOrder>(dto);
+            entity.BackOrderId = Guid.NewGuid();
+            entity.CreatedBy = userId;
+            entity.CreatedAt = DateTime.Now;
+            entity.Status = BackOrderStatus.Unavailable;
+            var created = await _backOrderRepository.CreateBackOrder(entity);
+            var createdResponse = await _backOrderRepository.GetBackOrderById(created.BackOrderId);
+            return ("", _mapper.Map<BackOrderDto.BackOrderResponseDto>(createdResponse));
+        }
+
+        public async Task<(string, BackOrderDto.BackOrderResponseDto)> UpdateBackOrder(Guid backOrderId, BackOrderDto.BackOrderRequestDto dto)
+        {
+            var backOrder = await _backOrderRepository.GetBackOrderById(backOrderId);
+            if (backOrder == null)
+                return ("Back order do not exist.", new BackOrderDto.BackOrderResponseDto());
+
+            if (!await _backOrderRepository.ExistsRetailer(dto.RetailerId))
+                return ("Retailer do not exist.", new BackOrderDto.BackOrderResponseDto());
+
+            if (!await _backOrderRepository.ExistsGoods(dto.GoodsId))
+                return ("Goods do not exist.", new BackOrderDto.BackOrderResponseDto());
+
+            _mapper.Map(dto, backOrder);
+            backOrder.UpdateAt = DateTime.Now;
+
+            var updated = await _backOrderRepository.UpdateBackOrder(backOrder);
+            var updateResponse = await _backOrderRepository.GetBackOrderById(updated.BackOrderId);
+            return ("", _mapper.Map<BackOrderDto.BackOrderResponseDto>(updated));
+        }
+
+        public async Task<(string, BackOrderDto.BackOrderResponseDto)> DeleteBackOrder(Guid backOrderId)
+        {
+            var backOrder = await _backOrderRepository.GetBackOrderById(backOrderId);
+            if (backOrder == null)
+                return ("Back order do not exist.", new BackOrderDto.BackOrderResponseDto());
+
+            backOrder.Status = BackOrderStatus.Completed;
+            backOrder.UpdateAt = DateTime.Now;
+
+            var deleted = await _backOrderRepository.UpdateBackOrder(backOrder);
+            return ("", _mapper.Map<BackOrderDto.BackOrderResponseDto>(deleted));
+        }
+
+        public async Task<(string, List<BackOrderDto.BackOrderActiveDto>)> GetBackOrderDropdown()
+        {
+            var backOrders = await _backOrderRepository.GetActiveBackOrdersAsync();
+            if (!backOrders.Any())
+                return ("Không có back order cần xử lý.", new List<BackOrderDto.BackOrderActiveDto>());
+
+            var dto = _mapper.Map<List<BackOrderDto.BackOrderActiveDto>>(backOrders);
+            return ("", dto);
+        }
+
+        public async Task<(string, BackOrderDto.BackOrderUpdateStatusDto)> UpdateStatus(BackOrderDto.BackOrderUpdateStatusDto update)
+        {
+            var backOrderExist = await _backOrderRepository.GetBackOrderById(update.BackOrderId);
+            if (backOrderExist == null)
+            {
+                return ("Back order do not exist.", new BackOrderDto.BackOrderUpdateStatusDto());
+            }
+
+            if (backOrderExist.Status == update.Status)
+            {
+                return ("Trạng thái hiện tại và trạng thái update đang giống nhau.".ToMessageForUser(), new BackOrderDto.BackOrderUpdateStatusDto());
+            }
+
+            backOrderExist.Status = update.Status;
+            backOrderExist.UpdateAt = DateTime.Now;
+
+            var updatedBackOrder = await _backOrderRepository.UpdateBackOrder(backOrderExist);
+            if (updatedBackOrder == null)
+            {
+                return ("Update back order status failed.", new BackOrderDto.BackOrderUpdateStatusDto());
+            }
+
+            var resultDto = _mapper.Map<BackOrderDto.BackOrderUpdateStatusDto>(updatedBackOrder);
+            return ("", resultDto);
+        }
+    }
+}
