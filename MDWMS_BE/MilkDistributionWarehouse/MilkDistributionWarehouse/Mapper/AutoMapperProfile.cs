@@ -300,7 +300,10 @@ namespace MilkDistributionWarehouse.Mapper
             CreateMap<GoodsPacking, GoodsPackingDto>();
             CreateMap<GoodsPackingCreate, GoodsPacking>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => CommonStatus.Active));
-                
+
+            //Map GoodsReceiptNoteDetail
+            CreateMap<GoodsReceiptNoteDetail, GoodsReceiptNoteDetailDto.GoodsReceiptNoteDetailPalletDto>()
+                .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Goods.GoodsName));
         }
     }
 }
