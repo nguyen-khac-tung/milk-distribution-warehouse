@@ -7,18 +7,18 @@ import { Search, Plus, Edit, Trash2, Eye, ArrowUp, ArrowDown, ArrowUpDown, Packa
 import Loading from "../../components/Common/Loading";
 import EmptyState from "../../components/Common/EmptyState";
 import Pagination from "../../components/Common/Pagination";
-import PurchaseOrderFilterToggle from "../../components/SaleOrderCompoents/SaleOrderFilterToggle";
-import PurchaseOrderStatsChart from "../../components/PurchaseOrderComponents/PurchaseOrderStatsChart";
-import StatusDisplaySaleOrder, { SALE_ORDER_STATUS, STATUS_LABELS } from "../../components/SaleOrderCompoents/StatusDisplaySaleOrder";
+import StatusDisplaySaleOrder, { STATUS_LABELS, SALE_ORDER_STATUS } from "../../components/SaleOrderCompoents/StatusDisplaySaleOrder";
 import DeleteModal from "../../components/Common/DeleteModal";
 import { extractErrorMessage } from "../../utils/Validation";
 import { getSalesOrderListSaleManager, getSalesOrderListSalesRepresentatives, getSalesOrderListWarehouseManager, getSalesOrderListWarehouseStaff } from "../../services/SalesOrderService";
-import { getSuppliersDropdown } from "../../services/SupplierService";
+import { getRetailersDropdown } from "../../services/RetailerService";
+import { getUserDropDownByRoleName } from "../../services/AccountService";
 import { PERMISSIONS } from "../../utils/permissions";
 import { usePermissions } from "../../hooks/usePermissions";
 import PermissionWrapper from "../../components/Common/PermissionWrapper";
 import SalesOrderTable from "./SalesOrderTable";
 import SaleOrderStatsChart from "../../components/SaleOrderCompoents/SaleOrderStatsChart";
+import SaleOrderFilterToggle from "../../components/SaleOrderCompoents/SaleOrderFilterToggle";
 
 
 
@@ -34,17 +34,23 @@ const sampleUsers = [
 const SalesOrderList = () => {
     const navigate = useNavigate();
     const { hasPermission, userRoles } = usePermissions();
-    const [searchQuery, setSearchQuery] = useState("");
     const [sortField, setSortField] = useState("");
     const [sortAscending, setSortAscending] = useState(true);
     const [loading, setLoading] = useState(true);
     const [saleOrders, setsaleOrders] = useState([]);
-    const [suppliers, setSuppliers] = useState([]);
+    const [retailers, setRetailers] = useState([]);
+    const [approvers, setApprovers] = useState([]);
+    const [creators, setCreators] = useState([]);
+    const [confirmers, setConfirmers] = useState([]);
+    const [assignees, setAssignees] = useState([]);
     const [pagination, setPagination] = useState({
         current: 1,
         pageSize: 10,
         total: 0
     });
+
+    // Search
+    const [searchQuery, setSearchQuery] = useState("");
 
     // Filter states
     const [statusFilter, setStatusFilter] = useState("");
@@ -53,18 +59,18 @@ const SalesOrderList = () => {
     const [showCreateForm, setShowCreateForm] = useState(false);
 
     // New filter states
-    const [supplierFilter, setSupplierFilter] = useState("");
-    const [showSupplierFilter, setShowSupplierFilter] = useState(false);
+    const [retailerFilter, setRetailerFilter] = useState("");
+    const [showRetailerFilter, setShowRetailerFilter] = useState(false);
     const [approverFilter, setApproverFilter] = useState("");
     const [showApproverFilter, setShowApproverFilter] = useState(false);
-    const [creatorFilter, setCreatorFilter] = useState("");
-    const [showCreatorFilter, setShowCreatorFilter] = useState(false);
+    const [sellerFilter, setSellerFilter] = useState("");
+    const [showSellerFilter, setShowSellerFilter] = useState(false);
     const [confirmerFilter, setConfirmerFilter] = useState("");
     const [showConfirmerFilter, setShowConfirmerFilter] = useState(false);
     const [assigneeFilter, setAssigneeFilter] = useState("");
     const [showAssigneeFilter, setShowAssigneeFilter] = useState(false);
-    const [dateRangeFilter, setDateRangeFilter] = useState({ fromDate: '', toDate: '' });
-    const [showDateRangeFilter, setShowDateRangeFilter] = useState(false);
+    const [estimatedDateRangeFilter, setEstimatedDateRangeFilter] = useState({ fromEstimatedDate: '', toEstimatedDate: '' });
+    const [showEstimatedDateRangeFilter, setShowEstimatedDateRangeFilter] = useState(false);
     const [hasInitialLoad, setHasInitialLoad] = useState(false);
     const [apiCallCount, setApiCallCount] = useState(0);
 
@@ -74,15 +80,45 @@ const SalesOrderList = () => {
     const [deleteLoading, setDeleteLoading] = useState(false);
 
     // Fetch data from API
-    const fetchSuppliers = async () => {
+    const fetchRetailers = async () => {
         try {
-            const response = await getSuppliersDropdown();
+            const response = await getRetailersDropdown();
+            console.log("retailer:", response)
             if (response && response.data && Array.isArray(response.data)) {
-                setSuppliers(response.data);
+                setRetailers(response.data);
             }
         } catch (error) {
-            console.error("Error fetching suppliers:", error);
+            console.error("Error fetching retailers:", error);
         }
+    };
+
+    // Fetch users by role name
+    const fetchUsersByRole = async (roleName, setter) => {
+        try {
+            const response = await getUserDropDownByRoleName(roleName);
+            // console.log("fetchUsersByRole", response)
+            if (response && response.data && Array.isArray(response.data)) {
+                setter(response.data);
+            }
+        } catch (error) {
+            console.error(`Error fetching users for role ${roleName}:`, error);
+            setter([]);
+        }
+    };
+
+    // Fetch all users for filters
+    const fetchAllUsers = async () => {
+        // Fetch approvers (Sale Manager role)
+        await fetchUsersByRole("Sale Manager", setApprovers);
+
+        // Fetch creators/sellers (Sales Representative role)
+        await fetchUsersByRole("Sales Representative", setCreators);
+
+        // Fetch confirmers (Warehouse Manager role)
+        await fetchUsersByRole("Warehouse Manager", setConfirmers);
+
+        // Fetch assignees (Warehouse Staff role)
+        await fetchUsersByRole("Warehouse Staff", setAssignees);
     };
 
     const fetchDataWithParams = async (params) => {
@@ -102,15 +138,15 @@ const SalesOrderList = () => {
             let response;
 
             // Kiểm tra permissions để chọn API phù hợp
-            if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_SM)) {
+            if (hasPermission(PERMISSIONS.SALES_ORDER_VIEW_SM)) {
                 response = await getSalesOrderListSaleManager(params);
-            } else if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WM)) {
+            } else if (hasPermission(PERMISSIONS.SALES_ORDER_VIEW_WM)) {
                 // Warehouse Manager - có quyền xem đơn hàng cho quản lý kho
                 response = await getSalesOrderListWarehouseManager(params);
-            } else if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WS)) {
+            } else if (hasPermission(PERMISSIONS.SALES_ORDER_VIEW_WS)) {
                 // Warehouse Staff - có quyền xem đơn hàng được giao
                 response = await getSalesOrderListWarehouseStaff(params);
-            } else if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS)) {
+            } else if (hasPermission(PERMISSIONS.SALES_ORDER_VIEW_SR)) {
                 // Sales Representative - chỉ xem đơn hàng của mình
                 response = await getSalesOrderListSalesRepresentatives(params);
             } else {
@@ -144,140 +180,89 @@ const SalesOrderList = () => {
         }
     };
 
-    const fetchData = async () => {
-        const requestParams = {
+    // Helper function để tạo request params
+    const createRequestParams = (overrides = {}) => {
+        return {
             pageNumber: pagination.current,
             pageSize: pagination.pageSize,
             search: searchQuery,
             sortField: sortField,
             sortAscending: sortAscending,
             status: statusFilter,
-            supplierId: supplierFilter,
-            approvalBy: approverFilter,
-            createdBy: creatorFilter,
-            arrivalConfirmedBy: confirmerFilter,
-            assignTo: assigneeFilter,
-            fromDate: dateRangeFilter.fromDate,
-            toDate: dateRangeFilter.toDate
+            customerId: retailerFilter,
+            salesRepId: sellerFilter,
+            createdBy: sellerFilter,
+            approvedBy: approverFilter,
+            assignedTo: assigneeFilter,
+            fromEstimatedDate: estimatedDateRangeFilter.fromEstimatedDate,
+            toEstimatedDate: estimatedDateRangeFilter.toEstimatedDate,
+            ...overrides
         };
+    };
 
+    const fetchData = async () => {
+        const requestParams = createRequestParams();
 
         return await fetchDataWithParams(requestParams);
     };
 
     // Initial load
     useEffect(() => {
-        fetchSuppliers();
+        fetchRetailers();
+        fetchAllUsers();
         if (!hasInitialLoad) {
-            console.log("=== INITIAL LOAD START ===");
-            console.log("API Call Count before initial load:", apiCallCount);
             fetchData();
             setHasInitialLoad(true);
         }
     }, [hasInitialLoad]);
 
-    // Trigger search/filter when filters change (skip initial load)
+    // Trigger search when search query changes (skip initial load)
     useEffect(() => {
         // Chỉ gọi API sau khi đã load dữ liệu ban đầu
         if (!hasInitialLoad) return;
 
-        // Chỉ gọi fetchData() khi có filter thực sự active (không phải empty string)
-        const hasActiveFilters = searchQuery.trim() ||
-            (statusFilter && statusFilter !== "") ||
-            (supplierFilter && supplierFilter !== "") ||
-            (approverFilter && approverFilter !== "") ||
-            (creatorFilter && creatorFilter !== "") ||
-            (confirmerFilter && confirmerFilter !== "") ||
-            (assigneeFilter && assigneeFilter !== "") ||
-            (dateRangeFilter.fromDate && dateRangeFilter.fromDate !== "") ||
-            (dateRangeFilter.toDate && dateRangeFilter.toDate !== "");
-
-        // Chỉ gọi API khi có filter thực sự active
-        if (hasActiveFilters) {
-            console.log("=== FILTER CHANGE DETECTED ===");
-            console.log("API Call Count before filter:", apiCallCount);
+        // Chỉ gọi fetchData() khi có search query thực sự active
+        if (searchQuery.trim()) {
+            console.log("=== SEARCH CHANGE DETECTED ===");
+            console.log("API Call Count before search:", apiCallCount);
             fetchData();
         }
-    }, [hasInitialLoad, searchQuery, statusFilter, supplierFilter, approverFilter, creatorFilter, confirmerFilter, assigneeFilter, dateRangeFilter]);
+    }, [hasInitialLoad, searchQuery]);
 
-    // Filter and sort data
-    const filteredPurchaseOrders = useMemo(() => {
-        if (!Array.isArray(saleOrders)) {
-            return [];
-        }
-        return saleOrders.filter(order => {
-            const searchLower = searchQuery.toLowerCase();
-            const matchesSearch = (
-                (order.purchaseOrderId || '').toLowerCase().includes(searchLower) ||
-                (order.supplierName || '').toLowerCase().includes(searchLower) ||
-                (order.creatorName || '').toLowerCase().includes(searchLower) ||
-                (STATUS_LABELS[order.status] || '').toLowerCase().includes(searchLower)
-            );
+    // Filter được xử lý ở backend, không cần filter ở frontend nữa
+    const filteredSaleOrders = saleOrders;
 
-            const matchesStatus = !statusFilter || (order.status || '').toString() === statusFilter;
-            const matchesSupplier = !supplierFilter || (order.supplierId || '').toString() === supplierFilter;
-            const matchesApprover = !approverFilter || (order.approvalBy || '').toString() === approverFilter;
-            const matchesCreator = !creatorFilter || (order.createdBy || '').toString() === creatorFilter;
-            const matchesConfirmer = !confirmerFilter || (order.arrivalConfirmedBy || '').toString() === confirmerFilter;
-            const matchesAssignee = !assigneeFilter || (order.assignTo || '').toString() === assigneeFilter;
-
-            // Date range filter
-            let matchesDateRange = true;
-            if (dateRangeFilter.fromDate || dateRangeFilter.toDate) {
-                const orderDate = new Date(order.createdAt);
-                if (dateRangeFilter.fromDate) {
-                    const fromDate = new Date(dateRangeFilter.fromDate);
-                    matchesDateRange = matchesDateRange && orderDate >= fromDate;
-                }
-                if (dateRangeFilter.toDate) {
-                    const toDate = new Date(dateRangeFilter.toDate);
-                    toDate.setHours(23, 59, 59, 999); // Include the entire day
-                    matchesDateRange = matchesDateRange && orderDate <= toDate;
-                }
-            }
-
-            return matchesSearch && matchesStatus && matchesSupplier && matchesApprover &&
-                matchesCreator && matchesConfirmer && matchesAssignee && matchesDateRange;
-        });
-    }, [saleOrders, searchQuery, statusFilter, supplierFilter, approverFilter, creatorFilter, confirmerFilter, assigneeFilter, dateRangeFilter]);
-
-    // Sort data
-    const sortedPurchaseOrders = useMemo(() => {
-        return [...filteredPurchaseOrders].sort((a, b) => {
-            if (!sortField) return 0;
-
-            let aValue = a[sortField];
-            let bValue = b[sortField];
-
-            if (sortField === 'createdAt' || sortField === 'updatedAt') {
-                aValue = new Date(aValue);
-                bValue = new Date(bValue);
-            }
-
-            if (aValue < bValue) return sortAscending ? -1 : 1;
-            if (aValue > bValue) return sortAscending ? 1 : -1;
-            return 0;
-        });
-    }, [filteredPurchaseOrders, sortField, sortAscending]);
+    // Sort được xử lý ở backend, không cần sort ở frontend nữa
+    const sortedSaleOrders = filteredSaleOrders;
 
 
 
     const handleSort = (field) => {
+        let newSortAscending = true;
+
         if (sortField === field) {
-            setSortAscending(!sortAscending);
-        } else {
-            setSortField(field);
-            setSortAscending(true);
+            newSortAscending = !sortAscending;
         }
+
+        setSortField(field);
+        setSortAscending(newSortAscending);
+
+        const requestParams = createRequestParams({
+            pageNumber: 1,
+            sortField: field,
+            sortAscending: newSortAscending
+        });
+
+        fetchDataWithParams(requestParams);
     };
 
     const handleViewClick = (order) => {
-        navigate(`/sales-orders/${order.purchaseOderId}`);
+        navigate(`/sales-orders/${order.salesOrderId}`);
     };
 
     const handleEditClick = (order) => {
         // Navigate to update page with order ID
-        navigate(`/sales-orders/update/${order.purchaseOderId}`);
+        navigate(`/sales-orders/update/${order.salesOrderId}`);
     };
 
     const handleDeleteClick = (order) => {
@@ -294,7 +279,7 @@ const SalesOrderList = () => {
 
         setDeleteLoading(true);
         try {
-            const orderId = selectedPurchaseOrder.purchaseOderId;
+            const orderId = selectedPurchaseOrder.salesOrderId;
 
             if (!orderId) {
                 console.error("No valid ID found. Available fields:", Object.keys(selectedPurchaseOrder));
@@ -302,8 +287,6 @@ const SalesOrderList = () => {
             }
 
             // await deletePurchaseOrder(orderId);
-
-            // Show success message
             if (window.showToast) {
                 window.showToast("Xóa đơn xuất thành công!", "success");
             }
@@ -339,22 +322,9 @@ const SalesOrderList = () => {
         // Update pagination state first
         setPagination(prev => ({ ...prev, current: newPage }));
 
-        // Call fetchData with the new page number directly
-        const requestParams = {
-            pageNumber: newPage, // Use the new page directly
-            pageSize: pagination.pageSize,
-            search: searchQuery,
-            sortField: sortField,
-            sortAscending: sortAscending,
-            status: statusFilter,
-            supplierId: supplierFilter,
-            approvalBy: approverFilter,
-            createdBy: creatorFilter,
-            arrivalConfirmedBy: confirmerFilter,
-            assignTo: assigneeFilter,
-            fromDate: dateRangeFilter.fromDate,
-            toDate: dateRangeFilter.toDate
-        };
+        const requestParams = createRequestParams({
+            pageNumber: newPage
+        });
 
         fetchDataWithParams(requestParams);
     };
@@ -364,21 +334,10 @@ const SalesOrderList = () => {
         setPagination(prev => ({ ...prev, pageSize: newPageSize, current: 1 }));
 
         // Call fetchData with the new page size directly
-        const requestParams = {
-            pageNumber: 1, // Reset to page 1 when changing page size
-            pageSize: newPageSize,
-            search: searchQuery,
-            sortField: sortField,
-            sortAscending: sortAscending,
-            status: statusFilter,
-            supplierId: supplierFilter,
-            approvalBy: approverFilter,
-            createdBy: creatorFilter,
-            arrivalConfirmedBy: confirmerFilter,
-            assignTo: assigneeFilter,
-            fromDate: dateRangeFilter.fromDate,
-            toDate: dateRangeFilter.toDate
-        };
+        const requestParams = createRequestParams({
+            pageNumber: 1,
+            pageSize: newPageSize
+        });
 
         fetchDataWithParams(requestParams);
     };
@@ -387,38 +346,52 @@ const SalesOrderList = () => {
     const handleStatusFilter = (value) => {
         setStatusFilter(value);
         setShowStatusFilter(false);
+
+        // Gọi API với giá trị mới ngay lập tức
+        const requestParams = createRequestParams({
+            pageNumber: 1,
+            status: value
+        });
+
+        fetchDataWithParams(requestParams);
     };
 
     const clearStatusFilter = () => {
         setStatusFilter("");
         setPagination(prev => ({ ...prev, current: 1 }));
+
+        // Gọi API khi clear filter
+        const requestParams = createRequestParams({
+            pageNumber: 1,
+            status: ""
+        });
+
+        fetchDataWithParams(requestParams);
     };
 
     const clearAllFilters = () => {
-        console.log("=== CLEAR ALL FILTERS ===");
-        console.log("API Call Count before clear:", apiCallCount);
 
         // Reset tất cả filters về giá trị mặc định
         setSearchQuery("");
         setStatusFilter("");
-        setSupplierFilter("");
+        setRetailerFilter("");
         setApproverFilter("");
-        setCreatorFilter("");
+        setSellerFilter("");
         setConfirmerFilter("");
         setAssigneeFilter("");
-        setDateRangeFilter({ fromDate: '', toDate: '' });
+        setEstimatedDateRangeFilter({ fromEstimatedDate: '', toEstimatedDate: '' });
 
         // Reset pagination về trang đầu
         setPagination(prev => ({ ...prev, current: 1 }));
 
         // Reset các show states về false
         setShowStatusFilter(false);
-        setShowSupplierFilter(false);
+        setShowRetailerFilter(false);
         setShowApproverFilter(false);
-        setShowCreatorFilter(false);
+        setShowSellerFilter(false);
         setShowConfirmerFilter(false);
         setShowAssigneeFilter(false);
-        setShowDateRangeFilter(false);
+        setShowEstimatedDateRangeFilter(false);
 
         // Reset hasInitialLoad để load lại dữ liệu ban đầu
         setHasInitialLoad(false);
@@ -431,13 +404,13 @@ const SalesOrderList = () => {
             sortField: sortField,
             sortAscending: sortAscending,
             status: "",
-            supplierId: "",
-            approvalBy: "",
+            customerId: "",
+            salesRepId: "",
             createdBy: "",
-            arrivalConfirmedBy: "",
-            assignTo: "",
-            fromDate: "",
-            toDate: ""
+            approvedBy: "",
+            assignedTo: "",
+            fromEstimatedDate: "",
+            toEstimatedDate: ""
         };
 
         // Gọi API trực tiếp với params rỗng
@@ -458,76 +431,154 @@ const SalesOrderList = () => {
     };
 
     // New filter handlers
-    const handleSupplierFilter = (value) => {
-        setSupplierFilter(value);
-        setShowSupplierFilter(false);
+    const handleRetailerFilter = (value) => {
+        setRetailerFilter(value);
+        setShowRetailerFilter(false);
+
+        const requestParams = createRequestParams({
+            pageNumber: 1,
+            customerId: value
+        });
+        fetchDataWithParams(requestParams);
     };
 
-    const clearSupplierFilter = () => {
-        setSupplierFilter("");
+    const clearRetailerFilter = () => {
+        setRetailerFilter("");
         setPagination(prev => ({ ...prev, current: 1 }));
+
+        const requestParams = createRequestParams({
+            pageNumber: 1,
+            customerId: ""
+        });
+        fetchDataWithParams(requestParams);
     };
 
     const handleApproverFilter = (value) => {
         setApproverFilter(value);
         setShowApproverFilter(false);
+
+        const requestParams = createRequestParams({
+            pageNumber: 1,
+            approvedBy: value
+        });
+        fetchDataWithParams(requestParams);
     };
 
     const clearApproverFilter = () => {
         setApproverFilter("");
         setPagination(prev => ({ ...prev, current: 1 }));
+
+        const requestParams = createRequestParams({
+            pageNumber: 1,
+            approvedBy: ""
+        });
+        fetchDataWithParams(requestParams);
     };
 
-    const handleCreatorFilter = (value) => {
-        setCreatorFilter(value);
-        setShowCreatorFilter(false);
+    const handleSellerFilter = (value) => {
+        setSellerFilter(value);
+        setShowSellerFilter(false);
+
+        const requestParams = createRequestParams({
+            pageNumber: 1,
+            salesRepId: value,
+            createdBy: value
+        });
+        fetchDataWithParams(requestParams);
     };
 
-    const clearCreatorFilter = () => {
-        setCreatorFilter("");
+    const clearSellerFilter = () => {
+        setSellerFilter("");
         setPagination(prev => ({ ...prev, current: 1 }));
+
+        const requestParams = createRequestParams({
+            pageNumber: 1,
+            salesRepId: "",
+            createdBy: ""
+        });
+        fetchDataWithParams(requestParams);
     };
 
     const handleConfirmerFilter = (value) => {
         setConfirmerFilter(value);
         setShowConfirmerFilter(false);
+
+        const requestParams = createRequestParams({
+            pageNumber: 1,
+        });
+        fetchDataWithParams(requestParams);
     };
 
     const clearConfirmerFilter = () => {
         setConfirmerFilter("");
         setPagination(prev => ({ ...prev, current: 1 }));
+
+        const requestParams = createRequestParams({
+            pageNumber: 1,
+        });
+        fetchDataWithParams(requestParams);
     };
 
     const handleAssigneeFilter = (value) => {
         setAssigneeFilter(value);
         setShowAssigneeFilter(false);
+
+        const requestParams = createRequestParams({
+            pageNumber: 1,
+            assignedTo: value
+        });
+        fetchDataWithParams(requestParams);
     };
 
     const clearAssigneeFilter = () => {
         setAssigneeFilter("");
         setPagination(prev => ({ ...prev, current: 1 }));
+
+        const requestParams = createRequestParams({
+            pageNumber: 1,
+            assignedTo: ""
+        });
+        fetchDataWithParams(requestParams);
     };
 
-    const handleDateRangeFilter = (value) => {
-        setDateRangeFilter(value);
+
+    const handleEstimatedDateRangeFilter = (value) => {
+        setEstimatedDateRangeFilter(value);
     };
 
-    const clearDateRangeFilter = () => {
-        setDateRangeFilter({ fromDate: '', toDate: '' });
+    const applyEstimatedDateRangeFilter = () => {
+
+        const requestParams = createRequestParams({
+            pageNumber: 1,
+            fromEstimatedDate: estimatedDateRangeFilter.fromEstimatedDate,
+            toEstimatedDate: estimatedDateRangeFilter.toEstimatedDate
+        });
+        fetchDataWithParams(requestParams);
+    };
+
+    const clearEstimatedDateRangeFilter = () => {
+        setEstimatedDateRangeFilter({ fromEstimatedDate: '', toEstimatedDate: '' });
         setPagination(prev => ({ ...prev, current: 1 }));
+
+        const requestParams = createRequestParams({
+            pageNumber: 1,
+            fromEstimatedDate: "",
+            toEstimatedDate: ""
+        });
+        fetchDataWithParams(requestParams);
     };
 
 
     // Logic để hiển thị filter dựa trên role
     const getFilterConfig = () => {
-        // Mặc định hiển thị tất cả 7 nút filter
+        // Mặc định hiển thị tất cả 6 nút filter
         const defaultConfig = {
-            showSupplier: true,
+            showRetailer: true,
             showApprover: true,
-            showCreator: true,
+            showSeller: true,
             showConfirmer: true,
             showAssignee: true,
-            showDateRange: true
+            showEstimatedDateRange: true
         };
 
         if (hasPermission(PERMISSIONS.SALES_ORDER_VIEW_SM)) {
@@ -545,7 +596,7 @@ const SalesOrderList = () => {
             return {
                 ...defaultConfig,
                 showApprover: false,
-                showCreator: false,
+                showSeller: false,
             };
         } else if (hasPermission(PERMISSIONS.SALES_ORDER_VIEW_SR)) {
             // Sales Representative - filter cơ bản
@@ -621,78 +672,79 @@ const SalesOrderList = () => {
 
                 {/* Search and Table Combined */}
                 <Card className="shadow-sm border border-slate-200 overflow-visible bg-gray-50">
-                    <PurchaseOrderFilterToggle
+                    <SaleOrderFilterToggle
                         searchQuery={searchQuery}
                         setSearchQuery={setSearchQuery}
-                        searchPlaceholder="Tìm kiếm theo mã đơn hàng, nhà cung cấp..."
+                        searchPlaceholder="Tìm kiếm theo đại lý, người duyệt, người tạo..."
                         statusFilter={statusFilter}
                         setStatusFilter={setStatusFilter}
                         showStatusFilter={showStatusFilter}
                         setShowStatusFilter={setShowStatusFilter}
                         statusOptions={[
                             { value: "", label: "Tất cả trạng thái đơn" },
-                            { value: "1", label: STATUS_LABELS[SALE_ORDER_STATUS.Draft] },
-                            { value: "2", label: STATUS_LABELS[SALE_ORDER_STATUS.PendingApproval] },
-                            { value: "3", label: STATUS_LABELS[SALE_ORDER_STATUS.Rejected] },
-                            { value: "4", label: STATUS_LABELS[SALE_ORDER_STATUS.Approved] },
-                            { value: "5", label: STATUS_LABELS[SALE_ORDER_STATUS.AssignedForPicking] },
-                            { value: "6", label: STATUS_LABELS[SALE_ORDER_STATUS.Picking] },
-                            { value: "7", label: STATUS_LABELS[SALE_ORDER_STATUS.Completed] }
+                            { value: String(SALE_ORDER_STATUS.Draft), label: STATUS_LABELS[SALE_ORDER_STATUS.Draft] },
+                            { value: String(SALE_ORDER_STATUS.PendingApproval), label: STATUS_LABELS[SALE_ORDER_STATUS.PendingApproval] },
+                            { value: String(SALE_ORDER_STATUS.Rejected), label: STATUS_LABELS[SALE_ORDER_STATUS.Rejected] },
+                            { value: String(SALE_ORDER_STATUS.Approved), label: STATUS_LABELS[SALE_ORDER_STATUS.Approved] },
+                            { value: String(SALE_ORDER_STATUS.AssignedForPicking), label: STATUS_LABELS[SALE_ORDER_STATUS.AssignedForPicking] },
+                            { value: String(SALE_ORDER_STATUS.Picking), label: STATUS_LABELS[SALE_ORDER_STATUS.Picking] },
+                            { value: String(SALE_ORDER_STATUS.Completed), label: STATUS_LABELS[SALE_ORDER_STATUS.Completed] },
                         ]}
                         onStatusFilter={handleStatusFilter}
                         clearStatusFilter={clearStatusFilter}
-                        // Supplier Filter - hiển thị theo config
-                        supplierFilter={filterConfig.showSupplier ? supplierFilter : ""}
-                        setSupplierFilter={filterConfig.showSupplier ? setSupplierFilter : () => { }}
-                        showSupplierFilter={filterConfig.showSupplier ? showSupplierFilter : false}
-                        setShowSupplierFilter={filterConfig.showSupplier ? setShowSupplierFilter : () => { }}
-                        suppliers={suppliers}
-                        onSupplierFilter={filterConfig.showSupplier ? handleSupplierFilter : () => { }}
-                        clearSupplierFilter={filterConfig.showSupplier ? clearSupplierFilter : () => { }}
-                        showSupplier={filterConfig.showSupplier}
-                        // Approver Filter - hiển thị theo config
+                        // Retailer
+                        retailerFilter={filterConfig.showRetailer ? retailerFilter : ""}
+                        setRetailerFilter={filterConfig.showRetailer ? setRetailerFilter : () => { }}
+                        showRetailerFilter={filterConfig.showRetailer ? showRetailerFilter : false}
+                        setShowRetailerFilter={filterConfig.showRetailer ? setShowRetailerFilter : () => { }}
+                        retailers={retailers}
+                        onRetailerFilter={filterConfig.showRetailer ? handleRetailerFilter : () => { }}
+                        clearRetailerFilter={filterConfig.showRetailer ? clearRetailerFilter : () => { }}
+                        showRetailer={filterConfig.showRetailer}
+                        // Approver
                         approverFilter={filterConfig.showApprover ? approverFilter : ""}
                         setApproverFilter={filterConfig.showApprover ? setApproverFilter : () => { }}
                         showApproverFilter={filterConfig.showApprover ? showApproverFilter : false}
                         setShowApproverFilter={filterConfig.showApprover ? setShowApproverFilter : () => { }}
-                        approvers={filterConfig.showApprover ? sampleUsers : []}
+                        approvers={filterConfig.showApprover ? approvers : []}
                         onApproverFilter={filterConfig.showApprover ? handleApproverFilter : () => { }}
                         clearApproverFilter={filterConfig.showApprover ? clearApproverFilter : () => { }}
                         showApprover={filterConfig.showApprover}
-                        // Creator Filter - hiển thị theo config
-                        creatorFilter={filterConfig.showCreator ? creatorFilter : ""}
-                        setCreatorFilter={filterConfig.showCreator ? setCreatorFilter : () => { }}
-                        showCreatorFilter={filterConfig.showCreator ? showCreatorFilter : false}
-                        setShowCreatorFilter={filterConfig.showCreator ? setShowCreatorFilter : () => { }}
-                        creators={filterConfig.showCreator ? sampleUsers : []}
-                        onCreatorFilter={filterConfig.showCreator ? handleCreatorFilter : () => { }}
-                        clearCreatorFilter={filterConfig.showCreator ? clearCreatorFilter : () => { }}
-                        showCreator={filterConfig.showCreator}
-                        // Confirmer Filter - hiển thị theo config
+                        // Seller
+                        sellerFilter={filterConfig.showSeller ? sellerFilter : ""}
+                        setSellerFilter={filterConfig.showSeller ? setSellerFilter : () => { }}
+                        showSellerFilter={filterConfig.showSeller ? showSellerFilter : false}
+                        setShowSellerFilter={filterConfig.showSeller ? setShowSellerFilter : () => { }}
+                        sellers={filterConfig.showSeller ? creators : []}
+                        onSellerFilter={filterConfig.showSeller ? handleSellerFilter : () => { }}
+                        clearSellerFilter={filterConfig.showSeller ? clearSellerFilter : () => { }}
+                        showSeller={filterConfig.showSeller}
+                        // Confirmer
                         confirmerFilter={filterConfig.showConfirmer ? confirmerFilter : ""}
                         setConfirmerFilter={filterConfig.showConfirmer ? setConfirmerFilter : () => { }}
                         showConfirmerFilter={filterConfig.showConfirmer ? showConfirmerFilter : false}
                         setShowConfirmerFilter={filterConfig.showConfirmer ? setShowConfirmerFilter : () => { }}
-                        confirmers={filterConfig.showConfirmer ? sampleUsers : []}
+                        confirmers={filterConfig.showConfirmer ? confirmers : []}
                         onConfirmerFilter={filterConfig.showConfirmer ? handleConfirmerFilter : () => { }}
                         clearConfirmerFilter={filterConfig.showConfirmer ? clearConfirmerFilter : () => { }}
                         showConfirmer={filterConfig.showConfirmer}
-                        // Assignee Filter - hiển thị theo config
+                        // Assignee
                         assigneeFilter={filterConfig.showAssignee ? assigneeFilter : ""}
                         setAssigneeFilter={filterConfig.showAssignee ? setAssigneeFilter : () => { }}
                         showAssigneeFilter={filterConfig.showAssignee ? showAssigneeFilter : false}
                         setShowAssigneeFilter={filterConfig.showAssignee ? setShowAssigneeFilter : () => { }}
-                        assignees={filterConfig.showAssignee ? sampleUsers : []}
+                        assignees={filterConfig.showAssignee ? assignees : []}
                         onAssigneeFilter={filterConfig.showAssignee ? handleAssigneeFilter : () => { }}
                         clearAssigneeFilter={filterConfig.showAssignee ? clearAssigneeFilter : () => { }}
                         showAssignee={filterConfig.showAssignee}
-                        // Date Range Filter
-                        dateRangeFilter={dateRangeFilter}
-                        setDateRangeFilter={setDateRangeFilter}
-                        showDateRangeFilter={showDateRangeFilter}
-                        setShowDateRangeFilter={setShowDateRangeFilter}
-                        onDateRangeFilter={handleDateRangeFilter}
-                        clearDateRangeFilter={clearDateRangeFilter}
+                        // Estimated Date Range
+                        estimatedDateRangeFilter={estimatedDateRangeFilter}
+                        setEstimatedDateRangeFilter={setEstimatedDateRangeFilter}
+                        showEstimatedDateRangeFilter={showEstimatedDateRangeFilter}
+                        setShowEstimatedDateRangeFilter={setShowEstimatedDateRangeFilter}
+                        onEstimatedDateRangeFilter={handleEstimatedDateRangeFilter}
+                        applyEstimatedDateRangeFilter={applyEstimatedDateRangeFilter}
+                        clearEstimatedDateRangeFilter={clearEstimatedDateRangeFilter}
                         onClearAll={clearAllFilters}
                         showClearButton={true}
                         onRefresh={handleRefresh}
@@ -707,7 +759,7 @@ const SalesOrderList = () => {
 
                     {/* Table */}
                     <SalesOrderTable
-                        saleOrders={saleOrders}
+                        saleOrders={sortedSaleOrders}
                         pagination={pagination}
                         sortField={sortField}
                         sortAscending={sortAscending}

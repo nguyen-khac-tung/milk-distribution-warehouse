@@ -85,7 +85,8 @@ export const updateRetailerStatus = async (data) => {
 // Get retailers for dropdown
 export const getRetailersDropdown = async () => {
     try {
-        const res = await api.get("/Retailer/GetRetailersDropDown");
+        const res = await api.get("/Retailer/GetRetailerDropDown");
+        // console.log("retailer:", res)
         return res.data;
     } catch (error) {
         console.error("Error fetching retailers dropdown:", error);

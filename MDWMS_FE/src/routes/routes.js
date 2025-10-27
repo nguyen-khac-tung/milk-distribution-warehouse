@@ -29,6 +29,7 @@ import PalletList from "../pages/PalletPage/PalletList";
 import ChangePasswordPage from "../pages/AuthenticationPage/ChangePasswordPage"
 import { PERMISSIONS } from "../utils/permissions";
 import SalesOrderList from "../pages/SalesOrderPage/SalesOrderList";
+import SalesOrderDetail from "../pages/SalesOrderPage/SalesOrderDetail";
 
 export const routes = [
     {
@@ -234,7 +235,7 @@ export const routes = [
         path: "/sales-orders/:id",
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.SALES_ORDER_VIEW_DETAILS}>
-                <SalesOrderList />
+                <SalesOrderDetail />
             </ProtectedRoute>
         ),
         isShowHeader: true,
@@ -242,7 +243,7 @@ export const routes = [
     {
         path: "/sales-orders/create",
         page: () => (
-            <ProtectedRoute requiredPermission={PERMISSIONS.PURCHASE_ORDER_CREATE}>
+            <ProtectedRoute requiredPermission={PERMISSIONS.SALES_ORDER_CREATE}>
                 <SalesOrderList />
             </ProtectedRoute>
         ),

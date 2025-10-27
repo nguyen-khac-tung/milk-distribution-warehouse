@@ -20,7 +20,6 @@ export default function SaleOrderStatsChart({
     const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
 
     const { totalOrders } = saleOrderStats;
-    console.log("toorng", totalOrders)
     const toggleDetails = () => setIsDetailsExpanded(!isDetailsExpanded);
 
     return (

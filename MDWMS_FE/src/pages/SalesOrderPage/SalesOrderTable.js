@@ -1,11 +1,12 @@
 import React from "react";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "../../components/ui/table";
-import { ArrowUp, ArrowDown, ArrowUpDown, Eye, Edit, Trash2 } from "lucide-react";
+import { ArrowUp, ArrowDown, ArrowUpDown, Eye, Edit, Trash2, CheckCircle, UserPlus, FileText } from "lucide-react";
 import EmptyState from "../../components/Common/EmptyState";
 import { Package } from "lucide-react";
-import { PERMISSIONS } from "../../utils/permissions";
+import { PERMISSIONS, canPerformSalesOrderAction } from "../../utils/permissions";
 import PermissionWrapper from "../../components/Common/PermissionWrapper";
 import StatusDisplaySaleOrder from "../../components/SaleOrderCompoents/StatusDisplaySaleOrder";
+import { usePermissions } from "../../hooks/usePermissions";
 
 const SalesOrderTable = ({
     saleOrders,
@@ -19,6 +20,8 @@ const SalesOrderTable = ({
     onClearFilters,
     loading,
 }) => {
+    const { hasPermission } = usePermissions();
+    const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
 
     // Xác định cột nào tồn tại trong dữ liệu (tự động theo role)
     const availableFields = React.useMemo(() => {
@@ -185,7 +188,7 @@ const SalesOrderTable = ({
 
                                         {/* Đại lý */}
                                         <TableCell className="text-left px-6 py-4">
-                                            {order?.retailerContact?.retailerName || "-"}
+                                            {order?.retailerName || "-"}
                                         </TableCell>
 
                                         {/* Người duyệt */}
@@ -258,6 +261,7 @@ const SalesOrderTable = ({
                                         {/* Thao tác */}
                                         <TableCell className="px-6 py-4 text-center">
                                             <div className="flex items-center justify-center space-x-1">
+                                                {/* View Button - Always visible for all roles */}
                                                 <PermissionWrapper requiredPermission={PERMISSIONS.SALES_ORDER_VIEW_DETAILS}>
                                                     <button
                                                         className="p-1.5 hover:bg-slate-100 rounded transition-colors"
@@ -267,27 +271,83 @@ const SalesOrderTable = ({
                                                         <Eye className="h-4 w-4 text-orange-500" />
                                                     </button>
                                                 </PermissionWrapper>
-                                                {!order.isDisable && (
-                                                    <PermissionWrapper requiredPermission={PERMISSIONS.SALES_ORDER_UPDATE}>
-                                                        <button
-                                                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                            title="Chỉnh sửa"
-                                                            onClick={() => handleEditClick(order)}
-                                                        >
-                                                            <Edit className="h-4 w-4 text-orange-500" />
-                                                        </button>
-                                                    </PermissionWrapper>
+
+                                                {/* Approve Button - Sale Manager for PendingApproval */}
+                                                {canPerformSalesOrderAction('approve', order, hasPermission, userInfo) && (
+                                                    <button
+                                                        className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                        title="Duyệt phiếu"
+                                                        onClick={() => {
+                                                            // TODO: Implement approve functionality
+                                                            console.log('Approve order:', order.salesOrderId);
+                                                        }}
+                                                    >
+                                                        <CheckCircle className="h-4 w-4 text-green-500" />
+                                                    </button>
                                                 )}
-                                                {!order.isDisable && (
-                                                    <PermissionWrapper requiredPermission={PERMISSIONS.SALES_ORDER_DELETE}>
-                                                        <button
-                                                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                            title="Xóa"
-                                                        // onClick={() => handleDeleteClick(order)}
-                                                        >
-                                                            <Trash2 className="h-4 w-4 text-red-500" />
-                                                        </button>
-                                                    </PermissionWrapper>
+
+                                                {/* Assign Button - Warehouse Manager */}
+                                                {canPerformSalesOrderAction('assign', order, hasPermission, userInfo) && (
+                                                    <button
+                                                        className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                        title={order.status === 4 ? 'Phân công' : 'Phân công lại'}
+                                                        onClick={() => {
+                                                            // TODO: Implement assign functionality
+                                                            console.log('Assign order:', order.salesOrderId);
+                                                        }}
+                                                    >
+                                                        <UserPlus className="h-4 w-4 text-blue-500" />
+                                                    </button>
+                                                )}
+
+                                                {/* Create Delivery Slip Button - Warehouse Staff */}
+                                                {canPerformSalesOrderAction('create_delivery_slip', order, hasPermission, userInfo) && (
+                                                    <button
+                                                        className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                        title="Tạo phiếu xuất kho"
+                                                        onClick={() => {
+                                                            // TODO: Implement create delivery slip functionality
+                                                            console.log('Create delivery slip:', order.salesOrderId);
+                                                        }}
+                                                    >
+                                                        <FileText className="h-4 w-4 text-purple-500" />
+                                                    </button>
+                                                )}
+
+                                                {/* View Delivery Slip Button - Warehouse Manager/Staff */}
+                                                {canPerformSalesOrderAction('view_delivery_slip', order, hasPermission, userInfo) && (
+                                                    <button
+                                                        className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                        title="Xem phiếu xuất kho"
+                                                        onClick={() => {
+                                                            // TODO: Implement view delivery slip functionality
+                                                            console.log('View delivery slip:', order.salesOrderId);
+                                                        }}
+                                                    >
+                                                        <FileText className="h-4 w-4 text-orange-500" />
+                                                    </button>
+                                                )}
+
+                                                {/* Edit Button - Sales Representative */}
+                                                {canPerformSalesOrderAction('edit', order, hasPermission, userInfo) && (
+                                                    <button
+                                                        className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                        title="Chỉnh sửa"
+                                                        onClick={() => handleEditClick(order)}
+                                                    >
+                                                        <Edit className="h-4 w-4 text-yellow-500" />
+                                                    </button>
+                                                )}
+
+                                                {/* Delete Button - Sales Representative */}
+                                                {canPerformSalesOrderAction('delete', order, hasPermission, userInfo) && (
+                                                    <button
+                                                        className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                        title="Xóa"
+                                                        onClick={() => handleDeleteClick(order)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4 text-red-500" />
+                                                    </button>
                                                 )}
                                             </div>
                                         </TableCell>

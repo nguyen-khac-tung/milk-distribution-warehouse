@@ -18,8 +18,9 @@ export const getSalesOrderListSalesRepresentatives = async (searchParams = {}) =
                 ...(searchParams.createdBy && { createdBy: searchParams.createdBy }),
                 ...(searchParams.approvedBy && { approvedBy: searchParams.approvedBy }),
                 ...(searchParams.assignedTo && { assignedTo: searchParams.assignedTo }),
-                ...(searchParams.fromDate && { fromDate: searchParams.fromDate }),
-                ...(searchParams.toDate && { toDate: searchParams.toDate }),
+                // Backend expects keys named fromDate / toDate (case-insensitive). Map frontend estimated date keys to those.
+                ...(searchParams.fromEstimatedDate && { fromDate: searchParams.fromEstimatedDate }),
+                ...(searchParams.toEstimatedDate && { toDate: searchParams.toEstimatedDate }),
             },
         };
 
@@ -70,8 +71,8 @@ export const getSalesOrderListSaleManager = async (searchParams = {}) => {
                 ...(searchParams.createdBy && { createdBy: searchParams.createdBy }),
                 ...(searchParams.approvedBy && { approvedBy: searchParams.approvedBy }),
                 ...(searchParams.assignedTo && { assignedTo: searchParams.assignedTo }),
-                ...(searchParams.fromDate && { fromDate: searchParams.fromDate }),
-                ...(searchParams.toDate && { toDate: searchParams.toDate }),
+                ...(searchParams.fromEstimatedDate && { fromDate: searchParams.fromEstimatedDate }),
+                ...(searchParams.toEstimatedDate && { toDate: searchParams.toEstimatedDate }),
             },
         };
 
@@ -122,8 +123,8 @@ export const getSalesOrderListWarehouseManager = async (searchParams = {}) => {
                 ...(searchParams.createdBy && { createdBy: searchParams.createdBy }),
                 ...(searchParams.approvedBy && { approvedBy: searchParams.approvedBy }),
                 ...(searchParams.assignedTo && { assignedTo: searchParams.assignedTo }),
-                ...(searchParams.fromDate && { fromDate: searchParams.fromDate }),
-                ...(searchParams.toDate && { toDate: searchParams.toDate }),
+                ...(searchParams.fromEstimatedDate && { fromDate: searchParams.fromEstimatedDate }),
+                ...(searchParams.toEstimatedDate && { toDate: searchParams.toEstimatedDate }),
             },
         };
 
@@ -174,8 +175,8 @@ export const getSalesOrderListWarehouseStaff = async (searchParams = {}) => {
                 ...(searchParams.createdBy && { createdBy: searchParams.createdBy }),
                 ...(searchParams.approvedBy && { approvedBy: searchParams.approvedBy }),
                 ...(searchParams.assignedTo && { assignedTo: searchParams.assignedTo }),
-                ...(searchParams.fromDate && { fromDate: searchParams.fromDate }),
-                ...(searchParams.toDate && { toDate: searchParams.toDate }),
+                ...(searchParams.fromEstimatedDate && { fromDate: searchParams.fromEstimatedDate }),
+                ...(searchParams.toEstimatedDate && { toDate: searchParams.toEstimatedDate }),
             },
         };
 
@@ -208,4 +209,25 @@ export const getSalesOrderListWarehouseStaff = async (searchParams = {}) => {
     }
 };
 
+// Lấy chi tiết Sale Order
+export const getSalesOrderDetail = async (id) => {
+    try {
+        const res = await api.get(`/SalesOrder/GetSalesOrderDetail/${id}`);
+        console.log("getSaleOrderDetail: ", res);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching sale order detail:", error);
+        throw error;
+    }
+};
 
+// Tạo Sale Order
+export const createSaleOrder = async (data) => {
+    try {
+        const res = await api.post("/SaleOrder/CreateSaleOrder", data);
+        return res.data;
+    } catch (error) {
+        console.error("Error creating sale order:", error);
+        throw error;
+    }
+};
