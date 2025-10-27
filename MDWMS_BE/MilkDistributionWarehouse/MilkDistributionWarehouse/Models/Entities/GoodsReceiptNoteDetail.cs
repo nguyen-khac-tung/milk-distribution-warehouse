@@ -13,7 +13,7 @@ public partial class GoodsReceiptNoteDetail
 
     public int GoodsId { get; set; }
 
-    public string GoodsPackingId { get; set; }
+    public int? GoodsPackingId { get; set; }
 
     public int? ExpectedPackageQuantity { get; set; }
 
@@ -32,6 +32,8 @@ public partial class GoodsReceiptNoteDetail
     public DateTime? UpdatedAt { get; set; }
 
     public virtual Good Goods { get; set; }
+
+    public virtual GoodsPacking GoodsPacking { get; set; }
 
     public virtual GoodsReceiptNote GoodsReceiptNote { get; set; }
 }
