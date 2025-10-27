@@ -213,15 +213,16 @@ public partial class WarehouseContext : DbContext
             entity.HasKey(e => e.GoodsReceiptNoteDetailId).HasName("PK_ImportInspections");
 
             entity.Property(e => e.GoodsReceiptNoteDetailId).ValueGeneratedNever();
-            entity.Property(e => e.GoodsPackingId)
-                .HasMaxLength(10)
-                .IsFixedLength();
             entity.Property(e => e.Note).HasMaxLength(255);
 
             entity.HasOne(d => d.Goods).WithMany(p => p.GoodsReceiptNoteDetails)
                 .HasForeignKey(d => d.GoodsId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ImportInspections_Products");
+
+            entity.HasOne(d => d.GoodsPacking).WithMany(p => p.GoodsReceiptNoteDetails)
+                .HasForeignKey(d => d.GoodsPackingId)
+                .HasConstraintName("FK_GoodsReceiptNoteDetails_GoodsPacking");
 
             entity.HasOne(d => d.GoodsReceiptNote).WithMany(p => p.GoodsReceiptNoteDetails)
                 .HasForeignKey(d => d.GoodsReceiptNoteId)
@@ -399,8 +400,6 @@ public partial class WarehouseContext : DbContext
         modelBuilder.Entity<SalesOrderDetail>(entity =>
         {
             entity.HasKey(e => e.SalesOrderDetailId).HasName("PK_ExportOrderDetails");
-
-            entity.Property(e => e.SalesOrderDetailId).ValueGeneratedNever();
 
             entity.HasOne(d => d.Goods).WithMany(p => p.SalesOrderDetails)
                 .HasForeignKey(d => d.GoodsId)

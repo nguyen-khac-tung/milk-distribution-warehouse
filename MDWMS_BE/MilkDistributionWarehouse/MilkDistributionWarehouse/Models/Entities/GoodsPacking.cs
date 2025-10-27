@@ -19,6 +19,8 @@ public partial class GoodsPacking
 
     public virtual ICollection<GoodsIssueNoteDetail> GoodsIssueNoteDetails { get; set; } = new List<GoodsIssueNoteDetail>();
 
+    public virtual ICollection<GoodsReceiptNoteDetail> GoodsReceiptNoteDetails { get; set; } = new List<GoodsReceiptNoteDetail>();
+
     public virtual ICollection<Pallet> Pallets { get; set; } = new List<Pallet>();
 
     public virtual ICollection<PurchaseOderDetail> PurchaseOderDetails { get; set; } = new List<PurchaseOderDetail>();

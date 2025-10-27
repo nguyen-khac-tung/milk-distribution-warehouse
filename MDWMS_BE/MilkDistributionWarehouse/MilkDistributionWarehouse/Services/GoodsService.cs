@@ -130,7 +130,7 @@ namespace MilkDistributionWarehouse.Services
                 if (IsCheckDuplicationGoodsPacking(goodsCreate.GoodsPackingCreates))
                     return ("Số lượng đóng gói hàng hoá bị trùng lặp.", default);
                 goods.GoodsPackings = _mapper.Map<List<GoodsPacking>>(goodsCreate.GoodsPackingCreates);
-            }    
+            }
 
             var createResult = await _goodRepository.CreateGoods(goods);
 
@@ -176,6 +176,10 @@ namespace MilkDistributionWarehouse.Services
                     }
 
                     var goods = _mapper.Map<Good>(goodDto);
+
+                    if (goodDto.GoodsPackingCreates.Any())
+                        goods.GoodsPackings = _mapper.Map<List<GoodsPacking>>(goodDto.GoodsPackingCreates);
+
                     validGoods.Add(goods);
 
                     existingCodesSet.Add(goodDto.GoodsCode);
@@ -218,10 +222,51 @@ namespace MilkDistributionWarehouse.Services
 
             if (updateResult == null)
                 return ("Cập nhật hàng hoá thất bại.".ToMessageForUser(), default);
-            
+
             _cacheService.InvalidateDropdownCache("goods", "supplier", updateResult.SupplierId);
 
             return ("", _mapper.Map<GoodsDto>(goodsExist));
+        }
+
+        public async Task<(string, GoodsDto?)> UpdateGoods_1(GoodsUpdate update)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                if (update == null)
+                    return ("Goods update data is invalid", default);
+
+                var goodsExist = await _goodRepository.GetGoodsByGoodsId(update.GoodsId);
+
+                if (goodsExist == null)
+                    return ("Goods is not exist", default);
+
+                if (await IsGoodInUseAnyTransactionToUpdate(update.GoodsId))
+                    return ("Không thể cập nhật thông tin hàng hoá vì hàng hoá đang được sử dụng.".ToMessageForUser(), default);
+
+                _mapper.Map(update, goodsExist);
+
+                _cacheService.InvalidateDropdownCache("goods", "supplier", goodsExist.SupplierId);
+
+                var updateResult = await _goodRepository.UpdateGoods(goodsExist);
+
+                if (updateResult == null)
+                    return ("Cập nhật hàng hoá thất bại.".ToMessageForUser(), default);
+
+                _cacheService.InvalidateDropdownCache("goods", "supplier", updateResult.SupplierId);
+
+
+
+                await _unitOfWork.CommitTransactionAsync();
+
+                return ("", _mapper.Map<GoodsDto>(goodsExist));
+            }
+            catch (Exception ex) 
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ($"{ex.Message}".ToMessageForUser(), default);
+            }
         }
 
         public async Task<(string, GoodsUpdateStatus?)> UpdateGoodsStatus(GoodsUpdateStatus update)
@@ -285,7 +330,7 @@ namespace MilkDistributionWarehouse.Services
             goodsExist.UpdateAt = DateTime.Now;
 
             var resultDelete = await _goodRepository.UpdateGoods(goodsExist);
-            
+
             if (resultDelete == null)
                 return ("Xoá hàng hoá thất bại.".ToMessageForUser(), default);
 
@@ -319,6 +364,16 @@ namespace MilkDistributionWarehouse.Services
 
             if (create.UnitMeasureId <= 0)
                 return "Đơn vị sản phẩm không được để trống";
+
+            if (create.GoodsPackingCreates.Count() >= 1)
+            {
+                if (IsCheckDuplicationGoodsPacking(create.GoodsPackingCreates))
+                    return "Số lượng đóng gói hàng hoá bị trùng lặp.";
+            }
+            else
+            {
+                return "Danh sách đóng gói hàng hoá trống.";
+            }
 
             return null;
         }
