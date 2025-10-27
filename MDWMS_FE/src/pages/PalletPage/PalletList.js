@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { getPallets, updatePalletStatus, deletePallet } from "../../services/PalletService";
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
-import { Edit, Trash2, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Eye, Package } from "lucide-react";
+import { Edit, Trash2, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Eye, Package, Printer } from "lucide-react";
 import Loading from "../../components/Common/Loading";
 import SearchFilterToggle from "../../components/Common/SearchFilterToggle";
 import { extractErrorMessage } from "../../utils/Validation";
@@ -14,7 +14,10 @@ import StatsCards from "../../components/Common/StatsCards";
 import { StatusToggle } from "../../components/Common/SwitchToggle/StatusToggle";
 import { PalletDetail } from "./ViewPalletModal";
 import DeleteModal from "../../components/Common/DeleteModal";
-import UpdatePalletModal from "../../components/PalletComponents/UpdatePalletModal";
+import UpdatePalletModal from "./UpdatePalletModal";
+import { useReactToPrint } from "react-to-print";
+import { usePermissions } from "../../hooks/usePermissions";
+import { PrintablePalletLabel, PrintableMultiplePalletLabels } from "../../components/PalletComponents/PrintPalletLabel";
 
 const Pallet = {
     palletId: "",
@@ -59,6 +62,38 @@ export default function PalletList() {
         activeCount: 0,
         inactiveCount: 0
     })
+    const [selectedPallets, setSelectedPallets] = useState([]);
+    const [selectAll, setSelectAll] = useState(false);
+    const [showPrintPreview, setShowPrintPreview] = useState(false);
+    const printRef = useRef(null);
+
+    const { hasAnyPermission } = usePermissions();
+
+    // Kiểm tra quyền in
+    const hasPrintPermission = hasAnyPermission([PERMISSIONS.PALLET_PRINT_BARCODE]);
+
+    const handlePrint = useReactToPrint({
+        contentRef: printRef,
+        documentTitle: "Phiếu dán mã kệ kê hàng",
+        pageStyle: `
+            @page { 
+                size: A4; 
+                margin: 10mm; 
+            } 
+            body { 
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact; 
+                margin: 0;
+                padding: 0;
+            }
+            .print-container {
+                width: 100% !important;
+                height: auto !important;
+                overflow: visible !important;
+            }
+        `,
+    });
+
     const fetchTotalStats = async () => {
         try {
             const response = await getPallets({
@@ -185,6 +220,57 @@ export default function PalletList() {
         return Array.isArray(pallets) ? pallets : []
     }, [pallets])
 
+    // Cập nhật selectAll khi selectedPallets thay đổi
+    useEffect(() => {
+        if (selectedPallets.length === 0) {
+            setSelectAll(false);
+        } else if (selectedPallets.length === filteredPallets.length && filteredPallets.length > 0) {
+            setSelectAll(true);
+        } else {
+            setSelectAll(false);
+        }
+    }, [selectedPallets, filteredPallets]);
+
+    // Xử lý chọn/bỏ chọn tất cả
+    const handleSelectAll = (checked) => {
+        setSelectAll(checked);
+        if (checked) {
+            setSelectedPallets([...filteredPallets]);
+        } else {
+            setSelectedPallets([]);
+        }
+    };
+
+    // Xử lý chọn/bỏ chọn một pallet
+    const handleSelectPallet = (pallet, checked) => {
+        if (checked) {
+            setSelectedPallets(prev => [...prev, pallet]);
+        } else {
+            setSelectedPallets(prev => prev.filter(p => p.palletId !== pallet.palletId));
+        }
+    };
+
+    // Kiểm tra xem một pallet có được chọn không
+    const isPalletSelected = (pallet) => {
+        return selectedPallets.some(p => p.palletId === pallet.palletId);
+    };
+
+    // In nhiều pallet đã chọn
+    const handlePrintSelected = () => {
+        if (selectedPallets.length === 0) {
+            window.showToast("Vui lòng chọn ít nhất một kệ kê hàng để in", "warning");
+            return;
+        }
+        // Hiển thị modal preview trước khi in
+        setShowPrintPreview(true);
+    };
+
+    // Xác nhận in từ modal preview
+    const handleConfirmPrint = () => {
+        setShowPrintPreview(false);
+        setTimeout(() => handlePrint(), 100);
+    };
+
     const activeCount = Array.isArray(pallets) ? pallets.filter((p) => p.status === 1).length : 0
     const inactiveCount = Array.isArray(pallets) ? pallets.filter((p) => p.status === 2).length : 0
 
@@ -196,7 +282,7 @@ export default function PalletList() {
         setUpdatePalletId(pallet.palletId)
         setShowUpdateModal(true)
     }
-    
+
     const handleUpdateSuccess = () => {
         setShowUpdateModal(false)
         setUpdatePalletId(null)
@@ -313,6 +399,7 @@ export default function PalletList() {
             setSortAscending(true)
         }
     }
+
     return (
         <div className="min-h-screen">
             <div className="max-w-7xl mx-auto space-y-6">
@@ -321,6 +408,29 @@ export default function PalletList() {
                     <div>
                         <h1 className="text-2xl font-bold text-slate-600">Quản lý Kệ Kê Hàng</h1>
                         <p className="text-slate-600 mt-1">Quản lý các kệ kê hàng trong hệ thống</p>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        {hasPrintPermission && selectedPallets.length > 0 && (
+                            <>
+                                <Button
+                                    className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white transition-colors duration-200"
+                                    onClick={handlePrintSelected}
+                                >
+                                    <Printer className="mr-2 h-4 w-4 text-white" />
+                                    In đã chọn ({selectedPallets.length})
+                                </Button>
+                                <Button
+                                    className="bg-slate-800 hover:bg-slate-900 h-[38px] px-6 text-white transition-colors duration-200"
+                                    onClick={() => {
+                                        setSelectedPallets([]);
+                                        setSelectAll(false);
+                                    }}
+                                >
+                                    Bỏ chọn tất cả
+                                </Button>
+                            </>
+                        )}
                     </div>
                 </div>
 
@@ -369,6 +479,16 @@ export default function PalletList() {
                                 <Table className="w-full">
                                     <TableHeader>
                                         <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
+                                            {hasPrintPermission && (
+                                                <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-12">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectAll}
+                                                        onChange={(e) => handleSelectAll(e.target.checked)}
+                                                        className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                                                    />
+                                                </TableHead>
+                                            )}
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-16">
                                                 STT
                                             </TableHead>
@@ -413,6 +533,16 @@ export default function PalletList() {
                                                     key={index}
                                                     className="hover:bg-slate-50 border-b border-slate-200"
                                                 >
+                                                    {hasPrintPermission && (
+                                                        <TableCell className="px-6 py-4 text-center">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={isPalletSelected(pallet)}
+                                                                onChange={(e) => handleSelectPallet(pallet, e.target.checked)}
+                                                                className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                                                            />
+                                                        </TableCell>
+                                                    )}
                                                     <TableCell className="px-6 py-4 text-slate-600 font-medium">
                                                         {index + 1}
                                                     </TableCell>
@@ -494,7 +624,7 @@ export default function PalletList() {
                                                 actionText="Xóa bộ lọc"
                                                 onAction={clearAllFilters}
                                                 showAction={!!(searchQuery || statusFilter)}
-                                                colSpan={8}
+                                                colSpan={hasPrintPermission ? 9 : 8}
                                             />
                                         )}
                                     </TableBody>
@@ -631,6 +761,56 @@ export default function PalletList() {
                     onSuccess={handleUpdateSuccess}
                 />
             )}
+
+            {/* Modal Preview In */}
+            {showPrintPreview && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style={{ zIndex: 9999 }}>
+                    <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col">
+                        <div className="flex items-center justify-between p-4 border-b">
+                            <h3 className="text-lg font-semibold text-gray-900">
+                                Xem trước barcode ({selectedPallets.length} kệ kê hàng)
+                            </h3>
+                            <button
+                                onClick={() => setShowPrintPreview(false)}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-4">
+                            <PrintableMultiplePalletLabels pallets={selectedPallets} />
+                        </div>
+                        <div className="flex items-center justify-end gap-3 p-4 border-t">
+                            <button
+                                onClick={() => setShowPrintPreview(false)}
+                                className="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                            >
+                                Hủy
+                            </button>
+                            <button
+                                onClick={handleConfirmPrint}
+                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center gap-2"
+                            >
+                                <Printer className="w-4 h-4" />
+                                In ngay
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Vùng in phiếu - căn giữa khi in */}
+            <div className="print-wrapper">
+                <div ref={printRef} className="print-container">
+                    {selectedPallets.length > 1 ? (
+                        <PrintableMultiplePalletLabels pallets={selectedPallets} />
+                    ) : selectedPallets.length === 1 ? (
+                        <PrintablePalletLabel pallet={selectedPallets[0]} />
+                    ) : null}
+                </div>
+            </div>
         </div>
     )
 }

@@ -1,10 +1,14 @@
-﻿namespace MilkDistributionWarehouse.Models.DTOs
+﻿using MilkDistributionWarehouse.Utilities;
+using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
+
+namespace MilkDistributionWarehouse.Models.DTOs
 {
     public class SalesOrderDto
     {
         public Guid SalesOrderId { get; set; }
         public int RetailerId { get; set; }
-        public RetailerContactDto RetailerContact { get; set; }
+        public string RetailerName { get; set; }
         public DateTime? EstimatedTimeDeparture { get; set; }
         public int Status { get; set; }
         public DateTime? CreatedAt { get; set; }
@@ -40,6 +44,9 @@
 
     public class SalesOrderDetailDto : SalesOrderDto
     {
+        public string RetailerPhone { get; set; }
+        public string RetailerEmail { get; set; }
+        public string RetailerAddress { get; set; }
         public List<SalesOrderItemDetailDto>? SalesOrderItemDetails { get; set; } = new();
         public UserDto? CreatedBy { get; set; }
         public UserDto? ApprovalBy { get; set; }
@@ -51,9 +58,28 @@
     public class SalesOrderItemDetailDto
     {
         public int SalesOrderDetailId { get; set; }
-
         public GoodsDto Goods { get; set; }
+        public GoodsPackingDto GoodsPacking { get; set; }
+        public int? PackageQuantity { get; set; }
+    }
 
-        public int? Quantity { get; set; }
+    public class SalesOrderCreateDto
+    {
+        public int? RetailerId { get; set; }
+
+        [JsonConverter(typeof(NullableDateTimeConverter))]
+        [Required(ErrorMessage = "Ngày sinh không được bỏ trống.")]
+        public DateTime? EstimatedTimeDeparture { get; set; }
+
+        public List<SalesOrderItemDetailCreateDto> SalesOrderItemDetailCreateDtos { get; set; }
+    }
+
+    public class SalesOrderItemDetailCreateDto
+    {
+        public int? GoodsId { get; set; }
+
+        public int? GoodsPackingId { get; set; }
+
+        public int? PackageQuantity { get; set; }
     }
 }
