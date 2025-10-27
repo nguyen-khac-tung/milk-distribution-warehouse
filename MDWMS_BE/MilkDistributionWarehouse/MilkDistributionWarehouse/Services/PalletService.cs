@@ -79,11 +79,12 @@ namespace MilkDistributionWarehouse.Services
             entity.PalletId = Guid.NewGuid();
             entity.CreateBy = userId;
             entity.CreateAt = DateTime.Now;
-            entity.Status = CommonStatus.Active;
-
+            entity.Status = CommonStatus.Inactive;
+            
             // Only update location availability when a location is provided
             if (dto.LocationId.HasValue)
             {
+                entity.Status = CommonStatus.Active;
                 var updateIsAvail = await _locationRepository.UpdateIsAvailableAsync(dto.LocationId, false);
                 if (!updateIsAvail)
                     return ("Cập nhật trạng thái vị trí thất bại.".ToMessageForUser(), new PalletDto.PalletResponseDto());
@@ -137,6 +138,11 @@ namespace MilkDistributionWarehouse.Services
             }
 
             pallet.UpdateAt = DateTime.Now;
+
+            if (dto.LocationId.HasValue)
+                pallet.Status = CommonStatus.Active;
+            else
+                pallet.Status = CommonStatus.Inactive;
 
             // Occupy new location if provided and changed
             if (dto.LocationId.HasValue && oldLocationId != dto.LocationId)

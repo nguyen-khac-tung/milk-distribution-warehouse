@@ -13,6 +13,9 @@ namespace MilkDistributionWarehouse.Repositories
         Task<SalesOrder?> GetSalesOrderById(Guid? id);
         Task<bool> HasActiveSalesOrder(int retailerId);
         Task<bool> IsAllSalesOrderDraffOrEmpty(int retailerId);
+        Task CreateSalesOrder(SalesOrder salesOrder);
+        Task UpdateSalesOrder(SalesOrder salesOrder);
+        Task<string> DeleteSalesOrder(SalesOrder salesOrder);
     }
     public class SalesOrderRepository : ISalesOrderRepository
     {
@@ -56,7 +59,7 @@ namespace MilkDistributionWarehouse.Repositories
         {
             return await _context.SalesOrders
                 .AnyAsync(so => so.RetailerId == retailerId
-                && so.Status != SalesOrderStatus.Draft 
+                && so.Status != SalesOrderStatus.Draft
                 && so.Status != SalesOrderStatus.Completed);
         }
 
@@ -64,6 +67,31 @@ namespace MilkDistributionWarehouse.Repositories
         {
             var salesOrder = _context.SalesOrders.Where(so => so.RetailerId == retailerId);
             return !await salesOrder.AnyAsync(so => so.Status != SalesOrderStatus.Draft);
+        }
+
+        public async Task CreateSalesOrder(SalesOrder salesOrder)
+        {
+            await _context.SalesOrders.AddAsync(salesOrder);
+        }
+
+        public async Task UpdateSalesOrder(SalesOrder salesOrder)
+        {
+            _context.SalesOrders.Update(salesOrder);
+            await Task.CompletedTask;
+        }
+
+        public async Task<string> DeleteSalesOrder(SalesOrder salesOrder)
+        {
+            try
+            {
+                _context.SalesOrders.Remove(salesOrder);
+                await _context.SaveChangesAsync();
+                return "";
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
         }
     }
 }

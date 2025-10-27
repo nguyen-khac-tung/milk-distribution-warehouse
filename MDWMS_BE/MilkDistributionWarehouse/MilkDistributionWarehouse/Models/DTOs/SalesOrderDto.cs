@@ -1,4 +1,8 @@
-﻿namespace MilkDistributionWarehouse.Models.DTOs
+﻿using MilkDistributionWarehouse.Utilities;
+using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
+
+namespace MilkDistributionWarehouse.Models.DTOs
 {
     public class SalesOrderDto
     {
@@ -56,6 +60,26 @@
         public int SalesOrderDetailId { get; set; }
         public GoodsDto Goods { get; set; }
         public GoodsPackingDto GoodsPacking { get; set; }
+        public int? PackageQuantity { get; set; }
+    }
+
+    public class SalesOrderCreateDto
+    {
+        public int? RetailerId { get; set; }
+
+        [JsonConverter(typeof(NullableDateTimeConverter))]
+        [Required(ErrorMessage = "Ngày sinh không được bỏ trống.")]
+        public DateTime? EstimatedTimeDeparture { get; set; }
+
+        public List<SalesOrderItemDetailCreateDto> SalesOrderItemDetailCreateDtos { get; set; }
+    }
+
+    public class SalesOrderItemDetailCreateDto
+    {
+        public int? GoodsId { get; set; }
+
+        public int? GoodsPackingId { get; set; }
+
         public int? PackageQuantity { get; set; }
     }
 }
