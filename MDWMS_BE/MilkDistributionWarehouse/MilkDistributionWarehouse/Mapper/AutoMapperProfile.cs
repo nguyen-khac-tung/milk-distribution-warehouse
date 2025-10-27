@@ -151,7 +151,8 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.TemperatureMin, opt => opt.MapFrom(src => src.StorageCondition.TemperatureMin))
                 .ForMember(dest => dest.HumidityMax, opt => opt.MapFrom(src => src.StorageCondition.HumidityMax))
                 .ForMember(dest => dest.HumidityMin, opt => opt.MapFrom(src => src.StorageCondition.HumidityMin))
-                .ForMember(dest => dest.LightLevel, opt => opt.MapFrom(src => src.StorageCondition.LightLevel));
+                .ForMember(dest => dest.LightLevel, opt => opt.MapFrom(src => src.StorageCondition.LightLevel))
+                .ForMember(dest => dest.GoodsPackings, opt => opt.MapFrom(src => src.GoodsPackings));
             CreateMap<GoodsCreate, Good>()
                 .ForMember(dest => dest.GoodsId, opt => opt.Ignore())
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => CommonStatus.Active))
@@ -248,12 +249,14 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.CreateByName, opt => opt.MapFrom(src => src.CreateByNavigation != null ? src.CreateByNavigation.FullName : null))
                 .ForMember(dest => dest.BatchCode, opt => opt.MapFrom(src => src.Batch != null ? src.Batch.BatchCode : null))
                 .ForMember(dest => dest.GoodId, opt => opt.MapFrom(src => src.Batch != null ? src.Batch.GoodsId : null))
+                .ForMember(dest => dest.UnitPerPackage, opt => opt.MapFrom(src => src.GoodsPacking != null ? src.GoodsPacking.UnitPerPackage : null))
                 .ForMember(dest => dest.LocationCode, opt => opt.MapFrom(src => src.Location != null ? src.Location.LocationCode : null));
             CreateMap<Pallet, PalletDetailDto>()
                 .ForMember(dest => dest.CreateByName, opt => opt.MapFrom(src => src.CreateByNavigation != null ? src.CreateByNavigation.FullName : null))
                 .ForMember(dest => dest.BatchCode, opt => opt.MapFrom(src => src.Batch != null ? src.Batch.BatchCode : null))
                 .ForMember(dest => dest.ManufacturingDate, opt => opt.MapFrom(src => src.Batch != null ? src.Batch.ManufacturingDate : null))
                 .ForMember(dest => dest.ExpiryDate, opt => opt.MapFrom(src => src.Batch != null ? src.Batch.ExpiryDate : null))
+                .ForMember(dest => dest.UnitPerPackage, opt => opt.MapFrom(src => src.GoodsPacking != null ? src.GoodsPacking.UnitPerPackage : null))
                 .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Batch != null && src.Batch.Goods != null ? src.Batch.Goods.GoodsName : null))
                 .ForMember(dest => dest.AreaName, opt => opt.MapFrom(src => src.Location != null && src.Location.Area != null ? src.Location.Area.AreaName : null))
                 .ForMember(dest => dest.AreaCode, opt => opt.MapFrom(src => src.Location != null && src.Location.Area != null ? src.Location.Area.AreaCode : null))
@@ -292,6 +295,15 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.SalesOrderItemDetails, opt => opt.MapFrom(src => src.SalesOrderDetails.ToList()));
             CreateMap<SalesOrderDetail, SalesOrderItemDetailDto>()
                 .ForMember(dest => dest.Goods, opt => opt.MapFrom(src => src.Goods));
+
+            //GoodsPacking
+            CreateMap<GoodsPacking, GoodsPackingDto>();
+            CreateMap<GoodsPackingCreate, GoodsPacking>()
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => CommonStatus.Active));
+
+            //Map GoodsReceiptNoteDetail
+            CreateMap<GoodsReceiptNoteDetail, GoodsReceiptNoteDetailDto.GoodsReceiptNoteDetailPalletDto>()
+                .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Goods.GoodsName));
         }
     }
 }
