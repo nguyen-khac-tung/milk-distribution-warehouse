@@ -76,5 +76,15 @@ namespace MilkDistributionWarehouse.Controllers
 
             return ApiResponse<SalesOrderCreateDto>.ToResultOk(salesOrder);
         }
+
+        [Authorize(Roles = "Sales Representative")]
+        [HttpPost("UpdateSalesOrder")]
+        public async Task<IActionResult> UpdateSalesOrder(SalesOrderUpdateDto salesOrderUpdate)
+        {
+            var (msg, salesOrder) = await _salesOrderService.UpdateSalesOrder(salesOrderUpdate);
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<SalesOrderUpdateDto>.ToResultOk(salesOrder);
+        }
     }
 }

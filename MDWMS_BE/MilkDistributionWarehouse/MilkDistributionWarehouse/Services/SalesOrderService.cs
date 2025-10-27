@@ -14,6 +14,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, PageResult<T>?)> GetSalesOrderList<T>(PagedRequest request, int? userId);
         Task<(string, SalesOrderDetailDto?)> GetSalesOrderDetail(Guid? saleOrderId);
         Task<(string, SalesOrderCreateDto?)> CreateSalesOrder(SalesOrderCreateDto salesOrderCreate, int? userId);
+        Task<(string, SalesOrderUpdateDto?)> UpdateSalesOrder(SalesOrderUpdateDto salesOrderUpdate);
     }
 
 
@@ -102,10 +103,10 @@ namespace MilkDistributionWarehouse.Services
             if (salesOrderCreate.RetailerId != null && (await _retailerRepository.GetRetailerByRetailerId((int)salesOrderCreate.RetailerId)) == null)
                 return ("Nhà bán lẻ không hợp lệ.".ToMessageForUser(), null);
 
-            if(salesOrderCreate.EstimatedTimeDeparture!.Value.Date <= DateTime.Now.Date)
+            if (salesOrderCreate.EstimatedTimeDeparture!.Value.Date <= DateTime.Now.Date)
                 return ("Ngày giao hàng không hợp lệ. Vui lòng chọn một ngày trong tương lai.".ToMessageForUser(), null);
 
-            if (salesOrderCreate.SalesOrderItemDetailCreateDtos.IsNullOrEmpty()) 
+            if (salesOrderCreate.SalesOrderItemDetailCreateDtos.IsNullOrEmpty())
                 return ("Danh sách hàng hóa không được bỏ trống.".ToMessageForUser(), null);
 
             try
@@ -114,7 +115,6 @@ namespace MilkDistributionWarehouse.Services
 
                 var salesOrder = _mapper.Map<SalesOrder>(salesOrderCreate);
                 salesOrder.CreatedBy = userId;
-
                 await _salesOrderRepository.CreateSalesOrder(salesOrder);
 
                 await _unitOfWork.CommitTransactionAsync();
@@ -124,6 +124,44 @@ namespace MilkDistributionWarehouse.Services
             {
                 await _unitOfWork.RollbackTransactionAsync();
                 return ("Lưu đơn hàng thất bại.".ToMessageForUser(), null);
+            }
+        }
+
+        public async Task<(string, SalesOrderUpdateDto?)> UpdateSalesOrder(SalesOrderUpdateDto salesOrderUpdate)
+        {
+            if (salesOrderUpdate == null) return ("Data sales order update is null.", null);
+
+            if (salesOrderUpdate.RetailerId != null && (await _retailerRepository.GetRetailerByRetailerId((int)salesOrderUpdate.RetailerId)) == null)
+                return ("Nhà bán lẻ không hợp lệ.".ToMessageForUser(), null);
+
+            if (salesOrderUpdate.EstimatedTimeDeparture!.Value.Date <= DateTime.Now.Date)
+                return ("Ngày giao hàng không hợp lệ. Vui lòng chọn một ngày trong tương lai.".ToMessageForUser(), null);
+
+            if (salesOrderUpdate.SalesOrderItemDetailUpdateDtos.IsNullOrEmpty())
+                return ("Danh sách hàng hóa không được bỏ trống.".ToMessageForUser(), null);
+
+            var salesOrderExist = await _salesOrderRepository.GetSalesOrderById(salesOrderUpdate.SalesOrderId);
+            if (salesOrderExist == null) return ("Sales order exist is null", null);
+
+            if (salesOrderExist.Status != SalesOrderStatus.Draft && salesOrderExist.Status != SalesOrderStatus.Rejected)
+                return ("Chỉ được cập nhật khi đơn hàng ở trạng thái Nháp hoặc Bị từ chối.".ToMessageForUser(), null);
+
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                _mapper.Map(salesOrderUpdate, salesOrderExist);
+                if (salesOrderExist.Status == SalesOrderStatus.Rejected) 
+                    salesOrderExist.Status = SalesOrderStatus.PendingApproval;
+                await _salesOrderRepository.UpdateSalesOrder(salesOrderExist);
+
+                await _unitOfWork.CommitTransactionAsync();
+                return ("", salesOrderUpdate);
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ("Cập nhật đơn hàng thất bại.".ToMessageForUser(), null);
             }
         }
     }
