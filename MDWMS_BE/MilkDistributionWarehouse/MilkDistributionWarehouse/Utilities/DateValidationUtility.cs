@@ -1,4 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Globalization;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace MilkDistributionWarehouse.Utilities
 {
@@ -29,6 +32,66 @@ namespace MilkDistributionWarehouse.Utilities
                 return new ValidationResult($"Ngày sinh không hợp lệ (tuổi không được vượt quá {MaximumAge}).");
 
             return ValidationResult.Success;
+        }
+    }
+
+    public class NullableDateTimeConverter : JsonConverter<DateTime?>
+    {
+        public override DateTime? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            if (reader.TokenType == JsonTokenType.String && string.IsNullOrEmpty(reader.GetString()))
+            {
+                return null;
+            }
+
+            if (DateTime.TryParse(reader.GetString(), out var date))
+            {
+                return date;
+            }
+
+            return null;
+        }
+
+        public override void Write(Utf8JsonWriter writer, DateTime? value, JsonSerializerOptions options)
+        {
+            if (value.HasValue)
+            {
+                writer.WriteStringValue(value.Value);
+            }
+            else
+            {
+                writer.WriteNullValue();
+            }
+        }
+    }
+
+    public class NullableDateOnlyConverter : JsonConverter<DateOnly?>
+    {
+        public override DateOnly? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            if (reader.TokenType == JsonTokenType.String && string.IsNullOrEmpty(reader.GetString()))
+            {
+                return null;
+            }
+
+            if (DateOnly.TryParse(reader.GetString(), out var date))
+            {
+                return date;
+            }
+
+            return null;
+        }
+
+        public override void Write(Utf8JsonWriter writer, DateOnly? value, JsonSerializerOptions options)
+        {
+            if (value.HasValue)
+            {
+                writer.WriteStringValue(value.Value.ToString("O", CultureInfo.InvariantCulture));
+            }
+            else
+            {
+                writer.WriteNullValue();
+            }
         }
     }
 }
