@@ -4,7 +4,7 @@
     {
         public Guid SalesOrderId { get; set; }
         public int RetailerId { get; set; }
-        public RetailerContactDto RetailerContact { get; set; }
+        public string RetailerName { get; set; }
         public DateTime? EstimatedTimeDeparture { get; set; }
         public int Status { get; set; }
         public DateTime? CreatedAt { get; set; }
@@ -40,6 +40,9 @@
 
     public class SalesOrderDetailDto : SalesOrderDto
     {
+        public string RetailerPhone { get; set; }
+        public string RetailerEmail { get; set; }
+        public string RetailerAddress { get; set; }
         public List<SalesOrderItemDetailDto>? SalesOrderItemDetails { get; set; } = new();
         public UserDto? CreatedBy { get; set; }
         public UserDto? ApprovalBy { get; set; }
@@ -51,9 +54,8 @@
     public class SalesOrderItemDetailDto
     {
         public int SalesOrderDetailId { get; set; }
-
         public GoodsDto Goods { get; set; }
-
-        public int? Quantity { get; set; }
+        public GoodsPackingDto GoodsPacking { get; set; }
+        public int? PackageQuantity { get; set; }
     }
 }

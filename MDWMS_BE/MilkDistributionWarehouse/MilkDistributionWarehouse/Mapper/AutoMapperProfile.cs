@@ -184,7 +184,6 @@ namespace MilkDistributionWarehouse.Mapper
             CreateMap<Retailer, RetailerDto>();
             CreateMap<Retailer, RetailerDetail>();
             CreateMap<Retailer, RetailerDropDown>();
-            CreateMap<Retailer, RetailerContactDto>();
             CreateMap<RetailerCreate, Retailer>()
                 .ForMember(dest => dest.RetailerId, opt => opt.Ignore())
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => CommonStatus.Active))
@@ -268,33 +267,37 @@ namespace MilkDistributionWarehouse.Mapper
 
             //Map SalesOrder
             CreateMap<SalesOrder, SalesOrderDtoSalesRepresentative>()
-                .ForMember(dest => dest.RetailerContact, opt => opt.MapFrom(src => src.Retailer))
+                .ForMember(dest => dest.RetailerName, opt => opt.MapFrom(src => src.Retailer.RetailerName))
                 .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => src.CreatedByNavigation.FullName))
                 .ForMember(dest => dest.ApprovalByName, opt => opt.MapFrom(src => src.ApprovalByNavigation.FullName));
             CreateMap<SalesOrder, SalesOrderDtoSaleManager>()
-                .ForMember(dest => dest.RetailerContact, opt => opt.MapFrom(src => src.Retailer))
+                .ForMember(dest => dest.RetailerName, opt => opt.MapFrom(src => src.Retailer.RetailerName))
                 .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => src.CreatedByNavigation.FullName))
                 .ForMember(dest => dest.ApprovalByName, opt => opt.MapFrom(src => src.ApprovalByNavigation.FullName))
                 .ForMember(dest => dest.AcknowledgedByName, opt => opt.MapFrom(src => src.AcknowledgedByNavigation.FullName));
             CreateMap<SalesOrder, SalesOrderDtoWarehouseManager>()
-                .ForMember(dest => dest.RetailerContact, opt => opt.MapFrom(src => src.Retailer))
+                .ForMember(dest => dest.RetailerName, opt => opt.MapFrom(src => src.Retailer.RetailerName))
                 .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => src.CreatedByNavigation.FullName))
                 .ForMember(dest => dest.ApprovalByName, opt => opt.MapFrom(src => src.ApprovalByNavigation.FullName))
                 .ForMember(dest => dest.AcknowledgedByName, opt => opt.MapFrom(src => src.AcknowledgedByNavigation.FullName))
                 .ForMember(dest => dest.AssignToName, opt => opt.MapFrom(src => src.AssignToNavigation.FullName));
             CreateMap<SalesOrder, SalesOrderDtoWarehouseStaff>()
-                .ForMember(dest => dest.RetailerContact, opt => opt.MapFrom(src => src.Retailer))
+                .ForMember(dest => dest.RetailerName, opt => opt.MapFrom(src => src.Retailer.RetailerName))
                 .ForMember(dest => dest.AcknowledgedByName, opt => opt.MapFrom(src => src.AcknowledgedByNavigation.FullName))
                 .ForMember(dest => dest.AssignToName, opt => opt.MapFrom(src => src.AssignToNavigation.FullName));
             CreateMap<SalesOrder, SalesOrderDetailDto>()
-                .ForMember(dest => dest.RetailerContact, opt => opt.MapFrom(src => src.Retailer))
+                .ForMember(dest => dest.RetailerName, opt => opt.MapFrom(src => src.Retailer.RetailerName))
+                .ForMember(dest => dest.RetailerPhone, opt => opt.MapFrom(src => src.Retailer.Phone))
+                .ForMember(dest => dest.RetailerEmail, opt => opt.MapFrom(src => src.Retailer.Email))
+                .ForMember(dest => dest.RetailerAddress, opt => opt.MapFrom(src => src.Retailer.Address))
                 .ForMember(dest => dest.CreatedBy, opt => opt.MapFrom(src => src.CreatedByNavigation))
                 .ForMember(dest => dest.ApprovalBy, opt => opt.MapFrom(src => src.ApprovalByNavigation))
                 .ForMember(dest => dest.AcknowledgedBy, opt => opt.MapFrom(src => src.AcknowledgedByNavigation))
                 .ForMember(dest => dest.AssignTo, opt => opt.MapFrom(src => src.AssignToNavigation))
                 .ForMember(dest => dest.SalesOrderItemDetails, opt => opt.MapFrom(src => src.SalesOrderDetails.ToList()));
             CreateMap<SalesOrderDetail, SalesOrderItemDetailDto>()
-                .ForMember(dest => dest.Goods, opt => opt.MapFrom(src => src.Goods));
+                .ForMember(dest => dest.Goods, opt => opt.MapFrom(src => src.Goods))
+                .ForMember(dest => dest.GoodsPacking, opt => opt.MapFrom(src => src.GoodsPacking));
 
             //GoodsPacking
             CreateMap<GoodsPacking, GoodsPackingDto>();

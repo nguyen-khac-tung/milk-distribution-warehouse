@@ -11,7 +11,7 @@ namespace MilkDistributionWarehouse.Services
     public interface ISalesOrderService
     {
         Task<(string, PageResult<T>?)> GetSalesOrderList<T>(PagedRequest request, int? userId);
-        Task<(string, SalesOrderDetailDto?)> GetSalesOrderDeatail(Guid? saleOrderId);
+        Task<(string, SalesOrderDetailDto?)> GetSalesOrderDetail(Guid? saleOrderId);
     }
 
 
@@ -37,6 +37,10 @@ namespace MilkDistributionWarehouse.Services
             if (user == null || user.Roles.IsNullOrEmpty()) return ("User is not valid", null);
             var userRoles = user.Roles.Select(r => r.RoleId).ToList();
             var salesOrders = _salesOrderRepository.GetAllSalesOrders();
+
+            if (userRoles.Contains(RoleType.SalesRepresentative))
+                salesOrders = salesOrders.Where(s => s.Status != null &&
+                                                    (s.Status != SalesOrderStatus.Draft || (s.Status == SalesOrderStatus.Draft && s.CreatedBy == userId)));
 
             if (userRoles.Contains(RoleType.SaleManager))
                 salesOrders = salesOrders.Where(s => s.Status != null && s.Status != SalesOrderStatus.Draft);
@@ -73,7 +77,7 @@ namespace MilkDistributionWarehouse.Services
             return ("", result);
         }
 
-        public async Task<(string, SalesOrderDetailDto?)> GetSalesOrderDeatail(Guid? saleOrderId)
+        public async Task<(string, SalesOrderDetailDto?)> GetSalesOrderDetail(Guid? saleOrderId)
         {
             if (saleOrderId == null) return ("SaleOrderId is invalid.", null);
             var salesOrder = await _salesOrderRepository.GetSalesOrderById(saleOrderId);
