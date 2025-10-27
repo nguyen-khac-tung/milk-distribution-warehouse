@@ -151,7 +151,8 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.TemperatureMin, opt => opt.MapFrom(src => src.StorageCondition.TemperatureMin))
                 .ForMember(dest => dest.HumidityMax, opt => opt.MapFrom(src => src.StorageCondition.HumidityMax))
                 .ForMember(dest => dest.HumidityMin, opt => opt.MapFrom(src => src.StorageCondition.HumidityMin))
-                .ForMember(dest => dest.LightLevel, opt => opt.MapFrom(src => src.StorageCondition.LightLevel));
+                .ForMember(dest => dest.LightLevel, opt => opt.MapFrom(src => src.StorageCondition.LightLevel))
+                .ForMember(dest => dest.GoodsPackings, opt => opt.MapFrom(src => src.GoodsPackings));
             CreateMap<GoodsCreate, Good>()
                 .ForMember(dest => dest.GoodsId, opt => opt.Ignore())
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => CommonStatus.Active))
@@ -292,6 +293,12 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.SalesOrderItemDetails, opt => opt.MapFrom(src => src.SalesOrderDetails.ToList()));
             CreateMap<SalesOrderDetail, SalesOrderItemDetailDto>()
                 .ForMember(dest => dest.Goods, opt => opt.MapFrom(src => src.Goods));
+
+            //GoodsPacking
+            CreateMap<GoodsPacking, GoodsPackingDto>();
+            CreateMap<GoodsPackingCreate, GoodsPacking>()
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => CommonStatus.Active));
+                
         }
     }
 }

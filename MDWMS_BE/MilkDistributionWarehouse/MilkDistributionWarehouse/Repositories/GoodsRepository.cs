@@ -32,6 +32,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> IsGoodsActiveOrInActive(int supplierId);
         Task<List<string>> GetExistingGoodsCode(List<string> goodsCode);
         Task<int> CreateGoodsBulk(List<Good> goods);
+        Task<bool> IsDuplicationNameAndSupplier(string goodsName, int supplierId);
     }
     public class GoodsRepository : IGoodsRepository
     {
@@ -93,28 +94,11 @@ namespace MilkDistributionWarehouse.Repositories
                 (goodsId == null || g.GoodsId != goodsId));
         }
 
-        public async Task<bool> IsGoodInUseAnyTransaction(int goodsId)
+        public async Task<bool> IsDuplicationNameAndSupplier(string goodsName, int supplierId)
         {
-            var checkBatch = await HasGoodsUsedInBatchNotExpiry(goodsId);
-
-            var excludedStatuses = new[] { PurchaseOrderStatus.Draft, PurchaseOrderStatus.Completed };
-
-            var checkPurchaseOrder = await IsGoodsUsedInPurchaseOrderWithExcludedStatusesAsync(goodsId, excludedStatuses);
-
-            var checkSalesOrder = await IsGoodsUsedInSalesOrderWithExcludedStatusesAsync(goodsId, excludedStatuses);
-
-            return checkBatch || checkPurchaseOrder || checkSalesOrder;
-        }
-
-        public async Task<bool> IsGoodInUseAnyTransactionToUpdate(int goodsId)
-        {
-            var checkBatch = await IsGoodsUsedInBatch(goodsId);
-
-            var checkPurchaseOrder = await IsGoodsUsedInPurchaseOrderWithExcludedStatusesAsync(goodsId, PurchaseOrderStatus.Draft);
-
-            var checkSalesOrder = await IsGoodsUsedInSalesOrderWithExcludedStatusesAsync(goodsId, SalesOrderStatus.Draft);
-
-            return checkBatch || checkPurchaseOrder || checkSalesOrder;
+            return await _warehouseContext.Goods
+                .AnyAsync(g => g.Status != CommonStatus.Deleted 
+                && g.SupplierId == supplierId && g.GoodsName.Equals(goodsName));
         }
 
         public async Task<Category?> GetInactiveCategoryByGoodsIdAsync(int goodsId)
