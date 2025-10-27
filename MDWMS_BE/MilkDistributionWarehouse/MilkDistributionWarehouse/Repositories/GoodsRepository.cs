@@ -18,6 +18,7 @@ namespace MilkDistributionWarehouse.Repositories
         IQueryable<Good?> GetGoodsById(int goodsId);
         Task<Good?> GetGoodsByGoodsId(int goodsId);
         Task<bool> IsDuplicationCode(int? goodIds, string goodsCode);
+        Task<List<Good>?> GetActiveGoodsBySupplierId(int supplierId);
         Task<Category?> GetInactiveCategoryByGoodsIdAsync(int goodsId);
         Task<UnitMeasure?> GetInactiveUnitMeasureByGoodsIdAsync(int goodsId);
         Task<StorageCondition?> GetInactiveStorageConditionByGoodsIdAsync(int goodsId);
@@ -99,6 +100,18 @@ namespace MilkDistributionWarehouse.Repositories
             return await _warehouseContext.Goods
                 .AnyAsync(g => g.Status != CommonStatus.Deleted 
                 && g.SupplierId == supplierId && g.GoodsName.Equals(goodsName));
+        }
+
+        public async Task<List<Good>?> GetActiveGoodsBySupplierId(int supplierId)
+        {
+            return await _warehouseContext.Goods
+                .Include(g => g.UnitMeasure)
+                .Include(g => g.GoodsPackings)
+                .Include(g => g.Batches)
+                .ThenInclude(b => b.Pallets.Where(p=> p.Status == CommonStatus.Active))
+                .ThenInclude(p => p.GoodsPacking)
+                .Where(g => g.SupplierId == supplierId)
+                .ToListAsync();
         }
 
         public async Task<Category?> GetInactiveCategoryByGoodsIdAsync(int goodsId)

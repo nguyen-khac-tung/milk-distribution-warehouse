@@ -17,6 +17,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, PageResult<GoodsDto>?)> GetGoods(PagedRequest request);
         Task<(string, List<GoodsDropDown>?)> GetGoodsDropDown();
         Task<(string, List<GoodsDropDownAndUnitMeasure>?)> GetGoodsDropDownBySupplierId(int supplierId);
+        Task<(string, List<GoodsInventoryDto>?)> GetGoodsInventoryBySupplierId(int supplierId);
         Task<(string, GoodsDetail?)> GetGoodsByGoodsId(int goodsId);
         Task<(string, GoodsDto?)> CreateGoods(GoodsCreate goodsCreate);
         Task<(string, GoodsBulkdResponse)> CreateGoodsBulk(GoodsBulkCreate create);
@@ -73,6 +74,34 @@ namespace MilkDistributionWarehouse.Services
                 return ("Danh sách sản phẩm trống.".ToMessageForUser(), default);
 
             return ("", goodsDropDown);
+        }
+
+        public async Task<(string, List<GoodsInventoryDto>?)> GetGoodsInventoryBySupplierId(int supplierId)
+        {
+            var goodsList = await _goodRepository.GetActiveGoodsBySupplierId(supplierId);
+            if (goodsList == null || !goodsList.Any())
+                return ("Danh sách sản phẩm trống.".ToMessageForUser(), default);
+
+            var goodsInventoryDtos = _mapper.Map<List<GoodsInventoryDto>>(goodsList);
+
+            goodsInventoryDtos.ForEach(goods =>
+            {
+                goods.GoodsPackings.ForEach(packing =>
+                {
+                    var totalPackageQuantity = goodsList.FirstOrDefault(g => g.GoodsId == goods.GoodsId)
+                                                        ?.Batches.SelectMany(b => b.Pallets)
+                                                        .Where(p => p.GoodsPackingId == packing.GoodsPackingId)
+                                                        .Sum(p => p.PackageQuantity);
+                    goods.InventoryPackingDtos.Add(new InventoryPackagingDto()
+                    {
+                        GoodsPackingId = packing.GoodsPackingId,
+                        UnitPerPackage = packing.UnitPerPackage,
+                        TotalPackageQuantity = totalPackageQuantity ?? 0
+                    });
+                });
+            });
+
+            return ("", goodsInventoryDtos);
         }
 
         public async Task<(string, GoodsDetail?)> GetGoodsByGoodsId(int goodsId)

@@ -20,6 +20,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, RetailerDetail)> UpdateRetailer(RetailerUpdate update);
         Task<(string, RetailerDetail)> DeleteRetailer(int retailerId);
         Task<(string, List<RetailerDropDown>)> GetRetailerDropDown();
+        Task<(string, List<RetailerDropDown>)> GetAllRetailerDropDown();
         Task<(string, RetailerUpdateStatus)> UpdateRetailerStatus(RetailerUpdateStatus update);
     }
     public class RetailerService : IRetailerService
@@ -53,6 +54,18 @@ namespace MilkDistributionWarehouse.Services
             var retailerQuery = await _retailerRepository.GetRetailers()
                 .Where(r => r.Status == CommonStatus.Active)
                 .ToListAsync();
+
+            var retailsDropDown = _mapper.Map<List<RetailerDropDown>>(retailerQuery);
+
+            if (!retailsDropDown.Any())
+                return ("Danh sách nhà bán lẻ trống.", new List<RetailerDropDown>());
+
+            return ("", retailsDropDown);
+        }
+
+        public async Task<(string, List<RetailerDropDown>)> GetAllRetailerDropDown()
+        {
+            var retailerQuery = await _retailerRepository.GetRetailers().ToListAsync();
 
             var retailsDropDown = _mapper.Map<List<RetailerDropDown>>(retailerQuery);
 

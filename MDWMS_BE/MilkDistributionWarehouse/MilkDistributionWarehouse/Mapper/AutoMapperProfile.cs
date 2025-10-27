@@ -167,6 +167,10 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.GoodsId, opt => opt.Ignore())
                 .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => DateTime.Now))
                 .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
+            CreateMap<Good, GoodsInventoryDto>()
+                .ForMember(dest => dest.UnitMeasureName, opt => opt.MapFrom(src => src.UnitMeasure.Name))
+                .ForMember(dest => dest.GoodsPackings, opt => opt.MapFrom(src => src.GoodsPackings));
+                
 
             //Map Supplier
             CreateMap<Supplier, SupplierDto>();
@@ -309,7 +313,12 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now))
                 .ForMember(dest => dest.SalesOrderDetails, opt => opt.MapFrom(src => src.SalesOrderItemDetailCreateDtos));
             CreateMap<SalesOrderItemDetailCreateDto, SalesOrderDetail>()
-                .ForMember(dest => dest.SalesOrderDetailId, opt => opt.Ignore());
+                .ForMember(dest => dest.SalesOrderDetailId, opt => opt.Ignore())
+                .ForMember(dest => dest.SalesOrderId, opt => opt.Ignore());
+            CreateMap<SalesOrderUpdateDto, SalesOrder>()
+                .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => DateTime.Now))
+                .ForMember(dest => dest.SalesOrderDetails, opt => opt.Ignore());
+            CreateMap<SalesOrderItemDetailUpdateDto, SalesOrderDetail>();
 
             //GoodsPacking
             CreateMap<GoodsPacking, GoodsPackingDto>();
