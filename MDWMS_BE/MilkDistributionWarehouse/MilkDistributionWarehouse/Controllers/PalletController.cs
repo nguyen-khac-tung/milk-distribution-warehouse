@@ -24,20 +24,20 @@ namespace MilkDistributionWarehouse.Controllers
             var (msg, result) = await _palletService.GetPallets(request);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<PageResult<PalletDto.PalletResponseDto>>.ToResultOk(result);
+            return ApiResponse<PageResult<PalletResponseDto>>.ToResultOk(result);
         }
 
         [HttpGet("PalletDetail/{id}")]
-        public async Task<IActionResult> GetPallet(Guid id)
+        public async Task<IActionResult> GetPallet(string id)
         {
             var (msg, pallet) = await _palletService.GetPalletById(id);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<PalletDto.PalletDetailDto>.ToResultOk(pallet);
+            return ApiResponse<PalletDetailDto>.ToResultOk(pallet);
         }
 
         [HttpPost("Create")]
-        public async Task<IActionResult> CreatePallet([FromBody] PalletDto.PalletRequestDto dto)
+        public async Task<IActionResult> CreatePallet([FromBody] PalletRequestDto dto)
         {
             if (!ModelState.IsValid)
                 return ApiResponse<string>.ToResultError("Dữ liệu không hợp lệ.");
@@ -45,27 +45,27 @@ namespace MilkDistributionWarehouse.Controllers
             var (msg, created) = await _palletService.CreatePallet(dto, userId);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<PalletDto.PalletResponseDto>.ToResultOk(created);
+            return ApiResponse<PalletResponseDto>.ToResultOk(created);
         }
 
         [HttpPut("Update/{id}")]
-        public async Task<IActionResult> UpdatePallet(Guid id, [FromBody] PalletDto.PalletRequestDto dto)
+        public async Task<IActionResult> UpdatePallet(string id, [FromBody] PalletRequestDto dto)
         {
             if (!ModelState.IsValid)
                 return ApiResponse<string>.ToResultError("Dữ liệu không hợp lệ.");
             var (msg, updated) = await _palletService.UpdatePallet(id, dto);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<PalletDto.PalletResponseDto>.ToResultOk(updated);
+            return ApiResponse<PalletResponseDto>.ToResultOk(updated);
         }
 
         [HttpDelete("Delete/{id}")]
-        public async Task<IActionResult> DeletePallet(Guid id)
+        public async Task<IActionResult> DeletePallet(string id)
         {
             var (msg, deleted) = await _palletService.DeletePallet(id);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<PalletDto.PalletResponseDto>.ToResultOk(deleted);
+            return ApiResponse<PalletResponseDto>.ToResultOk(deleted);
         }
 
         [HttpGet("GetPalletDropdown")]
@@ -74,11 +74,11 @@ namespace MilkDistributionWarehouse.Controllers
             var (msg, pallets) = await _palletService.GetPalletDropdown();
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<List<PalletDto.PalletActiveDto>>.ToResultOk(pallets);
+            return ApiResponse<List<PalletActiveDto>>.ToResultOk(pallets);
         }
 
         [HttpPut("UpdateStatus")]
-        public async Task<IActionResult> UpdateStatus(PalletDto.PalletUpdateStatusDto update)
+        public async Task<IActionResult> UpdateStatus(PalletUpdateStatusDto update)
         {
             var (msg, pallets) = await _palletService.UpdatePalletStatus(update);
             if (!string.IsNullOrEmpty(msg))

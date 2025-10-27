@@ -79,7 +79,7 @@ namespace MilkDistributionWarehouse.Services
             var entity = _mapper.Map<Location>(dto);
             entity.LocationCode = locationCode;
             entity.CreatedAt = DateTime.Now;
-            entity.Status = (int)CommonStatus.Active;
+            entity.Status = CommonStatus.Active;
 
             var createdEntity = await _locationRepository.CreateLocation(entity);
             if (createdEntity == null)
@@ -236,7 +236,7 @@ namespace MilkDistributionWarehouse.Services
                         result.FailedItems.Add(new LocationDto.FailedItem
                         {
                             Index = i,
-                            Code = $"{dto.Rack}-R{dto.Row:D2}-C{dto.Column:D2}",
+                            Code = $"{areaExists.AreaCode}-{dto.Rack}-R{dto.Row:D2}-C{dto.Column:D2}",
                             Error = "Khu vực được chọn không tồn tại hoặc đã bị xoá.".ToMessageForUser()
                         });
                         result.TotalFailed++;
@@ -244,7 +244,7 @@ namespace MilkDistributionWarehouse.Services
                     }
 
                     var entity = _mapper.Map<Location>(dto);
-                    entity.LocationCode = $"{dto.Rack}-R{dto.Row:D2}-C{dto.Column:D2}";
+                    entity.LocationCode = $"{areaExists.AreaCode}-{dto.Rack}-R{dto.Row:D2}-C{dto.Column:D2}";
                     entity.AreaId = dto.AreaId;
                     entity.CreatedAt = DateTime.Now;
                     entity.Status = (int)CommonStatus.Active;
