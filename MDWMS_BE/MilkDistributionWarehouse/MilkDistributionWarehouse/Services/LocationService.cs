@@ -79,7 +79,7 @@ namespace MilkDistributionWarehouse.Services
             var entity = _mapper.Map<Location>(dto);
             entity.LocationCode = locationCode;
             entity.CreatedAt = DateTime.Now;
-            entity.Status = (int)CommonStatus.Active;
+            entity.Status = CommonStatus.Active;
 
             var createdEntity = await _locationRepository.CreateLocation(entity);
             if (createdEntity == null)
