@@ -41,6 +41,9 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
         if (pathname.startsWith('/purchase-orders')) {
             keys.push('purchase-orders-management');
         }
+        if (pathname.startsWith('/sales-orders')) {
+            keys.push('sales-orders-management');
+        }
         if (pathname.startsWith('/pallets')) {
             // Pallet không có submenu, không cần thêm key
         }
@@ -91,21 +94,21 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                 key: "sales-orders-management",
                 icon: <ComponentIcon name="puscharorder" size={16} collapsed={collapsed} />,
                 label: "Quản lý đơn xuất",
-                permission: [PERMISSIONS.PURCHASE_ORDER_VIEW],
+                permission: [PERMISSIONS.SALES_ORDER_VIEW, PERMISSIONS.SALES_ORDER_VIEW_SR, PERMISSIONS.SALES_ORDER_VIEW_SM],
                 requireAll: false,
                 children: [
                     {
                         key: "/sales-orders",
                         icon: <ComponentIcon name="cart" size={14} collapsed={collapsed} />,
                         label: "Danh sách đơn xuất",
-                        permission: [PERMISSIONS.PURCHASE_ORDER_VIEW],
+                        permission: [PERMISSIONS.SALES_ORDER_VIEW, PERMISSIONS.SALES_ORDER_VIEW_SR, PERMISSIONS.SALES_ORDER_VIEW_SM, PERMISSIONS.SALES_ORDER_VIEW_WM, PERMISSIONS.SALES_ORDER_VIEW_WS],
                         requireAll: false,
                     },
                     {
                         key: "/sales-orders/create",
                         icon: <ComponentIcon name="createpuscharorder" size={14} collapsed={collapsed} />,
                         label: "Tạo đơn xuất",
-                        permission: [PERMISSIONS.PURCHASE_ORDER_VIEW],
+                        permission: [PERMISSIONS.PURCHASE_ORDER_CREATE],
                     }
                 ],
             },
@@ -147,7 +150,7 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                 label: "Quản lý đơn vị",
                 permission: PERMISSIONS.UNIT_MEASURE_VIEW
             },
-            
+
             {
                 key: "/batches",
                 icon: <ComponentIcon name="batch" size={16} collapsed={collapsed} />,
@@ -160,7 +163,7 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                 label: "Quản lý kệ kê hàng",
                 permission: PERMISSIONS.PALLET_VIEW
             },
-            
+
             {
                 key: "/accounts",
                 icon: <UsergroupAddOutlined style={{ color: '#000000' }} />,

@@ -66,7 +66,7 @@ export default function PurchaseOrderList() {
   const [showDateRangeFilter, setShowDateRangeFilter] = useState(false);
   const [hasInitialLoad, setHasInitialLoad] = useState(false);
   const [apiCallCount, setApiCallCount] = useState(0);
-  
+
   // Delete modal states
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedPurchaseOrder, setSelectedPurchaseOrder] = useState(null);
@@ -122,7 +122,7 @@ export default function PurchaseOrderList() {
         console.log("Total count:", response.data.totalCount);
         console.log("Page number:", response.data.pageNumber);
         console.log("Total pages:", response.data.totalPages);
-        
+
         setPurchaseOrders(response.data.items);
         setPagination(prev => ({
           ...prev,
@@ -159,7 +159,7 @@ export default function PurchaseOrderList() {
       fromDate: dateRangeFilter.fromDate,
       toDate: dateRangeFilter.toDate
     };
-    
+
 
     return await fetchDataWithParams(requestParams);
   };
@@ -286,40 +286,40 @@ export default function PurchaseOrderList() {
 
   const handleDeleteConfirm = async () => {
     if (!selectedPurchaseOrder) return;
-    
+
     console.log("=== DELETE CONFIRM ===");
     console.log("Selected purchase order:", selectedPurchaseOrder);
     console.log("All keys:", Object.keys(selectedPurchaseOrder));
-    
+
     setDeleteLoading(true);
     try {
-      const orderId = selectedPurchaseOrder.purchaseOderId;  
-      
+      const orderId = selectedPurchaseOrder.purchaseOderId;
+
       if (!orderId) {
         console.error("No valid ID found. Available fields:", Object.keys(selectedPurchaseOrder));
         throw new Error("Không tìm thấy ID của đơn nhập");
       }
-      
+
       await deletePurchaseOrder(orderId);
-      
+
       // Show success message
       if (window.showToast) {
         window.showToast("Xóa đơn nhập thành công!", "success");
       }
-      
+
       // Close modal and refresh data
       setShowDeleteModal(false);
       setSelectedPurchaseOrder(null);
-      
+
       // Refresh the list
       fetchData();
-      
+
     } catch (error) {
       console.error("Error deleting purchase order:", error);
-      
+
       // Extract error message from backend using utility function
       const errorMessage = extractErrorMessage(error);
-      
+
       // Show specific error message
       if (window.showToast) {
         window.showToast(errorMessage, "error");
@@ -337,7 +337,7 @@ export default function PurchaseOrderList() {
   const handlePageChange = (newPage) => {
     // Update pagination state first
     setPagination(prev => ({ ...prev, current: newPage }));
-    
+
     // Call fetchData with the new page number directly
     const requestParams = {
       pageNumber: newPage, // Use the new page directly
@@ -354,14 +354,14 @@ export default function PurchaseOrderList() {
       fromDate: dateRangeFilter.fromDate,
       toDate: dateRangeFilter.toDate
     };
-    
+
     fetchDataWithParams(requestParams);
   };
 
   const handlePageSizeChange = (newPageSize) => {
     // Update pagination state first
     setPagination(prev => ({ ...prev, pageSize: newPageSize, current: 1 }));
-    
+
     // Call fetchData with the new page size directly
     const requestParams = {
       pageNumber: 1, // Reset to page 1 when changing page size
@@ -378,7 +378,7 @@ export default function PurchaseOrderList() {
       fromDate: dateRangeFilter.fromDate,
       toDate: dateRangeFilter.toDate
     };
-    
+
     fetchDataWithParams(requestParams);
   };
 

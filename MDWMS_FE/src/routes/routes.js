@@ -28,6 +28,7 @@ import PurchaseOrderDetail from "../pages/PurchaseOrderPage/PurchaseOrderDetail"
 import PalletList from "../pages/PalletPage/PalletList";
 import ChangePasswordPage from "../pages/AuthenticationPage/ChangePasswordPage"
 import { PERMISSIONS } from "../utils/permissions";
+import SalesOrderList from "../pages/SalesOrderPage/SalesOrderList";
 
 export const routes = [
     {
@@ -219,12 +220,21 @@ export const routes = [
         ),
         isShowHeader: true,
     },
-    //đơn xuất
+    // đơn xuất
     {
-        path: "/sale-orders",
+        path: "/sales-orders",
         page: () => (
-            <ProtectedRoute requiredPermission={[PERMISSIONS.PURCHASE_ORDER_VIEW]} requireAll={false}>
-                <PurchaseOrderList />
+            <ProtectedRoute requiredPermission={[PERMISSIONS.SALES_ORDER_VIEW]} requireAll={false}>
+                <SalesOrderList />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/sales-orders/:id",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.SALES_ORDER_VIEW_DETAILS}>
+                <SalesOrderList />
             </ProtectedRoute>
         ),
         isShowHeader: true,
@@ -233,7 +243,7 @@ export const routes = [
         path: "/sales-orders/create",
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.PURCHASE_ORDER_CREATE}>
-                <CreatePurchaseOrder />
+                <SalesOrderList />
             </ProtectedRoute>
         ),
         isShowHeader: true,

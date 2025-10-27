@@ -20,7 +20,7 @@ export const getPurchaseOrderSaleManagers = async (searchParams = {}) => {
                 ...(searchParams.toDate && { toDate: searchParams.toDate })
             }
         };
-        
+
         const res = await api.post("/PurchaseOrder/GetPurchaseOrderSaleManagers", body);
         return res.data;
     } catch (error) {
@@ -49,7 +49,7 @@ export const getPurchaseOrderSaleRepresentatives = async (searchParams = {}) => 
                 ...(searchParams.toDate && { toDate: searchParams.toDate })
             }
         };
-        
+
         const res = await api.post("/PurchaseOrder/GetPurchaseOrderSaleRepresentatives", body);
         return res.data;
     } catch (error) {
@@ -78,7 +78,7 @@ export const getPurchaseOrderWarehouseManagers = async (searchParams = {}) => {
                 ...(searchParams.toDate && { toDate: searchParams.toDate })
             }
         };
-        
+
         const res = await api.post("/PurchaseOrder/GetPurchaseOrderWarehouseManagers", body);
         return res.data;
     } catch (error) {
@@ -107,7 +107,7 @@ export const getPurchaseOrderWarehouseStaff = async (searchParams = {}) => {
                 ...(searchParams.toDate && { toDate: searchParams.toDate })
             }
         };
-        
+
         const res = await api.post("/PurchaseOrder/GetPurchaseOrderWarehouseStaff", body);
         return res.data;
     } catch (error) {
@@ -241,7 +241,7 @@ export const getDraftPurchaseOrdersBySupplier = async (supplierId) => {
                 supplierId: supplierId
             }
         };
-        
+
         const res = await api.post("/PurchaseOrder/GetPurchaseOrderSaleManagers", body);
         return res.data;
     } catch (error) {

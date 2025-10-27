@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import { 
-  Search, 
-  Filter, 
-  ChevronDown, 
-  ChevronUp, 
-  Settings, 
-  Calendar, 
+import {
+  Search,
+  Filter,
+  ChevronDown,
+  ChevronUp,
+  Settings,
+  Calendar,
   RefreshCw,
   Building2,      // Supplier icon
   Shield,         // Approver icon
@@ -119,7 +119,7 @@ export default function PurchaseOrderFilterToggle({
     setShowConfirmerFilter(false);
     setShowAssigneeFilter(false);
     setShowDateRangeFilter(false);
-    
+
     if (onClearAll) {
       onClearAll();
     } else {
@@ -275,26 +275,26 @@ export default function PurchaseOrderFilterToggle({
                       <ChevronDown className="h-4 w-4 flex-shrink-0" />
                     </button>
 
-                      {showStatusFilter && (
-                        <div className="absolute top-full right-0 mt-1 w-48 bg-white rounded-md shadow-lg border z-50 max-h-48 overflow-y-auto dropdown-scroll" style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 #f1f5f9' }}>
-                          <div className="py-1">
-                            {statusOptions.map((option) => (
-                              <button
-                                key={option.value}
-                                onClick={() => {
-                                  onStatusFilter(option.value);
-                                  setShowStatusFilter(false);
-                                }}
-                                className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center justify-between"
-                              >
-                                {option.label}
-                                {statusFilter === option.value && <span className="text-[#d97706]">✓</span>}
-                              </button>
-                            ))}
-                          </div>
+                    {showStatusFilter && (
+                      <div className="absolute top-full right-0 mt-1 w-48 bg-white rounded-md shadow-lg border z-50 max-h-48 overflow-y-auto dropdown-scroll" style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 #f1f5f9' }}>
+                        <div className="py-1">
+                          {statusOptions.map((option) => (
+                            <button
+                              key={option.value}
+                              onClick={() => {
+                                onStatusFilter(option.value);
+                                setShowStatusFilter(false);
+                              }}
+                              className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center justify-between"
+                            >
+                              {option.label}
+                              {statusFilter === option.value && <span className="text-[#d97706]">✓</span>}
+                            </button>
+                          ))}
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Supplier Filter */}
                   {showSupplier && suppliers.length > 0 && (
@@ -504,16 +504,16 @@ export default function PurchaseOrderFilterToggle({
 
                   {/* Date Range Filter */}
                   <div className="relative date-range-filter-dropdown flex-1 min-w-[140px]">
-                  <button
-                    onClick={() => setShowDateRangeFilter(!showDateRangeFilter)}
-                    className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors w-full
+                    <button
+                      onClick={() => setShowDateRangeFilter(!showDateRangeFilter)}
+                      className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors w-full
                       focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
                       ${dateRangeFilter ? 'bg-white text-slate-700 hover:bg-slate-50' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
                     >
                       <Clock className="h-4 w-4 flex-shrink-0" />
                       <span className="text-sm font-medium truncate">
-                        {dateRangeFilter && dateRangeFilter.fromDate && dateRangeFilter.toDate 
-                          ? `${dateRangeFilter.fromDate} - ${dateRangeFilter.toDate}` 
+                        {dateRangeFilter && dateRangeFilter.fromDate && dateRangeFilter.toDate
+                          ? `${dateRangeFilter.fromDate} - ${dateRangeFilter.toDate}`
                           : "Khoảng thời gian"}
                       </span>
                       <ChevronDown className="h-4 w-4 flex-shrink-0" />

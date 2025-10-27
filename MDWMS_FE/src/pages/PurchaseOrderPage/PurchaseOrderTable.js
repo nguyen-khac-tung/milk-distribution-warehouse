@@ -41,12 +41,12 @@ const PurchaseOrderTable = ({
       hasAssignToName: firstItem.assignToName !== undefined || firstItem.assignToByName !== undefined,
       hasCreatedAt: firstItem.createdAt !== undefined
     };
-    
+
     // Show fields if they exist in the API response
     if (firstItem.approvalBy !== undefined || firstItem.approvalByName !== undefined) {
       fields.hasApprovalByName = true;
     }
-    
+
     if (firstItem.arrivalConfirmedBy !== undefined || firstItem.arrivalConfirmedByName !== undefined) {
       fields.hasArrivalConfirmedByName = true;
     }
@@ -74,7 +74,7 @@ const PurchaseOrderTable = ({
     if (!purchaseOrders || !Array.isArray(purchaseOrders)) {
       return [];
     }
-    
+
     // Backend already handles pagination, so return all data
     return purchaseOrders;
   }, [purchaseOrders]);
