@@ -13,6 +13,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<Location?> UpdateLocation(Location entity);
         Task<bool> HasDependentPalletsAsync(int locationId);
         Task<List<Location>> GetActiveLocationsAsync();
+        Task<Location> GetLocationPallet(string locationcode);
         Task<List<string>> GetExistingLocationKeys(List<int> areaIds);
         Task<int> CreateLocationsBulk(List<Location> locations);
         Task<bool> IsDuplicateLocationCodeInAreaAsync(string locationCode, int areaId, int? excludeId = null);
@@ -86,6 +87,13 @@ namespace MilkDistributionWarehouse.Repositories
                 .AsNoTracking()
                 .ToListAsync();
         }
+
+        public async Task<Location> GetLocationPallet(string locationcode)
+        {
+            return await _context.Locations
+                .FirstOrDefaultAsync(l => l.LocationCode.ToLower().Trim() == locationcode.ToLower().Trim() && l.Status != CommonStatus.Deleted);
+        }
+
         public async Task<bool> IsDuplicateLocationCodeInAreaAsync(string locationCode, int areaId, int? excludeId = null)
         {
             var query = _context.Locations

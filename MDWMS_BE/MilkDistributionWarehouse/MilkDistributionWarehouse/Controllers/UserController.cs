@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Services;
 using MilkDistributionWarehouse.Utilities;
+using System.Threading.Tasks;
 
 namespace MilkDistributionWarehouse.Controllers
 {
@@ -34,6 +35,15 @@ namespace MilkDistributionWarehouse.Controllers
             if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
 
             return ApiResponse<UserDetailDto>.ToResultOk(userDetail);
+        }
+
+        [HttpGet("GetUserDropDownByRoleName/{roleName}")]
+        public async Task<IActionResult> GetUserDropDownByRoleName(string? roleName)
+        {
+            var (msg, userDropDown) = await _userService.GetUserDropDownByRoleName(roleName);
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<List<UserDropDown>>.ToResultOk(userDropDown);
         }
 
         [Authorize(Roles = "Administrator, Business Owner")]

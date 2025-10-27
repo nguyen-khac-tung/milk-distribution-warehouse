@@ -13,9 +13,13 @@ public partial class SalesOrderDetail
 
     public int? GoodsId { get; set; }
 
-    public int? Quantity { get; set; }
+    public int? GoodsPackingId { get; set; }
+
+    public int? PackageQuantity { get; set; }
 
     public virtual Good Goods { get; set; }
+
+    public virtual GoodsPacking GoodsPacking { get; set; }
 
     public virtual SalesOrder SalesOrder { get; set; }
 }

@@ -35,6 +35,8 @@ public partial class Good
 
     public virtual ICollection<GoodsIssueNoteDetail> GoodsIssueNoteDetails { get; set; } = new List<GoodsIssueNoteDetail>();
 
+    public virtual ICollection<GoodsPacking> GoodsPackings { get; set; } = new List<GoodsPacking>();
+
     public virtual ICollection<GoodsReceiptNoteDetail> GoodsReceiptNoteDetails { get; set; } = new List<GoodsReceiptNoteDetail>();
 
     public virtual ICollection<PurchaseOderDetail> PurchaseOderDetails { get; set; } = new List<PurchaseOderDetail>();
