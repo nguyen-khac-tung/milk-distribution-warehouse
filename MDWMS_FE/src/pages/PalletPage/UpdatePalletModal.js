@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Card } from '../ui/card';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Card } from '../../components/ui/card';
 import { X, Loader2 } from 'lucide-react';
 import { updatePallet } from '../../services/PalletService';
 import { extractErrorMessage } from '../../utils/Validation';
 
-const UpdatePalletModal = ({ 
-  isOpen, 
-  onClose, 
-  pallet, 
-  onSuccess 
+const UpdatePalletModal = ({
+  isOpen,
+  onClose,
+  pallet,
+  onSuccess
 }) => {
   const [formData, setFormData] = useState({
     batchCode: '',
@@ -47,7 +47,7 @@ const UpdatePalletModal = ({
       ...prev,
       [field]: value
     }));
-    
+
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({
@@ -59,38 +59,38 @@ const UpdatePalletModal = ({
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.batchCode || formData.batchCode === '') {
       newErrors.batchCode = 'Mã lô hàng là bắt buộc';
     }
-    
+
     if (!formData.locationCode || formData.locationCode === '') {
       newErrors.locationCode = 'Mã vị trí là bắt buộc';
     }
-    
+
     if (!formData.packageQuantity || formData.packageQuantity === '') {
       newErrors.packageQuantity = 'Số lượng thùng là bắt buộc';
     } else if (isNaN(formData.packageQuantity) || parseInt(formData.packageQuantity) <= 0) {
       newErrors.packageQuantity = 'Số lượng thùng phải là số dương';
     }
-    
+
     if (!formData.unitsPerPackage || formData.unitsPerPackage === '') {
       newErrors.unitsPerPackage = 'Đơn vị/thùng là bắt buộc';
     } else if (isNaN(formData.unitsPerPackage) || parseInt(formData.unitsPerPackage) <= 0) {
       newErrors.unitsPerPackage = 'Đơn vị/thùng phải là số dương';
     }
-    
+
     if (!formData.goodsReceiptNoteId?.trim()) {
       newErrors.goodsReceiptNoteId = 'Phiếu nhập kho là bắt buộc';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -106,17 +106,17 @@ const UpdatePalletModal = ({
         goodsReceiptNoteId: formData.goodsReceiptNoteId
       };
       await updatePallet(pallet.palletId, apiData);
-      
+
       if (window.showToast) {
         window.showToast("Cập nhật kệ kê hàng thành công!", "success");
       }
-      
+
       onSuccess && onSuccess();
       onClose && onClose();
     } catch (error) {
       console.error("Error updating pallet:", error);
       const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật kệ kê hàng");
-      
+
       if (window.showToast) {
         window.showToast(errorMessage, "error");
       }
@@ -171,9 +171,8 @@ const UpdatePalletModal = ({
                     placeholder="Nhập mã lô hàng..."
                     value={formData.batchCode}
                     onChange={(e) => handleInputChange('batchCode', e.target.value)}
-                    className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${
-                      errors.batchCode ? 'border-red-500' : ''
-                    }`}
+                    className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${errors.batchCode ? 'border-red-500' : ''
+                      }`}
                     required
                   />
                   {errors.batchCode && (
@@ -190,9 +189,8 @@ const UpdatePalletModal = ({
                     placeholder="Nhập mã vị trí..."
                     value={formData.locationCode}
                     onChange={(e) => handleInputChange('locationCode', e.target.value)}
-                    className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${
-                      errors.locationCode ? 'border-red-500' : ''
-                    }`}
+                    className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${errors.locationCode ? 'border-red-500' : ''
+                      }`}
                     required
                   />
                   {errors.locationCode && (
@@ -213,9 +211,8 @@ const UpdatePalletModal = ({
                     placeholder="Nhập số lượng thùng..."
                     value={formData.packageQuantity}
                     onChange={(e) => handleInputChange('packageQuantity', e.target.value)}
-                    className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${
-                      errors.packageQuantity ? 'border-red-500' : ''
-                    }`}
+                    className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${errors.packageQuantity ? 'border-red-500' : ''
+                      }`}
                     required
                   />
                   {errors.packageQuantity && (
@@ -233,9 +230,8 @@ const UpdatePalletModal = ({
                     placeholder="Nhập đơn vị/thùng..."
                     value={formData.unitsPerPackage}
                     onChange={(e) => handleInputChange('unitsPerPackage', e.target.value)}
-                    className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${
-                      errors.unitsPerPackage ? 'border-red-500' : ''
-                    }`}
+                    className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${errors.unitsPerPackage ? 'border-red-500' : ''
+                      }`}
                     required
                   />
                   {errors.unitsPerPackage && (
@@ -255,9 +251,8 @@ const UpdatePalletModal = ({
                     placeholder="Nhập phiếu nhập kho..."
                     value={formData.goodsReceiptNoteId}
                     onChange={(e) => handleInputChange('goodsReceiptNoteId', e.target.value)}
-                    className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${
-                      errors.goodsReceiptNoteId ? 'border-red-500' : ''
-                    }`}
+                    className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${errors.goodsReceiptNoteId ? 'border-red-500' : ''
+                      }`}
                     required
                   />
                   {errors.goodsReceiptNoteId && (
