@@ -7,7 +7,7 @@ import { Label } from "../../components/ui/label"
 import FloatingDropdown from "../../components/PurchaseOrderComponents/FloatingDropdown"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
 import { Plus, Trash2, ArrowLeft, Save, X } from "lucide-react"
-import { createPurchaseOrder, getGoodsDropDownBySupplierId, getDraftPurchaseOrdersBySupplier, updatePurchaseOrder, getPurchaseOrderDetail } from "../../services/PurchaseOrderService"
+import { createPurchaseOrder, getGoodsDropDownBySupplierId, getDraftPurchaseOrdersBySupplier, updatePurchaseOrder, getPurchaseOrderDetail, getGoodsPackingByGoodsId } from "../../services/PurchaseOrderService"
 import { getSuppliersDropdown } from "../../services/SupplierService"
 
 export default function CreatePurchaseOrder({
@@ -17,15 +17,17 @@ export default function CreatePurchaseOrder({
     const navigate = useNavigate();
     const [suppliers, setSuppliers] = useState([]);
     const [goods, setGoods] = useState([]);
+    const [goodsPackingsMap, setGoodsPackingsMap] = useState({}); // Map để lưu goodsPackings theo goodsId
     const [suppliersLoading, setSuppliersLoading] = useState(false);
     const [goodsLoading, setGoodsLoading] = useState(false);
+    const [packingLoading, setPackingLoading] = useState(false);
     const [formData, setFormData] = useState({
         supplierName: initialData?.supplierName || ""
     });
 
     const [items, setItems] = useState(
         initialData?.items || [
-            { id: 1, goodsName: "", quantity: "" },
+            { id: 1, goodsName: "", quantity: "", goodsPackingId: "" },
         ],
     )
     const [fieldErrors, setFieldErrors] = useState({}) // Lỗi theo từng trường
@@ -72,6 +74,7 @@ export default function CreatePurchaseOrder({
             id: Date.now(),
             goodsName: "",
             quantity: "",
+            goodsPackingId: "",
         };
         const updatedItems = [...items, newItem];
         setItems(updatedItems);
@@ -87,7 +90,16 @@ export default function CreatePurchaseOrder({
                 window.showToast("Mặt hàng này đã được thêm vào danh sách!", "error");
                 return;
             }
+            
+            // Load goods packing khi chọn goods (chỉ load nếu chưa có trong map)
+            if (value) {
+                const selectedGood = goods.find(good => good.goodsName === value);
+                if (selectedGood && !goodsPackingsMap[selectedGood.goodsId]) {
+                    loadGoodsPacking(selectedGood.goodsId);
+                }
+            }
         }
+        
         setItems(items.map((item) => (item.id === id ? { ...item, [field]: value } : item)))
 
         // Xóa lỗi validation khi người dùng sửa
@@ -119,6 +131,28 @@ export default function CreatePurchaseOrder({
             setGoodsLoading(false);
         }
     };
+
+    const loadGoodsPacking = async (goodsId) => {
+        setPackingLoading(true);
+        try {
+            const response = await getGoodsPackingByGoodsId(goodsId);
+            const packingData = response?.data || [];
+            // Lưu vào map theo goodsId
+            setGoodsPackingsMap(prev => ({
+                ...prev,
+                [goodsId]: packingData
+            }));
+        } catch (error) {
+            console.error("Error loading goods packing:", error);
+            // Lưu mảng rỗng vào map
+            setGoodsPackingsMap(prev => ({
+                ...prev,
+                [goodsId]: []
+            }));
+        } finally {
+            setPackingLoading(false);
+        }
+    };
     // Create options for dropdowns
     const supplierOptions = suppliers.map(supplier => ({
         value: supplier.companyName,
@@ -144,6 +178,34 @@ export default function CreatePurchaseOrder({
         label: good.goodsName
     }));
 
+    // Tạo options cho goods packing dropdown
+    const getGoodsPackingOptions = (currentItemId) => {
+        const currentItem = items.find(item => item.id === currentItemId);
+        if (!currentItem || !currentItem.goodsName) {
+            return [{ value: "", label: "Chọn hàng hóa trước" }];
+        }
+        
+        // Lấy thông tin hàng hóa để có unitMeasureName và goodsId
+        const selectedGood = goods.find(good => good.goodsName === currentItem.goodsName);
+        if (!selectedGood) {
+            return [{ value: "", label: "Không tìm thấy hàng hóa" }];
+        }
+        
+        const unitMeasureName = selectedGood?.name || "đơn vị";
+        const goodsId = selectedGood.goodsId;
+        
+        // Lấy goodsPackings từ map theo goodsId
+        const goodsPackings = goodsPackingsMap[goodsId] || [];
+        
+        return [
+            { value: "", label: "Chọn đóng gói..." },
+            ...goodsPackings.map(packing => ({
+                value: packing.goodsPackingId.toString(),
+                label: `${packing.unitPerPackage} ${unitMeasureName}/thùng`
+            }))
+        ];
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -159,6 +221,9 @@ export default function CreatePurchaseOrder({
             }
             if (!item.quantity || item.quantity <= 0) {
                 newFieldErrors[`${item.id}-quantity`] = "Vui lòng nhập số lượng lớn hơn 0";
+            }
+            if (!item.goodsPackingId) {
+                newFieldErrors[`${item.id}-goodsPackingId`] = "Vui lòng chọn đóng gói";
             }
         });
 
@@ -182,7 +247,7 @@ export default function CreatePurchaseOrder({
             return;
         }
 
-        const validItems = items.filter(item => item.goodsName && item.quantity);
+        const validItems = items.filter(item => item.goodsName && item.quantity && item.goodsPackingId);
         if (validItems.length === 0) {
             window.showToast("Vui lòng thêm ít nhất một hàng hóa với đầy đủ thông tin", "error");
             return;
@@ -193,7 +258,8 @@ export default function CreatePurchaseOrder({
                 const selectedGood = goods.find(good => good.goodsName === item.goodsName);
                 return {
                     goodsId: selectedGood ? parseInt(selectedGood.goodsId) : null,
-                    quantity: parseInt(item.quantity)
+                    quantity: parseInt(item.quantity),
+                    goodsPackingId: parseInt(item.goodsPackingId)
                 };
             }).filter(item => item.goodsId);
 
@@ -225,7 +291,8 @@ export default function CreatePurchaseOrder({
                     allItemsMap.set(item.goodsId, {
                         purchaseOrderDetailId: item.purchaseOrderDetailId,
                         goodsId: item.goodsId,
-                        quantity: item.quantity
+                        quantity: item.quantity,
+                        goodsPackingId: item.goodsPackingId
                     });
                 });
 
@@ -250,7 +317,8 @@ export default function CreatePurchaseOrder({
                 const itemsToUpdate = Array.from(allItemsMap.values()).map(item => ({
                     purchaseOrderDetailId: item.purchaseOrderDetailId || 0,
                     goodsId: item.goodsId,
-                    quantity: item.quantity
+                    quantity: item.quantity,
+                    goodsPackingId: item.goodsPackingId
                 }));
 
                 // Cập nhật đơn nháp với tất cả sản phẩm
@@ -342,6 +410,7 @@ export default function CreatePurchaseOrder({
                                         <TableRow className="border-b border-gray-200 hover:bg-transparent">
                                             <TableHead className="text-slate-600 font-semibold">STT</TableHead>
                                             <TableHead className="text-slate-600 font-semibold">Tên Hàng Hóa</TableHead>
+                                            <TableHead className="text-slate-600 font-semibold">Đóng Gói</TableHead>
                                             <TableHead className="text-slate-600 font-semibold">Số Lượng</TableHead>
                                             <TableHead className="text-slate-600 font-semibold">Đơn Vị</TableHead>
                                             {items.length > 1 && (
@@ -365,6 +434,21 @@ export default function CreatePurchaseOrder({
                                                         />
                                                         {fieldErrors[`${item.id}-goodsName`] && (
                                                             <p className="text-red-500 text-xs mt-1">{fieldErrors[`${item.id}-goodsName`]}</p>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="relative" style={{ overflow: 'visible', zIndex: 'auto' }}>
+                                                    <div>
+                                                        <FloatingDropdown
+                                                            value={item.goodsPackingId}
+                                                            onChange={(value) => updateItem(item.id, "goodsPackingId", value)}
+                                                            options={getGoodsPackingOptions(item.id)}
+                                                            placeholder={item.goodsName ? "Chọn đóng gói" : "Chọn hàng hóa trước"}
+                                                            loading={packingLoading}
+                                                            disabled={!item.goodsName}
+                                                        />
+                                                        {fieldErrors[`${item.id}-goodsPackingId`] && (
+                                                            <p className="text-red-500 text-xs mt-1">{fieldErrors[`${item.id}-goodsPackingId`]}</p>
                                                         )}
                                                     </div>
                                                 </TableCell>
