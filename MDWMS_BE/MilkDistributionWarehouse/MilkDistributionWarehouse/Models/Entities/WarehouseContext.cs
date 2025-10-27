@@ -187,8 +187,6 @@ public partial class WarehouseContext : DbContext
         {
             entity.ToTable("GoodsPacking");
 
-            entity.Property(e => e.GoodsPackingId).ValueGeneratedNever();
-
             entity.HasOne(d => d.Goods).WithMany(p => p.GoodsPackings)
                 .HasForeignKey(d => d.GoodsId)
                 .HasConstraintName("FK_GoodsPacking_Goods");
@@ -540,7 +538,9 @@ public partial class WarehouseContext : DbContext
             entity.Property(e => e.Phone)
                 .HasMaxLength(50)
                 .IsUnicode(false);
-            entity.Property(e => e.Status).HasDefaultValue(1);
+            entity.Property(e => e.Status)
+                .HasDefaultValue(1)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF__Users__Status__32AB8735");
 
             entity.HasMany(d => d.Roles).WithMany(p => p.Users)
                 .UsingEntity<Dictionary<string, object>>(
