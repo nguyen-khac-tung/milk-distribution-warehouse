@@ -158,7 +158,11 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => CommonStatus.Active))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now))
                 .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => (DateTime?)null));
-            CreateMap<GoodsCreateBulkDto, Good>();
+            CreateMap<GoodsCreateBulkDto, Good>()
+                .ForMember(dest => dest.GoodsId, opt => opt.Ignore())
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => CommonStatus.Active))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now))
+                .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => (DateTime?)null));
             CreateMap<GoodsUpdate, Good>()
                 .ForMember(dest => dest.GoodsId, opt => opt.Ignore())
                 .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => DateTime.Now))
@@ -314,6 +318,16 @@ namespace MilkDistributionWarehouse.Mapper
             //Map GoodsReceiptNoteDetail
             CreateMap<GoodsReceiptNoteDetail, GoodsReceiptNoteDetailDto.GoodsReceiptNoteDetailPalletDto>()
                 .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Goods.GoodsName));
+
+            // Map BackOrder
+            CreateMap<BackOrder, BackOrderDto.BackOrderResponseDto>()
+                .ForMember(dest => dest.RetailerName, opt => opt.MapFrom(src => src.Retailer != null ? src.Retailer.RetailerName : null))
+                .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Goods != null ? src.Goods.GoodsName : null));
+            CreateMap<BackOrderDto.BackOrderRequestDto, BackOrder>();
+            CreateMap<BackOrder, BackOrderDto.BackOrderActiveDto>()
+                .ForMember(dest => dest.DisplayName, opt => opt.MapFrom(src =>
+                    $"BackOrder - {(src.Goods != null ? src.Goods.GoodsName : "N/A")} ({src.Quantity}) cho {(src.Retailer != null ? src.Retailer.RetailerName : "N/A")}"));
+            CreateMap<BackOrder, BackOrderDto.BackOrderUpdateStatusDto>();
         }
     }
 }
