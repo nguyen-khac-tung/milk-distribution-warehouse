@@ -270,7 +270,10 @@ public partial class WarehouseContext : DbContext
 
         modelBuilder.Entity<Pallet>(entity =>
         {
-            entity.Property(e => e.PalletId).ValueGeneratedNever();
+            entity.Property(e => e.PalletId)
+                .HasMaxLength(26)
+                .IsUnicode(false)
+                .IsFixedLength();
 
             entity.HasOne(d => d.Batch).WithMany(p => p.Pallets)
                 .HasForeignKey(d => d.BatchId)
@@ -457,6 +460,10 @@ public partial class WarehouseContext : DbContext
 
             entity.Property(e => e.StocktakingPalletId).ValueGeneratedNever();
             entity.Property(e => e.Note).HasMaxLength(200);
+            entity.Property(e => e.PalletId)
+                .HasMaxLength(26)
+                .IsUnicode(false)
+                .IsFixedLength();
 
             entity.HasOne(d => d.Pallet).WithMany(p => p.StocktakingPallets)
                 .HasForeignKey(d => d.PalletId)
@@ -537,9 +544,7 @@ public partial class WarehouseContext : DbContext
             entity.Property(e => e.Phone)
                 .HasMaxLength(50)
                 .IsUnicode(false);
-            entity.Property(e => e.Status)
-                .HasDefaultValue(1)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__Users__Status__32AB8735");
+            entity.Property(e => e.Status).HasDefaultValue(1);
 
             entity.HasMany(d => d.Roles).WithMany(p => p.Users)
                 .UsingEntity<Dictionary<string, object>>(

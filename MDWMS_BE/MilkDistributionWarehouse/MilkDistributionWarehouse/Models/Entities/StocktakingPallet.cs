@@ -11,7 +11,7 @@ public partial class StocktakingPallet
 
     public Guid? StocktakingLocationId { get; set; }
 
-    public Guid? PalletId { get; set; }
+    public string PalletId { get; set; }
 
     public int? ExpectedPackageQuantity { get; set; }
 

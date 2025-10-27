@@ -7,7 +7,7 @@ namespace MilkDistributionWarehouse.Models.Entities;
 
 public partial class Pallet
 {
-    public Guid PalletId { get; set; }
+    public string PalletId { get; set; }
 
     public Guid? GoodsReceiptNoteId { get; set; }
 
