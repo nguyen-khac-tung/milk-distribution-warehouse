@@ -20,6 +20,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, PurchaseOrderCreate?)> CreatePurchaseOrder(PurchaseOrderCreate create, int? userId, string? userName);
         Task<(string, PurchaseOrdersDetail?)> GetPurchaseOrderDetailById(Guid purchaseOrderId, int? userId, List<string>? roles);
         Task<(string, PurchaseOrderUpdate?)> UpdatePurchaseOrder(PurchaseOrderUpdate update, int? userId);
+        Task<(string, PurchaseOrderProcess)> SubmitPurchaseOrder(PurchaseOrderProcess purchaseOrderProcess, int? userId);
         Task<(string, PurchaseOrder?)> DeletePurchaseOrder(Guid purchaseOrderId, int? userId);
         Task<(string, List<PurchaseOrderDetailBySupplier>?)> GetPurchaseOrderDetailBySupplierId(int supplierId, int? userId);
     }
@@ -178,6 +179,28 @@ namespace MilkDistributionWarehouse.Services
             return ("", purchaseOrderMapDetal);
         }
 
+        public async Task<(string, List<PurchaseOrderDetailBySupplier>?)> GetPurchaseOrderDetailBySupplierId(int supplierId, int? userId)
+        {
+            var purchaseOrderQuery = _purchaseOrderRepository.GetPurchaseOrderByPurchaseOrderId();
+
+            var purchaseOrderMap = purchaseOrderQuery.ProjectTo<PurchaseOrderDetailBySupplier>(_mapper.ConfigurationProvider);
+
+            var purchaseOrderMapDetal = await purchaseOrderMap
+                .Where(pod => pod.SupplierId == supplierId
+                    && pod.CreatedBy == userId && pod.Status == PurchaseOrderStatus.Draft).ToListAsync();
+
+            if (!purchaseOrderMapDetal.Any())
+                return ("PurchaseOrder is not found.", default);
+
+            foreach (var po in purchaseOrderMapDetal)
+            {
+                var (msg, purchaseOrderDetail) = await _purchaseOrderDetailService.GetPurchaseOrderDetailByPurchaseOrderId(po.PurchaseOderId);
+                po.PurchaseOrderDetails = purchaseOrderDetail;
+            }
+
+            return ("", purchaseOrderMapDetal);
+        }
+
         public async Task<(string, PurchaseOrderCreate?)> CreatePurchaseOrder(PurchaseOrderCreate create, int? userId, string? userName)
         {
             try
@@ -186,7 +209,8 @@ namespace MilkDistributionWarehouse.Services
                 if (create == null)
                     return ("PurchaseOrder data create is null.", default);
 
-                create.Note = $"[{userName}] - " + create.Note;
+                if(!string.IsNullOrEmpty(create.Note))
+                    create.Note = $"[{userName}] - " + create.Note;
 
                 var purchaseOrderCreate = _mapper.Map<PurchaseOrder>(create);
 
@@ -232,7 +256,7 @@ namespace MilkDistributionWarehouse.Services
                     return ("PurchaseOrder data update is invalid.", default);
                 }
 
-                var purchaseOrderExist = await _purchaseOrderRepository.GetPurchaseOrderByPurchaserOrderId(update.PurchaseOderId);
+                var purchaseOrderExist = await _purchaseOrderRepository.GetPurchaseOrderByPurchaseOrderId(update.PurchaseOderId);
 
                 if (purchaseOrderExist == null)
                 {
@@ -294,6 +318,51 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
+        private async Task<(string, PurchaseOrderProcess?)> UpdatePurchaseOrderProcess(PurchaseOrderProcess purchaseOrderProcess, int? userId, string? userRole)
+        {
+            var purchaseOrderExist = await _purchaseOrderRepository.GetPurchaseOrderByPurchaseOrderId(purchaseOrderProcess.PurchaseOrderId);
+
+            if (purchaseOrderExist == null)
+                return ("PurchaseOrder is not exist.", default);
+
+            if (userRole != null)
+            {
+                switch (userRole)
+                {
+                    case RoleNames.SalesRepresentative:
+                        if(purchaseOrderExist.CreatedBy != userId)
+                            return ("Bạn không có quyền nộp đơn đặt hàng.".ToMessageForUser(), default);
+
+                        purchaseOrderExist.Status = PurchaseOrderStatus.PendingApproval;
+                        purchaseOrderExist.Note = purchaseOrderProcess.Note;
+                        purchaseOrderExist.UpdatedAt = DateTime.Now;
+
+                        var resultUpdate = await _purchaseOrderRepository.UpdatePurchaseOrder(purchaseOrderExist);
+                        if (resultUpdate == null)
+                            return ("Nộp đơn đặt hàng để duyệt thất bại.".ToMessageForUser(), default);
+                        break;
+                    //case RoleNames.SalesManager:
+                    //    purchaseOrderQuery = purchaseOrderQuery.Where(pod => pod.CreatedBy == userId);
+                    //    break;
+                    case RoleNames.WarehouseManager:
+                       
+                        break;
+                    case RoleNames.WarehouseStaff:
+                        
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            return ("", purchaseOrderProcess);
+        }
+
+        public async Task<(string, PurchaseOrderProcess)> SubmitPurchaseOrder(PurchaseOrderProcess purchaseOrderProcess, int? userId)
+        {
+            return await UpdatePurchaseOrderProcess(purchaseOrderProcess, userId, RoleNames.SalesRepresentative);
+        }
+
         public async Task<(string, PurchaseOrder?)> DeletePurchaseOrder(Guid purchaseOrderId, int? userId)
         {
             try
@@ -303,7 +372,7 @@ namespace MilkDistributionWarehouse.Services
                 if (Guid.Empty == purchaseOrderId)
                     return ("PurchaseOrderId is invalid.", default);
 
-                var purchaseOrderExist = await _purchaseOrderRepository.GetPurchaseOrderByPurchaserOrderId(purchaseOrderId);
+                var purchaseOrderExist = await _purchaseOrderRepository.GetPurchaseOrderByPurchaseOrderId(purchaseOrderId);
 
                 if (purchaseOrderExist == null)
                     return ("PurchaseOrder is not exist.", default);
@@ -340,28 +409,6 @@ namespace MilkDistributionWarehouse.Services
                 await _unitOfWork.RollbackTransactionAsync();
                 return ($"{ex.Message}".ToMessageForUser(), default);
             }
-        }
-
-        public async Task<(string, List<PurchaseOrderDetailBySupplier>?)> GetPurchaseOrderDetailBySupplierId(int supplierId, int? userId)
-        {
-            var purchaseOrderQuery = _purchaseOrderRepository.GetPurchaseOrderByPurchaseOrderId();
-
-            var purchaseOrderMap = purchaseOrderQuery.ProjectTo<PurchaseOrderDetailBySupplier>(_mapper.ConfigurationProvider);
-
-            var purchaseOrderMapDetal = await purchaseOrderMap
-                .Where(pod => pod.SupplierId == supplierId
-                    && pod.CreatedBy == userId && pod.Status == PurchaseOrderStatus.Draft).ToListAsync();
-
-            if (!purchaseOrderMapDetal.Any())
-                return ("PurchaseOrder is not found.", default);
-
-            foreach (var po in purchaseOrderMapDetal)
-            {
-                var (msg, purchaseOrderDetail) = await _purchaseOrderDetailService.GetPurchaseOrderDetailByPurchaseOrderId(po.PurchaseOderId);
-                po.PurchaseOrderDetails = purchaseOrderDetail;
-            }
-
-            return ("", purchaseOrderMapDetal);
         }
     }
 }

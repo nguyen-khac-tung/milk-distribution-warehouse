@@ -21,6 +21,26 @@ namespace MilkDistributionWarehouse.Controllers
             _purchaseOrderService = purchaseOrderService;
         }
 
+        [HttpGet("GetPurchaseOrderBySupplierId/{supplierId}")]
+        [Authorize(Roles = "Sales Representative")]
+        public async Task<IActionResult> GetPurchaseOrderBySupplierId(int supplierId)
+        {
+            var (msg, purchaseOrderDetail) = await _purchaseOrderService.GetPurchaseOrderDetailBySupplierId(supplierId, User.GetUserId());
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<List<PurchaseOrderDetailBySupplier>>.ToResultOk(purchaseOrderDetail);
+        }
+
+        [HttpGet("GetPurchaseOrder/{purchaseOrderId}")]
+        [Authorize(Roles = "Sale Manager, Sales Representative, Warehouse Staff, Warehouse Manager")]
+        public async Task<IActionResult> GetPurchaseOrderByPurchaseOrderId(Guid purchaseOrderId)
+        {
+            var (msg, purchaseOrderDetail) = await _purchaseOrderService.GetPurchaseOrderDetailById(purchaseOrderId, User.GetUserId(), User.GetUserRole());
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<PurchaseOrdersDetail>.ToResultOk(purchaseOrderDetail);
+        }
+
         [HttpPost("GetPurchaseOrderSaleRepresentatives")]
         [Authorize(Roles = "Sales Representative")]
         public async Task<IActionResult> GetPurchaseOrderSaleRepresentatives([FromBody] PagedRequest request)
@@ -61,16 +81,6 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<PageResult<PurchaseOrderDtoWarehouseStaff>>.ToResultOk(purchaseOrderDto);
         }
 
-        [HttpGet("GetPurchaseOrder/{purchaseOrderId}")]
-        [Authorize(Roles = "Sale Manager, Sales Representative, Warehouse Staff, Warehouse Manager")]
-        public async Task<IActionResult> GetPurchaseOrderByPurchaseOrderId(Guid purchaseOrderId)
-        {
-            var (msg, purchaseOrderDetail) = await _purchaseOrderService.GetPurchaseOrderDetailById(purchaseOrderId, User.GetUserId(), User.GetUserRole());
-            if (!string.IsNullOrEmpty(msg))
-                return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<PurchaseOrdersDetail>.ToResultOk(purchaseOrderDetail);
-        }
-
         [HttpPost("CreatePurchaseOrder")]
         [Authorize(Roles = "Sales Representative")]
         public async Task<IActionResult> CreatePurchaseOrder([FromBody] PurchaseOrderCreate create)
@@ -91,6 +101,16 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<PurchaseOrderUpdate>.ToResultOk(purchaseOrderUpdate);
         }
 
+        [HttpPut("SubmitPerchaseOrder")]
+        [Authorize(Roles = "Sales Representative")]
+        public async Task<IActionResult> SubmitPerchaseOrder([FromBody] PurchaseOrderProcess purchaseOrderProcess)
+        {
+            var (msg, purchaseOrderUpdate) = await _purchaseOrderService.SubmitPurchaseOrder(purchaseOrderProcess, User.GetUserId());
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<PurchaseOrderProcess>.ToResultOk(purchaseOrderUpdate);
+        }
+
         [HttpDelete("DeletePurchaseOrder/{purchaseOrderId}")]
         [Authorize(Roles = "Sales Representative")]
         public async Task<IActionResult> DeletePurchaseOrder(Guid purchaseOrderId)
@@ -101,14 +121,5 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<PurchaseOrder>.ToResultOk(purchaseOrderDelete);
         }
 
-        [HttpGet("GetPurchaseOrderBySupplierId/{supplierId}")]
-        [Authorize(Roles = "Sales Representative")]
-        public async Task<IActionResult> GetPurchaseOrderBySupplierId(int supplierId)
-        {
-            var (msg, purchaseOrderDetail) = await _purchaseOrderService.GetPurchaseOrderDetailBySupplierId(supplierId, User.GetUserId());
-            if (!string.IsNullOrEmpty(msg))
-                return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<List<PurchaseOrderDetailBySupplier>>.ToResultOk(purchaseOrderDetail);
-        }
     }
 }
