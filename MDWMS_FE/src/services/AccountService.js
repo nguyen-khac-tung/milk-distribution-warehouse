@@ -208,3 +208,19 @@ export const getUserProfile = async () => {
         };
     }
 };
+
+// Get user dropdown by role name
+export const getUserDropDownByRoleName = async (roleName) => {
+    try {
+        const res = await api.get(`/User/GetUserDropDownByRoleName/${roleName}`);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching user dropdown by role name:", error);
+        return {
+            success: false,
+            status: 500,
+            message: error?.response?.data?.message || "Failed to fetch user dropdown by role name",
+            data: null
+        };
+    }
+};

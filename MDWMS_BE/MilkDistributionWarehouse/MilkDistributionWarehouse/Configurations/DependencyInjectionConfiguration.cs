@@ -89,6 +89,10 @@ namespace MilkDistributionWarehouse.Configurations
             //SalesOrderDetail
             services.AddScoped<ISalesOrderDetailService, SalesOrderDetailService>();
             services.AddScoped<ISalesOrderDetailRepository, SalesOrderDetailRepository>();
+
+            //GoodsReceiptNoteDetail
+            services.AddScoped<IGoodsReceiptNoteDetailRepository, GoodsReceiptNoteDetailRepository>();
+            services.AddScoped<IGoodsReceiptNoteDetailService, GoodsReceiptNoteDetailService>();
         }
     }
 }

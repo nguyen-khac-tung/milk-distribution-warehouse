@@ -16,8 +16,7 @@ export const getPurchaseOrderSaleManagers = async (searchParams = {}) => {
                 ...(searchParams.createdBy && { createdBy: searchParams.createdBy }),
                 ...(searchParams.arrivalConfirmedBy && { arrivalConfirmedBy: searchParams.arrivalConfirmedBy }),
                 ...(searchParams.assignTo && { assignTo: searchParams.assignTo }),
-                ...(searchParams.fromDate && { fromDate: searchParams.fromDate }),
-                ...(searchParams.toDate && { toDate: searchParams.toDate })
+                ...(searchParams.createdAt && { createdAt: searchParams.createdAt })
             }
         };
 
@@ -45,8 +44,7 @@ export const getPurchaseOrderSaleRepresentatives = async (searchParams = {}) => 
                 ...(searchParams.createdBy && { createdBy: searchParams.createdBy }),
                 ...(searchParams.arrivalConfirmedBy && { arrivalConfirmedBy: searchParams.arrivalConfirmedBy }),
                 ...(searchParams.assignTo && { assignTo: searchParams.assignTo }),
-                ...(searchParams.fromDate && { fromDate: searchParams.fromDate }),
-                ...(searchParams.toDate && { toDate: searchParams.toDate })
+                ...(searchParams.createdAt && { createdAt: searchParams.createdAt })
             }
         };
 
@@ -74,8 +72,7 @@ export const getPurchaseOrderWarehouseManagers = async (searchParams = {}) => {
                 ...(searchParams.createdBy && { createdBy: searchParams.createdBy }),
                 ...(searchParams.arrivalConfirmedBy && { arrivalConfirmedBy: searchParams.arrivalConfirmedBy }),
                 ...(searchParams.assignTo && { assignTo: searchParams.assignTo }),
-                ...(searchParams.fromDate && { fromDate: searchParams.fromDate }),
-                ...(searchParams.toDate && { toDate: searchParams.toDate })
+                ...(searchParams.createdAt && { createdAt: searchParams.createdAt })
             }
         };
 
@@ -103,8 +100,7 @@ export const getPurchaseOrderWarehouseStaff = async (searchParams = {}) => {
                 ...(searchParams.createdBy && { createdBy: searchParams.createdBy }),
                 ...(searchParams.arrivalConfirmedBy && { arrivalConfirmedBy: searchParams.arrivalConfirmedBy }),
                 ...(searchParams.assignTo && { assignTo: searchParams.assignTo }),
-                ...(searchParams.fromDate && { fromDate: searchParams.fromDate }),
-                ...(searchParams.toDate && { toDate: searchParams.toDate })
+                ...(searchParams.createdAt && { createdAt: searchParams.createdAt })
             }
         };
 
@@ -230,23 +226,11 @@ export const updatePurchaseOrder = async (updateData) => {
 // Lấy đơn nháp theo nhà cung cấp
 export const getDraftPurchaseOrdersBySupplier = async (supplierId) => {
     try {
-        const body = {
-            pageNumber: 1,
-            pageSize: 100,
-            search: "",
-            sortField: "",
-            sortAscending: true,
-            filters: {
-                status: 1, // Draft status
-                supplierId: supplierId
-            }
-        };
-
-        const res = await api.post("/PurchaseOrder/GetPurchaseOrderSaleManagers", body);
+        const res = await api.get(`/PurchaseOrder/GetPurchaseOrderBySupplierId/${supplierId}`);
         return res.data;
     } catch (error) {
         console.error("Error fetching draft purchase orders by supplier:", error);
-        return { data: [], totalCount: 0 };
+        return { data: [] };
     }
 };
 

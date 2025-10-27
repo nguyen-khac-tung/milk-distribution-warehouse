@@ -143,7 +143,9 @@ export default function AdminPage() {
     try {
       // console.log(`Updating user ${id} (${name}) status to ${newStatus}`)
       const response = await updateUserStatus(id, newStatus)
-      if (response && response.success !== false) {
+      
+      // Kiểm tra response từ backend
+      if (response && response.success === true) {
         const statusText = newStatus === 1 ? "kích hoạt" : "ngừng hoạt động"
         window.showToast(`Đã ${statusText} người dùng "${name}" thành công`, "success")
         // console.log(`Successfully updated user ${name} status to ${newStatus}`)
@@ -162,9 +164,20 @@ export default function AdminPage() {
           sortAscending: sortDirection === "asc"
         })
       } else {
-        // console.error(`Failed to update user ${name} status:`, response?.message)
-        const errorMessage = extractErrorMessage({ response: { data: response } }, "Có lỗi xảy ra khi cập nhật trạng thái người dùng")
+        // Hiển thị thông báo lỗi từ backend
+        let errorMessage = response?.message || response?.data?.message || "Có lỗi xảy ra khi cập nhật trạng thái người dùng"
+        
+        // Kiểm tra nếu lỗi liên quan đến việc không thể vô hiệu hóa người dùng quan trọng
+        if (errorMessage.includes("Failed to update user status") || 
+            errorMessage.includes("không thể") || 
+            errorMessage.includes("quản lý") ||
+            errorMessage.includes("admin") ||
+            errorMessage.includes("business owner")) {
+          errorMessage = "Không thể cập nhật trạng thái người dùng khi đã có đủ các vai trò quan trọng (quản lý kho, quản lý kinh doanh, admin, business owner)"
+        }
+        
         window.showToast(errorMessage, "error")
+        // console.error(`Failed to update user ${name} status:`, response?.message)
       }
     } catch (error) {
       // console.error("Error updating user status:", error)

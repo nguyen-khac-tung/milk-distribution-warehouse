@@ -166,7 +166,7 @@ export function PalletDetail({ palletId, onClose }) {
                         </div>
 
                         {/* Quick Info Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                             <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
                                 <div className="flex items-center gap-3">
                                     <ComponentIcon name="qrcode" size={20} color="#3b82f6" />
@@ -181,7 +181,7 @@ export function PalletDetail({ palletId, onClose }) {
                                 <div className="flex items-center gap-3">
                                     <ComponentIcon name="package" size={20} color="#10b981" />
                                     <div>
-                                        <p className="text-sm text-green-600 font-medium">Số lượng kiện</p>
+                                        <p className="text-sm text-green-600 font-medium">Số lượng thùng</p>
                                         <p className="text-lg text-green-800 font-bold">{pallet.packageQuantity?.toLocaleString() || "N/A"}</p>
                                     </div>
                                 </div>
@@ -191,8 +191,22 @@ export function PalletDetail({ palletId, onClose }) {
                                 <div className="flex items-center gap-3">
                                     <ComponentIcon name="box" size={20} color="#8b5cf6" />
                                     <div>
-                                        <p className="text-sm text-purple-600 font-medium">Đơn vị/kiện</p>
+                                        <p className="text-sm text-purple-600 font-medium">Đơn vị/thùng</p>
                                         <p className="text-lg text-purple-800 font-bold">{pallet.unitsPerPackage?.toLocaleString() || "N/A"}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-4 rounded-lg border border-orange-200">
+                                <div className="flex items-center gap-3">
+                                    <ComponentIcon name="shoppingCart" size={20} color="#f97316" />
+                                    <div>
+                                        <p className="text-sm text-orange-600 font-medium">Tổng số đơn vị/kiện</p>
+                                        <p className="text-lg text-orange-800 font-bold">
+                                            {pallet.packageQuantity && pallet.unitsPerPackage 
+                                                ? (pallet.packageQuantity * pallet.unitsPerPackage).toLocaleString() 
+                                                : "N/A"}
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -212,11 +226,17 @@ export function PalletDetail({ palletId, onClose }) {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="bg-white p-4 rounded-lg border border-blue-200">
+                                <div className="bg-white p-4 rounded-lg border border-blue-200 space-y-3">
                                     <InfoRow
                                         icon="mapPin"
                                         label="Mã vị trí"
                                         value={pallet.locationCode || "N/A"}
+                                        iconColor="#3b82f6"
+                                    />
+                                    <InfoRow
+                                        icon="building"
+                                        label="Khu vực"
+                                        value={pallet.areaName || "N/A"}
                                         iconColor="#3b82f6"
                                     />
                                 </div>
@@ -234,11 +254,29 @@ export function PalletDetail({ palletId, onClose }) {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="bg-white p-4 rounded-lg border border-green-200">
+                                <div className="bg-white p-4 rounded-lg border border-green-200 space-y-3">
                                     <InfoRow 
                                         icon="batch" 
                                         label="Mã lô hàng" 
                                         value={pallet.batchCode || "N/A"} 
+                                        iconColor="#10b981"
+                                    />
+                                    <InfoRow 
+                                        icon="package" 
+                                        label="Tên hàng hóa" 
+                                        value={pallet.goodsName || "N/A"} 
+                                        iconColor="#10b981"
+                                    />
+                                    <InfoRow 
+                                        icon="calendar" 
+                                        label="Ngày sản xuất" 
+                                        value={pallet.manufacturingDate ? new Date(pallet.manufacturingDate).toLocaleDateString('vi-VN') : "N/A"} 
+                                        iconColor="#10b981"
+                                    />
+                                    <InfoRow 
+                                        icon="calendar" 
+                                        label="Ngày hết hạn" 
+                                        value={pallet.expiryDate ? new Date(pallet.expiryDate).toLocaleDateString('vi-VN') : "N/A"} 
                                         iconColor="#10b981"
                                     />
                                 </div>

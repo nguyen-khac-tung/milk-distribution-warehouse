@@ -87,6 +87,7 @@ export default function PurchaseOrderFilterToggle({
   showDateRangeFilter,
   setShowDateRangeFilter,
   onDateRangeFilter,
+  applyDateRangeFilter,
   clearDateRangeFilter,
   searchWidth = "w-[450px]",
   showToggle = true,
@@ -542,13 +543,23 @@ export default function PurchaseOrderFilterToggle({
                           </div>
                           <div className="flex space-x-2">
                             <button
-                              onClick={() => { onDateRangeFilter({ fromDate: '', toDate: '' }); setShowDateRangeFilter(false); }}
+                              onClick={() => { 
+                                if (clearDateRangeFilter) {
+                                  clearDateRangeFilter();
+                                }
+                                setShowDateRangeFilter(false); 
+                              }}
                               className="flex-1 px-3 py-2 text-sm bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200"
                             >
                               Xóa
                             </button>
                             <button
-                              onClick={() => setShowDateRangeFilter(false)}
+                              onClick={() => { 
+                                if (applyDateRangeFilter) {
+                                  applyDateRangeFilter();
+                                }
+                                setShowDateRangeFilter(false); 
+                              }}
                               className="flex-1 px-3 py-2 text-sm bg-[#d97706] text-white rounded-lg hover:bg-[#b8650f]"
                             >
                               Áp dụng

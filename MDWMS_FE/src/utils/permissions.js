@@ -198,3 +198,86 @@ export const ROLE_PERMISSIONS = {
         PERMISSIONS.REPORT_VIEW
     ]
 };
+
+// Purchase Order Status Constants
+export const PURCHASE_ORDER_STATUS = {
+    Draft: 1,
+    PendingApproval: 2,
+    Rejected: 3,
+    Approved: 4,
+    GoodsReceived: 5,
+    AssignedForReceiving: 6,
+    Receiving: 7,
+    Inspected: 8,
+    Completed: 9
+};
+
+/**
+ * Check if user can perform action on purchase order based on API response flags and role
+ * @param {string} action - 'view', 'edit', 'delete'
+ * @param {Object} order - Purchase order object with isDisableUpdate, isDisableDelete properties
+ * @param {Function} hasPermission - Function to check user permissions
+ * @returns {boolean} - Whether user can perform the action
+ */
+export const canPerformPurchaseOrderAction = (action, order, hasPermission) => {
+    // For Sales Representative, check API response flags
+    if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS)) {
+        switch (action) {
+            case 'view':
+                return true; // Always can view
+            case 'edit':
+                // Can edit if not disabled by API
+                return !order.isDisableUpdate;
+            case 'delete':
+                // Can delete if not disabled by API
+                return !order.isDisableDelete;
+            default:
+                return false;
+        }
+    }
+    
+    // For Sale Manager, only can view
+    if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_SM)) {
+        switch (action) {
+            case 'view':
+                return true; // Can view
+            case 'edit':
+                return false; // Cannot edit
+            case 'delete':
+                return false; // Cannot delete
+            default:
+                return false;
+        }
+    }
+    
+    // For Warehouse Manager, only can view
+    if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WM)) {
+        switch (action) {
+            case 'view':
+                return true; // Can view
+            case 'edit':
+                return false; // Cannot edit
+            case 'delete':
+                return false; // Cannot delete
+            default:
+                return false;
+        }
+    }
+    
+    // For Warehouse Staff, only can view
+    if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WS)) {
+        switch (action) {
+            case 'view':
+                return true; // Can view
+            case 'edit':
+                return false; // Cannot edit
+            case 'delete':
+                return false; // Cannot delete
+            default:
+                return false;
+        }
+    }
+    
+    // For other roles, use existing permission system
+    return true;
+};

@@ -32,6 +32,7 @@ namespace MilkDistributionWarehouse.Repositories
             return _context.Pallets
                 .Include(p => p.Batch)
                 .Include(p => p.Location)
+                .Include(p => p.GoodsPacking)
                 .Where(p => p.Status != CommonStatus.Deleted)
                 .OrderByDescending(p => p.CreateAt)
                 .AsNoTracking();
@@ -46,6 +47,7 @@ namespace MilkDistributionWarehouse.Repositories
                 .Include(p => p.Location)
                     .ThenInclude(l => l.Area)
                 .Include(p => p.GoodsReceiptNote)
+                .Include(p => p.GoodsPacking)
                 .FirstOrDefaultAsync(p => p.PalletId == palletId);
         }
 
@@ -73,8 +75,6 @@ namespace MilkDistributionWarehouse.Repositories
         {
             return await _context.Pallets
                 .Where(p => p.Status == CommonStatus.Active)
-                .Include(p => p.Batch)
-                .Include(p => p.Location)
                 .OrderBy(p => p.CreateAt)
                 .AsNoTracking()
                 .ToListAsync();
@@ -114,6 +114,15 @@ namespace MilkDistributionWarehouse.Repositories
             return _context.GoodsReceiptNotes
                 .AsNoTracking()
                 .AnyAsync(po => po.GoodsReceiptNoteId == goodRcNoteId.Value);
+        }
+
+        public Task<bool> ExistsGoodPackage(int? gpId)
+        {
+            if (!gpId.HasValue) return Task.FromResult(false);
+
+            return _context.GoodsPackings
+                .AsNoTracking()
+                .AnyAsync(g => g.GoodsPackingId == gpId.Value && g.Status == CommonStatus.Active);
         }
     }
 }

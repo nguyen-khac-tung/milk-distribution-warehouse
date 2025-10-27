@@ -47,6 +47,8 @@ namespace MilkDistributionWarehouse.Repositories
                 .Include(s => s.SalesOrderDetails)
                     .ThenInclude(d => d.Goods)
                         .ThenInclude(g => g.UnitMeasure)
+                .Include(s => s.SalesOrderDetails)
+                    .ThenInclude(d => d.GoodsPacking)
                 .Where(s => s.SalesOrderId == id).FirstOrDefaultAsync();
         }
 

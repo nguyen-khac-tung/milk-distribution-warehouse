@@ -289,23 +289,12 @@ export default function PurchaseOrderStatsChart({
                           opacity="0.1"
                         />
                         
-                        {/* Status Number with Enhanced Styling */}
+                        {/* Count with Better Typography - Centered */}
                         <text 
                           x={item.x} 
-                          y={item.y - 8} 
+                          y={item.y + 4} 
                           textAnchor="middle" 
-                          className="text-sm font-bold fill-slate-700"
-                          filter="url(#dropshadow)"
-                        >
-                          {index + 1}
-                        </text>
-                        
-                        {/* Count with Better Typography */}
-                        <text 
-                          x={item.x} 
-                          y={item.y + 8} 
-                          textAnchor="middle" 
-                          className="text-sm font-bold"
+                          className="text-lg font-bold"
                           fill={item.textColor}
                           filter="url(#dropshadow)"
                         >
