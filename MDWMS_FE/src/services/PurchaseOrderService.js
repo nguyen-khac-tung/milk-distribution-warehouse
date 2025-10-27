@@ -19,7 +19,7 @@ export const getPurchaseOrderSaleManagers = async (searchParams = {}) => {
                 ...(searchParams.createdAt && { createdAt: searchParams.createdAt })
             }
         };
-        
+
         const res = await api.post("/PurchaseOrder/GetPurchaseOrderSaleManagers", body);
         return res.data;
     } catch (error) {
@@ -47,7 +47,7 @@ export const getPurchaseOrderSaleRepresentatives = async (searchParams = {}) => 
                 ...(searchParams.createdAt && { createdAt: searchParams.createdAt })
             }
         };
-        
+
         const res = await api.post("/PurchaseOrder/GetPurchaseOrderSaleRepresentatives", body);
         return res.data;
     } catch (error) {
@@ -75,7 +75,7 @@ export const getPurchaseOrderWarehouseManagers = async (searchParams = {}) => {
                 ...(searchParams.createdAt && { createdAt: searchParams.createdAt })
             }
         };
-        
+
         const res = await api.post("/PurchaseOrder/GetPurchaseOrderWarehouseManagers", body);
         return res.data;
     } catch (error) {
@@ -103,7 +103,7 @@ export const getPurchaseOrderWarehouseStaff = async (searchParams = {}) => {
                 ...(searchParams.createdAt && { createdAt: searchParams.createdAt })
             }
         };
-        
+
         const res = await api.post("/PurchaseOrder/GetPurchaseOrderWarehouseStaff", body);
         return res.data;
     } catch (error) {
