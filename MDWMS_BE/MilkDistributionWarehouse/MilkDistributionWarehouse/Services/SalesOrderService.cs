@@ -14,25 +14,29 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, PageResult<T>?)> GetSalesOrderList<T>(PagedRequest request, int? userId);
         Task<(string, SalesOrderDetailDto?)> GetSalesOrderDetail(Guid? saleOrderId);
         Task<(string, SalesOrderCreateDto?)> CreateSalesOrder(SalesOrderCreateDto salesOrderCreate, int? userId);
-        Task<(string, SalesOrderUpdateDto?)> UpdateSalesOrder(SalesOrderUpdateDto salesOrderUpdate);
+        Task<(string, SalesOrderUpdateDto?)> UpdateSalesOrder(SalesOrderUpdateDto salesOrderUpdate, int? userId);
+        Task<string> DeleteSalesOrder(Guid? salesOrderId, int? userId);
     }
 
 
     public class SalesOrderService : ISalesOrderService
     {
         private readonly ISalesOrderRepository _salesOrderRepository;
+        private readonly ISalesOrderDetailRepository _salesOrderDetailRepository;
         private readonly IRetailerRepository _retailerRepository;
         private readonly IUserRepository _userRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
         public SalesOrderService(ISalesOrderRepository salesOrderRepository,
+                                 ISalesOrderDetailRepository salesOrderDetailRepository,
                                  IRetailerRepository retailerRepository,
                                  IUserRepository userRepository,
                                  IUnitOfWork unitOfWork,
                                  IMapper mapper)
         {
             _salesOrderRepository = salesOrderRepository;
+            _salesOrderDetailRepository = salesOrderDetailRepository;
             _retailerRepository = retailerRepository;
             _userRepository = userRepository;
             _unitOfWork = unitOfWork;
@@ -127,7 +131,7 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
-        public async Task<(string, SalesOrderUpdateDto?)> UpdateSalesOrder(SalesOrderUpdateDto salesOrderUpdate)
+        public async Task<(string, SalesOrderUpdateDto?)> UpdateSalesOrder(SalesOrderUpdateDto salesOrderUpdate, int? userId)
         {
             if (salesOrderUpdate == null) return ("Data sales order update is null.", null);
 
@@ -146,13 +150,39 @@ namespace MilkDistributionWarehouse.Services
             if (salesOrderExist.Status != SalesOrderStatus.Draft && salesOrderExist.Status != SalesOrderStatus.Rejected)
                 return ("Chỉ được cập nhật khi đơn hàng ở trạng thái Nháp hoặc Bị từ chối.".ToMessageForUser(), null);
 
+            if (salesOrderExist.CreatedBy != userId) return ("Current User has no permission to update.", null);
+
             try
             {
                 await _unitOfWork.BeginTransactionAsync();
 
                 _mapper.Map(salesOrderUpdate, salesOrderExist);
-                if (salesOrderExist.Status == SalesOrderStatus.Rejected) 
+                if (salesOrderExist.Status == SalesOrderStatus.Rejected)
                     salesOrderExist.Status = SalesOrderStatus.PendingApproval;
+
+                var updateDetails = salesOrderUpdate.SalesOrderItemDetailUpdateDtos;
+                var existingDetails = salesOrderExist.SalesOrderDetails.ToList();
+
+                existingDetails.ForEach(ex =>
+                {
+                    if (updateDetails != null && !updateDetails.Any(up => up.SalesOrderDetailId == ex.SalesOrderDetailId))
+                        _salesOrderDetailRepository.Remove(ex);
+                });
+
+                updateDetails.ForEach(updateDetail =>
+                {
+                    var existingDetail = existingDetails?.FirstOrDefault(ex => ex.SalesOrderDetailId == updateDetail.SalesOrderDetailId);
+                    if(existingDetail != null)
+                    {
+                        _mapper.Map(updateDetail, existingDetail);
+                    }
+                    else
+                    {
+                        var newDetail = _mapper.Map<SalesOrderDetail>(updateDetail);
+                        salesOrderExist.SalesOrderDetails.Add(newDetail);
+                    }
+                });
+
                 await _salesOrderRepository.UpdateSalesOrder(salesOrderExist);
 
                 await _unitOfWork.CommitTransactionAsync();
@@ -162,6 +192,39 @@ namespace MilkDistributionWarehouse.Services
             {
                 await _unitOfWork.RollbackTransactionAsync();
                 return ("Cập nhật đơn hàng thất bại.".ToMessageForUser(), null);
+            }
+        }
+
+        public async Task<string> DeleteSalesOrder(Guid? salesOrderId, int? userId)
+        {
+            if (salesOrderId == null) return "SalesOrderId is invalid.";
+
+            var salesOrderExist = await _salesOrderRepository.GetSalesOrderById(salesOrderId);
+            if (salesOrderExist == null) return "Sales order exist is null";
+
+            if (salesOrderExist.CreatedBy != userId) return "Current User has no permission to delete.";
+
+            if (salesOrderExist.Status != SalesOrderStatus.Draft) 
+                return "Chỉ những đơn trạng thái Nháp mới có thể xóa.".ToMessageForUser();
+                
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                foreach (var item in salesOrderExist.SalesOrderDetails)
+                {
+                    await _salesOrderDetailRepository.Remove(item);
+                }
+
+                await _salesOrderRepository.DeleteSalesOrder(salesOrderExist);
+
+                await _unitOfWork.CommitTransactionAsync();
+                return "";
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return "Xoá đơn hàng thất bại.".ToMessageForUser();
             }
         }
     }

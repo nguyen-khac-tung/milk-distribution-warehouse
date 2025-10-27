@@ -312,7 +312,7 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.SalesOrderId, opt => opt.Ignore());
             CreateMap<SalesOrderUpdateDto, SalesOrder>()
                 .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => DateTime.Now))
-                .ForMember(dest => dest.SalesOrderDetails, opt => opt.MapFrom(src => src.SalesOrderItemDetailUpdateDtos));
+                .ForMember(dest => dest.SalesOrderDetails, opt => opt.Ignore());
             CreateMap<SalesOrderItemDetailUpdateDto, SalesOrderDetail>();
 
             //GoodsPacking

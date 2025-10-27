@@ -111,6 +111,6 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
     public class SalesOrderItemDetailUpdateDto : SalesOrderItemDetailCreateDto
     {
-        public int SalesOrderDetailId { get; set; }
+        public int? SalesOrderDetailId { get; set; }
     }
 }
