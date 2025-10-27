@@ -314,6 +314,8 @@ namespace MilkDistributionWarehouse.Mapper
             CreateMap<GoodsPacking, GoodsPackingDto>();
             CreateMap<GoodsPackingCreate, GoodsPacking>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => CommonStatus.Active));
+            CreateMap<GoodsPackingCreateDto, GoodsPacking>()
+                .IncludeBase<GoodsPackingCreate, GoodsPacking>();
 
             //Map GoodsReceiptNoteDetail
             CreateMap<GoodsReceiptNoteDetail, GoodsReceiptNoteDetailDto.GoodsReceiptNoteDetailPalletDto>()

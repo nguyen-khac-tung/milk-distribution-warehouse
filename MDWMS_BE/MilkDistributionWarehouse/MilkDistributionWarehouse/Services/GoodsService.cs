@@ -33,9 +33,10 @@ namespace MilkDistributionWarehouse.Services
         private readonly IMapper _mapper;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICacheService _cacheService;
+        private readonly IGoodsPackingService _goodsPackingService;
         public GoodsService(IGoodsRepository goodRepository, IMapper mapper, ICategoryRepository categoryRepository,
             IUnitMeasureRepository unitMeasureRepository, IStorageConditionRepository storageConditionRepository,
-            IUnitOfWork unitOfWork, ICacheService cacheService)
+            IUnitOfWork unitOfWork, ICacheService cacheService, IGoodsPackingService goodsPackingService)
         {
             _goodRepository = goodRepository;
             _mapper = mapper;
@@ -44,6 +45,7 @@ namespace MilkDistributionWarehouse.Services
             _storageConditionRepository = storageConditionRepository;
             _unitOfWork = unitOfWork;
             _cacheService = cacheService;
+            _goodsPackingService = goodsPackingService;
         }
 
         public async Task<(string, PageResult<GoodsDto>?)> GetGoods(PagedRequest request)
@@ -203,33 +205,6 @@ namespace MilkDistributionWarehouse.Services
 
         public async Task<(string, GoodsDto?)> UpdateGoods(GoodsUpdate update)
         {
-            if (update == null)
-                return ("Goods update data is invalid", default);
-
-            var goodsExist = await _goodRepository.GetGoodsByGoodsId(update.GoodsId);
-
-            if (goodsExist == null)
-                return ("Goods is not exist", default);
-
-            if (await IsGoodInUseAnyTransactionToUpdate(update.GoodsId))
-                return ("Không thể cập nhật thông tin hàng hoá vì hàng hoá đang được sử dụng.".ToMessageForUser(), default);
-
-            _mapper.Map(update, goodsExist);
-
-            _cacheService.InvalidateDropdownCache("goods", "supplier", goodsExist.SupplierId);
-
-            var updateResult = await _goodRepository.UpdateGoods(goodsExist);
-
-            if (updateResult == null)
-                return ("Cập nhật hàng hoá thất bại.".ToMessageForUser(), default);
-
-            _cacheService.InvalidateDropdownCache("goods", "supplier", updateResult.SupplierId);
-
-            return ("", _mapper.Map<GoodsDto>(goodsExist));
-        }
-
-        public async Task<(string, GoodsDto?)> UpdateGoods_1(GoodsUpdate update)
-        {
             try
             {
                 await _unitOfWork.BeginTransactionAsync();
@@ -256,7 +231,10 @@ namespace MilkDistributionWarehouse.Services
 
                 _cacheService.InvalidateDropdownCache("goods", "supplier", updateResult.SupplierId);
 
+                var (msg, goodsPackingUpdates) = await _goodsPackingService.UpdateGoodsPacking(update.GoodsId, update.GoodsPackingUpdates);
 
+                if(!string.IsNullOrEmpty(msg))
+                    throw new Exception(msg);
 
                 await _unitOfWork.CommitTransactionAsync();
 

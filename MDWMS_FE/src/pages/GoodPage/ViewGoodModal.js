@@ -98,7 +98,7 @@ export function ProductDetail({ product, onClose }) {
                     <div key={packing.goodsPackingId || index} className="rounded-lg bg-white p-4 border border-gray-200">
                       <div className="flex items-center gap-2 mb-2">
                         <ComponentIcon name="box" size={20} color="#6b7280" />
-                        <span className="text-sm font-medium text-slate-600">Đóng gói #{packing.goodsPackingId}</span>
+                        <span className="text-sm font-medium text-slate-600">Đóng gói</span>
                       </div>
                       <div className="flex items-baseline gap-2">
                         <span className="text-2xl font-bold text-slate-800">{packing.unitPerPackage}</span>

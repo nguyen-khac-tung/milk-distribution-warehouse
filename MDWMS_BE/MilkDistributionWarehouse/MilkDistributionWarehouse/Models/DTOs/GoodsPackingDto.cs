@@ -14,5 +14,11 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int UnitPerPackage { get; set; }
     }
 
+    public class GoodsPackingCreateDto : GoodsPackingCreate
+    {
+        [Required]
+        public int GoodsId { get; set; }
+    }
+
     public class GoodsPackingUpdate : GoodsPackingDto { }
 }

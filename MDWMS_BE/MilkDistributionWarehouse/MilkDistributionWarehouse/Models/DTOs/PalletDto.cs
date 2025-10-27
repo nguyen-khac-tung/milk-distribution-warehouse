@@ -7,7 +7,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
     {
         public class PalletResponseDto
         {
-            public Guid PalletId { get; set; }
+            public string PalletId { get; set; }
             public Guid GoodsReceiptNoteId { get; set; }
             public int GoodsPackingId { get; set; }
             public int? UnitPerPackage { get; set; }
@@ -42,13 +42,13 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
         public class PalletActiveDto
         {
-            public Guid PalletId { get; set; }
+            public string PalletId { get; set; }
         }
 
         public class PalletUpdateStatusDto
         {
             [Required]
-            public Guid PalletId { get; set; }
+            public string PalletId { get; set; }
             [Required]
             [Range(1, 3, ErrorMessage = "Status chỉ được phép là 1, 2 hoặc 3.")]
             public int Status { get; set; }
@@ -56,7 +56,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
         public class PalletDetailDto
         {
-            public Guid PalletId { get; set; }
+            public string PalletId { get; set; }
             public Guid GoodsReceiptNoteId { get; set; }
             public int PackageQuantity { get; set; }
             public int GoodsPackingId { get; set; }
