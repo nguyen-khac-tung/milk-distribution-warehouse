@@ -203,33 +203,6 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
-        //public async Task<(string, GoodsDto?)> UpdateGoods(GoodsUpdate update)
-        //{
-        //    if (update == null)
-        //        return ("Goods update data is invalid", default);
-
-        //    var goodsExist = await _goodRepository.GetGoodsByGoodsId(update.GoodsId);
-
-        //    if (goodsExist == null)
-        //        return ("Goods is not exist", default);
-
-        //    if (await IsGoodInUseAnyTransactionToUpdate(update.GoodsId))
-        //        return ("Không thể cập nhật thông tin hàng hoá vì hàng hoá đang được sử dụng.".ToMessageForUser(), default);
-
-        //    _mapper.Map(update, goodsExist);
-
-        //    _cacheService.InvalidateDropdownCache("goods", "supplier", goodsExist.SupplierId);
-
-        //    var updateResult = await _goodRepository.UpdateGoods(goodsExist);
-
-        //    if (updateResult == null)
-        //        return ("Cập nhật hàng hoá thất bại.".ToMessageForUser(), default);
-
-        //    _cacheService.InvalidateDropdownCache("goods", "supplier", updateResult.SupplierId);
-
-        //    return ("", _mapper.Map<GoodsDto>(goodsExist));
-        //}
-
         public async Task<(string, GoodsDto?)> UpdateGoods(GoodsUpdate update)
         {
             try

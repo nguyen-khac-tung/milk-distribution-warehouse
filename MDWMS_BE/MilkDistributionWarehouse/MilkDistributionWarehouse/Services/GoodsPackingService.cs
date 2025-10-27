@@ -10,6 +10,7 @@ namespace MilkDistributionWarehouse.Services
     public interface IGoodsPackingService
     {
         Task<(string, List<GoodsPackingUpdate>?)> UpdateGoodsPacking(int goodsId, List<GoodsPackingUpdate> updates);
+        Task<(string, List<GoodsPackingDto>?)> GetGoodsPackingByGoodsId(int goodsId);
     }
 
     public class GoodsPackingService : IGoodsPackingService
@@ -22,6 +23,15 @@ namespace MilkDistributionWarehouse.Services
             _goodPackingRepository = goodPackingRepository;
             _mapper = mapper;
             _unitOfWork = unitOfWork;
+        }
+
+        public async Task<(string, List<GoodsPackingDto>?)> GetGoodsPackingByGoodsId(int goodsId)
+        {
+            var goodsPackings = await _goodPackingRepository.GetGoodsPackingsByGoodsId(goodsId);
+            if (goodsPackings == null)
+                return ("Danh sách số lượng đóng gói hàng hoá trống.", default);
+
+            return ("", _mapper.Map<List<GoodsPackingDto>>(goodsPackings));
         }
 
         public async Task<(string, List<GoodsPackingUpdate>?)> UpdateGoodsPacking(int goodsId, List<GoodsPackingUpdate> updates)

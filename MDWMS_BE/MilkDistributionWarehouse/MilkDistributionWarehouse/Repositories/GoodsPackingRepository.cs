@@ -61,7 +61,7 @@ namespace MilkDistributionWarehouse.Repositories
                 await _context.SaveChangesAsync();
                 return goodsPackings;
             }
-            catch (Exception ex)
+            catch
             {
                 return null;
             }
