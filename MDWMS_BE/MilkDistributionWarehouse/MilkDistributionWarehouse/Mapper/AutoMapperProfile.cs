@@ -240,7 +240,8 @@ namespace MilkDistributionWarehouse.Mapper
 
             //Map PurchaseOderDetail
             CreateMap<PurchaseOderDetail, PurchaseOrderDetailDto>()
-                .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Goods.GoodsName.Trim()));
+                .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Goods.GoodsName.Trim()))
+                .ForMember(dest => dest.UnitPerPacking, opt => opt.MapFrom(src => src.GoodsPacking.UnitPerPackage));
             CreateMap<PurchaseOrderDetailCreate, PurchaseOderDetail>()
                 .ForMember(dest => dest.PurchaseOderId, opt => opt.Ignore());
             CreateMap<PurchaseOrderDetailUpdate, PurchaseOderDetail>()
