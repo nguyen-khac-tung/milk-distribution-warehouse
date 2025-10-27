@@ -88,6 +88,8 @@ namespace MilkDistributionWarehouse.Models.DTOs
         [MaxLength(255, ErrorMessage = "Độ dài mã sản phẩm không được vượt quá 255 ký tự")]
         [RegularExpression(@"^[a-zA-Z0-9\s_-]+$", ErrorMessage = "Mã sản phẩm không được chứa các ký tự đặc biệt")]
         public string GoodsCode { get; set; }
+        [Required]
+        [MinLength(1, ErrorMessage = "Danh sách đóng gói hàng hoá không được rỗng")]
         public List<GoodsPackingCreate> GoodsPackingCreates { get; set; }
     }
 
@@ -123,6 +125,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int SupplierId { get; set; }
         public int StorageConditionId { get; set; }
         public int UnitMeasureId { get; set; }
+        public List<GoodsPackingCreate> GoodsPackingCreates { get; set; }
     }
 
     public class GoodsBulkCreate

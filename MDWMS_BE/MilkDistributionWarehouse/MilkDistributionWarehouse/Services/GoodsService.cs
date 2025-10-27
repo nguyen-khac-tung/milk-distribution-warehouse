@@ -130,7 +130,7 @@ namespace MilkDistributionWarehouse.Services
                 if (IsCheckDuplicationGoodsPacking(goodsCreate.GoodsPackingCreates))
                     return ("Số lượng đóng gói hàng hoá bị trùng lặp.", default);
                 goods.GoodsPackings = _mapper.Map<List<GoodsPacking>>(goodsCreate.GoodsPackingCreates);
-            }    
+            }
 
             var createResult = await _goodRepository.CreateGoods(goods);
 
@@ -176,6 +176,10 @@ namespace MilkDistributionWarehouse.Services
                     }
 
                     var goods = _mapper.Map<Good>(goodDto);
+
+                    if (goodDto.GoodsPackingCreates.Any())
+                        goods.GoodsPackings = _mapper.Map<List<GoodsPacking>>(goodDto.GoodsPackingCreates);
+
                     validGoods.Add(goods);
 
                     existingCodesSet.Add(goodDto.GoodsCode);
@@ -218,7 +222,7 @@ namespace MilkDistributionWarehouse.Services
 
             if (updateResult == null)
                 return ("Cập nhật hàng hoá thất bại.".ToMessageForUser(), default);
-            
+
             _cacheService.InvalidateDropdownCache("goods", "supplier", updateResult.SupplierId);
 
             return ("", _mapper.Map<GoodsDto>(goodsExist));
@@ -285,7 +289,7 @@ namespace MilkDistributionWarehouse.Services
             goodsExist.UpdateAt = DateTime.Now;
 
             var resultDelete = await _goodRepository.UpdateGoods(goodsExist);
-            
+
             if (resultDelete == null)
                 return ("Xoá hàng hoá thất bại.".ToMessageForUser(), default);
 
@@ -319,6 +323,16 @@ namespace MilkDistributionWarehouse.Services
 
             if (create.UnitMeasureId <= 0)
                 return "Đơn vị sản phẩm không được để trống";
+
+            if (create.GoodsPackingCreates.Count() >= 1)
+            {
+                if (IsCheckDuplicationGoodsPacking(create.GoodsPackingCreates))
+                    return "Số lượng đóng gói hàng hoá bị trùng lặp.";
+            }
+            else
+            {
+                return "Danh sách đóng gói hàng hoá trống.";
+            }
 
             return null;
         }
