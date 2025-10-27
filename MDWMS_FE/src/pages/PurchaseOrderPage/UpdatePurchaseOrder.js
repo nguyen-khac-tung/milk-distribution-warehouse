@@ -7,7 +7,7 @@ import { Label } from "../../components/ui/label"
 import FloatingDropdown from "../../components/PurchaseOrderComponents/FloatingDropdown"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
 import { Plus, Trash2, ArrowLeft, Save, X } from "lucide-react"
-import { updatePurchaseOrder, getGoodsDropDownBySupplierId, getPurchaseOrderDetail } from "../../services/PurchaseOrderService"
+import { updatePurchaseOrder, getGoodsDropDownBySupplierId, getPurchaseOrderDetail, getGoodsPackingByGoodsId } from "../../services/PurchaseOrderService"
 import { getSuppliersDropdown } from "../../services/SupplierService"
 
 export default function UpdatePurchaseOrder() {
@@ -15,6 +15,7 @@ export default function UpdatePurchaseOrder() {
     const { id } = useParams();
     const [suppliers, setSuppliers] = useState([]);
     const [goods, setGoods] = useState([]);
+    const [goodsPacking, setGoodsPacking] = useState({});
     const [suppliersLoading, setSuppliersLoading] = useState(false);
     const [goodsLoading, setGoodsLoading] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -23,9 +24,9 @@ export default function UpdatePurchaseOrder() {
     });
 
     const [items, setItems] = useState([
-        { id: 1, goodsName: "", quantity: "" },
+        { id: 1, goodsName: "", packageQuantity: "", goodsPackingId: 0 },
     ])
-    const [fieldErrors, setFieldErrors] = useState({}) // Lỗi theo từng trường
+    const [fieldErrors, setFieldErrors] = useState({})
 
     // Load initial data
     useEffect(() => {
@@ -40,25 +41,54 @@ export default function UpdatePurchaseOrder() {
                 // Load purchase order detail
                 const orderResponse = await getPurchaseOrderDetail(id);
                 const orderData = orderResponse?.data || orderResponse;
-                
+                console.log("=== LOADING UPDATE DATA ===");
+                console.log("Order data:", orderData);
+                console.log("Purchase order details:", orderData?.purchaseOrderDetails);
+
                 if (orderData) {
                     // Set supplier
                     const supplier = suppliersData.find(s => s.supplierId === orderData.supplierId);
                     if (supplier) {
                         setFormData({ supplierName: supplier.companyName });
-                        // Load goods for this supplier
+                        // Load goods for this supplier để có thể edit
                         await loadGoodsBySupplier(orderData.supplierId);
                     }
 
-                    // Set items
+                    // Set items - giữ nguyên dữ liệu từ detail
                     if (orderData.purchaseOrderDetails && orderData.purchaseOrderDetails.length > 0) {
                         const formattedItems = orderData.purchaseOrderDetails.map((detail, index) => ({
                             id: index + 1,
                             goodsName: detail.goodsName || "",
-                            quantity: detail.quantity || "",
-                            purchaseOrderDetailId: detail.purchaseOrderDetailId
+                            packageQuantity: detail.packageQuantity || "",
+                            goodsPackingId: detail.goodsPackingId || 0,
+                            goodsId: detail.goodsId || 0,
+                            purchaseOrderDetailId: detail.purchaseOrderDetailId,
+                            // Giữ nguyên dữ liệu gốc để hiển thị
+                            unitPerPacking: detail.unitPerPacking || 0,
+                            unitMeasureName: detail.unitMeasureName || "đơn vị"
                         }));
+                        console.log("Formatted items:", formattedItems);
                         setItems(formattedItems);
+
+                        // Load goods packing data cho các sản phẩm hiện có
+                        console.log("Loading goods packing for existing items...");
+                        for (const detail of orderData.purchaseOrderDetails) {
+                            if (detail.goodsId) {
+                                try {
+                                    console.log(`Loading packing for goodsId: ${detail.goodsId}`);
+                                    const packingResponse = await getGoodsPackingByGoodsId(detail.goodsId);
+                                    const packingData = packingResponse?.data || packingResponse?.items || packingResponse || [];
+                                    console.log(`Packing data for goodsId ${detail.goodsId}:`, packingData);
+
+                                    setGoodsPacking(prev => ({
+                                        ...prev,
+                                        [detail.goodsId]: packingData
+                                    }));
+                                } catch (error) {
+                                    console.error(`Error loading goods packing for goodsId ${detail.goodsId}:`, error);
+                                }
+                            }
+                        }
                     }
                 }
             } catch (error) {
@@ -76,23 +106,25 @@ export default function UpdatePurchaseOrder() {
             e.preventDefault();
             e.stopPropagation();
         }
-        
-        // Chỉ kiểm tra khi đã có danh sách hàng hóa từ nhà cung cấp
-        if (goods.length > 0) {
-            // Đếm số mặt hàng đã được chọn
-            const selectedGoodsCount = items.filter(item => item.goodsName && item.goodsName !== "").length;
-            
-            // Kiểm tra xem còn mặt hàng nào để thêm không
-            if (selectedGoodsCount >= goods.length) {
-                window.showToast("Đã thêm hết tất cả mặt hàng từ nhà cung cấp này!", "error");
-                return;
-            }
+
+        // Kiểm tra xem còn hàng hóa nào để thêm không (so sánh bằng goodsId)
+        const selectedGoodsIds = items
+            .filter(item => item.goodsId && item.goodsId !== 0)
+            .map(item => item.goodsId);
+
+        const availableGoods = goods.filter(good => !selectedGoodsIds.includes(good.goodsId));
+
+        if (availableGoods.length === 0 && goods.length > 0) {
+            window.showToast("Đã thêm hết tất cả mặt hàng từ nhà cung cấp này!", "error");
+            return;
         }
-        
+
         const newItem = {
             id: Date.now(),
             goodsName: "",
-            quantity: "",
+            packageQuantity: "",
+            goodsPackingId: 0,
+            goodsId: 0,
         };
         const updatedItems = [...items, newItem];
         setItems(updatedItems);
@@ -102,34 +134,95 @@ export default function UpdatePurchaseOrder() {
         setItems(items.filter((item) => item.id !== id))
     }
 
-    const updateItem = (id, field, value) => {
+    const updateItem = async (id, field, value) => {
         if (field === "goodsName") {
-            // Kiểm tra xem sản phẩm đã được chọn ở hàng khác chưa
-            const isDuplicate = items.some(item => item.id !== id && item.goodsName === value && value !== "");
-            if (isDuplicate) {
-                window.showToast("Mặt hàng này đã được thêm vào danh sách!", "error");
-                return;
+            // Tìm goodsId từ goodsName được chọn
+            const selectedGood = goods.find(good => good.goodsName === value);
+            if (selectedGood) {
+                // Load goods packing cho hàng hóa mới
+                try {
+                    const packingResponse = await getGoodsPackingByGoodsId(selectedGood.goodsId);
+                    const packingData = packingResponse?.data || packingResponse?.items || packingResponse || [];
+
+                    setGoodsPacking(prev => ({
+                        ...prev,
+                        [selectedGood.goodsId]: packingData
+                    }));
+
+                    // Cập nhật item KHÔNG tự động chọn đóng gói
+                    setItems(items.map((item) =>
+                        item.id === id
+                            ? {
+                                ...item,
+                                [field]: value,
+                                goodsPackingId: 0, // Không tự động chọn, để người dùng chọn thủ công
+                                goodsId: selectedGood.goodsId
+                            }
+                            : item
+                    ));
+                } catch (error) {
+                    console.error("Error loading goods packing:", error);
+                    setItems(items.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
+                }
+            } else {
+                setItems(items.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
             }
+        } else {
+            setItems(items.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
         }
-        setItems(items.map((item) => (item.id === id ? { ...item, [field]: value } : item)))
-        
+
         // Xóa lỗi validation khi người dùng sửa
         if (fieldErrors[`${id}-${field}`]) {
             const newErrors = { ...fieldErrors };
             delete newErrors[`${id}-${field}`];
             setFieldErrors(newErrors);
         }
-    }
 
-    const handleInputChange = (field, value) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-        if (field === "supplierName" && value) {
-            const selectedSupplier = suppliers.find(supplier => supplier.companyName === value);
-            if (selectedSupplier) {
-                loadGoodsBySupplier(selectedSupplier.supplierId);
+        // Validate real-time cho số lượng
+        if (field === "packageQuantity" || field === "goodsPackingId") {
+            const updatedItem = items.find(item => item.id === id);
+            if (updatedItem) {
+                const tempItem = { ...updatedItem, [field]: value };
+                const quantityError = validateQuantity(tempItem);
+                if (quantityError) {
+                    setFieldErrors(prev => ({
+                        ...prev,
+                        [`${id}-packageQuantity`]: quantityError
+                    }));
+                } else {
+                    setFieldErrors(prev => {
+                        const newErrors = { ...prev };
+                        delete newErrors[`${id}-packageQuantity`];
+                        return newErrors;
+                    });
+                }
             }
         }
     }
+
+    // Kiểm tra validation cho số lượng
+    const validateQuantity = (item) => {
+        if (!item.packageQuantity || !item.goodsPackingId) return null;
+
+        const selectedGood = goods.find(good => good.goodsName === item.goodsName);
+        if (!selectedGood) return null;
+
+        const goodsPackings = goodsPacking[selectedGood.goodsId] || [];
+        const selectedPacking = goodsPackings.find(packing =>
+            packing.goodsPackingId === item.goodsPackingId
+        );
+
+        if (!selectedPacking) return null;
+
+        const quantity = parseInt(item.packageQuantity);
+        const unitPerPackage = selectedPacking.unitPerPackage;
+        const unitMeasureName = selectedGood?.name || "đơn vị";
+
+        if (quantity % unitPerPackage !== 0) {
+            return `Số lượng không hợp lệ. Quy cách đóng gói là ${unitPerPackage} ${unitMeasureName}/thùng. Vui lòng nhập tổng số lượng chẵn theo thùng (ví dụ: ${unitPerPackage}, ${unitPerPackage * 2}, ${unitPerPackage * 3}...).`;
+        }
+        return null;
+    };
 
     const loadGoodsBySupplier = async (supplierId) => {
         setGoodsLoading(true);
@@ -151,62 +244,50 @@ export default function UpdatePurchaseOrder() {
         label: supplier.companyName
     }));
 
-    // Lọc danh sách hàng hóa để không hiển thị những mặt hàng đã được chọn
-    const getAvailableGoodsOptions = (currentItemId) => {
-        const selectedGoodsNames = items
-            .filter(item => item.id !== currentItemId && item.goodsName)
-            .map(item => item.goodsName);
-        
-        return goods
-            .filter(good => !selectedGoodsNames.includes(good.goodsName))
-            .map(good => ({
-                value: good.goodsName,
-                label: good.goodsName
-            }));
-    };
-
-    const goodsOptions = goods.map(good => ({
-        value: good.goodsName,
-        label: good.goodsName
-    }));
-
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         // Reset validation errors
         setFieldErrors({});
         const newFieldErrors = {};
-        
+
         // Kiểm tra từng mặt hàng
         items.forEach((item, index) => {
             if (!item.goodsName) {
                 newFieldErrors[`${item.id}-goodsName`] = "Vui lòng chọn tên hàng hóa";
             }
-            if (!item.quantity || item.quantity <= 0) {
-                newFieldErrors[`${item.id}-quantity`] = "Vui lòng nhập số lượng lớn hơn 0";
+            if (!item.goodsPackingId) {
+                newFieldErrors[`${item.id}-goodsPackingId`] = "Vui lòng chọn đóng gói";
+            }
+            if (!item.packageQuantity || item.packageQuantity <= 0) {
+                newFieldErrors[`${item.id}-packageQuantity`] = "Vui lòng nhập số lượng lớn hơn 0";
+            }
+            
+            // Kiểm tra validation số lượng
+            const quantityError = validateQuantity(item);
+            if (quantityError) {
+                newFieldErrors[`${item.id}-packageQuantity`] = quantityError;
             }
         });
-        
+
         if (Object.keys(newFieldErrors).length > 0) {
             setFieldErrors(newFieldErrors);
             return;
         }
-        
-        const validItems = items.filter(item => item.goodsName && item.quantity);
+
+        const validItems = items.filter(item => item.goodsName && item.packageQuantity && item.goodsPackingId);
         if (validItems.length === 0) {
             window.showToast("Vui lòng thêm ít nhất một hàng hóa với đầy đủ thông tin", "error");
             return;
         }
-        
+
         try {
-            const itemsWithIds = validItems.map(item => {
-                const selectedGood = goods.find(good => good.goodsName === item.goodsName);
-                return {
-                    goodsId: selectedGood ? parseInt(selectedGood.goodsId) : null,
-                    quantity: parseInt(item.quantity),
-                    purchaseOrderDetailId: item.purchaseOrderDetailId || 0
-                };
-            }).filter(item => item.goodsId);
+            const itemsWithIds = validItems.map(item => ({
+                goodsId: parseInt(item.goodsId),
+                packageQuantity: parseInt(item.packageQuantity),
+                goodsPackingId: parseInt(item.goodsPackingId),
+                purchaseOrderDetailId: item.purchaseOrderDetailId || 0
+            })).filter(item => item.goodsId);
 
             if (itemsWithIds.length === 0) {
                 window.showToast("Không tìm thấy hàng hóa hợp lệ!", "error");
@@ -269,7 +350,7 @@ export default function UpdatePurchaseOrder() {
                                     </Label>
                                     <FloatingDropdown
                                         value={formData.supplierName}
-                                        onChange={(value) => handleInputChange("supplierName", value)}
+                                        onChange={(value) => setFormData(prev => ({ ...prev, supplierName: value }))}
                                         options={supplierOptions}
                                         placeholder="Chọn nhà cung cấp"
                                         loading={suppliersLoading}
@@ -291,7 +372,9 @@ export default function UpdatePurchaseOrder() {
                                         <TableRow className="border-b border-gray-200 hover:bg-transparent">
                                             <TableHead className="text-slate-600 font-semibold">STT</TableHead>
                                             <TableHead className="text-slate-600 font-semibold">Tên Hàng Hóa</TableHead>
+                                            <TableHead className="text-slate-600 font-semibold">Đóng Gói</TableHead>
                                             <TableHead className="text-slate-600 font-semibold">Số Lượng</TableHead>
+                                            <TableHead className="text-slate-600 font-semibold">Tổng Số Thùng</TableHead>
                                             <TableHead className="text-slate-600 font-semibold">Đơn Vị</TableHead>
                                             {items.length > 1 && (
                                                 <TableHead className="text-right text-slate-600 font-semibold">Hành Động</TableHead>
@@ -305,15 +388,103 @@ export default function UpdatePurchaseOrder() {
                                                 <TableCell className="relative" style={{ overflow: 'visible', zIndex: 'auto' }}>
                                                     <div>
                                                         <FloatingDropdown
-                                                            value={item.goodsName}
+                                                            value={(() => {
+                                                                // Tìm goodsName từ goodsId để hiển thị đúng
+                                                                if (item.goodsId && goods.length > 0) {
+                                                                    const selectedGood = goods.find(good => good.goodsId === item.goodsId);
+                                                                    return selectedGood ? selectedGood.goodsName : item.goodsName;
+                                                                }
+                                                                return item.goodsName;
+                                                            })()}
                                                             onChange={(value) => updateItem(item.id, "goodsName", value)}
-                                                            options={getAvailableGoodsOptions(item.id)}
+                                                            options={(() => {
+                                                                // Kiểm tra goods đã load chưa
+                                                                if (!goods || goods.length === 0) {
+                                                                    return [];
+                                                                }
+
+                                                                // Lọc ra những hàng hóa đã được chọn ở các hàng khác (so sánh bằng goodsId)
+                                                                const selectedGoodsIds = items
+                                                                    .filter(otherItem => otherItem.id !== item.id && otherItem.goodsId && otherItem.goodsId !== 0)
+                                                                    .map(otherItem => otherItem.goodsId);
+
+                                                                console.log(`=== DROPDOWN FOR ITEM ${index + 1} ===`);
+                                                                console.log("Current item:", item);
+                                                                console.log("All items:", items);
+                                                                console.log("Selected goods IDs:", selectedGoodsIds);
+                                                                console.log("All goods:", goods.map(g => ({ id: g.goodsId, name: g.goodsName })));
+
+                                                                const availableGoods = goods.filter(good => !selectedGoodsIds.includes(good.goodsId));
+                                                                console.log("Available goods:", availableGoods.map(g => ({ id: g.goodsId, name: g.goodsName })));
+
+                                                                // Nếu không còn hàng hóa nào để chọn, hiển thị thông báo
+                                                                if (availableGoods.length === 0 && goods.length > 0) {
+                                                                    return [{
+                                                                        value: "",
+                                                                        label: "Đã chọn hết hàng hóa"
+                                                                    }];
+                                                                }
+
+                                                                return availableGoods.map(good => ({
+                                                                    value: good.goodsName,
+                                                                    label: good.goodsName
+                                                                }));
+                                                            })()}
                                                             placeholder={formData.supplierName ? "Chọn hàng hóa" : "Chọn nhà cung cấp trước"}
-                                                            loading={goodsLoading}
-                                                            disabled={!formData.supplierName}
+                                                            disabled={(() => {
+                                                                // Kiểm tra goods đã load chưa
+                                                                if (!goods || goods.length === 0) {
+                                                                    return true;
+                                                                }
+
+                                                                const selectedGoodsIds = items
+                                                                    .filter(otherItem => otherItem.id !== item.id && otherItem.goodsId && otherItem.goodsId !== 0)
+                                                                    .map(otherItem => otherItem.goodsId);
+
+                                                                const availableGoods = goods.filter(good => !selectedGoodsIds.includes(good.goodsId));
+                                                                return availableGoods.length === 0 && goods.length > 0;
+                                                            })()}
                                                         />
                                                         {fieldErrors[`${item.id}-goodsName`] && (
                                                             <p className="text-red-500 text-xs mt-1">{fieldErrors[`${item.id}-goodsName`]}</p>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="relative" style={{ overflow: 'visible', zIndex: 'auto' }}>
+                                                    <div>
+                                                        <FloatingDropdown
+                                                            value={item.goodsPackingId ? item.goodsPackingId.toString() : ""}
+                                                            onChange={(value) => updateItem(item.id, "goodsPackingId", parseInt(value))}
+                                                            options={(() => {
+                                                                // Hiển thị đóng gói từ goodsPacking data để có thể edit
+                                                                if (!item.goodsName) {
+                                                                    return [];
+                                                                }
+
+                                                                if (!item.goodsId) {
+                                                                    return [];
+                                                                }
+
+                                                                if (!goodsPacking[item.goodsId]) {
+                                                                    return [];
+                                                                }
+
+                                                                // Tìm selectedGood để lấy unitMeasureName
+                                                                const selectedGood = goods.find(good => good.goodsId === item.goodsId);
+                                                                const unitMeasureName = selectedGood?.name || "đơn vị";
+
+                                                                const options = goodsPacking[item.goodsId].map(packing => ({
+                                                                    value: packing.goodsPackingId.toString(),
+                                                                    label: `${packing.unitPerPackage} ${unitMeasureName}/thùng`
+                                                                }));
+
+                                                                return options;
+                                                            })()}
+                                                            placeholder="Chọn đóng gói"
+                                                            disabled={false}
+                                                        />
+                                                        {fieldErrors[`${item.id}-goodsPackingId`] && (
+                                                            <p className="text-red-500 text-xs mt-1">{fieldErrors[`${item.id}-goodsPackingId`]}</p>
                                                         )}
                                                     </div>
                                                 </TableCell>
@@ -322,21 +493,37 @@ export default function UpdatePurchaseOrder() {
                                                         <Input
                                                             type="number"
                                                             placeholder="0"
-                                                            value={item.quantity}
-                                                            onChange={(e) => updateItem(item.id, "quantity", e.target.value)}
-                                                            className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${fieldErrors[`${item.id}-quantity`] ? 'border-red-500' : ''}`}
+                                                            value={item.packageQuantity}
+                                                            onChange={(e) => updateItem(item.id, "packageQuantity", e.target.value)}
+                                                            className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${fieldErrors[`${item.id}-packageQuantity`] ? 'border-red-500' : ''}`}
                                                         />
-                                                        {fieldErrors[`${item.id}-quantity`] && (
-                                                            <p className="text-red-500 text-xs mt-1">{fieldErrors[`${item.id}-quantity`]}</p>
+                                                        {fieldErrors[`${item.id}-packageQuantity`] && (
+                                                            <p className="text-red-500 text-xs mt-1">{fieldErrors[`${item.id}-packageQuantity`]}</p>
                                                         )}
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
                                                     <div className="h-[38px] flex items-center px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600">
                                                         {(() => {
-                                                            if (item.goodsName) {
-                                                                const selectedGood = goods.find(good => good.goodsName === item.goodsName);
-                                                                return selectedGood ? selectedGood.name : "Chưa chọn";
+                                                            if (item.goodsName && item.packageQuantity && item.goodsPackingId && item.goodsId) {
+                                                                if (goodsPacking[item.goodsId]) {
+                                                                    const packingData = goodsPacking[item.goodsId];
+                                                                    const selectedPacking = packingData.find(p => p.goodsPackingId === item.goodsPackingId);
+                                                                    const unitPerPackage = selectedPacking ? selectedPacking.unitPerPackage : 0;
+                                                                    return unitPerPackage > 0 ? Math.floor(item.packageQuantity / unitPerPackage) : 0;
+                                                                }
+                                                                return "0";
+                                                            }
+                                                            return "0";
+                                                        })()}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="h-[38px] flex items-center px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600">
+                                                        {(() => {
+                                                            if (item.goodsId) {
+                                                                const selectedGood = goods.find(good => good.goodsId === item.goodsId);
+                                                                return selectedGood?.name || "Chưa chọn";
                                                             }
                                                             return "Chưa chọn";
                                                         })()}
@@ -360,7 +547,7 @@ export default function UpdatePurchaseOrder() {
                                     </TableBody>
                                 </Table>
                             </div>
-                            
+
                             {/* Add Item Text - Centered below table */}
                             <div className="flex justify-center">
                                 <button
@@ -373,7 +560,7 @@ export default function UpdatePurchaseOrder() {
                                 </button>
                             </div>
                         </div>
-                        
+
                         {/* Actions */}
                         <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
                             <Button
