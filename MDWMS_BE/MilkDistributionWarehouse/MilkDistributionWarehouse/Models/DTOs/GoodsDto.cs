@@ -97,6 +97,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
     {
         [Required(ErrorMessage = "Cần phải chọn sản phẩm để cập nhật")]
         public int GoodsId { get; set; }
+        public List<GoodsPackingUpdate> GoodsPackingUpdates { get; set; }
     }
 
     public class GoodsDropDown

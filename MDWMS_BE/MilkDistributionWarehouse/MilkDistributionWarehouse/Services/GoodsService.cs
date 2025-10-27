@@ -228,6 +228,47 @@ namespace MilkDistributionWarehouse.Services
             return ("", _mapper.Map<GoodsDto>(goodsExist));
         }
 
+        public async Task<(string, GoodsDto?)> UpdateGoods_1(GoodsUpdate update)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                if (update == null)
+                    return ("Goods update data is invalid", default);
+
+                var goodsExist = await _goodRepository.GetGoodsByGoodsId(update.GoodsId);
+
+                if (goodsExist == null)
+                    return ("Goods is not exist", default);
+
+                if (await IsGoodInUseAnyTransactionToUpdate(update.GoodsId))
+                    return ("Không thể cập nhật thông tin hàng hoá vì hàng hoá đang được sử dụng.".ToMessageForUser(), default);
+
+                _mapper.Map(update, goodsExist);
+
+                _cacheService.InvalidateDropdownCache("goods", "supplier", goodsExist.SupplierId);
+
+                var updateResult = await _goodRepository.UpdateGoods(goodsExist);
+
+                if (updateResult == null)
+                    return ("Cập nhật hàng hoá thất bại.".ToMessageForUser(), default);
+
+                _cacheService.InvalidateDropdownCache("goods", "supplier", updateResult.SupplierId);
+
+
+
+                await _unitOfWork.CommitTransactionAsync();
+
+                return ("", _mapper.Map<GoodsDto>(goodsExist));
+            }
+            catch (Exception ex) 
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ($"{ex.Message}".ToMessageForUser(), default);
+            }
+        }
+
         public async Task<(string, GoodsUpdateStatus?)> UpdateGoodsStatus(GoodsUpdateStatus update)
         {
             if (update.GoodsId <= 0)

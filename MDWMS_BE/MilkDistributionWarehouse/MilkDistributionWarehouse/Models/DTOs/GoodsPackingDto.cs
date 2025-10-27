@@ -14,4 +14,5 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int UnitPerPackage { get; set; }
     }
 
+    public class GoodsPackingUpdate : GoodsPackingDto { }
 }
