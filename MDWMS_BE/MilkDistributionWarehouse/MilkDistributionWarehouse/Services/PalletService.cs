@@ -13,10 +13,10 @@ namespace MilkDistributionWarehouse.Services
     public interface IPalletService
     {
         Task<(string, PageResult<PalletDto.PalletResponseDto>)> GetPallets(PagedRequest request);
-        Task<(string, PalletDto.PalletDetailDto)> GetPalletById(Guid palletId);
+        Task<(string, PalletDto.PalletDetailDto)> GetPalletById(string palletId);
         Task<(string, PalletDto.PalletResponseDto)> CreatePallet(PalletDto.PalletRequestDto dto, int? userId);
-        Task<(string, PalletDto.PalletResponseDto)> UpdatePallet(Guid palletId, PalletDto.PalletRequestDto dto);
-        Task<(string, PalletDto.PalletResponseDto)> DeletePallet(Guid palletId);
+        Task<(string, PalletDto.PalletResponseDto)> UpdatePallet(string palletId, PalletDto.PalletRequestDto dto);
+        Task<(string, PalletDto.PalletResponseDto)> DeletePallet(string palletId);
         Task<(string, List<PalletDto.PalletActiveDto>)> GetPalletDropdown();
         Task<(string, PalletDto.PalletUpdateStatusDto)> UpdatePalletStatus(PalletDto.PalletUpdateStatusDto update);
     }
@@ -45,7 +45,7 @@ namespace MilkDistributionWarehouse.Services
             return ("", pagedResult);
         }
 
-        public async Task<(string, PalletDto.PalletDetailDto)> GetPalletById(Guid palletId)
+        public async Task<(string, PalletDto.PalletDetailDto)> GetPalletById(string palletId)
         {
             var pallet = await _palletRepository.GetPalletById(palletId);
             if (pallet == null)
@@ -76,7 +76,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Batch do not exist.", new PalletDto.PalletResponseDto());
 
             var entity = _mapper.Map<Pallet>(dto);
-            entity.PalletId = Guid.NewGuid();
+            entity.PalletId = Ulid.NewUlid().ToString();
             entity.CreateBy = userId;
             entity.CreateAt = DateTime.Now;
             entity.Status = CommonStatus.Inactive;
@@ -102,7 +102,7 @@ namespace MilkDistributionWarehouse.Services
             return ("", createdDto);
         }
 
-        public async Task<(string, PalletDto.PalletResponseDto)> UpdatePallet(Guid palletId, PalletDto.PalletRequestDto dto)
+        public async Task<(string, PalletDto.PalletResponseDto)> UpdatePallet(string palletId, PalletDto.PalletRequestDto dto)
         {
             var pallet = await _palletRepository.GetPalletById(palletId);
             if (pallet == null)
@@ -164,7 +164,7 @@ namespace MilkDistributionWarehouse.Services
             return ("", updatedDto);
         }
 
-        public async Task<(string, PalletDto.PalletResponseDto)> DeletePallet(Guid palletId)
+        public async Task<(string, PalletDto.PalletResponseDto)> DeletePallet(string palletId)
         {
             var pallet = await _palletRepository.GetPalletById(palletId);
             if (pallet == null)

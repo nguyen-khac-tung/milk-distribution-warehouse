@@ -7,10 +7,10 @@ namespace MilkDistributionWarehouse.Repositories
     public interface IPalletRepository
     {
         IQueryable<Pallet>? GetPallets();
-        Task<Pallet?> GetPalletById(Guid palletId);
+        Task<Pallet?> GetPalletById(string palletId);
         Task<Pallet?> CreatePallet(Pallet entity);
         Task<Pallet?> UpdatePallet(Pallet entity);
-        Task<bool> HasDependencies(Guid palletId);
+        Task<bool> HasDependencies(string palletId);
         Task<List<Pallet>> GetActivePalletsAsync();
         Task<bool> IsLocationAvailable(int? locationId);
         Task<bool> ExistsBatch(Guid? batchId);
@@ -38,7 +38,7 @@ namespace MilkDistributionWarehouse.Repositories
                 .AsNoTracking();
         }
 
-        public async Task<Pallet?> GetPalletById(Guid palletId)
+        public async Task<Pallet?> GetPalletById(string palletId)
         {
             return await _context.Pallets
                 .Include(p => p.CreateByNavigation)
@@ -66,7 +66,7 @@ namespace MilkDistributionWarehouse.Repositories
             return entity;
         }
 
-        public async Task<bool> HasDependencies(Guid palletId)
+        public async Task<bool> HasDependencies(string palletId)
         {
             return await _context.StocktakingPallets.AnyAsync(sp => sp.PalletId == palletId);
         }
