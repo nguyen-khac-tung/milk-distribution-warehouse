@@ -298,6 +298,13 @@ namespace MilkDistributionWarehouse.Mapper
             CreateMap<SalesOrderDetail, SalesOrderItemDetailDto>()
                 .ForMember(dest => dest.Goods, opt => opt.MapFrom(src => src.Goods))
                 .ForMember(dest => dest.GoodsPacking, opt => opt.MapFrom(src => src.GoodsPacking));
+            CreateMap<SalesOrderCreateDto, SalesOrder>()
+                .ForMember(dest => dest.SalesOrderId, opt => opt.MapFrom(_ => Guid.NewGuid()))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => SalesOrderStatus.Draft))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now))
+                .ForMember(dest => dest.SalesOrderDetails, opt => opt.MapFrom(src => src.SalesOrderItemDetailCreateDtos));
+            CreateMap<SalesOrderItemDetailCreateDto, SalesOrderDetail>()
+                .ForMember(dest => dest.SalesOrderDetailId, opt => opt.Ignore());
 
             //GoodsPacking
             CreateMap<GoodsPacking, GoodsPackingDto>();

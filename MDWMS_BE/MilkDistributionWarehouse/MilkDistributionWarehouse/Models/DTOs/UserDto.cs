@@ -1,5 +1,6 @@
 ﻿using MilkDistributionWarehouse.Utilities;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace MilkDistributionWarehouse.Models.DTOs
 {
@@ -45,8 +46,8 @@ namespace MilkDistributionWarehouse.Models.DTOs
         [RegularExpression(@"^[\p{L}0-9\s_\-.,]+$", ErrorMessage = "Tên không được chứa các ký tự đặc biệt")]
         public string FullName { get; set; }
 
+        [JsonConverter(typeof(NullableDateOnlyConverter))]
         [Required(ErrorMessage = "Ngày sinh không được bỏ trống.")]
-        [DataType(DataType.Date, ErrorMessage = "Định dạng ngày sinh không hợp lệ.")]
         [DateOfBirthValidation(MinimumAge = 18, MaximumAge = 100)]
         public DateOnly? DoB { get; set; }
 

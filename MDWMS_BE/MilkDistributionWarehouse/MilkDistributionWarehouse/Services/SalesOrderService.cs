@@ -3,6 +3,7 @@ using AutoMapper.QueryableExtensions;
 using Microsoft.IdentityModel.Tokens;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
+using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
 using MilkDistributionWarehouse.Utilities;
 
@@ -12,6 +13,7 @@ namespace MilkDistributionWarehouse.Services
     {
         Task<(string, PageResult<T>?)> GetSalesOrderList<T>(PagedRequest request, int? userId);
         Task<(string, SalesOrderDetailDto?)> GetSalesOrderDetail(Guid? saleOrderId);
+        Task<(string, SalesOrderCreateDto?)> CreateSalesOrder(SalesOrderCreateDto salesOrderCreate, int? userId);
     }
 
 
@@ -19,14 +21,17 @@ namespace MilkDistributionWarehouse.Services
     {
         private readonly ISalesOrderRepository _salesOrderRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
         public SalesOrderService(ISalesOrderRepository salesOrderRepository,
                                  IUserRepository userRepository,
+                                 IUnitOfWork unitOfWork,
                                  IMapper mapper)
         {
             _salesOrderRepository = salesOrderRepository;
             _userRepository = userRepository;
+            _unitOfWork = unitOfWork;
             _mapper = mapper;
         }
 
@@ -81,10 +86,33 @@ namespace MilkDistributionWarehouse.Services
         {
             if (saleOrderId == null) return ("SaleOrderId is invalid.", null);
             var salesOrder = await _salesOrderRepository.GetSalesOrderById(saleOrderId);
-            if (salesOrder == null) return ("Không tìm thấy đơn bán hàng này.", null);
+            if (salesOrder == null) return ("Không tìm thấy đơn bán hàng này.".ToMessageForUser(), null);
 
             var salesOrderDetail = _mapper.Map<SalesOrderDetailDto>(salesOrder);
             return ("", salesOrderDetail);
+        }
+
+        public async Task<(string, SalesOrderCreateDto?)> CreateSalesOrder(SalesOrderCreateDto salesOrderCreate, int? userId)
+        {
+            if (salesOrderCreate == null) return ("Data sales order create is null.", null);
+
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                var salesOrder = _mapper.Map<SalesOrder>(salesOrderCreate);
+                salesOrder.CreatedBy = userId;
+
+                await _salesOrderRepository.CreateSalesOrder(salesOrder);
+
+                await _unitOfWork.CommitTransactionAsync();
+                return ("", salesOrderCreate);
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ("Lưu đơn hàng thất bại.".ToMessageForUser(), null);
+            }
         }
     }
 }
