@@ -14,7 +14,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<PurchaseOrder?> DeletePurchaseOrder(PurchaseOrder purchaseOrder);
         Task<bool> HasActivePurchaseOrder(int supplierId);
         Task<bool> IsAllPurchaseOrderDraftOrEmpty(int supplierId);
-        Task<PurchaseOrder?> GetPurchaseOrderByPurchaserOrderId(Guid purchaseOrderId);
+        Task<PurchaseOrder?> GetPurchaseOrderByPurchaseOrderId(Guid purchaseOrderId);
     }
     public class PurchaseOrderRepository : IPurchaseOrderRepositoy
     {
@@ -34,7 +34,7 @@ namespace MilkDistributionWarehouse.Repositories
             return _context.PurchaseOrders.AsNoTracking();
         }
 
-        public async Task<PurchaseOrder?> GetPurchaseOrderByPurchaserOrderId(Guid purchaseOrderId)
+        public async Task<PurchaseOrder?> GetPurchaseOrderByPurchaseOrderId(Guid purchaseOrderId)
         {
             return await _context.PurchaseOrders.FirstOrDefaultAsync(po => po.PurchaseOderId == purchaseOrderId);
         }
