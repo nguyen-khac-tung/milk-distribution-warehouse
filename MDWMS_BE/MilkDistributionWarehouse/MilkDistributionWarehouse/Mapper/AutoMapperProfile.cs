@@ -304,7 +304,8 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now))
                 .ForMember(dest => dest.SalesOrderDetails, opt => opt.MapFrom(src => src.SalesOrderItemDetailCreateDtos));
             CreateMap<SalesOrderItemDetailCreateDto, SalesOrderDetail>()
-                .ForMember(dest => dest.SalesOrderDetailId, opt => opt.Ignore());
+                .ForMember(dest => dest.SalesOrderDetailId, opt => opt.Ignore())
+                .ForMember(dest => dest.SalesOrderId, opt => opt.Ignore());
 
             //GoodsPacking
             CreateMap<GoodsPacking, GoodsPackingDto>();

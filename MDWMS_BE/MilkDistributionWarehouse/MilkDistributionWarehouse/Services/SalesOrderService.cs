@@ -20,16 +20,19 @@ namespace MilkDistributionWarehouse.Services
     public class SalesOrderService : ISalesOrderService
     {
         private readonly ISalesOrderRepository _salesOrderRepository;
+        private readonly IRetailerRepository _retailerRepository;
         private readonly IUserRepository _userRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
         public SalesOrderService(ISalesOrderRepository salesOrderRepository,
+                                 IRetailerRepository retailerRepository,
                                  IUserRepository userRepository,
                                  IUnitOfWork unitOfWork,
                                  IMapper mapper)
         {
             _salesOrderRepository = salesOrderRepository;
+            _retailerRepository = retailerRepository;
             _userRepository = userRepository;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
@@ -70,8 +73,8 @@ namespace MilkDistributionWarehouse.Services
                 DateTime.TryParse(toDate.Value, out DateTime endDate);
                 salesOrders = salesOrders.Where(s => (startDate == default || s.EstimatedTimeDeparture >= startDate) &&
                                                      (endDate == default || s.EstimatedTimeDeparture <= endDate));
-                if(fromDate.Key != null) request.Filters.Remove(fromDate.Key);
-                if(toDate.Key != null) request.Filters.Remove(toDate.Key);
+                if (fromDate.Key != null) request.Filters.Remove(fromDate.Key);
+                if (toDate.Key != null) request.Filters.Remove(toDate.Key);
             }
 
             var salesOrderDtos = salesOrders.ProjectTo<T>(_mapper.ConfigurationProvider);
@@ -95,6 +98,15 @@ namespace MilkDistributionWarehouse.Services
         public async Task<(string, SalesOrderCreateDto?)> CreateSalesOrder(SalesOrderCreateDto salesOrderCreate, int? userId)
         {
             if (salesOrderCreate == null) return ("Data sales order create is null.", null);
+
+            if (salesOrderCreate.RetailerId != null && (await _retailerRepository.GetRetailerByRetailerId((int)salesOrderCreate.RetailerId)) == null)
+                return ("Nhà bán lẻ không hợp lệ.".ToMessageForUser(), null);
+
+            if(salesOrderCreate.EstimatedTimeDeparture!.Value.Date <= DateTime.Now.Date)
+                return ("Ngày giao hàng không hợp lệ. Vui lòng chọn một ngày trong tương lai.".ToMessageForUser(), null);
+
+            if (salesOrderCreate.SalesOrderItemDetailCreateDtos.IsNullOrEmpty()) 
+                return ("Danh sách hàng hóa không được bỏ trống.".ToMessageForUser(), null);
 
             try
             {
