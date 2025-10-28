@@ -7,10 +7,12 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int PurchaseOrderDetailId { get; set; }
         public Guid PurchaseOderId { get; set; }
         public int GoodsId { get; set; }
+        public string GoodsCode { get; set; }
         public string GoodsName { get; set; }
         public int GoodsPackingId { get; set; }
         public int UnitPerPacking { get; set; }
         public int PackageQuantity { get; set; }
+        public string UnitMeasureName { get; set; }
     }
 
     public class PurchaseOrderDetailCreate
