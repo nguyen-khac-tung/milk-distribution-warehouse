@@ -316,11 +316,13 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.SalesOrderId, opt => opt.MapFrom(_ => Guid.NewGuid()))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => SalesOrderStatus.Draft))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now))
+                .ForMember(dest => dest.Note, opt => opt.MapFrom(src => src.Note ?? ""))
                 .ForMember(dest => dest.SalesOrderDetails, opt => opt.MapFrom(src => src.SalesOrderItemDetailCreateDtos));
             CreateMap<SalesOrderItemDetailCreateDto, SalesOrderDetail>()
                 .ForMember(dest => dest.SalesOrderDetailId, opt => opt.Ignore())
                 .ForMember(dest => dest.SalesOrderId, opt => opt.Ignore());
             CreateMap<SalesOrderUpdateDto, SalesOrder>()
+                .ForMember(dest => dest.Note, opt => opt.MapFrom(src => src.Note ?? ""))
                 .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => DateTime.Now))
                 .ForMember(dest => dest.SalesOrderDetails, opt => opt.Ignore());
             CreateMap<SalesOrderItemDetailUpdateDto, SalesOrderDetail>();

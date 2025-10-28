@@ -9,7 +9,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public Guid SalesOrderId { get; set; }
         public int RetailerId { get; set; }
         public string RetailerName { get; set; }
-        public DateTime? EstimatedTimeDeparture { get; set; }
+        public DateOnly? EstimatedTimeDeparture { get; set; }
         public int Status { get; set; }
         public DateTime? CreatedAt { get; set; }
     }
@@ -53,6 +53,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public UserDto? AcknowledgedBy { get; set; }
         public UserDto? AssignTo { get; set; }
         public DateTime? UpdatedAt { get; set; }
+        public string Note { get; set; }
     }
 
     public class SalesOrderItemDetailDto
@@ -68,13 +69,15 @@ namespace MilkDistributionWarehouse.Models.DTOs
         [Required(ErrorMessage = "Nhà bán lẻ không được bỏ trống.")]
         public int? RetailerId { get; set; }
 
-        [JsonConverter(typeof(NullableDateTimeConverter))]
+        [JsonConverter(typeof(NullableDateOnlyConverter))]
         [Required(ErrorMessage = "Ngày dự kiến giao không được bỏ trống.")]
         [DataType(DataType.Date, ErrorMessage = "Định dạng ngày không hợp lệ.")]
-        public DateTime? EstimatedTimeDeparture { get; set; }
+        public DateOnly? EstimatedTimeDeparture { get; set; }
 
         [Required(ErrorMessage = "Danh sách hàng hóa không được bỏ trống.")]
         public List<SalesOrderItemDetailCreateDto>? SalesOrderItemDetailCreateDtos { get; set; }
+
+        public string? Note { get; set; }
     }
 
     public class SalesOrderItemDetailCreateDto
@@ -100,13 +103,15 @@ namespace MilkDistributionWarehouse.Models.DTOs
         [Required(ErrorMessage = "Nhà bán lẻ không được bỏ trống.")]
         public int? RetailerId { get; set; }
 
-        [JsonConverter(typeof(NullableDateTimeConverter))]
+        [JsonConverter(typeof(NullableDateOnlyConverter))]
         [Required(ErrorMessage = "Ngày dự kiến giao không được bỏ trống.")]
         [DataType(DataType.Date, ErrorMessage = "Định dạng ngày không hợp lệ.")]
-        public DateTime? EstimatedTimeDeparture { get; set; }
+        public DateOnly? EstimatedTimeDeparture { get; set; }
 
         [Required(ErrorMessage = "Danh sách hàng hóa không được bỏ trống.")]
         public List<SalesOrderItemDetailUpdateDto>? SalesOrderItemDetailUpdateDtos { get; set; }
+
+        public string? Note { get; set; }
     }
 
     public class SalesOrderItemDetailUpdateDto : SalesOrderItemDetailCreateDto
