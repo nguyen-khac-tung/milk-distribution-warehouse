@@ -143,10 +143,27 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int TotalFailed { get; set; }
         public List<FailedItem> FailedItems { get; set; } = new();
     }
+
     public class FailedItem
     {
         public int Index { get; set; }
         public string Code { get; set; } = string.Empty;
         public string Error { get; set; } = string.Empty;
+    }
+
+    public class GoodsInventoryDto
+    {
+        public int GoodsId { get; set; }
+        public string GoodsName { get; set; }
+        public string UnitMeasureName { get; set; }
+        public List<GoodsPackingDto> GoodsPackings { get; set; }
+        public List<InventoryPackagingDto> InventoryPackingDtos { get; set; } = new();
+    }
+
+    public class InventoryPackagingDto
+    {
+        public int GoodsPackingId { get; set; }
+        public int UnitPerPackage { get; set; }
+        public int TotalPackageQuantity { get; set; }
     }
 }

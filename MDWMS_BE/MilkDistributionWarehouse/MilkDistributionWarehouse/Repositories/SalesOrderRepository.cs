@@ -15,7 +15,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> IsAllSalesOrderDraffOrEmpty(int retailerId);
         Task CreateSalesOrder(SalesOrder salesOrder);
         Task UpdateSalesOrder(SalesOrder salesOrder);
-        Task<string> DeleteSalesOrder(SalesOrder salesOrder);
+        Task DeleteSalesOrder(SalesOrder salesOrder);
     }
     public class SalesOrderRepository : ISalesOrderRepository
     {
@@ -80,18 +80,10 @@ namespace MilkDistributionWarehouse.Repositories
             await Task.CompletedTask;
         }
 
-        public async Task<string> DeleteSalesOrder(SalesOrder salesOrder)
+        public async Task DeleteSalesOrder(SalesOrder salesOrder)
         {
-            try
-            {
-                _context.SalesOrders.Remove(salesOrder);
-                await _context.SaveChangesAsync();
-                return "";
-            }
-            catch (Exception ex)
-            {
-                return ex.Message;
-            }
+            _context.SalesOrders.Remove(salesOrder);
+            await Task.CompletedTask;
         }
     }
 }
