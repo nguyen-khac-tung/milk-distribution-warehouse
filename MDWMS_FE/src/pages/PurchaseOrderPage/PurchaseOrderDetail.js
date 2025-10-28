@@ -7,6 +7,7 @@ import { ArrowLeft, Package, User, Calendar, CheckCircle, XCircle, Clock, Truck,
 import Loading from '../../components/Common/Loading';
 import { getPurchaseOrderDetail, submitPurchaseOrder } from '../../services/PurchaseOrderService';
 import ApprovalConfirmationModal from '../../components/PurchaseOrderComponents/ApprovalConfirmationModal';
+import RejectionConfirmationModal from '../../components/PurchaseOrderComponents/RejectionConfirmationModal';
 import SubmitDraftConfirmationModal from '../../components/PurchaseOrderComponents/SubmitDraftConfirmationModal';
 import { PURCHASE_ORDER_STATUS } from '../../utils/permissions';
 import { usePermissions } from '../../hooks/usePermissions';
@@ -22,8 +23,10 @@ const PurchaseOrderDetail = () => {
 
     // Modal states
     const [showApprovalModal, setShowApprovalModal] = useState(false);
+    const [showRejectionModal, setShowRejectionModal] = useState(false);
     const [showSubmitDraftModal, setShowSubmitDraftModal] = useState(false);
     const [approvalLoading, setApprovalLoading] = useState(false);
+    const [rejectionLoading, setRejectionLoading] = useState(false);
     const [submitLoading, setSubmitLoading] = useState(false);
 
     useEffect(() => {
@@ -123,8 +126,43 @@ const PurchaseOrderDetail = () => {
             setApprovalLoading(false);
         }
     };
+
+    const handleRejectionConfirm = async (rejectionReason) => {
+        setRejectionLoading(true);
+        try {
+            await submitPurchaseOrder(
+                purchaseOrder.purchaseOderId,
+                3, // Status: Rejected
+                rejectionReason
+            );
+
+            if (window.showToast) {
+                window.showToast("Từ chối đơn hàng thành công!", "success");
+            }
+
+            setShowRejectionModal(false);
+
+            // Refresh data after successful rejection
+            const response = await getPurchaseOrderDetail(id);
+            if (response && response.success) {
+                setPurchaseOrder(response.data);
+            }
+        } catch (error) {
+            console.error("Error rejecting purchase order:", error);
+            if (window.showToast) {
+                window.showToast("Có lỗi xảy ra khi từ chối đơn hàng", "error");
+            }
+        } finally {
+            setRejectionLoading(false);
+        }
+    };
     const canApprove = () => {
         return hasPermission(PERMISSIONS.PURCHASE_ORDER_APPROVAL_REQUEST) &&
+            purchaseOrder?.status === PURCHASE_ORDER_STATUS.PendingApproval;
+    };
+
+    const canReject = () => {
+        return hasPermission(PERMISSIONS.PURCHASE_ORDER_REJECT_REQUEST) &&
             purchaseOrder?.status === PURCHASE_ORDER_STATUS.PendingApproval;
     };
 
@@ -291,17 +329,6 @@ const PurchaseOrderDetail = () => {
                                         </div>
                                     </div>
 
-                                    {purchaseOrder.note && (
-                                        <div className="flex items-start space-x-2">
-                                            <div className="flex items-center space-x-2">
-                                                <FileText className="h-4 w-4 text-blue-600 mt-1" />
-                                                <label className="text-sm font-medium text-gray-700">Ghi chú:</label>
-                                            </div>
-                                            <div className="text-sm text-gray-900 bg-gray-200 px-3 py-1 rounded border flex-1">
-                                                {purchaseOrder.note}
-                                            </div>
-                                        </div>
-                                    )}
                                 </div>
                             </div>
                             {/* Product List Table */}
@@ -381,7 +408,17 @@ const PurchaseOrderDetail = () => {
                                         className="bg-green-600 hover:bg-green-700 text-white h-[38px] px-8"
                                     >
                                         <CheckCircle className="h-4 w-4 mr-2" />
-                                        Xác nhận chờ duyệt
+                                        Duyệt đơn hàng
+                                    </Button>
+                                )}
+
+                                {canReject() && (
+                                    <Button
+                                        onClick={() => setShowRejectionModal(true)}
+                                        className="bg-red-600 hover:bg-red-700 text-white h-[38px] px-8"
+                                    >
+                                        <XCircle className="h-4 w-4 mr-2" />
+                                        Từ chối đơn hàng
                                     </Button>
                                 )}
                             </div>
@@ -430,50 +467,69 @@ const PurchaseOrderDetail = () => {
                                 />
                             </div>
                         </div>
-                        <div className="mb-4">
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                    <UserCheck2 className="h-4 w-4 text-blue-600" />
-                                    <span className="text-sm font-medium text-gray-700">Duyệt bởi</span>
+                        {/* Chỉ hiển thị "Duyệt bởi" khi đơn hàng đã được duyệt (status = 4) */}
+                        {purchaseOrder.status === 4 && (
+                            <div className="mb-4">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center space-x-2">
+                                        <UserCheck2 className="h-4 w-4 text-blue-600" />
+                                        <span className="text-sm font-medium text-gray-700">Duyệt bởi</span>
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <input
+                                        type="text"
+                                        value={purchaseOrder.approvalByName || 'Chưa có thông tin'}
+                                        readOnly
+                                        className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
+                                    />
+                                    <input
+                                        type="text"
+                                        value={purchaseOrder.approvalByName ? formatDate(purchaseOrder.updatedAt) : 'Chưa có thông tin'}
+                                        readOnly
+                                        className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
+                                    />
                                 </div>
                             </div>
-                            <div className="space-y-1">
-                                <input
-                                    type="text"
-                                    value={purchaseOrder.approvalByName || 'Chưa có thông tin'}
-                                    readOnly
-                                    className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
-                                />
-                                <input
-                                    type="text"
-                                    value={purchaseOrder.approvalByName ? formatDate(purchaseOrder.updatedAt) : 'Chưa có thông tin'}
-                                    readOnly
-                                    className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
-                                />
-                            </div>
-                        </div>
-                        <div className="mb-4">
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                    <UserX2 className="h-4 w-4 text-red-600" />
-                                    <span className="text-sm font-medium text-gray-700">Từ chối bởi</span>
+                        )}
+                        
+                        {/* Chỉ hiển thị "Từ chối bởi" khi đơn hàng bị từ chối (status = 3) */}
+                        {purchaseOrder.status === 3 && (
+                            <div className="mb-4">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center space-x-2">
+                                        <UserX2 className="h-4 w-4 text-red-600" />
+                                        <span className="text-sm font-medium text-gray-700">Từ chối bởi</span>
+                                    </div>
                                 </div>
+                                <div className="space-y-1">
+                                    <input
+                                        type="text"
+                                        value={purchaseOrder.approvalByName || 'Chưa có thông tin'}
+                                        readOnly
+                                        className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
+                                    />
+                                    <input
+                                        type="text"
+                                        value={purchaseOrder.approvalByName ? formatDate(purchaseOrder.updatedAt) : 'Chưa có thông tin'}
+                                        readOnly
+                                        className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
+                                    />
+                                </div>
+                                {/* Hiển thị note từ chối nếu có */}
+                                {purchaseOrder.note && (
+                                    <div className="mt-2">
+                                        <label className="text-xs font-medium text-gray-600 block mb-1">Lý do từ chối:</label>
+                                        <textarea
+                                            value={purchaseOrder.note}
+                                            readOnly
+                                            className="w-full bg-red-50 border border-red-200 rounded px-2 py-1 text-sm text-red-800 resize-none"
+                                            rows="2"
+                                        />
+                                    </div>
+                                )}
                             </div>
-                            <div className="space-y-1">
-                                <input
-                                    type="text"
-                                    value="Chưa có thông tin"
-                                    readOnly
-                                    className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
-                                />
-                                <input
-                                    type="text"
-                                    value="Chưa có thông tin"
-                                    readOnly
-                                    className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
-                                />
-                            </div>
-                        </div>
+                        )}
                         {/* Assign To */}
                         <div className="mb-4">
                             <div className="flex items-center justify-between mb-2">
@@ -530,6 +586,15 @@ const PurchaseOrderDetail = () => {
                 onConfirm={handleApprovalConfirm}
                 purchaseOrder={purchaseOrder}
                 loading={approvalLoading}
+            />
+
+            {/* Rejection Confirmation Modal */}
+            <RejectionConfirmationModal
+                isOpen={showRejectionModal}
+                onClose={() => setShowRejectionModal(false)}
+                onConfirm={handleRejectionConfirm}
+                purchaseOrder={purchaseOrder}
+                loading={rejectionLoading}
             />
 
             {/* Submit Draft Confirmation Modal */}

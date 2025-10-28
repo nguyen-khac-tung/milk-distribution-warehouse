@@ -734,9 +734,9 @@ export default function PurchaseOrderList() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-600">Quản lý Đơn hàng nhập</h1>
+            <h1 className="text-2xl font-bold text-slate-600">Quản lý Đơn yêu cầu đặt hàng</h1>
             <p className="text-slate-600 mt-1">
-              Quản lý các đơn hàng nhập trong hệ thống
+              Quản lý các đơn yêu cầu đặt hàng trong hệ thống
             </p>
           </div>
           <div className="flex space-x-3">
@@ -764,7 +764,7 @@ export default function PurchaseOrderList() {
           <PurchaseOrderFilterToggle
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            searchPlaceholder="Tìm kiếm theo mã đơn hàng, nhà cung cấp..."
+            searchPlaceholder="Tìm kiếm theo nhà cung cấp..."
             statusFilter={statusFilter}
             setStatusFilter={setStatusFilter}
             showStatusFilter={showStatusFilter}

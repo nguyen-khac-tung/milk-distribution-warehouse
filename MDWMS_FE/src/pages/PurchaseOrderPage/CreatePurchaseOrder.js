@@ -3,11 +3,10 @@ import { useNavigate } from "react-router-dom"
 import { Card } from "../../components/ui/card"
 import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
-import { Textarea } from "../../components/ui/textarea"
 import { Label } from "../../components/ui/label"
 import FloatingDropdown from "../../components/Common/FloatingDropdown"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
-import { Plus, Trash2, ArrowLeft, Save, X, ChevronDown, ChevronUp } from "lucide-react"
+import { Plus, Trash2, ArrowLeft, Save, X } from "lucide-react"
 import { createPurchaseOrder, getGoodsDropDownBySupplierId, getDraftPurchaseOrdersBySupplier, updatePurchaseOrder, getPurchaseOrderDetail, getGoodsPackingByGoodsId } from "../../services/PurchaseOrderService"
 import { getSuppliersDropdown } from "../../services/SupplierService"
 
@@ -22,10 +21,8 @@ export default function CreatePurchaseOrder({
     const [suppliersLoading, setSuppliersLoading] = useState(false);
     const [goodsLoading, setGoodsLoading] = useState(false);
     const [packingLoading, setPackingLoading] = useState(false);
-    const [isGuideExpanded, setIsGuideExpanded] = useState(true);
     const [formData, setFormData] = useState({
-        supplierName: initialData?.supplierName || "",
-        note: initialData?.note || ""
+        supplierName: initialData?.supplierName || ""
     });
 
     const [items, setItems] = useState(
@@ -230,8 +227,9 @@ export default function CreatePurchaseOrder({
         ];
     };
 
-    // Tính tổng số thùng (số lượng ÷ đơn vị đóng gói)
-    const calculateTotalQuantity = (item) => {
+
+    // Tính tổng số đơn vị (số thùng × đơn vị đóng gói)
+    const calculateTotalUnits = (item) => {
         if (!item.quantity || !item.goodsPackingId) return 0;
 
         const selectedGood = goods.find(good => good.goodsName === item.goodsName);
@@ -244,30 +242,19 @@ export default function CreatePurchaseOrder({
 
         if (!selectedPacking) return 0;
 
-        return parseInt(item.quantity) / selectedPacking.unitPerPackage;
+        return parseInt(item.quantity) * selectedPacking.unitPerPackage;
     };
 
-    // Kiểm tra validation cho số lượng
+    // Kiểm tra validation cho số thùng
     const validateQuantity = (item) => {
         if (!item.quantity || !item.goodsPackingId) return null;
 
-        const selectedGood = goods.find(good => good.goodsName === item.goodsName);
-        if (!selectedGood) return null;
-
-        const goodsPackings = goodsPackingsMap[selectedGood.goodsId] || [];
-        const selectedPacking = goodsPackings.find(packing =>
-            packing.goodsPackingId.toString() === item.goodsPackingId
-        );
-
-        if (!selectedPacking) return null;
-
         const quantity = parseInt(item.quantity);
-        const unitPerPackage = selectedPacking.unitPerPackage;
-        const unitMeasureName = selectedGood?.name || "đơn vị";
 
-        if (quantity % unitPerPackage !== 0) {
-            return `Số lượng không hợp lệ. Quy cách đóng gói là ${unitPerPackage} ${unitMeasureName}/thùng. Vui lòng nhập tổng số lượng chẵn theo thùng (ví dụ: ${unitPerPackage}, ${unitPerPackage * 2}, ${unitPerPackage * 3}...).`;
+        if (quantity <= 0) {
+            return "Số thùng phải lớn hơn 0";
         }
+
         return null;
     };
 
@@ -285,13 +272,13 @@ export default function CreatePurchaseOrder({
                 newFieldErrors[`${item.id}-goodsName`] = "Vui lòng chọn tên hàng hóa";
             }
             if (!item.quantity || item.quantity <= 0) {
-                newFieldErrors[`${item.id}-quantity`] = "Vui lòng nhập số lượng lớn hơn 0";
+                newFieldErrors[`${item.id}-quantity`] = "Vui lòng nhập số thùng lớn hơn 0";
             }
             if (!item.goodsPackingId) {
                 newFieldErrors[`${item.id}-goodsPackingId`] = "Vui lòng chọn đóng gói";
             }
 
-            // Kiểm tra validation số lượng chia hết cho đơn vị đóng gói
+            // Kiểm tra validation số thùng
             const quantityError = validateQuantity(item);
             if (quantityError) {
                 newFieldErrors[`${item.id}-quantity`] = quantityError;
@@ -327,9 +314,19 @@ export default function CreatePurchaseOrder({
         try {
             const itemsWithIds = validItems.map(item => {
                 const selectedGood = goods.find(good => good.goodsName === item.goodsName);
+                const goodsPackings = goodsPackingsMap[selectedGood?.goodsId] || [];
+                const selectedPacking = goodsPackings.find(packing =>
+                    packing.goodsPackingId.toString() === item.goodsPackingId
+                );
+
+                // Tính packageQuantity = số thùng × đơn vị đóng gói
+                const packageQuantity = selectedPacking ?
+                    parseInt(item.quantity) * selectedPacking.unitPerPackage :
+                    parseInt(item.quantity);
+
                 return {
                     goodsId: selectedGood ? parseInt(selectedGood.goodsId) : null,
-                    packageQuantity: parseInt(item.quantity),
+                    packageQuantity: packageQuantity,
                     goodsPackingId: parseInt(item.goodsPackingId)
                 };
             }).filter(item => item.goodsId);
@@ -472,7 +469,6 @@ export default function CreatePurchaseOrder({
                 // Không có đơn nháp - tạo đơn mới
                 const submitData = {
                     supplierId: parseInt(selectedSupplier.supplierId),
-                    note: formData.note || "",
                     purchaseOrderDetailCreate: itemsWithIds
                 };
                 await createPurchaseOrder(submitData);
@@ -505,73 +501,6 @@ export default function CreatePurchaseOrder({
 
             {/* Main Content */}
             <div className="space-y-6">
-                {/* Hướng dẫn sử dụng */}
-                <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 shadow-sm">
-                    <div className="p-6">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                                    <span className="text-white text-sm font-semibold">?</span>
-                                </div>
-                                <h3 className="text-lg font-semibold text-blue-800">Hướng dẫn tạo đơn nhập hàng</h3>
-                            </div>
-                            <button
-                                onClick={() => setIsGuideExpanded(!isGuideExpanded)}
-                                className="p-2 hover:bg-blue-100 rounded-full transition-colors"
-                            >
-                                {isGuideExpanded ? (
-                                    <ChevronUp className="h-5 w-5 text-blue-600" />
-                                ) : (
-                                    <ChevronDown className="h-5 w-5 text-blue-600" />
-                                )}
-                            </button>
-                        </div>
-
-                        {isGuideExpanded && (
-                            <div className="mt-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-700">
-                                    <div className="space-y-2">
-                                        <div className="flex items-start gap-2">
-                                            <span className="text-blue-500 font-semibold">1.</span>
-                                            <span><strong>Chọn nhà cung cấp:</strong> Chọn nhà cung cấp từ thanh cuộn để hiển thị danh sách hàng hóa.</span>
-                                        </div>
-                                        <div className="flex items-start gap-2">
-                                            <span className="text-blue-500 font-semibold">2.</span>
-                                            <span><strong>Chọn hàng hóa:</strong> Chọn mặt hàng từ danh sách hiển thị.</span>
-                                        </div>
-                                        <div className="flex items-start gap-2">
-                                            <span className="text-blue-500 font-semibold">3.</span>
-                                            <span><strong>Chọn đóng gói:</strong> Chọn quy cách đóng gói (ví dụ: 48 hộp/thùng).</span>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <div className="flex items-start gap-2">
-                                            <span className="text-blue-500 font-semibold">4.</span>
-                                            <span><strong>Nhập số lượng:</strong> Nhập số lượng theo đơn vị đóng gói (phải chia hết cho số đóng gói).</span>
-                                        </div>
-                                        <div className="flex items-start gap-2">
-                                            <span className="text-blue-500 font-semibold">5.</span>
-                                            <span><strong>Kiểm tra tổng:</strong> Cột "Tổng Số Thùng" sẽ tự động tính số thùng cần.</span>
-                                        </div>
-                                        <div className="flex items-start gap-2">
-                                            <span className="text-blue-500 font-semibold">6.</span>
-                                            <span><strong>Thêm ghi chú:</strong> Nhập ghi chú (tùy chọn) và nhấn "Tạo Đơn Nhập".</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                    <div className="flex items-start gap-2">
-                                        <span className="text-yellow-600 text-sm">⚠️</span>
-                                        <div className="text-sm text-yellow-800">
-                                            <strong>Lưu ý:</strong> Số lượng nhập phải chia hết cho đơn vị đóng gói. Ví dụ: nếu đóng gói là 48 hộp/thùng, bạn có thể nhập 48, 96, 144... (tương ứng 1, 2, 3 thùng).
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </Card>
-
                 {/* Form Card */}
                 <Card className="bg-white border border-gray-200 shadow-sm">
                     <div className="p-6 space-y-6">
@@ -607,8 +536,8 @@ export default function CreatePurchaseOrder({
                                             <TableHead className="text-slate-600 font-semibold">STT</TableHead>
                                             <TableHead className="text-slate-600 font-semibold">Tên Hàng Hóa</TableHead>
                                             <TableHead className="text-slate-600 font-semibold">Đóng Gói</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold">Số Lượng</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold">Tổng Số Thùng</TableHead>
+                                            <TableHead className="text-slate-600 font-semibold">Số Thùng</TableHead>
+                                            <TableHead className="text-slate-600 font-semibold">Tổng Số Đơn Vị</TableHead>
                                             <TableHead className="text-slate-600 font-semibold">Đơn Vị</TableHead>
                                             {items.length > 1 && (
                                                 <TableHead className="text-right text-slate-600 font-semibold">Hành Động</TableHead>
@@ -666,10 +595,9 @@ export default function CreatePurchaseOrder({
                                                 <TableCell>
                                                     <div className="h-[38px] flex items-center px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600 font-medium">
                                                         {(() => {
-                                                            const totalBoxes = calculateTotalQuantity(item);
-                                                            if (totalBoxes === 0) return "0";
-                                                            // Chỉ hiển thị phần thập phân nếu không phải số nguyên
-                                                            return totalBoxes % 1 === 0 ? totalBoxes.toString() : totalBoxes.toFixed(1);
+                                                            const totalUnits = calculateTotalUnits(item);
+                                                            if (totalUnits === 0) return "0";
+                                                            return totalUnits.toString();
                                                         })()}
                                                     </div>
                                                 </TableCell>
@@ -723,20 +651,6 @@ export default function CreatePurchaseOrder({
                                 </button>
                             </div>
 
-                            {/* Ghi chú */}
-                            <div className="space-y-2">
-                                <Label htmlFor="note" className="text-slate-600 font-medium">
-                                    Ghi chú
-                                </Label>
-                                <Textarea
-                                    id="note"
-                                    placeholder="Nhập ghi chú cho đơn nhập hàng..."
-                                    value={formData.note}
-                                    onChange={(e) => handleInputChange("note", e.target.value)}
-                                    className="min-h-[80px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg resize-none"
-                                    rows={3}
-                                />
-                            </div>
 
                             {/* Actions */}
                             <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-4">

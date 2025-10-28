@@ -24,7 +24,7 @@ export default function UpdatePurchaseOrder() {
     });
 
     const [items, setItems] = useState([
-        { id: 1, goodsName: "", packageQuantity: "", goodsPackingId: 0 },
+        { id: 1, goodsName: "", quantity: "", goodsPackingId: 0 },
     ])
     const [fieldErrors, setFieldErrors] = useState({})
 
@@ -56,17 +56,24 @@ export default function UpdatePurchaseOrder() {
 
                     // Set items - giữ nguyên dữ liệu từ detail
                     if (orderData.purchaseOrderDetails && orderData.purchaseOrderDetails.length > 0) {
-                        const formattedItems = orderData.purchaseOrderDetails.map((detail, index) => ({
-                            id: index + 1,
-                            goodsName: detail.goodsName || "",
-                            packageQuantity: detail.packageQuantity || "",
-                            goodsPackingId: detail.goodsPackingId || 0,
-                            goodsId: detail.goodsId || 0,
-                            purchaseOrderDetailId: detail.purchaseOrderDetailId,
-                            // Giữ nguyên dữ liệu gốc để hiển thị
-                            unitPerPacking: detail.unitPerPacking || 0,
-                            unitMeasureName: detail.unitMeasureName || "đơn vị"
-                        }));
+                        const formattedItems = orderData.purchaseOrderDetails.map((detail, index) => {
+                            // Tính số thùng từ packageQuantity và unitPerPacking
+                            const unitPerPacking = detail.unitPerPacking || 1;
+                            const packageQuantity = detail.packageQuantity || 0;
+                            const numberOfBoxes = unitPerPacking > 0 ? Math.floor(packageQuantity / unitPerPacking) : 0;
+
+                            return {
+                                id: index + 1,
+                                goodsName: detail.goodsName || "",
+                                quantity: numberOfBoxes.toString(), // Số thùng
+                                goodsPackingId: detail.goodsPackingId || 0,
+                                goodsId: detail.goodsId || 0,
+                                purchaseOrderDetailId: detail.purchaseOrderDetailId,
+                                // Giữ nguyên dữ liệu gốc để hiển thị
+                                unitPerPacking: detail.unitPerPacking || 0,
+                                unitMeasureName: detail.unitMeasureName || "đơn vị"
+                            };
+                        });
                         console.log("Formatted items:", formattedItems);
                         setItems(formattedItems);
 
@@ -122,7 +129,7 @@ export default function UpdatePurchaseOrder() {
         const newItem = {
             id: Date.now(),
             goodsName: "",
-            packageQuantity: "",
+            quantity: "",
             goodsPackingId: 0,
             goodsId: 0,
         };
@@ -178,8 +185,8 @@ export default function UpdatePurchaseOrder() {
             setFieldErrors(newErrors);
         }
 
-        // Validate real-time cho số lượng
-        if (field === "packageQuantity" || field === "goodsPackingId") {
+        // Validate real-time cho số thùng
+        if (field === "quantity" || field === "goodsPackingId") {
             const updatedItem = items.find(item => item.id === id);
             if (updatedItem) {
                 const tempItem = { ...updatedItem, [field]: value };
@@ -187,12 +194,12 @@ export default function UpdatePurchaseOrder() {
                 if (quantityError) {
                     setFieldErrors(prev => ({
                         ...prev,
-                        [`${id}-packageQuantity`]: quantityError
+                        [`${id}-quantity`]: quantityError
                     }));
                 } else {
                     setFieldErrors(prev => {
                         const newErrors = { ...prev };
-                        delete newErrors[`${id}-packageQuantity`];
+                        delete newErrors[`${id}-quantity`];
                         return newErrors;
                     });
                 }
@@ -200,27 +207,16 @@ export default function UpdatePurchaseOrder() {
         }
     }
 
-    // Kiểm tra validation cho số lượng
+    // Kiểm tra validation cho số thùng
     const validateQuantity = (item) => {
-        if (!item.packageQuantity || !item.goodsPackingId) return null;
+        if (!item.quantity || !item.goodsPackingId) return null;
 
-        const selectedGood = goods.find(good => good.goodsName === item.goodsName);
-        if (!selectedGood) return null;
+        const quantity = parseInt(item.quantity);
 
-        const goodsPackings = goodsPacking[selectedGood.goodsId] || [];
-        const selectedPacking = goodsPackings.find(packing =>
-            packing.goodsPackingId === item.goodsPackingId
-        );
-
-        if (!selectedPacking) return null;
-
-        const quantity = parseInt(item.packageQuantity);
-        const unitPerPackage = selectedPacking.unitPerPackage;
-        const unitMeasureName = selectedGood?.name || "đơn vị";
-
-        if (quantity % unitPerPackage !== 0) {
-            return `Số lượng không hợp lệ. Quy cách đóng gói là ${unitPerPackage} ${unitMeasureName}/thùng. Vui lòng nhập tổng số lượng chẵn theo thùng (ví dụ: ${unitPerPackage}, ${unitPerPackage * 2}, ${unitPerPackage * 3}...).`;
+        if (quantity <= 0) {
+            return "Số thùng phải lớn hơn 0";
         }
+
         return null;
     };
 
@@ -236,6 +232,24 @@ export default function UpdatePurchaseOrder() {
         } finally {
             setGoodsLoading(false);
         }
+    };
+
+
+    // Tính tổng số đơn vị (số thùng × đơn vị đóng gói)
+    const calculateTotalUnits = (item) => {
+        if (!item.quantity || !item.goodsPackingId) return 0;
+
+        const selectedGood = goods.find(good => good.goodsName === item.goodsName);
+        if (!selectedGood) return 0;
+
+        const goodsPackings = goodsPacking[selectedGood.goodsId] || [];
+        const selectedPacking = goodsPackings.find(packing =>
+            packing.goodsPackingId === item.goodsPackingId
+        );
+
+        if (!selectedPacking) return 0;
+
+        return parseInt(item.quantity) * selectedPacking.unitPerPackage;
     };
 
     // Create options for dropdowns
@@ -259,14 +273,14 @@ export default function UpdatePurchaseOrder() {
             if (!item.goodsPackingId) {
                 newFieldErrors[`${item.id}-goodsPackingId`] = "Vui lòng chọn đóng gói";
             }
-            if (!item.packageQuantity || item.packageQuantity <= 0) {
-                newFieldErrors[`${item.id}-packageQuantity`] = "Vui lòng nhập số lượng lớn hơn 0";
+            if (!item.quantity || item.quantity <= 0) {
+                newFieldErrors[`${item.id}-quantity`] = "Vui lòng nhập số thùng lớn hơn 0";
             }
 
-            // Kiểm tra validation số lượng
+            // Kiểm tra validation số thùng
             const quantityError = validateQuantity(item);
             if (quantityError) {
-                newFieldErrors[`${item.id}-packageQuantity`] = quantityError;
+                newFieldErrors[`${item.id}-quantity`] = quantityError;
             }
         });
 
@@ -275,19 +289,32 @@ export default function UpdatePurchaseOrder() {
             return;
         }
 
-        const validItems = items.filter(item => item.goodsName && item.packageQuantity && item.goodsPackingId);
+        const validItems = items.filter(item => item.goodsName && item.quantity && item.goodsPackingId);
         if (validItems.length === 0) {
             window.showToast("Vui lòng thêm ít nhất một hàng hóa với đầy đủ thông tin", "error");
             return;
         }
 
         try {
-            const itemsWithIds = validItems.map(item => ({
-                goodsId: parseInt(item.goodsId),
-                packageQuantity: parseInt(item.packageQuantity),
-                goodsPackingId: parseInt(item.goodsPackingId),
-                purchaseOrderDetailId: item.purchaseOrderDetailId || 0
-            })).filter(item => item.goodsId);
+            const itemsWithIds = validItems.map(item => {
+                const selectedGood = goods.find(good => good.goodsName === item.goodsName);
+                const goodsPackings = goodsPacking[selectedGood?.goodsId] || [];
+                const selectedPacking = goodsPackings.find(packing =>
+                    packing.goodsPackingId === item.goodsPackingId
+                );
+
+                // Tính packageQuantity = số thùng × đơn vị đóng gói
+                const packageQuantity = selectedPacking ?
+                    parseInt(item.quantity) * selectedPacking.unitPerPackage :
+                    parseInt(item.quantity);
+
+                return {
+                    goodsId: parseInt(item.goodsId),
+                    packageQuantity: packageQuantity,
+                    goodsPackingId: parseInt(item.goodsPackingId),
+                    purchaseOrderDetailId: item.purchaseOrderDetailId || 0
+                };
+            }).filter(item => item.goodsId);
 
             if (itemsWithIds.length === 0) {
                 window.showToast("Không tìm thấy hàng hóa hợp lệ!", "error");
@@ -373,8 +400,8 @@ export default function UpdatePurchaseOrder() {
                                             <TableHead className="text-slate-600 font-semibold">STT</TableHead>
                                             <TableHead className="text-slate-600 font-semibold">Tên Hàng Hóa</TableHead>
                                             <TableHead className="text-slate-600 font-semibold">Đóng Gói</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold">Số Lượng</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold">Tổng Số Thùng</TableHead>
+                                            <TableHead className="text-slate-600 font-semibold">Số Thùng</TableHead>
+                                            <TableHead className="text-slate-600 font-semibold">Tổng Số Đơn Vị</TableHead>
                                             <TableHead className="text-slate-600 font-semibold">Đơn Vị</TableHead>
                                             {items.length > 1 && (
                                                 <TableHead className="text-right text-slate-600 font-semibold">Hành Động</TableHead>
@@ -493,28 +520,21 @@ export default function UpdatePurchaseOrder() {
                                                         <Input
                                                             type="number"
                                                             placeholder="0"
-                                                            value={item.packageQuantity}
-                                                            onChange={(e) => updateItem(item.id, "packageQuantity", e.target.value)}
-                                                            className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${fieldErrors[`${item.id}-packageQuantity`] ? 'border-red-500' : ''}`}
+                                                            value={item.quantity}
+                                                            onChange={(e) => updateItem(item.id, "quantity", e.target.value)}
+                                                            className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${fieldErrors[`${item.id}-quantity`] ? 'border-red-500' : ''}`}
                                                         />
-                                                        {fieldErrors[`${item.id}-packageQuantity`] && (
-                                                            <p className="text-red-500 text-xs mt-1">{fieldErrors[`${item.id}-packageQuantity`]}</p>
+                                                        {fieldErrors[`${item.id}-quantity`] && (
+                                                            <p className="text-red-500 text-xs mt-1">{fieldErrors[`${item.id}-quantity`]}</p>
                                                         )}
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <div className="h-[38px] flex items-center px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600">
+                                                    <div className="h-[38px] flex items-center px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600 font-medium">
                                                         {(() => {
-                                                            if (item.goodsName && item.packageQuantity && item.goodsPackingId && item.goodsId) {
-                                                                if (goodsPacking[item.goodsId]) {
-                                                                    const packingData = goodsPacking[item.goodsId];
-                                                                    const selectedPacking = packingData.find(p => p.goodsPackingId === item.goodsPackingId);
-                                                                    const unitPerPackage = selectedPacking ? selectedPacking.unitPerPackage : 0;
-                                                                    return unitPerPackage > 0 ? Math.floor(item.packageQuantity / unitPerPackage) : 0;
-                                                                }
-                                                                return "0";
-                                                            }
-                                                            return "0";
+                                                            const totalUnits = calculateTotalUnits(item);
+                                                            if (totalUnits === 0) return "0";
+                                                            return totalUnits.toString();
                                                         })()}
                                                     </div>
                                                 </TableCell>

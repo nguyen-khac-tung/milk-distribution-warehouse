@@ -95,20 +95,6 @@ const PurchaseOrderTable = ({
                 <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-16">
                   STT
                 </TableHead>
-                <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                  <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("purchaseOderId")}>
-                    <span>Mã đơn hàng</span>
-                    {sortField === "purchaseOderId" ? (
-                      sortAscending ? (
-                        <ArrowUp className="h-4 w-4 text-orange-500" />
-                      ) : (
-                        <ArrowDown className="h-4 w-4 text-orange-500" />
-                      )
-                    ) : (
-                      <ArrowUpDown className="h-4 w-4 text-slate-400" />
-                    )}
-                  </div>
-                </TableHead>
                 <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                   <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("supplierId")}>
                     <span>Tên nhà cung cấp</span>
@@ -219,15 +205,10 @@ const PurchaseOrderTable = ({
                     <TableCell className="px-6 py-4 text-slate-600 font-medium text-center">
                       {(pagination.current - 1) * pagination.pageSize + index + 1}
                     </TableCell>
-                    <TableCell className="px-6 py-4 text-slate-700 text-center">
-                      {order.purchaseOderId ? (
-                        <span className="font-mono text-sm bg-orange-100 text-orange-800 px-2 py-1 rounded border border-orange-200">
-                          {order.purchaseOderId.split('-').pop()}
-                        </span>
-                      ) : '-'}
-                    </TableCell>
                     <TableCell className="px-6 py-4 text-slate-700 text-left">
-                      {order.supplierName || order.supplierId || '-'}
+                      <span className="font-bold">
+                        {order.supplierName || order.supplierId || '-'}
+                      </span>
                     </TableCell>
                     {availableFields.hasApprovalByName && (
                       <TableCell className="px-6 py-4 text-slate-700 text-center">
@@ -285,7 +266,7 @@ const PurchaseOrderTable = ({
                             <Eye className="h-4 w-4 text-orange-500" />
                           </button>
                         )}
-                        
+
                         {/* Edit button - conditional based on API flags for Sales Representative */}
                         {canPerformPurchaseOrderAction('edit', order, hasPermission) && (
                           <button
@@ -296,7 +277,7 @@ const PurchaseOrderTable = ({
                             <Edit className="h-4 w-4 text-orange-500" />
                           </button>
                         )}
-                        
+
                         {/* Delete button - conditional based on API flags for Sales Representative */}
                         {canPerformPurchaseOrderAction('delete', order, hasPermission) && (
                           <button
@@ -307,46 +288,46 @@ const PurchaseOrderTable = ({
                             <Trash2 className="h-4 w-4 text-red-500" />
                           </button>
                         )}
-                        
+
                         {/* Fallback for other roles using existing permission system */}
-                        {!hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS) && 
-                         !hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_SM) && 
-                         !hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WM) && 
-                         !hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WS) && (
-                          <>
-                            <PermissionWrapper requiredPermission={PERMISSIONS.PURCHASE_ORDER_VIEW_DETAILS}>
-                              <button
-                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                title="Xem chi tiết"
-                                onClick={() => handleViewClick(order)}
-                              >
-                                <Eye className="h-4 w-4 text-orange-500" />
-                              </button>
-                            </PermissionWrapper>
-                            {!order.isDisable && (
-                              <PermissionWrapper requiredPermission={PERMISSIONS.PURCHASE_ORDER_UPDATE}>
+                        {!hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS) &&
+                          !hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_SM) &&
+                          !hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WM) &&
+                          !hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WS) && (
+                            <>
+                              <PermissionWrapper requiredPermission={PERMISSIONS.PURCHASE_ORDER_VIEW_DETAILS}>
                                 <button
                                   className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                  title="Chỉnh sửa"
-                                  onClick={() => handleEditClick(order)}
+                                  title="Xem chi tiết"
+                                  onClick={() => handleViewClick(order)}
                                 >
-                                  <Edit className="h-4 w-4 text-orange-500" />
+                                  <Eye className="h-4 w-4 text-orange-500" />
                                 </button>
                               </PermissionWrapper>
-                            )}
-                            {!order.isDisable && (
-                              <PermissionWrapper requiredPermission={PERMISSIONS.PURCHASE_ORDER_DELETE}>
-                                <button
-                                  className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                  title="Xóa"
-                                  onClick={() => handleDeleteClick(order)}
-                                >
-                                  <Trash2 className="h-4 w-4 text-red-500" />
-                                </button>
-                              </PermissionWrapper>
-                            )}
-                          </>
-                        )}
+                              {!order.isDisable && (
+                                <PermissionWrapper requiredPermission={PERMISSIONS.PURCHASE_ORDER_UPDATE}>
+                                  <button
+                                    className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                    title="Chỉnh sửa"
+                                    onClick={() => handleEditClick(order)}
+                                  >
+                                    <Edit className="h-4 w-4 text-orange-500" />
+                                  </button>
+                                </PermissionWrapper>
+                              )}
+                              {!order.isDisable && (
+                                <PermissionWrapper requiredPermission={PERMISSIONS.PURCHASE_ORDER_DELETE}>
+                                  <button
+                                    className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                    title="Xóa"
+                                    onClick={() => handleDeleteClick(order)}
+                                  >
+                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                  </button>
+                                </PermissionWrapper>
+                              )}
+                            </>
+                          )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -359,7 +340,7 @@ const PurchaseOrderTable = ({
                   actionText="Xóa bộ lọc"
                   onAction={onClearFilters}
                   showAction={false}
-                  colSpan={6 + Object.values(availableFields).filter(Boolean).length + 2}
+                  colSpan={5 + Object.values(availableFields).filter(Boolean).length + 2}
                 />
               )}
             </TableBody>
