@@ -18,6 +18,7 @@ export const getPallets = async (searchParams = {}) => {
         };
         console.log("PalletService - Request body:", body);
         const res = await api.post("/Pallet/Pallets", body);
+        console.log("PalletService - Response:", res.data);
         return res.data;
     } catch (error) {
         console.error("Error fetching pallets:", error);

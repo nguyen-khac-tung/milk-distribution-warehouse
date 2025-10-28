@@ -1,4 +1,5 @@
 import api from "./api";
+import { extractErrorMessage } from '../utils/Validation';
 
 // Lấy danh sách Location (phân trang, tìm kiếm, sort, filter)
 export const getLocations = async (searchParams = {}) => {
@@ -164,3 +165,51 @@ export const createMultipleLocations = async (locations) => {
         throw error;
     }
 };
+
+// Validate location code
+export const validateLocationCode = async (locationCode) => {
+    try {
+        const response = await api.get(`/Location/LocationPallet/${locationCode}`);
+
+        if (response.status === 200 && response.data) {
+            if (response.data.success === true && response.data.data && response.data.data.locationId) {
+                return {
+                    success: true,
+                    data: response.data.data,
+                    message: "Mã vị trí hợp lệ"
+                };
+            }
+            else if (response.data.data && response.data.data.locationId) {
+                return {
+                    success: true,
+                    data: response.data.data,
+                    message: "Mã vị trí hợp lệ"
+                };
+            }
+            else if (response.data.locationId) {
+                return {
+                    success: true,
+                    data: response.data,
+                    message: "Mã vị trí hợp lệ"
+                };
+            }
+        }
+
+        return {
+            success: false,
+            data: null,
+            message: "Mã vị trí không tồn tại"
+        };
+    } catch (error) {
+        console.error("Error validating location code:", error);
+        const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi kiểm tra mã vị trí");
+
+        return {
+            success: false,
+            data: null,
+            message: errorMessage
+        };
+    }
+};
+
+

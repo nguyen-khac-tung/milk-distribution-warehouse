@@ -191,7 +191,7 @@ export function PalletDetail({ palletId, onClose }) {
                                 <div className="flex items-center gap-3">
                                     <ComponentIcon name="box" size={20} color="#8b5cf6" />
                                     <div>
-                                        <p className="text-sm text-purple-600 font-medium">Đơn vị/thùng</p>
+                                        <p className="text-sm text-purple-600 font-medium">{pallet.unitOfMeasure || "Đơn vị"}/thùng</p>
                                         <p className="text-lg text-purple-800 font-bold">{pallet.unitPerPackage?.toLocaleString() || "N/A"}</p>
                                     </div>
                                 </div>
@@ -201,10 +201,10 @@ export function PalletDetail({ palletId, onClose }) {
                                 <div className="flex items-center gap-3">
                                     <ComponentIcon name="shoppingCart" size={20} color="#f97316" />
                                     <div>
-                                        <p className="text-sm text-orange-600 font-medium">Tổng số đơn vị/kiện</p>
+                                        <p className="text-sm text-orange-600 font-medium">Tổng số {pallet.unitOfMeasure || "đơn vị"}/kiện</p>
                                         <p className="text-lg text-orange-800 font-bold">
                                             {pallet.packageQuantity && pallet.unitPerPackage
-                                                ? (pallet.packageQuantity * pallet.unitPerPackage).toLocaleString()
+                                                ? `${(pallet.packageQuantity * pallet.unitPerPackage).toLocaleString()} ${pallet.unitOfMeasure || ""}`
                                                 : "N/A"}
                                         </p>
                                     </div>
