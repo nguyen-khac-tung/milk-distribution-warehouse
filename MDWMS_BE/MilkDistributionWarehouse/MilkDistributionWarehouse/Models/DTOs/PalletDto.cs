@@ -37,6 +37,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
             [Required(ErrorMessage = "Phương thức đóng hộp không được để trống")]
             public int GoodsPackingId { get; set; }
 
+            [Required(ErrorMessage = "Mã đơn kiểm nhập không được để trống")]
             public Guid? GoodsReceiptNoteId { get; set; }
         }
 
@@ -73,6 +74,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public string GoodsName { get; set; }
             public string AreaName { get; set; }
             public string AreaCode { get; set; }
+            public string UnitOfMeasure { get; set; }
         }
     }
 }
