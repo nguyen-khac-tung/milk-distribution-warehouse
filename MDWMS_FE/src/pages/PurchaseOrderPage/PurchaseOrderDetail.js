@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
-import { ArrowLeft, Package, User, Calendar, CheckCircle, XCircle, Clock, Truck, CheckSquare, Trash2, Key, Building2, FileText, Hash, Shield, ShoppingCart, Users, UserCheck, UserX, TruckIcon, UserPlus, Store, UserCircle, UserCog, UserCheck2, UserX2, UserMinus } from 'lucide-react';
+import { ArrowLeft, Package, User, Calendar, CheckCircle, XCircle, Clock, Truck, CheckSquare, Trash2, Key, Building2, FileText, Hash, Shield, ShoppingCart, Users, UserCheck, UserX, TruckIcon, UserPlus, Store, UserCircle, UserCog, UserCheck2, UserX2, UserMinus, Mail, Phone, MapPin } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { getPurchaseOrderDetail } from '../../services/PurchaseOrderService';
 import ApprovalConfirmationModal from '../../components/PurchaseOrderComponents/ApprovalConfirmationModal';
@@ -203,15 +203,56 @@ const PurchaseOrderDetail = () => {
                                     <h3 className="font-bold text-gray-800">Thông tin chung</h3>
                                 </div>
                                 <div className="space-y-3">
-                                    <div className="flex items-center space-x-2">
+                                    {/* Supplier and Address on same line */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {/* Left: Supplier */}
                                         <div className="flex items-center space-x-2">
-                                            <Store className="h-4 w-4 text-green-600" />
-                                            <label className="text-sm font-medium text-gray-700">Nhà cung cấp:</label>
+                                            <div className="flex items-center space-x-2">
+                                                <Store className="h-4 w-4 text-green-600" />
+                                                <label className="text-sm font-medium text-gray-700">Nhà cung cấp:</label>
+                                            </div>
+                                            <span className="text-sm font-semibold text-gray-900 bg-gray-200 px-3 py-1 rounded border">
+                                                {purchaseOrder.supplierName || 'Chưa có thông tin'}
+                                            </span>
                                         </div>
-                                        <span className="text-sm font-semibold text-gray-900 bg-gray-200 px-3 py-1 rounded border flex items-center space-x-2">
-                                            <span>{purchaseOrder.supplierName || 'Chưa có thông tin'}</span>
-                                        </span>
+                                        
+                                        {/* Right: Address */}
+                                        <div className="flex items-center space-x-2">
+                                            <div className="flex items-center space-x-2">
+                                                <MapPin className="h-4 w-4 text-red-600" />
+                                                <label className="text-sm font-medium text-gray-700">Địa chỉ:</label>
+                                            </div>
+                                            <span className="text-sm text-gray-900 bg-gray-200 px-3 py-1 rounded border">
+                                                {purchaseOrder.address || 'Chưa có thông tin'}
+                                            </span>
+                                        </div>
                                     </div>
+                                    
+                                    {/* Email and Phone on same line */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {/* Left: Email */}
+                                        <div className="flex items-center space-x-2">
+                                            <div className="flex items-center space-x-2">
+                                                <Mail className="h-4 w-4 text-orange-600" />
+                                                <label className="text-sm font-medium text-gray-700">Email:</label>
+                                            </div>
+                                            <span className="text-sm text-gray-900 bg-gray-200 px-3 py-1 rounded border">
+                                                {purchaseOrder.email || 'Chưa có thông tin'}
+                                            </span>
+                                        </div>
+                                        
+                                        {/* Right: Phone */}
+                                        <div className="flex items-center space-x-2">
+                                            <div className="flex items-center space-x-2">
+                                                <Phone className="h-4 w-4 text-blue-600" />
+                                                <label className="text-sm font-medium text-gray-700">SĐT:</label>
+                                            </div>
+                                            <span className="text-sm text-gray-900 bg-gray-200 px-3 py-1 rounded border">
+                                                {purchaseOrder.phone || 'Chưa có thông tin'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    
                                     {purchaseOrder.note && (
                                         <div className="flex items-start space-x-2">
                                             <div className="flex items-center space-x-2">
@@ -234,6 +275,7 @@ const PurchaseOrderDetail = () => {
                                             <TableHead className="font-semibold">Tên hàng hóa</TableHead>
                                             <TableHead className="font-semibold">Mã hàng</TableHead>
                                             <TableHead className="text-center font-semibold">Đơn vị tính</TableHead>
+                                            <TableHead className="text-center font-semibold">Đơn vị/thùng</TableHead>
                                             <TableHead className="text-center font-semibold">Số lượng</TableHead>
                                             <TableHead className="text-center font-semibold">Số thùng</TableHead>
                                         </TableRow>
@@ -248,7 +290,8 @@ const PurchaseOrderDetail = () => {
                                                     <TableRow key={item.purchaseOrderDetailId} className="border-b">
                                                         <TableCell className="text-center font-medium">{index + 1}</TableCell>
                                                         <TableCell className="font-medium">{item.goodsName}</TableCell>
-                                                        <TableCell className="text-gray-600">{item.goodsId}</TableCell>
+                                                        <TableCell className="text-gray-600">{item.goodsCode || item.goodsId || '-'}</TableCell>
+                                                        <TableCell className="text-center text-gray-600">{item.unitMeasureName || '-'}</TableCell>
                                                         <TableCell className="text-center text-gray-600">{item.unitPerPacking || '-'}</TableCell>
                                                         <TableCell className="text-center font-semibold">{item.packageQuantity || 0}</TableCell>
                                                         <TableCell className="text-center font-semibold">{numberOfBoxes}</TableCell>
@@ -257,7 +300,7 @@ const PurchaseOrderDetail = () => {
                                             })
                                         ) : (
                                             <TableRow>
-                                                <TableCell colSpan={6} className="text-center text-gray-500 py-8">
+                                                <TableCell colSpan={7} className="text-center text-gray-500 py-8">
                                                     Không có sản phẩm nào
                                                 </TableCell>
                                             </TableRow>
@@ -265,7 +308,7 @@ const PurchaseOrderDetail = () => {
                                         {/* Total Row */}
                                         {purchaseOrder.purchaseOrderDetails && purchaseOrder.purchaseOrderDetails.length > 0 && (
                                             <TableRow className="bg-gray-100 font-bold border-t border-gray-300">
-                                                <TableCell colSpan={4} className="text-right pr-2">Tổng:</TableCell>
+                                                <TableCell colSpan={5} className="text-right pr-2">Tổng:</TableCell>
                                                 <TableCell className="text-center font-bold">
                                                     {purchaseOrder.purchaseOrderDetails.reduce((sum, item) => sum + (item.packageQuantity || 0), 0)}
                                                 </TableCell>
