@@ -17,6 +17,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, PageResult<GoodsDto>?)> GetGoods(PagedRequest request);
         Task<(string, List<GoodsDropDown>?)> GetGoodsDropDown();
         Task<(string, List<GoodsDropDownAndUnitMeasure>?)> GetGoodsDropDownBySupplierId(int supplierId);
+        Task<(string, List<GoodsInventoryDto>?)> GetGoodsInventoryBySupplierId(int supplierId);
         Task<(string, GoodsDetail?)> GetGoodsByGoodsId(int goodsId);
         Task<(string, GoodsDto?)> CreateGoods(GoodsCreate goodsCreate);
         Task<(string, GoodsBulkdResponse)> CreateGoodsBulk(GoodsBulkCreate create);
@@ -75,6 +76,34 @@ namespace MilkDistributionWarehouse.Services
             return ("", goodsDropDown);
         }
 
+        public async Task<(string, List<GoodsInventoryDto>?)> GetGoodsInventoryBySupplierId(int supplierId)
+        {
+            var goodsList = await _goodRepository.GetActiveGoodsBySupplierId(supplierId);
+            if (goodsList == null || !goodsList.Any())
+                return ("Danh sách sản phẩm trống.".ToMessageForUser(), default);
+
+            var goodsInventoryDtos = _mapper.Map<List<GoodsInventoryDto>>(goodsList);
+
+            goodsInventoryDtos.ForEach(goods =>
+            {
+                goods.GoodsPackings.ForEach(packing =>
+                {
+                    var totalPackageQuantity = goodsList.FirstOrDefault(g => g.GoodsId == goods.GoodsId)
+                                                        ?.Batches.SelectMany(b => b.Pallets)
+                                                        .Where(p => p.GoodsPackingId == packing.GoodsPackingId)
+                                                        .Sum(p => p.PackageQuantity);
+                    goods.InventoryPackingDtos.Add(new InventoryPackagingDto()
+                    {
+                        GoodsPackingId = packing.GoodsPackingId,
+                        UnitPerPackage = packing.UnitPerPackage,
+                        TotalPackageQuantity = totalPackageQuantity ?? 0
+                    });
+                });
+            });
+
+            return ("", goodsInventoryDtos);
+        }
+
         public async Task<(string, GoodsDetail?)> GetGoodsByGoodsId(int goodsId)
         {
             if (goodsId <= 0)
@@ -96,7 +125,7 @@ namespace MilkDistributionWarehouse.Services
 
         public async Task<(string, List<GoodsDropDownAndUnitMeasure>?)> GetGoodsDropDownBySupplierId(int supplierId)
         {
-            var cacheKey = _cacheService.GenerateDropdownCacheKey("goods", "supplier", supplierId);
+            var cacheKey = _cacheService.GenerateDropdownCacheKey("Goods", "Supplier", supplierId);
 
             var result = await _cacheService.GetOrCreatedAsync(cacheKey, async () =>
             {
@@ -131,6 +160,7 @@ namespace MilkDistributionWarehouse.Services
             {
                 if (IsCheckDuplicationGoodsPacking(goodsCreate.GoodsPackingCreates))
                     return ("Số lượng đóng gói hàng hoá bị trùng lặp.", default);
+
                 goods.GoodsPackings = _mapper.Map<List<GoodsPacking>>(goodsCreate.GoodsPackingCreates);
             }
 
@@ -139,7 +169,7 @@ namespace MilkDistributionWarehouse.Services
             if (createResult == null)
                 return ("Tạo mới sản phẩm thất bại.".ToMessageForUser(), default);
 
-            _cacheService.InvalidateDropdownCache("goods", "supplier", createResult.SupplierId);
+            _cacheService.InvalidateDropdownCache("Goods", "Supplier", createResult.SupplierId);
 
             return ("", _mapper.Map<GoodsDto>(createResult));
         }
@@ -222,14 +252,14 @@ namespace MilkDistributionWarehouse.Services
 
                 _mapper.Map(update, goodsExist);
 
-                _cacheService.InvalidateDropdownCache("goods", "supplier", goodsExist.SupplierId);
+                _cacheService.InvalidateDropdownCache("Goods", "Supplier", goodsExist.SupplierId);
 
                 var updateResult = await _goodRepository.UpdateGoods(goodsExist);
 
                 if (updateResult == null)
                     return ("Cập nhật hàng hoá thất bại.".ToMessageForUser(), default);
 
-                _cacheService.InvalidateDropdownCache("goods", "supplier", updateResult.SupplierId);
+                _cacheService.InvalidateDropdownCache("Goods", "Supplier", updateResult.SupplierId);
 
                 var (msg, goodsPackingUpdates) = await _goodsPackingService.UpdateGoodsPacking(update.GoodsId, update.GoodsPackingUpdates);
 
@@ -277,7 +307,7 @@ namespace MilkDistributionWarehouse.Services
                     return (activateError, default);
             }
 
-            _cacheService.InvalidateDropdownCache("goods", "supplier", goodsExist.SupplierId);
+            _cacheService.InvalidateDropdownCache("Goods", "Supplier", goodsExist.SupplierId);
 
             goodsExist.Status = update.Status;
             goodsExist.UpdateAt = DateTime.Now;
@@ -286,7 +316,7 @@ namespace MilkDistributionWarehouse.Services
             if (updateResult == null)
                 return ("Cập nhật hàng hoá thất bại.".ToMessageForUser(), default);
 
-            _cacheService.InvalidateDropdownCache("goods", "supplier", updateResult.SupplierId);
+            _cacheService.InvalidateDropdownCache("Goods", "Supplier", updateResult.SupplierId);
 
             return ("", update);
         }
@@ -312,7 +342,7 @@ namespace MilkDistributionWarehouse.Services
             if (resultDelete == null)
                 return ("Xoá hàng hoá thất bại.".ToMessageForUser(), default);
 
-            _cacheService.InvalidateDropdownCache("goods", "supplier", goodsExist.SupplierId);
+            _cacheService.InvalidateDropdownCache("Goods", "Supplier", goodsExist.SupplierId);
 
             return ("", _mapper.Map<GoodsDto>(goodsExist));
         }

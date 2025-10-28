@@ -234,3 +234,14 @@ export const getDraftPurchaseOrdersBySupplier = async (supplierId) => {
     }
 };
 
+// Lấy danh sách đóng gói hàng hóa theo ID hàng hóa
+export const getGoodsPackingByGoodsId = async (goodsId) => {
+    try {
+        const res = await api.get(`/GoodsPacking/GetGoodsPackingByGoodsId/${goodsId}`);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching goods packing by goods ID:", error);
+        throw error;
+    }
+};
+

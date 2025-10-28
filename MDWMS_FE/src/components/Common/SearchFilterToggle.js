@@ -71,6 +71,14 @@ export default function SearchFilterToggle({
   areas = [],
   onAreaFilter,
   clearAreaFilter,
+  // Creator Filter
+  creatorFilter,
+  setCreatorFilter,
+  showCreatorFilter,
+  setShowCreatorFilter,
+  creators = [],
+  onCreatorFilter,
+  clearCreatorFilter,
   searchWidth = "w-80",
   showToggle = true,
   defaultOpen = true,
@@ -117,15 +125,18 @@ export default function SearchFilterToggle({
       if (clearAreaFilter) {
         clearAreaFilter();
       }
+      if (clearCreatorFilter) {
+        clearCreatorFilter();
+      }
     }
   };
 
-  const hasActiveFilters = searchQuery || statusFilter || roleFilter || categoryFilter || supplierFilter || unitMeasureFilter || areaFilter;
+  const hasActiveFilters = searchQuery || statusFilter || roleFilter || categoryFilter || supplierFilter || unitMeasureFilter || areaFilter || creatorFilter;
 
   return (
     <>
       {/* Custom scrollbar styles */}
-      <style jsx>{`
+      <style>{`
         .dropdown-scroll::-webkit-scrollbar {
           width: 6px;
         }
@@ -499,6 +510,45 @@ export default function SearchFilterToggle({
                             className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${unitMeasureFilter === unit.unitMeasureId.toString() ? 'bg-orange-500 text-white' : 'text-slate-700'}`}
                           >
                             {unit.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Creator Filter */}
+              {creators.length > 0 && (
+                <div className="relative creator-filter-dropdown">
+                  <button
+                    onClick={() => setShowCreatorFilter(!showCreatorFilter)}
+                    className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors min-w-0 max-w-48
+                      focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
+                      ${creatorFilter ? 'bg-[#d97706] text-white hover:bg-[#d97706]' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
+                  >
+                    <span className="text-sm font-medium truncate">
+                      {creatorFilter ? creators.find(c => c.userId.toString() === creatorFilter)?.fullName || "Chọn người tạo" : "Tất cả người tạo"}
+                    </span>
+                    <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                  </button>
+
+                  {showCreatorFilter && (
+                    <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-50 max-h-48 overflow-y-auto dropdown-scroll" style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 #f1f5f9' }}>
+                      <div className="py-1">
+                        <button
+                          onClick={() => { clearCreatorFilter(); setShowCreatorFilter(false); }}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 text-slate-700"
+                        >
+                          Tất cả người tạo
+                        </button>
+                        {creators.map((creator) => (
+                          <button
+                            key={creator.userId}
+                            onClick={() => { onCreatorFilter(creator.userId.toString()); setShowCreatorFilter(false); }}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${creatorFilter === creator.userId.toString() ? 'bg-orange-500 text-white' : 'text-slate-700'}`}
+                          >
+                            {creator.fullName}
                           </button>
                         ))}
                       </div>

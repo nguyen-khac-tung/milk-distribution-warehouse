@@ -101,6 +101,16 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
       return
     }
 
+    // Check if all packing items have valid unitPerPackage
+    const hasEmptyPacking = goodsPackingCreates.some(packing => 
+      !packing.unitPerPackage || packing.unitPerPackage === "" || isNaN(packing.unitPerPackage) || parseInt(packing.unitPerPackage) <= 0
+    )
+
+    if (hasEmptyPacking) {
+      window.showToast("Vui lòng nhập đầy đủ số lượng cho tất cả các thông tin đóng gói", "error")
+      return
+    }
+
     try {
       setLoading(true)
       const submitData = {
@@ -288,10 +298,10 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
                 </Button>
               </div>
               
-              <div className="space-y-3">
-                {goodsPackingCreates.map((packing, index) => (
-                  <Card key={index} className="p-4 border border-gray-200">
-                    <div className="flex items-end gap-4">
+              <Card className="p-4 border border-gray-200">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {goodsPackingCreates.map((packing, index) => (
+                    <div key={index} className="flex items-end gap-2">
                       <div className="flex-1">
                         <Label className="text-sm font-medium text-slate-600">
                           Số {unitMeasures.find(unit => unit.unitMeasureId.toString() === formData.unitMeasureId)?.name || 'đơn vị'} trên 1 thùng
@@ -315,13 +325,13 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
                         </Button>
                       )}
                     </div>
-                  </Card>
-                ))}
-              </div>
-              
-              <p className="text-xs text-slate-500">
-                * Nhập số lượng {unitMeasures.find(unit => unit.unitMeasureId.toString() === formData.unitMeasureId)?.name || 'đơn vị'} có trong mỗi thùng đóng gói
-              </p>
+                  ))}
+                </div>
+                
+                <p className="text-xs text-slate-500 mt-3">
+                  * Nhập số lượng {unitMeasures.find(unit => unit.unitMeasureId.toString() === formData.unitMeasureId)?.name || 'đơn vị'} có trong mỗi thùng đóng gói
+                </p>
+              </Card>
             </div>
 
             {/* Action Buttons */}

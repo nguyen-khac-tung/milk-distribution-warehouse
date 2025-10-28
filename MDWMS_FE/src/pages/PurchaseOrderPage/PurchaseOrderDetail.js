@@ -187,14 +187,27 @@ const PurchaseOrderDetail = () => {
                                     <FileText className="h-5 w-5 text-blue-600" />
                                     <h3 className="font-bold text-gray-800">Thông tin chung</h3>
                                 </div>
-                                <div className="flex items-center space-x-2">
+                                <div className="space-y-3">
                                     <div className="flex items-center space-x-2">
-                                        <Store className="h-4 w-4 text-green-600" />
-                                        <label className="text-sm font-medium text-gray-700">Nhà cung cấp:</label>
+                                        <div className="flex items-center space-x-2">
+                                            <Store className="h-4 w-4 text-green-600" />
+                                            <label className="text-sm font-medium text-gray-700">Nhà cung cấp:</label>
+                                        </div>
+                                        <span className="text-sm font-semibold text-gray-900 bg-gray-200 px-3 py-1 rounded border flex items-center space-x-2">
+                                            <span>{purchaseOrder.supplierName || 'Chưa có thông tin'}</span>
+                                        </span>
                                     </div>
-                                    <span className="text-sm font-semibold text-gray-900 bg-gray-200 px-3 py-1 rounded border flex items-center space-x-2">
-                                        <span>{purchaseOrder.supplierName || 'Chưa có thông tin'}</span>
-                                    </span>
+                                    {purchaseOrder.note && (
+                                        <div className="flex items-start space-x-2">
+                                            <div className="flex items-center space-x-2">
+                                                <FileText className="h-4 w-4 text-blue-600 mt-1" />
+                                                <label className="text-sm font-medium text-gray-700">Ghi chú:</label>
+                                            </div>
+                                            <div className="text-sm text-gray-900 bg-gray-200 px-3 py-1 rounded border flex-1">
+                                                {purchaseOrder.note}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             {/* Product List Table */}
@@ -207,22 +220,29 @@ const PurchaseOrderDetail = () => {
                                             <TableHead className="font-semibold">Mã hàng</TableHead>
                                             <TableHead className="text-center font-semibold">Đơn vị tính</TableHead>
                                             <TableHead className="text-center font-semibold">Số lượng</TableHead>
+                                            <TableHead className="text-center font-semibold">Số thùng</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody className="flex-1">
                                         {purchaseOrder.purchaseOrderDetails && purchaseOrder.purchaseOrderDetails.length > 0 ? (
-                                            purchaseOrder.purchaseOrderDetails.map((item, index) => (
-                                                <TableRow key={item.purchaseOrderDetailId} className="border-b">
-                                                    <TableCell className="text-center font-medium">{index + 1}</TableCell>
-                                                    <TableCell className="font-medium">{item.goodsName}</TableCell>
-                                                    <TableCell className="text-gray-600">{item.goodsId}</TableCell>
-                                                    <TableCell className="text-center text-gray-600">-</TableCell>
-                                                    <TableCell className="text-center font-semibold">{item.quantity}</TableCell>
-                                                </TableRow>
-                                            ))
+                                            purchaseOrder.purchaseOrderDetails.map((item, index) => {
+                                                const numberOfBoxes = item.unitPerPacking > 0
+                                                    ? Math.floor(item.packageQuantity / item.unitPerPacking)
+                                                    : 0;
+                                                return (
+                                                    <TableRow key={item.purchaseOrderDetailId} className="border-b">
+                                                        <TableCell className="text-center font-medium">{index + 1}</TableCell>
+                                                        <TableCell className="font-medium">{item.goodsName}</TableCell>
+                                                        <TableCell className="text-gray-600">{item.goodsId}</TableCell>
+                                                        <TableCell className="text-center text-gray-600">{item.unitPerPacking || '-'}</TableCell>
+                                                        <TableCell className="text-center font-semibold">{item.packageQuantity || 0}</TableCell>
+                                                        <TableCell className="text-center font-semibold">{numberOfBoxes}</TableCell>
+                                                    </TableRow>
+                                                );
+                                            })
                                         ) : (
                                             <TableRow>
-                                                <TableCell colSpan={5} className="text-center text-gray-500 py-8">
+                                                <TableCell colSpan={6} className="text-center text-gray-500 py-8">
                                                     Không có sản phẩm nào
                                                 </TableCell>
                                             </TableRow>
@@ -232,7 +252,15 @@ const PurchaseOrderDetail = () => {
                                             <TableRow className="bg-gray-100 font-bold border-t border-gray-300">
                                                 <TableCell colSpan={4} className="text-right pr-2">Tổng:</TableCell>
                                                 <TableCell className="text-center font-bold">
-                                                    {purchaseOrder.purchaseOrderDetails.reduce((sum, item) => sum + (item.quantity || 0), 0)}
+                                                    {purchaseOrder.purchaseOrderDetails.reduce((sum, item) => sum + (item.packageQuantity || 0), 0)}
+                                                </TableCell>
+                                                <TableCell className="text-center font-bold">
+                                                    {purchaseOrder.purchaseOrderDetails.reduce((sum, item) => {
+                                                        const numberOfBoxes = item.unitPerPacking > 0
+                                                            ? Math.floor(item.packageQuantity / item.unitPerPacking)
+                                                            : 0;
+                                                        return sum + numberOfBoxes;
+                                                    }, 0)}
                                                 </TableCell>
                                             </TableRow>
                                         )}
