@@ -378,6 +378,7 @@ public partial class WarehouseContext : DbContext
             entity.HasKey(e => e.SalesOrderId).HasName("PK_ExportOrders");
 
             entity.Property(e => e.SalesOrderId).ValueGeneratedNever();
+            entity.Property(e => e.Note).HasMaxLength(250);
 
             entity.HasOne(d => d.AcknowledgedByNavigation).WithMany(p => p.SalesOrderAcknowledgedByNavigations)
                 .HasForeignKey(d => d.AcknowledgedBy)

@@ -1,7 +1,7 @@
 
 import NotFoundPage from "../pages/NotFoundPage";
 import Dashboard from "../pages/AccountPage/Dashboard/Dashboard";
-import Products from "../pages/GoodPage/GoodsList";
+import CreateSaleOrder from "../pages/SalesOrderPage/CreateSaleOrder";
 import Reports from "../pages/Reports";
 // import Settings from "../pages/Settings";
 import Areas from "../pages/AreaAndLocationPage/AreaPage/AreasList";
@@ -244,7 +244,7 @@ export const routes = [
         path: "/sales-orders/create",
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.SALES_ORDER_CREATE}>
-                <SalesOrderList />
+                <CreateSaleOrder />
             </ProtectedRoute>
         ),
         isShowHeader: true,

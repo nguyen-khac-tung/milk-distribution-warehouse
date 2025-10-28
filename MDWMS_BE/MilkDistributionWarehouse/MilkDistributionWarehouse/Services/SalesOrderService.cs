@@ -77,8 +77,8 @@ namespace MilkDistributionWarehouse.Services
             {
                 var fromDate = request.Filters.FirstOrDefault(f => f.Key.ToLower() == "fromdate");
                 var toDate = request.Filters.FirstOrDefault(f => f.Key.ToLower() == "todate");
-                DateTime.TryParse(fromDate.Value, out DateTime startDate);
-                DateTime.TryParse(toDate.Value, out DateTime endDate);
+                DateOnly.TryParse(fromDate.Value, out DateOnly startDate);
+                DateOnly.TryParse(toDate.Value, out DateOnly endDate);
                 salesOrders = salesOrders.Where(s => (startDate == default || s.EstimatedTimeDeparture >= startDate) &&
                                                      (endDate == default || s.EstimatedTimeDeparture <= endDate));
                 if (fromDate.Key != null) request.Filters.Remove(fromDate.Key);
@@ -110,7 +110,7 @@ namespace MilkDistributionWarehouse.Services
             if (salesOrderCreate.RetailerId != null && (await _retailerRepository.GetRetailerByRetailerId((int)salesOrderCreate.RetailerId)) == null)
                 return ("Nhà bán lẻ không hợp lệ.".ToMessageForUser(), null);
 
-            if (salesOrderCreate.EstimatedTimeDeparture!.Value.Date <= DateTime.Now.Date)
+            if (salesOrderCreate.EstimatedTimeDeparture <= DateOnly.FromDateTime(DateTime.Now))
                 return ("Ngày giao hàng không hợp lệ. Vui lòng chọn một ngày trong tương lai.".ToMessageForUser(), null);
 
             if (salesOrderCreate.SalesOrderItemDetailCreateDtos.IsNullOrEmpty())
@@ -141,7 +141,7 @@ namespace MilkDistributionWarehouse.Services
             if (salesOrderUpdate.RetailerId != null && (await _retailerRepository.GetRetailerByRetailerId((int)salesOrderUpdate.RetailerId)) == null)
                 return ("Nhà bán lẻ không hợp lệ.".ToMessageForUser(), null);
 
-            if (salesOrderUpdate.EstimatedTimeDeparture!.Value.Date <= DateTime.Now.Date)
+            if (salesOrderUpdate.EstimatedTimeDeparture <= DateOnly.FromDateTime(DateTime.Now))
                 return ("Ngày giao hàng không hợp lệ. Vui lòng chọn một ngày trong tương lai.".ToMessageForUser(), null);
 
             if (salesOrderUpdate.SalesOrderItemDetailUpdateDtos.IsNullOrEmpty())
@@ -280,13 +280,13 @@ namespace MilkDistributionWarehouse.Services
             var msg = string.Empty;
             var pendingSalesOrders = _salesOrderRepository.GetListSalesOrdersByStatus(SalesOrderStatus.PendingApproval);
             var hasPendingSaleOrder = await pendingSalesOrders.AnyAsync(s => s.RetailerId == salesOrderUpdate.RetailerId
-                && s.EstimatedTimeDeparture!.Value.Date == salesOrderUpdate.EstimatedTimeDeparture!.Value.Date);
+                && s.EstimatedTimeDeparture == salesOrderUpdate.EstimatedTimeDeparture);
             if(hasPendingSaleOrder)  return "Không thể gửi duyệt.Nhà bán lẻ này đã có một đơn hàng khác đang chờ duyệt cho cùng ngày giao dự kiến.".ToMessageForUser();
 
             var approvalSalesOrdersQuery = _salesOrderRepository.GetListSalesOrdersByStatus(SalesOrderStatus.Approved);
             var potentialMatches = await approvalSalesOrdersQuery
                                     .Where(s => s.RetailerId == salesOrderUpdate.RetailerId
-                                                && s.EstimatedTimeDeparture!.Value.Date == salesOrderUpdate.EstimatedTimeDeparture!.Value.Date
+                                                && s.EstimatedTimeDeparture == salesOrderUpdate.EstimatedTimeDeparture
                                                 && s.SalesOrderDetails.Count == salesOrderUpdate.SalesOrderDetails.Count)
                                     .ToListAsync();
             var hasApprovalSaleOrder = potentialMatches.Any(s =>

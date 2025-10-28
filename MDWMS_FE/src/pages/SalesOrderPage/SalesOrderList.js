@@ -10,8 +10,8 @@ import Pagination from "../../components/Common/Pagination";
 import StatusDisplaySaleOrder, { STATUS_LABELS, SALE_ORDER_STATUS } from "../../components/SaleOrderCompoents/StatusDisplaySaleOrder";
 import DeleteModal from "../../components/Common/DeleteModal";
 import { extractErrorMessage } from "../../utils/Validation";
-import { getSalesOrderListSaleManager, getSalesOrderListSalesRepresentatives, getSalesOrderListWarehouseManager, getSalesOrderListWarehouseStaff } from "../../services/SalesOrderService";
-import { getRetailersDropdown } from "../../services/RetailerService";
+import { deleteSaleOrder, getSalesOrderListSaleManager, getSalesOrderListSalesRepresentatives, getSalesOrderListWarehouseManager, getSalesOrderListWarehouseStaff } from "../../services/SalesOrderService";
+import { getAllRetailersDropdown } from "../../services/RetailerService";
 import { getUserDropDownByRoleName } from "../../services/AccountService";
 import { PERMISSIONS } from "../../utils/permissions";
 import { usePermissions } from "../../hooks/usePermissions";
@@ -82,7 +82,7 @@ const SalesOrderList = () => {
     // Fetch data from API
     const fetchRetailers = async () => {
         try {
-            const response = await getRetailersDropdown();
+            const response = await getAllRetailersDropdown();
             console.log("retailer:", response)
             if (response && response.data && Array.isArray(response.data)) {
                 setRetailers(response.data);
@@ -286,7 +286,7 @@ const SalesOrderList = () => {
                 throw new Error("Không tìm thấy ID của đơn xuất");
             }
 
-            // await deletePurchaseOrder(orderId);
+            await deleteSaleOrder(orderId);
             if (window.showToast) {
                 window.showToast("Xóa đơn xuất thành công!", "success");
             }
@@ -659,7 +659,7 @@ const SalesOrderList = () => {
                                 }}
                             >
                                 <Plus className="mr-2 h-4 w-4 text-white" />
-                                Tạo đơn xuất mới
+                                Thêm yêu cầu xuất đơn
                             </Button>
                         </PermissionWrapper>
                     </div>

@@ -4,7 +4,7 @@ import { Card } from "../../components/ui/card"
 import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
 import { Label } from "../../components/ui/label"
-import FloatingDropdown from "../../components/PurchaseOrderComponents/FloatingDropdown"
+import FloatingDropdown from "../../components/Common/FloatingDropdown"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
 import { Plus, Trash2, ArrowLeft, Save, X } from "lucide-react"
 import { updatePurchaseOrder, getGoodsDropDownBySupplierId, getPurchaseOrderDetail, getGoodsPackingByGoodsId } from "../../services/PurchaseOrderService"
@@ -262,7 +262,7 @@ export default function UpdatePurchaseOrder() {
             if (!item.packageQuantity || item.packageQuantity <= 0) {
                 newFieldErrors[`${item.id}-packageQuantity`] = "Vui lòng nhập số lượng lớn hơn 0";
             }
-            
+
             // Kiểm tra validation số lượng
             const quantityError = validateQuantity(item);
             if (quantityError) {
@@ -349,7 +349,7 @@ export default function UpdatePurchaseOrder() {
                                         Nhà Cung Cấp *
                                     </Label>
                                     <FloatingDropdown
-                                        value={formData.supplierName}
+                                        value={formData.supplierName || undefined}
                                         onChange={(value) => setFormData(prev => ({ ...prev, supplierName: value }))}
                                         options={supplierOptions}
                                         placeholder="Chọn nhà cung cấp"
@@ -420,7 +420,7 @@ export default function UpdatePurchaseOrder() {
                                                                 // Nếu không còn hàng hóa nào để chọn, hiển thị thông báo
                                                                 if (availableGoods.length === 0 && goods.length > 0) {
                                                                     return [{
-                                                                        value: "",
+                                                                        value: { undefined },
                                                                         label: "Đã chọn hết hàng hóa"
                                                                     }];
                                                                 }
@@ -453,7 +453,7 @@ export default function UpdatePurchaseOrder() {
                                                 <TableCell className="relative" style={{ overflow: 'visible', zIndex: 'auto' }}>
                                                     <div>
                                                         <FloatingDropdown
-                                                            value={item.goodsPackingId ? item.goodsPackingId.toString() : ""}
+                                                            value={item.goodsPackingId ? item.goodsPackingId.toString() : undefined}
                                                             onChange={(value) => updateItem(item.id, "goodsPackingId", parseInt(value))}
                                                             options={(() => {
                                                                 // Hiển thị đóng gói từ goodsPacking data để có thể edit

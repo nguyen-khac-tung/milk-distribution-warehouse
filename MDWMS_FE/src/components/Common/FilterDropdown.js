@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Filter, ChevronDown } from "lucide-react";
 
-const FilterDropdown = ({ 
-    type, 
-    value, 
-    onFilterChange, 
-    onClearFilter, 
-    options = [], 
+const FilterDropdown = ({
+    type,
+    value,
+    onFilterChange,
+    onClearFilter,
+    options = [],
     placeholder = "Tất cả",
     className = "",
     title = ""
