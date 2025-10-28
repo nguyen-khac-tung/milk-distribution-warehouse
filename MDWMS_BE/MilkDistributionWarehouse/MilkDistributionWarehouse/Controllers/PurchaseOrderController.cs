@@ -101,14 +101,54 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<PurchaseOrderUpdate>.ToResultOk(purchaseOrderUpdate);
         }
 
-        [HttpPut("SubmitPerchaseOrder")]
+        [HttpPut("SubmitPurchaseOrder")]
         [Authorize(Roles = "Sales Representative")]
-        public async Task<IActionResult> SubmitPerchaseOrder([FromBody] PurchaseOrderProcess purchaseOrderProcess)
+        public async Task<IActionResult> SubmitPurchaseOrder([FromBody] PurchaseOrderProcess purchaseOrderProcess)
         {
-            var (msg, purchaseOrderUpdate) = await _purchaseOrderService.SubmitPurchaseOrder(purchaseOrderProcess, User.GetUserId());
+            var (msg, purchaseOrderUpdate) = await _purchaseOrderService.SubmitPurchaseOrder(purchaseOrderProcess, User.GetUserId(), User.GetUserName());
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<PurchaseOrderProcess>.ToResultOk(purchaseOrderUpdate);
+            return ApiResponse<PurchaseOrder>.ToResultOk(purchaseOrderUpdate);
+        }
+
+        [HttpPut("ApprovalPurchaseOrder")]
+        [Authorize(Roles = "Sale Manager")]
+        public async Task<IActionResult> ApprovalPurchaseOrder([FromBody] PurchaseOrderProcess purchaseOrderProcess)
+        {
+            var (msg, purchaseOrderUpdate) = await _purchaseOrderService.ApprovalPurchaseOrder(purchaseOrderProcess, User.GetUserId(), User.GetUserName());
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<PurchaseOrder>.ToResultOk(purchaseOrderUpdate);
+        }
+
+        [HttpPut("RejectedPurchaseOrder")]
+        [Authorize(Roles = "Sale Manager")]
+        public async Task<IActionResult> RejectedPurchaseOrder([FromBody] PurchaseOrderProcess purchaseOrderProcess)
+        {
+            var (msg, purchaseOrderUpdate) = await _purchaseOrderService.RejectedPurchaseOrder(purchaseOrderProcess, User.GetUserId(), User.GetUserName());
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<PurchaseOrder>.ToResultOk(purchaseOrderUpdate);
+        }
+
+        [HttpPut("GoodsReceivedPurchaseOrder")]
+        [Authorize(Roles = "Warehouse Manager")]
+        public async Task<IActionResult> GoodsReceivedPurchaseOrder([FromBody] PurchaseOrderProcess purchaseOrderProcess)
+        {
+            var (msg, purchaseOrderUpdate) = await _purchaseOrderService.GoodsReceivedPurchaseOrder(purchaseOrderProcess, User.GetUserId());
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<PurchaseOrder>.ToResultOk(purchaseOrderUpdate);
+        }
+
+        [HttpPut("AssignedForReceivingPO")]
+        [Authorize(Roles = "Warehouse Manager")]
+        public async Task<IActionResult> AssignedForReceivingPO([FromBody] PurchaseOrderProcessAssignTo purchaseOrderProcess)
+        {
+            var (msg, purchaseOrderUpdate) = await _purchaseOrderService.AssignedForReceivingPO(purchaseOrderProcess, User.GetUserId());
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<PurchaseOrder>.ToResultOk(purchaseOrderUpdate);
         }
 
         [HttpDelete("DeletePurchaseOrder/{purchaseOrderId}")]

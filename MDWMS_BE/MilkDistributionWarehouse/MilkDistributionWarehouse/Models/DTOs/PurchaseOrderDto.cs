@@ -100,12 +100,15 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
     public class PurchaseOrderProcess
     {
-        [Required]
+        [Required(ErrorMessage = "Mã đơn hàng không được để trống.")]
         public Guid PurchaseOrderId { get; set; }
-
-        [ValidStatusAttributeUtility(typeof(PurchaseOrderStatus))]
-        public int Status { get; set; }
         public string? Note { get; set; }
+    }
+
+    public class PurchaseOrderProcessAssignTo : PurchaseOrderProcess
+    {
+        [Required(ErrorMessage = "Nhân viên kho không được bỏ trống.")]
+        public int AssignTo { get; set; }
     }
 
 }
