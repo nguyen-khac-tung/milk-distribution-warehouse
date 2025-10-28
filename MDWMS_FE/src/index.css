@@ -277,3 +277,30 @@ input:focus,
 .animate-pulse {
   animation: pulse 2s ease-in-out infinite;
 }
+
+/* Nút dropdown */
+.ant-select-selector {
+  border-color: rgb(203 213 225); /* slate-300 */
+  border-radius: 0.375rem;
+  height: 38px !important;
+  display: flex !important;
+  align-items: center !important;
+  transition: all 0.2s;
+}
+
+.ant-select:hover .ant-select-selector {
+  border-color: rgb(249 115 22) !important; /* orange-500 */
+  box-shadow: 0 0 0 1px rgb(249 115 22 / 0.3);
+}
+
+.ant-select-focused .ant-select-selector {
+  border-color: rgb(249 115 22) !important;
+  box-shadow: 0 0 0 2px rgb(249 115 22 / 0.2);
+}
+
+/* Item được chọn hoặc hover */
+.ant-select-item-option-selected,
+.ant-select-item-option-active {
+  background-color: rgb(249 115 22) !important;
+  color: white !important;
+}

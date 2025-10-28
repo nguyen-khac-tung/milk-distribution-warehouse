@@ -221,13 +221,49 @@ export const getSalesOrderDetail = async (id) => {
     }
 };
 
-// Tạo Sale Order
+// Tạo mới Sale Order
 export const createSaleOrder = async (data) => {
     try {
-        const res = await api.post("/SaleOrder/CreateSaleOrder", data);
+        console.log("createSaleOrder - request payload:", data);
+        const res = await api.post("/SalesOrder/CreateSalesOrder", data);
+        console.log("createSaleOrder - response:", res);
         return res.data;
     } catch (error) {
         console.error("Error creating sale order:", error);
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
+        throw error;
+    }
+};
+
+// Cập nhật Sale Order
+export const updateSaleOrder = async (data) => {
+    try {
+        const res = await api.put("/SalesOrder/UpdateSalesOrder", data);
+        console.log("updateSaleOrder:", res);
+        return res.data;
+    } catch (error) {
+        console.error("Error updating sale order:", error);
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
+        throw error;
+    }
+};
+
+
+// Xóa Sale Order
+export const deleteSaleOrder = async (id) => {
+    try {
+        const res = await api.delete(`/SalesOrder/DeleteSalesOrder/${id}`);
+        console.log("deleteSaleOrder:", res);
+        return res.data;
+    } catch (error) {
+        console.error("Error deleting sale order:", error);
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
         throw error;
     }
 };

@@ -5,7 +5,7 @@ import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
 import { Textarea } from "../../components/ui/textarea"
 import { Label } from "../../components/ui/label"
-import FloatingDropdown from "../../components/PurchaseOrderComponents/FloatingDropdown"
+import FloatingDropdown from "../../components/Common/FloatingDropdown"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
 import { Plus, Trash2, ArrowLeft, Save, X, ChevronDown, ChevronUp } from "lucide-react"
 import { createPurchaseOrder, getGoodsDropDownBySupplierId, getDraftPurchaseOrdersBySupplier, updatePurchaseOrder, getPurchaseOrderDetail, getGoodsPackingByGoodsId } from "../../services/PurchaseOrderService"
@@ -353,7 +353,7 @@ export default function CreatePurchaseOrder({
                 console.log("Chi tiết đơn nháp từ API:", draftOrderDetail);
                 const existingItems = draftOrderDetail?.data?.purchaseOrderDetails || draftOrderDetail?.purchaseOrderDetails || [];
                 console.log("Danh sách sản phẩm hiện có:", existingItems);
-                
+
                 // Debug: Kiểm tra từng sản phẩm có số lượng hợp lệ không
                 existingItems.forEach((item, index) => {
                     console.log(`Sản phẩm ${index + 1} - Toàn bộ dữ liệu:`, item);
@@ -375,7 +375,7 @@ export default function CreatePurchaseOrder({
                 existingItems.forEach(item => {
                     // Kiểm tra các trường có thể chứa số lượng
                     const quantity = parseInt(item.quantity) || parseInt(item.packageQuantity) || parseInt(item.unitQuantity) || 0;
-                    
+
                     console.log(`Xử lý sản phẩm hiện có:`, {
                         goodsId: item.goodsId,
                         quantity: item.quantity,
@@ -383,7 +383,7 @@ export default function CreatePurchaseOrder({
                         unitQuantity: item.unitQuantity,
                         finalQuantity: quantity
                     });
-                    
+
                     // Thêm sản phẩm vào map (ngay cả khi số lượng = 0 để giữ lại thông tin)
                     allItemsMap.set(item.goodsId, {
                         purchaseOrderDetailId: item.purchaseOrderDetailId,
@@ -584,7 +584,7 @@ export default function CreatePurchaseOrder({
                                         Nhà Cung Cấp <span className="text-red-500">*</span>
                                     </Label>
                                     <FloatingDropdown
-                                        value={formData.supplierName}
+                                        value={formData.supplierName || undefined}
                                         onChange={(value) => handleInputChange("supplierName", value)}
                                         options={supplierOptions}
                                         placeholder="Chọn nhà cung cấp"
@@ -622,7 +622,7 @@ export default function CreatePurchaseOrder({
                                                 <TableCell className="relative" style={{ overflow: 'visible', zIndex: 'auto' }}>
                                                     <div>
                                                         <FloatingDropdown
-                                                            value={item.goodsName}
+                                                            value={item.goodsName || undefined}
                                                             onChange={(value) => updateItem(item.id, "goodsName", value)}
                                                             options={getAvailableGoodsOptions(item.id)}
                                                             placeholder={formData.supplierName ? "Chọn hàng hóa" : "Chọn nhà cung cấp trước"}
@@ -637,7 +637,7 @@ export default function CreatePurchaseOrder({
                                                 <TableCell className="relative" style={{ overflow: 'visible', zIndex: 'auto' }}>
                                                     <div>
                                                         <FloatingDropdown
-                                                            value={item.goodsPackingId}
+                                                            value={item.goodsPackingId || undefined}
                                                             onChange={(value) => updateItem(item.id, "goodsPackingId", value)}
                                                             options={getGoodsPackingOptions(item.id)}
                                                             placeholder={item.goodsName ? "Chọn đóng gói" : "Chọn hàng hóa trước"}
@@ -698,7 +698,7 @@ export default function CreatePurchaseOrder({
                                                     </TableCell>
                                                 )}
                                             </TableRow>
-                                        ))}                                        
+                                        ))}
                                         <TableRow className="border-b border-gray-200">
                                             <TableCell className={items.length === 1 ? "py-16" : "py-8"}></TableCell>
                                             <TableCell className={items.length === 1 ? "py-16" : "py-8"}></TableCell>

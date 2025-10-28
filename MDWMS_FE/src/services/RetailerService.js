@@ -93,3 +93,15 @@ export const getRetailersDropdown = async () => {
         return { status: 500, message: "Error fetching retailers", data: [] };
     }
 };
+
+// Get retailers for dropdown
+export const getAllRetailersDropdown = async () => {
+    try {
+        const res = await api.get("/Retailer/GetAllRetailerDropDown");
+        // console.log("retailer:", res)
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching retailers dropdown:", error);
+        return { status: 500, message: "Error fetching retailers", data: [] };
+    }
+};
