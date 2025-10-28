@@ -20,7 +20,8 @@ const UpdatePalletModal = ({
     locationCode: '',
     locationId: '',
     packageQuantity: '',
-    unitsPerPackage: '',
+    unitPerPackage: '',
+    goodsPackingId: '',
     goodsReceiptNoteId: ''
   });
   const [loading, setLoading] = useState(false);
@@ -35,7 +36,8 @@ const UpdatePalletModal = ({
         locationCode: pallet.locationCode || '',
         locationId: pallet.locationId || '',
         packageQuantity: pallet.packageQuantity || '',
-        unitsPerPackage: pallet.unitsPerPackage || '',
+        unitPerPackage: pallet.unitPerPackage || '',
+        goodsPackingId: pallet.goodsPackingId || '',
         goodsReceiptNoteId: pallet.goodsReceiptNoteId || ''
       });
       setErrors({});
@@ -74,10 +76,10 @@ const UpdatePalletModal = ({
       newErrors.packageQuantity = 'Số lượng thùng phải là số dương';
     }
 
-    if (!formData.unitsPerPackage || formData.unitsPerPackage === '') {
-      newErrors.unitsPerPackage = 'Đơn vị/thùng là bắt buộc';
-    } else if (isNaN(formData.unitsPerPackage) || parseInt(formData.unitsPerPackage) <= 0) {
-      newErrors.unitsPerPackage = 'Đơn vị/thùng phải là số dương';
+    if (!formData.unitPerPackage || formData.unitPerPackage === '') {
+      newErrors.unitPerPackage = 'Đơn vị/thùng là bắt buộc';
+    } else if (isNaN(formData.unitPerPackage) || parseInt(formData.unitPerPackage) <= 0) {
+      newErrors.unitPerPackage = 'Đơn vị/thùng phải là số dương';
     }
 
     if (!formData.goodsReceiptNoteId?.trim()) {
@@ -102,7 +104,7 @@ const UpdatePalletModal = ({
         batchId: formData.batchId,
         locationId: formData.locationId,
         packageQuantity: formData.packageQuantity,
-        unitsPerPackage: formData.unitsPerPackage,
+        goodsPackingId: formData.goodsPackingId,
         goodsReceiptNoteId: formData.goodsReceiptNoteId
       };
       await updatePallet(pallet.palletId, apiData);
@@ -221,21 +223,21 @@ const UpdatePalletModal = ({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="unitsPerPackage" className="text-sm font-medium text-slate-700">
+                  <Label htmlFor="unitPerPackage" className="text-sm font-medium text-slate-700">
                     Đơn vị/thùng <span className="text-red-500">*</span>
                   </Label>
                   <Input
-                    id="unitsPerPackage"
+                    id="unitPerPackage"
                     type="number"
                     placeholder="Nhập đơn vị/thùng..."
-                    value={formData.unitsPerPackage}
-                    onChange={(e) => handleInputChange('unitsPerPackage', e.target.value)}
-                    className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${errors.unitsPerPackage ? 'border-red-500' : ''
+                    value={formData.unitPerPackage}
+                    onChange={(e) => handleInputChange('unitPerPackage', e.target.value)}
+                    className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${errors.unitPerPackage ? 'border-red-500' : ''
                       }`}
                     required
                   />
-                  {errors.unitsPerPackage && (
-                    <p className="text-sm text-red-500">{errors.unitsPerPackage}</p>
+                  {errors.unitPerPackage && (
+                    <p className="text-sm text-red-500">{errors.unitPerPackage}</p>
                   )}
                 </div>
               </div>

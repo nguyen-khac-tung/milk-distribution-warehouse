@@ -13,13 +13,10 @@ export const getPallets = async (searchParams = {}) => {
             filters: {
                 ...(searchParams.status && { status: searchParams.status }),
                 ...(searchParams.purchaseOrderId && { purchaseOrderId: searchParams.purchaseOrderId }),
-                ...(searchParams.batchId && { batchId: searchParams.batchId }),
-                ...(searchParams.locationId && { locationId: searchParams.locationId }),
-                ...(searchParams.createBy && { createBy: searchParams.createBy }),
-                ...(searchParams.fromDate && { fromDate: searchParams.fromDate }),
-                ...(searchParams.toDate && { toDate: searchParams.toDate })
+                ...(searchParams.creatorId && searchParams.creatorId !== "" && { createBy: searchParams.creatorId }),
             }
         };
+        console.log("PalletService - Request body:", body);
         const res = await api.post("/Pallet/Pallets", body);
         return res.data;
     } catch (error) {
@@ -41,21 +38,13 @@ export const getPalletDetail = async (palletId) => {
 
 // Cập nhật trạng thái kệ kê hàng
 export const updatePalletStatus = async (palletId, status) => {
-    console.log("updatePalletStatus called with:", { palletId, status });
-
-    // Validate palletId is a valid UUID
+    // Validate palletId
     if (!palletId) {
         throw new Error('palletId is required');
     }
 
     if (typeof palletId !== 'string') {
         throw new Error(`Invalid palletId type: ${typeof palletId}, expected string`);
-    }
-
-    // Check if it's a valid UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(palletId)) {
-        throw new Error(`Invalid palletId format: ${palletId}, expected UUID`);
     }
 
     const body = {
@@ -77,21 +66,13 @@ export const updatePalletStatus = async (palletId, status) => {
 
 // Xóa kệ kê hàng
 export const deletePallet = async (palletId) => {
-    console.log("deletePallet called with:", { palletId });
-
-    // Validate palletId is a valid UUID
+    // Validate palletId
     if (!palletId) {
         throw new Error('palletId is required');
     }
 
     if (typeof palletId !== 'string') {
         throw new Error(`Invalid palletId type: ${typeof palletId}, expected string`);
-    }
-
-    // Check if it's a valid UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(palletId)) {
-        throw new Error(`Invalid palletId format: ${palletId}, expected UUID`);
     }
 
     try {
@@ -111,8 +92,8 @@ export const createPallet = async (palletData) => {
         batchId: palletData.batchId,
         locationId: parseInt(palletData.locationId),
         packageQuantity: parseInt(palletData.packageQuantity),
-        unitsPerPackage: parseInt(palletData.unitsPerPackage),
-        purchaseOrderId: palletData.purchaseOrderId
+        goodsPackingId: parseInt(palletData.goodsPackingId),
+        goodsReceiptNoteId: palletData.goodsReceiptNoteId
     };
 
     try {
@@ -129,9 +110,7 @@ export const createPallet = async (palletData) => {
 
 // Cập nhật kệ kê hàng
 export const updatePallet = async (palletId, palletData) => {
-    console.log("updatePallet called with:", { palletId, palletData });
-
-    // Validate palletId is a valid UUID
+    // Validate palletId
     if (!palletId) {
         throw new Error('palletId is required');
     }
@@ -140,17 +119,11 @@ export const updatePallet = async (palletId, palletData) => {
         throw new Error(`Invalid palletId type: ${typeof palletId}, expected string`);
     }
 
-    // Check if it's a valid UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(palletId)) {
-        throw new Error(`Invalid palletId format: ${palletId}, expected UUID`);
-    }
-
     const body = {
         batchId: palletData.batchId,
         locationId: parseInt(palletData.locationId),
         packageQuantity: parseInt(palletData.packageQuantity),
-        unitsPerPackage: parseInt(palletData.unitsPerPackage),
+        goodsPackingId: parseInt(palletData.goodsPackingId),
         goodsReceiptNoteId: palletData.goodsReceiptNoteId
     };
 

@@ -155,7 +155,7 @@ export default function PurchaseOrderFilterToggle({
   return (
     <>
       {/* Custom scrollbar styles */}
-      <style jsx>{`
+      <style>{`
         .dropdown-scroll::-webkit-scrollbar {
           width: 6px;
         }

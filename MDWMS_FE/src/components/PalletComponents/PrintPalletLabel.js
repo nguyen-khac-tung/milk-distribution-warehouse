@@ -10,15 +10,15 @@ export const PrintablePalletLabel = React.forwardRef(({ pallet }, ref) => (
         <div className="flex flex-col items-center w-full mt-[20px]">
             <Barcode
                 value={pallet.palletId}
-                height={50}
-                width={0.7}
+                height={55}
+                width={1}
                 margin={10}
                 displayValue={false}
                 fontSize={12}
                 textMargin={6}
                 format="CODE128"
             />
-            <p className="text-xs font-mono mt-2 text-gray-800 break-all">
+            <p className="text-xl font-mono mt-2 text-gray-800 break-all">
                 {pallet.palletId}
             </p>
         </div>
@@ -51,15 +51,15 @@ export const PrintableMultiplePalletLabels = React.forwardRef(({ pallets }, ref)
                         <div className="flex flex-col items-center w-full mt-[20px]">
                             <Barcode
                                 value={pallet.palletId}
-                                height={50}
-                                width={0.7}
+                                height={55}
+                                width={1}
                                 margin={10}
                                 displayValue={false}
                                 fontSize={12}
                                 textMargin={6}
                                 format="CODE128"
                             />
-                            <p className="text-xs font-mono mt-2 text-gray-800 break-all">
+                            <p className="text-xl font-mono mt-2 text-gray-800 break-all">
                                 {pallet.palletId}
                             </p>
                         </div>

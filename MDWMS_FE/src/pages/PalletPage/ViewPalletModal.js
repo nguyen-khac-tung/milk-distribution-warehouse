@@ -192,7 +192,7 @@ export function PalletDetail({ palletId, onClose }) {
                                     <ComponentIcon name="box" size={20} color="#8b5cf6" />
                                     <div>
                                         <p className="text-sm text-purple-600 font-medium">Đơn vị/thùng</p>
-                                        <p className="text-lg text-purple-800 font-bold">{pallet.unitsPerPackage?.toLocaleString() || "N/A"}</p>
+                                        <p className="text-lg text-purple-800 font-bold">{pallet.unitPerPackage?.toLocaleString() || "N/A"}</p>
                                     </div>
                                 </div>
                             </div>
@@ -203,8 +203,8 @@ export function PalletDetail({ palletId, onClose }) {
                                     <div>
                                         <p className="text-sm text-orange-600 font-medium">Tổng số đơn vị/kiện</p>
                                         <p className="text-lg text-orange-800 font-bold">
-                                            {pallet.packageQuantity && pallet.unitsPerPackage 
-                                                ? (pallet.packageQuantity * pallet.unitsPerPackage).toLocaleString() 
+                                            {pallet.packageQuantity && pallet.unitPerPackage
+                                                ? (pallet.packageQuantity * pallet.unitPerPackage).toLocaleString()
                                                 : "N/A"}
                                         </p>
                                     </div>
@@ -230,13 +230,13 @@ export function PalletDetail({ palletId, onClose }) {
                                     <InfoRow
                                         icon="mapPin"
                                         label="Mã vị trí"
-                                        value={pallet.locationCode || "N/A"}
+                                        value={pallet?.locationCode || pallet?.LocationCode || "N/A"}
                                         iconColor="#3b82f6"
                                     />
                                     <InfoRow
                                         icon="building"
                                         label="Khu vực"
-                                        value={pallet.areaName || "N/A"}
+                                        value={pallet?.areaName || pallet?.AreaName || "N/A"}
                                         iconColor="#3b82f6"
                                     />
                                 </div>
@@ -255,28 +255,28 @@ export function PalletDetail({ palletId, onClose }) {
                             </CardHeader>
                             <CardContent>
                                 <div className="bg-white p-4 rounded-lg border border-green-200 space-y-3">
-                                    <InfoRow 
-                                        icon="batch" 
-                                        label="Mã lô hàng" 
-                                        value={pallet.batchCode || "N/A"} 
+                                    <InfoRow
+                                        icon="batch"
+                                        label="Mã lô hàng"
+                                        value={pallet.batchCode || "N/A"}
                                         iconColor="#10b981"
                                     />
-                                    <InfoRow 
-                                        icon="package" 
-                                        label="Tên hàng hóa" 
-                                        value={pallet.goodsName || "N/A"} 
+                                    <InfoRow
+                                        icon="package"
+                                        label="Tên hàng hóa"
+                                        value={pallet.goodsName || "N/A"}
                                         iconColor="#10b981"
                                     />
-                                    <InfoRow 
-                                        icon="calendar" 
-                                        label="Ngày sản xuất" 
-                                        value={pallet.manufacturingDate ? new Date(pallet.manufacturingDate).toLocaleDateString('vi-VN') : "N/A"} 
+                                    <InfoRow
+                                        icon="calendar"
+                                        label="Ngày sản xuất"
+                                        value={pallet.manufacturingDate ? new Date(pallet.manufacturingDate).toLocaleDateString('vi-VN') : "N/A"}
                                         iconColor="#10b981"
                                     />
-                                    <InfoRow 
-                                        icon="calendar" 
-                                        label="Ngày hết hạn" 
-                                        value={pallet.expiryDate ? new Date(pallet.expiryDate).toLocaleDateString('vi-VN') : "N/A"} 
+                                    <InfoRow
+                                        icon="calendar"
+                                        label="Ngày hết hạn"
+                                        value={pallet.expiryDate ? new Date(pallet.expiryDate).toLocaleDateString('vi-VN') : "N/A"}
                                         iconColor="#10b981"
                                     />
                                 </div>
@@ -290,15 +290,15 @@ export function PalletDetail({ palletId, onClose }) {
                                     <div className="p-2 bg-orange-100 rounded-lg">
                                         <ComponentIcon name="shoppingCart" size={20} color="#f97316" />
                                     </div>
-                                    Thông tin đơn hàng
+                                    Thông tin phiếu nhập kho
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="bg-white p-4 rounded-lg border border-orange-200">
-                                    <InfoRow 
-                                        icon="shoppingCart" 
-                                        label="ID đơn hàng" 
-                                        value={pallet.purchaseOrderId || "N/A"} 
+                                <div className="bg-white p-4 rounded-lg border border-orange-200 space-y-3">
+                                    <InfoRow
+                                        icon="shoppingCart"
+                                        label="ID phiếu nhập kho"
+                                        value={pallet.goodsReceiptNoteId || "N/A"}
                                         iconColor="#f97316"
                                     />
                                 </div>
@@ -317,10 +317,10 @@ export function PalletDetail({ palletId, onClose }) {
                             </CardHeader>
                             <CardContent>
                                 <div className="bg-white p-4 rounded-lg border border-purple-200">
-                                    <InfoRow 
-                                        icon="user" 
-                                        label="Người tạo" 
-                                        value={pallet.createByName || "N/A"} 
+                                    <InfoRow
+                                        icon="user"
+                                        label="Người tạo"
+                                        value={pallet.createByName || "N/A"}
                                         iconColor="#8b5cf6"
                                     />
                                 </div>
