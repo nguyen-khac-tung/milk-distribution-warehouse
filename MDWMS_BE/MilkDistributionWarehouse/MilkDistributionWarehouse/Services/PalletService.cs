@@ -170,6 +170,9 @@ namespace MilkDistributionWarehouse.Services
             if (pallet == null)
                 return ("Pallet do not exist.", new PalletDto.PalletResponseDto());
 
+            if (pallet.PackageQuantity > 0)
+                return ("Không thể xóa pallet còn hàng.".ToMessageForUser(), new PalletDto.PalletResponseDto());
+
             pallet.Status = CommonStatus.Deleted;
             pallet.UpdateAt = DateTime.Now;
 
@@ -211,8 +214,16 @@ namespace MilkDistributionWarehouse.Services
                 return ("Trạng thái hiện tại và trạng thái update đang giống nhau.".ToMessageForUser(), new PalletDto.PalletUpdateStatusDto());
             }
 
+            if (palletExist.Status == CommonStatus.Active && update.Status == CommonStatus.Inactive)
+            {
+                return ("Pallet đã được xếp vào vị trí rồi không thể xếp ra.".ToMessageForUser(), new PalletDto.PalletUpdateStatusDto());
+            }
+
             if (update.Status == CommonStatus.Deleted && palletExist.LocationId.HasValue)
             {
+                if (palletExist.PackageQuantity > 0)
+                    return ("Không thể xóa pallet còn hàng.".ToMessageForUser(), new PalletDto.PalletUpdateStatusDto());
+
                 var updateIsAvailOld = await _locationRepository.UpdateIsAvailableAsync(palletExist.LocationId, true);
                 if (!updateIsAvailOld)
                     return ("Cập nhật trạng thái vị trí cũ thất bại.".ToMessageForUser(), new PalletDto.PalletUpdateStatusDto());
