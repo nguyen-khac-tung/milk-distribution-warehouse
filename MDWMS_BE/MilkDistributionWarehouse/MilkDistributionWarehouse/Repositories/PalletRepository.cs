@@ -44,6 +44,7 @@ namespace MilkDistributionWarehouse.Repositories
                 .Include(p => p.CreateByNavigation)
                 .Include(p => p.Batch)
                     .ThenInclude(b => b.Goods)
+                        .ThenInclude(u => u.UnitMeasure)
                 .Include(p => p.Location)
                     .ThenInclude(l => l.Area)
                 .Include(p => p.GoodsReceiptNote)
