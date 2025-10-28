@@ -271,6 +271,7 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.ExpiryDate, opt => opt.MapFrom(src => src.Batch != null ? src.Batch.ExpiryDate : null))
                 .ForMember(dest => dest.UnitPerPackage, opt => opt.MapFrom(src => src.GoodsPacking != null ? src.GoodsPacking.UnitPerPackage : null))
                 .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Batch != null && src.Batch.Goods != null ? src.Batch.Goods.GoodsName : null))
+                .ForMember(dest => dest.UnitOfMeasure, opt => opt.MapFrom(src => src.Batch != null && src.Batch.Goods.UnitMeasure != null ? src.Batch.Goods.UnitMeasure.Name : null))
                 .ForMember(dest => dest.AreaName, opt => opt.MapFrom(src => src.Location != null && src.Location.Area != null ? src.Location.Area.AreaName : null))
                 .ForMember(dest => dest.AreaCode, opt => opt.MapFrom(src => src.Location != null && src.Location.Area != null ? src.Location.Area.AreaCode : null))
                 .ForMember(dest => dest.LocationCode, opt => opt.MapFrom(src => src.Location != null ? src.Location.LocationCode : null));
