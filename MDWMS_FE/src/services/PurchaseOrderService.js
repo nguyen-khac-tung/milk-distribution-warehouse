@@ -190,18 +190,65 @@ export const getGoodsPackingByGoodsId = async (goodsId) => {
 };
 
 // Submit Purchase Order
-export const submitPurchaseOrder = async (purchaseOrderId, status, note) => {
+export const submitPurchaseOrder = async (purchaseOrderId, note = "") => {
     try {
         const data = {
             purchaseOrderId: purchaseOrderId,
-            status: status,
             note: note
         };
         
-        const res = await api.put('/PurchaseOrder/SubmitPerchaseOrder', data);
+        const res = await api.put('/PurchaseOrder/SubmitPurchaseOrder', data);
         return res.data;
     } catch (error) {
         console.error("Error submitting purchase order:", error);
+        throw error;
+    }
+};
+
+// Approve Purchase Order
+export const approvePurchaseOrder = async (purchaseOrderId, note = "") => {
+    try {
+        const data = {
+            purchaseOrderId: purchaseOrderId,
+            note: note
+        };
+        
+        const res = await api.put('/PurchaseOrder/ApprovalPurchaseOrder', data);
+        return res.data;
+    } catch (error) {
+        console.error("Error approving purchase order:", error);
+        throw error;
+    }
+};
+
+// Reject Purchase Order
+export const rejectPurchaseOrder = async (purchaseOrderId, note = "") => {
+    try {
+        const data = {
+            purchaseOrderId: purchaseOrderId,
+            note: note
+        };
+        
+        const res = await api.put('/PurchaseOrder/RejectedPurchaseOrder', data);
+        return res.data;
+    } catch (error) {
+        console.error("Error rejecting purchase order:", error);
+        throw error;
+    }
+};
+
+// Confirm Goods Received for Purchase Order
+export const confirmGoodsReceived = async (purchaseOrderId, note = "") => {
+    try {
+        const data = {
+            purchaseOrderId: purchaseOrderId,
+            note: note
+        };
+        
+        const res = await api.put('/PurchaseOrder/GoodsReceivedPurchaseOrder', data);
+        return res.data;
+    } catch (error) {
+        console.error("Error confirming goods received:", error);
         throw error;
     }
 };

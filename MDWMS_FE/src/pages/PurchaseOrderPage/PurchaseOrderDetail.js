@@ -5,10 +5,12 @@ import { Button } from '../../components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { ArrowLeft, Package, User, Calendar, CheckCircle, XCircle, Clock, Truck, CheckSquare, Trash2, Key, Building2, FileText, Hash, Shield, ShoppingCart, Users, UserCheck, UserX, TruckIcon, UserPlus, Store, UserCircle, UserCog, UserCheck2, UserX2, UserMinus, Mail, Phone, MapPin } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
-import { getPurchaseOrderDetail, submitPurchaseOrder } from '../../services/PurchaseOrderService';
+import { getPurchaseOrderDetail, submitPurchaseOrder, approvePurchaseOrder, rejectPurchaseOrder, confirmGoodsReceived } from '../../services/PurchaseOrderService';
 import ApprovalConfirmationModal from '../../components/PurchaseOrderComponents/ApprovalConfirmationModal';
 import RejectionConfirmationModal from '../../components/PurchaseOrderComponents/RejectionConfirmationModal';
 import SubmitDraftConfirmationModal from '../../components/PurchaseOrderComponents/SubmitDraftConfirmationModal';
+import ConfirmGoodsReceivedModal from '../../components/PurchaseOrderComponents/ConfirmGoodsReceivedModal';
+import UserInfoDisplay from '../../components/PurchaseOrderComponents/UserInfoDisplay';
 import { PURCHASE_ORDER_STATUS } from '../../utils/permissions';
 import { usePermissions } from '../../hooks/usePermissions';
 import { PERMISSIONS } from '../../utils/permissions';
@@ -25,15 +27,18 @@ const PurchaseOrderDetail = () => {
     const [showApprovalModal, setShowApprovalModal] = useState(false);
     const [showRejectionModal, setShowRejectionModal] = useState(false);
     const [showSubmitDraftModal, setShowSubmitDraftModal] = useState(false);
+    const [showConfirmGoodsReceivedModal, setShowConfirmGoodsReceivedModal] = useState(false);
     const [approvalLoading, setApprovalLoading] = useState(false);
     const [rejectionLoading, setRejectionLoading] = useState(false);
     const [submitLoading, setSubmitLoading] = useState(false);
+    const [confirmGoodsReceivedLoading, setConfirmGoodsReceivedLoading] = useState(false);
 
     useEffect(() => {
         const fetchPurchaseOrderDetail = async () => {
             try {
                 setLoading(true);
                 const response = await getPurchaseOrderDetail(id);
+                console.log('PurchaseOrderDetail - response:', response);
                 if (response && response.success) {
                     setPurchaseOrder(response.data);
                 } else {
@@ -106,9 +111,14 @@ const PurchaseOrderDetail = () => {
         };
         return statusTexts[status] || 'Không xác định';
     };
-    const handleApprovalConfirm = async () => {
+    const handleApprovalConfirm = async (approvalNote = "") => {
         setApprovalLoading(true);
         try {
+            await approvePurchaseOrder(
+                purchaseOrder.purchaseOderId,
+                approvalNote
+            );
+
             if (window.showToast) {
                 window.showToast("Duyệt đơn hàng thành công!", "success");
             }
@@ -130,9 +140,8 @@ const PurchaseOrderDetail = () => {
     const handleRejectionConfirm = async (rejectionReason) => {
         setRejectionLoading(true);
         try {
-            await submitPurchaseOrder(
+            await rejectPurchaseOrder(
                 purchaseOrder.purchaseOderId,
-                3, // Status: Rejected
                 rejectionReason
             );
 
@@ -166,6 +175,11 @@ const PurchaseOrderDetail = () => {
             purchaseOrder?.status === PURCHASE_ORDER_STATUS.PendingApproval;
     };
 
+    const canConfirmGoodsReceived = () => {
+        return hasPermission(PERMISSIONS.PURCHASE_ORDER_CONFIRM_DELIVERY) &&
+            purchaseOrder?.status === PURCHASE_ORDER_STATUS.Approved;
+    };
+
     const canSubmitDraft = () => {
         return purchaseOrder?.status === PURCHASE_ORDER_STATUS.Draft &&
             purchaseOrder?.isDisableButton === false;
@@ -176,7 +190,6 @@ const PurchaseOrderDetail = () => {
         try {
             await submitPurchaseOrder(
                 purchaseOrder.purchaseOderId,
-                2, // Status: Pending Approval
                 "Nộp bản nháp để duyệt"
             );
 
@@ -198,6 +211,32 @@ const PurchaseOrderDetail = () => {
             }
         } finally {
             setSubmitLoading(false);
+        }
+    };
+
+    const handleConfirmGoodsReceived = async (note) => {
+        setConfirmGoodsReceivedLoading(true);
+        try {
+            await confirmGoodsReceived(
+                purchaseOrder.purchaseOderId,
+                note
+            );
+
+            if (window.showToast) {
+                window.showToast("Xác nhận hàng đã nhận thành công!", "success");
+            }
+            setShowConfirmGoodsReceivedModal(false);
+            const response = await getPurchaseOrderDetail(id);
+            if (response && response.success) {
+                setPurchaseOrder(response.data);
+            }
+        } catch (error) {
+            console.error("Error confirming goods received:", error);
+            if (window.showToast) {
+                window.showToast("Có lỗi xảy ra khi xác nhận hàng đã nhận", "error");
+            }
+        } finally {
+            setConfirmGoodsReceivedLoading(false);
         }
     };
     if (loading) {
@@ -421,6 +460,16 @@ const PurchaseOrderDetail = () => {
                                         Từ chối đơn hàng
                                     </Button>
                                 )}
+
+                                {canConfirmGoodsReceived() && (
+                                    <Button
+                                        onClick={() => setShowConfirmGoodsReceivedModal(true)}
+                                        className="bg-blue-600 hover:bg-blue-700 text-white h-[38px] px-8"
+                                    >
+                                        <Package className="h-4 w-4 mr-2" />
+                                        Xác nhận hàng đã nhận
+                                    </Button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -445,137 +494,13 @@ const PurchaseOrderDetail = () => {
                                 </span>
                             </div>
                         </div>
-                        <div className="mb-4">
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                    <UserCircle className="h-4 w-4 text-green-600" />
-                                    <span className="text-sm font-medium text-gray-700">Tạo bởi</span>
-                                </div>
-                            </div>
-                            <div className="space-y-1">
-                                <input
-                                    type="text"
-                                    value={purchaseOrder.createdByName || 'Chưa có thông tin'}
-                                    readOnly
-                                    className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
-                                />
-                                <input
-                                    type="text"
-                                    value={formatDate(purchaseOrder.createdAt)}
-                                    readOnly
-                                    className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
-                                />
-                            </div>
-                        </div>
-                        {/* Chỉ hiển thị "Duyệt bởi" khi đơn hàng đã được duyệt (status = 4) */}
-                        {purchaseOrder.status === 4 && (
-                            <div className="mb-4">
-                                <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center space-x-2">
-                                        <UserCheck2 className="h-4 w-4 text-blue-600" />
-                                        <span className="text-sm font-medium text-gray-700">Duyệt bởi</span>
-                                    </div>
-                                </div>
-                                <div className="space-y-1">
-                                    <input
-                                        type="text"
-                                        value={purchaseOrder.approvalByName || 'Chưa có thông tin'}
-                                        readOnly
-                                        className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
-                                    />
-                                    <input
-                                        type="text"
-                                        value={purchaseOrder.approvalByName ? formatDate(purchaseOrder.updatedAt) : 'Chưa có thông tin'}
-                                        readOnly
-                                        className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
-                                    />
-                                </div>
-                            </div>
-                        )}
-                        
-                        {/* Chỉ hiển thị "Từ chối bởi" khi đơn hàng bị từ chối (status = 3) */}
-                        {purchaseOrder.status === 3 && (
-                            <div className="mb-4">
-                                <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center space-x-2">
-                                        <UserX2 className="h-4 w-4 text-red-600" />
-                                        <span className="text-sm font-medium text-gray-700">Từ chối bởi</span>
-                                    </div>
-                                </div>
-                                <div className="space-y-1">
-                                    <input
-                                        type="text"
-                                        value={purchaseOrder.approvalByName || 'Chưa có thông tin'}
-                                        readOnly
-                                        className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
-                                    />
-                                    <input
-                                        type="text"
-                                        value={purchaseOrder.approvalByName ? formatDate(purchaseOrder.updatedAt) : 'Chưa có thông tin'}
-                                        readOnly
-                                        className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
-                                    />
-                                </div>
-                                {/* Hiển thị note từ chối nếu có */}
-                                {purchaseOrder.note && (
-                                    <div className="mt-2">
-                                        <label className="text-xs font-medium text-gray-600 block mb-1">Lý do từ chối:</label>
-                                        <textarea
-                                            value={purchaseOrder.note}
-                                            readOnly
-                                            className="w-full bg-red-50 border border-red-200 rounded px-2 py-1 text-sm text-red-800 resize-none"
-                                            rows="2"
-                                        />
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                        {/* Assign To */}
-                        <div className="mb-4">
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                    <UserCog className="h-4 w-4 text-purple-600" />
-                                    <span className="text-sm font-medium text-gray-700">Giao cho</span>
-                                </div>
-                            </div>
-                            <div className="space-y-1">
-                                <input
-                                    type="text"
-                                    value={purchaseOrder.assignToByName || 'Chưa có thông tin'}
-                                    readOnly
-                                    className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
-                                />
-                                <input
-                                    type="text"
-                                    value={purchaseOrder.assignToByName ? formatDate(purchaseOrder.updatedAt) : 'Chưa có thông tin'}
-                                    readOnly
-                                    className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
-                                />
-                            </div>
-                        </div>
-                        {/* Entered By */}
-                        <div className="mb-4">
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                    <UserMinus className="h-4 w-4 text-orange-600" />
-                                    <span className="text-sm font-medium text-gray-700">Xác nhận hàng giao đến</span>
-                                </div>
-                            </div>
-                            <div className="space-y-1">
-                                <input
-                                    type="text"
-                                    value={purchaseOrder.arrivalConfirmedByName || 'Chưa có thông tin'}
-                                    readOnly
-                                    className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
-                                />
-                                <input
-                                    type="text"
-                                    value={purchaseOrder.arrivalConfirmedByName ? formatDate(purchaseOrder.updatedAt) : 'Chưa có thông tin'}
-                                    readOnly
-                                    className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
-                                />
-                            </div>
-                        </div>
+                        {/* User Information Display */}
+                        <UserInfoDisplay
+                            order={purchaseOrder}
+                            formatDate={formatDate}
+                            hasPermission={hasPermission}
+                            userInfo={null}
+                        />
                     </div>
                 </div>
             </div>
@@ -595,6 +520,15 @@ const PurchaseOrderDetail = () => {
                 onConfirm={handleRejectionConfirm}
                 purchaseOrder={purchaseOrder}
                 loading={rejectionLoading}
+            />
+
+            {/* Confirm Goods Received Modal */}
+            <ConfirmGoodsReceivedModal
+                isOpen={showConfirmGoodsReceivedModal}
+                onClose={() => setShowConfirmGoodsReceivedModal(false)}
+                onConfirm={handleConfirmGoodsReceived}
+                purchaseOrder={purchaseOrder}
+                loading={confirmGoodsReceivedLoading}
             />
 
             {/* Submit Draft Confirmation Modal */}
