@@ -856,6 +856,7 @@ export default function PalletList() {
                         setUpdatePalletId(null)
                     }}
                     pallet={pallets.find(p => p.palletId === updatePalletId)}
+                    goodsId={pallets.find(p => p.palletId === updatePalletId)?.goodId}
                     onSuccess={handleUpdateSuccess}
                 />
             )}

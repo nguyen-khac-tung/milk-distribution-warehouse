@@ -4,14 +4,16 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Card } from '../../components/ui/card';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, ChevronDown } from 'lucide-react';
 import { updatePallet } from '../../services/PalletService';
+import { getBatchDropdown } from '../../services/BatchService';
 import { extractErrorMessage } from '../../utils/Validation';
 
 const UpdatePalletModal = ({
   isOpen,
   onClose,
   pallet,
+  goodsId,
   onSuccess
 }) => {
   const [formData, setFormData] = useState({
@@ -26,10 +28,20 @@ const UpdatePalletModal = ({
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [batchOptions, setBatchOptions] = useState([]);
+  const [batchLoading, setBatchLoading] = useState(false);
+  const [showBatchDropdown, setShowBatchDropdown] = useState(false);
+
+  // Debug batchOptions changes
+  useEffect(() => {
+    console.log("batchOptions updated:", batchOptions);
+  }, [batchOptions]);
 
   // Initialize form data when pallet changes
   useEffect(() => {
     if (pallet && isOpen) {
+      console.log("Modal opened with pallet:", pallet);
+      console.log("GoodsId:", goodsId);
       setFormData({
         batchCode: pallet.batchCode || '',
         batchId: pallet.batchId || '',
@@ -41,8 +53,34 @@ const UpdatePalletModal = ({
         goodsReceiptNoteId: pallet.goodsReceiptNoteId || ''
       });
       setErrors({});
+      
+      // Load batch dropdown if goodsId exists
+      if (goodsId) {
+        console.log("Loading batch dropdown for goodsId:", goodsId);
+        loadBatchDropdown(goodsId);
+      } else {
+        console.log("No goodsId provided");
+      }
     }
-  }, [pallet, isOpen]);
+  }, [pallet, goodsId, isOpen]);
+
+  // Load batch dropdown data
+  const loadBatchDropdown = async (goodsId) => {
+    try {
+      setBatchLoading(true);
+      const response = await getBatchDropdown(goodsId);
+      console.log("Batch dropdown response:", response);
+      // API trả về object có data property chứa array
+      const batchData = response?.data || [];
+      console.log("Setting batchOptions to:", batchData);
+      setBatchOptions(batchData);
+    } catch (error) {
+      console.error("Error loading batch dropdown:", error);
+      setBatchOptions([]);
+    } finally {
+      setBatchLoading(false);
+    }
+  };
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -55,6 +93,24 @@ const UpdatePalletModal = ({
       setErrors(prev => ({
         ...prev,
         [field]: ''
+      }));
+    }
+  };
+
+  // Handle batch selection
+  const handleBatchSelect = (batch) => {
+    setFormData(prev => ({
+      ...prev,
+      batchId: batch.batchId,
+      batchCode: batch.batchCode
+    }));
+    setShowBatchDropdown(false);
+    
+    // Clear error when user selects
+    if (errors.batchCode) {
+      setErrors(prev => ({
+        ...prev,
+        batchCode: ''
       }));
     }
   };
@@ -134,12 +190,29 @@ const UpdatePalletModal = ({
       locationCode: '',
       locationId: '',
       packageQuantity: '',
-      unitsPerPackage: '',
+      unitPerPackage: '',
+      goodsPackingId: '',
       goodsReceiptNoteId: ''
     });
     setErrors({});
+    setBatchOptions([]);
+    setShowBatchDropdown(false);
     onClose && onClose();
   };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showBatchDropdown && !event.target.closest('.batch-dropdown-container')) {
+        setShowBatchDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showBatchDropdown]);
 
   if (!isOpen) return null;
 
@@ -168,15 +241,53 @@ const UpdatePalletModal = ({
                   <Label htmlFor="batchCode" className="text-sm font-medium text-slate-700">
                     Mã lô hàng <span className="text-red-500">*</span>
                   </Label>
-                  <Input
-                    id="batchCode"
-                    placeholder="Nhập mã lô hàng..."
-                    value={formData.batchCode}
-                    onChange={(e) => handleInputChange('batchCode', e.target.value)}
-                    className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${errors.batchCode ? 'border-red-500' : ''
-                      }`}
-                    required
-                  />
+                  <div className="relative batch-dropdown-container">
+                    <button
+                      type="button"
+                      onClick={() => setShowBatchDropdown(!showBatchDropdown)}
+                      className={`w-full h-[38px] px-3 py-2 text-left border rounded-lg bg-white flex items-center justify-between ${errors.batchCode ? 'border-red-500' : 'border-slate-300 focus:border-orange-500 focus:ring-orange-500'}`}
+                    >
+                      <span className={formData.batchCode ? 'text-slate-900' : 'text-slate-500'}>
+                        {formData.batchCode || 'Chọn lô hàng...'}
+                      </span>
+                      {batchLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-slate-400" />
+                      )}
+                    </button>
+                    
+                    {showBatchDropdown && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-slate-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        {batchLoading ? (
+                          <div className="px-3 py-2 text-slate-500 text-sm flex items-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Đang tải...
+                          </div>
+                        ) : batchOptions.length > 0 ? (
+                          batchOptions.map((batch) => (
+                            <button
+                              key={batch.batchId}
+                              type="button"
+                              onClick={() => handleBatchSelect(batch)}
+                              className={`w-full px-3 py-2 text-left hover:bg-slate-50 flex items-center justify-between ${
+                                formData.batchId === batch.batchId ? 'bg-orange-50 text-orange-600' : 'text-slate-900'
+                              }`}
+                            >
+                              <span>{batch.batchCode}</span>
+                              {formData.batchId === batch.batchId && (
+                                <span className="text-orange-600">✓</span>
+                              )}
+                            </button>
+                          ))
+                        ) : (
+                          <div className="px-3 py-2 text-slate-500 text-sm">
+                            Không có dữ liệu batch
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   {errors.batchCode && (
                     <p className="text-sm text-red-500">{errors.batchCode}</p>
                   )}
