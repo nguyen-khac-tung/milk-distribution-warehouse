@@ -123,18 +123,6 @@ export const createPurchaseOrder = async (data) => {
     }
 };
 
-// // Cập nhật Purchase Order
-// export const updatePurchaseOrder = async (id, data) => {
-//     try {
-//         const res = await api.put(`/PurchaseOrder/Update/${id}`, data);
-//         return res.data;
-//     } catch (error) {
-//         console.error("Error updating purchase order:", error);
-//         throw error;
-//     }
-// };
-
-
 // Lấy chi tiết Purchase Order
 export const getPurchaseOrderDetail = async (id) => {
     try {
@@ -145,50 +133,6 @@ export const getPurchaseOrderDetail = async (id) => {
         throw error;
     }
 };
-
-// // Submit request
-// export const submitPurchaseOrderRequest = async (id) => {
-//     try {
-//         const res = await api.post(`/PurchaseOrder/SubmitRequest/${id}`);
-//         return res.data;
-//     } catch (error) {
-//         console.error("Error submitting purchase order request:", error);
-//         throw error;
-//     }
-// };
-
-// // Approval request
-// export const approvalPurchaseOrderRequest = async (id, data) => {
-//     try {
-//         const res = await api.post(`/PurchaseOrder/ApprovalRequest/${id}`, data);
-//         return res.data;
-//     } catch (error) {
-//         console.error("Error approval purchase order request:", error);
-//         throw error;
-//     }
-// };
-
-// // Confirm delivery
-// export const confirmPurchaseOrderDelivery = async (id) => {
-//     try {
-//         const res = await api.post(`/PurchaseOrder/ConfirmDelivery/${id}`);
-//         return res.data;
-//     } catch (error) {
-//         console.error("Error confirming purchase order delivery:", error);
-//         throw error;
-//     }
-// };
-
-// // Assign receiving
-// export const assignPurchaseOrderReceiving = async (id, data) => {
-//     try {
-//         const res = await api.post(`/PurchaseOrder/AssignReceiving/${id}`, data);
-//         return res.data;
-//     } catch (error) {
-//         console.error("Error assigning purchase order receiving:", error);
-//         throw error;
-//     }
-// };
 
 // Lấy danh sách hàng hóa theo nhà cung cấp
 export const getGoodsDropDownBySupplierId = async (supplierId) => {
@@ -244,4 +188,22 @@ export const getGoodsPackingByGoodsId = async (goodsId) => {
         throw error;
     }
 };
+
+// Submit Purchase Order
+export const submitPurchaseOrder = async (purchaseOrderId, status, note) => {
+    try {
+        const data = {
+            purchaseOrderId: purchaseOrderId,
+            status: status,
+            note: note
+        };
+        
+        const res = await api.put('/PurchaseOrder/SubmitPerchaseOrder', data);
+        return res.data;
+    } catch (error) {
+        console.error("Error submitting purchase order:", error);
+        throw error;
+    }
+};
+
 

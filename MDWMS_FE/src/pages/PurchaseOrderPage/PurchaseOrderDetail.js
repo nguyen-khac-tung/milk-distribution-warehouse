@@ -5,8 +5,9 @@ import { Button } from '../../components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { ArrowLeft, Package, User, Calendar, CheckCircle, XCircle, Clock, Truck, CheckSquare, Trash2, Key, Building2, FileText, Hash, Shield, ShoppingCart, Users, UserCheck, UserX, TruckIcon, UserPlus, Store, UserCircle, UserCog, UserCheck2, UserX2, UserMinus, Mail, Phone, MapPin } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
-import { getPurchaseOrderDetail } from '../../services/PurchaseOrderService';
+import { getPurchaseOrderDetail, submitPurchaseOrder } from '../../services/PurchaseOrderService';
 import ApprovalConfirmationModal from '../../components/PurchaseOrderComponents/ApprovalConfirmationModal';
+import SubmitDraftConfirmationModal from '../../components/PurchaseOrderComponents/SubmitDraftConfirmationModal';
 import { PURCHASE_ORDER_STATUS } from '../../utils/permissions';
 import { usePermissions } from '../../hooks/usePermissions';
 import { PERMISSIONS } from '../../utils/permissions';
@@ -21,7 +22,9 @@ const PurchaseOrderDetail = () => {
 
     // Modal states
     const [showApprovalModal, setShowApprovalModal] = useState(false);
+    const [showSubmitDraftModal, setShowSubmitDraftModal] = useState(false);
     const [approvalLoading, setApprovalLoading] = useState(false);
+    const [submitLoading, setSubmitLoading] = useState(false);
 
     useEffect(() => {
         const fetchPurchaseOrderDetail = async () => {
@@ -124,6 +127,41 @@ const PurchaseOrderDetail = () => {
         return hasPermission(PERMISSIONS.PURCHASE_ORDER_APPROVAL_REQUEST) &&
             purchaseOrder?.status === PURCHASE_ORDER_STATUS.PendingApproval;
     };
+
+    const canSubmitDraft = () => {
+        return purchaseOrder?.status === PURCHASE_ORDER_STATUS.Draft &&
+            purchaseOrder?.isDisableButton === false;
+    };
+
+    const handleSubmitDraftConfirm = async () => {
+        setSubmitLoading(true);
+        try {
+            await submitPurchaseOrder(
+                purchaseOrder.purchaseOderId,
+                2, // Status: Pending Approval
+                "Nộp bản nháp để duyệt"
+            );
+
+            if (window.showToast) {
+                window.showToast("Nộp bản nháp thành công!", "success");
+            }
+
+            setShowSubmitDraftModal(false);
+
+            // Refresh data after successful submission
+            const response = await getPurchaseOrderDetail(id);
+            if (response && response.success) {
+                setPurchaseOrder(response.data);
+            }
+        } catch (error) {
+            console.error("Error submitting draft:", error);
+            if (window.showToast) {
+                window.showToast("Có lỗi xảy ra khi nộp bản nháp", "error");
+            }
+        } finally {
+            setSubmitLoading(false);
+        }
+    };
     if (loading) {
         return <Loading />;
     }
@@ -215,7 +253,7 @@ const PurchaseOrderDetail = () => {
                                                 {purchaseOrder.supplierName || 'Chưa có thông tin'}
                                             </span>
                                         </div>
-                                        
+
                                         {/* Right: Address */}
                                         <div className="flex items-center space-x-2">
                                             <div className="flex items-center space-x-2">
@@ -227,7 +265,7 @@ const PurchaseOrderDetail = () => {
                                             </span>
                                         </div>
                                     </div>
-                                    
+
                                     {/* Email and Phone on same line */}
                                     <div className="grid grid-cols-2 gap-4">
                                         {/* Left: Email */}
@@ -240,7 +278,7 @@ const PurchaseOrderDetail = () => {
                                                 {purchaseOrder.email || 'Chưa có thông tin'}
                                             </span>
                                         </div>
-                                        
+
                                         {/* Right: Phone */}
                                         <div className="flex items-center space-x-2">
                                             <div className="flex items-center space-x-2">
@@ -252,7 +290,7 @@ const PurchaseOrderDetail = () => {
                                             </span>
                                         </div>
                                     </div>
-                                    
+
                                     {purchaseOrder.note && (
                                         <div className="flex items-start space-x-2">
                                             <div className="flex items-center space-x-2">
@@ -325,9 +363,19 @@ const PurchaseOrderDetail = () => {
                                     </TableBody>
                                 </Table>
                             </div>
-                            {/* Action Button at bottom of card */}
-                            {canApprove() && (
-                                <div className="mt-6 flex justify-center">
+                            {/* Action Buttons at bottom of card */}
+                            <div className="mt-6 flex justify-center space-x-4">
+                                {canSubmitDraft() && (
+                                    <Button
+                                        onClick={() => setShowSubmitDraftModal(true)}
+                                        className="bg-orange-600 hover:bg-orange-700 text-white h-[38px] px-8"
+                                    >
+                                        <FileText className="h-4 w-4 mr-2" />
+                                        Nộp bản nháp
+                                    </Button>
+                                )}
+
+                                {canApprove() && (
                                     <Button
                                         onClick={() => setShowApprovalModal(true)}
                                         className="bg-green-600 hover:bg-green-700 text-white h-[38px] px-8"
@@ -335,8 +383,8 @@ const PurchaseOrderDetail = () => {
                                         <CheckCircle className="h-4 w-4 mr-2" />
                                         Xác nhận chờ duyệt
                                     </Button>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
                     </div>
                     <div className="bg-gray-200 rounded-lg p-6 h-full">
@@ -482,6 +530,15 @@ const PurchaseOrderDetail = () => {
                 onConfirm={handleApprovalConfirm}
                 purchaseOrder={purchaseOrder}
                 loading={approvalLoading}
+            />
+
+            {/* Submit Draft Confirmation Modal */}
+            <SubmitDraftConfirmationModal
+                isOpen={showSubmitDraftModal}
+                onClose={() => setShowSubmitDraftModal(false)}
+                onConfirm={handleSubmitDraftConfirm}
+                purchaseOrder={purchaseOrder}
+                loading={submitLoading}
             />
         </div>
     );
