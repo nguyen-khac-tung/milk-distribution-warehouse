@@ -113,4 +113,12 @@ namespace MilkDistributionWarehouse.Models.DTOs
     {
         public int? SalesOrderDetailId { get; set; }
     }
+
+    public class SalesOrderStatusUpdateDto
+    {
+        public Guid SalesOrderId { get; set; }
+
+        [Required(ErrorMessage = "Trạng thái không được bỏ trống.")]
+        public int? Status { get; set; }
+    }
 }
