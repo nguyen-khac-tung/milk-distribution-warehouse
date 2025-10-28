@@ -17,12 +17,10 @@ namespace MilkDistributionWarehouse.Services
     {
         private readonly IGoodsPackingRepository _goodPackingRepository;
         private readonly IMapper _mapper;
-        private readonly IUnitOfWork _unitOfWork;
-        public GoodsPackingService(IGoodsPackingRepository goodPackingRepository, IMapper mapper, IUnitOfWork unitOfWork)
+        public GoodsPackingService(IGoodsPackingRepository goodPackingRepository, IMapper mapper)
         {
             _goodPackingRepository = goodPackingRepository;
             _mapper = mapper;
-            _unitOfWork = unitOfWork;
         }
 
         public async Task<(string, List<GoodsPackingDto>?)> GetGoodsPackingByGoodsId(int goodsId)
@@ -59,26 +57,27 @@ namespace MilkDistributionWarehouse.Services
                         throw new Exception("Cập nhật số lượng đóng gói hàng hoá thất bại." + hasAnyTransaction);
 
                     var resultRemove = await _goodPackingRepository.DeleteGoodsPacking(p);
-                    if (resultRemove == null) 
+                    if (resultRemove == null)
                         throw new Exception("Cập nhật số lượng đóng gói hàng hoá thất bại.");
                 }
 
-                foreach(var p in updates)
+                foreach (var p in updates)
                 {
-                    if(p.GoodsPackingId > 0)
+                    if (p.GoodsPackingId > 0)
                     {
                         var existingGoodsPacking = goodsPackingsExist
                             .FirstOrDefault(gp => gp.GoodsPackingId == p.GoodsPackingId);
-                        
-                        if(existingGoodsPacking != null)
+
+                        if (existingGoodsPacking != null)
                         {
                             var hasRelatedTransaction = await HasRelatedTransaction(p.GoodsPackingId);
                             if (!string.IsNullOrEmpty(hasRelatedTransaction))
                                 throw new Exception("Cập nhật số lượng đóng gói hàng hoá thất bại." + hasRelatedTransaction);
 
                             existingGoodsPacking.UnitPerPackage = p.UnitPerPackage;
-                        }    
-                    }else
+                        }
+                    }
+                    else
                     {
                         var newGoodsPackingCreate = new GoodsPackingCreateDto()
                         {
@@ -89,9 +88,9 @@ namespace MilkDistributionWarehouse.Services
                         var newGoodsPacking = _mapper.Map<GoodsPacking>(newGoodsPackingCreate);
 
                         var resultCreate = await _goodPackingRepository.CreateGoodsPacking(newGoodsPacking);
-                        if (resultCreate == null) 
+                        if (resultCreate == null)
                             throw new Exception("Cập nhật số lượng đóng gói hàng hoá thất bại.");
-                    } 
+                    }
                 }
 
                 return ("", updates);
