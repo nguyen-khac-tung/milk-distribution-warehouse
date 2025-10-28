@@ -87,6 +87,16 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<SalesOrderUpdateDto>.ToResultOk(salesOrder);
         }
 
+        [Authorize(Roles = "Sale Manager, Sales Representative, Warehouse Staff, Warehouse Manager")]
+        [HttpPut("UpdateStatusSalesOrder")]
+        public async Task<IActionResult> UpdateStatusSalesOrder(SalesOrderStatusUpdateDto salesOrderUpdateStatus)
+        {
+            var (msg, salesOrder) = await _salesOrderService.UpdateStatusSalesOrder(salesOrderUpdateStatus, User.GetUserId());
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<SalesOrderStatusUpdateDto>.ToResultOk(salesOrder);
+        }
+
         [Authorize(Roles = "Sales Representative")]
         [HttpDelete("DeleteSalesOrder/{salesOrderId}")]
         public async Task<IActionResult> DeleteSalesOrder(Guid? salesOrderId)

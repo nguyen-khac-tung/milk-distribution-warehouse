@@ -28,7 +28,6 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<PageResult<BatchDto>>.ToResultOk(batchs);
         }
 
-        [Authorize(Roles = "Warehouse Manager, Warehouse Staff")]
         [HttpGet("DropDown/{goodsId}")]
         public async Task<IActionResult> GetBatchDropDown(int goodsId)
         {

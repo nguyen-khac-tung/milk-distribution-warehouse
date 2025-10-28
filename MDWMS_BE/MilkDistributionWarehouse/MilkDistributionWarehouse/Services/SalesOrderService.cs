@@ -1,11 +1,13 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
 using MilkDistributionWarehouse.Utilities;
+using System.Threading.Tasks;
 
 namespace MilkDistributionWarehouse.Services
 {
@@ -15,6 +17,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, SalesOrderDetailDto?)> GetSalesOrderDetail(Guid? saleOrderId);
         Task<(string, SalesOrderCreateDto?)> CreateSalesOrder(SalesOrderCreateDto salesOrderCreate, int? userId);
         Task<(string, SalesOrderUpdateDto?)> UpdateSalesOrder(SalesOrderUpdateDto salesOrderUpdate, int? userId);
+        Task<(string, SalesOrderStatusUpdateDto?)> UpdateStatusSalesOrder(SalesOrderStatusUpdateDto salesOrderUpdateStatus, int? userId);
         Task<string> DeleteSalesOrder(Guid? salesOrderId, int? userId);
     }
 
@@ -172,7 +175,7 @@ namespace MilkDistributionWarehouse.Services
                 updateDetails.ForEach(updateDetail =>
                 {
                     var existingDetail = existingDetails?.FirstOrDefault(ex => ex.SalesOrderDetailId == updateDetail.SalesOrderDetailId);
-                    if(existingDetail != null)
+                    if (existingDetail != null)
                     {
                         _mapper.Map(updateDetail, existingDetail);
                     }
@@ -195,6 +198,50 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
+        public async Task<(string, SalesOrderStatusUpdateDto?)> UpdateStatusSalesOrder(SalesOrderStatusUpdateDto salesOrderUpdateStatus, int? userId)
+        {
+            var salesOrder = await _salesOrderRepository.GetSalesOrderById(salesOrderUpdateStatus.SalesOrderId);
+            if (salesOrder == null) return ("Sales order exist is null", null);
+
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                if (salesOrderUpdateStatus.Status == SalesOrderStatus.PendingApproval)
+                {
+                    if (salesOrder.Status != SalesOrderStatus.Draft && salesOrder.Status != SalesOrderStatus.Rejected)
+                        return ("Chỉ được nộp đơn khi đơn hàng ở trạng thái Nháp hoặc Bị từ chối.".ToMessageForUser(), null);
+                    if (salesOrder.CreatedBy != userId) return ("Current User has no permission to update.", null);
+                    var msg = await CheckPendingSalesOrderValidation(salesOrder);
+                    if (msg.Length > 0) return (msg, null);
+                    salesOrder.Status = SalesOrderStatus.PendingApproval;
+                }
+
+                if (salesOrderUpdateStatus.Status == SalesOrderStatus.Rejected)
+                {
+                    if (salesOrder.Status != SalesOrderStatus.PendingApproval)
+                        return ("Chỉ được từ chối khi đơn hàng ở trạng thái Chờ duyệt.".ToMessageForUser(), null);
+                    salesOrder.Status = SalesOrderStatus.Rejected;
+                }
+
+                if (salesOrderUpdateStatus.Status == SalesOrderStatus.Approved)
+                {
+                    if (salesOrder.Status != SalesOrderStatus.PendingApproval)
+                        return ("Chỉ được duyệt khi đơn hàng ở trạng thái Chờ duyệt.".ToMessageForUser(), null);
+                    salesOrder.Status = SalesOrderStatus.Approved;
+                }
+
+                salesOrder.UpdateAt = DateTime.Now;
+                await _unitOfWork.CommitTransactionAsync();
+                return ("", salesOrderUpdateStatus);
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ("Cập nhật trạng thái đơn hàng thất bại.".ToMessageForUser(), null);
+            }
+        }
+
         public async Task<string> DeleteSalesOrder(Guid? salesOrderId, int? userId)
         {
             if (salesOrderId == null) return "SalesOrderId is invalid.";
@@ -204,9 +251,9 @@ namespace MilkDistributionWarehouse.Services
 
             if (salesOrderExist.CreatedBy != userId) return "Current User has no permission to delete.";
 
-            if (salesOrderExist.Status != SalesOrderStatus.Draft) 
+            if (salesOrderExist.Status != SalesOrderStatus.Draft)
                 return "Chỉ những đơn trạng thái Nháp mới có thể xóa.".ToMessageForUser();
-                
+
             try
             {
                 await _unitOfWork.BeginTransactionAsync();
@@ -226,6 +273,31 @@ namespace MilkDistributionWarehouse.Services
                 await _unitOfWork.RollbackTransactionAsync();
                 return "Xoá đơn hàng thất bại.".ToMessageForUser();
             }
+        }
+
+        private async Task<string> CheckPendingSalesOrderValidation(SalesOrder salesOrderUpdate)
+        {
+            var msg = string.Empty;
+            var pendingSalesOrders = _salesOrderRepository.GetListSalesOrdersByStatus(SalesOrderStatus.PendingApproval);
+            var hasPendingSaleOrder = await pendingSalesOrders.AnyAsync(s => s.RetailerId == salesOrderUpdate.RetailerId
+                && s.EstimatedTimeDeparture!.Value.Date == salesOrderUpdate.EstimatedTimeDeparture!.Value.Date);
+            if(hasPendingSaleOrder)  return "Không thể gửi duyệt.Nhà bán lẻ này đã có một đơn hàng khác đang chờ duyệt cho cùng ngày giao dự kiến.".ToMessageForUser();
+
+            var approvalSalesOrdersQuery = _salesOrderRepository.GetListSalesOrdersByStatus(SalesOrderStatus.Approved);
+            var potentialMatches = await approvalSalesOrdersQuery
+                                    .Where(s => s.RetailerId == salesOrderUpdate.RetailerId
+                                                && s.EstimatedTimeDeparture!.Value.Date == salesOrderUpdate.EstimatedTimeDeparture!.Value.Date
+                                                && s.SalesOrderDetails.Count == salesOrderUpdate.SalesOrderDetails.Count)
+                                    .ToListAsync();
+            var hasApprovalSaleOrder = potentialMatches.Any(s =>
+                                    s.SalesOrderDetails.All(sd =>
+                                        salesOrderUpdate.SalesOrderDetails.Any(su =>
+                                            su.GoodsId == sd.GoodsId
+                                            && su.GoodsPackingId == sd.GoodsPackingId
+                                            && su.PackageQuantity == sd.PackageQuantity)));
+            if (hasApprovalSaleOrder) return "Không thể gửi duyệt vì đơn hàng này trùng lặp hoàn toàn với một đơn hàng đã được duyệt trước đó.".ToMessageForUser();
+
+            return "";
         }
     }
 }

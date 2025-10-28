@@ -63,6 +63,9 @@ namespace MilkDistributionWarehouse.Models.DTOs
     public class PurchaseOrdersDetail : PurchaseOrderDtoWarehouseManager
     {
         public List<PurchaseOrderDetailDto>? PurchaseOrderDetails { get; set; } = new();
+        public string Email { get; set; }
+        public string Phone { get; set; }
+        public string Address { get; set; }
         public string? Note { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public bool IsDisableButton { get; set; }

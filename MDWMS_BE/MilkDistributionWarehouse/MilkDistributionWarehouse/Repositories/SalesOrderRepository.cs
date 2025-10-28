@@ -10,6 +10,7 @@ namespace MilkDistributionWarehouse.Repositories
     public interface ISalesOrderRepository
     {
         IQueryable<SalesOrder> GetAllSalesOrders();
+        IQueryable<SalesOrder> GetListSalesOrdersByStatus(int status);
         Task<SalesOrder?> GetSalesOrderById(Guid? id);
         Task<bool> HasActiveSalesOrder(int retailerId);
         Task<bool> IsAllSalesOrderDraffOrEmpty(int retailerId);
@@ -34,6 +35,14 @@ namespace MilkDistributionWarehouse.Repositories
                 .Include(s => s.AcknowledgedByNavigation)
                 .Include(s => s.AssignToNavigation)
                 .AsNoTracking();
+        }
+
+        public IQueryable<SalesOrder> GetListSalesOrdersByStatus(int status)
+        {
+            return _context.SalesOrders
+                    .Include(s => s.Retailer)
+                    .Include(s => s.SalesOrderDetails)
+                    .Where(s => s.Status == status);
         }
 
         public async Task<SalesOrder?> GetSalesOrderById(Guid? id)
