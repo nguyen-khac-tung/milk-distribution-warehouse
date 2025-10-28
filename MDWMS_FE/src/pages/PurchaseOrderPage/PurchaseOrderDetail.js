@@ -5,11 +5,12 @@ import { Button } from '../../components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { ArrowLeft, Package, User, Calendar, CheckCircle, XCircle, Clock, Truck, CheckSquare, Trash2, Key, Building2, FileText, Hash, Shield, ShoppingCart, Users, UserCheck, UserX, TruckIcon, UserPlus, Store, UserCircle, UserCog, UserCheck2, UserX2, UserMinus, Mail, Phone, MapPin } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
-import { getPurchaseOrderDetail, submitPurchaseOrder, approvePurchaseOrder, rejectPurchaseOrder, confirmGoodsReceived } from '../../services/PurchaseOrderService';
+import { getPurchaseOrderDetail, submitPurchaseOrder, approvePurchaseOrder, rejectPurchaseOrder, confirmGoodsReceived, assignForReceiving } from '../../services/PurchaseOrderService';
 import ApprovalConfirmationModal from '../../components/PurchaseOrderComponents/ApprovalConfirmationModal';
 import RejectionConfirmationModal from '../../components/PurchaseOrderComponents/RejectionConfirmationModal';
 import SubmitDraftConfirmationModal from '../../components/PurchaseOrderComponents/SubmitDraftConfirmationModal';
 import ConfirmGoodsReceivedModal from '../../components/PurchaseOrderComponents/ConfirmGoodsReceivedModal';
+import AssignReceivingModal from '../../components/PurchaseOrderComponents/AssignReceivingModal';
 import UserInfoDisplay from '../../components/PurchaseOrderComponents/UserInfoDisplay';
 import { PURCHASE_ORDER_STATUS } from '../../utils/permissions';
 import { usePermissions } from '../../hooks/usePermissions';
@@ -28,10 +29,12 @@ const PurchaseOrderDetail = () => {
     const [showRejectionModal, setShowRejectionModal] = useState(false);
     const [showSubmitDraftModal, setShowSubmitDraftModal] = useState(false);
     const [showConfirmGoodsReceivedModal, setShowConfirmGoodsReceivedModal] = useState(false);
+    const [showAssignReceivingModal, setShowAssignReceivingModal] = useState(false);
     const [approvalLoading, setApprovalLoading] = useState(false);
     const [rejectionLoading, setRejectionLoading] = useState(false);
     const [submitLoading, setSubmitLoading] = useState(false);
     const [confirmGoodsReceivedLoading, setConfirmGoodsReceivedLoading] = useState(false);
+    const [assignReceivingLoading, setAssignReceivingLoading] = useState(false);
 
     useEffect(() => {
         const fetchPurchaseOrderDetail = async () => {
@@ -104,7 +107,7 @@ const PurchaseOrderDetail = () => {
             3: 'Đã từ chối',
             4: 'Đã duyệt',
             5: 'Đã nhận hàng',
-            6: 'Đã giao cho',
+            6: 'Đã phân công',
             7: 'Đang nhận hàng',
             8: 'Đã kiểm tra',
             9: 'Hoàn thành'
@@ -166,22 +169,29 @@ const PurchaseOrderDetail = () => {
         }
     };
     const canApprove = () => {
-        return hasPermission(PERMISSIONS.PURCHASE_ORDER_APPROVAL_REQUEST) &&
+        return hasPermission(PERMISSIONS.PURCHASE_ORDER_APPROVE) &&
+            //Chỉ có thể duyệt khi đơn hàng đang chờ duyệt
             purchaseOrder?.status === PURCHASE_ORDER_STATUS.PendingApproval;
     };
 
     const canReject = () => {
-        return hasPermission(PERMISSIONS.PURCHASE_ORDER_REJECT_REQUEST) &&
+        return hasPermission(PERMISSIONS.PURCHASE_ORDER_REJECT) &&
             purchaseOrder?.status === PURCHASE_ORDER_STATUS.PendingApproval;
     };
 
     const canConfirmGoodsReceived = () => {
-        return hasPermission(PERMISSIONS.PURCHASE_ORDER_CONFIRM_DELIVERY) &&
+        return hasPermission(PERMISSIONS.PURCHASE_ORDER_CONFIRM_GOODS_RECEIVED) &&
             purchaseOrder?.status === PURCHASE_ORDER_STATUS.Approved;
     };
 
+    const canAssignReceiving = () => {
+        return hasPermission(PERMISSIONS.PURCHASE_ORDER_ASSIGN_FOR_RECEIVING) &&
+            purchaseOrder?.status === PURCHASE_ORDER_STATUS.GoodsReceived;
+    };
+
     const canSubmitDraft = () => {
-        return purchaseOrder?.status === PURCHASE_ORDER_STATUS.Draft &&
+        return hasPermission(PERMISSIONS.PURCHASE_ORDER_SUBMIT_DRAFT) &&
+            purchaseOrder?.status === PURCHASE_ORDER_STATUS.Draft &&
             purchaseOrder?.isDisableButton === false;
     };
 
@@ -237,6 +247,33 @@ const PurchaseOrderDetail = () => {
             }
         } finally {
             setConfirmGoodsReceivedLoading(false);
+        }
+    };
+
+    const handleAssignReceiving = async (assignTo, note) => {
+        setAssignReceivingLoading(true);
+        try {
+            await assignForReceiving(
+                purchaseOrder.purchaseOderId,
+                assignTo,
+                note
+            );
+
+            if (window.showToast) {
+                window.showToast("Giao nhiệm vụ nhận hàng thành công!", "success");
+            }
+            setShowAssignReceivingModal(false);
+            const response = await getPurchaseOrderDetail(id);
+            if (response && response.success) {
+                setPurchaseOrder(response.data);
+            }
+        } catch (error) {
+            console.error("Error assigning for receiving:", error);
+            if (window.showToast) {
+                window.showToast("Có lỗi xảy ra khi giao nhiệm vụ nhận hàng", "error");
+            }
+        } finally {
+            setAssignReceivingLoading(false);
         }
     };
     if (loading) {
@@ -470,6 +507,15 @@ const PurchaseOrderDetail = () => {
                                         Xác nhận hàng đã nhận
                                     </Button>
                                 )}
+                                {canAssignReceiving() && (
+                                    <Button
+                                        onClick={() => setShowAssignReceivingModal(true)}
+                                        className="bg-green-600 hover:bg-green-700 text-white h-[38px] px-8"
+                                    >
+                                        <UserPlus className="h-4 w-4 mr-2" />
+                                        Giao cho nhân viên
+                                    </Button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -529,6 +575,13 @@ const PurchaseOrderDetail = () => {
                 onConfirm={handleConfirmGoodsReceived}
                 purchaseOrder={purchaseOrder}
                 loading={confirmGoodsReceivedLoading}
+            />
+            <AssignReceivingModal
+                isOpen={showAssignReceivingModal}
+                onClose={() => setShowAssignReceivingModal(false)}
+                onConfirm={handleAssignReceiving}
+                purchaseOrder={purchaseOrder}
+                loading={assignReceivingLoading}
             />
 
             {/* Submit Draft Confirmation Modal */}

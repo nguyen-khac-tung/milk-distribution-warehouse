@@ -96,6 +96,10 @@ const UserInfoDisplay = ({
                 status === PURCHASE_ORDER_STATUS.Completed)) {
             return false; // Ẩn "Từ chối bởi" khi đã duyệt, nhận hàng, hoặc giao hàng
         }
+        // Nhân viên kho: nếu trạng thái là AssignedForReceiving (Đã phân công) thì ẩn "Từ chối bởi"
+        if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WS) && status === PURCHASE_ORDER_STATUS.AssignedForReceiving) {
+            return false; // Ẩn "Từ chối bởi" khi đã phân công
+        }
         return true; // Các trường hợp khác đều thấy
     };
 
@@ -117,13 +121,18 @@ const UserInfoDisplay = ({
         if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS) && status === PURCHASE_ORDER_STATUS.GoodsReceived) {
             return false;
         }
+        // Nhân viên kinh doanh ở trạng thái AssignedForReceiving (Đã phân công) không thấy "Giao cho" và "Xác nhận hàng giao đến"
+        if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS) && status === PURCHASE_ORDER_STATUS.AssignedForReceiving) {
+            return false;
+        }
         // Nhân viên kinh doanh ở các trạng thái khác thấy "Giao cho" và "Xác nhận hàng giao đến"
         if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS) &&
             status !== PURCHASE_ORDER_STATUS.Draft &&
             status !== PURCHASE_ORDER_STATUS.PendingApproval &&
             status !== PURCHASE_ORDER_STATUS.Approved &&
             status !== PURCHASE_ORDER_STATUS.Rejected &&
-            status !== PURCHASE_ORDER_STATUS.GoodsReceived) {
+            status !== PURCHASE_ORDER_STATUS.GoodsReceived &&
+            status !== PURCHASE_ORDER_STATUS.AssignedForReceiving) {
             return true;
         }
         return true; // Các trường hợp khác đều thấy
@@ -167,25 +176,25 @@ const UserInfoDisplay = ({
                     <div className="space-y-1">
                         <input
                             type="text"
-                            value={(status === PURCHASE_ORDER_STATUS.Approved || 
-                                   status === PURCHASE_ORDER_STATUS.GoodsReceived ||
-                                   status === PURCHASE_ORDER_STATUS.AssignedForReceiving ||
-                                   status === PURCHASE_ORDER_STATUS.Receiving ||
-                                   status === PURCHASE_ORDER_STATUS.Checked ||
-                                   status === PURCHASE_ORDER_STATUS.Completed) ? 
-                                   (order.approvalByName || 'Chưa có thông tin') : 'Chưa duyệt'}
+                            value={(status === PURCHASE_ORDER_STATUS.Approved ||
+                                status === PURCHASE_ORDER_STATUS.GoodsReceived ||
+                                status === PURCHASE_ORDER_STATUS.AssignedForReceiving ||
+                                status === PURCHASE_ORDER_STATUS.Receiving ||
+                                status === PURCHASE_ORDER_STATUS.Checked ||
+                                status === PURCHASE_ORDER_STATUS.Completed) ?
+                                (order.approvalByName || 'Chưa có thông tin') : 'Chưa duyệt'}
                             readOnly
                             className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
                         />
                         <input
                             type="text"
-                            value={(status === PURCHASE_ORDER_STATUS.Approved || 
-                                   status === PURCHASE_ORDER_STATUS.GoodsReceived ||
-                                   status === PURCHASE_ORDER_STATUS.AssignedForReceiving ||
-                                   status === PURCHASE_ORDER_STATUS.Receiving ||
-                                   status === PURCHASE_ORDER_STATUS.Checked ||
-                                   status === PURCHASE_ORDER_STATUS.Completed) ? 
-                                   (order.approvalByName ? formatDate(order.updatedAt) : 'Chưa có thông tin') : 'Chưa duyệt'}
+                            value={(status === PURCHASE_ORDER_STATUS.Approved ||
+                                status === PURCHASE_ORDER_STATUS.GoodsReceived ||
+                                status === PURCHASE_ORDER_STATUS.AssignedForReceiving ||
+                                status === PURCHASE_ORDER_STATUS.Receiving ||
+                                status === PURCHASE_ORDER_STATUS.Checked ||
+                                status === PURCHASE_ORDER_STATUS.Completed) ?
+                                (order.approvalByName ? formatDate(order.updatedAt) : 'Chưa có thông tin') : 'Chưa duyệt'}
                             readOnly
                             className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
                         />
