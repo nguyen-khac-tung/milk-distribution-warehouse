@@ -73,17 +73,32 @@ const PurchaseOrderDetail = () => {
 
     const getStatusIcon = (status) => {
         const statusIcons = {
-            1: <Clock className="h-4 w-4" />, // Draft
-            2: <Clock className="h-4 w-4" />, // Pending Approval
-            3: <XCircle className="h-4 w-4" />, // Rejected
-            4: <CheckCircle className="h-4 w-4" />, // Approved
-            5: <Truck className="h-4 w-4" />, // Goods Received
-            6: <User className="h-4 w-4" />, // Assigned for Receiving
-            7: <Package className="h-4 w-4" />, // Receiving
-            8: <CheckSquare className="h-4 w-4" />, // Inspected
-            9: <CheckCircle className="h-4 w-4" /> // Completed
+            1: <Clock className="h-3 w-3" />, // Draft
+            2: <Clock className="h-3 w-3" />, // Pending Approval
+            3: <XCircle className="h-3 w-3" />, // Rejected
+            4: <CheckCircle className="h-3 w-3" />, // Approved
+            5: <Truck className="h-3 w-3" />, // Goods Received
+            6: <User className="h-3 w-3" />, // Assigned for Receiving
+            7: <Package className="h-3 w-3" />, // Receiving
+            8: <CheckSquare className="h-3 w-3" />, // Inspected
+            9: <CheckCircle className="h-3 w-3" /> // Completed
         };
-        return statusIcons[status] || <Clock className="h-4 w-4" />;
+        return statusIcons[status] || <Clock className="h-3 w-3" />;
+    };
+
+    const getStatusText = (status) => {
+        const statusTexts = {
+            1: 'Nháp',
+            2: 'Chờ duyệt',
+            3: 'Đã từ chối',
+            4: 'Đã duyệt',
+            5: 'Đã nhận hàng',
+            6: 'Đã giao cho',
+            7: 'Đang nhận hàng',
+            8: 'Đã kiểm tra',
+            9: 'Hoàn thành'
+        };
+        return statusTexts[status] || 'Không xác định';
     };
     const handleApprovalConfirm = async () => {
         setApprovalLoading(true);
@@ -285,6 +300,22 @@ const PurchaseOrderDetail = () => {
                         <div className="flex items-center space-x-2 mb-4">
                             <Shield className="h-5 w-5 text-blue-600" />
                             <h3 className="font-bold text-gray-800">Tình trạng</h3>
+                        </div>
+
+                        {/* Status Display */}
+                        <div className="mb-4">
+                            <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-center space-x-2">
+                                    <CheckCircle className="h-3 w-3 text-green-600" />
+                                    <span className="text-xs font-medium text-gray-700">Trạng thái đơn hàng</span>
+                                </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${getStatusColor(purchaseOrder.status)}`}>
+                                    {getStatusIcon(purchaseOrder.status)}
+                                    <span>{getStatusText(purchaseOrder.status)}</span>
+                                </span>
+                            </div>
                         </div>
                         <div className="mb-4">
                             <div className="flex items-center justify-between mb-2">
