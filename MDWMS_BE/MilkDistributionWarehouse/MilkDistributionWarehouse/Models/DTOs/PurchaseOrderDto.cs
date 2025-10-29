@@ -69,6 +69,9 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public string? Note { get; set; }
         public string RejectionReason { get; set; }
         public DateTime? UpdatedAt { get; set; }
+        public DateTime? ApprovedAt { get; set; }
+        public DateTime? ArrivalConfirmedAt { get; set; }
+        public DateTime? AssignedAt { get; set; }
         public bool IsDisableButton { get; set; }
 
     }
