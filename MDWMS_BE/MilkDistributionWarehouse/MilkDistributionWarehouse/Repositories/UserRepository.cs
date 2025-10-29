@@ -58,7 +58,7 @@ namespace MilkDistributionWarehouse.Repositories
                 .Include(u => u.Batches)
                 .Include(u => u.Pallets)
                 .Include(u => u.GoodsIssueNotes)
-                .Include(u => u.GoodsReceiptNotes)
+                .Include(u => u.GoodsReceiptNoteCreatedByNavigations)
                 .Include(u => u.PurchaseOrderCreatedByNavigations)
                 .Include(u => u.SalesOrderCreatedByNavigations)
                 .Include(u => u.SalesOrderAcknowledgedByNavigations)

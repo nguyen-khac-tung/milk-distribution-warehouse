@@ -198,7 +198,11 @@ public partial class WarehouseContext : DbContext
 
             entity.Property(e => e.GoodsReceiptNoteId).ValueGeneratedNever();
 
-            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.GoodsReceiptNotes)
+            entity.HasOne(d => d.ApprovalByNavigation).WithMany(p => p.GoodsReceiptNoteApprovalByNavigations)
+                .HasForeignKey(d => d.ApprovalBy)
+                .HasConstraintName("FK_GoodsReceiptNotes_ApprovalBy");
+
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.GoodsReceiptNoteCreatedByNavigations)
                 .HasForeignKey(d => d.CreatedBy)
                 .HasConstraintName("FK_GoodsReceiptNotes_Users");
 
@@ -545,7 +549,9 @@ public partial class WarehouseContext : DbContext
             entity.Property(e => e.Phone)
                 .HasMaxLength(50)
                 .IsUnicode(false);
-            entity.Property(e => e.Status).HasDefaultValue(1);
+            entity.Property(e => e.Status)
+                .HasDefaultValue(1)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF__Users__Status__32AB8735");
 
             entity.HasMany(d => d.Roles).WithMany(p => p.Users)
                 .UsingEntity<Dictionary<string, object>>(

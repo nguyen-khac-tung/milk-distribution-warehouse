@@ -21,6 +21,8 @@ public partial class GoodsReceiptNote
 
     public Guid PurchaseOderId { get; set; }
 
+    public virtual User ApprovalByNavigation { get; set; }
+
     public virtual User CreatedByNavigation { get; set; }
 
     public virtual ICollection<GoodsReceiptNoteDetail> GoodsReceiptNoteDetails { get; set; } = new List<GoodsReceiptNoteDetail>();

@@ -328,7 +328,7 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.SalesOrderDetails, opt => opt.Ignore());
             CreateMap<SalesOrderItemDetailUpdateDto, SalesOrderDetail>();
 
-            //GoodsPacking
+            //Map GoodsPacking
             CreateMap<GoodsPacking, GoodsPackingDto>();
             CreateMap<GoodsPackingCreate, GoodsPacking>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => CommonStatus.Active));
@@ -338,6 +338,14 @@ namespace MilkDistributionWarehouse.Mapper
             //Map GoodsReceiptNoteDetail
             CreateMap<GoodsReceiptNoteDetail, GoodsReceiptNoteDetailDto.GoodsReceiptNoteDetailPalletDto>()
                 .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Goods.GoodsName));
+            CreateMap<GoodsReceiptNoteDetail, GoodsReceiptNoteDetailListDto>();
+            CreateMap<PurchaseOderDetail, GoodsReceiptNoteDetail>()
+                .ForMember(dest => dest.GoodsReceiptNoteDetailId, opt => opt.MapFrom(_ => Guid.NewGuid()))
+                .ForMember(dest => dest.GoodsReceiptNoteId, opt => opt.Ignore())
+                .ForMember(dest => dest.ExpectedPackageQuantity, opt => opt.MapFrom(src => src.PackageQuantity))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => GoodsReceiptNoteStatus.Draft))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now))
+                .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(_ => (DateTime?)null));
 
             // Map BackOrder
             CreateMap<BackOrder, BackOrderDto.BackOrderResponseDto>()
@@ -348,6 +356,17 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.DisplayName, opt => opt.MapFrom(src =>
                     $"BackOrder - {(src.Goods != null ? src.Goods.GoodsName : "N/A")} ({src.Quantity}) cho {(src.Retailer != null ? src.Retailer.RetailerName : "N/A")}"));
             CreateMap<BackOrder, BackOrderDto.BackOrderUpdateStatusDto>();
+
+            //Map GoodsReceiptNote
+            CreateMap<GoodsReceiptNoteCreate, GoodsReceiptNote>()
+                .ForMember(dest => dest.GoodsReceiptNoteId, opt => opt.MapFrom(_ => Guid.NewGuid()))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => GoodsReceiptNoteStatus.Draft))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now))
+                .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(_ => (DateTime?)null));
+            CreateMap<GoodsReceiptNote, GoodsReceiptNoteDto>()
+                .ForMember(dest => dest.ApprovalByName, opt => opt.MapFrom(src => src.ApprovalByNavigation.FullName))
+                .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => src.CreatedByNavigation.FullName))
+                .ForMember(dest => dest.GRNDetails, opt => opt.MapFrom(src => src.GoodsReceiptNoteDetails));
         }
     }
 }
