@@ -25,7 +25,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, PurchaseOrder)> RejectPurchaseOrder(PurchaseOrderProcess purchaseOrderProcess, int? userId, string? userName);
         Task<(string, PurchaseOrder)> GoodsReceivedPurchaseOrder(PurchaseOrderProcess purchaseOrderProcess, int? userId);
         Task<(string, PurchaseOrder?)> AssignForReceivingPurchaseOrder(PurchaseOrderProcessAssignTo purchaseOrderProcess, int? userId);
-        Task<(string, PurchaseOrderProcess?)> StartReceivingPurchaseOrder(PurchaseOrderProcess purchaseOrderProcess, int? userId);
+        Task<(string, GoodsReceiptNoteDto?)> StartReceivingPurchaseOrder(PurchaseOrderProcess purchaseOrderProcess, int? userId);
         Task<(string, PurchaseOrder?)> DeletePurchaseOrder(Guid purchaseOrderId, int? userId);
         Task<(string, List<PurchaseOrderDetailBySupplier>?)> GetPurchaseOrderDetailBySupplierId(int supplierId, int? userId);
     }
@@ -375,7 +375,7 @@ namespace MilkDistributionWarehouse.Services
         public async Task<(string, PurchaseOrder)> GoodsReceivedPurchaseOrder(PurchaseOrderProcess purchaseOrderProcess, int? userId)
             => await UpdatePurchaseOrderProcess(purchaseOrderProcess, PurchaseOrderStatus.GoodsReceived, userId, RoleNames.WarehouseManager, null);
 
-        public async Task<(string, PurchaseOrderProcess?)> StartReceivingPurchaseOrder(PurchaseOrderProcess purchaseOrderProcess, int? userId)
+        public async Task<(string, GoodsReceiptNoteDto?)> StartReceivingPurchaseOrder(PurchaseOrderProcess purchaseOrderProcess, int? userId)
         {
             try
             {
@@ -393,7 +393,7 @@ namespace MilkDistributionWarehouse.Services
 
                 await _unitOfWork.CommitTransactionAsync();
 
-                return ("", purchaseOrderProcess);
+                return ("", grnCreate);
             }
             catch (Exception ex)
             {

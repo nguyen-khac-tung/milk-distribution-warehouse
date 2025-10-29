@@ -338,7 +338,8 @@ namespace MilkDistributionWarehouse.Mapper
             //Map GoodsReceiptNoteDetail
             CreateMap<GoodsReceiptNoteDetail, GoodsReceiptNoteDetailDto.GoodsReceiptNoteDetailPalletDto>()
                 .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Goods.GoodsName));
-            CreateMap<GoodsReceiptNoteDetail, GoodsReceiptNoteDetailListDto>();
+            CreateMap<GoodsReceiptNoteDetail, GoodsReceiptNoteDetailListDto>()
+                .ForMember(dest => dest.UnitPerPackage, opt => opt.MapFrom(src => src.GoodsPacking.UnitPerPackage));
             CreateMap<PurchaseOderDetail, GoodsReceiptNoteDetail>()
                 .ForMember(dest => dest.GoodsReceiptNoteDetailId, opt => opt.MapFrom(_ => Guid.NewGuid()))
                 .ForMember(dest => dest.GoodsReceiptNoteId, opt => opt.Ignore())
