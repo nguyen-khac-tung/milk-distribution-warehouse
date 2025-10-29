@@ -15,6 +15,8 @@ public partial class GoodsPacking
 
     public int? Status { get; set; }
 
+    public virtual ICollection<BackOrder> BackOrders { get; set; } = new List<BackOrder>();
+
     public virtual Good Goods { get; set; }
 
     public virtual ICollection<GoodsIssueNoteDetail> GoodsIssueNoteDetails { get; set; } = new List<GoodsIssueNoteDetail>();

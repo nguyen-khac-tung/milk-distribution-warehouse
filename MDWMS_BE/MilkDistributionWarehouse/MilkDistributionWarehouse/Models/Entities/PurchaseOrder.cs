@@ -23,9 +23,17 @@ public partial class PurchaseOrder
 
     public string Note { get; set; }
 
+    public string RejectionReason { get; set; }
+
     public DateTime? CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
+
+    public DateTime? ApprovedAt { get; set; }
+
+    public DateTime? ArrivalConfirmedAt { get; set; }
+
+    public DateTime? AssignedAt { get; set; }
 
     public virtual User ApprovalByNavigation { get; set; }
 
