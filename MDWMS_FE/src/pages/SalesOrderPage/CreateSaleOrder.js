@@ -554,8 +554,8 @@ function CreateSaleOrder({
                                             <TableHead className="text-slate-600 font-semibold">STT</TableHead>
                                             <TableHead className="text-slate-600 font-semibold">Nhà Cung Cấp</TableHead>
                                             <TableHead className="text-slate-600 font-semibold">Tên Hàng Hóa</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold">Đóng Gói</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold">Số Thùng</TableHead>
+                                            <TableHead className="text-slate-600 font-semibold">Quy cách đóng Gói</TableHead>
+                                            <TableHead className="text-slate-600 font-semibold">Số Lượng Thùng</TableHead>
                                             <TableHead className="text-slate-600 font-semibold">Tổng Số Đơn Vị</TableHead>
                                             <TableHead className="text-slate-600 font-semibold">Đơn Vị</TableHead>
                                             {items.length > 1 && (

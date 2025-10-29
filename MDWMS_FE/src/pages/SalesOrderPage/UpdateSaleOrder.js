@@ -18,6 +18,7 @@ function UpdateSaleOrder() {
     const navigate = useNavigate();
     const { id } = useParams();
     const [loading, setLoading] = useState(true);
+    const [dataLoaded, setDataLoaded] = useState(false);
     const [retailers, setRetailers] = useState([]);
     const [suppliers, setSuppliers] = useState([]);
     const [goodsBySupplier, setGoodsBySupplier] = useState({}); // Map supplierId -> goods
@@ -50,7 +51,7 @@ function UpdateSaleOrder() {
                 setLoading(true);
                 const response = await getSalesOrderDetail(id);
                 console.log("Sales Order Detail Response:", response);
-                
+ 
                 const orderData = response?.data || response;
                 console.log("Order Data:", orderData);
 
@@ -66,9 +67,9 @@ function UpdateSaleOrder() {
                     if (orderData.salesOrderItemDetails && orderData.salesOrderItemDetails.length > 0) {
                         const mappedItems = orderData.salesOrderItemDetails.map((detail, index) => {
                             // Calculate quantity from packageQuantity and unitPerPackage
-                            // packageQuantity = số thùng, unitPerPackage = số đơn vị trong 1 thùng
-                            // Vậy số thùng = packageQuantity (không cần chia)
-                            const calculatedQuantity = detail.packageQuantity || 0;
+                            const unitPerPackage = detail.goodsPacking?.unitPerPackage || 1;
+                            const packageQuantity = detail.packageQuantity || 0;
+                            const calculatedQuantity = unitPerPackage > 0 ? Math.floor(packageQuantity / unitPerPackage) : packageQuantity;
 
                             return {
                                 id: index + 1,
@@ -76,7 +77,10 @@ function UpdateSaleOrder() {
                                 goodsName: detail.goods?.goodsName || "",
                                 quantity: calculatedQuantity.toString(),
                                 goodsPackingId: detail.goodsPacking?.goodsPackingId ? detail.goodsPacking.goodsPackingId.toString() : "",
-                                salesOrderDetailId: detail.salesOrderDetailId || 0
+                                salesOrderDetailId: detail.salesOrderDetailId || 0,
+                                // Store original data for reference
+                                originalGoodsId: detail.goods?.goodsId,
+                                originalSupplierId: detail.goods?.supplierId
                             };
                         });
                         console.log("Mapped Items:", mappedItems);
@@ -94,6 +98,76 @@ function UpdateSaleOrder() {
 
         loadSalesOrderData();
     }, [id, navigate]);
+
+    // Load goods and packing data immediately after items are set
+    useEffect(() => {
+        const loadGoodsAndPackingData = async () => {
+            if (suppliers.length === 0 || items.length === 0) return;
+
+            console.log("Loading goods and packing data for items:", items);
+
+            // Get unique supplier IDs from items (use original data if available)
+            const supplierIds = [...new Set(items
+                .filter(item => item.supplierName)
+                .map(item => {
+                    // Use original supplier ID if available, otherwise find by name
+                    if (item.originalSupplierId) {
+                        return item.originalSupplierId;
+                    }
+                    const supplier = suppliers.find(s => s.companyName === item.supplierName);
+                    return supplier?.supplierId;
+                })
+                .filter(Boolean)
+            )];
+
+            console.log("Supplier IDs to load:", supplierIds);
+
+            // Load goods for each supplier
+            for (const supplierId of supplierIds) {
+                if (!goodsBySupplier[supplierId]) {
+                    console.log("Loading goods for supplier:", supplierId);
+                    await loadGoodsBySupplier(supplierId);
+                }
+            }
+
+            // Wait a bit for goods to be loaded
+            await new Promise(resolve => setTimeout(resolve, 200));
+
+            // Load packing data for each goods (use original data if available)
+            const goodsIds = [...new Set(items
+                .filter(item => item.goodsName)
+                .map(item => {
+                    // Use original goods ID if available
+                    if (item.originalGoodsId) {
+                        console.log("Using original goods ID:", item.originalGoodsId, "for goods:", item.goodsName);
+                        return item.originalGoodsId;
+                    }
+                    
+                    // Otherwise try to find by name
+                    const supplier = suppliers.find(s => s.companyName === item.supplierName);
+                    if (!supplier) return null;
+                    const goods = goodsBySupplier[supplier.supplierId] || [];
+                    const good = goods.find(g => g.goodsName === item.goodsName);
+                    return good?.goodsId;
+                })
+                .filter(Boolean)
+            )];
+
+            console.log("Goods IDs to load packing for:", goodsIds);
+
+            for (const goodsId of goodsIds) {
+                if (!goodsPackingsMap[goodsId]) {
+                    console.log("Loading packing for goods:", goodsId);
+                    await loadGoodsPacking(goodsId);
+                }
+            }
+
+            // Mark data as loaded
+            setDataLoaded(true);
+        };
+
+        loadGoodsAndPackingData();
+    }, [items]); // Only depend on items, not suppliers.length
 
     // Load retailers and suppliers on component mount
     useEffect(() => {
@@ -124,50 +198,6 @@ function UpdateSaleOrder() {
         loadData();
     }, []);
 
-    // Load goods and packing data for existing items after suppliers are loaded
-    useEffect(() => {
-        const loadGoodsAndPackingData = async () => {
-            if (suppliers.length === 0 || items.length === 0) return;
-
-            // Get unique supplier IDs from items
-            const supplierIds = [...new Set(items
-                .filter(item => item.supplierName)
-                .map(item => {
-                    const supplier = suppliers.find(s => s.companyName === item.supplierName);
-                    return supplier?.supplierId;
-                })
-                .filter(Boolean)
-            )];
-
-            // Load goods for each supplier
-            for (const supplierId of supplierIds) {
-                if (!goodsBySupplier[supplierId]) {
-                    await loadGoodsBySupplier(supplierId);
-                }
-            }
-
-            // Load packing data for each goods
-            const goodsIds = [...new Set(items
-                .filter(item => item.goodsName && item.supplierName)
-                .map(item => {
-                    const supplier = suppliers.find(s => s.companyName === item.supplierName);
-                    if (!supplier) return null;
-                    const goods = goodsBySupplier[supplier.supplierId] || [];
-                    const good = goods.find(g => g.goodsName === item.goodsName);
-                    return good?.goodsId;
-                })
-                .filter(Boolean)
-            )];
-
-            for (const goodsId of goodsIds) {
-                if (!goodsPackingsMap[goodsId]) {
-                    await loadGoodsPacking(goodsId);
-                }
-            }
-        };
-
-        loadGoodsAndPackingData();
-    }, [suppliers.length, items.length]); // Only depend on length to avoid infinite loops
 
     const addItem = (e) => {
         // Ngăn chặn mọi event propagation
@@ -404,28 +434,22 @@ function UpdateSaleOrder() {
 
     // Tính tổng số đơn vị (số thùng × đơn vị đóng gói)
     const calculateTotalUnits = (item) => {
-        if (!item.quantity || !item.goodsPackingId || !item.supplierName) return 0;
+        if (!item.quantity || !item.goodsPackingId) return 0;
 
-        const selectedSupplier = suppliers.find(supplier => supplier.companyName === item.supplierName);
-        if (!selectedSupplier) {
-            console.log("No supplier found for:", item.supplierName);
+        // Use original goods ID if available
+        const goodsId = item.originalGoodsId;
+        if (!goodsId) {
+            console.log("No original goods ID found for item:", item);
             return 0;
         }
 
-        const goods = goodsBySupplier[selectedSupplier.supplierId] || [];
-        const selectedGood = goods.find(good => good.goodsName === item.goodsName);
-        if (!selectedGood) {
-            console.log("No goods found for:", item.goodsName, "in supplier:", selectedSupplier.supplierId);
-            return 0;
-        }
-
-        const goodsPackings = goodsPackingsMap[selectedGood.goodsId] || [];
+        const goodsPackings = goodsPackingsMap[goodsId] || [];
         const selectedPacking = goodsPackings.find(packing =>
             packing.goodsPackingId.toString() === item.goodsPackingId
         );
 
         if (!selectedPacking) {
-            console.log("No packing found for goodsPackingId:", item.goodsPackingId, "in goods:", selectedGood.goodsId);
+            console.log("No packing found for goodsPackingId:", item.goodsPackingId, "in goods:", goodsId);
             console.log("Available packings:", goodsPackings);
             return 0;
         }
@@ -577,7 +601,7 @@ function UpdateSaleOrder() {
         }
     }
 
-    if (loading) {
+    if (loading || !dataLoaded) {
         return <Loading />;
     }
 
