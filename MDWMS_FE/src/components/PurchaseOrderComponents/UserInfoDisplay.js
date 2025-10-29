@@ -203,7 +203,7 @@ const UserInfoDisplay = ({
                                 status === PURCHASE_ORDER_STATUS.Receiving ||
                                 status === PURCHASE_ORDER_STATUS.Checked ||
                                 status === PURCHASE_ORDER_STATUS.Completed) ?
-                                (order.approvalByName ? formatDate(order.updatedAt) : 'Chưa có thông tin') : 'Chưa duyệt'}
+                                (order.approvalByName ? formatDate(order.approvedAt) : 'Chưa có thông tin') : 'Chưa duyệt'}
                             readOnly
                             className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
                         />
@@ -229,7 +229,7 @@ const UserInfoDisplay = ({
                         />
                         <input
                             type="text"
-                            value={status === PURCHASE_ORDER_STATUS.Rejected ? (order.updatedAt ? formatDate(order.updatedAt) : 'Chưa có thông tin') : 'Chưa từ chối'}
+                            value={status === PURCHASE_ORDER_STATUS.Rejected ? (order.approvedAt ? formatDate(order.approvedAt) : 'Chưa có thông tin') : 'Chưa từ chối'}
                             readOnly
                             className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
                         />
@@ -267,7 +267,7 @@ const UserInfoDisplay = ({
                         />
                         <input
                             type="text"
-                            value={order.assignToByName ? formatDate(order.updatedAt) : 'Chưa có thông tin'}
+                            value={order.assignToByName ? formatDate(order.assignedAt) : 'Chưa có thông tin'}
                             readOnly
                             className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
                         />
@@ -293,7 +293,7 @@ const UserInfoDisplay = ({
                         />
                         <input
                             type="text"
-                            value={order.arrivalConfirmedByName ? formatDate(order.updatedAt) : 'Chưa có thông tin'}
+                            value={order.arrivalConfirmedByName ? formatDate(order.arrivalConfirmedAt) : 'Chưa có thông tin'}
                             readOnly
                             className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
                         />

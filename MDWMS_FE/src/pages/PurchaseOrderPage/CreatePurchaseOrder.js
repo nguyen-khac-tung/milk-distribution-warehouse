@@ -3,11 +3,12 @@ import { useNavigate } from "react-router-dom"
 import { Card } from "../../components/ui/card"
 import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
+import { Textarea } from "../../components/ui/textarea"
 import { Label } from "../../components/ui/label"
 import FloatingDropdown from "../../components/Common/FloatingDropdown"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
 import { Plus, Trash2, ArrowLeft, Save, X } from "lucide-react"
-import { createPurchaseOrder, getGoodsDropDownBySupplierId, getDraftPurchaseOrdersBySupplier, updatePurchaseOrder, getPurchaseOrderDetail, getGoodsPackingByGoodsId } from "../../services/PurchaseOrderService"
+import { createPurchaseOrder, getGoodsDropDownBySupplierId, getGoodsPackingByGoodsId } from "../../services/PurchaseOrderService"
 import { extractErrorMessage } from '../../utils/Validation';
 import { getSuppliersDropdown } from "../../services/SupplierService"
 
@@ -23,7 +24,8 @@ export default function CreatePurchaseOrder({
     const [goodsLoading, setGoodsLoading] = useState(false);
     const [packingLoading, setPackingLoading] = useState(false);
     const [formData, setFormData] = useState({
-        supplierName: initialData?.supplierName || ""
+        supplierName: initialData?.supplierName || "",
+        note: initialData?.note || ""
     });
 
     const [items, setItems] = useState(
@@ -338,143 +340,14 @@ export default function CreatePurchaseOrder({
                 return;
             }
 
-            // Kiểm tra đơn nháp của nhà cung cấp
-            const draftOrdersResponse = await getDraftPurchaseOrdersBySupplier(parseInt(selectedSupplier.supplierId));
-            const draftOrders = draftOrdersResponse?.data || [];
-
-            if (draftOrders.length > 0) {
-                // Tìm đơn nháp gần nhất
-                const latestDraftOrder = draftOrders[0];
-
-                // Lấy chi tiết đơn nháp
-                const draftOrderDetail = await getPurchaseOrderDetail(latestDraftOrder.purchaseOderId);
-                console.log("Chi tiết đơn nháp từ API:", draftOrderDetail);
-                const existingItems = draftOrderDetail?.data?.purchaseOrderDetails || draftOrderDetail?.purchaseOrderDetails || [];
-                console.log("Danh sách sản phẩm hiện có:", existingItems);
-
-                // Debug: Kiểm tra từng sản phẩm có số lượng hợp lệ không
-                existingItems.forEach((item, index) => {
-                    console.log(`Sản phẩm ${index + 1} - Toàn bộ dữ liệu:`, item);
-                    console.log(`Sản phẩm ${index + 1} - Các trường số lượng:`, {
-                        quantity: item.quantity,
-                        packageQuantity: item.packageQuantity,
-                        unitQuantity: item.unitQuantity,
-                        amount: item.amount,
-                        totalQuantity: item.totalQuantity
-                    });
-                });
-
-                // Kết hợp các sản phẩm mới với sản phẩm cũ
-                const allItemsMap = new Map();
-                let hasMergedItems = false; // Đánh dấu có sản phẩm bị cộng
-                let hasNewItems = false; // Đánh dấu có sản phẩm mới thêm vào
-
-                // Thêm tất cả sản phẩm cũ vào map (kiểm tra nhiều trường có thể chứa số lượng)
-                existingItems.forEach(item => {
-                    // Kiểm tra các trường có thể chứa số lượng
-                    const quantity = parseInt(item.quantity) || parseInt(item.packageQuantity) || parseInt(item.unitQuantity) || 0;
-
-                    console.log(`Xử lý sản phẩm hiện có:`, {
-                        goodsId: item.goodsId,
-                        quantity: item.quantity,
-                        packageQuantity: item.packageQuantity,
-                        unitQuantity: item.unitQuantity,
-                        finalQuantity: quantity
-                    });
-
-                    // Thêm sản phẩm vào map (ngay cả khi số lượng = 0 để giữ lại thông tin)
-                    allItemsMap.set(item.goodsId, {
-                        purchaseOrderDetailId: item.purchaseOrderDetailId,
-                        goodsId: item.goodsId,
-                        packageQuantity: quantity,
-                        goodsPackingId: item.goodsPackingId
-                    });
-                });
-
-                // Cộng hoặc thêm sản phẩm mới
-                itemsWithIds.forEach(newItem => {
-                    // Validate dữ liệu trước khi xử lý
-                    if (!newItem.goodsId || !newItem.packageQuantity || !newItem.goodsPackingId) {
-                        console.error("Dữ liệu sản phẩm không hợp lệ:", newItem);
-                        return;
-                    }
-
-                    if (allItemsMap.has(newItem.goodsId)) {
-                        // Cùng sản phẩm - cộng số lượng
-                        const existing = allItemsMap.get(newItem.goodsId);
-                        const oldQuantity = existing.packageQuantity;
-                        const newQuantity = parseInt(newItem.packageQuantity) || 0;
-                        existing.packageQuantity = existing.packageQuantity + newQuantity;
-                        hasMergedItems = true;
-                        console.log(`Đã cộng ${newQuantity} vào sản phẩm hiện có (từ ${oldQuantity} thành ${existing.packageQuantity})`);
-                    } else {
-                        // Sản phẩm mới - thêm vào map
-                        allItemsMap.set(newItem.goodsId, {
-                            purchaseOrderDetailId: 0, // Sản phẩm mới có ID = 0
-                            goodsId: newItem.goodsId,
-                            packageQuantity: parseInt(newItem.packageQuantity) || 0,
-                            goodsPackingId: newItem.goodsPackingId
-                        });
-                        hasNewItems = true;
-                        console.log(`Đã thêm sản phẩm mới: ${newItem.goodsId} với số lượng ${newItem.packageQuantity}`);
-                    }
-                });
-
-                // Chuyển map thành mảng cho API update theo đúng schema
-                const itemsToUpdate = Array.from(allItemsMap.values())
-                    .map(item => ({
-                        goodsId: item.goodsId,
-                        goodsPackingId: item.goodsPackingId,
-                        packageQuantity: item.packageQuantity,
-                        purchaseOrderDetailId: item.purchaseOrderDetailId
-                    }));
-
-                console.log("Tất cả sản phẩm sẽ được gửi lên API:", itemsToUpdate);
-
-                // Cập nhật đơn nháp với tất cả sản phẩm theo đúng schema API
-                const updateData = {
-                    purchaseOderId: latestDraftOrder.purchaseOderId,
-                    purchaseOrderDetailUpdates: itemsToUpdate
-                };
-
-                // Kiểm tra có sản phẩm để cập nhật không
-                if (itemsToUpdate.length === 0) {
-                    window.showToast("Không có sản phẩm để cập nhật!", "error");
-                    return;
-                }
-
-                // Kiểm tra có sản phẩm mới được thêm không
-                const hasNewProducts = itemsToUpdate.some(item => item.purchaseOrderDetailId === 0);
-                if (!hasNewProducts && !hasMergedItems) {
-                    window.showToast("Không có sản phẩm mới hoặc thay đổi để cập nhật!", "error");
-                    return;
-                }
-
-                // Log dữ liệu để debug
-                console.log("Dữ liệu gửi lên API:", JSON.stringify(updateData, null, 2));
-
-                await updatePurchaseOrder(updateData);
-
-                // Hiển thị thông báo chi tiết
-                let message = "Đã bổ sung vào đơn nháp thành công! ";
-                if (hasMergedItems && hasNewItems) {
-                    message += "Đã cộng thêm số lượng cho sản phẩm trùng và thêm sản phẩm mới.";
-                } else if (hasMergedItems) {
-                    message += "Đã cộng thêm số lượng cho sản phẩm trùng khớp.";
-                } else if (hasNewItems) {
-                    message += "Đã thêm sản phẩm mới vào đơn nháp.";
-                }
-
-                window.showToast(message, "success");
-            } else {
-                // Không có đơn nháp - tạo đơn mới
-                const submitData = {
-                    supplierId: parseInt(selectedSupplier.supplierId),
-                    purchaseOrderDetailCreate: itemsWithIds
-                };
-                await createPurchaseOrder(submitData);
-                window.showToast("Tạo đơn nhập thành công!", "success");
-            }
+            // Tạo đơn hàng mới
+            const submitData = {
+                supplierId: parseInt(selectedSupplier.supplierId),
+                purchaseOrderDetailCreate: itemsWithIds,
+                note: formData.note || ""
+            };
+            await createPurchaseOrder(submitData);
+            window.showToast("Tạo đơn nhập thành công!", "success");
 
             navigate("/purchase-orders");
         } catch (error) {
@@ -521,7 +394,7 @@ export default function CreatePurchaseOrder({
                                         loading={suppliersLoading}
                                     />
                                 </div>
-                                
+
                                 {/* Thông tin nhà cung cấp đã chọn */}
                                 {formData.supplierName && (() => {
                                     const selectedSupplier = suppliers.find(supplier => supplier.companyName === formData.supplierName);
@@ -560,6 +433,7 @@ export default function CreatePurchaseOrder({
                                     ) : null;
                                 })()}
                             </div>
+
                         </div>
 
                         {/* Items Table */}
@@ -688,6 +562,21 @@ export default function CreatePurchaseOrder({
                                     <Plus className="h-4 w-4" />
                                     Thêm mặt hàng
                                 </button>
+                            </div>
+
+                            {/* Ghi chú */}
+                            <div className="space-y-2">
+                                <Label htmlFor="note" className="text-slate-600 font-medium">
+                                    Ghi chú
+                                </Label>
+                                <Textarea
+                                    id="note"
+                                    value={formData.note}
+                                    onChange={(e) => handleInputChange("note", e.target.value)}
+                                    placeholder="Nhập ghi chú cho đơn hàng (tùy chọn)"
+                                    className="min-h-[100px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg resize-none"
+                                    rows={4}
+                                />
                             </div>
 
 
