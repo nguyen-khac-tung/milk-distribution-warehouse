@@ -35,7 +35,9 @@ public partial class User
 
     public virtual ICollection<GoodsIssueNote> GoodsIssueNotes { get; set; } = new List<GoodsIssueNote>();
 
-    public virtual ICollection<GoodsReceiptNote> GoodsReceiptNotes { get; set; } = new List<GoodsReceiptNote>();
+    public virtual ICollection<GoodsReceiptNote> GoodsReceiptNoteApprovalByNavigations { get; set; } = new List<GoodsReceiptNote>();
+
+    public virtual ICollection<GoodsReceiptNote> GoodsReceiptNoteCreatedByNavigations { get; set; } = new List<GoodsReceiptNote>();
 
     public virtual ICollection<Notification> NotificationReceivedByNavigations { get; set; } = new List<Notification>();
 

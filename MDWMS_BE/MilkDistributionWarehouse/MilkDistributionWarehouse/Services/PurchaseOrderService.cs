@@ -21,10 +21,11 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, PurchaseOrdersDetail?)> GetPurchaseOrderDetailById(Guid purchaseOrderId, int? userId, List<string>? roles);
         Task<(string, PurchaseOrderUpdate?)> UpdatePurchaseOrder(PurchaseOrderUpdate update, int? userId);
         Task<(string, PurchaseOrder)> SubmitPurchaseOrder(PurchaseOrderProcess purchaseOrderProcess, int? userId, string? userName);
-        Task<(string, PurchaseOrder)> ApprovalPurchaseOrder(PurchaseOrderProcess purchaseOrderProcess, int? userId, string? userName);
-        Task<(string, PurchaseOrder)> RejectedPurchaseOrder(PurchaseOrderProcess purchaseOrderProcess, int? userId, string? userName);
+        Task<(string, PurchaseOrder)> ApprovePurchaseOrder(PurchaseOrderProcess purchaseOrderProcess, int? userId, string? userName);
+        Task<(string, PurchaseOrder)> RejectPurchaseOrder(PurchaseOrderProcess purchaseOrderProcess, int? userId, string? userName);
         Task<(string, PurchaseOrder)> GoodsReceivedPurchaseOrder(PurchaseOrderProcess purchaseOrderProcess, int? userId);
-        Task<(string, PurchaseOrder?)> AssignedForReceivingPO(PurchaseOrderProcessAssignTo purchaseOrderProcess, int? userId);
+        Task<(string, PurchaseOrder?)> AssignForReceivingPurchaseOrder(PurchaseOrderProcessAssignTo purchaseOrderProcess, int? userId);
+        Task<(string, PurchaseOrderProcess?)> StartReceivingPurchaseOrder(PurchaseOrderProcess purchaseOrderProcess, int? userId);
         Task<(string, PurchaseOrder?)> DeletePurchaseOrder(Guid purchaseOrderId, int? userId);
         Task<(string, List<PurchaseOrderDetailBySupplier>?)> GetPurchaseOrderDetailBySupplierId(int supplierId, int? userId);
     }
@@ -36,14 +37,16 @@ namespace MilkDistributionWarehouse.Services
         private readonly IPurchaseOrderDetailRepository _purchaseOrderDetailRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
+        private readonly IGoodsReceiptNoteService _goodsReceiptNoteService;
         public PurchaseOrderService(IPurchaseOrderRepositoy purchaseOrderRepository, IMapper mapper, IPurchaseOrderDetailService purchaseOrderDetailService,
-            IPurchaseOrderDetailRepository purchaseOrderDetailRepository, IUnitOfWork unitOfWork)
+            IPurchaseOrderDetailRepository purchaseOrderDetailRepository, IUnitOfWork unitOfWork, IGoodsReceiptNoteService goodsReceiptNoteService)
         {
             _purchaseOrderRepository = purchaseOrderRepository;
             _mapper = mapper;
             _purchaseOrderDetailService = purchaseOrderDetailService;
             _purchaseOrderDetailRepository = purchaseOrderDetailRepository;
             _unitOfWork = unitOfWork;
+            _goodsReceiptNoteService = goodsReceiptNoteService;
         }
 
         private async Task<(string, PageResult<TDto>?)> GetPurchaseOrdersAsync<TDto>(PagedRequest request, int? userId, string? userRole, params int[] excludedStatuses)
@@ -149,12 +152,11 @@ namespace MilkDistributionWarehouse.Services
         {
             var role = roles?.FirstOrDefault();
 
-
-            var purchaseOrderQuery = _purchaseOrderRepository.GetPurchaseOrderByPurchaseOrderId();
+            var purchaseOrderQuery = _purchaseOrderRepository.GetPurchaseOrderByPurchaseOrderId().Where(pod => pod.PurchaseOderId == purchaseOrderId);
 
             var purchaseOrderMap = purchaseOrderQuery.ProjectTo<PurchaseOrdersDetail>(_mapper.ConfigurationProvider);
 
-            var purchaseOrderMapDetal = await purchaseOrderMap.FirstOrDefaultAsync(pod => pod.PurchaseOderId == purchaseOrderId);
+            var purchaseOrderMapDetal = await purchaseOrderMap.FirstOrDefaultAsync();
 
             if (purchaseOrderMapDetal == null)
                 return ("PurchaseOrder is not found.", default);
@@ -167,7 +169,8 @@ namespace MilkDistributionWarehouse.Services
                 {
                     case RoleNames.SalesRepresentative:
                         isDisableButton = purchaseOrderMapDetal.CreatedBy != userId
-                            && (purchaseOrderMapDetal.Status != PurchaseOrderStatus.Draft || purchaseOrderMapDetal.Status != PurchaseOrderStatus.Rejected);
+                            && purchaseOrderMapDetal.Status != PurchaseOrderStatus.Draft
+                            && purchaseOrderMapDetal.Status != PurchaseOrderStatus.Rejected;
                         break;
                     case RoleNames.SalesManager:
                         isDisableButton = purchaseOrderMapDetal.Status != PurchaseOrderStatus.PendingApproval;
@@ -264,42 +267,30 @@ namespace MilkDistributionWarehouse.Services
             {
                 await _unitOfWork.BeginTransactionAsync();
                 if (update == null)
-                {
-                    await _unitOfWork.RollbackTransactionAsync();
-                    return ("PurchaseOrder data update is invalid.", default);
-                }
+                    throw new Exception("PurchaseOrder data update is invalid.");
 
                 var purchaseOrderExist = await _purchaseOrderRepository.GetPurchaseOrderByPurchaseOrderId(update.PurchaseOderId);
 
                 if (purchaseOrderExist == null)
-                {
-                    await _unitOfWork.RollbackTransactionAsync();
-                    return ("PurchaseOrder is not exist.", default);
-                }
+                    throw new Exception("PurchaseOrder is not exist.");
 
                 if (purchaseOrderExist.Status != PurchaseOrderStatus.Draft && purchaseOrderExist.Status != PurchaseOrderStatus.Rejected)
-                    throw new Exception("Chỉ được cập nhật khi đơn hàng ở trạng thái Nháp hoặc Bị từ chối.");
+                    throw new Exception("Chỉ được cập nhật khi đơn hàng ở trạng thái Nháp hoặc Bị từ chối.".ToMessageForUser());
 
                 if (purchaseOrderExist.CreatedBy != userId)
-                {
-                    await _unitOfWork.RollbackTransactionAsync();
-                    return ("No PO update permission.", default);
-                }
+                    throw new Exception("No PO update permission.");
 
                 var purchaseOrderDetails = await _purchaseOrderDetailRepository.GetPurchaseOrderDetail()
                     .Where(pod => pod.PurchaseOderId == update.PurchaseOderId)
                     .ToListAsync();
 
                 if (!purchaseOrderDetails.Any())
-                {
-                    await _unitOfWork.RollbackTransactionAsync();
-                    return ("List purchase order detail is null.", default);
-                }
+                    throw new Exception("List purchase order detail is empty.");
 
                 var resultDeletePODetail = await _purchaseOrderDetailRepository.DeletePODetailBulk(purchaseOrderDetails);
 
                 if (resultDeletePODetail == 0)
-                    return ("Delete PO Details is failed.", default);
+                    throw new Exception("Delete PO Details is failed.");
 
                 var newDetails = _mapper.Map<List<PurchaseOderDetail>>(update.PurchaseOrderDetailUpdates);
 
@@ -312,13 +303,13 @@ namespace MilkDistributionWarehouse.Services
                 var resultCreatePODetail = await _purchaseOrderDetailRepository.CreatePODetailBulk(newDetails);
 
                 if (resultCreatePODetail == 0)
-                    return ("Create PO Details is failed.", default);
+                    throw new Exception("Create PO Details is failed.");
 
                 purchaseOrderExist.UpdatedAt = DateTime.Now;
                 var resultUpdatePO = await _purchaseOrderRepository.UpdatePurchaseOrder(purchaseOrderExist);
 
                 if (resultUpdatePO == null)
-                    throw new Exception("Cập nhật đơn hàng thất bại");
+                    throw new Exception("Update Purchase Order is failed.");
 
                 await _unitOfWork.CommitTransactionAsync();
 
@@ -327,7 +318,7 @@ namespace MilkDistributionWarehouse.Services
             catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                return ($"{ex.Message}".ToMessageForUser(), default);
+                return ($"{ex.Message}", default);
             }
         }
 
@@ -354,6 +345,8 @@ namespace MilkDistributionWarehouse.Services
                    => ApprovalOrRejectPO(purchaseOrderExist, currentStatus, changeStatus, purchaseOrderProcess, userId, userName),
                 RoleNames.WarehouseManager
                    => GoodsReceivedPO(purchaseOrderExist, currentStatus, changeStatus, purchaseOrderProcess, userId),
+                RoleNames.WarehouseStaff
+                   => StartReceivingPO(purchaseOrderExist, currentStatus, changeStatus, purchaseOrderProcess, userId),
                 _ => ("User role not supported.", default)
             };
 
@@ -373,83 +366,43 @@ namespace MilkDistributionWarehouse.Services
         public async Task<(string, PurchaseOrder)> SubmitPurchaseOrder(PurchaseOrderProcess purchaseOrderProcess, int? userId, string? userName)
             => await UpdatePurchaseOrderProcess(purchaseOrderProcess, PurchaseOrderStatus.PendingApproval, userId, RoleNames.SalesRepresentative, userName);
 
-        public async Task<(string, PurchaseOrder)> ApprovalPurchaseOrder(PurchaseOrderProcess purchaseOrderProcess, int? userId, string? userName)
+        public async Task<(string, PurchaseOrder)> ApprovePurchaseOrder(PurchaseOrderProcess purchaseOrderProcess, int? userId, string? userName)
             => await UpdatePurchaseOrderProcess(purchaseOrderProcess, PurchaseOrderStatus.Approved, userId, RoleNames.SalesManager, userName);
 
-        public async Task<(string, PurchaseOrder)> RejectedPurchaseOrder(PurchaseOrderProcess purchaseOrderProcess, int? userId, string? userName)
+        public async Task<(string, PurchaseOrder)> RejectPurchaseOrder(PurchaseOrderProcess purchaseOrderProcess, int? userId, string? userName)
             => await UpdatePurchaseOrderProcess(purchaseOrderProcess, PurchaseOrderStatus.Rejected, userId, RoleNames.SalesManager, userName);
 
         public async Task<(string, PurchaseOrder)> GoodsReceivedPurchaseOrder(PurchaseOrderProcess purchaseOrderProcess, int? userId)
             => await UpdatePurchaseOrderProcess(purchaseOrderProcess, PurchaseOrderStatus.GoodsReceived, userId, RoleNames.WarehouseManager, null);
 
-        private (string, PurchaseOrder?) SubmitPurchaseOrder(PurchaseOrder purchaseOrderExist, int? currentStatus,
-            int? changeStatus, PurchaseOrderProcess processPO,
-            int? userId, string? userName)
+        public async Task<(string, PurchaseOrderProcess?)> StartReceivingPurchaseOrder(PurchaseOrderProcess purchaseOrderProcess, int? userId)
         {
-            if (purchaseOrderExist.CreatedBy != userId)
-                return ("Bạn không có quyền nộp đơn đặt hàng.", default);
-
-            if ((currentStatus != PurchaseOrderStatus.Draft && currentStatus != PurchaseOrderStatus.Rejected)
-                || changeStatus != PurchaseOrderStatus.PendingApproval)
-                return ("Purchaes Orders status is invalid.", default);
-
-            purchaseOrderExist.Status = PurchaseOrderStatus.PendingApproval;
-
-            purchaseOrderExist.UpdatedAt = DateTime.Now;
-
-            return ("", purchaseOrderExist);
-        }
-
-        private (string, PurchaseOrder?) ApprovalOrRejectPO(PurchaseOrder purchaseOrderExist, int? currentStatus,
-            int? changeStatus, PurchaseOrderProcess processPO,
-            int? userId, string? userName)
-        {
-            if (currentStatus != PurchaseOrderStatus.PendingApproval ||
-                (changeStatus != PurchaseOrderStatus.Approved && changeStatus != PurchaseOrderStatus.Rejected))
-                return ("Purchase Orders status is invalid.", default);
-
-            if (changeStatus == PurchaseOrderStatus.Rejected && string.IsNullOrEmpty(processPO.Note))
-                return ("Từ chối đơn phải cần có lý do.".ToMessageForUser(), default);
-
-            purchaseOrderExist.Status = changeStatus == PurchaseOrderStatus.Approved
-                ? PurchaseOrderStatus.Approved
-                : PurchaseOrderStatus.Rejected;
-
-            if (changeStatus == PurchaseOrderStatus.Approved)
+            try
             {
-                purchaseOrderExist.ApprovalBy = userId;
-                purchaseOrderExist.Note = "";
+                await _unitOfWork.BeginTransactionAsync();
+
+                var (msg, purchaseOrder) = await UpdatePurchaseOrderProcess(purchaseOrderProcess, PurchaseOrderStatus.Receiving, userId, RoleNames.WarehouseStaff, null);
+
+                if (!string.IsNullOrEmpty(msg))
+                    throw new Exception(msg);
+
+                var (msg1, grnCreate) = await _goodsReceiptNoteService.CreateGoodsReceiptNote(new GoodsReceiptNoteCreate { PurchaseOderId = purchaseOrder.PurchaseOderId }, userId);
+
+                if (!string.IsNullOrEmpty(msg1))
+                    throw new Exception(msg1);
+
+                await _unitOfWork.CommitTransactionAsync();
+
+                return ("", purchaseOrderProcess);
             }
-            else
+            catch (Exception ex)
             {
-                if (!string.IsNullOrEmpty(processPO.Note))
-                    purchaseOrderExist.Note = $"[{userName}] - " + processPO.Note;
+                await _unitOfWork.RollbackTransactionAsync();
+                return ($"{ex.Message}", default);
             }
-
-            purchaseOrderExist.UpdatedAt = DateTime.Now;
-
-            return ("", purchaseOrderExist);
         }
 
-        private (string, PurchaseOrder?) GoodsReceivedPO(PurchaseOrder purchaseOrderExist, int? currentStatus,
-            int? changeStatus, PurchaseOrderProcess processPO,
-            int? userId)
-        {
-            if (currentStatus != PurchaseOrderStatus.Approved ||
-                    changeStatus != PurchaseOrderStatus.GoodsReceived)
-                return ("Purchase Orders status is invalid.", default);
-
-            if (purchaseOrderExist.ApprovalBy == null)
-                return ("Đơn đặt hàng chưa được duyệt.", default);
-
-            purchaseOrderExist.Status = changeStatus;
-            purchaseOrderExist.ArrivalConfirmedBy = userId;
-            purchaseOrderExist.UpdatedAt = DateTime.Now;
-
-            return ("", purchaseOrderExist);
-        }
-
-        public async Task<(string, PurchaseOrder?)> AssignedForReceivingPO(PurchaseOrderProcessAssignTo purchaseOrderProcess,
+        public async Task<(string, PurchaseOrder?)> AssignForReceivingPurchaseOrder(PurchaseOrderProcessAssignTo purchaseOrderProcess,
             int? userId)
         {
             var purchaseOrderExist = await _purchaseOrderRepository.GetPurchaseOrderByPurchaseOrderId(purchaseOrderProcess.PurchaseOrderId);
@@ -526,6 +479,111 @@ namespace MilkDistributionWarehouse.Services
                 await _unitOfWork.RollbackTransactionAsync();
                 return ($"{ex.Message}".ToMessageForUser(), default);
             }
+        }
+
+        private (string, PurchaseOrder?) SubmitPurchaseOrder(PurchaseOrder purchaseOrderExist, int? currentStatus,
+            int? changeStatus, PurchaseOrderProcess processPO,
+            int? userId, string? userName)
+        {
+            if (purchaseOrderExist.CreatedBy != userId)
+                return ("Bạn không có quyền nộp đơn đặt hàng.", default);
+
+            if ((currentStatus != PurchaseOrderStatus.Draft && currentStatus != PurchaseOrderStatus.Rejected)
+                || changeStatus != PurchaseOrderStatus.PendingApproval)
+                return ("Purchaes Orders status is invalid.", default);
+
+            purchaseOrderExist.Status = PurchaseOrderStatus.PendingApproval;
+
+            purchaseOrderExist.UpdatedAt = DateTime.Now;
+
+            return ("", purchaseOrderExist);
+        }
+
+        private (string, PurchaseOrder?) ApprovalOrRejectPO(PurchaseOrder purchaseOrderExist, int? currentStatus,
+            int? changeStatus, PurchaseOrderProcess processPO,
+            int? userId, string? userName)
+        {
+            if (currentStatus != PurchaseOrderStatus.PendingApproval ||
+                (changeStatus != PurchaseOrderStatus.Approved && changeStatus != PurchaseOrderStatus.Rejected))
+                return ("Purchase Orders status is invalid.", default);
+
+            if (changeStatus == PurchaseOrderStatus.Rejected && string.IsNullOrEmpty(processPO.Note))
+                return ("Từ chối đơn phải cần có lý do.".ToMessageForUser(), default);
+
+            purchaseOrderExist.Status = changeStatus == PurchaseOrderStatus.Approved
+                ? PurchaseOrderStatus.Approved
+                : PurchaseOrderStatus.Rejected;
+
+            if (changeStatus == PurchaseOrderStatus.Approved)
+            {
+                purchaseOrderExist.ApprovalBy = userId;
+                purchaseOrderExist.Note = "";
+            }
+            else
+            {
+                if (!string.IsNullOrEmpty(processPO.Note))
+                    purchaseOrderExist.Note = $"[{userName}] - " + processPO.Note;
+            }
+
+            purchaseOrderExist.UpdatedAt = DateTime.Now;
+
+            return ("", purchaseOrderExist);
+        }
+
+        private (string, PurchaseOrder?) GoodsReceivedPO(PurchaseOrder purchaseOrderExist, int? currentStatus,
+            int? changeStatus, PurchaseOrderProcess processPO,
+            int? userId)
+        {
+            if (currentStatus != PurchaseOrderStatus.Approved ||
+                    changeStatus != PurchaseOrderStatus.GoodsReceived)
+                return ("Purchase Orders status is invalid.", default);
+
+            if (purchaseOrderExist.ApprovalBy == null)
+                return ("Đơn đặt hàng chưa được duyệt.", default);
+
+            purchaseOrderExist.Status = changeStatus;
+            purchaseOrderExist.ArrivalConfirmedBy = userId;
+            purchaseOrderExist.UpdatedAt = DateTime.Now;
+
+            return ("", purchaseOrderExist);
+        }
+
+        private (string, PurchaseOrder?) StartReceivingPO(PurchaseOrder purchaseOrderExist, int? currentStatus,
+            int changeStatus, PurchaseOrderProcess purchaseOrderProcess, int? userId)
+        {
+            if (currentStatus != PurchaseOrderStatus.AssignedForReceiving ||
+                    changeStatus != PurchaseOrderStatus.Receiving)
+                return ("Purchase Orders status is invalid.", default);
+
+            if (purchaseOrderExist.AssignTo == null)
+                return ("Purchase Orders not yet assigned to warehouse staff.", default);
+
+            if (purchaseOrderExist.AssignTo != userId)
+                return ("You are not entitled to receive the goods.", default);
+
+            purchaseOrderExist.Status = changeStatus;
+            purchaseOrderExist.UpdatedAt = DateTime.Now;
+
+            return ("", purchaseOrderExist);
+        }
+
+        private (string, PurchaseOrder?) InspectPO(PurchaseOrder purchaseOrderExist, int? currentStatus,
+                int changeStatus, PurchaseOrderProcess purchaseOrderProcess, int? userId)
+        {
+            if (currentStatus != PurchaseOrderStatus.Receiving ||
+                    changeStatus != PurchaseOrderStatus.Inspected)
+                return ("Purchase Orders status is invalid.", default);
+
+            if (purchaseOrderExist.AssignTo == null)
+                return ("Purchase Orders not yet receive to warehouse staff.", default);
+
+            if (purchaseOrderExist.AssignTo != userId)
+                return ("You are not entitled to receive the goods.", default);
+
+            purchaseOrderExist.Status = changeStatus;
+            purchaseOrderExist.UpdatedAt = DateTime.Now;
+
+            return ("", purchaseOrderExist);
         }
     }
 }

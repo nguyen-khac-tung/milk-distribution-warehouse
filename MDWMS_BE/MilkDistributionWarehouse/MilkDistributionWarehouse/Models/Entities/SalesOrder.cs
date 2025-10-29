@@ -29,6 +29,8 @@ public partial class SalesOrder
 
     public string Note { get; set; }
 
+    public string RejectionReason { get; set; }
+
     public virtual User AcknowledgedByNavigation { get; set; }
 
     public virtual User ApprovalByNavigation { get; set; }

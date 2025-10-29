@@ -54,6 +54,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public UserDto? AssignTo { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public string Note { get; set; }
+        public string RejectionReason { get; set; }
     }
 
     public class SalesOrderItemDetailDto
@@ -119,11 +120,29 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int? SalesOrderDetailId { get; set; }
     }
 
-    public class SalesOrderStatusUpdateDto
+    public class SaleSOrderUpdateStatusDto
     {
         public Guid SalesOrderId { get; set; }
-
-        [Required(ErrorMessage = "Trạng thái không được bỏ trống.")]
-        public int? Status { get; set; }
     }
+
+    public class SalesOrderPendingApprovalDto: SaleSOrderUpdateStatusDto
+    {
+    }
+
+    public class SalesOrderApprovalDto : SaleSOrderUpdateStatusDto
+    {
+    }
+
+    public class SalesOrderRejectDto : SaleSOrderUpdateStatusDto
+    {
+        [Required(ErrorMessage = "Lý do từ chối không được bỏ trống.")]
+        public string? RejectionReason { get; set; }
+    }
+
+    public class SalesOrderAssignedForPickingDto : SaleSOrderUpdateStatusDto
+    {
+        [Required(ErrorMessage = "Nhân viên kho không được bỏ trống.")]
+        public int? AssignTo { get; set; }
+    }
+
 }
