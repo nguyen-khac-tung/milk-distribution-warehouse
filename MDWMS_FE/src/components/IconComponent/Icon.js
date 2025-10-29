@@ -117,7 +117,7 @@ export const ComponentIcon = ({ name, color = "#000000", size = 20, collapsed = 
     isPhoneIcon || isEmailIcon || isTaxIcon || isCalendarIcon || isStreamlineplumpIcon || isFormkitdownIcon || isBellIcon || isBoyIcon || isGirlIcon
     || isCalendarzxIcon || isCrownIcon || isServerNetworkIcon || isPeopleIcon || isEuropeanNameBadgeIcon
     || isSchoolboyRunawayIcon || isBatchIcon || isPalletIcon || isUserIcon || isShoppingCartIcon || isTrashIcon || isCartIcon || isPurchaseOrder
-    || isCPOrder || isGoodsReceiptNoteIcon;
+    || isCPOrder || isGoodsReceiptNoteIcon
     || isCPOrder || isBackOrderIcon;
 
   return (
