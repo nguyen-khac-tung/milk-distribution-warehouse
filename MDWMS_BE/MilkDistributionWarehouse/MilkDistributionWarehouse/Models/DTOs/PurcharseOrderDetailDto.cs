@@ -12,7 +12,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int GoodsPackingId { get; set; }
         public int UnitPerPacking { get; set; }
         public int PackageQuantity { get; set; }
-        public string UnitMeasureName { get; set; }
+        public string UnitMeasureName { get; set; } 
     }
 
     public class PurchaseOrderDetailCreate
