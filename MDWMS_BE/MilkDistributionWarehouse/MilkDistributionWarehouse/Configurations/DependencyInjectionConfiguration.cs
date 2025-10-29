@@ -101,6 +101,10 @@ namespace MilkDistributionWarehouse.Configurations
             //BackOrder
             services.AddScoped<IBackOrderRepository, BackOrderRepository>();
             services.AddScoped<IBackOrderService, BackOrderService>();
+
+            //GoodsReceiptNote
+            services.AddScoped<IGoodsReceiptNoteRepository, GoodsReceiptNoteRepository>();
+            services.AddScoped<IGoodsReceiptNoteService, GoodsReceiptNoteService>();
         }
     }
 }
