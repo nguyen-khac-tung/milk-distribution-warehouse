@@ -11,6 +11,21 @@ export const getGoodsReceiptNoteByPurchaseOrderId = async (purchaseOrderId) => {
     }
 };
 
+// Bắt đầu quá trình nhận hàng
+export const startReceive = async (purchaseOrderId) => {
+    try {
+        const data = {
+            purchaseOrderId: purchaseOrderId
+        };
+        
+        const res = await api.post('/GoodsReceiptNote/StartReceive', data);
+        return res.data;
+    } catch (error) {
+        console.error("Error starting receive process:", error);
+        throw error;
+    }
+};
+
 
 
 // // Hoàn thành kiểm nhập

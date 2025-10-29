@@ -734,9 +734,9 @@ export default function PurchaseOrderList() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-600">Quản lý Đơn yêu cầu đặt hàng</h1>
+            <h1 className="text-2xl font-bold text-slate-600">Quản lý Đơn yêu cầu mua hàng</h1>
             <p className="text-slate-600 mt-1">
-              Quản lý các đơn yêu cầu đặt hàng trong hệ thống
+              Quản lý các đơn yêu cầu mua hàng trong hệ thống
             </p>
           </div>
           <div className="flex space-x-3">
