@@ -27,5 +27,7 @@ public partial class BackOrder
 
     public virtual Good Goods { get; set; }
 
+    public virtual GoodsPacking GoodsPacking { get; set; }
+
     public virtual Retailer Retailer { get; set; }
 }

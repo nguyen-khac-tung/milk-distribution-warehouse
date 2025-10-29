@@ -95,6 +95,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
     public class PurchaseOrderUpdate
     {
         public Guid PurchaseOderId { get; set; }
+        public string? Note { get; set; }
         public List<PurchaseOrderDetailUpdate> PurchaseOrderDetailUpdates { get; set; } = new();
     }
 
@@ -102,7 +103,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
     {
         [Required(ErrorMessage = "Mã đơn hàng không được để trống.")]
         public Guid PurchaseOrderId { get; set; }
-        public string? Note { get; set; }
+        public string? RejectionReason { get; set; }
     }
 
     public class PurchaseOrderProcessAssignTo : PurchaseOrderProcess
@@ -110,5 +111,46 @@ namespace MilkDistributionWarehouse.Models.DTOs
         [Required(ErrorMessage = "Nhân viên kho không được bỏ trống.")]
         public int AssignTo { get; set; }
     }
+
+
+
+    public class PurchaseOrderUpdateStatusDto
+    {
+        [Required(ErrorMessage = "Mã đơn hàng không được để trống.")]
+        public Guid PurchaseOrderId { get; set; }
+    }
+
+    public class PurchaseOrderPendingApprovalDto : PurchaseOrderUpdateStatusDto
+    {
+    }
+
+    public class PurchaseOrderApprovalDto : PurchaseOrderUpdateStatusDto
+    {
+    }
+
+    public class PurchaseOrderRejectDto : PurchaseOrderUpdateStatusDto
+    {
+        [Required(ErrorMessage = "Lý do từ chối không được bỏ trống.")]
+        public string? RejectionReason { get; set; }
+    }
+
+    public class PurchaseOrderGoodsReceivedDto : PurchaseOrderUpdateStatusDto
+    {
+    }
+
+    public class PurchaseOrderAssignedForReceivingDto : PurchaseOrderUpdateStatusDto
+    {
+        [Required(ErrorMessage = "Nhân viên kho không được bỏ trống.")]
+        public int? AssignTo { get; set; }
+    }
+
+    public class PurchaseOrderReceivingDto : PurchaseOrderUpdateStatusDto
+    {
+    }
+
+    public class PurchaseOrderCompletedDto : PurchaseOrderUpdateStatusDto
+    {
+    }
+
 
 }

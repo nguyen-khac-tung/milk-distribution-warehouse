@@ -97,6 +97,10 @@ public partial class WarehouseContext : DbContext
                 .HasForeignKey(d => d.GoodsId)
                 .HasConstraintName("FK_BackOrders_Goods");
 
+            entity.HasOne(d => d.GoodsPacking).WithMany(p => p.BackOrders)
+                .HasForeignKey(d => d.GoodsPackingId)
+                .HasConstraintName("FK_BackOrders_GoodsPacking");
+
             entity.HasOne(d => d.Retailer).WithMany(p => p.BackOrders)
                 .HasForeignKey(d => d.RetailerId)
                 .HasConstraintName("FK_BackOrders_Retailers");
@@ -325,6 +329,7 @@ public partial class WarehouseContext : DbContext
 
             entity.Property(e => e.PurchaseOderId).ValueGeneratedNever();
             entity.Property(e => e.Note).HasMaxLength(255);
+            entity.Property(e => e.RejectionReason).HasMaxLength(255);
 
             entity.HasOne(d => d.ApprovalByNavigation).WithMany(p => p.PurchaseOrderApprovalByNavigations).HasForeignKey(d => d.ApprovalBy);
 
@@ -550,7 +555,9 @@ public partial class WarehouseContext : DbContext
             entity.Property(e => e.Phone)
                 .HasMaxLength(50)
                 .IsUnicode(false);
-            entity.Property(e => e.Status).HasDefaultValue(1);
+            entity.Property(e => e.Status)
+                .HasDefaultValue(1)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF__Users__Status__32AB8735");
 
             entity.HasMany(d => d.Roles).WithMany(p => p.Users)
                 .UsingEntity<Dictionary<string, object>>(
