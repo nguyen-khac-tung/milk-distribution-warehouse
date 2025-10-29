@@ -17,7 +17,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, SalesOrderDetailDto?)> GetSalesOrderDetail(Guid? saleOrderId);
         Task<(string, SalesOrderCreateDto?)> CreateSalesOrder(SalesOrderCreateDto salesOrderCreate, int? userId);
         Task<(string, SalesOrderUpdateDto?)> UpdateSalesOrder(SalesOrderUpdateDto salesOrderUpdate, int? userId);
-        Task<(string, SalesOrderStatusUpdateDto?)> UpdateStatusSalesOrder(SalesOrderStatusUpdateDto salesOrderUpdateStatus, int? userId);
+        Task<(string, T?)> UpdateStatusSalesOrder<T>(T salesOrderUpdateStatus, int? userId) where T : SaleSOrderUpdateStatusDto;
         Task<string> DeleteSalesOrder(Guid? salesOrderId, int? userId);
     }
 
@@ -198,50 +198,6 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
-        public async Task<(string, SalesOrderStatusUpdateDto?)> UpdateStatusSalesOrder(SalesOrderStatusUpdateDto salesOrderUpdateStatus, int? userId)
-        {
-            var salesOrder = await _salesOrderRepository.GetSalesOrderById(salesOrderUpdateStatus.SalesOrderId);
-            if (salesOrder == null) return ("Sales order exist is null", null);
-
-            try
-            {
-                await _unitOfWork.BeginTransactionAsync();
-
-                if (salesOrderUpdateStatus.Status == SalesOrderStatus.PendingApproval)
-                {
-                    if (salesOrder.Status != SalesOrderStatus.Draft && salesOrder.Status != SalesOrderStatus.Rejected)
-                        return ("Chỉ được nộp đơn khi đơn hàng ở trạng thái Nháp hoặc Bị từ chối.".ToMessageForUser(), null);
-                    if (salesOrder.CreatedBy != userId) return ("Current User has no permission to update.", null);
-                    var msg = await CheckPendingSalesOrderValidation(salesOrder);
-                    if (msg.Length > 0) return (msg, null);
-                    salesOrder.Status = SalesOrderStatus.PendingApproval;
-                }
-
-                if (salesOrderUpdateStatus.Status == SalesOrderStatus.Rejected)
-                {
-                    if (salesOrder.Status != SalesOrderStatus.PendingApproval)
-                        return ("Chỉ được từ chối khi đơn hàng ở trạng thái Chờ duyệt.".ToMessageForUser(), null);
-                    salesOrder.Status = SalesOrderStatus.Rejected;
-                }
-
-                if (salesOrderUpdateStatus.Status == SalesOrderStatus.Approved)
-                {
-                    if (salesOrder.Status != SalesOrderStatus.PendingApproval)
-                        return ("Chỉ được duyệt khi đơn hàng ở trạng thái Chờ duyệt.".ToMessageForUser(), null);
-                    salesOrder.Status = SalesOrderStatus.Approved;
-                }
-
-                salesOrder.UpdateAt = DateTime.Now;
-                await _unitOfWork.CommitTransactionAsync();
-                return ("", salesOrderUpdateStatus);
-            }
-            catch
-            {
-                await _unitOfWork.RollbackTransactionAsync();
-                return ("Cập nhật trạng thái đơn hàng thất bại.".ToMessageForUser(), null);
-            }
-        }
-
         public async Task<string> DeleteSalesOrder(Guid? salesOrderId, int? userId)
         {
             if (salesOrderId == null) return "SalesOrderId is invalid.";
@@ -275,9 +231,67 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
+        public async Task<(string, T?)> UpdateStatusSalesOrder<T>(T salesOrderUpdateStatus, int? userId)
+            where T : SaleSOrderUpdateStatusDto
+        {
+            var salesOrder = await _salesOrderRepository.GetSalesOrderById(salesOrderUpdateStatus.SalesOrderId);
+            if (salesOrder == null) return ("Sales order exist is null", null);
+
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                if (salesOrderUpdateStatus is SalesOrderPendingApprovalDto)
+                {
+                    if (salesOrder.Status != SalesOrderStatus.Draft && salesOrder.Status != SalesOrderStatus.Rejected)
+                        return ("Chỉ được nộp đơn khi đơn hàng ở trạng thái Nháp hoặc Bị từ chối.".ToMessageForUser(), null);
+                    if (salesOrder.CreatedBy != userId) return ("Current User has no permission to update.", null);
+                    var msg = await CheckPendingSalesOrderValidation(salesOrder);
+                    if (msg.Length > 0) return (msg, null);
+                    salesOrder.Status = SalesOrderStatus.PendingApproval;
+                }
+
+                if (salesOrderUpdateStatus is SalesOrderRejectDto rejectDto)
+                {
+                    if (rejectDto == null) return ("SalesOrderRejectDto is not valid", null);
+                    if (salesOrder.Status != SalesOrderStatus.PendingApproval)
+                        return ("Chỉ được từ chối khi đơn hàng ở trạng thái Chờ duyệt.".ToMessageForUser(), null);
+                    salesOrder.Status = SalesOrderStatus.Rejected;
+                    salesOrder.RejectionReason = rejectDto.RejectionReason;
+                }
+
+                if (salesOrderUpdateStatus is SalesOrderApprovalDto)
+                {
+                    if (salesOrder.Status != SalesOrderStatus.PendingApproval)
+                        return ("Chỉ được duyệt khi đơn hàng ở trạng thái Chờ duyệt.".ToMessageForUser(), null);
+                    salesOrder.Status = SalesOrderStatus.Approved;
+                    salesOrder.RejectionReason = "";
+                }
+
+                if (salesOrderUpdateStatus is SalesOrderAssignedForPickingDto assignedForPickingDto)
+                {
+                    if (salesOrder.Status != SalesOrderStatus.Approved)
+                        return ("Chỉ được phân công khi đơn hàng ở trạng thái Đã duyệt.".ToMessageForUser(), null);
+                    salesOrder.Status = SalesOrderStatus.AssignedForPicking;
+                    salesOrder.AcknowledgedBy = userId;
+                    salesOrder.AssignTo = assignedForPickingDto.AssignTo;
+                }
+
+                salesOrder.UpdateAt = DateTime.Now;
+                await _salesOrderRepository.UpdateSalesOrder(salesOrder);
+                await _unitOfWork.CommitTransactionAsync();
+                return ("", salesOrderUpdateStatus);
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ("Cập nhật trạng thái đơn hàng thất bại.".ToMessageForUser(), null);
+            }
+        }
+
         private async Task<string> CheckPendingSalesOrderValidation(SalesOrder salesOrderUpdate)
         {
-            var msg = string.Empty;
+
             var pendingSalesOrders = _salesOrderRepository.GetListSalesOrdersByStatus(SalesOrderStatus.PendingApproval);
             var hasPendingSaleOrder = await pendingSalesOrders.AnyAsync(s => s.RetailerId == salesOrderUpdate.RetailerId
                 && s.EstimatedTimeDeparture == salesOrderUpdate.EstimatedTimeDeparture);
@@ -291,17 +305,6 @@ namespace MilkDistributionWarehouse.Services
                                     .ToListAsync();
             var hasApprovalSaleOrder = potentialMatches.Any(s =>
                                         AreDetailListsEqual(s.SalesOrderDetails, salesOrderUpdate.SalesOrderDetails));
-            //var hasApprovalSaleOrder = potentialMatches.Any(s =>
-            //                            s.SalesOrderDetails.All(sd =>
-            //                                s.SalesOrderDetails.Count(s =>
-            //                                    s.GoodsId == sd.GoodsId
-            //                                    && s.GoodsPackingId == sd.GoodsPackingId
-            //                                    && s.PackageQuantity == sd.PackageQuantity)
-            //                                ==
-            //                                salesOrderUpdate.SalesOrderDetails.Count(su =>
-            //                                    su.GoodsId == sd.GoodsId
-            //                                    && su.GoodsPackingId == sd.GoodsPackingId
-            //                                    && su.PackageQuantity == sd.PackageQuantity)));
             if (hasApprovalSaleOrder) return "Không thể gửi duyệt vì đơn hàng này trùng lặp hoàn toàn với một đơn hàng đã được duyệt trước đó.".ToMessageForUser();
 
             return "";

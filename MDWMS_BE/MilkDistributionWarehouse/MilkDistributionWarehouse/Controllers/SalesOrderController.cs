@@ -87,16 +87,6 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<SalesOrderUpdateDto>.ToResultOk(salesOrder);
         }
 
-        [Authorize(Roles = "Sale Manager, Sales Representative, Warehouse Staff, Warehouse Manager")]
-        [HttpPut("UpdateStatusSalesOrder")]
-        public async Task<IActionResult> UpdateStatusSalesOrder(SalesOrderStatusUpdateDto salesOrderUpdateStatus)
-        {
-            var (msg, salesOrder) = await _salesOrderService.UpdateStatusSalesOrder(salesOrderUpdateStatus, User.GetUserId());
-            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
-
-            return ApiResponse<SalesOrderStatusUpdateDto>.ToResultOk(salesOrder);
-        }
-
         [Authorize(Roles = "Sales Representative")]
         [HttpDelete("DeleteSalesOrder/{salesOrderId}")]
         public async Task<IActionResult> DeleteSalesOrder(Guid? salesOrderId)
@@ -105,6 +95,46 @@ namespace MilkDistributionWarehouse.Controllers
             if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
 
             return ApiResponse<string>.ToResultOkMessage();
+        }
+
+        [Authorize(Roles = "Sales Representative")]
+        [HttpPut("UpdateSalesOrderStatusPendingApproval")]
+        public async Task<IActionResult> UpdateSalesOrderStatusPendingApproval(SalesOrderPendingApprovalDto salesOrderStatusDto)
+        {
+            var (msg, salesOrder) = await _salesOrderService.UpdateStatusSalesOrder(salesOrderStatusDto, User.GetUserId());
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<SalesOrderPendingApprovalDto>.ToResultOk(salesOrder);
+        }
+
+        [Authorize(Roles = "Sale Manager")]
+        [HttpPut("UpdateSalesOrderStatusReject")]
+        public async Task<IActionResult> UpdateSalesOrderStatusReject(SalesOrderRejectDto salesOrderStatusDto)
+        {
+            var (msg, salesOrder) = await _salesOrderService.UpdateStatusSalesOrder(salesOrderStatusDto, User.GetUserId());
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<SalesOrderRejectDto>.ToResultOk(salesOrder);
+        }
+
+        [Authorize(Roles = "Sale Manager")]
+        [HttpPut("UpdateSalesOrderStatusApproval")]
+        public async Task<IActionResult> UpdateSalesOrderStatusApproval(SalesOrderApprovalDto salesOrderStatusDto)
+        {
+            var (msg, salesOrder) = await _salesOrderService.UpdateStatusSalesOrder(salesOrderStatusDto, User.GetUserId());
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<SalesOrderApprovalDto>.ToResultOk(salesOrder);
+        }
+
+        [Authorize(Roles = "Warehouse Manager")]
+        [HttpPut("UpdateSalesOrderStatusAssignedForPicking")]
+        public async Task<IActionResult> UpdateSalesOrderStatusAssignedForPicking(SalesOrderAssignedForPickingDto salesOrderStatusDto)
+        {
+            var (msg, salesOrder) = await _salesOrderService.UpdateStatusSalesOrder(salesOrderStatusDto, User.GetUserId());
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<SalesOrderAssignedForPickingDto>.ToResultOk(salesOrder);
         }
     }
 }
