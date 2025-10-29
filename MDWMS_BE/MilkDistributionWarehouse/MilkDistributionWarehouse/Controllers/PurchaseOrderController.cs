@@ -21,16 +21,6 @@ namespace MilkDistributionWarehouse.Controllers
             _purchaseOrderService = purchaseOrderService;
         }
 
-        [HttpGet("GetPurchaseOrderBySupplierId/{supplierId}")]
-        [Authorize(Roles = "Sales Representative")]
-        public async Task<IActionResult> GetPurchaseOrderBySupplierId(int supplierId)
-        {
-            var (msg, purchaseOrderDetail) = await _purchaseOrderService.GetPurchaseOrderDetailBySupplierId(supplierId, User.GetUserId());
-            if (!string.IsNullOrEmpty(msg))
-                return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<List<PurchaseOrderDetailBySupplier>>.ToResultOk(purchaseOrderDetail);
-        }
-
         [HttpGet("GetPurchaseOrder/{purchaseOrderId}")]
         [Authorize(Roles = "Sale Manager, Sales Representative, Warehouse Staff, Warehouse Manager")]
         public async Task<IActionResult> GetPurchaseOrderByPurchaseOrderId(Guid purchaseOrderId)
