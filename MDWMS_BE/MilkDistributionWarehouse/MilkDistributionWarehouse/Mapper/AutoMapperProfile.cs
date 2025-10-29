@@ -366,7 +366,7 @@ namespace MilkDistributionWarehouse.Mapper
             CreateMap<GoodsReceiptNote, GoodsReceiptNoteDto>()
                 .ForMember(dest => dest.ApprovalByName, opt => opt.MapFrom(src => src.ApprovalByNavigation.FullName))
                 .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => src.CreatedByNavigation.FullName))
-                .ForMember(dest => dest.GRNDetails, opt => opt.MapFrom(src => src.GoodsReceiptNoteDetails));
+                .ForMember(dest => dest.GoodsReceiptNoteDetails, opt => opt.MapFrom(src => src.GoodsReceiptNoteDetails));
         }
     }
 }
