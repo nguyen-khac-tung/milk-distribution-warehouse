@@ -5,9 +5,18 @@ import { Button } from '../../components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { ArrowLeft, Package, User, Calendar, CheckCircle, XCircle, Clock, Truck, CheckSquare, Key, Building2, FileText, Hash, Shield, ShoppingCart, Users, UserCheck, UserX, TruckIcon, Store, UserCircle, UserCog, UserCheck2, UserX2, UserMinus, Mail, MapPin, Phone } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
-import { getSalesOrderDetail } from '../../services/SalesOrderService';
+import { getSalesOrderDetail, updateSaleOrderStatusPendingApproval, approveSalesOrder, rejectSalesOrder, assignForPicking, createDeliverySlip } from '../../services/SalesOrderService';
 import { SALES_ORDER_STATUS } from '../../utils/permissions';
 import { STATUS_LABELS } from '../../components/SaleOrderCompoents/StatusDisplaySaleOrder';
+import SubmitDraftModal from '../../components/SaleOrderCompoents/SubmitDraftModal';
+import ApprovalConfirmationModal from '../../components/SaleOrderCompoents/ApprovalConfirmationModal';
+import RejectionConfirmationModal from '../../components/SaleOrderCompoents/RejectionConfirmationModal';
+import AssignPickingModal from '../../components/SaleOrderCompoents/AssignPickingModal';
+import CreateDeliverySlipModal from '../../components/SaleOrderCompoents/CreateDeliverySlipModal';
+import ViewDeliverySlipModal from '../../components/SaleOrderCompoents/ViewDeliverySlipModal';
+import { usePermissions } from '../../hooks/usePermissions';
+import { PERMISSIONS } from '../../utils/permissions';
+import { extractErrorMessage } from '../../utils/Validation';
 
 const SalesOrderDetail = () => {
     const { id } = useParams();
@@ -15,6 +24,18 @@ const SalesOrderDetail = () => {
     const [loading, setLoading] = useState(true);
     const [salesOrder, setSalesOrder] = useState(null);
     const [error, setError] = useState(null);
+    const [showSubmitDraftModal, setShowSubmitDraftModal] = useState(false);
+    const [showApprovalModal, setShowApprovalModal] = useState(false);
+    const [showRejectionModal, setShowRejectionModal] = useState(false);
+    const [showAssignPickingModal, setShowAssignPickingModal] = useState(false);
+    const [showCreateDeliverySlipModal, setShowCreateDeliverySlipModal] = useState(false);
+    const [showViewDeliverySlipModal, setShowViewDeliverySlipModal] = useState(false);
+    const [submitLoading, setSubmitLoading] = useState(false);
+    const [approvalLoading, setApprovalLoading] = useState(false);
+    const [rejectionLoading, setRejectionLoading] = useState(false);
+    const [assignPickingLoading, setAssignPickingLoading] = useState(false);
+    const [createDeliverySlipLoading, setCreateDeliverySlipLoading] = useState(false);
+    const { hasPermission } = usePermissions();
 
     useEffect(() => {
         const fetchSalesOrderDetail = async () => {
@@ -52,7 +73,7 @@ const SalesOrderDetail = () => {
             1: 'bg-gray-100 text-gray-800', // Draft
             2: 'bg-yellow-100 text-yellow-800', // Pending Approval
             3: 'bg-red-100 text-red-800', // Rejected
-            4: 'bg-green-100 text-green-800', // Approved
+            4: 'bg-blue-100 text-blue-800', // Approved
             5: 'bg-purple-100 text-purple-800', // Assigned for Picking
             6: 'bg-orange-100 text-orange-800', // Picking
             7: 'bg-emerald-100 text-emerald-800' // Completed
@@ -73,7 +94,183 @@ const SalesOrderDetail = () => {
         return statusIcons[status] || <Clock className="h-4 w-4" />;
     };
 
+    const canApprove = () => {
+        return hasPermission(PERMISSIONS.SALES_ORDER_APPROVE) &&
+            //Chỉ có thể duyệt khi đơn hàng đang chờ duyệt
+            salesOrder?.status === SALES_ORDER_STATUS.PendingApproval;
+    };
 
+    const canReject = () => {
+        return hasPermission(PERMISSIONS.SALES_ORDER_REJECT_ORDER) &&
+            salesOrder?.status === SALES_ORDER_STATUS.PendingApproval;
+    };
+
+    const canSubmitDraft = () => {
+        return hasPermission(PERMISSIONS.SALES_ORDER_SUBMIT_PENDING_APPROVAL) &&
+            (salesOrder?.status === SALES_ORDER_STATUS.Draft || salesOrder?.status === SALES_ORDER_STATUS.Rejected);
+    };
+
+    const canAssignForPicking = () => {
+        return hasPermission(PERMISSIONS.SALES_ORDER_ASSIGN_FOR_PICKING) &&
+            salesOrder?.status === SALES_ORDER_STATUS.Approved;
+    };
+
+    const canCreateDeliverySlip = () => {
+        return hasPermission(PERMISSIONS.SALES_ORDER_CREATE_DELIVERY_SLIP) &&
+            salesOrder?.status === SALES_ORDER_STATUS.AssignedForPicking;
+    };
+
+    const canViewDeliverySlip = () => {
+        return hasPermission(PERMISSIONS.SALES_ORDER_VIEW_DELIVERY_SLIP) &&
+            (salesOrder?.status === SALES_ORDER_STATUS.Picking || salesOrder?.status === SALES_ORDER_STATUS.Completed);
+    };
+
+    const handleSubmitDraftConfirm = async () => {
+        setSubmitLoading(true);
+        try {
+            await updateSaleOrderStatusPendingApproval({
+                salesOrderId: salesOrder.salesOrderId
+            });
+
+            if (window.showToast) {
+                window.showToast("Nộp bản nháp thành công!", "success");
+            }
+
+            setShowSubmitDraftModal(false);
+
+            // Refresh data after successful submission
+            const response = await getSalesOrderDetail(id);
+            if (response && response.success) {
+                setSalesOrder(response.data);
+            }
+        } catch (error) {
+            console.error("Error submitting draft:", error);
+            const message = extractErrorMessage(error, "Có lỗi xảy ra khi nộp bản nháp")
+
+            if (window.showToast) {
+                window.showToast(message, "error");
+            }
+        } finally {
+            setSubmitLoading(false);
+        }
+    };
+
+    const handleApprovalConfirm = async (approvalNote = "") => {
+        setApprovalLoading(true);
+        try {
+            await approveSalesOrder({
+                salesOrderId: salesOrder.salesOrderId
+            });
+
+            if (window.showToast) {
+                window.showToast("Duyệt đơn hàng thành công!", "success");
+            }
+            setShowApprovalModal(false);
+            const response = await getSalesOrderDetail(id);
+            if (response && response.success) {
+                setSalesOrder(response.data);
+            }
+        } catch (error) {
+            console.error("Error approving sales order:", error);
+            const message = extractErrorMessage(error, "Có lỗi xảy ra khi duyệt đơn hàng")
+
+            if (window.showToast) {
+                window.showToast(message, "error");
+            }
+        } finally {
+            setApprovalLoading(false);
+        }
+    };
+
+    const handleRejectionConfirm = async (rejectionReason) => {
+        setRejectionLoading(true);
+        try {
+            await rejectSalesOrder({
+                salesOrderId: salesOrder.salesOrderId,
+                rejectionReason: rejectionReason
+            });
+
+            if (window.showToast) {
+                window.showToast("Từ chối đơn hàng thành công!", "success");
+            }
+
+            setShowRejectionModal(false);
+
+            // Refresh data after successful rejection
+            const response = await getSalesOrderDetail(id);
+            if (response && response.success) {
+                setSalesOrder(response.data);
+            }
+        } catch (error) {
+            console.error("Error rejecting sales order:", error);
+            const message = extractErrorMessage(error, "Có lỗi xảy ra khi từ chối đơn hàng")
+
+            if (window.showToast) {
+                window.showToast(message, "error");
+            }
+        } finally {
+            setRejectionLoading(false);
+        }
+    };
+
+    const handleAssignPicking = async (assignTo) => {
+        setAssignPickingLoading(true);
+        try {
+            await assignForPicking({
+                salesOrderId: salesOrder.salesOrderId,
+                assignTo: assignTo
+            });
+
+            if (window.showToast) {
+                window.showToast("Phân công lấy hàng thành công!", "success");
+            }
+            setShowAssignPickingModal(false);
+            const response = await getSalesOrderDetail(id);
+            if (response && response.success) {
+                setSalesOrder(response.data);
+            }
+        } catch (error) {
+            console.error("Error assigning for picking:", error);
+            const message = extractErrorMessage(error, "Có lỗi xảy ra khi phân công lấy hàng")
+
+            if (window.showToast) {
+                window.showToast(message, "error");
+            }
+        } finally {
+            setAssignPickingLoading(false);
+        }
+    };
+
+    const handleCreateDeliverySlip = async (note) => {
+        setCreateDeliverySlipLoading(true);
+        try {
+            await createDeliverySlip({
+                salesOrderId: salesOrder.salesOrderId,
+                note: note
+            });
+
+            if (window.showToast) {
+                window.showToast("Tạo phiếu xuất kho thành công!", "success");
+            }
+            setShowCreateDeliverySlipModal(false);
+            const response = await getSalesOrderDetail(id);
+            if (response && response.success) {
+                setSalesOrder(response.data);
+            }
+        } catch (error) {
+            console.error("Error creating delivery slip:", error);
+            if (window.showToast) {
+                window.showToast("", "error");
+            }
+            const message = extractErrorMessage(error, "Có lỗi xảy ra khi tạo phiếu xuất kho")
+
+            if (window.showToast) {
+                window.showToast(message, "error");
+            }
+        } finally {
+            setCreateDeliverySlipLoading(false);
+        }
+    };
 
     if (loading) {
         return <Loading />;
@@ -261,9 +458,73 @@ const SalesOrderDetail = () => {
                                     </TableBody>
                                 </Table>
                             </div>
+                            {/* Action Buttons at bottom of card */}
+                            <div className="mt-6 flex justify-center space-x-4">
+                                {canSubmitDraft() && (
+                                    <Button
+                                        onClick={() => setShowSubmitDraftModal(true)}
+                                        className="bg-orange-600 hover:bg-orange-700 text-white h-[38px] px-8"
+                                    >
+                                        <FileText className="h-4 w-4 mr-2" />
+                                        Nộp bản nháp
+                                    </Button>
+                                )}
+
+                                {canApprove() && (
+                                    <Button
+                                        onClick={() => setShowApprovalModal(true)}
+                                        className="bg-green-600 hover:bg-green-700 text-white h-[38px] px-8"
+                                    >
+                                        <CheckCircle className="h-4 w-4 mr-2" />
+                                        Duyệt đơn hàng
+                                    </Button>
+                                )}
+
+                                {canReject() && (
+                                    <Button
+                                        onClick={() => setShowRejectionModal(true)}
+                                        className="bg-red-600 hover:bg-red-700 text-white h-[38px] px-8"
+                                    >
+                                        <XCircle className="h-4 w-4 mr-2" />
+                                        Từ chối đơn hàng
+                                    </Button>
+                                )}
+
+                                {canAssignForPicking() && (
+                                    <Button
+                                        onClick={() => setShowAssignPickingModal(true)}
+                                        className="bg-blue-600 hover:bg-blue-700 text-white h-[38px] px-8"
+                                    >
+                                        <Truck className="h-4 w-4 mr-2" />
+                                        Phân công lấy hàng
+                                    </Button>
+                                )}
+
+                                {canCreateDeliverySlip() && (
+                                    <Button
+                                        onClick={() => setShowCreateDeliverySlipModal(true)}
+                                        className="bg-purple-600 hover:bg-purple-700 text-white h-[38px] px-8"
+                                    >
+                                        <Package className="h-4 w-4 mr-2" />
+                                        Tạo phiếu xuất kho
+                                    </Button>
+                                )}
+
+                                {canViewDeliverySlip() && (
+                                    <Button
+                                        onClick={() => setShowViewDeliverySlipModal(true)}
+                                        className="bg-indigo-600 hover:bg-indigo-700 text-white h-[38px] px-8"
+                                    >
+                                        <FileText className="h-4 w-4 mr-2" />
+                                        Xem phiếu xuất kho
+                                    </Button>
+                                )}
+
+                            </div>
 
                         </div>
                     </div>
+
 
                     {/* Right Sidebar */}
                     <div className="bg-gray-200 rounded-lg p-6 h-full">
@@ -386,6 +647,60 @@ const SalesOrderDetail = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Submit Draft Confirmation Modal */}
+            <SubmitDraftModal
+                isOpen={showSubmitDraftModal}
+                onClose={() => setShowSubmitDraftModal(false)}
+                onConfirm={handleSubmitDraftConfirm}
+                saleOrder={salesOrder}
+                loading={submitLoading}
+            />
+
+            {/* Approval Confirmation Modal */}
+            <ApprovalConfirmationModal
+                isOpen={showApprovalModal}
+                onClose={() => setShowApprovalModal(false)}
+                onConfirm={handleApprovalConfirm}
+                saleOrder={salesOrder}
+                loading={approvalLoading}
+            />
+
+            {/* Rejection Confirmation Modal */}
+            <RejectionConfirmationModal
+                isOpen={showRejectionModal}
+                onClose={() => setShowRejectionModal(false)}
+                onConfirm={handleRejectionConfirm}
+                saleOrder={salesOrder}
+                loading={rejectionLoading}
+            />
+
+            {/* Assign Picking Modal */}
+            <AssignPickingModal
+                isOpen={showAssignPickingModal}
+                onClose={() => setShowAssignPickingModal(false)}
+                onConfirm={handleAssignPicking}
+                saleOrder={salesOrder}
+                loading={assignPickingLoading}
+            />
+
+            {/* Create Delivery Slip Modal */}
+            <CreateDeliverySlipModal
+                isOpen={showCreateDeliverySlipModal}
+                onClose={() => setShowCreateDeliverySlipModal(false)}
+                onConfirm={handleCreateDeliverySlip}
+                saleOrder={salesOrder}
+                loading={createDeliverySlipLoading}
+            />
+
+            {/* View Delivery Slip Modal */}
+            <ViewDeliverySlipModal
+                isOpen={showViewDeliverySlipModal}
+                onClose={() => setShowViewDeliverySlipModal(false)}
+                saleOrder={salesOrder}
+                loading={false}
+            />
+
         </div>
     );
 };

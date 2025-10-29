@@ -520,7 +520,7 @@ export default function CreatePurchaseOrder({
                                         loading={suppliersLoading}
                                     />
                                 </div>
-                                
+
                                 {/* Thông tin nhà cung cấp đã chọn */}
                                 {formData.supplierName && (() => {
                                     const selectedSupplier = suppliers.find(supplier => supplier.companyName === formData.supplierName);
