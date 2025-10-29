@@ -30,6 +30,8 @@ import ChangePasswordPage from "../pages/AuthenticationPage/ChangePasswordPage"
 import { PERMISSIONS } from "../utils/permissions";
 import SalesOrderList from "../pages/SalesOrderPage/SalesOrderList";
 import SalesOrderDetail from "../pages/SalesOrderPage/SalesOrderDetail";
+import BackOrderList from "../pages/BackOrderPage/BackOrderList";
+import UpdateSaleOrder from "../pages/SalesOrderPage/UpdateSaleOrder";
 
 export const routes = [
     {
@@ -101,6 +103,14 @@ export const routes = [
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.GOODS_VIEW}>
                 <GoodsList />
+            </ProtectedRoute>
+        ),
+    },
+    {
+        path: "/backorder",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.BACKORDER_VIEW}>
+                <BackOrderList />
             </ProtectedRoute>
         ),
     },
@@ -245,6 +255,15 @@ export const routes = [
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.SALES_ORDER_CREATE}>
                 <CreateSaleOrder />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/sales-orders/update/:id",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.SALES_ORDER_UPDATE}>
+                <UpdateSaleOrder />
             </ProtectedRoute>
         ),
         isShowHeader: true,
