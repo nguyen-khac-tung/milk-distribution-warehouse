@@ -281,7 +281,7 @@ namespace MilkDistributionWarehouse.Services
             var pendingSalesOrders = _salesOrderRepository.GetListSalesOrdersByStatus(SalesOrderStatus.PendingApproval);
             var hasPendingSaleOrder = await pendingSalesOrders.AnyAsync(s => s.RetailerId == salesOrderUpdate.RetailerId
                 && s.EstimatedTimeDeparture == salesOrderUpdate.EstimatedTimeDeparture);
-            if(hasPendingSaleOrder)  return "Không thể gửi duyệt.Nhà bán lẻ này đã có một đơn hàng khác đang chờ duyệt cho cùng ngày giao dự kiến.".ToMessageForUser();
+            if (hasPendingSaleOrder) return "Không thể gửi duyệt.Nhà bán lẻ này đã có một đơn hàng khác đang chờ duyệt cho cùng ngày giao dự kiến.".ToMessageForUser();
 
             var approvalSalesOrdersQuery = _salesOrderRepository.GetListSalesOrdersByStatus(SalesOrderStatus.Approved);
             var potentialMatches = await approvalSalesOrdersQuery
@@ -290,14 +290,39 @@ namespace MilkDistributionWarehouse.Services
                                                 && s.SalesOrderDetails.Count == salesOrderUpdate.SalesOrderDetails.Count)
                                     .ToListAsync();
             var hasApprovalSaleOrder = potentialMatches.Any(s =>
-                                    s.SalesOrderDetails.All(sd =>
-                                        salesOrderUpdate.SalesOrderDetails.Any(su =>
-                                            su.GoodsId == sd.GoodsId
-                                            && su.GoodsPackingId == sd.GoodsPackingId
-                                            && su.PackageQuantity == sd.PackageQuantity)));
+                                        AreDetailListsEqual(s.SalesOrderDetails, salesOrderUpdate.SalesOrderDetails));
+            //var hasApprovalSaleOrder = potentialMatches.Any(s =>
+            //                            s.SalesOrderDetails.All(sd =>
+            //                                s.SalesOrderDetails.Count(s =>
+            //                                    s.GoodsId == sd.GoodsId
+            //                                    && s.GoodsPackingId == sd.GoodsPackingId
+            //                                    && s.PackageQuantity == sd.PackageQuantity)
+            //                                ==
+            //                                salesOrderUpdate.SalesOrderDetails.Count(su =>
+            //                                    su.GoodsId == sd.GoodsId
+            //                                    && su.GoodsPackingId == sd.GoodsPackingId
+            //                                    && su.PackageQuantity == sd.PackageQuantity)));
             if (hasApprovalSaleOrder) return "Không thể gửi duyệt vì đơn hàng này trùng lặp hoàn toàn với một đơn hàng đã được duyệt trước đó.".ToMessageForUser();
 
             return "";
+        }
+
+        private bool AreDetailListsEqual(ICollection<SalesOrderDetail> list1, ICollection<SalesOrderDetail> list2)
+        {
+            if (list1.Count != list2.Count) return false;
+
+            var dictionary1 = list1
+                .GroupBy(d => (d.GoodsId, d.GoodsPackingId, d.PackageQuantity))
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            var dictionary2 = list2
+                .GroupBy(d => (d.GoodsId, d.GoodsPackingId, d.PackageQuantity))
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            if (dictionary1.Count != dictionary2.Count) return false;
+
+            return dictionary1.All(kvp =>
+                dictionary2.TryGetValue(kvp.Key, out var count) && count == kvp.Value);
         }
     }
 }
