@@ -10,7 +10,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<BackOrder?> GetBackOrderById(Guid backOrderId);
         Task<BackOrder?> CreateBackOrder(BackOrder entity);
         Task<BackOrder?> UpdateBackOrder(BackOrder entity);
-        Task<List<BackOrder>> GetActiveBackOrdersAsync();
+        Task<BackOrder?> DeleteBackOrder(Guid backOrderId);
         Task<bool> ExistsRetailer(int? retailerId);
         Task<bool> ExistsGoods(int? goodsId);
     }
@@ -29,7 +29,8 @@ namespace MilkDistributionWarehouse.Repositories
             return _context.BackOrders
                 .Include(bo => bo.Goods)
                 .Include(bo => bo.Retailer)
-                .Where(bo => bo.Status != BackOrderStatus.Completed)
+                .Include(bo => bo.GoodsPacking)
+                .Include(bo => bo.CreatedByNavigation)
                 .OrderByDescending(bo => bo.CreatedAt)
                 .AsNoTracking();
         }
@@ -39,7 +40,20 @@ namespace MilkDistributionWarehouse.Repositories
             return await _context.BackOrders
                 .Include(bo => bo.Goods)
                 .Include(bo => bo.Retailer)
+                .Include(bo => bo.GoodsPacking)
+                .Include(bo => bo.CreatedByNavigation)
                 .FirstOrDefaultAsync(bo => bo.BackOrderId == backOrderId);
+        }
+
+        public async Task<BackOrder?> DeleteBackOrder(Guid backOrderId)
+        {
+            var backOrder = await _context.BackOrders.FindAsync(backOrderId);
+            if (backOrder != null)
+            {
+                _context.BackOrders.Remove(backOrder);
+                await _context.SaveChangesAsync();
+            }
+            return backOrder;
         }
 
         public async Task<BackOrder?> CreateBackOrder(BackOrder entity)
@@ -55,17 +69,6 @@ namespace MilkDistributionWarehouse.Repositories
             _context.Entry(entity).State = EntityState.Modified;
             await _context.SaveChangesAsync();
             return entity;
-        }
-
-        public async Task<List<BackOrder>> GetActiveBackOrdersAsync()
-        {
-            return await _context.BackOrders
-                .Where(bo => bo.Status != BackOrderStatus.Completed)
-                .Include(bo => bo.Goods)
-                .Include(bo => bo.Retailer)
-                .OrderBy(bo => bo.CreatedAt)
-                .AsNoTracking()
-                .ToListAsync();
         }
 
         public Task<bool> ExistsRetailer(int? retailerId)
