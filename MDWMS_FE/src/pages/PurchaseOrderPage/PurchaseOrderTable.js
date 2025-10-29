@@ -8,7 +8,8 @@ import { Package } from 'lucide-react';
 import StatusDisplay from '../../components/PurchaseOrderComponents/StatusDisplay';
 import { usePermissions } from '../../hooks/usePermissions';
 import { useNavigate } from 'react-router-dom';
-import { startReceive } from '../../services/GoodsReceiptService';
+import { startReceive } from '../../services/PurchaseOrderService';
+import { extractErrorMessage } from '../../utils/Validation';
 
 const PurchaseOrderTable = ({
   purchaseOrders,
@@ -30,15 +31,27 @@ const PurchaseOrderTable = ({
     try {
       if (order.status === 6) {
         // Trạng thái = 6 (Đã phân công): Gọi API startReceive trước
+        console.log('Status 6: Calling startReceive API for order:', order.purchaseOderId);
         await startReceive(order.purchaseOderId);
-        navigate(`/goods-receipt-detail/${order.purchaseOderId}`);
+        window.showToast?.('Bắt đầu quá trình nhận hàng thành công!', 'success');
+        navigate(`/goods-receipt-notes/${order.purchaseOderId}`);
       } else if (order.status === 7) {
         // Trạng thái = 7 (Đang tiếp nhận): Chỉ navigate
-        navigate(`/goods-receipt-detail/${order.purchaseOderId}`);
+        console.log('Status 7: Navigating directly for order:', order.purchaseOderId);
+        navigate(`/goods-receipt-notes/${order.purchaseOderId}`);
       }
     } catch (error) {
       console.error('Error handling goods receipt:', error);
-      window.showToast?.('Có lỗi xảy ra khi xử lý phiếu nhập kho', 'error');
+      console.error('Error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data
+      });
+      
+      // Sử dụng extractErrorMessage để lấy message lỗi từ backend
+      const errorMessage = extractErrorMessage(error) || 'Có lỗi xảy ra khi xử lý phiếu nhập kho';
+      
+      window.showToast?.(errorMessage, 'error');
     }
   };
 
@@ -306,7 +319,7 @@ const PurchaseOrderTable = ({
                             title={order.status === 6 ? "Bắt đầu nhận hàng" : "Xem phiếu nhập kho"}
                             onClick={() => handleGoodsReceiptClick(order)}
                           >
-                            <Package2 className="h-4 w-4 text-green-500" />
+                            <Package2 className={`h-4 w-4 ${order.status === 6 ? 'text-green-500' : 'text-blue-500'}`} />
                           </button>
                         )}
 
@@ -344,7 +357,7 @@ const PurchaseOrderTable = ({
                                   title={order.status === 6 ? "Bắt đầu nhận hàng" : "Xem phiếu nhập kho"}
                                   onClick={() => handleGoodsReceiptClick(order)}
                                 >
-                                  <Package2 className="h-4 w-4 text-green-500" />
+                                  <Package2 className={`h-4 w-4 ${order.status === 6 ? 'text-green-500' : 'text-blue-500'}`} />
                                 </button>
                               )}
                               {!order.isDisable && (

@@ -117,12 +117,11 @@ const PurchaseOrderDetail = () => {
         };
         return statusTexts[status] || 'Không xác định';
     };
-    const handleApprovalConfirm = async (approvalNote = "") => {
+    const handleApprovalConfirm = async () => {
         setApprovalLoading(true);
         try {
             await approvePurchaseOrder(
-                purchaseOrder.purchaseOderId,
-                approvalNote
+                purchaseOrder.purchaseOderId
             );
 
             if (window.showToast) {
@@ -207,8 +206,7 @@ const PurchaseOrderDetail = () => {
         setSubmitLoading(true);
         try {
             await submitPurchaseOrder(
-                purchaseOrder.purchaseOderId,
-                "Nộp bản nháp để duyệt"
+                purchaseOrder.purchaseOderId
             );
 
             if (window.showToast) {
@@ -232,12 +230,11 @@ const PurchaseOrderDetail = () => {
         }
     };
 
-    const handleConfirmGoodsReceived = async (note) => {
+    const handleConfirmGoodsReceived = async () => {
         setConfirmGoodsReceivedLoading(true);
         try {
             await confirmGoodsReceived(
-                purchaseOrder.purchaseOderId,
-                note
+                purchaseOrder.purchaseOderId
             );
 
             if (window.showToast) {
@@ -258,13 +255,12 @@ const PurchaseOrderDetail = () => {
         }
     };
 
-    const handleAssignReceiving = async (assignTo, note) => {
+    const handleAssignReceiving = async (assignTo) => {
         setAssignReceivingLoading(true);
         try {
             await assignForReceiving(
                 purchaseOrder.purchaseOderId,
-                assignTo,
-                note
+                assignTo
             );
 
             if (window.showToast) {
@@ -285,12 +281,11 @@ const PurchaseOrderDetail = () => {
         }
     };
 
-    const handleStartReceive = async (note) => {
+    const handleStartReceive = async () => {
         setStartReceiveLoading(true);
         try {
             await startReceive(
-                purchaseOrder.purchaseOderId,
-                note
+                purchaseOrder.purchaseOderId
             );
 
             if (window.showToast) {

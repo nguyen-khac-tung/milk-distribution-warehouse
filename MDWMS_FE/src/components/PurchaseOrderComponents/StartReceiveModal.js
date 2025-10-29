@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { X, Play, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useNavigate } from 'react-router-dom';
-import { startReceive } from '../../services/GoodsReceiptService';
+import { startReceive } from '../../services/PurchaseOrderService';
+import { extractErrorMessage } from '../../utils/Validation';
 
 const StartReceiveModal = ({
     isOpen,
@@ -17,23 +18,30 @@ const StartReceiveModal = ({
     const handleConfirm = async () => {
         if (!purchaseOrder?.purchaseOderId) {
             console.error('Purchase Order ID is required');
+            window.showToast?.('Không tìm thấy ID đơn hàng', 'error');
             return;
         }
 
         setIsSubmitting(true);
         try {
-            // Gọi API Start Receive trước
+            // Gọi API Start Receive trước để update trạng thái
             await startReceive(purchaseOrder.purchaseOderId);
             
+            // Hiển thị thông báo thành công
+            window.showToast?.('Bắt đầu quá trình nhận hàng thành công!', 'success');
+            
             // Navigate sang trang GoodsReceiptDetail với purchaseOrderId
-            navigate(`/goods-receipt-detail/${purchaseOrder.purchaseOderId}`);
+            navigate(`/goods-receipt-notes/${purchaseOrder.purchaseOderId}`);
             
             // Đóng modal
             onClose();
         } catch (error) {
             console.error('Error starting receive process:', error);
-            // Có thể hiển thị thông báo lỗi cho user
-            window.showToast?.('Có lỗi xảy ra khi bắt đầu quá trình nhận hàng', 'error');
+            
+            // Sử dụng extractErrorMessage để lấy message lỗi từ backend
+            const errorMessage = extractErrorMessage(error) || 'Có lỗi xảy ra khi bắt đầu quá trình nhận hàng';
+            
+            window.showToast?.(errorMessage, 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -149,5 +157,4 @@ const StartReceiveModal = ({
         </div>
     );
 };
-
 export default StartReceiveModal;
