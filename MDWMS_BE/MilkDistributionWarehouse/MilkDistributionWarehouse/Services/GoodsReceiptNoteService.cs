@@ -12,7 +12,7 @@ namespace MilkDistributionWarehouse.Services
     public interface IGoodsReceiptNoteService
     {
         Task<(string, GoodsReceiptNoteDto?)> GetGRNByPurchaseOrderId(Guid purchaseOrderId);
-        Task<(string, GoodsReceiptNoteCreate?)> CreateGoodsReceiptNote(GoodsReceiptNoteCreate create, int? userId);
+        Task<(string, GoodsReceiptNoteDto?)> CreateGoodsReceiptNote(GoodsReceiptNoteCreate create, int? userId);
     }
 
     public class GoodsReceiptNoteService : IGoodsReceiptNoteService
@@ -31,7 +31,7 @@ namespace MilkDistributionWarehouse.Services
             _goodsReceiptNoteDetailRepository = goodsReceiptNoteDetailRepository;
         }
 
-        public async Task<(string, GoodsReceiptNoteCreate?)> CreateGoodsReceiptNote(GoodsReceiptNoteCreate create, int? userId)
+        public async Task<(string, GoodsReceiptNoteDto?)> CreateGoodsReceiptNote(GoodsReceiptNoteCreate create, int? userId)
         {
             try
             {
@@ -39,7 +39,7 @@ namespace MilkDistributionWarehouse.Services
                 .Where(pod => pod.PurchaseOderId == create.PurchaseOderId).ToListAsync();
 
                 if (!purchaseOrderDetails.Any())
-                    return ("Danh sách đơn đặt hàng chi tiết trống.".ToMessageForUser(), default);
+                    throw new Exception("Danh sách đơn đặt hàng chi tiết trống.".ToMessageForUser());
 
                 var grnDetails = _mapper.Map<List<GoodsReceiptNoteDetail>>(purchaseOrderDetails);
 
@@ -54,14 +54,17 @@ namespace MilkDistributionWarehouse.Services
 
                 var resultCreate = await _goodsReceiptNoteRepository.CreateGoodsReceiptNote(grn);
                 if (resultCreate == null)
-                    return ("GRN create is failed.", default);
+                    throw new Exception("GRN create is failed.");
 
-                return ("", create);
+                var (msg, getGRN) = await GetGRNByPurchaseOrderId(resultCreate.PurchaseOderId);
+                if(!string.IsNullOrEmpty(msg))
+                    throw new Exception(msg);
 
+                return ("", getGRN);
             }
             catch (Exception ex)
             {
-                return ("Tạo thất bại phiếu nhập kho.", default);
+                return ($"{ex.Message}", default);
             }
         }
 

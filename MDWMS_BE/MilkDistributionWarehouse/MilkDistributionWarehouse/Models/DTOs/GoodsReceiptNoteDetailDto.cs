@@ -16,6 +16,7 @@
         public int GoodsId { get; set; }
 
         public int GoodsPackingId { get; set; }
+        public int UnitPerPackage { get; set; }
 
         public int ExpectedPackageQuantity { get; set; }
 

@@ -158,7 +158,7 @@ namespace MilkDistributionWarehouse.Controllers
             var (msg, purchaseOrderUpdate) = await _purchaseOrderService.StartReceivingPurchaseOrder(purchaseOrderProcess, User.GetUserId());
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<PurchaseOrderProcess>.ToResultOk(purchaseOrderUpdate);
+            return ApiResponse<GoodsReceiptNoteDto>.ToResultOk(purchaseOrderUpdate);
         }
 
         [HttpDelete("DeletePurchaseOrder/{purchaseOrderId}")]
