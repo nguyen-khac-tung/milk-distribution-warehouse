@@ -85,6 +85,11 @@ namespace MilkDistributionWarehouse.Models.DTOs
     {
         public int SupplierId { get; set; }
         public string CompanyName { get; set; }
+        public string BrandName { get; set; }
+        public string Address { get; set; }
+        public string ContactPersonName { get; set; }
+        public string ContactPersonPhone { get; set; }
+        public string ContactPersonEmail { get; set; }
     }
 
     public class SupplierUpdateStatusDto
