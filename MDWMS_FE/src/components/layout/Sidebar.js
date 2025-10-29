@@ -71,7 +71,7 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
             {
                 key: "purchase-orders-management",
                 icon: <ComponentIcon name="puscharorder" size={16} collapsed={collapsed} />,
-                label: "Quản lý đơn nhập",
+                label: "Quản lý đơn mua hàng",
                 permission: [PERMISSIONS.PURCHASE_ORDER_VIEW, PERMISSIONS.PURCHASE_ORDER_VIEW_RS, PERMISSIONS.PURCHASE_ORDER_VIEW_SM],
                 requireAll: false,
                 children: [
@@ -93,7 +93,7 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
             {
                 key: "sales-orders-management",
                 icon: <ComponentIcon name="puscharorder" size={16} collapsed={collapsed} />,
-                label: "Quản lý đơn xuất",
+                label: "Quản lý đơn bán hàng",
                 permission: [PERMISSIONS.SALES_ORDER_VIEW, PERMISSIONS.SALES_ORDER_VIEW_SR, PERMISSIONS.SALES_ORDER_VIEW_SM],
                 requireAll: false,
                 children: [
@@ -131,6 +131,12 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                         permission: PERMISSIONS.RETAILER_VIEW
                     },
                 ],
+            },
+            {
+                key: "/backorder",
+                icon: <ComponentIcon name="backorder" size={16} collapsed={collapsed} />,
+                label: "Quản lý đơn hàng chờ",
+                permission: PERMISSIONS.BACKORDER_VIEW
             },
             {
                 key: "/goods",

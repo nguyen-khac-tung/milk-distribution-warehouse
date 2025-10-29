@@ -535,8 +535,8 @@ export default function CreatePurchaseOrder({
                                         <TableRow className="border-b border-gray-200 hover:bg-transparent">
                                             <TableHead className="text-slate-600 font-semibold">STT</TableHead>
                                             <TableHead className="text-slate-600 font-semibold">Tên Hàng Hóa</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold">Đóng Gói</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold">Số Thùng</TableHead>
+                                            <TableHead className="text-slate-600 font-semibold">Quy Cách Đóng Gói</TableHead>
+                                            <TableHead className="text-slate-600 font-semibold">Số Lượng Thùng</TableHead>
                                             <TableHead className="text-slate-600 font-semibold">Tổng Số Đơn Vị</TableHead>
                                             <TableHead className="text-slate-600 font-semibold">Đơn Vị</TableHead>
                                             {items.length > 1 && (
@@ -606,9 +606,9 @@ export default function CreatePurchaseOrder({
                                                         {(() => {
                                                             if (item.goodsName) {
                                                                 const selectedGood = goods.find(good => good.goodsName === item.goodsName);
-                                                                return selectedGood ? selectedGood.name : "Chưa chọn";
+                                                                return selectedGood ? selectedGood.name : "Trống";
                                                             }
-                                                            return "Chưa chọn";
+                                                            return "Trống";
                                                         })()}
                                                     </div>
                                                 </TableCell>

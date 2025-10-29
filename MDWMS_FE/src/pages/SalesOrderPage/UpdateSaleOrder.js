@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 import { Card } from "../../components/ui/card"
 import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
@@ -8,16 +8,17 @@ import { Textarea } from "../../components/ui/textarea"
 import FloatingDropdown from "../../components/Common/FloatingDropdown"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
 import { Plus, Trash2, ArrowLeft, Save, X } from "lucide-react"
-import { createSaleOrder, getSalesOrderDetail } from "../../services/SalesOrderService"
+import { updateSaleOrder, getSalesOrderDetail } from "../../services/SalesOrderService"
 import { getRetailersDropdown } from "../../services/RetailerService"
 import { getSuppliersDropdown } from "../../services/SupplierService"
 import { getGoodsDropDownBySupplierId, getGoodsPackingByGoodsId } from "../../services/PurchaseOrderService"
+import Loading from "../../components/Common/Loading"
 
-function CreateSaleOrder({
-    isEditMode = false,
-    initialData = null
-}) {
+function UpdateSaleOrder() {
     const navigate = useNavigate();
+    const { id } = useParams();
+    const [loading, setLoading] = useState(true);
+    const [dataLoaded, setDataLoaded] = useState(false);
     const [retailers, setRetailers] = useState([]);
     const [suppliers, setSuppliers] = useState([]);
     const [goodsBySupplier, setGoodsBySupplier] = useState({}); // Map supplierId -> goods
@@ -27,17 +28,146 @@ function CreateSaleOrder({
     const [goodsLoading, setGoodsLoading] = useState({}); // Map supplierId -> loading state
     const [packingLoading, setPackingLoading] = useState(false);
     const [formData, setFormData] = useState({
-        retailerName: initialData?.retailerName || "",
-        estimatedTimeDeparture: initialData?.estimatedTimeDeparture || "",
-        note: initialData?.note || ""
+        retailerName: "",
+        estimatedTimeDeparture: "",
+        note: ""
     });
 
-    const [items, setItems] = useState(
-        initialData?.items || [
-            { id: 1, supplierName: "", goodsName: "", quantity: "", goodsPackingId: "" },
-        ],
-    )
+    const [items, setItems] = useState([
+        { id: 1, supplierName: "", goodsName: "", quantity: "", goodsPackingId: "" },
+    ])
     const [fieldErrors, setFieldErrors] = useState({}) // Lỗi theo từng trường
+
+    // Load existing sales order data
+    useEffect(() => {
+        const loadSalesOrderData = async () => {
+            if (!id) {
+                window.showToast("Không tìm thấy ID đơn hàng", "error");
+                navigate("/sales-orders");
+                return;
+            }
+
+            try {
+                setLoading(true);
+                const response = await getSalesOrderDetail(id);
+                console.log("Sales Order Detail Response:", response);
+ 
+                const orderData = response?.data || response;
+                console.log("Order Data:", orderData);
+
+                if (orderData) {
+                    // Set form data
+                    setFormData({
+                        retailerName: orderData.retailerName || "",
+                        estimatedTimeDeparture: orderData.estimatedTimeDeparture || "",
+                        note: orderData.note || ""
+                    });
+
+                    // Set items data - fix the mapping based on actual API structure
+                    if (orderData.salesOrderItemDetails && orderData.salesOrderItemDetails.length > 0) {
+                        const mappedItems = orderData.salesOrderItemDetails.map((detail, index) => {
+                            // Calculate quantity from packageQuantity and unitPerPackage
+                            const unitPerPackage = detail.goodsPacking?.unitPerPackage || 1;
+                            const packageQuantity = detail.packageQuantity || 0;
+                            const calculatedQuantity = unitPerPackage > 0 ? Math.floor(packageQuantity / unitPerPackage) : packageQuantity;
+
+                            return {
+                                id: index + 1,
+                                supplierName: detail.goods?.companyName || detail.supplier?.companyName || "",
+                                goodsName: detail.goods?.goodsName || "",
+                                quantity: calculatedQuantity.toString(),
+                                goodsPackingId: detail.goodsPacking?.goodsPackingId ? detail.goodsPacking.goodsPackingId.toString() : "",
+                                salesOrderDetailId: detail.salesOrderDetailId || 0,
+                                // Store original data for reference
+                                originalGoodsId: detail.goods?.goodsId,
+                                originalSupplierId: detail.goods?.supplierId
+                            };
+                        });
+                        console.log("Mapped Items:", mappedItems);
+                        setItems(mappedItems);
+                    }
+                }
+            } catch (error) {
+                console.error("Error loading sales order data:", error);
+                window.showToast("Không thể tải dữ liệu đơn hàng", "error");
+                navigate("/sales-orders");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadSalesOrderData();
+    }, [id, navigate]);
+
+    // Load goods and packing data immediately after items are set
+    useEffect(() => {
+        const loadGoodsAndPackingData = async () => {
+            if (suppliers.length === 0 || items.length === 0) return;
+
+            console.log("Loading goods and packing data for items:", items);
+
+            // Get unique supplier IDs from items (use original data if available)
+            const supplierIds = [...new Set(items
+                .filter(item => item.supplierName)
+                .map(item => {
+                    // Use original supplier ID if available, otherwise find by name
+                    if (item.originalSupplierId) {
+                        return item.originalSupplierId;
+                    }
+                    const supplier = suppliers.find(s => s.companyName === item.supplierName);
+                    return supplier?.supplierId;
+                })
+                .filter(Boolean)
+            )];
+
+            console.log("Supplier IDs to load:", supplierIds);
+
+            // Load goods for each supplier
+            for (const supplierId of supplierIds) {
+                if (!goodsBySupplier[supplierId]) {
+                    console.log("Loading goods for supplier:", supplierId);
+                    await loadGoodsBySupplier(supplierId);
+                }
+            }
+
+            // Wait a bit for goods to be loaded
+            await new Promise(resolve => setTimeout(resolve, 200));
+
+            // Load packing data for each goods (use original data if available)
+            const goodsIds = [...new Set(items
+                .filter(item => item.goodsName)
+                .map(item => {
+                    // Use original goods ID if available
+                    if (item.originalGoodsId) {
+                        console.log("Using original goods ID:", item.originalGoodsId, "for goods:", item.goodsName);
+                        return item.originalGoodsId;
+                    }
+                    
+                    // Otherwise try to find by name
+                    const supplier = suppliers.find(s => s.companyName === item.supplierName);
+                    if (!supplier) return null;
+                    const goods = goodsBySupplier[supplier.supplierId] || [];
+                    const good = goods.find(g => g.goodsName === item.goodsName);
+                    return good?.goodsId;
+                })
+                .filter(Boolean)
+            )];
+
+            console.log("Goods IDs to load packing for:", goodsIds);
+
+            for (const goodsId of goodsIds) {
+                if (!goodsPackingsMap[goodsId]) {
+                    console.log("Loading packing for goods:", goodsId);
+                    await loadGoodsPacking(goodsId);
+                }
+            }
+
+            // Mark data as loaded
+            setDataLoaded(true);
+        };
+
+        loadGoodsAndPackingData();
+    }, [items]); // Only depend on items, not suppliers.length
 
     // Load retailers and suppliers on component mount
     useEffect(() => {
@@ -68,6 +198,7 @@ function CreateSaleOrder({
         loadData();
     }, []);
 
+
     const addItem = (e) => {
         // Ngăn chặn mọi event propagation
         if (e) {
@@ -81,6 +212,7 @@ function CreateSaleOrder({
             goodsName: "",
             quantity: "",
             goodsPackingId: "",
+            salesOrderDetailId: 0
         };
         const updatedItems = [...items, newItem];
         setItems(updatedItems);
@@ -302,23 +434,29 @@ function CreateSaleOrder({
 
     // Tính tổng số đơn vị (số thùng × đơn vị đóng gói)
     const calculateTotalUnits = (item) => {
-        if (!item.quantity || !item.goodsPackingId || !item.supplierName) return 0;
+        if (!item.quantity || !item.goodsPackingId) return 0;
 
-        const selectedSupplier = suppliers.find(supplier => supplier.companyName === item.supplierName);
-        if (!selectedSupplier) return 0;
+        // Use original goods ID if available
+        const goodsId = item.originalGoodsId;
+        if (!goodsId) {
+            console.log("No original goods ID found for item:", item);
+            return 0;
+        }
 
-        const goods = goodsBySupplier[selectedSupplier.supplierId] || [];
-        const selectedGood = goods.find(good => good.goodsName === item.goodsName);
-        if (!selectedGood) return 0;
-
-        const goodsPackings = goodsPackingsMap[selectedGood.goodsId] || [];
+        const goodsPackings = goodsPackingsMap[goodsId] || [];
         const selectedPacking = goodsPackings.find(packing =>
             packing.goodsPackingId.toString() === item.goodsPackingId
         );
 
-        if (!selectedPacking) return 0;
+        if (!selectedPacking) {
+            console.log("No packing found for goodsPackingId:", item.goodsPackingId, "in goods:", goodsId);
+            console.log("Available packings:", goodsPackings);
+            return 0;
+        }
 
-        return parseInt(item.quantity) * selectedPacking.unitPerPackage;
+        const total = parseInt(item.quantity) * selectedPacking.unitPerPackage;
+        console.log(`Calculating total: ${item.quantity} × ${selectedPacking.unitPerPackage} = ${total}`);
+        return total;
     };
 
     // Kiểm tra validation cho số thùng
@@ -434,7 +572,8 @@ function CreateSaleOrder({
                     supplierId: parseInt(selectedSupplier.supplierId),
                     goodsId: parseInt(selectedGood.goodsId),
                     goodsPackingId: parseInt(item.goodsPackingId),
-                    packageQuantity: packageQuantity
+                    packageQuantity: packageQuantity,
+                    salesOrderDetailId: item.salesOrderDetailId || 0
                 };
             }).filter(item => item !== null);
 
@@ -445,20 +584,25 @@ function CreateSaleOrder({
             }
 
             const submitData = {
+                salesOrderId: id,
                 retailerId: parseInt(selectedRetailer.retailerId),
                 estimatedTimeDeparture: formData.estimatedTimeDeparture,
                 note: formData.note || "",
-                salesOrderItemDetailCreateDtos: itemsWithIds
+                salesOrderItemDetailUpdateDtos: itemsWithIds
             };
 
-            await createSaleOrder(submitData);
-            window.showToast("Tạo đơn bán hàng thành công!", "success");
+            await updateSaleOrder(submitData);
+            window.showToast("Cập nhật đơn bán hàng thành công!", "success");
             navigate("/sales-orders");
         } catch (error) {
-            console.error("Lỗi khi xử lý đơn bán hàng:", error);
-            const errorMessage = error.response?.data?.message || error.message || "Có lỗi xảy ra khi xử lý đơn bán hàng!";
+            console.error("Lỗi khi cập nhật đơn bán hàng:", error);
+            const errorMessage = error.response?.data?.message || error.message || "Có lỗi xảy ra khi cập nhật đơn bán hàng!";
             window.showToast(errorMessage, "error");
         }
+    }
+
+    if (loading || !dataLoaded) {
+        return <Loading />;
     }
 
     return (
@@ -478,7 +622,7 @@ function CreateSaleOrder({
                         </Button>
 
                         <h1 className="text-2xl font-bold text-slate-700 leading-none flex items-center">
-                            {isEditMode ? "Cập Nhật Đơn Bán Hàng" : "Tạo Đơn Bán Hàng Mới"}
+                            Cập Nhật Đơn Bán Hàng
                         </h1>
                     </div>
                 </div>
@@ -516,17 +660,6 @@ function CreateSaleOrder({
                                         className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                                     />
                                 </div>
-                                {/* <div className="space-y-2">
-                                    <Label htmlFor="note" className="text-slate-600 font-medium">
-                                        Ghi Chú
-                                    </Label>
-                                    <Textarea
-                                        value={formData.note}
-                                        onChange={(e) => handleInputChange("note", e.target.value)}
-                                        placeholder="Nhập ghi chú (tùy chọn)"
-                                        className="min-h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                                    />
-                                </div> */}
                             </div>
                             <div className="space-y-2 mt-2">
                                 <Label htmlFor="note" className="text-slate-600 font-medium">
@@ -554,8 +687,8 @@ function CreateSaleOrder({
                                             <TableHead className="text-slate-600 font-semibold">STT</TableHead>
                                             <TableHead className="text-slate-600 font-semibold">Nhà Cung Cấp</TableHead>
                                             <TableHead className="text-slate-600 font-semibold">Tên Hàng Hóa</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold">Quy cách đóng Gói</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold">Số Lượng Thùng</TableHead>
+                                            <TableHead className="text-slate-600 font-semibold">Đóng Gói</TableHead>
+                                            <TableHead className="text-slate-600 font-semibold">Số Thùng</TableHead>
                                             <TableHead className="text-slate-600 font-semibold">Tổng Số Đơn Vị</TableHead>
                                             <TableHead className="text-slate-600 font-semibold">Đơn Vị</TableHead>
                                             {items.length > 1 && (
@@ -700,7 +833,7 @@ function CreateSaleOrder({
                                     onClick={handleSubmit}
                                     className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
                                 >
-                                    {isEditMode ? "Cập Nhật Đơn Bán Hàng" : "Tạo Đơn Bán Hàng"}
+                                    Cập Nhật Đơn Bán Hàng
                                 </Button>
                             </div>
                         </div>
@@ -711,4 +844,4 @@ function CreateSaleOrder({
     )
 }
 
-export default CreateSaleOrder
+export default UpdateSaleOrder
