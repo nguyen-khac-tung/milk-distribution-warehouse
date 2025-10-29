@@ -507,8 +507,8 @@ export default function CreatePurchaseOrder({
                         {/* Header Information */}
                         <div>
                             <h3 className="text-lg font-semibold text-slate-600 mb-4">Thông Tin Đơn Hàng</h3>
-                            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                                <div className="space-y-2 md:col-span-1">
+                            <div className="space-y-6">
+                                <div className="space-y-2 max-w-md">
                                     <Label htmlFor="supplier" className="text-slate-600 font-medium">
                                         Nhà Cung Cấp <span className="text-red-500">*</span>
                                     </Label>
@@ -520,6 +520,44 @@ export default function CreatePurchaseOrder({
                                         loading={suppliersLoading}
                                     />
                                 </div>
+                                
+                                {/* Thông tin nhà cung cấp đã chọn */}
+                                {formData.supplierName && (() => {
+                                    const selectedSupplier = suppliers.find(supplier => supplier.companyName === formData.supplierName);
+                                    return selectedSupplier ? (
+                                        <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-lg p-4">
+                                            <h4 className="text-sm font-semibold text-orange-800 mb-3">Thông Tin Nhà Cung Cấp</h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                <div className="bg-white rounded-lg p-3 border border-orange-100">
+                                                    <div className="text-xs text-orange-600 font-medium mb-1">Tên Công Ty</div>
+                                                    <div className="text-sm font-semibold text-slate-700">{selectedSupplier.companyName}</div>
+                                                </div>
+                                                <div className="bg-white rounded-lg p-3 border border-orange-100">
+                                                    <div className="text-xs text-orange-600 font-medium mb-1">Thương Hiệu</div>
+                                                    <div className="text-sm font-semibold text-slate-700">{selectedSupplier.brandName}</div>
+                                                </div>
+                                                <div className="bg-white rounded-lg p-3 border border-orange-100">
+                                                    <div className="text-xs text-orange-600 font-medium mb-1">Địa Chỉ</div>
+                                                    <div className="text-sm font-semibold text-slate-700">{selectedSupplier.address}</div>
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+                                                <div className="bg-white rounded-lg p-3 border border-orange-100">
+                                                    <div className="text-xs text-orange-600 font-medium mb-1">Người Liên Hệ</div>
+                                                    <div className="text-sm font-semibold text-slate-700">{selectedSupplier.contactPersonName}</div>
+                                                </div>
+                                                <div className="bg-white rounded-lg p-3 border border-orange-100">
+                                                    <div className="text-xs text-orange-600 font-medium mb-1">Số Điện Thoại</div>
+                                                    <div className="text-sm font-semibold text-slate-700">{selectedSupplier.contactPersonPhone}</div>
+                                                </div>
+                                                <div className="bg-white rounded-lg p-3 border border-orange-100">
+                                                    <div className="text-xs text-orange-600 font-medium mb-1">Email</div>
+                                                    <div className="text-sm font-semibold text-slate-700">{selectedSupplier.contactPersonEmail}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : null;
+                                })()}
                             </div>
                         </div>
 
