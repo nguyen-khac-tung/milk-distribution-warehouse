@@ -237,14 +237,30 @@ export const createSaleOrder = async (data) => {
     }
 };
 
-// Cập nhật Sale Order
+// Cập nhật thông tin Sale Order
 export const updateSaleOrder = async (data) => {
     try {
         const res = await api.put("/SalesOrder/UpdateSalesOrder", data);
-        console.log("updateSaleOrder:", res);
+        console.log("updateSaleOrder response:", res);
         return res.data;
     } catch (error) {
         console.error("Error updating sale order:", error);
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
+        throw error;
+    }
+};
+
+
+// Cập nhật trạng thái từ chối Sale Order
+export const updateSaleOrderStatusReject = async (data) => {
+    try {
+        const res = await api.put("/SalesOrder/UpdateSalesOrderStatusReject", data);
+        console.log("updateSaleOrderStatusReject:", res);
+        return res.data;
+    } catch (error) {
+        console.error("Error rejecting sale order:", error);
         if (error.response?.data?.message) {
             throw new Error(error.response.data.message);
         }

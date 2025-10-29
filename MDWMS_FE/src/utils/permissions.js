@@ -119,6 +119,14 @@ export const PERMISSIONS = {
     PURCHASE_ORDER_CONFIRM_DELIVERY: 'PurchaseOrder.ConfirmDelivery',
     PURCHASE_ORDER_ASSIGN_RECEIVING: 'PurchaseOrder.AssignReceiving',
 
+    // BackOrder permissions
+    BACKORDER_VIEW: 'BackOrder.View',
+    BACKORDER_VIEW_DETAILS: 'BackOrder.ViewDetails',
+    BACKORDER_CREATE: 'BackOrder.Create',
+    BACKORDER_UPDATE: 'BackOrder.Update',
+    BACKORDER_DELETE: 'BackOrder.Delete',
+    BACKORDER_CREATE_SALES_ORDER: 'BackOrder.CreateSalesOrderFromSelected',
+
     // Kệ Kê Hàng permissions
     PALLET_VIEW: 'Pallet.View',
     PALLET_CREATE: 'Pallet.Create',
@@ -173,7 +181,8 @@ export const ROLE_PERMISSIONS = {
         PERMISSIONS.PURCHASE_ORDER_SUBMIT_REQUEST,
         PERMISSIONS.SALES_ORDER_VIEW, PERMISSIONS.SALES_ORDER_VIEW_SR, PERMISSIONS.SALES_ORDER_CREATE, PERMISSIONS.SALES_ORDER_UPDATE, PERMISSIONS.SALES_ORDER_DELETE, PERMISSIONS.SALES_ORDER_VIEW_DETAILS,
         PERMISSIONS.SALES_ORDER_SUBMIT_REQUEST,
-        PERMISSIONS.REPORT_VIEW
+        PERMISSIONS.REPORT_VIEW,
+        PERMISSIONS.BACKORDER_CREATE, PERMISSIONS.BACKORDER_UPDATE, PERMISSIONS.BACKORDER_CREATE_SALES_ORDER, PERMISSIONS.BACKORDER_VIEW, PERMISSIONS.BACKORDER_VIEW_DETAILS, PERMISSIONS.BACKORDER_DELETE
     ],
 
     [ROLES.WAREHOUSE_MANAGER]: [
@@ -343,15 +352,15 @@ export const canPerformSalesOrderAction = (action, order, hasPermission, userInf
  */
 export const canPerformSalesOrderDetailAction = (action, order, hasPermission, userInfo) => {
     const currentUserId = userInfo?.userId;
-    
+
     // Flexible ownership check - handle different possible field structures
-    const isOwnOrder = 
+    const isOwnOrder =
         order?.createdBy?.userId === currentUserId ||
         order?.createdBy?.id === currentUserId ||
         order?.createdBy === currentUserId ||
         order?.createdById === currentUserId ||
         order?.createdByUserId === currentUserId;
-    
+
     const status = order?.status;
 
 

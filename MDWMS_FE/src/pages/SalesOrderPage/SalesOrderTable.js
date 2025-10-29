@@ -158,8 +158,22 @@ const SalesOrderTable = ({
                                 </TableHead>
 
                                 {/* Ngày tạo */}
-                                <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                                    Ngày tạo
+                                <TableHead
+                                    className="font-semibold text-slate-900 px-6 py-3 text-center"
+                                    onClick={() => handleSort("createdAt")}
+                                >
+                                    <div className="flex items-center justify-center space-x-2 cursor-pointer">
+                                        <span>Ngày tạo</span>
+                                        {sortField === "createdAt" ? (
+                                            sortAscending ? (
+                                                <ArrowUp className="h-4 w-4 text-orange-500" />
+                                            ) : (
+                                                <ArrowDown className="h-4 w-4 text-orange-500" />
+                                            )
+                                        ) : (
+                                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                        )}
+                                    </div>
                                 </TableHead>
 
                                 {/* Trạng thái */}
@@ -235,10 +249,6 @@ const SalesOrderTable = ({
                                         <TableCell className="text-center px-6 py-4">
                                             {order.estimatedTimeDeparture ? (
                                                 <>
-                                                    {new Date(order.estimatedTimeDeparture).toLocaleTimeString("vi-VN", {
-                                                        hour: "2-digit",
-                                                        minute: "2-digit",
-                                                    })}{" "}
                                                     {new Date(order.estimatedTimeDeparture).toLocaleDateString("vi-VN")}
                                                 </>
                                             ) : (

@@ -54,7 +54,7 @@ export const IconMap = [
   { keywords: ['cart'], icon: 'raphael:cart' },
   { keywords: ['puscharorder'], icon: 'fluent-emoji-high-contrast:clipboard' },
   { keywords: ['createpuscharorder'], icon: 'fluent:clipboard-text-edit-24-regular' },
-
+  { keywords: ['backorder', 'backOrder', 'pendingorder'], icon: 'mdi:clipboard-clock-outline' },
 
 
   // có thể thêm nhiều icon khác ở đây
@@ -105,6 +105,7 @@ export const ComponentIcon = ({ name, color = "#000000", size = 20, collapsed = 
   const isCartIcon = name === 'cart';
   const isPurchaseOrder = name === 'puscharorder';
   const isCPOrder = name === 'createpuscharorder';
+  const isBackOrderIcon = name === 'backorder' || name === 'backOrder';
 
   const needsSpecialAlignment = isMilkIcon || isUnitMeasureIcon || isCategoryIcon || isStorageCondition ||
     isPartnerIcon || isRetailerIcon || isSupplierIcon || isThermometerIcon ||
@@ -113,7 +114,7 @@ export const ComponentIcon = ({ name, color = "#000000", size = 20, collapsed = 
     isPhoneIcon || isEmailIcon || isTaxIcon || isCalendarIcon || isStreamlineplumpIcon || isFormkitdownIcon || isBellIcon || isBoyIcon || isGirlIcon
     || isCalendarzxIcon || isCrownIcon || isServerNetworkIcon || isPeopleIcon || isEuropeanNameBadgeIcon
     || isSchoolboyRunawayIcon || isBatchIcon || isPalletIcon || isUserIcon || isShoppingCartIcon || isTrashIcon || isCartIcon || isPurchaseOrder
-    || isCPOrder;
+    || isCPOrder || isBackOrderIcon;
 
   return (
     <Icon
