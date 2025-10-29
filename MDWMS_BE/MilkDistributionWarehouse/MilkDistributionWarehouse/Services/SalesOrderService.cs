@@ -257,6 +257,7 @@ namespace MilkDistributionWarehouse.Services
                     if (salesOrder.Status != SalesOrderStatus.PendingApproval)
                         return ("Chỉ được từ chối khi đơn hàng ở trạng thái Chờ duyệt.".ToMessageForUser(), null);
                     salesOrder.Status = SalesOrderStatus.Rejected;
+                    salesOrder.ApprovalBy = userId;
                     salesOrder.RejectionReason = rejectDto.RejectionReason;
                 }
 
@@ -265,6 +266,7 @@ namespace MilkDistributionWarehouse.Services
                     if (salesOrder.Status != SalesOrderStatus.PendingApproval)
                         return ("Chỉ được duyệt khi đơn hàng ở trạng thái Chờ duyệt.".ToMessageForUser(), null);
                     salesOrder.Status = SalesOrderStatus.Approved;
+                    salesOrder.ApprovalBy = userId;
                     salesOrder.RejectionReason = "";
                 }
 
