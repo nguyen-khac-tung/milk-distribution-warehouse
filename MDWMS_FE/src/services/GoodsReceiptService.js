@@ -13,34 +13,34 @@ export const getGoodsReceiptNoteByPurchaseOrderId = async (purchaseOrderId) => {
 
 
 
-// Hoàn thành kiểm nhập
-export const completeReceiving = async (goodsReceiptNoteId, note = "") => {
-    try {
-        const data = {
-            goodsReceiptNoteId: goodsReceiptNoteId,
-            note: note
-        };
+// // Hoàn thành kiểm nhập
+// export const completeReceiving = async (goodsReceiptNoteId, note = "") => {
+//     try {
+//         const data = {
+//             goodsReceiptNoteId: goodsReceiptNoteId,
+//             note: note
+//         };
 
-        const res = await api.put('/GoodsReceiptNote/CompleteReceiving', data);
-        return res.data;
-    } catch (error) {
-        console.error("Error completing receiving:", error);
-        throw error;
-    }
-};
+//         const res = await api.put('/GoodsReceiptNote/CompleteReceiving', data);
+//         return res.data;
+//     } catch (error) {
+//         console.error("Error completing receiving:", error);
+//         throw error;
+//     }
+// };
 
-// Hoàn thành sắp xếp
-export const completeArranging = async (goodsReceiptNoteId, note = "") => {
-    try {
-        const data = {
-            goodsReceiptNoteId: goodsReceiptNoteId,
-            note: note
-        };
+// // Hoàn thành sắp xếp
+// export const completeArranging = async (goodsReceiptNoteId, note = "") => {
+//     try {
+//         const data = {
+//             goodsReceiptNoteId: goodsReceiptNoteId,
+//             note: note
+//         };
 
-        const res = await api.put('/GoodsReceiptNote/CompleteArranging', data);
-        return res.data;
-    } catch (error) {
-        console.error("Error completing arranging:", error);
-        throw error;
-    }
-};
+//         const res = await api.put('/GoodsReceiptNote/CompleteArranging', data);
+//         return res.data;
+//     } catch (error) {
+//         console.error("Error completing arranging:", error);
+//         throw error;
+//     }
+// };
