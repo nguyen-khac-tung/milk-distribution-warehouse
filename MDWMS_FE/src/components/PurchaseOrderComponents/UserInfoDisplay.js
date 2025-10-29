@@ -125,6 +125,10 @@ const UserInfoDisplay = ({
         if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS) && status === PURCHASE_ORDER_STATUS.AssignedForReceiving) {
             return false;
         }
+        // Nhân viên kinh doanh ở trạng thái Receiving (Đã nhận hàng) chỉ thấy "Tạo bởi" và "Duyệt bởi"
+        if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS) && status === PURCHASE_ORDER_STATUS.Receiving) {
+            return false;
+        }
         // Nhân viên kinh doanh ở các trạng thái khác thấy "Giao cho" và "Xác nhận hàng giao đến"
         if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS) &&
             status !== PURCHASE_ORDER_STATUS.Draft &&
@@ -132,7 +136,8 @@ const UserInfoDisplay = ({
             status !== PURCHASE_ORDER_STATUS.Approved &&
             status !== PURCHASE_ORDER_STATUS.Rejected &&
             status !== PURCHASE_ORDER_STATUS.GoodsReceived &&
-            status !== PURCHASE_ORDER_STATUS.AssignedForReceiving) {
+            status !== PURCHASE_ORDER_STATUS.AssignedForReceiving &&
+            status !== PURCHASE_ORDER_STATUS.Receiving) {
             return true;
         }
         return true; // Các trường hợp khác đều thấy

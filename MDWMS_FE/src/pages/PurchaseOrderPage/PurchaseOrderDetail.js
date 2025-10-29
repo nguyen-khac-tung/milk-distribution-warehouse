@@ -3,14 +3,15 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
-import { ArrowLeft, Package, User, Calendar, CheckCircle, XCircle, Clock, Truck, CheckSquare, Trash2, Key, Building2, FileText, Hash, Shield, ShoppingCart, Users, UserCheck, UserX, TruckIcon, UserPlus, Store, UserCircle, UserCog, UserCheck2, UserX2, UserMinus, Mail, Phone, MapPin } from 'lucide-react';
+import { ArrowLeft, Package, User, Calendar, CheckCircle, XCircle, Clock, Truck, CheckSquare, Trash2, Key, Building2, FileText, Hash, Shield, ShoppingCart, Users, UserCheck, UserX, TruckIcon, UserPlus, Store, UserCircle, UserCog, UserCheck2, UserX2, UserMinus, Mail, Phone, MapPin, Play } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
-import { getPurchaseOrderDetail, submitPurchaseOrder, approvePurchaseOrder, rejectPurchaseOrder, confirmGoodsReceived, assignForReceiving } from '../../services/PurchaseOrderService';
+import { getPurchaseOrderDetail, submitPurchaseOrder, approvePurchaseOrder, rejectPurchaseOrder, confirmGoodsReceived, assignForReceiving, startReceive } from '../../services/PurchaseOrderService';
 import ApprovalConfirmationModal from '../../components/PurchaseOrderComponents/ApprovalConfirmationModal';
 import RejectionConfirmationModal from '../../components/PurchaseOrderComponents/RejectionConfirmationModal';
 import SubmitDraftConfirmationModal from '../../components/PurchaseOrderComponents/SubmitDraftConfirmationModal';
 import ConfirmGoodsReceivedModal from '../../components/PurchaseOrderComponents/ConfirmGoodsReceivedModal';
 import AssignReceivingModal from '../../components/PurchaseOrderComponents/AssignReceivingModal';
+import StartReceiveModal from '../../components/PurchaseOrderComponents/StartReceiveModal';
 import UserInfoDisplay from '../../components/PurchaseOrderComponents/UserInfoDisplay';
 import { PURCHASE_ORDER_STATUS } from '../../utils/permissions';
 import { usePermissions } from '../../hooks/usePermissions';
@@ -30,11 +31,13 @@ const PurchaseOrderDetail = () => {
     const [showSubmitDraftModal, setShowSubmitDraftModal] = useState(false);
     const [showConfirmGoodsReceivedModal, setShowConfirmGoodsReceivedModal] = useState(false);
     const [showAssignReceivingModal, setShowAssignReceivingModal] = useState(false);
+    const [showStartReceiveModal, setShowStartReceiveModal] = useState(false);
     const [approvalLoading, setApprovalLoading] = useState(false);
     const [rejectionLoading, setRejectionLoading] = useState(false);
     const [submitLoading, setSubmitLoading] = useState(false);
     const [confirmGoodsReceivedLoading, setConfirmGoodsReceivedLoading] = useState(false);
     const [assignReceivingLoading, setAssignReceivingLoading] = useState(false);
+    const [startReceiveLoading, setStartReceiveLoading] = useState(false);
 
     useEffect(() => {
         const fetchPurchaseOrderDetail = async () => {
@@ -102,15 +105,15 @@ const PurchaseOrderDetail = () => {
 
     const getStatusText = (status) => {
         const statusTexts = {
-            1: 'Nháp',
+            1: 'Bản nháp',
             2: 'Chờ duyệt',
             3: 'Đã từ chối',
             4: 'Đã duyệt',
-            5: 'Đã nhận hàng',
+            5: 'Đã giao đến',
             6: 'Đã phân công',
-            7: 'Đang nhận hàng',
-            8: 'Đã kiểm tra',
-            9: 'Hoàn thành'
+            7: 'Đã nhận hàng',
+            8: 'Đã kiểm nhập',
+            9: 'Đã nhập kho'
         };
         return statusTexts[status] || 'Không xác định';
     };
@@ -187,6 +190,11 @@ const PurchaseOrderDetail = () => {
     const canAssignReceiving = () => {
         return hasPermission(PERMISSIONS.PURCHASE_ORDER_ASSIGN_FOR_RECEIVING) &&
             purchaseOrder?.status === PURCHASE_ORDER_STATUS.GoodsReceived;
+    };
+
+    const canStartReceive = () => {
+        return hasPermission(PERMISSIONS.PURCHASE_ORDER_START_RECEIVE) &&
+            purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving;
     };
 
     const canSubmitDraft = () => {
@@ -274,6 +282,32 @@ const PurchaseOrderDetail = () => {
             }
         } finally {
             setAssignReceivingLoading(false);
+        }
+    };
+
+    const handleStartReceive = async (note) => {
+        setStartReceiveLoading(true);
+        try {
+            await startReceive(
+                purchaseOrder.purchaseOderId,
+                note
+            );
+
+            if (window.showToast) {
+                window.showToast("Bắt đầu nhận hàng thành công!", "success");
+            }
+            setShowStartReceiveModal(false);
+            const response = await getPurchaseOrderDetail(id);
+            if (response && response.success) {
+                setPurchaseOrder(response.data);
+            }
+        } catch (error) {
+            console.error("Error starting receive:", error);
+            if (window.showToast) {
+                window.showToast("Có lỗi xảy ra khi bắt đầu nhận hàng", "error");
+            }
+        } finally {
+            setStartReceiveLoading(false);
         }
     };
     if (loading) {
@@ -516,6 +550,15 @@ const PurchaseOrderDetail = () => {
                                         Giao cho nhân viên
                                     </Button>
                                 )}
+                                {canStartReceive() && (
+                                    <Button
+                                        onClick={() => setShowStartReceiveModal(true)}
+                                        className="bg-green-600 hover:bg-green-700 text-white h-[38px] px-8"
+                                    >
+                                        <Play className="h-4 w-4 mr-2" />
+                                        Bắt đầu nhận hàng
+                                    </Button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -582,6 +625,15 @@ const PurchaseOrderDetail = () => {
                 onConfirm={handleAssignReceiving}
                 purchaseOrder={purchaseOrder}
                 loading={assignReceivingLoading}
+            />
+
+            {/* Start Receive Modal */}
+            <StartReceiveModal
+                isOpen={showStartReceiveModal}
+                onClose={() => setShowStartReceiveModal(false)}
+                onConfirm={handleStartReceive}
+                purchaseOrder={purchaseOrder}
+                loading={startReceiveLoading}
             />
 
             {/* Submit Draft Confirmation Modal */}
