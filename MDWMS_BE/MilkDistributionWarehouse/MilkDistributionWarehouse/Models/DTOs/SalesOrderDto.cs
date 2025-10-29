@@ -53,6 +53,9 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public UserDto? AcknowledgedBy { get; set; }
         public UserDto? AssignTo { get; set; }
         public DateTime? UpdatedAt { get; set; }
+        public DateTime? ApprovalAt { get; set; }
+        public DateTime? AcknowledgeAt { get; set; }
+        public DateTime? PickingAt { get; set; }
         public string Note { get; set; }
         public string RejectionReason { get; set; }
     }

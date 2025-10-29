@@ -160,8 +160,6 @@ namespace MilkDistributionWarehouse.Services
                 await _unitOfWork.BeginTransactionAsync();
 
                 _mapper.Map(salesOrderUpdate, salesOrderExist);
-                if (salesOrderExist.Status == SalesOrderStatus.Rejected)
-                    salesOrderExist.Status = SalesOrderStatus.PendingApproval;
 
                 var updateDetails = salesOrderUpdate.SalesOrderItemDetailUpdateDtos;
                 var existingDetails = salesOrderExist.SalesOrderDetails.ToList();
@@ -259,6 +257,7 @@ namespace MilkDistributionWarehouse.Services
                     salesOrder.Status = SalesOrderStatus.Rejected;
                     salesOrder.ApprovalBy = userId;
                     salesOrder.RejectionReason = rejectDto.RejectionReason;
+                    salesOrder.ApprovalAt = DateTime.Now;
                 }
 
                 if (salesOrderUpdateStatus is SalesOrderApprovalDto)
@@ -268,6 +267,7 @@ namespace MilkDistributionWarehouse.Services
                     salesOrder.Status = SalesOrderStatus.Approved;
                     salesOrder.ApprovalBy = userId;
                     salesOrder.RejectionReason = "";
+                    salesOrder.ApprovalAt = DateTime.Now;
                 }
 
                 if (salesOrderUpdateStatus is SalesOrderAssignedForPickingDto assignedForPickingDto)
@@ -277,6 +277,7 @@ namespace MilkDistributionWarehouse.Services
                     salesOrder.Status = SalesOrderStatus.AssignedForPicking;
                     salesOrder.AcknowledgedBy = userId;
                     salesOrder.AssignTo = assignedForPickingDto.AssignTo;
+                    salesOrder.AcknowledgeAt = DateTime.Now;
                 }
 
                 salesOrder.UpdateAt = DateTime.Now;

@@ -13,7 +13,9 @@ public partial class BackOrder
 
     public int? GoodsId { get; set; }
 
-    public int? Quantity { get; set; }
+    public int? GoodsPackingId { get; set; }
+
+    public int? PackageQuantity { get; set; }
 
     public int? CreatedBy { get; set; }
 
