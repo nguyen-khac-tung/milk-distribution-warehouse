@@ -21,8 +21,8 @@ export const STATUS_LABELS = {
   [PURCHASE_ORDER_STATUS.Approved]: 'Đã duyệt',
   [PURCHASE_ORDER_STATUS.GoodsReceived]: 'Đã giao đến',
   [PURCHASE_ORDER_STATUS.AssignedForReceiving]: 'Đã phân công',
-  [PURCHASE_ORDER_STATUS.Receiving]: 'Đã nhận hàng',
-  [PURCHASE_ORDER_STATUS.Inspected]: 'Đã kiểm nhập',
+  [PURCHASE_ORDER_STATUS.Receiving]: 'Đang tiếp nhận',
+  [PURCHASE_ORDER_STATUS.Inspected]: 'Đã kiểm tra',
   [PURCHASE_ORDER_STATUS.Completed]: 'Đã nhập kho'
 };
 

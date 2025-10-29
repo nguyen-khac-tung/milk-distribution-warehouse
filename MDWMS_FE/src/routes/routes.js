@@ -30,6 +30,7 @@ import ChangePasswordPage from "../pages/AuthenticationPage/ChangePasswordPage"
 import { PERMISSIONS } from "../utils/permissions";
 import SalesOrderList from "../pages/SalesOrderPage/SalesOrderList";
 import SalesOrderDetail from "../pages/SalesOrderPage/SalesOrderDetail";
+import GoodsReceiptDetail from "../pages/GoodsReceiptPage/GoodsReceiptDetail";
 import BackOrderList from "../pages/BackOrderPage/BackOrderList";
 import UpdateSaleOrder from "../pages/SalesOrderPage/UpdateSaleOrder";
 
@@ -227,6 +228,16 @@ export const routes = [
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.PURCHASE_ORDER_VIEW_DETAILS}>
                 <PurchaseOrderDetail />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    // Phiếu nhập kho
+    {
+        path: "/goods-receipt-notes/:id",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.GOODS_RECEIPT_NOTE_VIEW_DETAILS}>
+                <GoodsReceiptDetail />
             </ProtectedRoute>
         ),
         isShowHeader: true,

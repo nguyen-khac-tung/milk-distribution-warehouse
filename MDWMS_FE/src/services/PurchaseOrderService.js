@@ -190,18 +190,97 @@ export const getGoodsPackingByGoodsId = async (goodsId) => {
 };
 
 // Submit Purchase Order
-export const submitPurchaseOrder = async (purchaseOrderId, status, note) => {
+export const submitPurchaseOrder = async (purchaseOrderId, note = "") => {
     try {
         const data = {
             purchaseOrderId: purchaseOrderId,
-            status: status,
             note: note
         };
-        
-        const res = await api.put('/PurchaseOrder/SubmitPerchaseOrder', data);
+
+        const res = await api.put('/PurchaseOrder/Submit', data);
         return res.data;
     } catch (error) {
         console.error("Error submitting purchase order:", error);
+        throw error;
+    }
+};
+
+// Approve Purchase Order
+export const approvePurchaseOrder = async (purchaseOrderId, note = "") => {
+    try {
+        const data = {
+            purchaseOrderId: purchaseOrderId,
+            note: note
+        };
+
+        const res = await api.put('/PurchaseOrder/Approve', data);
+        return res.data;
+    } catch (error) {
+        console.error("Error approving purchase order:", error);
+        throw error;
+    }
+};
+
+// Reject Purchase Order
+export const rejectPurchaseOrder = async (purchaseOrderId, note = "") => {
+    try {
+        const data = {
+            purchaseOrderId: purchaseOrderId,
+            note: note
+        };
+
+        const res = await api.put('/PurchaseOrder/Reject', data);
+        return res.data;
+    } catch (error) {
+        console.error("Error rejecting purchase order:", error);
+        throw error;
+    }
+};
+
+// Confirm Goods Received for Purchase Order
+export const confirmGoodsReceived = async (purchaseOrderId, note = "") => {
+    try {
+        const data = {
+            purchaseOrderId: purchaseOrderId,
+            note: note
+        };
+
+        const res = await api.put('/PurchaseOrder/GoodsReceived', data);
+        return res.data;
+    } catch (error) {
+        console.error("Error confirming goods received:", error);
+        throw error;
+    }
+};
+
+// Assign Purchase Order for Receiving
+export const assignForReceiving = async (purchaseOrderId, assignTo, note = "") => {
+    try {
+        const data = {
+            purchaseOrderId: purchaseOrderId,
+            note: note,
+            assignTo: assignTo
+        };
+
+        const res = await api.put('/PurchaseOrder/AssignedForReceiving', data);
+        return res.data;
+    } catch (error) {
+        console.error("Error assigning for receiving:", error);
+        throw error;
+    }
+};
+
+// Start Receiving Process for Purchase Order
+export const startReceive = async (purchaseOrderId, note = "") => {
+    try {
+        const data = {
+            purchaseOrderId: purchaseOrderId,
+            note: note
+        };
+        const res = await api.put('/PurchaseOrder/StartReceive', data);
+        return res.data;
+    } catch (error) {
+        console.error("Error starting receive process:", error);
         throw error;
     }
 };
