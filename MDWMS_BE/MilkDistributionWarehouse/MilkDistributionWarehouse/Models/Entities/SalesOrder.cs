@@ -23,9 +23,15 @@ public partial class SalesOrder
 
     public int? AssignTo { get; set; }
 
+    public DateTime? CreatedAt { get; set; }
+
     public DateTime? UpdateAt { get; set; }
 
-    public DateTime? CreatedAt { get; set; }
+    public DateTime? ApprovalAt { get; set; }
+
+    public DateTime? AcknowledgeAt { get; set; }
+
+    public DateTime? PickingAt { get; set; }
 
     public string Note { get; set; }
 
