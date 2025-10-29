@@ -100,6 +100,10 @@ const UserInfoDisplay = ({
         if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WS) && status === PURCHASE_ORDER_STATUS.AssignedForReceiving) {
             return false; // Ẩn "Từ chối bởi" khi đã phân công
         }
+        // Nhân viên kho: nếu trạng thái là Receiving (Đang tiếp nhận) thì ẩn "Từ chối bởi"
+        if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WS) && status === PURCHASE_ORDER_STATUS.Receiving) {
+            return false; // Ẩn "Từ chối bởi" khi đang tiếp nhận
+        }
         return true; // Các trường hợp khác đều thấy
     };
 
@@ -230,11 +234,11 @@ const UserInfoDisplay = ({
                             className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
                         />
                         {/* Hiển thị lý do từ chối nếu có */}
-                        {status === PURCHASE_ORDER_STATUS.Rejected && order.note && (
+                        {status === PURCHASE_ORDER_STATUS.Rejected && order.rejectionReason && (
                             <div className="mt-2">
                                 <label className="text-xs font-medium text-gray-600 block mb-1">Lý do từ chối:</label>
                                 <textarea
-                                    value={order.note}
+                                    value={order.rejectionReason}
                                     readOnly
                                     className="w-full bg-red-50 border border-red-200 rounded px-2 py-1 text-sm text-red-800 resize-none"
                                     rows="2"

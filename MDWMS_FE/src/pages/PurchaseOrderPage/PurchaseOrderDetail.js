@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { ArrowLeft, Package, User, Calendar, CheckCircle, XCircle, Clock, Truck, CheckSquare, Trash2, Key, Building2, FileText, Hash, Shield, ShoppingCart, Users, UserCheck, UserX, TruckIcon, UserPlus, Store, UserCircle, UserCog, UserCheck2, UserX2, UserMinus, Mail, Phone, MapPin, Play } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { getPurchaseOrderDetail, submitPurchaseOrder, approvePurchaseOrder, rejectPurchaseOrder, confirmGoodsReceived, assignForReceiving, startReceive } from '../../services/PurchaseOrderService';
+import { extractErrorMessage } from '../../utils/Validation';
 import ApprovalConfirmationModal from '../../components/PurchaseOrderComponents/ApprovalConfirmationModal';
 import RejectionConfirmationModal from '../../components/PurchaseOrderComponents/RejectionConfirmationModal';
 import SubmitDraftConfirmationModal from '../../components/PurchaseOrderComponents/SubmitDraftConfirmationModal';
@@ -134,8 +135,9 @@ const PurchaseOrderDetail = () => {
             }
         } catch (error) {
             console.error("Error approving purchase order:", error);
+            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi duyệt đơn hàng";
             if (window.showToast) {
-                window.showToast("Có lỗi xảy ra khi duyệt đơn hàng", "error");
+                window.showToast(errorMessage, "error");
             }
         } finally {
             setApprovalLoading(false);
@@ -163,8 +165,9 @@ const PurchaseOrderDetail = () => {
             }
         } catch (error) {
             console.error("Error rejecting purchase order:", error);
+            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi từ chối đơn hàng";
             if (window.showToast) {
-                window.showToast("Có lỗi xảy ra khi từ chối đơn hàng", "error");
+                window.showToast(errorMessage, "error");
             }
         } finally {
             setRejectionLoading(false);
@@ -202,6 +205,12 @@ const PurchaseOrderDetail = () => {
             purchaseOrder?.isDisableButton === false;
     };
 
+    const canResubmit = () => {
+        return hasPermission(PERMISSIONS.PURCHASE_ORDER_SUBMIT_DRAFT) &&
+            purchaseOrder?.status === PURCHASE_ORDER_STATUS.Rejected &&
+            purchaseOrder?.isDisableButton === false;
+    };
+
     const handleSubmitDraftConfirm = async () => {
         setSubmitLoading(true);
         try {
@@ -210,7 +219,10 @@ const PurchaseOrderDetail = () => {
             );
 
             if (window.showToast) {
-                window.showToast("Nộp bản nháp thành công!", "success");
+                const message = purchaseOrder.status === PURCHASE_ORDER_STATUS.Rejected 
+                    ? "Nộp lại đơn hàng thành công!" 
+                    : "Nộp bản nháp thành công!";
+                window.showToast(message, "success");
             }
 
             setShowSubmitDraftModal(false);
@@ -222,8 +234,9 @@ const PurchaseOrderDetail = () => {
             }
         } catch (error) {
             console.error("Error submitting draft:", error);
+            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi nộp bản nháp";
             if (window.showToast) {
-                window.showToast("Có lỗi xảy ra khi nộp bản nháp", "error");
+                window.showToast(errorMessage, "error");
             }
         } finally {
             setSubmitLoading(false);
@@ -247,8 +260,9 @@ const PurchaseOrderDetail = () => {
             }
         } catch (error) {
             console.error("Error confirming goods received:", error);
+            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi xác nhận hàng đã nhận";
             if (window.showToast) {
-                window.showToast("Có lỗi xảy ra khi xác nhận hàng đã nhận", "error");
+                window.showToast(errorMessage, "error");
             }
         } finally {
             setConfirmGoodsReceivedLoading(false);
@@ -273,8 +287,9 @@ const PurchaseOrderDetail = () => {
             }
         } catch (error) {
             console.error("Error assigning for receiving:", error);
+            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi giao nhiệm vụ nhận hàng";
             if (window.showToast) {
-                window.showToast("Có lỗi xảy ra khi giao nhiệm vụ nhận hàng", "error");
+                window.showToast(errorMessage, "error");
             }
         } finally {
             setAssignReceivingLoading(false);
@@ -298,8 +313,9 @@ const PurchaseOrderDetail = () => {
             }
         } catch (error) {
             console.error("Error starting receive:", error);
+            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi bắt đầu nhận hàng";
             if (window.showToast) {
-                window.showToast("Có lỗi xảy ra khi bắt đầu nhận hàng", "error");
+                window.showToast(errorMessage, "error");
             }
         } finally {
             setStartReceiveLoading(false);
@@ -507,6 +523,16 @@ const PurchaseOrderDetail = () => {
                                     </Button>
                                 )}
 
+                                {canResubmit() && (
+                                    <Button
+                                        onClick={() => setShowSubmitDraftModal(true)}
+                                        className="bg-orange-600 hover:bg-orange-700 text-white h-[38px] px-8"
+                                    >
+                                        <FileText className="h-4 w-4 mr-2" />
+                                        Nộp lại
+                                    </Button>
+                                )}
+
                                 {canApprove() && (
                                     <Button
                                         onClick={() => setShowApprovalModal(true)}
@@ -578,6 +604,7 @@ const PurchaseOrderDetail = () => {
                                 </span>
                             </div>
                         </div>
+
                         {/* User Information Display */}
                         <UserInfoDisplay
                             order={purchaseOrder}
@@ -642,5 +669,4 @@ const PurchaseOrderDetail = () => {
         </div>
     );
 };
-
 export default PurchaseOrderDetail;

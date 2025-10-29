@@ -8,6 +8,7 @@ import FloatingDropdown from "../../components/Common/FloatingDropdown"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
 import { Plus, Trash2, ArrowLeft, Save, X } from "lucide-react"
 import { createPurchaseOrder, getGoodsDropDownBySupplierId, getDraftPurchaseOrdersBySupplier, updatePurchaseOrder, getPurchaseOrderDetail, getGoodsPackingByGoodsId } from "../../services/PurchaseOrderService"
+import { extractErrorMessage } from '../../utils/Validation';
 import { getSuppliersDropdown } from "../../services/SupplierService"
 
 export default function CreatePurchaseOrder({
@@ -478,7 +479,7 @@ export default function CreatePurchaseOrder({
             navigate("/purchase-orders");
         } catch (error) {
             console.error("Lỗi khi xử lý đơn nhập:", error);
-            const errorMessage = error.response?.data?.message || error.message || "Có lỗi xảy ra khi xử lý đơn nhập!";
+            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi xử lý đơn nhập!";
             window.showToast(errorMessage, "error");
         }
     }

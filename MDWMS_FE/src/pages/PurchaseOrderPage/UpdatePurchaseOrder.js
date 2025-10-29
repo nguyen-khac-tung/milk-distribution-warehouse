@@ -8,6 +8,7 @@ import FloatingDropdown from "../../components/Common/FloatingDropdown"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
 import { Plus, Trash2, ArrowLeft, Save, X } from "lucide-react"
 import { updatePurchaseOrder, getGoodsDropDownBySupplierId, getPurchaseOrderDetail, getGoodsPackingByGoodsId } from "../../services/PurchaseOrderService"
+import { extractErrorMessage } from '../../utils/Validation';
 import { getSuppliersDropdown } from "../../services/SupplierService"
 
 export default function UpdatePurchaseOrder() {
@@ -332,7 +333,7 @@ export default function UpdatePurchaseOrder() {
             navigate("/purchase-orders");
         } catch (error) {
             console.error("Lỗi khi cập nhật đơn nhập:", error);
-            const errorMessage = error.response?.data?.message || error.message || "Có lỗi xảy ra khi cập nhật đơn nhập!";
+            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi cập nhật đơn nhập!";
             window.showToast(errorMessage, "error");
         }
     }
