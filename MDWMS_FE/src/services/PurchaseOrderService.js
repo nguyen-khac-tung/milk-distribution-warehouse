@@ -190,11 +190,10 @@ export const getGoodsPackingByGoodsId = async (goodsId) => {
 };
 
 // Submit Purchase Order
-export const submitPurchaseOrder = async (purchaseOrderId, note = "") => {
+export const submitPurchaseOrder = async (purchaseOrderId) => {
     try {
         const data = {
-            purchaseOrderId: purchaseOrderId,
-            note: note
+            purchaseOrderId: purchaseOrderId
         };
 
         const res = await api.put('/PurchaseOrder/Submit', data);
@@ -206,11 +205,10 @@ export const submitPurchaseOrder = async (purchaseOrderId, note = "") => {
 };
 
 // Approve Purchase Order
-export const approvePurchaseOrder = async (purchaseOrderId, note = "") => {
+export const approvePurchaseOrder = async (purchaseOrderId) => {
     try {
         const data = {
-            purchaseOrderId: purchaseOrderId,
-            note: note
+            purchaseOrderId: purchaseOrderId
         };
 
         const res = await api.put('/PurchaseOrder/Approve', data);
@@ -222,11 +220,11 @@ export const approvePurchaseOrder = async (purchaseOrderId, note = "") => {
 };
 
 // Reject Purchase Order
-export const rejectPurchaseOrder = async (purchaseOrderId, note = "") => {
+export const rejectPurchaseOrder = async (purchaseOrderId, rejectionReason = "") => {
     try {
         const data = {
             purchaseOrderId: purchaseOrderId,
-            note: note
+            rejectionReason: rejectionReason
         };
 
         const res = await api.put('/PurchaseOrder/Reject', data);
@@ -238,11 +236,10 @@ export const rejectPurchaseOrder = async (purchaseOrderId, note = "") => {
 };
 
 // Confirm Goods Received for Purchase Order
-export const confirmGoodsReceived = async (purchaseOrderId, note = "") => {
+export const confirmGoodsReceived = async (purchaseOrderId) => {
     try {
         const data = {
-            purchaseOrderId: purchaseOrderId,
-            note: note
+            purchaseOrderId: purchaseOrderId
         };
 
         const res = await api.put('/PurchaseOrder/GoodsReceived', data);
@@ -254,15 +251,14 @@ export const confirmGoodsReceived = async (purchaseOrderId, note = "") => {
 };
 
 // Assign Purchase Order for Receiving
-export const assignForReceiving = async (purchaseOrderId, assignTo, note = "") => {
+export const assignForReceiving = async (purchaseOrderId, assignTo) => {
     try {
         const data = {
             purchaseOrderId: purchaseOrderId,
-            note: note,
             assignTo: assignTo
         };
 
-        const res = await api.put('/PurchaseOrder/AssignedForReceiving', data);
+        const res = await api.put('/PurchaseOrder/AssignForReceiving', data);
         return res.data;
     } catch (error) {
         console.error("Error assigning for receiving:", error);
@@ -271,11 +267,10 @@ export const assignForReceiving = async (purchaseOrderId, assignTo, note = "") =
 };
 
 // Start Receiving Process for Purchase Order
-export const startReceive = async (purchaseOrderId, note = "") => {
+export const startReceive = async (purchaseOrderId) => {
     try {
         const data = {
-            purchaseOrderId: purchaseOrderId,
-            note: note
+            purchaseOrderId: purchaseOrderId
         };
         const res = await api.put('/PurchaseOrder/StartReceive', data);
         return res.data;

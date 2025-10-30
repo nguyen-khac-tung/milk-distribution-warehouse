@@ -339,7 +339,11 @@ namespace MilkDistributionWarehouse.Mapper
             CreateMap<GoodsReceiptNoteDetail, GoodsReceiptNoteDetailDto.GoodsReceiptNoteDetailPalletDto>()
                 .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Goods.GoodsName));
             CreateMap<GoodsReceiptNoteDetail, GoodsReceiptNoteDetailListDto>()
+                .ForMember(dest => dest.GoodsCode, opt => opt.MapFrom(src => src.Goods.GoodsCode))
+                .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Goods.GoodsName))
+                .ForMember(dest => dest.UnitMeasureName, opt => opt.MapFrom(src => src.Goods.UnitMeasure.Name))
                 .ForMember(dest => dest.UnitPerPackage, opt => opt.MapFrom(src => src.GoodsPacking.UnitPerPackage));
+
             CreateMap<PurchaseOderDetail, GoodsReceiptNoteDetail>()
                 .ForMember(dest => dest.GoodsReceiptNoteDetailId, opt => opt.MapFrom(_ => Guid.NewGuid()))
                 .ForMember(dest => dest.GoodsReceiptNoteId, opt => opt.Ignore())
@@ -347,6 +351,28 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => GoodsReceiptNoteStatus.Draft))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now))
                 .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(_ => (DateTime?)null));
+            CreateMap<GoodsReceiptNoteDetailUpdateStatus, GoodsReceiptNoteDetail>()
+                .ForMember(dest => dest.GoodsReceiptNoteDetailId, opt => opt.Ignore())
+                .ForMember(dest => dest.GoodsReceiptNoteId, opt => opt.Ignore())
+                .ForMember(dest => dest.GoodsId, opt => opt.Ignore())
+                .ForMember(dest => dest.GoodsPackingId, opt => opt.Ignore())
+                .ForMember(dest => dest.ExpectedPackageQuantity, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(_ => DateTime.Now));
+            CreateMap<GoodsReceiptNoteDetailInspectedDto, GoodsReceiptNoteDetail>()
+                .IncludeBase<GoodsReceiptNoteDetailUpdateStatus, GoodsReceiptNoteDetail>()
+                .ForMember(dest => dest.ActualPackageQuantity, opt => opt.MapFrom(src => src.DeliveredPackageQuantity - src.RejectPackageQuantity))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => ReceiptItemStatus.PendingApproval));
+            CreateMap<GoodsReceiptNoteDetailCancelDto, GoodsReceiptNoteDetail>()
+                .IncludeBase<GoodsReceiptNoteDetailUpdateStatus, GoodsReceiptNoteDetail>()
+                .AfterMap((src, dest) =>
+                {
+                    dest.DeliveredPackageQuantity = null;
+                    dest.RejectPackageQuantity = null;
+                    dest.ActualPackageQuantity = null;
+                    dest.Note = null;
+                    dest.Status = ReceiptItemStatus.Receiving;
+                });
 
             // Map BackOrder
             CreateMap<BackOrder, BackOrderDto.BackOrderResponseDto>()

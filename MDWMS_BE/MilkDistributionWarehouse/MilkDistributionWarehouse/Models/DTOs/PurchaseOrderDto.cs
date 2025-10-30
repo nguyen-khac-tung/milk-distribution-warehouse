@@ -67,7 +67,11 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public string Phone { get; set; }
         public string Address { get; set; }
         public string? Note { get; set; }
+        public string RejectionReason { get; set; }
         public DateTime? UpdatedAt { get; set; }
+        public DateTime? ApprovedAt { get; set; }
+        public DateTime? ArrivalConfirmedAt { get; set; }
+        public DateTime? AssignedAt { get; set; }
         public bool IsDisableButton { get; set; }
 
     }
@@ -95,20 +99,47 @@ namespace MilkDistributionWarehouse.Models.DTOs
     public class PurchaseOrderUpdate
     {
         public Guid PurchaseOderId { get; set; }
+        public string? Note { get; set; }
         public List<PurchaseOrderDetailUpdate> PurchaseOrderDetailUpdates { get; set; } = new();
     }
 
-    public class PurchaseOrderProcess
+    public class PurchaseOrderUpdateStatusDto
     {
         [Required(ErrorMessage = "Mã đơn hàng không được để trống.")]
         public Guid PurchaseOrderId { get; set; }
-        public string? Note { get; set; }
     }
 
-    public class PurchaseOrderProcessAssignTo : PurchaseOrderProcess
+    public class PurchaseOrderPendingApprovalDto : PurchaseOrderUpdateStatusDto
+    {
+    }
+
+    public class PurchaseOrderApprovalDto : PurchaseOrderUpdateStatusDto
+    {
+    }
+
+    public class PurchaseOrderRejectDto : PurchaseOrderUpdateStatusDto
+    {
+        [Required(ErrorMessage = "Lý do từ chối không được bỏ trống.")]
+        public string? RejectionReason { get; set; }
+    }
+
+    public class PurchaseOrderGoodsReceivedDto : PurchaseOrderUpdateStatusDto
+    {
+    }
+
+    public class PurchaseOrderAssignedForReceivingDto : PurchaseOrderUpdateStatusDto
     {
         [Required(ErrorMessage = "Nhân viên kho không được bỏ trống.")]
-        public int AssignTo { get; set; }
+        public int? AssignTo { get; set; }
     }
 
+    public class PurchaseOrderReAssignForReceivingDto : PurchaseOrderAssignedForReceivingDto { }
+
+    public class PurchaseOrderReceivingDto : PurchaseOrderUpdateStatusDto
+    {
+    }
+
+    public class PurchaseOrderCompletedDto : PurchaseOrderUpdateStatusDto
+    {
+    }
 }
