@@ -1,4 +1,6 @@
-﻿namespace MilkDistributionWarehouse.Models.DTOs
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace MilkDistributionWarehouse.Models.DTOs
 {
     public class GoodsReceiptNoteDetailDto
     {
@@ -28,6 +30,25 @@
 
         public int Status { get; set; }
 
-        public string Note { get; set; }
+        public string? Note { get; set; }
     }
+
+    public class GoodsReceiptNoteDetailUpdateStatus
+    {
+        public Guid GoodsReceiptNoteDetailId { get; set; }
+    }
+
+    public class GoodsReceiptNoteDetailInspectedDto : GoodsReceiptNoteDetailUpdateStatus
+    {
+        [Range(0, int.MaxValue, ErrorMessage = "Số lượng phải lớn hơn hoặc bằng 0.")]
+        public int? DeliveredPackageQuantity { get; set; }
+        [Range(0, int.MaxValue, ErrorMessage = "Số lượng phải lớn hơn hoặc bằng 0.")]
+        public int? RejectPackageQuantity { get; set; }
+        [MaxLength(255, ErrorMessage = "Độ dài không được vượt quá 255 ký tự.")]
+        public string? Note { get; set; }
+    }
+
+    public class GoodsReceiptNoteDetailPendingApprovalDto : GoodsReceiptNoteDetailUpdateStatus { }
+
+    public class GoodsReceiptNoteDetailCancelDto : GoodsReceiptNoteDetailUpdateStatus { }
 }
