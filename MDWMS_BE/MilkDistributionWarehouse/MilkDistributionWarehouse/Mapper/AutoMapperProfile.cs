@@ -377,12 +377,11 @@ namespace MilkDistributionWarehouse.Mapper
             // Map BackOrder
             CreateMap<BackOrder, BackOrderDto.BackOrderResponseDto>()
                 .ForMember(dest => dest.RetailerName, opt => opt.MapFrom(src => src.Retailer != null ? src.Retailer.RetailerName : null))
-                .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Goods != null ? src.Goods.GoodsName : null));
+                .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Goods != null ? src.Goods.GoodsName : null))
+                .ForMember(dest => dest.UnitPerPackage, opt => opt.MapFrom(src => src.GoodsPacking != null ? src.GoodsPacking.UnitPerPackage : null))
+                .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => src.CreatedByNavigation != null ? src.CreatedByNavigation.FullName : null));
+
             CreateMap<BackOrderDto.BackOrderRequestDto, BackOrder>();
-            //CreateMap<BackOrder, BackOrderDto.BackOrderActiveDto>()
-                //.ForMember(dest => dest.DisplayName, opt => opt.MapFrom(src =>
-                //    $"BackOrder - {(src.Goods != null ? src.Goods.GoodsName : "N/A")} ({src.Quantity}) cho {(src.Retailer != null ? src.Retailer.RetailerName : "N/A")}"));
-            CreateMap<BackOrder, BackOrderDto.BackOrderUpdateStatusDto>();
 
             //Map GoodsReceiptNote
             CreateMap<GoodsReceiptNoteCreate, GoodsReceiptNote>()

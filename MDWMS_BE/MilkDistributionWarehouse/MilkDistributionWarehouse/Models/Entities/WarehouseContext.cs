@@ -93,6 +93,10 @@ public partial class WarehouseContext : DbContext
         {
             entity.Property(e => e.BackOrderId).ValueGeneratedNever();
 
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.BackOrders)
+                .HasForeignKey(d => d.CreatedBy)
+                .HasConstraintName("FK_BackOrders_Users");
+
             entity.HasOne(d => d.Goods).WithMany(p => p.BackOrders)
                 .HasForeignKey(d => d.GoodsId)
                 .HasConstraintName("FK_BackOrders_Goods");
