@@ -14,20 +14,16 @@
     public class GoodsReceiptNoteDetailListDto
     {
         public int GoodsId { get; set; }
-
+        public string GoodsCode { get; set; }
+        public string GoodsName { get; set; }
+        public string UnitMeasureName { get; set; }
         public int GoodsPackingId { get; set; }
         public int UnitPerPackage { get; set; }
-
         public int ExpectedPackageQuantity { get; set; }
-
         public int? DeliveredPackageQuantity { get; set; }
-
         public int? RejectPackageQuantity { get; set; }
-
         public int? ActualPackageQuantity { get; set; }
-
         public int Status { get; set; }
-
         public string Note { get; set; }
     }
 }
