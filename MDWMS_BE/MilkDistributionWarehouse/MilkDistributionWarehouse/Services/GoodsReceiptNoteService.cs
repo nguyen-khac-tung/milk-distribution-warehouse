@@ -120,7 +120,7 @@ namespace MilkDistributionWarehouse.Services
                     grn.UpdatedAt = DateTime.Now;
                 }
 
-                if(update is GoodsReceiptNoteCompletedDto)
+                if (update is GoodsReceiptNoteCompletedDto)
                 {
                     if (currentStatus != GoodsReceiptNoteStatus.PendingApproval)
                         throw new Exception("Chỉ được chuyển sang trạng thái Hoàn thành khi đơn ở trạng thái Chờ duyệt.".ToMessageForUser());
@@ -132,10 +132,15 @@ namespace MilkDistributionWarehouse.Services
                     grn.Status = GoodsReceiptNoteStatus.Completed;
                     grn.ApprovalBy = userId;
                     grn.UpdatedAt = DateTime.Now;
+
+                    if (grn.PurchaseOder.Status != PurchaseOrderStatus.Receiving)
+                        throw new Exception("Chỉ được chuyển sang trạng thái Đã kiểm tra khi đơn hàng khi đơn hàng ở trạng thái Đang tiếp nhận.");
+                    grn.PurchaseOder.Status = PurchaseOrderStatus.Inspected;
+                    grn.PurchaseOder.UpdatedAt = DateTime.Now;
                 }
 
                 var updateResult = await _goodsReceiptNoteRepository.UpdateGoodsReceiptNote(grn);
-                if (updateResult == null) 
+                if (updateResult == null)
                     throw new Exception("Cập nhật trạng thái phiếu nhập kho thất bại.".ToMessageForUser());
 
                 await _unitOfWork.CommitTransactionAsync();
@@ -172,7 +177,7 @@ namespace MilkDistributionWarehouse.Services
                 }
             }
 
-            if(statusChange == GoodsReceiptNoteStatus.Completed)
+            if (statusChange == GoodsReceiptNoteStatus.Completed)
             {
                 bool hasAnyNotPendingApprovalGRNDetail = grnds.Any(grnd => grnd.Status != ReceiptItemStatus.PendingApproval);
                 if (hasAnyNotPendingApprovalGRNDetail)

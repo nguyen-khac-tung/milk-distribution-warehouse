@@ -378,6 +378,7 @@ namespace MilkDistributionWarehouse.Services
                         throw new Exception ("Chỉ được tiếp nhận đơn hàng khi đơn hàng ở trạng thái Đã phân công.".ToMessageForUser());
 
                     purchaseOrder.Status = PurchaseOrderStatus.Receiving;
+                    purchaseOrder.UpdatedAt = DateTime.Now;
 
                     var (msg, grnCreate) = await _goodsReceiptNoteService.CreateGoodsReceiptNote(
                         new GoodsReceiptNoteCreate { PurchaseOderId = purchaseOrder.PurchaseOderId }, userId);

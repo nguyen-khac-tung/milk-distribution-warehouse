@@ -133,13 +133,10 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int AssignTo { get; set; }
     }
 
-    public class PurchaseOrderReAssignForReceivingDto : PurchaseOrderAssignedForReceivingDto { }
+    public class PurchaseOrderReceivingDto : PurchaseOrderUpdateStatusDto { }
 
-    public class PurchaseOrderReceivingDto : PurchaseOrderUpdateStatusDto
-    {
-    }
+    public class PurchaseOrderInspectDto : PurchaseOrderUpdateStatusDto { }
 
-    public class PurchaseOrderCompletedDto : PurchaseOrderUpdateStatusDto
-    {
-    }
+    public class PurchaseOrderCompletedDto : PurchaseOrderUpdateStatusDto { }
+    
 }
