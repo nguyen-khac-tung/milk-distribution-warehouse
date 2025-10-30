@@ -432,7 +432,7 @@ export default function GoodsReceiptDetail() {
                         <TableHead className="font-semibold text-green-900 text-center">Số lượng thùng thực nhận</TableHead>
                         <TableHead className="font-semibold text-green-900">Ghi chú</TableHead>
                         <TableHead className="font-semibold text-green-900 text-center">Trạng thái</TableHead>
-                        {checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.Receiving) && (
+                        {checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.Inspected) && (
                           <TableHead className="font-semibold text-green-900 text-center">Hành động</TableHead>
                         )}
                       </TableRow>
@@ -459,9 +459,9 @@ export default function GoodsReceiptDetail() {
                               <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium break-words ${meta.color}`}>{meta.label}</span>
                             ); })()}
                           </TableCell>
-                          {checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.Receiving) && (
+                          {checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.Inspected) && (
                             <TableCell className="text-center">
-                              {detail.status === RECEIPT_ITEM_STATUS.Receiving &&
+                              {detail.status === RECEIPT_ITEM_STATUS.Inspected &&
                                 hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CANCEL) && (
                                   <Button variant="outline" size="sm" className="text-yellow-600 border-yellow-300 hover:text-white hover:bg-yellow-500 h-[38px] rounded" onClick={async () => {
                                     await cancelGoodsReceiptNoteDetail(detail.goodsReceiptNoteDetailId);
