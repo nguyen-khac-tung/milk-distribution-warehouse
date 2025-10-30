@@ -155,7 +155,7 @@ export default function GoodsReceiptDetail() {
         <Card className="bg-gray-50 border border-slate-200 shadow-sm">
           <CardContent className="p-0">
             <div
-              className="p-6 border-b border-gray-200 cursor-pointer flex items-center justify-between hover:bg-gray-50 transition-colors"
+              className="p-4 border-b border-gray-200 cursor-pointer flex items-center justify-between hover:bg-gray-50 transition-colors"
               onClick={() => toggleSection('orderDetails')}
             >
               <div className="flex items-center gap-3">
@@ -171,65 +171,53 @@ export default function GoodsReceiptDetail() {
             </div>
 
             {expandedSections.orderDetails && (
-              <div className="p-6 space-y-6">
+              <div className="p-4 space-y-4">
                 {/* Thông tin cơ bản */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="text-sm font-medium text-gray-500 mb-1">Mã đơn nhập</div>
-                    <div className="text-lg font-semibold text-gray-900">{goodsReceiptNote.purchaseOderId || 'N/A'}</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div>
+                    <div className="text-xs text-gray-500 mb-0.5">Mã đơn nhập</div>
+                    <div className="text-base font-semibold text-gray-900">{goodsReceiptNote.purchaseOderId || 'N/A'}</div>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="text-sm font-medium text-gray-500 mb-1">Người xác nhận</div>
-                    <div className="text-lg font-semibold text-gray-900">{goodsReceiptNote.approvalByName || 'N/A'}</div>
+                  <div>
+                    <div className="text-xs text-gray-500 mb-0.5">Người xác nhận</div>
+                    <div className="text-base font-semibold text-gray-900">{goodsReceiptNote.approvalByName || 'N/A'}</div>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="text-sm font-medium text-gray-500 mb-1">Người tạo</div>
-                    <div className="text-lg font-semibold text-gray-900">{goodsReceiptNote.createdByName || 'N/A'}</div>
+                  <div>
+                    <div className="text-xs text-gray-500 mb-0.5">Người tạo</div>
+                    <div className="text-base font-semibold text-gray-900">{goodsReceiptNote.createdByName || 'N/A'}</div>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="text-sm font-medium text-gray-500 mb-1">Ngày tạo</div>
-                    <div className="text-lg font-semibold text-gray-900">
+                  <div>
+                    <div className="text-xs text-gray-500 mb-0.5">Ngày tạo</div>
+                    <div className="text-base font-semibold text-gray-900">
                       {goodsReceiptNote.createdAt ? new Date(goodsReceiptNote.createdAt).toLocaleDateString('vi-VN') : 'N/A'}
                     </div>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="text-sm font-medium text-gray-500 mb-1">Ngày cập nhật</div>
-                    <div className="text-lg font-semibold text-gray-900">
+                  <div>
+                    <div className="text-xs text-gray-500 mb-0.5">Ngày cập nhật</div>
+                    <div className="text-base font-semibold text-gray-900">
                       {goodsReceiptNote.updatedAt ? new Date(goodsReceiptNote.updatedAt).toLocaleDateString('vi-VN') : 'N/A'}
                     </div>
                   </div>
                 </div>
 
                 {/* Danh sách mặt hàng */}
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h3 className="text-sm font-medium text-gray-500 mb-3">Danh sách mặt hàng</h3>
-                  <div className="space-y-2">
+                <div>
+                  <h3 className="text-xs font-medium text-gray-500 mb-1">Danh sách mặt hàng</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {goodsReceiptNote.goodsReceiptNoteDetails?.map((detail, index) => (
-                      <div key={index} className="flex items-center justify-between bg-white rounded-lg p-3 border border-gray-200">
-                        <div className="flex items-center gap-3">
+                      <div key={index} className="rounded border border-gray-200 bg-white p-2 flex flex-col gap-1">
+                        <div className="flex items-center gap-2 mb-1">
                           <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                          <span className="font-medium text-gray-900">Goods ID {detail.goodsId}</span>
+                          <span className="font-medium text-gray-900 text-sm">Goods ID {detail.goodsId}</span>
                         </div>
-                        <div className="flex items-center gap-6 text-sm">
-                          <div className="text-center">
-                            <div className="text-gray-500">Dự kiến</div>
-                            <div className="font-semibold text-gray-900">{detail.expectedPackageQuantity || 0}</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-gray-500">Đã nhận</div>
-                            <div className="font-semibold text-green-600">{detail.deliveredPackageQuantity || 0}</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-gray-500">Thực nhập</div>
-                            <div className="font-semibold text-blue-600">{detail.actualPackageQuantity || 0}</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-gray-500">Loại bỏ</div>
-                            <div className="font-semibold text-red-600">{detail.rejectPackageQuantity || 0}</div>
-                          </div>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+                          <div className="text-gray-800">Dự kiến: <span className="font-semibold">{detail.expectedPackageQuantity || 0}</span></div>
+                          <div className="text-green-600">Đã nhận: <span className="font-semibold">{detail.deliveredPackageQuantity || 0}</span></div>
+                          <div className="text-blue-600">Thực nhập: <span className="font-semibold">{detail.actualPackageQuantity || 0}</span></div>
+                          <div className="text-red-600">Loại bỏ: <span className="font-semibold">{detail.rejectPackageQuantity || 0}</span></div>
                         </div>
                       </div>
-                    )) || <div className="text-center text-gray-500 py-4">Không có dữ liệu</div>}
+                    )) || <div className="text-center text-gray-500 py-2">Không có dữ liệu</div>}
                   </div>
                 </div>
 
