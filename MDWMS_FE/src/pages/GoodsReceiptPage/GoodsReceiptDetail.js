@@ -14,8 +14,8 @@ import {
   Printer
 } from "lucide-react";
 import Loading from "../../components/Common/Loading";
-import { getGoodsReceiptNoteByPurchaseOrderId } from "../../services/GoodsReceiptService";
-import { PERMISSIONS } from "../../utils/permissions";
+import { getGoodsReceiptNoteByPurchaseOrderId, confirmInspection } from "../../services/GoodsReceiptService";
+import { PERMISSIONS, ROLES } from "../../utils/permissions";
 import { usePermissions } from "../../hooks/usePermissions";
 import PermissionWrapper from "../../components/Common/PermissionWrapper";
 
@@ -40,7 +40,11 @@ const getStatusLabel = (status) => {
 export default function GoodsReceiptDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { hasPermission } = usePermissions();
+  const {
+    hasPermission,
+    isWarehouseManager,
+    isWarehouseStaff
+  } = usePermissions();
 
   const [loading, setLoading] = useState(true);
   const [goodsReceiptNote, setGoodsReceiptNote] = useState(null);
@@ -53,7 +57,7 @@ export default function GoodsReceiptDetail() {
   // Thêm state quản lý kiểm tra từng mặt hàng
   const [checkedDetails, setCheckedDetails] = useState([]);
   const [notCheckedDetails, setNotCheckedDetails] = useState([]);
-  
+
   // Đồng bộ dữ liệu mỗi khi load goodsReceiptNote
   useEffect(() => {
     if (goodsReceiptNote && Array.isArray(goodsReceiptNote.goodsReceiptNoteDetails)) {
@@ -107,6 +111,14 @@ export default function GoodsReceiptDetail() {
     window.print();
   };
 
+  // Handler placeholder for approve/reject
+  const handleApprove = () => {
+    alert('Chức năng Duyệt đang phát triển, hãy tích hợp API!');
+  };
+  const handleReject = () => {
+    alert('Chức năng Từ chối đang phát triển, hãy tích hợp API!');
+  };
+
   if (loading) {
     return <Loading />;
   }
@@ -124,6 +136,17 @@ export default function GoodsReceiptDetail() {
 
   return (
     <div className="min-h-screen">
+      {/* PHÂN QUYỀN ACTION: Duyệt/từ chối - chỉ show nếu không phải Quản lý kho và phiếu đang Chờ duyệt */}
+      {!isWarehouseManager && goodsReceiptNote?.status === 2 && (
+        <div className="flex gap-2 justify-end px-6 py-4">
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handleApprove}>
+            <CheckCircle className="w-4 h-4 mr-2" /> Duyệt
+          </Button>
+          <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={handleReject}>
+            <AlertCircle className="w-4 h-4 mr-2" /> Từ chối
+          </Button>
+        </div>
+      )}
       {/* Header */}
       <div className="border-b border-gray-200 py-4 px-4">
         <div className="flex items-center justify-between">
@@ -146,6 +169,10 @@ export default function GoodsReceiptDetail() {
             <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusLabel(goodsReceiptNote.status).color}`}>
               {getStatusLabel(goodsReceiptNote.status).label}
             </span>
+            <Button onClick={handlePrintReceipt} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 h-[38px] text-white">
+              <Printer className="w-4 h-4" />
+              In Phiếu
+            </Button>
           </div>
         </div>
       </div>
@@ -155,7 +182,7 @@ export default function GoodsReceiptDetail() {
         <Card className="bg-gray-50 border border-slate-200 shadow-sm">
           <CardContent className="p-0">
             <div
-              className="p-4 border-b border-gray-200 cursor-pointer flex items-center justify-between hover:bg-gray-50 transition-colors"
+              className="p-4 border-b border-gray-200 flex items-center justify-between hover:bg-gray-50 transition-colors"
               onClick={() => toggleSection('orderDetails')}
             >
               <div className="flex items-center gap-3">
@@ -206,9 +233,14 @@ export default function GoodsReceiptDetail() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {goodsReceiptNote.goodsReceiptNoteDetails?.map((detail, index) => (
                       <div key={index} className="rounded border border-gray-200 bg-white p-2 flex flex-col gap-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                          <span className="font-medium text-gray-900 text-sm">Goods ID {detail.goodsId}</span>
+                        <div className="mb-1">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                            <span className="font-semibold text-gray-900 text-sm">Mã: {detail.goodsCode || ''}</span>
+                          </div>
+                          <div className="mt-0.5">
+                            <span className="font-normal text-gray-800 text-xs">Tên: {detail.goodsName || ''}</span>
+                          </div>
                         </div>
                         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
                           <div className="text-gray-800">Dự kiến: <span className="font-semibold">{detail.expectedPackageQuantity || 0}</span></div>
@@ -219,26 +251,6 @@ export default function GoodsReceiptDetail() {
                       </div>
                     )) || <div className="text-center text-gray-500 py-2">Không có dữ liệu</div>}
                   </div>
-                </div>
-
-                {/* Action buttons */}
-                <div className="flex gap-3 pt-4 border-t border-gray-200">
-                  <Button
-                    variant="outline"
-                    disabled={goodsReceiptNote.status === 2 || goodsReceiptNote.status === 3 || goodsReceiptNote.status === 4}
-                    onClick={handleCompleteReceiving}
-                    className="flex items-center gap-2 h-[38px]"
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    Đã Đến
-                  </Button>
-                  <Button 
-                    onClick={handlePrintReceipt}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 h-[38px]"
-                  >
-                    <Printer className="w-4 h-4" />
-                    In Phiếu
-                  </Button>
                 </div>
               </div>
             )}
@@ -269,62 +281,126 @@ export default function GoodsReceiptDetail() {
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow className="bg-gray-50">
+                      <TableRow className="bg-gray-100">
                         <TableHead className="font-semibold text-gray-700">Mã hàng</TableHead>
-                        <TableHead className="font-semibold text-gray-700 text-center">Dự kiến</TableHead>
-                        <TableHead className="font-semibold text-gray-700 text-center">Đã nhận</TableHead>
-                        <TableHead className="font-semibold text-gray-700 text-center">Thực nhập</TableHead>
-                        <TableHead className="font-semibold text-gray-700 text-center">Số loại bỏ</TableHead>
+                        <TableHead className="font-semibold text-gray-700">Tên hàng</TableHead>
+                        <TableHead className="font-semibold text-gray-700 text-center">Đơn vị tính</TableHead>
+                        <TableHead className="font-semibold text-gray-700 text-center">Quy cách đóng gói</TableHead>
+                        <TableHead className="font-semibold text-gray-700 text-center">Số lượng thùng dự kiến</TableHead>
+                        <TableHead className="font-semibold text-gray-700 text-center">Số lượng thùng giao đến</TableHead>
+                        <TableHead className="font-semibold text-gray-700 text-center">Số lượng thùng trả lại</TableHead>
+                        <TableHead className="font-semibold text-gray-700 text-center">Số lượng thùng thực nhận</TableHead>
                         <TableHead className="font-semibold text-gray-700">Ghi chú</TableHead>
                         <TableHead className="font-semibold text-gray-700 text-center">Hành động</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {goodsReceiptNote.goodsReceiptNoteDetails?.map((detail, index) => (
+                      {notCheckedDetails.map((detail, index) => (
                         <TableRow key={index} className="hover:bg-gray-50">
-                          <TableCell className="font-medium text-gray-900">{detail.goodsId}</TableCell>
-                          <TableCell className="text-center">
-                            <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-medium">
-                              {detail.expectedPackageQuantity || 0}
-                            </span>
+                          <TableCell className="font-medium text-gray-900 text-xs">{detail.goodsCode}</TableCell>
+                          <TableCell className="text-xs text-gray-700">{detail.goodsName}</TableCell>
+                          <TableCell className="text-xs text-gray-700 text-center">{detail.unitMeasureName}</TableCell>
+                          <TableCell className="text-xs text-gray-700 text-center">{detail.unitPerPackage}/thùng</TableCell>
+                          <TableCell className="text-center text-xs">{detail.expectedPackageQuantity}</TableCell>
+                          <TableCell className="text-center text-xs">
+                            <input
+                              type="number"
+                              className="w-20 h-8 px-2 rounded border border-gray-300 text-center text-xs focus:outline-none focus:border-blue-500"
+                              value={detail.deliveredPackageQuantity === '' || detail.deliveredPackageQuantity === null || detail.deliveredPackageQuantity === undefined ? (document.activeElement === document.getElementById(`input-dpq-${index}`) ? '' : 0) : detail.deliveredPackageQuantity}
+                              id={`input-dpq-${index}`}
+                              min={0}
+                              onChange={e => {
+                                const value = e.target.value === '' ? '' : Math.max(0, Number(e.target.value));
+                                setNotCheckedDetails(prev => prev.map((d, i) =>
+                                  i === index ? { ...d, deliveredPackageQuantity: value } : d
+                                ));
+                              }}
+                              onBlur={e => {
+                                if(e.target.value === '') {
+                                  setNotCheckedDetails(prev => prev.map((d, i) =>
+                                    i === index ? { ...d, deliveredPackageQuantity: 0 } : d
+                                  ));
+                                }
+                              }}
+                              disabled={isWarehouseManager}
+                            />
+                          </TableCell>
+                          <TableCell className="text-center text-xs">
+                            <input
+                              type="number"
+                              className="w-20 h-8 px-2 rounded border border-gray-300 text-center text-xs focus:outline-none focus:border-blue-500"
+                              value={detail.rejectPackageQuantity === '' || detail.rejectPackageQuantity === null || detail.rejectPackageQuantity === undefined ? (document.activeElement === document.getElementById(`input-rpq-${index}`) ? '' : 0) : detail.rejectPackageQuantity}
+                              id={`input-rpq-${index}`}
+                              min={0}
+                              onChange={e => {
+                                const value = e.target.value === '' ? '' : Math.max(0, Number(e.target.value));
+                                setNotCheckedDetails(prev => prev.map((d, i) =>
+                                  i === index ? { ...d, rejectPackageQuantity: value } : d
+                                ));
+                              }}
+                              onBlur={e => {
+                                if(e.target.value === '') {
+                                  setNotCheckedDetails(prev => prev.map((d, i) =>
+                                    i === index ? { ...d, rejectPackageQuantity: 0 } : d
+                                  ));
+                                }
+                              }}
+                              disabled={isWarehouseManager}
+                            />
+                          </TableCell>
+                          <TableCell className="text-center text-xs font-bold text-blue-600">
+                            {Math.max(0, (detail.deliveredPackageQuantity || 0) - (detail.rejectPackageQuantity || 0))}
+                          </TableCell>
+                          <TableCell className="text-gray-600">
+                            <input
+                              type="text"
+                              className="w-32 h-8 px-2 rounded border border-gray-300 text-xs focus:outline-none focus:border-blue-500"
+                              value={detail.note || ''}
+                              onChange={e => {
+                                const value = e.target.value;
+                                setNotCheckedDetails(prev => prev.map((d, i) =>
+                                  i === index ? { ...d, note: value } : d
+                                ));
+                              }}
+                              disabled={isWarehouseManager}
+                            />
                           </TableCell>
                           <TableCell className="text-center">
-                            <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                              {detail.deliveredPackageQuantity || 0}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                              {detail.actualPackageQuantity || 0}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">
-                              {detail.rejectPackageQuantity || 0}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-gray-600">{detail.note || '-'}</TableCell>
-                          <TableCell className="text-center">
-                            <Button variant="outline" size="sm" className="text-green-600 hover:text-white hover:bg-green-600 h-[38px]"
-                              onClick={() => {
-                                // Chuyển item này sang checked
-                                setCheckedDetails(prev => [...prev, detail]);
-                                setNotCheckedDetails(prev => prev.filter((_, i) => i !== index));
-                              }}>
-                              Kiểm tra
-                            </Button>
+                            {!isWarehouseManager && (
+                              <Button variant="outline" size="sm" className="text-green-600 hover:text-white hover:bg-green-600 h-[38px]"
+                                onClick={async () => {
+                                  try {
+                                    const idField = detail.goodsReceiptNoteDetailId || detail.id;
+                                    const payload = {
+                                      goodsReceiptNoteDetailId: idField,
+                                      deliveredPackageQuantity: Number(detail.deliveredPackageQuantity) || 0,
+                                      rejectPackageQuantity: Number(detail.rejectPackageQuantity) || 0,
+                                      note: detail.note || ''
+                                    };
+                                    console.log('DEBUG CONFIRM INSPECTION PAYLOAD:', payload, detail);
+                                    await confirmInspection(payload);
+                                    window.showToast && window.showToast('Thành công!', {type: 'success'});
+                                    setCheckedDetails(prev => [...prev, detail]);
+                                    setNotCheckedDetails(prev => prev.filter((_, i) => i !== index));
+                                  } catch (error) {
+                                    window.showToast && window.showToast('Kiểm tra thất bại: ' + (error?.message || ''), {type: 'error'});
+                                  }
+                                }}>
+                                Kiểm tra
+                              </Button>)
+                            }
                           </TableCell>
                         </TableRow>
                       )) || (
-                        <TableRow>
-                          <TableCell colSpan={7} className="text-center text-gray-500 py-12">
-                            <div className="flex flex-col items-center gap-2">
-                              <AlertCircle className="w-8 h-8 text-gray-400" />
-                              <span>Không có dữ liệu</span>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )}
+                          <TableRow>
+                            <TableCell colSpan={12} className="text-center text-gray-500 py-12">
+                              <div className="flex flex-col items-center gap-2">
+                                <AlertCircle className="w-8 h-8 text-gray-400" />
+                                <span>Không có dữ liệu</span>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
                     </TableBody>
                   </Table>
                 </div>
@@ -332,7 +408,7 @@ export default function GoodsReceiptDetail() {
                 <div className="flex justify-end pt-4 border-t border-gray-200">
                   <Button
                     className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 h-[38px]"
-                    disabled={goodsReceiptNote.status === 2 || goodsReceiptNote.status === 3 || goodsReceiptNote.status === 4}
+                    disabled={isWarehouseManager || goodsReceiptNote.status === 2 || goodsReceiptNote.status === 3 || goodsReceiptNote.status === 4}
                     onClick={handleCompleteReceiving}
                   >
                     <CheckCircle className="w-4 h-4 mr-2" />
@@ -366,13 +442,11 @@ export default function GoodsReceiptDetail() {
             {expandedSections.pallet && (
               <div className="p-6 space-y-6">
                 <div className="flex gap-3">
-                  <Button className="bg-orange-600 hover:bg-orange-700 text-white h-[38px]">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Lô Mới
+                  <Button className="bg-orange-600 hover:bg-orange-700 text-white h-[38px]" disabled={isWarehouseManager}>
+                    <Plus className="w-4 h-4 mr-2" /> Lô Mới
                   </Button>
-                  <Button variant="outline" className="border-orange-300 text-orange-600 hover:bg-orange-50 h-[38px]">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Thêm Pallet
+                  <Button variant="outline" className="border-orange-300 text-orange-600 hover:bg-orange-50 h-[38px]" disabled={isWarehouseManager}>
+                    <Plus className="w-4 h-4 mr-2" /> Thêm Pallet
                   </Button>
                 </div>
 
@@ -387,11 +461,10 @@ export default function GoodsReceiptDetail() {
                 <div className="flex justify-end pt-4 border-t border-gray-200">
                   <Button
                     className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 h-[38px]"
-                    disabled={goodsReceiptNote.status !== 2}
+                    disabled={isWarehouseManager || goodsReceiptNote.status !== 2}
                     onClick={handleCompleteArranging}
                   >
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Tiếp Tục Đến Sắp Xếp
+                    <RefreshCw className="w-4 h-4 mr-2" /> Tiếp Tục Đến Sắp Xếp
                   </Button>
                 </div>
               </div>
@@ -435,11 +508,10 @@ export default function GoodsReceiptDetail() {
                 <div className="flex justify-end pt-4 border-t border-gray-200">
                   <Button
                     className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 h-[38px]"
-                    disabled={goodsReceiptNote.status !== 3}
+                    disabled={isWarehouseManager || goodsReceiptNote.status !== 3}
                     onClick={handleCompleteArranging}
                   >
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Hoàn Thành
+                    <CheckCircle className="w-4 h-4 mr-2" /> Hoàn Thành
                   </Button>
                 </div>
               </div>

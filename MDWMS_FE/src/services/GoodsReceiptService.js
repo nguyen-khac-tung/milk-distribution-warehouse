@@ -11,37 +11,14 @@ export const getGoodsReceiptNoteByPurchaseOrderId = async (purchaseOrderId) => {
     }
 };
 
+export const confirmInspection = async (payload) => {
+    try {
+        const res = await api.put('/GoodsReceiptNoteDetail/ConfirmInspection', payload);
+        return res.data;
+    } catch (error) {
+        console.error('Error confirming inspection:', error);
+        throw error;
+    }
+};
 
 
-
-// // Hoàn thành kiểm nhập
-// export const completeReceiving = async (goodsReceiptNoteId, note = "") => {
-//     try {
-//         const data = {
-//             goodsReceiptNoteId: goodsReceiptNoteId,
-//             note: note
-//         };
-
-//         const res = await api.put('/GoodsReceiptNote/CompleteReceiving', data);
-//         return res.data;
-//     } catch (error) {
-//         console.error("Error completing receiving:", error);
-//         throw error;
-//     }
-// };
-
-// // Hoàn thành sắp xếp
-// export const completeArranging = async (goodsReceiptNoteId, note = "") => {
-//     try {
-//         const data = {
-//             goodsReceiptNoteId: goodsReceiptNoteId,
-//             note: note
-//         };
-
-//         const res = await api.put('/GoodsReceiptNote/CompleteArranging', data);
-//         return res.data;
-//     } catch (error) {
-//         console.error("Error completing arranging:", error);
-//         throw error;
-//     }
-// };
