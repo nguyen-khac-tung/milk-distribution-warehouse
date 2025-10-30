@@ -130,7 +130,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
     public class PurchaseOrderAssignedForReceivingDto : PurchaseOrderUpdateStatusDto
     {
         [Required(ErrorMessage = "Nhân viên kho không được bỏ trống.")]
-        public int? AssignTo { get; set; }
+        public int AssignTo { get; set; }
     }
 
     public class PurchaseOrderReAssignForReceivingDto : PurchaseOrderAssignedForReceivingDto { }
