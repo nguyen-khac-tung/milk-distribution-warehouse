@@ -1,12 +1,15 @@
 import React from 'react';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
-import { ArrowUp, ArrowDown, ArrowUpDown, Eye, Edit, Trash2 } from 'lucide-react';
+import { ArrowUp, ArrowDown, ArrowUpDown, Eye, Edit, Trash2, Package2 } from 'lucide-react';
 import EmptyState from '../../components/Common/EmptyState';
 import PermissionWrapper from '../../components/Common/PermissionWrapper';
 import { PERMISSIONS, canPerformPurchaseOrderAction } from '../../utils/permissions';
 import { Package } from 'lucide-react';
 import StatusDisplay from '../../components/PurchaseOrderComponents/StatusDisplay';
 import { usePermissions } from '../../hooks/usePermissions';
+import { useNavigate } from 'react-router-dom';
+import { startReceive } from '../../services/PurchaseOrderService';
+import { extractErrorMessage } from '../../utils/Validation';
 
 const PurchaseOrderTable = ({
   purchaseOrders,
@@ -21,6 +24,37 @@ const PurchaseOrderTable = ({
   loading
 }) => {
   const { hasPermission } = usePermissions();
+  const navigate = useNavigate();
+
+  // Handle goods receipt action based on status
+  const handleGoodsReceiptClick = async (order) => {
+    try {
+      if (order.status === 6) {
+        // Trạng thái = 6 (Đã phân công): Gọi API startReceive trước
+        console.log('Status 6: Calling startReceive API for order:', order.purchaseOderId);
+        await startReceive(order.purchaseOderId);
+        window.showToast?.('Bắt đầu quá trình nhận hàng thành công!', 'success');
+        navigate(`/goods-receipt-notes/${order.purchaseOderId}`);
+      } else if (order.status === 7) {
+        // Trạng thái = 7 (Đang tiếp nhận): Chỉ navigate
+        console.log('Status 7: Navigating directly for order:', order.purchaseOderId);
+        navigate(`/goods-receipt-notes/${order.purchaseOderId}`);
+      }
+    } catch (error) {
+      console.error('Error handling goods receipt:', error);
+      console.error('Error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data
+      });
+      
+      // Sử dụng extractErrorMessage để lấy message lỗi từ backend
+      const errorMessage = extractErrorMessage(error) || 'Có lỗi xảy ra khi xử lý phiếu nhập kho';
+      
+      window.showToast?.(errorMessage, 'error');
+    }
+  };
+
   // Detect available fields in data
   const availableFields = React.useMemo(() => {
     if (!purchaseOrders || purchaseOrders.length === 0) {
@@ -109,11 +143,11 @@ const PurchaseOrderTable = ({
                     )}
                   </div>
                 </TableHead>
-                {availableFields.hasApprovalByName && (
+                {availableFields.hasCreatedByName && (
                   <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                    <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("approvalBy")}>
-                      <span>Người duyệt</span>
-                      {sortField === "approvalBy" ? (
+                    <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("createdBy")}>
+                      <span>Người tạo</span>
+                      {sortField === "createdBy" ? (
                         sortAscending ? (
                           <ArrowUp className="h-4 w-4 text-orange-500" />
                         ) : (
@@ -125,11 +159,11 @@ const PurchaseOrderTable = ({
                     </div>
                   </TableHead>
                 )}
-                {availableFields.hasCreatedByName && (
+                {availableFields.hasApprovalByName && (
                   <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                    <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("createdBy")}>
-                      <span>Người tạo</span>
-                      {sortField === "createdBy" ? (
+                    <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("approvalBy")}>
+                      <span>Người duyệt</span>
+                      {sortField === "approvalBy" ? (
                         sortAscending ? (
                           <ArrowUp className="h-4 w-4 text-orange-500" />
                         ) : (
@@ -210,6 +244,11 @@ const PurchaseOrderTable = ({
                         {order.supplierName || order.supplierId || '-'}
                       </span>
                     </TableCell>
+                    {availableFields.hasCreatedByName && (
+                      <TableCell className="px-6 py-4 text-slate-700 text-center">
+                        {order.createdByName || order.createdBy || '-'}
+                      </TableCell>
+                    )}
                     {availableFields.hasApprovalByName && (
                       <TableCell className="px-6 py-4 text-slate-700 text-center">
                         {order.approvalByName || order.approvalBy ? (
@@ -219,11 +258,6 @@ const PurchaseOrderTable = ({
                         ) : (
                           <span className="text-gray-400 italic text-sm">Chưa duyệt</span>
                         )}
-                      </TableCell>
-                    )}
-                    {availableFields.hasCreatedByName && (
-                      <TableCell className="px-6 py-4 text-slate-700 text-center">
-                        {order.createdByName || order.createdBy || '-'}
                       </TableCell>
                     )}
                     {availableFields.hasArrivalConfirmedByName && (
@@ -278,6 +312,17 @@ const PurchaseOrderTable = ({
                           </button>
                         )}
 
+                        {/* Goods Receipt button - for status 6 and 7 - only for Warehouse Staff */}
+                        {(order.status === 6 || order.status === 7) && hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WS) && (
+                          <button
+                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                            title={order.status === 6 ? "Bắt đầu nhận hàng" : "Xem phiếu nhập kho"}
+                            onClick={() => handleGoodsReceiptClick(order)}
+                          >
+                            <Package2 className={`h-4 w-4 ${order.status === 6 ? 'text-green-500' : 'text-blue-500'}`} />
+                          </button>
+                        )}
+
                         {/* Delete button - conditional based on API flags for Sales Representative */}
                         {canPerformPurchaseOrderAction('delete', order, hasPermission) && (
                           <button
@@ -304,6 +349,17 @@ const PurchaseOrderTable = ({
                                   <Eye className="h-4 w-4 text-orange-500" />
                                 </button>
                               </PermissionWrapper>
+                              
+                              {/* Goods Receipt button - for status 6 and 7 - only for Warehouse Staff */}
+                              {(order.status === 6 || order.status === 7) && hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WS) && (
+                                <button
+                                  className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                  title={order.status === 6 ? "Bắt đầu nhận hàng" : "Xem phiếu nhập kho"}
+                                  onClick={() => handleGoodsReceiptClick(order)}
+                                >
+                                  <Package2 className={`h-4 w-4 ${order.status === 6 ? 'text-green-500' : 'text-blue-500'}`} />
+                                </button>
+                              )}
                               {!order.isDisable && (
                                 <PermissionWrapper requiredPermission={PERMISSIONS.PURCHASE_ORDER_UPDATE}>
                                   <button

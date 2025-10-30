@@ -21,9 +21,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, PurchaseOrdersDetail?)> GetPurchaseOrderDetailById(Guid purchaseOrderId, int? userId, List<string>? roles);
         Task<(string, PurchaseOrderUpdate?)> UpdatePurchaseOrder(PurchaseOrderUpdate update, int? userId);
         Task<(string, T?)> UpdateStatusPurchaseOrder<T>(T purchaseOrdersUpdateStatus, int? userId) where T : PurchaseOrderUpdateStatusDto;
-        //Task<(string, GoodsReceiptNoteDto?)> StartReceivingPurchaseOrder(PurchaseOrderProcess purchaseOrderProcess, int? userId);
         Task<(string, PurchaseOrder?)> DeletePurchaseOrder(Guid purchaseOrderId, int? userId);
-        Task<(string, List<PurchaseOrderDetailBySupplier>?)> GetPurchaseOrderDetailBySupplierId(int supplierId, int? userId);
     }
 
     public class PurchaseOrderService : IPurchaseOrderService
@@ -191,28 +189,6 @@ namespace MilkDistributionWarehouse.Services
             return ("", purchaseOrderMapDetal);
         }
 
-        public async Task<(string, List<PurchaseOrderDetailBySupplier>?)> GetPurchaseOrderDetailBySupplierId(int supplierId, int? userId)
-        {
-            var purchaseOrderQuery = _purchaseOrderRepository.GetPurchaseOrderByPurchaseOrderId();
-
-            var purchaseOrderMap = purchaseOrderQuery.ProjectTo<PurchaseOrderDetailBySupplier>(_mapper.ConfigurationProvider);
-
-            var purchaseOrderMapDetal = await purchaseOrderMap
-                .Where(pod => pod.SupplierId == supplierId
-                    && pod.CreatedBy == userId && pod.Status == PurchaseOrderStatus.Draft).ToListAsync();
-
-            if (!purchaseOrderMapDetal.Any())
-                return ("PurchaseOrder is not found.", default);
-
-            foreach (var po in purchaseOrderMapDetal)
-            {
-                var (msg, purchaseOrderDetail) = await _purchaseOrderDetailService.GetPurchaseOrderDetailByPurchaseOrderId(po.PurchaseOderId);
-                po.PurchaseOrderDetails = purchaseOrderDetail;
-            }
-
-            return ("", purchaseOrderMapDetal);
-        }
-
         public async Task<(string, PurchaseOrderCreate?)> CreatePurchaseOrder(PurchaseOrderCreate create, int? userId, string? userName)
         {
             try
@@ -316,34 +292,6 @@ namespace MilkDistributionWarehouse.Services
                 await _unitOfWork.RollbackTransactionAsync();
                 return ($"{ex.Message}", default);
             }
-        }
-
-        public async Task<(string, GoodsReceiptNoteDto?)> StartReceivingPurchaseOrder(PurchaseOrderProcess purchaseOrderProcess, int? userId)
-        {
-            //try
-            //{
-            //    await _unitOfWork.BeginTransactionAsync();
-
-            //    var (msg, purchaseOrder) = await UpdatePurchaseOrderProcess(purchaseOrderProcess, PurchaseOrderStatus.Receiving, userId, RoleNames.WarehouseStaff, null);
-
-            //    if (!string.IsNullOrEmpty(msg))
-            //        throw new Exception(msg);
-
-            //    var (msg1, grnCreate) = await _goodsReceiptNoteService.CreateGoodsReceiptNote(new GoodsReceiptNoteCreate { PurchaseOderId = purchaseOrder.PurchaseOderId }, userId);
-
-            //    if (!string.IsNullOrEmpty(msg1))
-            //        throw new Exception(msg1);
-
-            //    await _unitOfWork.CommitTransactionAsync();
-
-            //    return ("", grnCreate);
-            //}
-            //catch (Exception ex)
-            //{
-            //    await _unitOfWork.RollbackTransactionAsync();
-            //    return ($"{ex.Message}", default);
-            //}
-            return ("", default);
         }
 
         public async Task<(string, T?)> UpdateStatusPurchaseOrder<T>(T purchaseOrdersUpdateStatus, int? userId) where T : PurchaseOrderUpdateStatusDto
@@ -498,12 +446,12 @@ namespace MilkDistributionWarehouse.Services
         {
             var purchaseOrders = _purchaseOrderRepository.GetPurchaseOrder().Where(po => po.PurchaseOderId != purchaseOrder.PurchaseOderId);
 
-            var hasPODraft = await purchaseOrders.AnyAsync(po => po.Status == PurchaseOrderStatus.Draft && po.SupplierId == purchaseOrder.SupplierId);
+            var hasPODraft = await purchaseOrders.AnyAsync(po => po.Status == PurchaseOrderStatus.PendingApproval && po.SupplierId == purchaseOrder.SupplierId);
 
             if (hasPODraft)
                 return "Không thể gửi duyệt. Nhà cung cấp này đã có một đơn mua khác đang chờ duyệt.".ToMessageForUser();
 
-            var approvalPurchaseOrderQuery = await purchaseOrders.Where(po => po.Status == PurchaseOrderStatus.PendingApproval
+            var approvalPurchaseOrderQuery = await purchaseOrders.Where(po => po.Status == PurchaseOrderStatus.Approved
                                     && po.SupplierId == purchaseOrder.SupplierId
                                     && po.PurchaseOderDetails.Count == purchaseOrder.PurchaseOderDetails.Count).ToListAsync();
 

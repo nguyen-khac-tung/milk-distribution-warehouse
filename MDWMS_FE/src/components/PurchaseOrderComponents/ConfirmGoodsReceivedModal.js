@@ -10,7 +10,7 @@ const ConfirmGoodsReceivedModal = ({
     loading = false
 }) => {
     const handleConfirm = () => {
-        onConfirm('');
+        onConfirm();
     };
 
     const handleClose = () => {

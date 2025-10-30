@@ -67,7 +67,11 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public string Phone { get; set; }
         public string Address { get; set; }
         public string? Note { get; set; }
+        public string RejectionReason { get; set; }
         public DateTime? UpdatedAt { get; set; }
+        public DateTime? ApprovedAt { get; set; }
+        public DateTime? ArrivalConfirmedAt { get; set; }
+        public DateTime? AssignedAt { get; set; }
         public bool IsDisableButton { get; set; }
 
     }
@@ -99,21 +103,6 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public List<PurchaseOrderDetailUpdate> PurchaseOrderDetailUpdates { get; set; } = new();
     }
 
-    public class PurchaseOrderProcess
-    {
-        [Required(ErrorMessage = "Mã đơn hàng không được để trống.")]
-        public Guid PurchaseOrderId { get; set; }
-        public string? RejectionReason { get; set; }
-    }
-
-    public class PurchaseOrderProcessAssignTo : PurchaseOrderProcess
-    {
-        [Required(ErrorMessage = "Nhân viên kho không được bỏ trống.")]
-        public int AssignTo { get; set; }
-    }
-
-
-
     public class PurchaseOrderUpdateStatusDto
     {
         [Required(ErrorMessage = "Mã đơn hàng không được để trống.")]
@@ -144,6 +133,8 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int? AssignTo { get; set; }
     }
 
+    public class PurchaseOrderReAssignForReceivingDto : PurchaseOrderAssignedForReceivingDto { }
+
     public class PurchaseOrderReceivingDto : PurchaseOrderUpdateStatusDto
     {
     }
@@ -151,6 +142,4 @@ namespace MilkDistributionWarehouse.Models.DTOs
     public class PurchaseOrderCompletedDto : PurchaseOrderUpdateStatusDto
     {
     }
-
-
 }
