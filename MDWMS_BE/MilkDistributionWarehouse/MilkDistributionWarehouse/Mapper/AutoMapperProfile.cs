@@ -279,6 +279,8 @@ namespace MilkDistributionWarehouse.Mapper
             CreateMap<Pallet, PalletUpdateStatusDto>().ReverseMap();
             CreateMap<PalletRequestDto, Pallet>();
             CreateMap<Pallet, PalletActiveDto>();
+            CreateMap<PalletUpdatePQuantityDto, Pallet>();
+            CreateMap<Pallet, PalletUpdatePQuantityDto>();
 
             //Map SalesOrder
             CreateMap<SalesOrder, SalesOrderDtoSalesRepresentative>()

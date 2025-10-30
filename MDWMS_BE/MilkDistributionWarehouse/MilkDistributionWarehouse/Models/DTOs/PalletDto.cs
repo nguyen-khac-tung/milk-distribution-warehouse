@@ -48,11 +48,19 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
         public class PalletUpdateStatusDto
         {
-            [Required]
+            [Required(ErrorMessage = "PalletId không được để trống")]
             public string PalletId { get; set; }
             [Required]
             [Range(1, 3, ErrorMessage = "Status chỉ được phép là 1, 2 hoặc 3.")]
             public int Status { get; set; }
+        }
+
+        public class PalletUpdatePQuantityDto
+        {
+            [Required(ErrorMessage = "PalletId không được để trống")]
+            public string PalletId { get; set; }
+            [Required(ErrorMessage = "Số lượng hộp lấy ra không được để trống")]
+            public int takeOutQuantity { get; set; }
         }
 
         public class PalletDetailDto

@@ -85,5 +85,14 @@ namespace MilkDistributionWarehouse.Controllers
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<PalletUpdateStatusDto>.ToResultOk(pallets);
         }
+
+        [HttpPut("UpdatePackageQuantity")]
+        public async Task<IActionResult> UpdatePackageQuantity(PalletUpdatePQuantityDto update)
+        {
+            var (msg, pallets) = await _palletService.UpdatePalletQuantity(update.PalletId, update.takeOutQuantity);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<PalletUpdateStatusDto>.ToResultOk(pallets);
+        }
     }
 }
