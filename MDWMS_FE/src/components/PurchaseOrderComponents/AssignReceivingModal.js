@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, User, Loader2, AlertCircle, Search } from 'lucide-react';
 import { Button } from '../ui/button';
-import { getUserDropDownByRoleName } from '../../services/AccountService';
+import { getUserDropDown } from '../../services/AccountService';
 import { ComponentIcon } from '../IconComponent/Icon';
 
 const AssignReceivingModal = ({
@@ -40,7 +40,7 @@ const AssignReceivingModal = ({
     const fetchEmployees = async () => {
         setLoadingEmployees(true);
         try {
-            const response = await getUserDropDownByRoleName('Warehouse Staff');
+            const response = await getUserDropDown();
             if (response && response.success) {
                 setEmployees(response.data || []);
             } else {

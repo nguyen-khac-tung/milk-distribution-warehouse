@@ -26,6 +26,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int? DeliveredPackageQuantity { get; set; }
         public int? RejectPackageQuantity { get; set; }
         public int? ActualPackageQuantity { get; set; }
+        public string RejectionReason { get; set; }
         public int Status { get; set; }
         public string? Note { get; set; }
     }

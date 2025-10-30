@@ -28,6 +28,7 @@ namespace MilkDistributionWarehouse.Repositories
         public async Task<GoodsReceiptNote?> GetGoodsReceiptNoteById(Guid grnId)
         {
             return await _context.GoodsReceiptNotes.Include(grn => grn.GoodsReceiptNoteDetails)
+                .Include(grn => grn.PurchaseOder)
                 .FirstOrDefaultAsync(grn => grn.GoodsReceiptNoteId == grnId);
         }
 
