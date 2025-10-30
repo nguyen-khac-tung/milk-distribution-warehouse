@@ -31,6 +31,8 @@ public partial class User
 
     public DateTime? UpdateAt { get; set; }
 
+    public virtual ICollection<BackOrder> BackOrders { get; set; } = new List<BackOrder>();
+
     public virtual ICollection<Batch> Batches { get; set; } = new List<Batch>();
 
     public virtual ICollection<GoodsIssueNote> GoodsIssueNotes { get; set; } = new List<GoodsIssueNote>();

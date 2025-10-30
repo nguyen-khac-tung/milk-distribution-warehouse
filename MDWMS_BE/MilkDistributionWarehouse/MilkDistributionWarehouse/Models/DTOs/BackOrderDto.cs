@@ -11,9 +11,12 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public string RetailerName { get; set; }
             public int GoodsId { get; set; }
             public string GoodsName { get; set; }
-            public int Quantity { get; set; }
+            public int GoodsPackingId { get; set; }
+            public string UnitPerPackage { get; set; }
+            public int PackageQuantity { get; set; }
             public int CreatedBy { get; set; }
-            public int Status { get; set; }
+            public string CreatedByName { get; set; }
+            public string StatusDinamic { get; set; }
         }
 
         public class BackOrderRequestDto
@@ -26,24 +29,13 @@ namespace MilkDistributionWarehouse.Models.DTOs
             [Range(1, int.MaxValue, ErrorMessage = "GoodsId phải là số nguyên dương")]
             public int GoodsId { get; set; }
 
+            [Required(ErrorMessage = "GoodsPackingId không được để trống")]
+            [Range(1, int.MaxValue, ErrorMessage = "GoodsPackingId phải là số nguyên dương")]
+            public int GoodsPackingId { get; set; }
+
             [Required(ErrorMessage = "Quantity không được để trống")]
             [Range(1, int.MaxValue, ErrorMessage = "Quantity phải lớn hơn 0")]
-            public int Quantity { get; set; }
-        }
-
-        public class BackOrderActiveDto
-        {
-            public Guid BackOrderId { get; set; }
-            public string DisplayName { get; set; }
-        }
-
-        public class BackOrderUpdateStatusDto
-        {
-            [Required(ErrorMessage = "BackOrderId không được để trống")]
-            public Guid BackOrderId { get; set; }
-            [Required]
-            [Range(1, 3, ErrorMessage = "Status chỉ được phép là 1, 2 hoặc 3.")]
-            public int Status { get; set; }
+            public int PackageQuantity { get; set; }
         }
     }
 }

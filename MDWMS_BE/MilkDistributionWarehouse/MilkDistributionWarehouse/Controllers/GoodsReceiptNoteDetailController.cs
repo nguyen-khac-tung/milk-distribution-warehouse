@@ -31,9 +31,9 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<List<GoodsReceiptNoteDetailPalletDto>>.ToResultOk(grnds);
         }
 
-        [HttpPut("ConfirmInspection")]
+        [HttpPut("VerifyRecord")]
         [Authorize(Roles = "Warehouse Staff")]
-        public async Task<IActionResult> InspectGRNDetail([FromBody] GoodsReceiptNoteDetailInspectedDto update)
+        public async Task<IActionResult> VerifyGRNDetail([FromBody] GoodsReceiptNoteDetailInspectedDto update)
         {
             var(msg, grnUpdate) = await _gcndService.UpdateGRNDetail(update, User.GetUserId());
             if (!string.IsNullOrEmpty(msg))
@@ -41,7 +41,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<GoodsReceiptNoteDetailInspectedDto>.ToResultOk(update);
         }
 
-        [HttpPut("CancelInspection")]
+        [HttpPut("CancelRecord")]
         [Authorize(Roles = "Warehouse Staff")]
         public async Task<IActionResult> CancelGRNDetail([FromBody] GoodsReceiptNoteDetailCancelDto update)
         {

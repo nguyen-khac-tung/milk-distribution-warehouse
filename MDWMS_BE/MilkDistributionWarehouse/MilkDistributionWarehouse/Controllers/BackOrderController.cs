@@ -67,23 +67,5 @@ namespace MilkDistributionWarehouse.Controllers
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<BackOrderResponseDto>.ToResultOk(deleted);
         }
-
-        [HttpGet("GetBackOrderDropdown")]
-        public async Task<IActionResult> GetBackOrderDropdown()
-        {
-            var (msg, backOrders) = await _backOrderService.GetBackOrderDropdown();
-            if (!string.IsNullOrEmpty(msg))
-                return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<List<BackOrderActiveDto>>.ToResultOk(backOrders);
-        }
-
-        [HttpPut("UpdateStatus")]
-        public async Task<IActionResult> UpdateStatus(BackOrderUpdateStatusDto update)
-        {
-            var (msg, backOrders) = await _backOrderService.UpdateStatus(update);
-            if (!string.IsNullOrEmpty(msg))
-                return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<BackOrderUpdateStatusDto>.ToResultOk(backOrders);
-        }
     }
 }
