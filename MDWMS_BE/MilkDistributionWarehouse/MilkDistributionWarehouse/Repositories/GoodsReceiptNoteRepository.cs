@@ -7,7 +7,9 @@ namespace MilkDistributionWarehouse.Repositories
     public interface IGoodsReceiptNoteRepository
     {
         IQueryable<GoodsReceiptNote?> GetGRN();
+        Task<GoodsReceiptNote?> GetGoodsReceiptNoteById(Guid grnId);
         Task<GoodsReceiptNote?> CreateGoodsReceiptNote(GoodsReceiptNote create);
+        Task<GoodsReceiptNote?> UpdateGoodsReceiptNote(GoodsReceiptNote update);
     }
 
     public class GoodsReceiptNoteRepository : IGoodsReceiptNoteRepository
@@ -22,6 +24,13 @@ namespace MilkDistributionWarehouse.Repositories
         {
             return _context.GoodsReceiptNotes.AsNoTracking();
         }
+
+        public async Task<GoodsReceiptNote?> GetGoodsReceiptNoteById(Guid grnId)
+        {
+            return await _context.GoodsReceiptNotes.Include(grn => grn.GoodsReceiptNoteDetails)
+                .FirstOrDefaultAsync(grn => grn.GoodsReceiptNoteId == grnId);
+        }
+
         public async Task<GoodsReceiptNote?> CreateGoodsReceiptNote(GoodsReceiptNote create)
         {
             try
@@ -29,6 +38,20 @@ namespace MilkDistributionWarehouse.Repositories
                 await _context.GoodsReceiptNotes.AddAsync(create);
                 await _context.SaveChangesAsync();
                 return create;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public async Task<GoodsReceiptNote?> UpdateGoodsReceiptNote(GoodsReceiptNote update)
+        {
+            try
+            {
+                _context.GoodsReceiptNotes.Update(update);
+                await _context.SaveChangesAsync();
+                return update;  
             }
             catch
             {

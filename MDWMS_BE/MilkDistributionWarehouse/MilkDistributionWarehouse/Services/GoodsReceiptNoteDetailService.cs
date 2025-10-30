@@ -73,12 +73,32 @@ namespace MilkDistributionWarehouse.Services
 
                 if(update is GoodsReceiptNoteDetailCancelDto)
                 {
-                    if (currentStatus != ReceiptItemStatus.PendingApproval)
-                        throw new Exception("Chỉ được chuyển về trạng thái Đang tiếp nhận khi mục nhập kho chi tiết ở trạng thái Chờ duyệt.".ToMessageForUser());
+                    if (currentStatus != ReceiptItemStatus.Inspected)
+                        throw new Exception("Chỉ được chuyển về trạng thái Đang tiếp nhận khi mục nhập kho chi tiết ở trạng thái Đã kiểm tra.".ToMessageForUser());
                     if (createBy != userId)
                         throw new Exception("Current User has no permission to update.");
 
                     grnDetail = _mapper.Map(update,grnDetail);
+                }
+
+                if(update is GoodsReceiptNoteDetailPendingApprovalDto)
+                {
+                    if (currentStatus != ReceiptItemStatus.Inspected)
+                        throw new Exception("Chỉ được chuyển sang trạng thái Đã kiểm tra khi mục nhập kho chi tiết ở trạng thái Đã kiểm tra.".ToMessageForUser());
+                    if (createBy != userId)
+                        throw new Exception("Current User has no permission to update.");
+
+                    grnDetail = _mapper.Map(update, grnDetail);
+                }
+
+                if (update is GoodsReceiptNoteDetailCompletedDto)
+                {
+                    if (currentStatus != ReceiptItemStatus.PendingApproval)
+                        throw new Exception("Chỉ được chuyển sang trạng thái Đã kiểm tra khi mục nhập kho chi tiết ở trạng thái Chờ duyệt.".ToMessageForUser());
+                    if (createBy != userId)
+                        throw new Exception("Current User has no permission to update.");
+
+                    grnDetail = _mapper.Map(update, grnDetail);
                 }
 
                 var resultUpdate = await _grndRepository.UpdateGRNDetail(grnDetail);

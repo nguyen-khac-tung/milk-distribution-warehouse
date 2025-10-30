@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
+using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
@@ -13,6 +14,7 @@ namespace MilkDistributionWarehouse.Services
     {
         Task<(string, GoodsReceiptNoteDto?)> GetGRNByPurchaseOrderId(Guid purchaseOrderId);
         Task<(string, GoodsReceiptNoteDto?)> CreateGoodsReceiptNote(GoodsReceiptNoteCreate create, int? userId);
+        Task<(string, T?)> UpdateGRNStatus<T>(T update, int? userId) where T : GoodsReceiptNoteUpdateStatus;
     }
 
     public class GoodsReceiptNoteService : IGoodsReceiptNoteService
@@ -21,14 +23,19 @@ namespace MilkDistributionWarehouse.Services
         private readonly IMapper _mapper;
         private readonly IPurchaseOrderDetailRepository _purchaseOrderDetailRepository;
         private readonly IGoodsReceiptNoteDetailRepository _goodsReceiptNoteDetailRepository;
-        public GoodsReceiptNoteService(IGoodsReceiptNoteRepository goodsReceiptNoteRepository, 
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IGoodsReceiptNoteDetailService _goodsReceiptNoteDetailService;
+        public GoodsReceiptNoteService(IGoodsReceiptNoteRepository goodsReceiptNoteRepository,
             IMapper mapper, IPurchaseOrderDetailRepository purchaseOrderDetailRepository,
-            IGoodsReceiptNoteDetailRepository goodsReceiptNoteDetailRepository)
+            IGoodsReceiptNoteDetailRepository goodsReceiptNoteDetailRepository, IUnitOfWork unitOfWork,
+            IGoodsReceiptNoteDetailService goodsReceiptNoteDetailService)
         {
             _goodsReceiptNoteRepository = goodsReceiptNoteRepository;
             _mapper = mapper;
             _purchaseOrderDetailRepository = purchaseOrderDetailRepository;
             _goodsReceiptNoteDetailRepository = goodsReceiptNoteDetailRepository;
+            _unitOfWork = unitOfWork;
+            _goodsReceiptNoteDetailService = goodsReceiptNoteDetailService;
         }
 
         public async Task<(string, GoodsReceiptNoteDto?)> CreateGoodsReceiptNote(GoodsReceiptNoteCreate create, int? userId)
@@ -57,7 +64,7 @@ namespace MilkDistributionWarehouse.Services
                     throw new Exception("GRN create is failed.");
 
                 var (msg, getGRN) = await GetGRNByPurchaseOrderId(resultCreate.PurchaseOderId);
-                if(!string.IsNullOrEmpty(msg))
+                if (!string.IsNullOrEmpty(msg))
                     throw new Exception(msg);
 
                 return ("", getGRN);
@@ -81,8 +88,84 @@ namespace MilkDistributionWarehouse.Services
             if (grn == null)
                 return ("Phiếu nhập kho không tồn tại.".ToMessageForUser(), default);
 
-            return ("",  grn);
+            return ("", grn);
         }
 
+        public async Task<(string, T?)> UpdateGRNStatus<T>(T update, int? userId) where T : GoodsReceiptNoteUpdateStatus
+        {
+            var grn = await _goodsReceiptNoteRepository.GetGoodsReceiptNoteById(update.GoodsReceiptNoteId);
+
+            if (grn == null) return ("GRN is not exist.", default);
+
+            var currentStatus = grn.Status;
+
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                if (update is GoodsReceiptNoteSubmitDto)
+                {
+                    if (currentStatus != GoodsReceiptNoteStatus.Draft)
+                        throw new Exception("Chỉ được chuyển sang trạng thái Chờ duyệt khi đơn ở trạng thái Nháp.");
+
+                    if (grn.CreatedBy != userId)
+                        throw new Exception("Current User has no permission to update.");
+
+                    var grnDetails = grn.GoodsReceiptNoteDetails.ToList();
+
+                    string message = await UpdateStatusGRNDetail(grnDetails, GoodsReceiptNoteStatus.PendingApproval, userId);
+                    if (!string.IsNullOrEmpty(message))
+                        throw new Exception(message);
+
+                    grn.Status = GoodsReceiptNoteStatus.PendingApproval;
+                    grn.UpdatedAt = DateTime.Now;
+                }
+
+                var updateResult = await _goodsReceiptNoteRepository.UpdateGoodsReceiptNote(grn);
+                if (updateResult == null) throw new Exception("Cập nhật trạng thái phiếu nhập kho thất bại.".ToMessageForUser());
+
+                await _unitOfWork.CommitTransactionAsync();
+                return ("", update);
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ($"{ex.Message}", default);
+            }
+        }
+
+        private async Task<string> UpdateStatusGRNDetail(List<GoodsReceiptNoteDetail> grnds, int status, int? userId)
+        {
+            if (status == GoodsReceiptNoteStatus.PendingApproval)
+            {
+                string message = CheckGRNDetailStatusValidation(grnds);
+                if (!string.IsNullOrEmpty(message))
+                    return message;
+
+                var grndInspected = grnds.Where(grnd => grnd.Status == ReceiptItemStatus.Inspected)
+                    .Select(grnd => new GoodsReceiptNoteDetailPendingApprovalDto
+                    {
+                        GoodsReceiptNoteDetailId = grnd.GoodsReceiptNoteDetailId
+                    }).ToList();
+
+                foreach (var grnd in grndInspected)
+                {
+                    var (message1, grndResult) = await _goodsReceiptNoteDetailService.UpdateGRNDetail(grnd, userId);
+                    if (!string.IsNullOrEmpty(message1))
+                        return message1;
+                }
+            }
+            return "";
+        }
+
+        private string CheckGRNDetailStatusValidation(List<GoodsReceiptNoteDetail> grnds)
+        {
+            bool hasAnyRecevingGRNDetail = grnds.Any(grnd => grnd.Status == ReceiptItemStatus.Receiving);
+
+            if (hasAnyRecevingGRNDetail)
+                return "Chỉ có thể nộp đơn khi mà tất cả các mục nhập kho chi tiết ở trạng thái Đã kiểm tra";
+
+            return "";
+        }
     }
 }
