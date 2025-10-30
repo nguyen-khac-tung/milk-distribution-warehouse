@@ -1,7 +1,5 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.EntityFrameworkCore;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
@@ -19,6 +17,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, PalletDto.PalletResponseDto)> DeletePallet(string palletId);
         Task<(string, List<PalletDto.PalletActiveDto>)> GetPalletDropdown();
         Task<(string, PalletDto.PalletUpdateStatusDto)> UpdatePalletStatus(PalletDto.PalletUpdateStatusDto update);
+        Task<(string, PalletDto.PalletUpdateStatusDto)> UpdatePalletQuantity(string palletId, int takeOutQuantity);
     }
 
     public class PalletService : IPalletService
@@ -80,7 +79,7 @@ namespace MilkDistributionWarehouse.Services
             entity.CreateBy = userId;
             entity.CreateAt = DateTime.Now;
             entity.Status = CommonStatus.Inactive;
-            
+
             // Only update location availability when a location is provided
             if (dto.LocationId.HasValue)
             {
@@ -240,6 +239,31 @@ namespace MilkDistributionWarehouse.Services
 
             var resultDto = _mapper.Map<PalletDto.PalletUpdateStatusDto>(updatedPallet);
             return ("", resultDto);
+        }
+
+        public async Task<(string, PalletDto.PalletUpdateStatusDto)> UpdatePalletQuantity(string palletId, int takeOutQuantity)
+        {
+            var pallet = await _palletRepository.GetPalletById(palletId);
+            if (pallet == null)
+                return ("Pallet do not exist.", new PalletDto.PalletUpdateStatusDto());
+            if (takeOutQuantity < 0)
+                return ("Số lượng lấy ra không được âm.".ToMessageForUser(), new PalletDto.PalletUpdateStatusDto());
+            if (takeOutQuantity > pallet.PackageQuantity)
+                return ("Số lượng lấy ra vượt quá số lượng hiện có trên pallet.".ToMessageForUser(), new PalletDto.PalletUpdateStatusDto());
+            pallet.PackageQuantity -= takeOutQuantity;
+            if (pallet.PackageQuantity == 0 && pallet.LocationId.HasValue)
+            {
+                var updateIsAvail = await _locationRepository.UpdateIsAvailableAsync(pallet.LocationId, true);
+                if (!updateIsAvail)
+                    return ("Cập nhật trạng thái vị trí khi pallet hết hàng thất bại.".ToMessageForUser(), new PalletDto.PalletUpdateStatusDto());
+                pallet.Status = CommonStatus.Deleted;
+            }
+            pallet.UpdateAt = DateTime.Now;
+            var updated = await _palletRepository.UpdatePallet(pallet);
+            if (updated == null)
+                return ("Update pallet quantity failed.", new PalletDto.PalletUpdateStatusDto());
+            var updatedDto = _mapper.Map<PalletDto.PalletUpdateStatusDto>(updated);
+            return ("", updatedDto);
         }
     }
 }
