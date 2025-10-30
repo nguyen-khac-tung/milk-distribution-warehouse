@@ -1,7 +1,10 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Services;
 using MilkDistributionWarehouse.Utilities;
+using System.Threading.Tasks;
 using static MilkDistributionWarehouse.Models.DTOs.GoodsReceiptNoteDetailDto;
 
 namespace MilkDistributionWarehouse.Controllers
@@ -26,6 +29,26 @@ namespace MilkDistributionWarehouse.Controllers
                 return ApiResponse<string>.ToResultError(msg);
 
             return ApiResponse<List<GoodsReceiptNoteDetailPalletDto>>.ToResultOk(grnds);
+        }
+
+        [HttpPut("ConfirmInspection")]
+        [Authorize(Roles = "Warehouse Staff")]
+        public async Task<IActionResult> InspectGRNDetail([FromBody] GoodsReceiptNoteDetailInspectedDto update)
+        {
+            var(msg, grnUpdate) = await _gcndService.UpdateGRNDetail(update, User.GetUserId());
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<GoodsReceiptNoteDetailInspectedDto>.ToResultOk(update);
+        }
+
+        [HttpPut("CancelInspection")]
+        [Authorize(Roles = "Warehouse Staff")]
+        public async Task<IActionResult> CancelGRNDetail([FromBody] GoodsReceiptNoteDetailCancelDto update)
+        {
+            var (msg, grnUpdate) = await _gcndService.UpdateGRNDetail(update, User.GetUserId());
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<GoodsReceiptNoteDetailCancelDto>.ToResultOk(update);
         }
     }
 }

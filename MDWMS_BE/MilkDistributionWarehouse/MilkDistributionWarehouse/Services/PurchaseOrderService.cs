@@ -498,12 +498,12 @@ namespace MilkDistributionWarehouse.Services
         {
             var purchaseOrders = _purchaseOrderRepository.GetPurchaseOrder().Where(po => po.PurchaseOderId != purchaseOrder.PurchaseOderId);
 
-            var hasPODraft = await purchaseOrders.AnyAsync(po => po.Status == PurchaseOrderStatus.Draft && po.SupplierId == purchaseOrder.SupplierId);
+            var hasPODraft = await purchaseOrders.AnyAsync(po => po.Status == PurchaseOrderStatus.PendingApproval && po.SupplierId == purchaseOrder.SupplierId);
 
             if (hasPODraft)
                 return "Không thể gửi duyệt. Nhà cung cấp này đã có một đơn mua khác đang chờ duyệt.".ToMessageForUser();
 
-            var approvalPurchaseOrderQuery = await purchaseOrders.Where(po => po.Status == PurchaseOrderStatus.PendingApproval
+            var approvalPurchaseOrderQuery = await purchaseOrders.Where(po => po.Status == PurchaseOrderStatus.Approved
                                     && po.SupplierId == purchaseOrder.SupplierId
                                     && po.PurchaseOderDetails.Count == purchaseOrder.PurchaseOderDetails.Count).ToListAsync();
 
