@@ -46,7 +46,7 @@ const AssignPickingModal = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[99999]">
-      <div className="bg-white rounded-2xl shadow-lg max-w-md w-full animate-fadeIn">
+      <div className="bg-white rounded-2xl shadow-lg max-w-xl w-full animate-fadeIn">
         {/* Header */}
         <div className="flex justify-between items-center p-5 border-b border-gray-200">
           <div className="flex items-center gap-3">
