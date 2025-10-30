@@ -372,7 +372,12 @@ namespace MilkDistributionWarehouse.Mapper
                     dest.ActualPackageQuantity = null;
                     dest.Note = null;
                     dest.Status = ReceiptItemStatus.Receiving;
+                    dest.UpdatedAt = DateTime.Now;
                 });
+            CreateMap<GoodsReceiptNoteDetailPendingApprovalDto, GoodsReceiptNoteDetail>()
+                .IncludeBase<GoodsReceiptNoteDetailUpdateStatus, GoodsReceiptNoteDetail>();
+            CreateMap<GoodsReceiptNoteDetailCompletedDto, GoodsReceiptNoteDetail>()
+                .IncludeBase<GoodsReceiptNoteDetailUpdateStatus, GoodsReceiptNoteDetail>();
 
             // Map BackOrder
             CreateMap<BackOrder, BackOrderDto.BackOrderResponseDto>()

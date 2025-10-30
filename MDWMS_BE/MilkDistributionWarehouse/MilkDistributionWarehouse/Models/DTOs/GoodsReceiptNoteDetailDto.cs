@@ -47,4 +47,6 @@ namespace MilkDistributionWarehouse.Models.DTOs
     public class GoodsReceiptNoteDetailPendingApprovalDto : GoodsReceiptNoteDetailUpdateStatus { }
 
     public class GoodsReceiptNoteDetailCancelDto : GoodsReceiptNoteDetailUpdateStatus { }
+
+    public class GoodsReceiptNoteDetailCompletedDto : GoodsReceiptNoteDetailUpdateStatus { }
 }
