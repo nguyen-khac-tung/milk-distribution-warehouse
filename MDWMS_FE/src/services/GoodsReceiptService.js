@@ -11,12 +11,40 @@ export const getGoodsReceiptNoteByPurchaseOrderId = async (purchaseOrderId) => {
     }
 };
 
-export const confirmInspection = async (payload) => {
+export const verifyRecord = async ({ goodsReceiptNoteDetailId, deliveredPackageQuantity, rejectPackageQuantity, note }) => {
     try {
-        const res = await api.put('/GoodsReceiptNoteDetail/ConfirmInspection', payload);
+        const body = {
+            goodsReceiptNoteDetailId,
+            deliveredPackageQuantity,
+            rejectPackageQuantity,
+            note
+        };
+        const res = await api.put('/GoodsReceiptNoteDetail/VerifyRecord', body);
         return res.data;
     } catch (error) {
-        console.error('Error confirming inspection:', error);
+        console.error('Error verifying record:', error);
+        throw error;
+    }
+};
+
+export const cancelGoodsReceiptNoteDetail = async (goodsReceiptNoteDetailId) => {
+    try {
+        const body = { goodsReceiptNoteDetailId };
+        const res = await api.put('/GoodsReceiptNoteDetail/CancelRecord', body);
+        return res.data;
+    } catch (error) {
+        console.error('Error cancelling goods receipt note detail:', error);
+        throw error;
+    }
+};
+
+export const submitGoodsReceiptNote = async (goodsReceiptNoteId) => {
+    try {
+        const body = { goodsReceiptNoteId };
+        const res = await api.put('/GoodsReceiptNote/Submit', body);
+        return res.data;
+    } catch (error) {
+        console.error('Error submitting goods receipt note:', error);
         throw error;
     }
 };
