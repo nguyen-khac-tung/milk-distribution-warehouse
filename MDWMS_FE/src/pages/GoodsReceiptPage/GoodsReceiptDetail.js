@@ -229,7 +229,7 @@ export default function GoodsReceiptDetail() {
                     <div className="text-base font-semibold text-gray-900">{goodsReceiptNote.purchaseOderId || 'N/A'}</div>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-500 mb-0.5">Người xác nhận</div>
+                    <div className="text-xs text-gray-500 mb-0.5">Người duyệt</div>
                     <div className="text-base font-semibold text-gray-900">{goodsReceiptNote.approvalByName || 'N/A'}</div>
                   </div>
                   <div>
@@ -331,124 +331,124 @@ export default function GoodsReceiptDetail() {
                             const actualPackageQuantity = (Number(detail.deliveredPackageQuantity) || 0) - (Number(detail.rejectPackageQuantity) || 0);
                             return (
                               <>
-                              <TableRow key={index} className="hover:bg-gray-50">
-                                <TableCell className="font-medium text-gray-900 text-xs max-w-[70px] truncate" title={detail.goodsCode}>{detail.goodsCode}</TableCell>
-                                <TableCell className="text-xs text-gray-700 max-w-[90px] truncate" title={detail.goodsName}>{detail.goodsName}</TableCell>
-                                <TableCell className="text-xs text-gray-700 text-center">{detail.unitMeasureName}</TableCell>
-                                <TableCell className="text-xs text-gray-700 text-center">{detail.unitPerPackage}/thùng</TableCell>
-                                {/* Số lượng thùng dự kiến */}
-                                <TableCell className="text-center text-xs">{detail.expectedPackageQuantity ?? 0}</TableCell>
-                                {/* Số lượng thùng giao đến */}
-                                <TableCell className="text-center text-xs">
-                                  <input
-                                    type="number"
-                                    className="w-20 h-8 px-2 rounded border border-gray-300 text-center text-xs focus:outline-none focus:border-blue-500"
-                                    value={detail.deliveredPackageQuantity === '' || detail.deliveredPackageQuantity === null || detail.deliveredPackageQuantity === undefined ? '' : detail.deliveredPackageQuantity}
-                                    min={0}
-                                    onChange={e => {
-                                      const value = e.target.value;
-                                      setGoodsReceiptNote(prev => ({
-                                        ...prev,
-                                        goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
-                                          d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? { ...d, deliveredPackageQuantity: value === '' ? '' : Math.max(0, Number(value)) } : d
-                                        )
-                                      }));
-                                    }}
-                                    onBlur={e => {
-                                      if (e.target.value === '') {
+                                <TableRow key={index} className="hover:bg-gray-50">
+                                  <TableCell className="font-medium text-gray-900 text-xs max-w-[70px] truncate" title={detail.goodsCode}>{detail.goodsCode}</TableCell>
+                                  <TableCell className="text-xs text-gray-700 max-w-[90px] truncate" title={detail.goodsName}>{detail.goodsName}</TableCell>
+                                  <TableCell className="text-xs text-gray-700 text-center">{detail.unitMeasureName}</TableCell>
+                                  <TableCell className="text-xs text-gray-700 text-center">{detail.unitPerPackage}/thùng</TableCell>
+                                  {/* Số lượng thùng dự kiến */}
+                                  <TableCell className="text-center text-xs">{detail.expectedPackageQuantity ?? 0}</TableCell>
+                                  {/* Số lượng thùng giao đến */}
+                                  <TableCell className="text-center text-xs">
+                                    <input
+                                      type="number"
+                                      className="w-20 h-8 px-2 rounded border border-gray-300 text-center text-xs focus:outline-none focus:border-blue-500"
+                                      value={detail.deliveredPackageQuantity === '' || detail.deliveredPackageQuantity === null || detail.deliveredPackageQuantity === undefined ? '' : detail.deliveredPackageQuantity}
+                                      min={0}
+                                      onChange={e => {
+                                        const value = e.target.value;
                                         setGoodsReceiptNote(prev => ({
                                           ...prev,
                                           goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
-                                            d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? { ...d, deliveredPackageQuantity: 0 } : d
+                                            d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? { ...d, deliveredPackageQuantity: value === '' ? '' : Math.max(0, Number(value)) } : d
                                           )
                                         }));
-                                      }
-                                    }}
-                                  />
-                                </TableCell>
-                                {/* Số lượng thùng trả lại */}
-                                <TableCell className="text-center text-xs">
-                                  <input
-                                    type="number"
-                                    className="w-20 h-8 px-2 rounded border border-gray-300 text-center text-xs focus:outline-none focus:border-blue-500"
-                                    value={detail.rejectPackageQuantity === '' || detail.rejectPackageQuantity === null || detail.rejectPackageQuantity === undefined ? '' : detail.rejectPackageQuantity}
-                                    min={0}
-                                    onChange={e => {
-                                      const value = e.target.value;
-                                      setGoodsReceiptNote(prev => ({
-                                        ...prev,
-                                        goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
-                                          d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? { ...d, rejectPackageQuantity: value === '' ? '' : Math.max(0, Number(value)) } : d
-                                        )
-                                      }));
-                                    }}
-                                    onBlur={e => {
-                                      if (e.target.value === '') {
+                                      }}
+                                      onBlur={e => {
+                                        if (e.target.value === '') {
+                                          setGoodsReceiptNote(prev => ({
+                                            ...prev,
+                                            goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
+                                              d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? { ...d, deliveredPackageQuantity: 0 } : d
+                                            )
+                                          }));
+                                        }
+                                      }}
+                                    />
+                                  </TableCell>
+                                  {/* Số lượng thùng trả lại */}
+                                  <TableCell className="text-center text-xs">
+                                    <input
+                                      type="number"
+                                      className="w-20 h-8 px-2 rounded border border-gray-300 text-center text-xs focus:outline-none focus:border-blue-500"
+                                      value={detail.rejectPackageQuantity === '' || detail.rejectPackageQuantity === null || detail.rejectPackageQuantity === undefined ? '' : detail.rejectPackageQuantity}
+                                      min={0}
+                                      onChange={e => {
+                                        const value = e.target.value;
                                         setGoodsReceiptNote(prev => ({
                                           ...prev,
                                           goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
-                                            d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? { ...d, rejectPackageQuantity: 0 } : d
+                                            d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? { ...d, rejectPackageQuantity: value === '' ? '' : Math.max(0, Number(value)) } : d
                                           )
                                         }));
-                                      }
-                                    }}
-                                  />
-                                </TableCell>
-                                {/* Số lượng thùng thực nhận */}
-                                <TableCell className="text-center text-xs">
-                                  <input
-                                    type="number"
-                                    className="w-20 h-8 px-2 rounded border border-gray-300 text-center text-xs focus:outline-none focus:border-blue-500 bg-gray-50 text-blue-700 font-semibold"
-                                    value={actualPackageQuantity}
-                                    readOnly
-                                    disabled
-                                  />
-                                </TableCell>
-                                <TableCell className="text-gray-600">
-                                  <input type="text" className="w-32 h-8 px-2 rounded border border-gray-300 text-xs focus:outline-none focus:border-blue-500"
-                                    value={detail.note || ''}
-                                    onChange={e => {
-                                      const value = e.target.value;
-                                      setGoodsReceiptNote(prev => ({
-                                        ...prev,
-                                        goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
-                                          d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? { ...d, note: value } : d
-                                        )
-                                      }));
-                                    }}
-                                  />
-                                </TableCell>
-                                {/* Cột trạng thái */}
-                                <TableCell className="text-center min-w-[110px]">
-                                  {(() => {
-                                    const meta = getReceiptItemStatusMeta(detail.status); return (
-                                      <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium break-words ${meta.color}`}>{meta.label}</span>
-                                    );
-                                  })()}
-                                </TableCell>
-                                <TableCell className="text-center">
-                                  {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CHECK) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && (
-                                    <Button variant="outline" size="sm" className="text-green-600 hover:text-white hover:bg-green-600 h-[38px] mr-2" onClick={async () => {
-                                      await verifyRecord({
-                                        goodsReceiptNoteDetailId: detail.goodsReceiptNoteDetailId,
-                                        deliveredPackageQuantity: Number(detail.deliveredPackageQuantity) || 0,
-                                        rejectPackageQuantity: Number(detail.rejectPackageQuantity) || 0,
-                                        note: detail.note || ''
-                                      });
-                                      fetchGoodsReceiptNoteDetail();
-                                    }}>Kiểm tra</Button>
-                                  )}
-                                </TableCell>
-                              </TableRow>
-                              {detail.rejectionReason && (
-                                <TableRow key={`${index}-rej`}>
-                                  <TableCell colSpan={11} className="py-2">
-                                    <div className="text-red-600 text-xs italic">
-                                      Lý do từ chối: {detail.rejectionReason}
-                                    </div>
+                                      }}
+                                      onBlur={e => {
+                                        if (e.target.value === '') {
+                                          setGoodsReceiptNote(prev => ({
+                                            ...prev,
+                                            goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
+                                              d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? { ...d, rejectPackageQuantity: 0 } : d
+                                            )
+                                          }));
+                                        }
+                                      }}
+                                    />
+                                  </TableCell>
+                                  {/* Số lượng thùng thực nhận */}
+                                  <TableCell className="text-center text-xs">
+                                    <input
+                                      type="number"
+                                      className="w-20 h-8 px-2 rounded border border-gray-300 text-center text-xs focus:outline-none focus:border-blue-500 bg-gray-50 text-blue-700 font-semibold"
+                                      value={actualPackageQuantity}
+                                      readOnly
+                                      disabled
+                                    />
+                                  </TableCell>
+                                  <TableCell className="text-gray-600">
+                                    <input type="text" className="w-32 h-8 px-2 rounded border border-gray-300 text-xs focus:outline-none focus:border-blue-500"
+                                      value={detail.note || ''}
+                                      onChange={e => {
+                                        const value = e.target.value;
+                                        setGoodsReceiptNote(prev => ({
+                                          ...prev,
+                                          goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
+                                            d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? { ...d, note: value } : d
+                                          )
+                                        }));
+                                      }}
+                                    />
+                                  </TableCell>
+                                  {/* Cột trạng thái */}
+                                  <TableCell className="text-center min-w-[110px]">
+                                    {(() => {
+                                      const meta = getReceiptItemStatusMeta(detail.status); return (
+                                        <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium break-words ${meta.color}`}>{meta.label}</span>
+                                      );
+                                    })()}
+                                  </TableCell>
+                                  <TableCell className="text-center">
+                                    {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CHECK) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && (
+                                      <Button variant="outline" size="sm" className="text-green-600 hover:text-white hover:bg-green-600 h-[38px] mr-2" onClick={async () => {
+                                        await verifyRecord({
+                                          goodsReceiptNoteDetailId: detail.goodsReceiptNoteDetailId,
+                                          deliveredPackageQuantity: Number(detail.deliveredPackageQuantity) || 0,
+                                          rejectPackageQuantity: Number(detail.rejectPackageQuantity) || 0,
+                                          note: detail.note || ''
+                                        });
+                                        fetchGoodsReceiptNoteDetail();
+                                      }}>Kiểm tra</Button>
+                                    )}
                                   </TableCell>
                                 </TableRow>
-                              )}
+                                {detail.rejectionReason && (
+                                  <TableRow key={`${index}-rej`}>
+                                    <TableCell colSpan={11} className="py-2">
+                                      <div className="text-red-600 text-xs italic">
+                                        Lý do từ chối: {detail.rejectionReason}
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                )}
                               </>
                             );
                           })}
@@ -495,9 +495,11 @@ export default function GoodsReceiptDetail() {
                           <TableCell className="text-green-700">{detail.note || ''}</TableCell>
                           {/* Cột trạng thái */}
                           <TableCell className="text-center min-w-[110px]">
-                            {(() => { const meta = getReceiptItemStatusMeta(detail.status); return (
-                              <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium break-words ${meta.color}`}>{meta.label}</span>
-                            ); })()}
+                            {(() => {
+                              const meta = getReceiptItemStatusMeta(detail.status); return (
+                                <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium break-words ${meta.color}`}>{meta.label}</span>
+                              );
+                            })()}
                           </TableCell>
                           {(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) || checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.Inspected)) && (
                             <TableCell className="text-center">
