@@ -283,7 +283,7 @@ const SalesOrderTable = ({
                                                 </PermissionWrapper>
 
                                                 {/* Approve Button - Sale Manager for PendingApproval */}
-                                                {canPerformSalesOrderAction('approve', order, hasPermission, userInfo) && (
+                                                {/* {canPerformSalesOrderAction('approve', order, hasPermission, userInfo) && (
                                                     <button
                                                         className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                                         title="Duyệt phiếu"
@@ -294,10 +294,10 @@ const SalesOrderTable = ({
                                                     >
                                                         <CheckCircle className="h-4 w-4 text-green-500" />
                                                     </button>
-                                                )}
+                                                )} */}
 
                                                 {/* Reject Button - Sale Manager for PendingApproval */}
-                                                {canPerformSalesOrderAction('reject', order, hasPermission, userInfo) && (
+                                                {/* {canPerformSalesOrderAction('reject', order, hasPermission, userInfo) && (
                                                     <button
                                                         className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                                         title="Từ chối phiếu"
@@ -308,10 +308,10 @@ const SalesOrderTable = ({
                                                     >
                                                         <XCircle className="h-4 w-4 text-red-500" />
                                                     </button>
-                                                )}
+                                                )} */}
 
                                                 {/* Assign Button - Warehouse Manager */}
-                                                {canPerformSalesOrderAction('assign_for_picking', order, hasPermission, userInfo) && (
+                                                {/* {canPerformSalesOrderAction('assign_for_picking', order, hasPermission, userInfo) && (
                                                     <button
                                                         className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                                         title={order.status === 4 ? 'Phân công' : 'Phân công lại'}
@@ -322,10 +322,10 @@ const SalesOrderTable = ({
                                                     >
                                                         <UserPlus className="h-4 w-4 text-blue-500" />
                                                     </button>
-                                                )}
+                                                )} */}
 
                                                 {/* Create Delivery Slip Button - Warehouse Staff */}
-                                                {canPerformSalesOrderAction('create_delivery_slip', order, hasPermission, userInfo) && (
+                                                {/* {canPerformSalesOrderAction('create_delivery_slip', order, hasPermission, userInfo) && (
                                                     <button
                                                         className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                                         title="Tạo phiếu xuất kho"
@@ -336,10 +336,10 @@ const SalesOrderTable = ({
                                                     >
                                                         <FileText className="h-4 w-4 text-purple-500" />
                                                     </button>
-                                                )}
+                                                )} */}
 
                                                 {/* Submit Pending Approval Button - Sales Representative */}
-                                                {canPerformSalesOrderAction('submit_pending_approval', order, hasPermission, userInfo) && (
+                                                {/* {canPerformSalesOrderAction('submit_pending_approval', order, hasPermission, userInfo) && (
                                                     <button
                                                         className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                                         title="Nộp bản nháp"
@@ -350,10 +350,10 @@ const SalesOrderTable = ({
                                                     >
                                                         <FileText className="h-4 w-4 text-orange-500" />
                                                     </button>
-                                                )}
+                                                )} */}
 
                                                 {/* View Delivery Slip Button - Warehouse Manager/Staff */}
-                                                {canPerformSalesOrderAction('view_delivery_slip', order, hasPermission, userInfo) && (
+                                                {/* {canPerformSalesOrderAction('view_delivery_slip', order, hasPermission, userInfo) && (
                                                     <button
                                                         className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                                         title="Xem phiếu xuất kho"
@@ -364,7 +364,7 @@ const SalesOrderTable = ({
                                                     >
                                                         <FileText className="h-4 w-4 text-orange-500" />
                                                     </button>
-                                                )}
+                                                )} */}
 
                                                 {/* Edit Button - Sales Representative */}
                                                 {canPerformSalesOrderAction('edit', order, hasPermission, userInfo) && (
