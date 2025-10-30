@@ -222,6 +222,7 @@ public partial class WarehouseContext : DbContext
 
             entity.Property(e => e.GoodsReceiptNoteDetailId).ValueGeneratedNever();
             entity.Property(e => e.Note).HasMaxLength(255);
+            entity.Property(e => e.RejectionReason).HasMaxLength(255);
 
             entity.HasOne(d => d.Goods).WithMany(p => p.GoodsReceiptNoteDetails)
                 .HasForeignKey(d => d.GoodsId)

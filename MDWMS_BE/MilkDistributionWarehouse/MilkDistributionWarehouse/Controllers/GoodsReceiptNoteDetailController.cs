@@ -50,5 +50,15 @@ namespace MilkDistributionWarehouse.Controllers
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<GoodsReceiptNoteDetailCancelDto>.ToResultOk(update);
         }
+
+        [HttpPut("RejectRecord")]
+        [Authorize(Roles = "Warehouse Manager")]
+        public async Task<IActionResult> RejectGRNDetail([FromBody] GoodsReceiptNoteDetailRejectDto update)
+        {
+            var (msg, grnUpdate) = await _gcndService.UpdateGRNDetail(update, User.GetUserId());
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<GoodsReceiptNoteDetailRejectDto>.ToResultOk(update);
+        }
     }
 }

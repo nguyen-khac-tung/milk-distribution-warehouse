@@ -106,23 +106,37 @@ namespace MilkDistributionWarehouse.Services
                 if (update is GoodsReceiptNoteSubmitDto)
                 {
                     if (currentStatus != GoodsReceiptNoteStatus.Draft)
-                        throw new Exception("Chỉ được chuyển sang trạng thái Chờ duyệt khi đơn ở trạng thái Nháp.");
+                        throw new Exception("Chỉ được chuyển sang trạng thái Chờ duyệt khi đơn ở trạng thái Nháp.".ToMessageForUser());
 
                     if (grn.CreatedBy != userId)
                         throw new Exception("Current User has no permission to update.");
 
-                    var grnDetails = grn.GoodsReceiptNoteDetails.ToList();
-
-                    string message = await UpdateStatusGRNDetail(grnDetails, GoodsReceiptNoteStatus.PendingApproval, userId);
+                    string message = await UpdateStatusGRNDetail(grn, GoodsReceiptNoteStatus.PendingApproval, userId);
                     if (!string.IsNullOrEmpty(message))
-                        throw new Exception(message);
+                        throw new Exception(message.ToMessageForUser());
 
                     grn.Status = GoodsReceiptNoteStatus.PendingApproval;
+                    grn.ApprovalBy = userId;
+                    grn.UpdatedAt = DateTime.Now;
+                }
+
+                if(update is GoodsReceiptNoteCompletedDto)
+                {
+                    if (currentStatus != GoodsReceiptNoteStatus.PendingApproval)
+                        throw new Exception("Chỉ được chuyển sang trạng thái Hoàn thành khi đơn ở trạng thái Chờ duyệt.".ToMessageForUser());
+
+                    string message = await UpdateStatusGRNDetail(grn, GoodsReceiptNoteStatus.Completed, userId);
+                    if (!string.IsNullOrEmpty(message))
+                        throw new Exception(message.ToMessageForUser());
+
+                    grn.Status = GoodsReceiptNoteStatus.Completed;
+                    grn.ApprovalBy = userId;
                     grn.UpdatedAt = DateTime.Now;
                 }
 
                 var updateResult = await _goodsReceiptNoteRepository.UpdateGoodsReceiptNote(grn);
-                if (updateResult == null) throw new Exception("Cập nhật trạng thái phiếu nhập kho thất bại.".ToMessageForUser());
+                if (updateResult == null) 
+                    throw new Exception("Cập nhật trạng thái phiếu nhập kho thất bại.".ToMessageForUser());
 
                 await _unitOfWork.CommitTransactionAsync();
                 return ("", update);
@@ -134,9 +148,11 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
-        private async Task<string> UpdateStatusGRNDetail(List<GoodsReceiptNoteDetail> grnds, int status, int? userId)
+        private async Task<string> UpdateStatusGRNDetail(GoodsReceiptNote grn, int statusChange, int? userId)
         {
-            if (status == GoodsReceiptNoteStatus.PendingApproval)
+            var grnds = grn.GoodsReceiptNoteDetails.ToList();
+
+            if (statusChange == GoodsReceiptNoteStatus.PendingApproval)
             {
                 string message = CheckGRNDetailStatusValidation(grnds);
                 if (!string.IsNullOrEmpty(message))
@@ -155,6 +171,27 @@ namespace MilkDistributionWarehouse.Services
                         return message1;
                 }
             }
+
+            if(statusChange == GoodsReceiptNoteStatus.Completed)
+            {
+                bool hasAnyNotPendingApprovalGRNDetail = grnds.Any(grnd => grnd.Status != ReceiptItemStatus.PendingApproval);
+                if (hasAnyNotPendingApprovalGRNDetail)
+                    return "Chỉ có thể Hoàn thành đơn khi mà tất cả các mục nhập kho chi tiết ở trạng thái Chờ duyệt.";
+
+                var grndPendingApproval = grnds.Where(grnd => grnd.Status == ReceiptItemStatus.PendingApproval)
+                    .Select(grnd => new GoodsReceiptNoteDetailCompletedDto
+                    {
+                        GoodsReceiptNoteDetailId = grnd.GoodsReceiptNoteDetailId
+                    }).ToList();
+
+                foreach (var grnd in grndPendingApproval)
+                {
+                    var (message1, grndResult) = await _goodsReceiptNoteDetailService.UpdateGRNDetail(grnd, userId);
+                    if (!string.IsNullOrEmpty(message1))
+                        return message1;
+                }
+            }
+
             return "";
         }
 
