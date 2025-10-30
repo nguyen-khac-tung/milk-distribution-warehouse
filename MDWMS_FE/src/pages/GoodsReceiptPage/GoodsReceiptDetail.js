@@ -50,6 +50,17 @@ export default function GoodsReceiptDetail() {
     pallet: true,
     arranging: true
   });
+  // Thêm state quản lý kiểm tra từng mặt hàng
+  const [checkedDetails, setCheckedDetails] = useState([]);
+  const [notCheckedDetails, setNotCheckedDetails] = useState([]);
+  
+  // Đồng bộ dữ liệu mỗi khi load goodsReceiptNote
+  useEffect(() => {
+    if (goodsReceiptNote && Array.isArray(goodsReceiptNote.goodsReceiptNoteDetails)) {
+      setNotCheckedDetails(goodsReceiptNote.goodsReceiptNoteDetails);
+      setCheckedDetails([]); // mới vào thì chưa item nào được kiểm tra
+    }
+  }, [goodsReceiptNote]);
 
 
   useEffect(() => {
@@ -112,40 +123,36 @@ export default function GoodsReceiptDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto p-6">
-        {/* Header */}
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm mb-6">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate('/purchase-orders')}
-                  className="text-slate-600 hover:bg-slate-50"
-                >
-                  <ChevronDown className="h-4 w-4 mr-2 rotate-90" />
-                  Quay lại
-                </Button>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Chi tiết phiếu nhập kho</h1>
-                  <p className="text-gray-600 mt-1">Mã phiếu: {goodsReceiptNote.goodsReceiptNoteId}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusLabel(goodsReceiptNote.status).color}`}>
-                  {getStatusLabel(goodsReceiptNote.status).label}
-                </span>
-              </div>
+    <div className="min-h-screen">
+      {/* Header */}
+      <div className="border-b border-gray-200 py-4 px-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/purchase-orders')}
+              className="text-slate-600 hover:bg-slate-50 h-[38px]"
+            >
+              <ChevronDown className="h-4 w-4 mr-2 rotate-90" />
+              Quay lại
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Chi tiết phiếu nhập kho</h1>
+              <p className="text-gray-600 mt-1">Mã phiếu: {goodsReceiptNote.goodsReceiptNoteId}</p>
             </div>
           </div>
+          <div className="flex items-center gap-2">
+            <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusLabel(goodsReceiptNote.status).color}`}>
+              {getStatusLabel(goodsReceiptNote.status).label}
+            </span>
+          </div>
         </div>
-
-      {/* Main Content */}
-      <div className="space-y-6">
+      </div>
+      {/* Main Content full width, no px-6 container, just vertical spacing */}
+      <div className="space-y-6 mt-4">
         {/* Chi tiết đơn hàng */}
-        <Card className="bg-white border border-gray-200 shadow-sm">
+        <Card className="bg-gray-50 border border-slate-200 shadow-sm">
           <CardContent className="p-0">
             <div
               className="p-6 border-b border-gray-200 cursor-pointer flex items-center justify-between hover:bg-gray-50 transition-colors"
@@ -232,14 +239,14 @@ export default function GoodsReceiptDetail() {
                     variant="outline"
                     disabled={goodsReceiptNote.status === 2 || goodsReceiptNote.status === 3 || goodsReceiptNote.status === 4}
                     onClick={handleCompleteReceiving}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 h-[38px]"
                   >
                     <CheckCircle className="w-4 h-4" />
                     Đã Đến
                   </Button>
                   <Button 
                     onClick={handlePrintReceipt}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 h-[38px]"
                   >
                     <Printer className="w-4 h-4" />
                     In Phiếu
@@ -251,7 +258,7 @@ export default function GoodsReceiptDetail() {
         </Card>
 
         {/* Kiểm nhập */}
-        <Card className="bg-white border border-gray-200 shadow-sm">
+        <Card className="bg-gray-50 border border-slate-200 shadow-sm">
           <CardContent className="p-0">
             <div
               className="p-6 border-b border-gray-200 cursor-pointer flex items-center justify-between hover:bg-gray-50 transition-colors"
@@ -285,39 +292,42 @@ export default function GoodsReceiptDetail() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {goodsReceiptNote.goodsReceiptNoteDetails && goodsReceiptNote.goodsReceiptNoteDetails.length > 0 ? (
-                        goodsReceiptNote.goodsReceiptNoteDetails.map((detail, index) => (
-                          <TableRow key={index} className="hover:bg-gray-50">
-                            <TableCell className="font-medium text-gray-900">{detail.goodsId}</TableCell>
-                            <TableCell className="text-center">
-                              <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-medium">
-                                {detail.expectedPackageQuantity || 0}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                                {detail.deliveredPackageQuantity || 0}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                                {detail.actualPackageQuantity || 0}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">
-                                {detail.rejectPackageQuantity || 0}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-gray-600">{detail.note || '-'}</TableCell>
-                            <TableCell className="text-center">
-                              <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
+                      {goodsReceiptNote.goodsReceiptNoteDetails?.map((detail, index) => (
+                        <TableRow key={index} className="hover:bg-gray-50">
+                          <TableCell className="font-medium text-gray-900">{detail.goodsId}</TableCell>
+                          <TableCell className="text-center">
+                            <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-medium">
+                              {detail.expectedPackageQuantity || 0}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                              {detail.deliveredPackageQuantity || 0}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                              {detail.actualPackageQuantity || 0}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">
+                              {detail.rejectPackageQuantity || 0}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-gray-600">{detail.note || '-'}</TableCell>
+                          <TableCell className="text-center">
+                            <Button variant="outline" size="sm" className="text-green-600 hover:text-white hover:bg-green-600 h-[38px]"
+                              onClick={() => {
+                                // Chuyển item này sang checked
+                                setCheckedDetails(prev => [...prev, detail]);
+                                setNotCheckedDetails(prev => prev.filter((_, i) => i !== index));
+                              }}>
+                              Kiểm tra
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      )) || (
                         <TableRow>
                           <TableCell colSpan={7} className="text-center text-gray-500 py-12">
                             <div className="flex flex-col items-center gap-2">
@@ -333,7 +343,7 @@ export default function GoodsReceiptDetail() {
 
                 <div className="flex justify-end pt-4 border-t border-gray-200">
                   <Button
-                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-2"
+                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 h-[38px]"
                     disabled={goodsReceiptNote.status === 2 || goodsReceiptNote.status === 3 || goodsReceiptNote.status === 4}
                     onClick={handleCompleteReceiving}
                   >
@@ -347,7 +357,7 @@ export default function GoodsReceiptDetail() {
         </Card>
 
         {/* Pallet */}
-        <Card className="bg-white border border-gray-200 shadow-sm">
+        <Card className="bg-gray-50 border border-slate-200 shadow-sm">
           <CardContent className="p-0">
             <div
               className="p-6 border-b border-gray-200 cursor-pointer flex items-center justify-between hover:bg-gray-50 transition-colors"
@@ -368,11 +378,11 @@ export default function GoodsReceiptDetail() {
             {expandedSections.pallet && (
               <div className="p-6 space-y-6">
                 <div className="flex gap-3">
-                  <Button className="bg-orange-600 hover:bg-orange-700 text-white">
+                  <Button className="bg-orange-600 hover:bg-orange-700 text-white h-[38px]">
                     <Plus className="w-4 h-4 mr-2" />
                     Lô Mới
                   </Button>
-                  <Button variant="outline" className="border-orange-300 text-orange-600 hover:bg-orange-50">
+                  <Button variant="outline" className="border-orange-300 text-orange-600 hover:bg-orange-50 h-[38px]">
                     <Plus className="w-4 h-4 mr-2" />
                     Thêm Pallet
                   </Button>
@@ -388,7 +398,7 @@ export default function GoodsReceiptDetail() {
 
                 <div className="flex justify-end pt-4 border-t border-gray-200">
                   <Button
-                    className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2"
+                    className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 h-[38px]"
                     disabled={goodsReceiptNote.status !== 2}
                     onClick={handleCompleteArranging}
                   >
@@ -402,7 +412,7 @@ export default function GoodsReceiptDetail() {
         </Card>
 
         {/* Sắp xếp */}
-        <Card className="bg-white border border-gray-200 shadow-sm">
+        <Card className="bg-gray-50 border border-slate-200 shadow-sm">
           <CardContent className="p-0">
             <div
               className="p-6 border-b border-gray-200 cursor-pointer flex items-center justify-between hover:bg-gray-50 transition-colors"
@@ -436,7 +446,7 @@ export default function GoodsReceiptDetail() {
 
                 <div className="flex justify-end pt-4 border-t border-gray-200">
                   <Button
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2"
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 h-[38px]"
                     disabled={goodsReceiptNote.status !== 3}
                     onClick={handleCompleteArranging}
                   >
@@ -448,7 +458,6 @@ export default function GoodsReceiptDetail() {
             )}
           </CardContent>
         </Card>
-      </div>
       </div>
     </div>
   );
