@@ -19,4 +19,13 @@ namespace MilkDistributionWarehouse.Models.DTOs
     {
         public Guid PurchaseOderId { get; set; }
     }
+
+    public class GoodsReceiptNoteUpdateStatus
+    {
+        public Guid GoodsReceiptNoteId { get; set; }
+    }
+
+    public class GoodsReceiptNoteSubmitDto : GoodsReceiptNoteUpdateStatus
+    {
+    }
 }

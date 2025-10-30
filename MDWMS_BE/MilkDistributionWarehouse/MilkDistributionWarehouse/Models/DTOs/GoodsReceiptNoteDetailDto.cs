@@ -15,6 +15,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
     public class GoodsReceiptNoteDetailListDto
     {
+        public Guid GoodsReceiptNoteDetailId { get; set; }
         public int GoodsId { get; set; }
         public string GoodsCode { get; set; }
         public string GoodsName { get; set; }
