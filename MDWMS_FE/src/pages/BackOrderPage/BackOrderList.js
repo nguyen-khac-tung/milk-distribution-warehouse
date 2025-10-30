@@ -27,6 +27,17 @@ const BackOrder = {
     createdBy: ""
 };
 
+// Map trạng thái động của tồn kho -> tiếng Việt
+const STATUS_DYNAMIC_LABELS = {
+    Available: "Có sẵn",
+    Unavailable: "Không có sẵn",
+};
+
+const getStatusDynamicLabel = (statusDinamic) => {
+    if (!statusDinamic) return "";
+    return STATUS_DYNAMIC_LABELS[statusDinamic] || statusDinamic;
+};
+
 
 export default function BackOrderList() {
     const [searchQuery, setSearchQuery] = useState("")
@@ -401,7 +412,7 @@ export default function BackOrderList() {
                     totalCount={totalStats.totalCount}
                     activeCount={totalStats.activeCount}
                     inactiveCount={totalStats.inactiveCount}
-                    totalLabel="Tổng đơn đặt hàng"
+                    totalLabel="Tổng đơn hàng chờ"
                     activeLabel="Đang xử lý"
                     inactiveLabel="Đã hoàn thành"
                 />
@@ -462,13 +473,19 @@ export default function BackOrderList() {
                                                 Tên sản phẩm
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                                                Số lượng
+                                                Quy cách (đv/thùng)
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                                Số thùng
+                                            </TableHead>
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                                Tổng đơn vị
+                                            </TableHead>
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-[150px]">
                                                 Người tạo
                                             </TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-48">
-                                                Trạng thái
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-[140px]">
+                                                Trạng thái kho
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
                                                 Hoạt động
@@ -487,34 +504,21 @@ export default function BackOrderList() {
                                                     </TableCell>
                                                     <TableCell className="px-6 py-4 text-slate-700 font-medium">{backOrder?.retailerName || ''}</TableCell>
                                                     <TableCell className="px-6 py-4 text-slate-700">{backOrder?.goodsName || ''}</TableCell>
-                                                    <TableCell className="px-6 py-4 text-slate-700">{backOrder?.quantity || ''}</TableCell>
-                                                    <TableCell className="px-6 py-4 text-slate-700">{backOrder?.createdBy || ''}</TableCell>
-                                                    <TableCell className="px-6 py-4 text-center">
-                                                        <div className="flex justify-center">
-                                                            <PermissionWrapper
-                                                                requiredPermission={PERMISSIONS.BACKORDER_UPDATE}
-                                                                hide={false}
-                                                                fallback={
-                                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center justify-center gap-1 ${backOrder?.status === 1
-                                                                        ? 'bg-green-100 text-green-800'
-                                                                        : 'bg-red-100 text-red-800'
-                                                                        }`}>
-                                                                        <span className={`w-2 h-2 rounded-full ${backOrder?.status === 1 ? 'bg-green-500' : 'bg-red-500'
-                                                                            }`}></span>
-                                                                        {backOrder?.status === 1 ? 'Đang xử lý' : 'Đã hoàn thành'}
-                                                                    </span>
-                                                                }
-                                                            >
-                                                                <StatusToggle
-                                                                    status={backOrder?.status}
-                                                                    onStatusChange={handleStatusChange}
-                                                                    supplierId={backOrder?.backOrderId}
-                                                                    supplierName={backOrder?.retailerName}
-                                                                    entityType="đơn đặt hàng"
-                                                                />
-                                                            </PermissionWrapper>
-                                                        </div>
+                                                    <TableCell className="px-6 py-4 text-slate-700">{backOrder?.unitPerPackage ?? ''}</TableCell>
+                                                    <TableCell className="px-6 py-4 text-slate-700">{backOrder?.packageQuantity ?? ''}</TableCell>
+                                                    <TableCell className="px-6 py-4 text-slate-700">{(() => {
+                                                        const up = parseInt(backOrder?.unitPerPackage ?? 0);
+                                                        const pq = parseInt(backOrder?.packageQuantity ?? 0);
+                                                        if (isNaN(up) || isNaN(pq)) return '';
+                                                        return up * pq;
+                                                    })()}</TableCell>
+                                                    <TableCell className="px-6 py-4 text-slate-700">{backOrder?.createdByName || backOrder?.createdBy || ''}</TableCell>
+                                                    <TableCell className="px-6 py-4">
+                                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${backOrder?.statusDinamic === 'Available' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                                            {getStatusDynamicLabel(backOrder?.statusDinamic)}
+                                                        </span>
                                                     </TableCell>
+
                                                     <TableCell className="px-6 py-4 text-center">
                                                         <div className="flex items-center justify-center space-x-1">
                                                             <PermissionWrapper requiredPermission={PERMISSIONS.BACKORDER_VIEW}>
