@@ -3,35 +3,45 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
-import { 
-  ChevronDown, 
-  ChevronUp, 
-  RefreshCw, 
-  Plus, 
-  Trash2, 
-  CheckCircle, 
+import {
+  ChevronDown,
+  ChevronUp,
+  RefreshCw,
+  Plus,
+  Trash2,
+  CheckCircle,
   AlertCircle,
   Printer
 } from "lucide-react";
 import Loading from "../../components/Common/Loading";
-import { getGoodsReceiptNoteByPurchaseOrderId, completeReceiving, completeArranging } from "../../services/GoodsReceiptService";
+import { getGoodsReceiptNoteByPurchaseOrderId } from "../../services/GoodsReceiptService";
 import { PERMISSIONS } from "../../utils/permissions";
 import { usePermissions } from "../../hooks/usePermissions";
 import PermissionWrapper from "../../components/Common/PermissionWrapper";
 
-// Status labels for Goods Receipt Note
-const GOODS_RECEIPT_STATUS_LABELS = {
-    1: { label: "Đang kiểm nhập", color: "bg-blue-100 text-blue-800" },
-    2: { label: "Đã kiểm nhập", color: "bg-green-100 text-green-800" },
-    3: { label: "Đã sắp xếp", color: "bg-purple-100 text-purple-800" },
-    4: { label: "Hoàn thành", color: "bg-gray-100 text-gray-800" }
+// Status labels for Goods Receipt Note - sẽ được lấy từ API
+const getStatusLabel = (status) => {
+  if (!status) return { label: "Không xác định", color: "bg-gray-100 text-gray-800" };
+
+  // Nếu status là object có label và color
+  if (typeof status === 'object' && status.label && status.color) {
+    return status;
+  }
+
+  // Nếu status là string
+  if (typeof status === 'string') {
+    return { label: status, color: "bg-blue-100 text-blue-800" };
+  }
+
+  // Fallback cho các trường hợp khác
+  return { label: `Trạng thái ${status}`, color: "bg-gray-100 text-gray-800" };
 };
 
 export default function GoodsReceiptDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { hasPermission } = usePermissions();
-  
+
   const [loading, setLoading] = useState(true);
   const [goodsReceiptNote, setGoodsReceiptNote] = useState(null);
   const [expandedSections, setExpandedSections] = useState({
@@ -72,25 +82,13 @@ export default function GoodsReceiptDetail() {
   };
 
   const handleCompleteReceiving = async () => {
-    if (!goodsReceiptNote?.goodsReceiptNoteId) return;
-    try {
-      await completeReceiving(goodsReceiptNote.goodsReceiptNoteId, "Hoàn thành kiểm nhập");
-      // Refresh data
-      fetchGoodsReceiptNoteDetail();
-    } catch (error) {
-      console.error("Error completing receiving:", error);
-    }
+    // TODO: Implement complete receiving functionality
+    console.log("Complete receiving clicked");
   };
 
   const handleCompleteArranging = async () => {
-    if (!goodsReceiptNote?.goodsReceiptNoteId) return;
-    try {
-      await completeArranging(goodsReceiptNote.goodsReceiptNoteId, "Hoàn thành sắp xếp");
-      // Refresh data
-      fetchGoodsReceiptNoteDetail();
-    } catch (error) {
-      console.error("Error completing arranging:", error);
-    }
+    // TODO: Implement complete arranging functionality
+    console.log("Complete arranging clicked");
   };
 
   const handlePrintReceipt = () => {
@@ -114,233 +112,344 @@ export default function GoodsReceiptDetail() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Chi tiết phiếu nhập kho</h1>
-          <p className="text-gray-600">Mã phiếu: {goodsReceiptNote.goodsReceiptNoteId}</p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => navigate('/goods-receipt-notes')}
-          >
-            Quay lại
-          </Button>
-        </div>
-      </div>
-
-      {/* Chi tiết đơn hàng */}
-      <Card>
-        <CardContent className="p-0">
-          <div 
-            className="p-4 border-b cursor-pointer flex items-center justify-between"
-            onClick={() => toggleSection('orderDetails')}
-          >
-            <h2 className="text-lg font-semibold text-gray-900">Chi tiết đơn hàng</h2>
-            {expandedSections.orderDetails ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto p-6">
+        {/* Header */}
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm mb-6">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate('/purchase-orders')}
+                  className="text-slate-600 hover:bg-slate-50"
+                >
+                  <ChevronDown className="h-4 w-4 mr-2 rotate-90" />
+                  Quay lại
+                </Button>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Chi tiết phiếu nhập kho</h1>
+                  <p className="text-gray-600 mt-1">Mã phiếu: {goodsReceiptNote.goodsReceiptNoteId}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusLabel(goodsReceiptNote.status).color}`}>
+                  {getStatusLabel(goodsReceiptNote.status).label}
+                </span>
+              </div>
+            </div>
           </div>
-          
-          {expandedSections.orderDetails && (
-            <div className="p-4 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <span className="text-sm font-medium text-gray-500">Trạng thái:</span>
-                  <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${GOODS_RECEIPT_STATUS_LABELS[goodsReceiptNote.status]?.color || 'bg-gray-100 text-gray-800'}`}>
-                    {GOODS_RECEIPT_STATUS_LABELS[goodsReceiptNote.status]?.label || 'Không xác định'}
-                  </span>
+        </div>
+
+      {/* Main Content */}
+      <div className="space-y-6">
+        {/* Chi tiết đơn hàng */}
+        <Card className="bg-white border border-gray-200 shadow-sm">
+          <CardContent className="p-0">
+            <div
+              className="p-6 border-b border-gray-200 cursor-pointer flex items-center justify-between hover:bg-gray-50 transition-colors"
+              onClick={() => toggleSection('orderDetails')}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <CheckCircle className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <span className="text-sm font-medium text-gray-500">Mã đơn nhập:</span>
-                  <span className="ml-2 text-gray-900">{goodsReceiptNote.purchaseOderId || 'N/A'}</span>
-                </div>
-                <div>
-                  <span className="text-sm font-medium text-gray-500">Người xác nhận:</span>
-                  <span className="ml-2 text-gray-900">{goodsReceiptNote.approvalByName || 'N/A'}</span>
-                </div>
-                <div>
-                  <span className="text-sm font-medium text-gray-500">Người tạo:</span>
-                  <span className="ml-2 text-gray-900">{goodsReceiptNote.createdByName || 'N/A'}</span>
-                </div>
-                <div>
-                  <span className="text-sm font-medium text-gray-500">Ngày tạo:</span>
-                  <span className="ml-2 text-gray-900">
-                    {goodsReceiptNote.createdAt ? new Date(goodsReceiptNote.createdAt).toLocaleString('vi-VN') : 'N/A'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-sm font-medium text-gray-500">Ngày cập nhật:</span>
-                  <span className="ml-2 text-gray-900">
-                    {goodsReceiptNote.updatedAt ? new Date(goodsReceiptNote.updatedAt).toLocaleString('vi-VN') : 'N/A'}
-                  </span>
+                  <h2 className="text-lg font-semibold text-gray-900">Chi tiết đơn hàng</h2>
+                  <p className="text-sm text-gray-500">Thông tin cơ bản về đơn hàng</p>
                 </div>
               </div>
-              
-              <div className="flex gap-2">
-                <Button variant="outline" disabled>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Đã Đến
-                </Button>
-                <Button onClick={handlePrintReceipt}>
-                  <Printer className="w-4 h-4 mr-2" />
-                  Print Receipt
-                </Button>
-              </div>
-              
-              <div>
-                <span className="text-sm font-medium text-gray-500">Mặt hàng:</span>
-                <div className="mt-2 space-y-1">
-                  {goodsReceiptNote.goodsReceiptNoteDetails?.map((detail, index) => (
-                    <div key={index} className="flex items-center">
-                      <span className="w-2 h-2 bg-gray-400 rounded-full mr-2"></span>
-                      <span className="text-gray-900">
-                        Goods ID {detail.goodsId}: {detail.actualPackageQuantity} (Dự kiến: {detail.expectedPackageQuantity}, Nhận: {detail.deliveredPackageQuantity}, Loại bỏ: {detail.rejectPackageQuantity})
-                      </span>
+              {expandedSections.orderDetails ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+            </div>
+
+            {expandedSections.orderDetails && (
+              <div className="p-6 space-y-6">
+                {/* Thông tin cơ bản */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="text-sm font-medium text-gray-500 mb-1">Mã đơn nhập</div>
+                    <div className="text-lg font-semibold text-gray-900">{goodsReceiptNote.purchaseOderId || 'N/A'}</div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="text-sm font-medium text-gray-500 mb-1">Người xác nhận</div>
+                    <div className="text-lg font-semibold text-gray-900">{goodsReceiptNote.approvalByName || 'N/A'}</div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="text-sm font-medium text-gray-500 mb-1">Người tạo</div>
+                    <div className="text-lg font-semibold text-gray-900">{goodsReceiptNote.createdByName || 'N/A'}</div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="text-sm font-medium text-gray-500 mb-1">Ngày tạo</div>
+                    <div className="text-lg font-semibold text-gray-900">
+                      {goodsReceiptNote.createdAt ? new Date(goodsReceiptNote.createdAt).toLocaleDateString('vi-VN') : 'N/A'}
                     </div>
-                  )) || <span className="text-gray-500">Không có dữ liệu</span>}
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="text-sm font-medium text-gray-500 mb-1">Ngày cập nhật</div>
+                    <div className="text-lg font-semibold text-gray-900">
+                      {goodsReceiptNote.updatedAt ? new Date(goodsReceiptNote.updatedAt).toLocaleDateString('vi-VN') : 'N/A'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Danh sách mặt hàng */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="text-sm font-medium text-gray-500 mb-3">Danh sách mặt hàng</h3>
+                  <div className="space-y-2">
+                    {goodsReceiptNote.goodsReceiptNoteDetails?.map((detail, index) => (
+                      <div key={index} className="flex items-center justify-between bg-white rounded-lg p-3 border border-gray-200">
+                        <div className="flex items-center gap-3">
+                          <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                          <span className="font-medium text-gray-900">Goods ID {detail.goodsId}</span>
+                        </div>
+                        <div className="flex items-center gap-6 text-sm">
+                          <div className="text-center">
+                            <div className="text-gray-500">Dự kiến</div>
+                            <div className="font-semibold text-gray-900">{detail.expectedPackageQuantity || 0}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-gray-500">Đã nhận</div>
+                            <div className="font-semibold text-green-600">{detail.deliveredPackageQuantity || 0}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-gray-500">Thực nhập</div>
+                            <div className="font-semibold text-blue-600">{detail.actualPackageQuantity || 0}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-gray-500">Loại bỏ</div>
+                            <div className="font-semibold text-red-600">{detail.rejectPackageQuantity || 0}</div>
+                          </div>
+                        </div>
+                      </div>
+                    )) || <div className="text-center text-gray-500 py-4">Không có dữ liệu</div>}
+                  </div>
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex gap-3 pt-4 border-t border-gray-200">
+                  <Button
+                    variant="outline"
+                    disabled={goodsReceiptNote.status === 2 || goodsReceiptNote.status === 3 || goodsReceiptNote.status === 4}
+                    onClick={handleCompleteReceiving}
+                    className="flex items-center gap-2"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    Đã Đến
+                  </Button>
+                  <Button 
+                    onClick={handlePrintReceipt}
+                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Printer className="w-4 h-4" />
+                    In Phiếu
+                  </Button>
                 </div>
               </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
 
-      {/* Kiểm nhập */}
-      <Card>
-        <CardContent className="p-0">
-          <div 
-            className="p-4 border-b cursor-pointer flex items-center justify-between"
-            onClick={() => toggleSection('receiving')}
-          >
-            <div className="flex items-center gap-2">
-              <RefreshCw className="w-5 h-5" />
-              <h2 className="text-lg font-semibold text-gray-900">Kiểm nhập</h2>
+        {/* Kiểm nhập */}
+        <Card className="bg-white border border-gray-200 shadow-sm">
+          <CardContent className="p-0">
+            <div
+              className="p-6 border-b border-gray-200 cursor-pointer flex items-center justify-between hover:bg-gray-50 transition-colors"
+              onClick={() => toggleSection('receiving')}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <RefreshCw className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Kiểm nhập</h2>
+                  <p className="text-sm text-gray-500">Kiểm tra và xác nhận hàng hóa nhập kho</p>
+                </div>
+              </div>
+              {expandedSections.receiving ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
             </div>
-            {expandedSections.receiving ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-          </div>
-          
-          {expandedSections.receiving && (
-            <div className="p-4 space-y-4">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Mã hàng</TableHead>
-                      <TableHead>Dự kiến</TableHead>
-                      <TableHead>Đã nhận</TableHead>
-                      <TableHead>Thực nhập</TableHead>
-                      <TableHead>Số loại bỏ</TableHead>
-                      <TableHead>Ghi chú</TableHead>
-                      <TableHead>Hành động</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {goodsReceiptNote.goodsReceiptNoteDetails && goodsReceiptNote.goodsReceiptNoteDetails.length > 0 ? (
-                      goodsReceiptNote.goodsReceiptNoteDetails.map((detail, index) => (
-                        <TableRow key={index}>
-                          <TableCell>{detail.goodsId}</TableCell>
-                          <TableCell>{detail.expectedPackageQuantity || 0}</TableCell>
-                          <TableCell>{detail.deliveredPackageQuantity || 0}</TableCell>
-                          <TableCell>{detail.actualPackageQuantity || 0}</TableCell>
-                          <TableCell>{detail.rejectPackageQuantity || 0}</TableCell>
-                          <TableCell>{detail.note || '-'}</TableCell>
-                          <TableCell>
-                            <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+
+            {expandedSections.receiving && (
+              <div className="p-6 space-y-6">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-gray-50">
+                        <TableHead className="font-semibold text-gray-700">Mã hàng</TableHead>
+                        <TableHead className="font-semibold text-gray-700 text-center">Dự kiến</TableHead>
+                        <TableHead className="font-semibold text-gray-700 text-center">Đã nhận</TableHead>
+                        <TableHead className="font-semibold text-gray-700 text-center">Thực nhập</TableHead>
+                        <TableHead className="font-semibold text-gray-700 text-center">Số loại bỏ</TableHead>
+                        <TableHead className="font-semibold text-gray-700">Ghi chú</TableHead>
+                        <TableHead className="font-semibold text-gray-700 text-center">Hành động</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {goodsReceiptNote.goodsReceiptNoteDetails && goodsReceiptNote.goodsReceiptNoteDetails.length > 0 ? (
+                        goodsReceiptNote.goodsReceiptNoteDetails.map((detail, index) => (
+                          <TableRow key={index} className="hover:bg-gray-50">
+                            <TableCell className="font-medium text-gray-900">{detail.goodsId}</TableCell>
+                            <TableCell className="text-center">
+                              <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-medium">
+                                {detail.expectedPackageQuantity || 0}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                                {detail.deliveredPackageQuantity || 0}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                                {detail.actualPackageQuantity || 0}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">
+                                {detail.rejectPackageQuantity || 0}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-gray-600">{detail.note || '-'}</TableCell>
+                            <TableCell className="text-center">
+                              <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center text-gray-500 py-12">
+                            <div className="flex flex-col items-center gap-2">
+                              <AlertCircle className="w-8 h-8 text-gray-400" />
+                              <span>Không có dữ liệu</span>
+                            </div>
                           </TableCell>
                         </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={7} className="text-center text-gray-500 py-8">
-                          Không có dữ liệu
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-              
-              <div className="flex justify-end">
-                <Button variant="outline" disabled>
-                  Hoàn Thành Kiểm Nhập
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
 
-      {/* Pallet */}
-      <Card>
-        <CardContent className="p-0">
-          <div 
-            className="p-4 border-b cursor-pointer flex items-center justify-between"
-            onClick={() => toggleSection('pallet')}
-          >
-            <h2 className="text-lg font-semibold text-gray-900">Pallet</h2>
-            {expandedSections.pallet ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-          </div>
-          
-          {expandedSections.pallet && (
-            <div className="p-4 space-y-4">
-              <div className="flex gap-2">
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Lô Mới
-                </Button>
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Thêm Pallet
-                </Button>
+                <div className="flex justify-end pt-4 border-t border-gray-200">
+                  <Button
+                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-2"
+                    disabled={goodsReceiptNote.status === 2 || goodsReceiptNote.status === 3 || goodsReceiptNote.status === 4}
+                    onClick={handleCompleteReceiving}
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Hoàn Thành Kiểm Nhập
+                  </Button>
+                </div>
               </div>
-              
-              <div className="flex items-center gap-2 text-red-600">
-                <AlertCircle className="w-5 h-5" />
-                <span className="text-sm">Bạn phải thêm ít nhất một dòng pallet.</span>
-              </div>
-              
-              <div className="flex justify-end">
-                <Button variant="outline" disabled>
-                  Tiếp Tục Đến Sắp Xếp
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
 
-      {/* Sắp xếp */}
-      <Card>
-        <CardContent className="p-0">
-          <div 
-            className="p-4 border-b cursor-pointer flex items-center justify-between"
-            onClick={() => toggleSection('arranging')}
-          >
-            <div className="flex items-center gap-2">
-              <RefreshCw className="w-5 h-5" />
-              <h2 className="text-lg font-semibold text-gray-900">Sắp xếp</h2>
-            </div>
-            {expandedSections.arranging ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-          </div>
-          
-          {expandedSections.arranging && (
-            <div className="p-4 space-y-4">
-              <div className="text-center text-gray-500 py-8">
-                Chưa có pallet nào.
+        {/* Pallet */}
+        <Card className="bg-white border border-gray-200 shadow-sm">
+          <CardContent className="p-0">
+            <div
+              className="p-6 border-b border-gray-200 cursor-pointer flex items-center justify-between hover:bg-gray-50 transition-colors"
+              onClick={() => toggleSection('pallet')}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <Plus className="w-5 h-5 text-orange-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Pallet</h2>
+                  <p className="text-sm text-gray-500">Quản lý pallet và lô hàng</p>
+                </div>
               </div>
-              
-              <div className="flex justify-end">
-                <Button variant="outline" disabled>
-                  Hoàn Thành
-                </Button>
-              </div>
+              {expandedSections.pallet ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
             </div>
-          )}
-        </CardContent>
-      </Card>
+
+            {expandedSections.pallet && (
+              <div className="p-6 space-y-6">
+                <div className="flex gap-3">
+                  <Button className="bg-orange-600 hover:bg-orange-700 text-white">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Lô Mới
+                  </Button>
+                  <Button variant="outline" className="border-orange-300 text-orange-600 hover:bg-orange-50">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Thêm Pallet
+                  </Button>
+                </div>
+
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 text-red-700">
+                    <AlertCircle className="w-5 h-5" />
+                    <span className="font-medium">Lưu ý quan trọng</span>
+                  </div>
+                  <p className="text-red-600 text-sm mt-1">Bạn phải thêm ít nhất một dòng pallet để tiếp tục.</p>
+                </div>
+
+                <div className="flex justify-end pt-4 border-t border-gray-200">
+                  <Button
+                    className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2"
+                    disabled={goodsReceiptNote.status !== 2}
+                    onClick={handleCompleteArranging}
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Tiếp Tục Đến Sắp Xếp
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Sắp xếp */}
+        <Card className="bg-white border border-gray-200 shadow-sm">
+          <CardContent className="p-0">
+            <div
+              className="p-6 border-b border-gray-200 cursor-pointer flex items-center justify-between hover:bg-gray-50 transition-colors"
+              onClick={() => toggleSection('arranging')}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <RefreshCw className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Sắp xếp</h2>
+                  <p className="text-sm text-gray-500">Sắp xếp hàng hóa trong kho</p>
+                </div>
+              </div>
+              {expandedSections.arranging ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+            </div>
+
+            {expandedSections.arranging && (
+              <div className="p-6 space-y-6">
+                <div className="text-center py-12">
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="p-4 bg-gray-100 rounded-full">
+                      <RefreshCw className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-1">Chưa có pallet nào</h3>
+                      <p className="text-gray-500">Hãy thêm pallet ở bước trước để tiếp tục sắp xếp.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-4 border-t border-gray-200">
+                  <Button
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2"
+                    disabled={goodsReceiptNote.status !== 3}
+                    onClick={handleCompleteArranging}
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Hoàn Thành
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+      </div>
     </div>
   );
 }

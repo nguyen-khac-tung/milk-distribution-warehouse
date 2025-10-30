@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { X, Play, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '../ui/button';
+import { useNavigate } from 'react-router-dom';
+import { startReceive } from '../../services/PurchaseOrderService';
+import { extractErrorMessage } from '../../utils/Validation';
 
 const StartReceiveModal = ({
     isOpen,
@@ -9,8 +12,39 @@ const StartReceiveModal = ({
     purchaseOrder,
     loading = false
 }) => {
-    const handleConfirm = () => {
-        onConfirm('');
+    const navigate = useNavigate();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleConfirm = async () => {
+        if (!purchaseOrder?.purchaseOderId) {
+            console.error('Purchase Order ID is required');
+            window.showToast?.('Không tìm thấy ID đơn hàng', 'error');
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            // Gọi API Start Receive trước để update trạng thái
+            await startReceive(purchaseOrder.purchaseOderId);
+            
+            // Hiển thị thông báo thành công
+            window.showToast?.('Bắt đầu quá trình nhận hàng thành công!', 'success');
+            
+            // Navigate sang trang GoodsReceiptDetail với purchaseOrderId
+            navigate(`/goods-receipt-notes/${purchaseOrder.purchaseOderId}`);
+            
+            // Đóng modal
+            onClose();
+        } catch (error) {
+            console.error('Error starting receive process:', error);
+            
+            // Sử dụng extractErrorMessage để lấy message lỗi từ backend
+            const errorMessage = extractErrorMessage(error) || 'Có lỗi xảy ra khi bắt đầu quá trình nhận hàng';
+            
+            window.showToast?.(errorMessage, 'error');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const handleClose = () => {
@@ -97,7 +131,7 @@ const StartReceiveModal = ({
                             type="button"
                             variant="outline"
                             onClick={handleClose}
-                            disabled={loading}
+                            disabled={loading || isSubmitting}
                             className="h-[38px] px-8 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50"
                         >
                             Hủy
@@ -105,10 +139,10 @@ const StartReceiveModal = ({
                         <Button
                             type="button"
                             onClick={handleConfirm}
-                            disabled={loading}
+                            disabled={loading || isSubmitting}
                             className="h-[38px] px-8 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50"
                         >
-                            {loading ? (
+                            {loading || isSubmitting ? (
                                 <div className="flex items-center gap-2">
                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                     Đang xử lý...
@@ -123,5 +157,4 @@ const StartReceiveModal = ({
         </div>
     );
 };
-
 export default StartReceiveModal;

@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.Entities;
+using System.Linq;
 
 namespace MilkDistributionWarehouse.Repositories
 {
@@ -8,9 +9,11 @@ namespace MilkDistributionWarehouse.Repositories
     {
         IQueryable<BackOrder>? GetBackOrders();
         Task<BackOrder?> GetBackOrderById(Guid backOrderId);
+        Task<int> GetAvailableQuantity(int? goodsId, int? goodsPackingId);
+        Task<Dictionary<(int, int), int>> GetAvailableQuantitiesAsync(List<(int GoodsId, int GoodsPackingId)> pairs);
         Task<BackOrder?> CreateBackOrder(BackOrder entity);
         Task<BackOrder?> UpdateBackOrder(BackOrder entity);
-        Task<List<BackOrder>> GetActiveBackOrdersAsync();
+        Task<BackOrder?> DeleteBackOrder(Guid backOrderId);
         Task<bool> ExistsRetailer(int? retailerId);
         Task<bool> ExistsGoods(int? goodsId);
     }
@@ -29,17 +32,81 @@ namespace MilkDistributionWarehouse.Repositories
             return _context.BackOrders
                 .Include(bo => bo.Goods)
                 .Include(bo => bo.Retailer)
-                .Where(bo => bo.Status != BackOrderStatus.Completed)
+                .Include(bo => bo.GoodsPacking)
+                .Include(bo => bo.CreatedByNavigation)
                 .OrderByDescending(bo => bo.CreatedAt)
+                .AsSplitQuery()
                 .AsNoTracking();
         }
 
         public async Task<BackOrder?> GetBackOrderById(Guid backOrderId)
         {
-            return await _context.BackOrders
-                .Include(bo => bo.Goods)
-                .Include(bo => bo.Retailer)
-                .FirstOrDefaultAsync(bo => bo.BackOrderId == backOrderId);
+            var query = from bo in _context.BackOrders
+                       .Include(bo => bo.Goods)
+                       .Include(bo => bo.Retailer)
+                       .Include(bo => bo.GoodsPacking)
+                       .Include(bo => bo.CreatedByNavigation)
+                       .AsSplitQuery()
+                       .AsNoTracking()
+                       where bo.BackOrderId == backOrderId
+                       select bo;
+
+            return await query.FirstOrDefaultAsync();
+        }
+
+        public async Task<int> GetAvailableQuantity(int? goodsId, int? goodsPackingId)
+        {
+            if (goodsId == null || goodsPackingId == null)
+                return 0;
+
+            return await _context.Pallets
+                .AsNoTracking()
+                .Where(p => p.Batch.GoodsId == goodsId
+                        && p.GoodsPackingId == goodsPackingId
+                        && p.Status == CommonStatus.Active)
+                .SumAsync(p => p.PackageQuantity) ?? 0;
+        }
+
+        public async Task<Dictionary<(int, int), int>> GetAvailableQuantitiesAsync(List<(int GoodsId, int GoodsPackingId)> pairs)
+        {
+            if (pairs == null || pairs.Count == 0)
+                return new Dictionary<(int, int), int>();
+
+            var goodsIds = pairs.Select(p => p.GoodsId).Distinct().ToList();
+            var packingIds = pairs.Select(p => p.GoodsPackingId).Distinct().ToList();
+
+            // Optimize by using a single query with optimized filters
+            var quantities = await _context.Pallets
+                .AsNoTracking()
+                .Where(p => p.Status == CommonStatus.Active
+                        && p.Batch.GoodsId.HasValue
+                        && goodsIds.Contains(p.Batch.GoodsId.Value)
+                        && p.GoodsPackingId.HasValue
+                        && packingIds.Contains(p.GoodsPackingId.Value))
+                .GroupBy(p => new { p.Batch.GoodsId, p.GoodsPackingId })
+                .Select(g => new
+                {
+                    g.Key.GoodsId,
+                    g.Key.GoodsPackingId,
+                    Total = g.Sum(x => x.PackageQuantity)
+                })
+                .ToDictionaryAsync(
+                    x => (x.GoodsId ?? 0, x.GoodsPackingId ?? 0),
+                    x => x.Total ?? 0
+                );
+
+            return quantities;
+        }
+
+        public async Task<BackOrder?> DeleteBackOrder(Guid backOrderId)
+        {
+            var backOrder = await _context.BackOrders.FindAsync(backOrderId);
+            if (backOrder != null)
+            {
+                _context.BackOrders.Remove(backOrder);
+                await _context.SaveChangesAsync();
+            }
+            return backOrder;
         }
 
         public async Task<BackOrder?> CreateBackOrder(BackOrder entity)
@@ -55,17 +122,6 @@ namespace MilkDistributionWarehouse.Repositories
             _context.Entry(entity).State = EntityState.Modified;
             await _context.SaveChangesAsync();
             return entity;
-        }
-
-        public async Task<List<BackOrder>> GetActiveBackOrdersAsync()
-        {
-            return await _context.BackOrders
-                .Where(bo => bo.Status != BackOrderStatus.Completed)
-                .Include(bo => bo.Goods)
-                .Include(bo => bo.Retailer)
-                .OrderBy(bo => bo.CreatedAt)
-                .AsNoTracking()
-                .ToListAsync();
         }
 
         public Task<bool> ExistsRetailer(int? retailerId)

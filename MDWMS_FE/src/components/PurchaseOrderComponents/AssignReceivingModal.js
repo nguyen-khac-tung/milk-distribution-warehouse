@@ -12,7 +12,6 @@ const AssignReceivingModal = ({
     loading = false
 }) => {
     const [selectedEmployee, setSelectedEmployee] = useState('');
-    const [note, setNote] = useState('');
     const [employees, setEmployees] = useState([]);
     const [loadingEmployees, setLoadingEmployees] = useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -68,12 +67,11 @@ const AssignReceivingModal = ({
             }
             return;
         }
-        onConfirm(selectedEmployee, note);
+        onConfirm(selectedEmployee);
     };
 
     const handleClose = () => {
         setSelectedEmployee('');
-        setNote('');
         setSearchTerm('');
         setIsDropdownOpen(false);
         onClose();
@@ -254,21 +252,6 @@ const AssignReceivingModal = ({
                                         )}
                                     </div>
                                 )}
-                            </div>
-
-                            {/* Note */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Ghi chú (tùy chọn)
-                                </label>
-                                <textarea
-                                    value={note}
-                                    onChange={(e) => setNote(e.target.value)}
-                                    placeholder="Nhập ghi chú về nhiệm vụ..."
-                                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                                    rows="5"
-                                    disabled={loading}
-                                />
                             </div>
                         </div>
                     </div>

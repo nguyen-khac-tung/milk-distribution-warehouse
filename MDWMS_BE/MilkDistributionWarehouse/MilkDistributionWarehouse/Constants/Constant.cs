@@ -104,9 +104,8 @@
     /// </summary>
     public static class BackOrderStatus
     {
-        public const int Available = 1;
-        public const int Unavailable = 2;
-        public const int Completed = 3;
+        public const string Available = "Available";
+        public const string Unavailable = "Unavailable";
     }
 
     public static class RoleNames

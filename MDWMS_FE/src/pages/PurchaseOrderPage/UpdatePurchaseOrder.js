@@ -3,11 +3,13 @@ import { useNavigate, useParams } from "react-router-dom"
 import { Card } from "../../components/ui/card"
 import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
+import { Textarea } from "../../components/ui/textarea"
 import { Label } from "../../components/ui/label"
 import FloatingDropdown from "../../components/Common/FloatingDropdown"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
 import { Plus, Trash2, ArrowLeft, Save, X } from "lucide-react"
 import { updatePurchaseOrder, getGoodsDropDownBySupplierId, getPurchaseOrderDetail, getGoodsPackingByGoodsId } from "../../services/PurchaseOrderService"
+import { extractErrorMessage } from '../../utils/Validation';
 import { getSuppliersDropdown } from "../../services/SupplierService"
 
 export default function UpdatePurchaseOrder() {
@@ -20,13 +22,22 @@ export default function UpdatePurchaseOrder() {
     const [goodsLoading, setGoodsLoading] = useState(false);
     const [loading, setLoading] = useState(true);
     const [formData, setFormData] = useState({
-        supplierName: ""
+        supplierName: "",
+        note: ""
     });
 
     const [items, setItems] = useState([
         { id: 1, goodsName: "", quantity: "", goodsPackingId: 0 },
     ])
     const [fieldErrors, setFieldErrors] = useState({})
+
+    // Trigger re-calculation when goodsPacking changes
+    useEffect(() => {
+        // Force re-render when goodsPacking is updated
+        if (Object.keys(goodsPacking).length > 0) {
+            console.log("GoodsPacking updated, triggering re-calculation");
+        }
+    }, [goodsPacking]);
 
     // Load initial data
     useEffect(() => {
@@ -49,7 +60,10 @@ export default function UpdatePurchaseOrder() {
                     // Set supplier
                     const supplier = suppliersData.find(s => s.supplierId === orderData.supplierId);
                     if (supplier) {
-                        setFormData({ supplierName: supplier.companyName });
+                        setFormData({ 
+                            supplierName: supplier.companyName,
+                            note: orderData.note || ""
+                        });
                         // Load goods for this supplier để có thể edit
                         await loadGoodsBySupplier(orderData.supplierId);
                     }
@@ -240,16 +254,27 @@ export default function UpdatePurchaseOrder() {
         if (!item.quantity || !item.goodsPackingId) return 0;
 
         const selectedGood = goods.find(good => good.goodsName === item.goodsName);
-        if (!selectedGood) return 0;
+        if (!selectedGood) {
+            console.log("Selected good not found for:", item.goodsName);
+            return 0;
+        }
 
         const goodsPackings = goodsPacking[selectedGood.goodsId] || [];
+        console.log("Goods packings for", selectedGood.goodsId, ":", goodsPackings);
+        console.log("Looking for goodsPackingId:", item.goodsPackingId);
+        
         const selectedPacking = goodsPackings.find(packing =>
-            packing.goodsPackingId === item.goodsPackingId
+            packing.goodsPackingId === parseInt(item.goodsPackingId)
         );
 
-        if (!selectedPacking) return 0;
+        if (!selectedPacking) {
+            console.log("Selected packing not found for goodsPackingId:", item.goodsPackingId);
+            return 0;
+        }
 
-        return parseInt(item.quantity) * selectedPacking.unitPerPackage;
+        const result = parseInt(item.quantity) * selectedPacking.unitPerPackage;
+        console.log("Calculating total units:", item.quantity, "*", selectedPacking.unitPerPackage, "=", result);
+        return result;
     };
 
     // Create options for dropdowns
@@ -323,8 +348,9 @@ export default function UpdatePurchaseOrder() {
 
             // Cấu trúc đúng theo API documentation
             const submitData = {
-                purchaseOderId: id, // Lưu ý: có typo "purchaseOderId" (thiếu 'r')
-                purchaseOrderDetailUpdates: itemsWithIds
+                purchaseOderId: id, 
+                purchaseOrderDetailUpdates: itemsWithIds,
+                note: formData.note || ""
             };
 
             await updatePurchaseOrder(submitData);
@@ -332,7 +358,7 @@ export default function UpdatePurchaseOrder() {
             navigate("/purchase-orders");
         } catch (error) {
             console.error("Lỗi khi cập nhật đơn nhập:", error);
-            const errorMessage = error.response?.data?.message || error.message || "Có lỗi xảy ra khi cập nhật đơn nhập!";
+            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi cập nhật đơn nhập!";
             window.showToast(errorMessage, "error");
         }
     }
@@ -356,7 +382,7 @@ export default function UpdatePurchaseOrder() {
                             Quay Lại
                         </Button>
                         <h1 className="text-2xl font-bold text-slate-600">
-                            Cập Nhật Đơn Nhập Hàng
+                            Cập Nhật Đơn Mua Hàng
                         </h1>
                     </div>
                 </div>
@@ -370,20 +396,23 @@ export default function UpdatePurchaseOrder() {
                         {/* Header Information */}
                         <div>
                             <h3 className="text-lg font-semibold text-slate-600 mb-4">Thông Tin Đơn Hàng</h3>
-                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                <div className="space-y-2">
-                                    <Label htmlFor="supplier" className="text-slate-600 font-medium">
-                                        Nhà Cung Cấp *
-                                    </Label>
-                                    <FloatingDropdown
-                                        value={formData.supplierName || undefined}
-                                        onChange={(value) => setFormData(prev => ({ ...prev, supplierName: value }))}
-                                        options={supplierOptions}
-                                        placeholder="Chọn nhà cung cấp"
-                                        loading={suppliersLoading}
-                                        disabled={true}
-                                    />
+                            <div className="space-y-6">
+                                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="supplier" className="text-slate-600 font-medium">
+                                            Nhà Cung Cấp *
+                                        </Label>
+                                        <FloatingDropdown
+                                            value={formData.supplierName || undefined}
+                                            onChange={(value) => setFormData(prev => ({ ...prev, supplierName: value }))}
+                                            options={supplierOptions}
+                                            placeholder="Chọn nhà cung cấp"
+                                            loading={suppliersLoading}
+                                            disabled={true}
+                                        />
+                                    </div>
                                 </div>
+
                             </div>
                         </div>
 
@@ -579,6 +608,21 @@ export default function UpdatePurchaseOrder() {
                                     Thêm mặt hàng
                                 </button>
                             </div>
+
+                            {/* Ghi chú */}
+                            <div className="space-y-2">
+                                <Label htmlFor="note" className="text-slate-600 font-medium">
+                                    Ghi chú
+                                </Label>
+                                <Textarea
+                                    id="note"
+                                    value={formData.note}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, note: e.target.value }))}
+                                    placeholder="Nhập ghi chú cho đơn hàng (tùy chọn)"
+                                    className="min-h-[100px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg resize-none"
+                                    rows={4}
+                                />
+                            </div>
                         </div>
 
                         {/* Actions */}
@@ -588,7 +632,7 @@ export default function UpdatePurchaseOrder() {
                                 onClick={handleSubmit}
                                 className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
                             >
-                                Cập Nhật Đơn Nhập
+                                Cập Nhật Đơn Mua Hàng
                             </Button>
                         </div>
                     </div>

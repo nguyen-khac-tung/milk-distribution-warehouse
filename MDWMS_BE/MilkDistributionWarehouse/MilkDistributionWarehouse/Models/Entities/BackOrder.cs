@@ -25,7 +25,11 @@ public partial class BackOrder
 
     public int? Status { get; set; }
 
+    public virtual User CreatedByNavigation { get; set; }
+
     public virtual Good Goods { get; set; }
+
+    public virtual GoodsPacking GoodsPacking { get; set; }
 
     public virtual Retailer Retailer { get; set; }
 }
