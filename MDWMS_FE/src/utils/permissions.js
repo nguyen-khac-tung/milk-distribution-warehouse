@@ -378,6 +378,14 @@ export const canPerformSalesOrderDetailAction = (action, order, hasPermission, u
         order?.createdById === currentUserId ||
         order?.createdByUserId === currentUserId;
 
+    // For warehouse staff, actions are based on being the assigned user, not the creator
+    const isAssignedToSelf =
+        order?.assignTo?.userId === currentUserId ||
+        order?.assignTo?.id === currentUserId ||
+        order?.assignTo === currentUserId ||
+        order?.assignToId === currentUserId ||
+        order?.assignToUserId === currentUserId;
+
     const status = order?.status;
 
 
@@ -441,8 +449,15 @@ export const canPerformSalesOrderDetailAction = (action, order, hasPermission, u
             case 'view':
                 return true;
             case 'assign_for_picking':
-                // Có thể assign Approved
-                return status === SALES_ORDER_STATUS.Approved || status === 4 || status === "4";
+                // Chỉ cho phép phân công/lại nếu trạng thái là Approved hoặc AssignedForPicking (Đã phân công)
+                return (
+                    status === SALES_ORDER_STATUS.Approved ||
+                    status === SALES_ORDER_STATUS.AssignedForPicking ||
+                    status === 4 ||
+                    status === '4' ||
+                    status === 5 ||
+                    status === '5'
+                );
             case 'view_delivery_slip':
                 // Có thể xem delivery slip khi Picking hoặc Completed
                 return status === SALES_ORDER_STATUS.Picking || status === SALES_ORDER_STATUS.Completed ||
@@ -465,11 +480,11 @@ export const canPerformSalesOrderDetailAction = (action, order, hasPermission, u
             case 'view':
                 return true;
             case 'create_delivery_slip':
-                // Chỉ có thể tạo delivery slip cho AssignedForPicking của mình
-                return isOwnOrder && (status === SALES_ORDER_STATUS.AssignedForPicking || status === 5 || status === "5");
+                // Chỉ có thể tạo delivery slip cho AssignedForPicking của chính mình (được phân công)
+                return isAssignedToSelf && (status === SALES_ORDER_STATUS.AssignedForPicking || status === 5 || status === "5");
             case 'view_delivery_slip':
-                // Có thể xem delivery slip khi Picking hoặc Completed của mình
-                return isOwnOrder && (status === SALES_ORDER_STATUS.Picking || status === SALES_ORDER_STATUS.Completed ||
+                // Có thể xem delivery slip khi Picking hoặc Completed của chính mình (được phân công)
+                return isAssignedToSelf && (status === SALES_ORDER_STATUS.Picking || status === SALES_ORDER_STATUS.Completed ||
                     status === 6 || status === "6" || status === 7 || status === "7");
             case 'edit':
             case 'delete':
