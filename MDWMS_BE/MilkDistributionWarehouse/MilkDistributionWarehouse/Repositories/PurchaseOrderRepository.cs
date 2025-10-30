@@ -15,6 +15,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> HasActivePurchaseOrder(int supplierId);
         Task<bool> IsAllPurchaseOrderDraftOrEmpty(int supplierId);
         Task<PurchaseOrder?> GetPurchaseOrderByPurchaseOrderId(Guid purchaseOrderId);
+        Task<bool> HasUserAssignedToOtherReceivingPOAsync(int assignTo);
     }
     public class PurchaseOrderRepository : IPurchaseOrderRepositoy
     {
@@ -92,6 +93,12 @@ namespace MilkDistributionWarehouse.Repositories
         {
             var purchaseOrders = _context.PurchaseOrders.Where(po => po.SupplierId == supplierId);
             return !await purchaseOrders.AnyAsync(po => po.Status != PurchaseOrderStatus.Draft);
+        }
+
+        public async Task<bool> HasUserAssignedToOtherReceivingPOAsync(int assignTo)
+        {
+            return await _context.PurchaseOrders.AnyAsync(po => po.Status == PurchaseOrderStatus.AssignedForReceiving
+                            && po.AssignTo == assignTo);
         }
     }
 }

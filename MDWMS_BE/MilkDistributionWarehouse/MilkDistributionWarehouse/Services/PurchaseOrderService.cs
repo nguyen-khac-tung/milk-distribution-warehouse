@@ -363,6 +363,10 @@ namespace MilkDistributionWarehouse.Services
                     if (currentStatus != PurchaseOrderStatus.GoodsReceived)
                         throw new Exception("Chỉ được phân công đơn hàng khi đơn hàng ở trạng thái đơn hàng Đã xác nhận đến.".ToMessageForUser());
 
+                    var msg = await CheckAssignedForReceivingPO(assignedForReceivingDto.AssignTo);
+                    if (!string.IsNullOrEmpty(msg))
+                        throw new Exception(msg.ToMessageForUser());
+
                     purchaseOrder.Status = PurchaseOrderStatus.AssignedForReceiving;
                     purchaseOrder.AssignTo = assignedForReceivingDto.AssignTo;
                     purchaseOrder.AssignedAt = DateTime.Now;
@@ -477,6 +481,15 @@ namespace MilkDistributionWarehouse.Services
             if (dicPOls1.Count != dicPOls2.Count) return false;
 
             return dicPOls1.All(kvp => dicPOls2.TryGetValue(kvp.Key, out var count) && count == kvp.Value);
+        }
+
+        private async Task<string> CheckAssignedForReceivingPO(int assignTo)
+        {
+            var hasUserAssignedToOtherReceivingPOAsync = await _purchaseOrderRepository.HasUserAssignedToOtherReceivingPOAsync(assignTo);
+            if (hasUserAssignedToOtherReceivingPOAsync)
+                return "Không theo phân công cho nhân viên. Nhân viên này đã được phân công cho đơn hàng khác.";
+
+            return "";
         }
     }
 }
