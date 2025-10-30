@@ -35,9 +35,35 @@ namespace MilkDistributionWarehouse.Services
             if (backOrders == null)
                 return ("Không có back order nào.".ToMessageForUser(), new PageResult<BackOrderDto.BackOrderResponseDto>());
 
-            var backOrderDtos = backOrders.ProjectTo<BackOrderDto.BackOrderResponseDto>(_mapper.ConfigurationProvider);
-            var pagedResult = await backOrderDtos.ToPagedResultAsync(request);
-            return ("", pagedResult);
+            // Apply search filter before projection to reduce memory usage
+            if (!string.IsNullOrWhiteSpace(request.Search))
+            {
+                backOrders = backOrders.Where(bo =>
+                    bo.Retailer.RetailerName.Contains(request.Search) ||
+                    bo.Goods.GoodsName.Contains(request.Search));
+            }
+
+            var backOrderDtos = await backOrders
+                .ProjectTo<BackOrderDto.BackOrderResponseDto>(_mapper.ConfigurationProvider)
+                .ToPagedResultAsync(request);
+
+            // Optimize by getting only distinct pairs
+            var pairs = backOrderDtos.Items
+                .Select(x => (x.GoodsId, x.GoodsPackingId))
+                .Distinct()
+                .ToList();
+
+            var availableDict = await _backOrderRepository.GetAvailableQuantitiesAsync(pairs);
+
+            // Update status in memory
+            foreach (var item in backOrderDtos.Items)
+            {
+                item.StatusDinamic = availableDict.TryGetValue((item.GoodsId, item.GoodsPackingId), out var qty)
+                    ? (qty > item.PackageQuantity ? BackOrderStatus.Available : BackOrderStatus.Unavailable)
+                    : BackOrderStatus.Unavailable;
+            }
+
+            return ("", backOrderDtos);
         }
 
         public async Task<(string, BackOrderDto.BackOrderResponseDto)> GetBackOrderById(Guid backOrderId)
@@ -46,7 +72,14 @@ namespace MilkDistributionWarehouse.Services
             if (backOrder == null)
                 return ("Không tìm thấy back order.".ToMessageForUser(), new BackOrderDto.BackOrderResponseDto());
 
-            return ("", _mapper.Map<BackOrderDto.BackOrderResponseDto>(backOrder));
+            var response = _mapper.Map<BackOrderDto.BackOrderResponseDto>(backOrder);
+            
+            var availableQuantity = await _backOrderRepository.GetAvailableQuantity(backOrder.GoodsId, backOrder.GoodsPackingId);
+            response.StatusDinamic = availableQuantity > backOrder.PackageQuantity
+                ? BackOrderStatus.Available
+                : BackOrderStatus.Unavailable;
+
+            return ("", response);
         }
 
         public async Task<(string, BackOrderDto.BackOrderResponseDto)> CreateBackOrder(BackOrderDto.BackOrderRequestDto dto, int? userId)
@@ -86,7 +119,7 @@ namespace MilkDistributionWarehouse.Services
 
             var updated = await _backOrderRepository.UpdateBackOrder(backOrder);
             var updateResponse = await _backOrderRepository.GetBackOrderById(updated.BackOrderId);
-            return ("", _mapper.Map<BackOrderDto.BackOrderResponseDto>(updated));
+            return ("", _mapper.Map<BackOrderDto.BackOrderResponseDto>(updateResponse));
         }
 
         public async Task<(string, BackOrderDto.BackOrderResponseDto)> DeleteBackOrder(Guid backOrderId)
