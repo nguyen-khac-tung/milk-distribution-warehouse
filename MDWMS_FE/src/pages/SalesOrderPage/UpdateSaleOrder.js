@@ -13,6 +13,7 @@ import { getRetailersDropdown } from "../../services/RetailerService"
 import { getSuppliersDropdown } from "../../services/SupplierService"
 import { getGoodsDropDownBySupplierId, getGoodsPackingByGoodsId } from "../../services/PurchaseOrderService"
 import Loading from "../../components/Common/Loading"
+import { extractErrorMessage } from "../../utils/Validation"
 
 function UpdateSaleOrder() {
     const navigate = useNavigate();
@@ -288,9 +289,9 @@ function UpdateSaleOrder() {
             setFieldErrors(newErrors);
         }
 
-        // Validate real-time cho số lượng
+        // Validate real-time cho số lượng (use updatedItems to avoid stale state)
         if (field === "quantity" || field === "goodsPackingId") {
-            const updatedItem = items.find(item => item.id === id);
+            const updatedItem = updatedItems.find(item => item.id === id);
             if (updatedItem) {
                 const tempItem = { ...updatedItem, [field]: value };
                 const quantityError = validateQuantity(tempItem);
@@ -435,27 +436,27 @@ function UpdateSaleOrder() {
     // Tính tổng số đơn vị (số thùng × đơn vị đóng gói)
     const calculateTotalUnits = (item) => {
         if (!item.quantity || !item.goodsPackingId) return 0;
-
-        // Use original goods ID if available
-        const goodsId = item.originalGoodsId;
+        // Determine goodsId: prefer originalGoodsId (from loaded data), otherwise find by supplierName + goodsName
+        let goodsId = item.originalGoodsId;
         if (!goodsId) {
-            console.log("No original goods ID found for item:", item);
-            return 0;
+            if (item.supplierName && item.goodsName) {
+                const selectedSupplier = suppliers.find(s => s.companyName === item.supplierName);
+                if (selectedSupplier) {
+                    const goods = goodsBySupplier[selectedSupplier.supplierId] || [];
+                    const selectedGood = goods.find(g => g.goodsName === item.goodsName);
+                    goodsId = selectedGood?.goodsId;
+                }
+            }
         }
 
-        const goodsPackings = goodsPackingsMap[goodsId] || [];
-        const selectedPacking = goodsPackings.find(packing =>
-            packing.goodsPackingId.toString() === item.goodsPackingId
-        );
+        if (!goodsId) return 0;
 
-        // if (!selectedPacking) {
-        //     console.log("No packing found for goodsPackingId:", item.goodsPackingId, "in goods:", goodsId);
-        //     console.log("Available packings:", goodsPackings);
-        //     return 0;
-        // }
+        const goodsPackings = goodsPackingsMap[goodsId] || [];
+        const selectedPacking = goodsPackings.find(packing => packing.goodsPackingId.toString() === item.goodsPackingId);
+
+        if (!selectedPacking) return 0;
 
         const total = parseInt(item.quantity) * selectedPacking.unitPerPackage;
-        // console.log(`Calculating total: ${item.quantity} × ${selectedPacking.unitPerPackage} = ${total}`);
         return total;
     };
 
@@ -596,8 +597,11 @@ function UpdateSaleOrder() {
             navigate("/sales-orders");
         } catch (error) {
             console.error("Lỗi khi cập nhật đơn bán hàng:", error);
-            const errorMessage = error.response?.data?.message || error.message || "Có lỗi xảy ra khi cập nhật đơn bán hàng!";
-            window.showToast(errorMessage, "error");
+            const message = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật đơn bán hàng!")
+
+            if (window.showToast) {
+                window.showToast(message, "error");
+            }
         }
     }
 

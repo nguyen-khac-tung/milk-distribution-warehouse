@@ -6,8 +6,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { ArrowLeft, Package, User, Calendar, CheckCircle, XCircle, Clock, Truck, CheckSquare, Key, Building2, FileText, Hash, Shield, ShoppingCart, Users, UserCheck, UserX, TruckIcon, Store, UserCircle, UserCog, UserCheck2, UserX2, UserMinus, Mail, MapPin, Phone } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { getSalesOrderDetail, updateSaleOrderStatusPendingApproval, approveSalesOrder, rejectSalesOrder, assignForPicking, createDeliverySlip } from '../../services/SalesOrderService';
-import { SALES_ORDER_STATUS } from '../../utils/permissions';
+import { SALES_ORDER_STATUS, canPerformSalesOrderDetailAction } from '../../utils/permissions';
 import { STATUS_LABELS } from '../../components/SaleOrderCompoents/StatusDisplaySaleOrder';
+import UserInfoDisplay from '../../components/SaleOrderCompoents/UserInfoDisplay';
 import SubmitDraftModal from '../../components/SaleOrderCompoents/SubmitDraftModal';
 import ApprovalConfirmationModal from '../../components/SaleOrderCompoents/ApprovalConfirmationModal';
 import RejectionConfirmationModal from '../../components/SaleOrderCompoents/RejectionConfirmationModal';
@@ -36,6 +37,7 @@ const SalesOrderDetail = () => {
     const [assignPickingLoading, setAssignPickingLoading] = useState(false);
     const [createDeliverySlipLoading, setCreateDeliverySlipLoading] = useState(false);
     const { hasPermission } = usePermissions();
+    const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
 
     useEffect(() => {
         const fetchSalesOrderDetail = async () => {
@@ -94,36 +96,12 @@ const SalesOrderDetail = () => {
         return statusIcons[status] || <Clock className="h-4 w-4" />;
     };
 
-    const canApprove = () => {
-        return hasPermission(PERMISSIONS.SALES_ORDER_APPROVE) &&
-            //Chỉ có thể duyệt khi đơn hàng đang chờ duyệt
-            salesOrder?.status === SALES_ORDER_STATUS.PendingApproval;
-    };
-
-    const canReject = () => {
-        return hasPermission(PERMISSIONS.SALES_ORDER_REJECT_ORDER) &&
-            salesOrder?.status === SALES_ORDER_STATUS.PendingApproval;
-    };
-
-    const canSubmitDraft = () => {
-        return hasPermission(PERMISSIONS.SALES_ORDER_SUBMIT_PENDING_APPROVAL) &&
-            (salesOrder?.status === SALES_ORDER_STATUS.Draft || salesOrder?.status === SALES_ORDER_STATUS.Rejected);
-    };
-
-    const canAssignForPicking = () => {
-        return hasPermission(PERMISSIONS.SALES_ORDER_ASSIGN_FOR_PICKING) &&
-            salesOrder?.status === SALES_ORDER_STATUS.Approved;
-    };
-
-    const canCreateDeliverySlip = () => {
-        return hasPermission(PERMISSIONS.SALES_ORDER_CREATE_DELIVERY_SLIP) &&
-            salesOrder?.status === SALES_ORDER_STATUS.AssignedForPicking;
-    };
-
-    const canViewDeliverySlip = () => {
-        return hasPermission(PERMISSIONS.SALES_ORDER_VIEW_DELIVERY_SLIP) &&
-            (salesOrder?.status === SALES_ORDER_STATUS.Picking || salesOrder?.status === SALES_ORDER_STATUS.Completed);
-    };
+    const canApprove = () => canPerformSalesOrderDetailAction('approve', salesOrder, hasPermission, userInfo);
+    const canReject = () => canPerformSalesOrderDetailAction('reject', salesOrder, hasPermission, userInfo);
+    const canSubmitDraft = () => canPerformSalesOrderDetailAction('submit_pending_approval', salesOrder, hasPermission, userInfo);
+    const canAssignForPicking = () => canPerformSalesOrderDetailAction('assign_for_picking', salesOrder, hasPermission, userInfo);
+    const canCreateDeliverySlip = () => canPerformSalesOrderDetailAction('create_delivery_slip', salesOrder, hasPermission, userInfo);
+    const canViewDeliverySlip = () => canPerformSalesOrderDetailAction('view_delivery_slip', salesOrder, hasPermission, userInfo);
 
     const handleSubmitDraftConfirm = async () => {
         setSubmitLoading(true);
@@ -466,7 +444,7 @@ const SalesOrderDetail = () => {
                                         className="bg-orange-600 hover:bg-orange-700 text-white h-[38px] px-8"
                                     >
                                         <FileText className="h-4 w-4 mr-2" />
-                                        Nộp bản nháp
+                                        {salesOrder?.status === SALES_ORDER_STATUS.Rejected ? 'Nộp đơn lại' : 'Nộp bản nháp'}
                                     </Button>
                                 )}
 
@@ -496,7 +474,7 @@ const SalesOrderDetail = () => {
                                         className="bg-blue-600 hover:bg-blue-700 text-white h-[38px] px-8"
                                     >
                                         <Truck className="h-4 w-4 mr-2" />
-                                        Phân công lấy hàng
+                                        {salesOrder?.status === SALES_ORDER_STATUS.AssignedForPicking ? 'Phân công lại' : 'Phân công lấy hàng'}
                                     </Button>
                                 )}
 
@@ -549,101 +527,12 @@ const SalesOrderDetail = () => {
                             </div>
                         </div>
 
-                        {/* Created By */}
-                        <div className="mb-4">
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                    <UserCircle className="h-4 w-4 text-green-600" />
-                                    <span className="text-sm font-medium text-gray-700">Tạo bởi</span>
-                                </div>
-                            </div>
-                            <div className="space-y-1">
-                                <input
-                                    type="text"
-                                    value={salesOrder.createdBy?.fullName || 'Chưa có thông tin'}
-                                    readOnly
-                                    className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
-                                />
-                                <input
-                                    type="text"
-                                    value={formatDate(salesOrder.createdAt)}
-                                    readOnly
-                                    className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Approval By */}
-                        <div className="mb-4">
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                    <UserCheck2 className="h-4 w-4 text-blue-600" />
-                                    <span className="text-sm font-medium text-gray-700">Duyệt bởi</span>
-                                </div>
-                            </div>
-                            <div className="space-y-1">
-                                <input
-                                    type="text"
-                                    value={salesOrder.approvalBy?.fullName || 'Chưa có thông tin'}
-                                    readOnly
-                                    className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
-                                />
-                                <input
-                                    type="text"
-                                    value={salesOrder.approvalBy ? formatDate(salesOrder.updatedAt) : 'Chưa có thông tin'}
-                                    readOnly
-                                    className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Acknowledged By */}
-                        <div className="mb-4">
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                    <UserX2 className="h-4 w-4 text-red-600" />
-                                    <span className="text-sm font-medium text-gray-700">Xác nhận bởi</span>
-                                </div>
-                            </div>
-                            <div className="space-y-1">
-                                <input
-                                    type="text"
-                                    value={salesOrder.acknowledgedBy?.fullName || 'Chưa có thông tin'}
-                                    readOnly
-                                    className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
-                                />
-                                <input
-                                    type="text"
-                                    value={salesOrder.acknowledgedBy ? formatDate(salesOrder.updatedAt) : 'Chưa có thông tin'}
-                                    readOnly
-                                    className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Assign To */}
-                        <div className="mb-4">
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                    <UserCog className="h-4 w-4 text-purple-600" />
-                                    <span className="text-sm font-medium text-gray-700">Giao cho</span>
-                                </div>
-                            </div>
-                            <div className="space-y-1">
-                                <input
-                                    type="text"
-                                    value={salesOrder.assignTo?.fullName || 'Chưa có thông tin'}
-                                    readOnly
-                                    className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
-                                />
-                                <input
-                                    type="text"
-                                    value={salesOrder.assignTo ? formatDate(salesOrder.updatedAt) : 'Chưa có thông tin'}
-                                    readOnly
-                                    className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
-                                />
-                            </div>
-                        </div>
+                        <UserInfoDisplay
+                            order={salesOrder}
+                            formatDate={formatDate}
+                            hasPermission={hasPermission}
+                            userInfo={null}
+                        />
                     </div>
                 </div>
             </div>

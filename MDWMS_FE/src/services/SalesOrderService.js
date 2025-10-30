@@ -343,12 +343,8 @@ export const approveSalesOrder = async (data) => {
 };
 
 // Từ chối đơn hàng
-export const rejectSalesOrder = async (salesOrderId, rejectionReason) => {
+export const rejectSalesOrder = async (data) => {
     try {
-        const data = {
-            salesOrderId: salesOrderId,
-            rejectionReason: rejectionReason
-        };
         const res = await api.put("/SalesOrder/UpdateSalesOrderStatusReject", data);
         console.log("rejectSalesOrder:", res);
         return res.data;
