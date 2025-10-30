@@ -21,6 +21,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpGet("GetGRNByPurchaseOrderId/{purchaseOrderId}")]
+        [Authorize(Roles = "Sale Manager, Warehouse Staff, Warehouse Manager")]
         public async Task<IActionResult> GetGRNByPurchaseOrderId(Guid purchaseOrderId)
         {
             var(msg, grn) = await _goodsReceiptNoteService.GetGRNByPurchaseOrderId(purchaseOrderId);
