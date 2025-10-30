@@ -150,7 +150,6 @@ export const PERMISSIONS = {
     GOODS_RECEIPT_NOTE_DETAIL_CHECK: 'GoodsReceiptNoteDetail.Check',
 
 
-
 };
 
 export const ROLE_PERMISSIONS = {

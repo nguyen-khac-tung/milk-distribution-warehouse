@@ -14,12 +14,14 @@ import {
   Printer
 } from "lucide-react";
 import Loading from "../../components/Common/Loading";
-import { getGoodsReceiptNoteByPurchaseOrderId, verifyRecord, cancelGoodsReceiptNoteDetail, submitGoodsReceiptNote } from "../../services/GoodsReceiptService";
+import { getGoodsReceiptNoteByPurchaseOrderId, verifyRecord, cancelGoodsReceiptNoteDetail, submitGoodsReceiptNote, approveGoodsReceiptNote, rejectGoodsReceiptNoteDetail } from "../../services/GoodsReceiptService";
 import { PERMISSIONS } from "../../utils/permissions";
 import { usePermissions } from "../../hooks/usePermissions";
 import PermissionWrapper from "../../components/Common/PermissionWrapper";
 import { GOODS_RECEIPT_NOTE_STATUS, RECEIPT_ITEM_STATUS, getGoodsReceiptNoteStatusMeta } from "./goodsReceiptNoteStatus";
 import { getReceiptItemStatusMeta } from "./goodsReceiptNoteStatus";
+import RejectReasonModal from "./RejectReasonModal";
+import { extractErrorMessage } from "../../utils/Validation";
 
 // Status labels for Goods Receipt Note - sẽ được lấy từ API
 const getStatusLabel = (status) => {
@@ -52,6 +54,9 @@ export default function GoodsReceiptDetail() {
     pallet: true,
     arranging: true
   });
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [selectedDetailId, setSelectedDetailId] = useState(null);
   // Thêm state quản lý kiểm tra từng mặt hàng
   // Xóa hẳn 2 state checkedDetails, notCheckedDetails và các setCheckedDetails/setNotCheckedDetails
 
@@ -119,6 +124,30 @@ export default function GoodsReceiptDetail() {
   const handlePrintReceipt = () => {
     // Implement print functionality
     window.print();
+  };
+
+  const openRejectModal = (detailId) => {
+    setSelectedDetailId(detailId);
+    setRejectReason("");
+    setShowRejectModal(true);
+  };
+
+  const closeRejectModal = () => {
+    setShowRejectModal(false);
+    setRejectReason("");
+    setSelectedDetailId(null);
+  };
+
+  const submitReject = async () => {
+    if (!selectedDetailId) return;
+    try {
+      await rejectGoodsReceiptNoteDetail({ goodsReceiptNoteDetailId: selectedDetailId, rejectionReason: rejectReason || "" });
+      closeRejectModal();
+      fetchGoodsReceiptNoteDetail();
+    } catch (e) {
+      console.error(e);
+      window.showToast("Từ chối thất bại, vui lòng thử lại!", "error");
+    }
   };
 
   if (loading) {
@@ -301,6 +330,7 @@ export default function GoodsReceiptDetail() {
                           ) : needCheckDetails.map((detail, index) => {
                             const actualPackageQuantity = (Number(detail.deliveredPackageQuantity) || 0) - (Number(detail.rejectPackageQuantity) || 0);
                             return (
+                              <>
                               <TableRow key={index} className="hover:bg-gray-50">
                                 <TableCell className="font-medium text-gray-900 text-xs max-w-[70px] truncate" title={detail.goodsCode}>{detail.goodsCode}</TableCell>
                                 <TableCell className="text-xs text-gray-700 max-w-[90px] truncate" title={detail.goodsName}>{detail.goodsName}</TableCell>
@@ -410,6 +440,16 @@ export default function GoodsReceiptDetail() {
                                   )}
                                 </TableCell>
                               </TableRow>
+                              {detail.rejectionReason && (
+                                <TableRow key={`${index}-rej`}>
+                                  <TableCell colSpan={11} className="py-2">
+                                    <div className="text-red-600 text-xs italic">
+                                      Lý do từ chối: {detail.rejectionReason}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              )}
+                              </>
                             );
                           })}
                         </TableBody>
@@ -432,7 +472,7 @@ export default function GoodsReceiptDetail() {
                         <TableHead className="font-semibold text-green-900 text-center">Số lượng thùng thực nhận</TableHead>
                         <TableHead className="font-semibold text-green-900">Ghi chú</TableHead>
                         <TableHead className="font-semibold text-green-900 text-center">Trạng thái</TableHead>
-                        {checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.Inspected) && (
+                        {(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) || checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.Inspected)) && (
                           <TableHead className="font-semibold text-green-900 text-center">Hành động</TableHead>
                         )}
                       </TableRow>
@@ -459,16 +499,19 @@ export default function GoodsReceiptDetail() {
                               <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium break-words ${meta.color}`}>{meta.label}</span>
                             ); })()}
                           </TableCell>
-                          {checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.Inspected) && (
+                          {(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) || checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.Inspected)) && (
                             <TableCell className="text-center">
-                              {detail.status === RECEIPT_ITEM_STATUS.Inspected &&
-                                hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CANCEL) && (
-                                  <Button variant="outline" size="sm" className="text-yellow-600 border-yellow-300 hover:text-white hover:bg-yellow-500 h-[38px] rounded" onClick={async () => {
+                              <div className="inline-flex items-center gap-2">
+                                {detail.status === RECEIPT_ITEM_STATUS.Inspected && hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CANCEL) && (
+                                  <Button variant="outline" size="sm" className="text-yellow-600 border-yellow-300 hover:text-white hover:bg-yellow-500 h-[30px] rounded" onClick={async () => {
                                     await cancelGoodsReceiptNoteDetail(detail.goodsReceiptNoteDetailId);
                                     fetchGoodsReceiptNoteDetail();
                                   }}>Kiểm tra lại</Button>
-                                )
-                              }
+                                )}
+                                {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && (
+                                  <Button variant="outline" size="sm" className="text-red-600 border-red-300 hover:text-white hover:bg-red-600 h-[30px] rounded" onClick={() => openRejectModal(detail.goodsReceiptNoteDetailId)}>Từ chối</Button>
+                                )}
+                              </div>
                             </TableCell>
                           )}
                         </TableRow>
@@ -477,15 +520,34 @@ export default function GoodsReceiptDetail() {
                   </Table>
                 </div>
 
-                <div className="flex justify-end pt-4 border-t border-gray-200">
-                  <Button
-                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 h-[38px]"
-                    disabled={goodsReceiptNote.status === GOODS_RECEIPT_NOTE_STATUS.PendingApproval}
-                    onClick={handleCompleteReceiving}
-                  >
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Nộp Đơn Kiểm Nhập
-                  </Button>
+                <div className="flex justify-end gap-2 pt-4 border-t border-gray-200 mr-6">
+                  {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_COMPLETE_RECEIVING) && (
+                    <Button
+                      className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 h-[38px]"
+                      disabled={goodsReceiptNote.status === GOODS_RECEIPT_NOTE_STATUS.PendingApproval}
+                      onClick={handleCompleteReceiving}
+                    >
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Nộp Đơn Kiểm Nhập
+                    </Button>
+                  )}
+                  {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) && (
+                    <Button
+                      className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 h-[38px]"
+                      onClick={async () => {
+                        try {
+                          await approveGoodsReceiptNote(goodsReceiptNote.goodsReceiptNoteId);
+                          window.showToast?.("Duyệt đơn kiểm nhập thành công!", "success");
+                          fetchGoodsReceiptNoteDetail();
+                        } catch (error) {
+                          const msg = extractErrorMessage(error, "Duyệt đơn kiểm nhập thất bại, vui lòng thử lại!");
+                          window.showToast?.(msg, "error");
+                        }
+                      }}
+                    >
+                      Duyệt Đơn Kiểm Nhập
+                    </Button>
+                  )}
                 </div>
               </>
             )}
@@ -595,6 +657,14 @@ export default function GoodsReceiptDetail() {
           </CardContent>
         </Card>
       </div>
+      {/* Modal nhập lý do từ chối */}
+      <RejectReasonModal
+        isOpen={showRejectModal}
+        reason={rejectReason}
+        setReason={setRejectReason}
+        onCancel={closeRejectModal}
+        onConfirm={submitReject}
+      />
     </div>
   );
 }

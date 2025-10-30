@@ -49,4 +49,26 @@ export const submitGoodsReceiptNote = async (goodsReceiptNoteId) => {
     }
 };
 
+export const rejectGoodsReceiptNoteDetail = async ({ goodsReceiptNoteDetailId, rejectionReason }) => {
+    try {
+        const body = { goodsReceiptNoteDetailId, rejectionReason };
+        const res = await api.put('/GoodsReceiptNoteDetail/RejectRecord', body);
+        return res.data;
+    } catch (error) {
+        console.error('Error rejecting goods receipt note detail:', error);
+        throw error;
+    }
+};
+
+export const approveGoodsReceiptNote = async (goodsReceiptNoteId) => {
+    try {
+        const body = { goodsReceiptNoteId };
+        const res = await api.put('/GoodsReceiptNote/Approve', body);
+        return res.data;
+    } catch (error) {
+        console.error('Error approving goods receipt note:', error);
+        throw error;
+    }
+};
+
 
