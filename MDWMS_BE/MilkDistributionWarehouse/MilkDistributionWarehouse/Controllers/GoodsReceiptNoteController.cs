@@ -41,5 +41,16 @@ namespace MilkDistributionWarehouse.Controllers
 
             return ApiResponse<GoodsReceiptNoteSubmitDto>.ToResultOk(grnUpdate);
         }
+
+        [HttpPut("Approve")]
+        [Authorize(Roles = "Warehouse Manager")]
+        public async Task<IActionResult> ApprovalGoodsReceiptNote([FromBody] GoodsReceiptNoteCompletedDto update)
+        {
+            var (msg, grnUpdate) = await _goodsReceiptNoteService.UpdateGRNStatus(update, User.GetUserId());
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<GoodsReceiptNoteCompletedDto>.ToResultOk(grnUpdate);
+        }
     }
 }
