@@ -18,6 +18,8 @@ import { getGoodsReceiptNoteByPurchaseOrderId, verifyRecord, cancelGoodsReceiptN
 import { PERMISSIONS } from "../../utils/permissions";
 import { usePermissions } from "../../hooks/usePermissions";
 import PermissionWrapper from "../../components/Common/PermissionWrapper";
+import { GOODS_RECEIPT_NOTE_STATUS, RECEIPT_ITEM_STATUS, getGoodsReceiptNoteStatusMeta } from "./goodsReceiptNoteStatus";
+import { getReceiptItemStatusMeta } from "./goodsReceiptNoteStatus";
 
 // Status labels for Goods Receipt Note - sẽ được lấy từ API
 const getStatusLabel = (status) => {
@@ -94,6 +96,10 @@ export default function GoodsReceiptDetail() {
   };
 
   const handleCompleteReceiving = async () => {
+    if (needCheckDetails.length > 0) {
+      window.showToast("Bạn phải kiểm tra hết tất cả mặt hàng trước khi nộp đơn kiểm nhập!", "warning");
+      return;
+    }
     try {
       const id = goodsReceiptNote?.goodsReceiptNoteId;
       if (!id) return;
@@ -101,6 +107,7 @@ export default function GoodsReceiptDetail() {
       await fetchGoodsReceiptNoteDetail();
     } catch (error) {
       console.error('Submit goods receipt note failed:', error);
+      window.showToast("Nộp đơn kiểm nhập thất bại, vui lòng thử lại!", "error");
     }
   };
 
@@ -129,8 +136,8 @@ export default function GoodsReceiptDetail() {
     );
   }
 
-  const needCheckDetails = goodsReceiptNote.goodsReceiptNoteDetails?.filter(d => d.status === 1) || [];
-  const checkedDetails = goodsReceiptNote.goodsReceiptNoteDetails?.filter(d => d.status === 2 || d.status === 3) || [];
+  const needCheckDetails = goodsReceiptNote.goodsReceiptNoteDetails?.filter(d => d.status === RECEIPT_ITEM_STATUS.Receiving) || [];
+  const checkedDetails = goodsReceiptNote.goodsReceiptNoteDetails?.filter(d => d.status === RECEIPT_ITEM_STATUS.Inspected || d.status === RECEIPT_ITEM_STATUS.PendingApproval || d.status === RECEIPT_ITEM_STATUS.Completed) || [];
 
   return (
     <div className="min-h-screen">
@@ -153,8 +160,8 @@ export default function GoodsReceiptDetail() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusLabel(goodsReceiptNote.status).color}`}>
-              {getStatusLabel(goodsReceiptNote.status).label}
+            <span className={`px-3 py-1 rounded-full text-sm font-medium ${getGoodsReceiptNoteStatusMeta(goodsReceiptNote.status).color}`}>
+              {getGoodsReceiptNoteStatusMeta(goodsReceiptNote.status).label}
             </span>
             <Button onClick={handlePrintReceipt} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 h-[38px] text-white">
               <Printer className="w-4 h-4" />
@@ -282,6 +289,7 @@ export default function GoodsReceiptDetail() {
                             <TableHead className="font-semibold text-gray-700 text-center">Số lượng thùng trả lại</TableHead>
                             <TableHead className="font-semibold text-gray-700 text-center">Số lượng thùng thực nhận</TableHead>
                             <TableHead className="font-semibold text-gray-700">Ghi chú</TableHead>
+                            <TableHead className="font-semibold text-gray-700 text-center">Trạng thái</TableHead>
                             <TableHead className="font-semibold text-gray-700 text-center">Hành động</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -294,8 +302,8 @@ export default function GoodsReceiptDetail() {
                             const actualPackageQuantity = (Number(detail.deliveredPackageQuantity) || 0) - (Number(detail.rejectPackageQuantity) || 0);
                             return (
                               <TableRow key={index} className="hover:bg-gray-50">
-                                <TableCell className="font-medium text-gray-900 text-xs">{detail.goodsCode}</TableCell>
-                                <TableCell className="text-xs text-gray-700">{detail.goodsName}</TableCell>
+                                <TableCell className="font-medium text-gray-900 text-xs max-w-[70px] truncate" title={detail.goodsCode}>{detail.goodsCode}</TableCell>
+                                <TableCell className="text-xs text-gray-700 max-w-[90px] truncate" title={detail.goodsName}>{detail.goodsName}</TableCell>
                                 <TableCell className="text-xs text-gray-700 text-center">{detail.unitMeasureName}</TableCell>
                                 <TableCell className="text-xs text-gray-700 text-center">{detail.unitPerPackage}/thùng</TableCell>
                                 {/* Số lượng thùng dự kiến */}
@@ -380,6 +388,14 @@ export default function GoodsReceiptDetail() {
                                     }}
                                   />
                                 </TableCell>
+                                {/* Cột trạng thái */}
+                                <TableCell className="text-center min-w-[110px]">
+                                  {(() => {
+                                    const meta = getReceiptItemStatusMeta(detail.status); return (
+                                      <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium break-words ${meta.color}`}>{meta.label}</span>
+                                    );
+                                  })()}
+                                </TableCell>
                                 <TableCell className="text-center">
                                   {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CHECK) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && (
                                     <Button variant="outline" size="sm" className="text-green-600 hover:text-white hover:bg-green-600 h-[38px] mr-2" onClick={async () => {
@@ -415,7 +431,10 @@ export default function GoodsReceiptDetail() {
                         <TableHead className="font-semibold text-green-900 text-center">Số lượng thùng trả lại</TableHead>
                         <TableHead className="font-semibold text-green-900 text-center">Số lượng thùng thực nhận</TableHead>
                         <TableHead className="font-semibold text-green-900">Ghi chú</TableHead>
-                        <TableHead className="font-semibold text-green-900 text-center">Hành động</TableHead>
+                        <TableHead className="font-semibold text-green-900 text-center">Trạng thái</TableHead>
+                        {checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.Receiving) && (
+                          <TableHead className="font-semibold text-green-900 text-center">Hành động</TableHead>
+                        )}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -434,14 +453,24 @@ export default function GoodsReceiptDetail() {
                           <TableCell className="text-center text-xs">{detail.rejectPackageQuantity}</TableCell>
                           <TableCell className="text-center text-xs">{detail.actualPackageQuantity}</TableCell>
                           <TableCell className="text-green-700">{detail.note || ''}</TableCell>
-                          <TableCell className="text-center">
-                            {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CANCEL) && (
-                              <Button variant="outline" size="sm" className="text-yellow-600 border-yellow-300 hover:text-white hover:bg-yellow-500 h-[38px] rounded" onClick={async () => {
-                                await cancelGoodsReceiptNoteDetail(detail.goodsReceiptNoteDetailId);
-                                fetchGoodsReceiptNoteDetail();
-                              }}>Kiểm tra lại</Button>
-                            )}
+                          {/* Cột trạng thái */}
+                          <TableCell className="text-center min-w-[110px]">
+                            {(() => { const meta = getReceiptItemStatusMeta(detail.status); return (
+                              <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium break-words ${meta.color}`}>{meta.label}</span>
+                            ); })()}
                           </TableCell>
+                          {checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.Receiving) && (
+                            <TableCell className="text-center">
+                              {detail.status === RECEIPT_ITEM_STATUS.Receiving &&
+                                hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CANCEL) && (
+                                  <Button variant="outline" size="sm" className="text-yellow-600 border-yellow-300 hover:text-white hover:bg-yellow-500 h-[38px] rounded" onClick={async () => {
+                                    await cancelGoodsReceiptNoteDetail(detail.goodsReceiptNoteDetailId);
+                                    fetchGoodsReceiptNoteDetail();
+                                  }}>Kiểm tra lại</Button>
+                                )
+                              }
+                            </TableCell>
+                          )}
                         </TableRow>
                       ))}
                     </TableBody>
@@ -451,7 +480,7 @@ export default function GoodsReceiptDetail() {
                 <div className="flex justify-end pt-4 border-t border-gray-200">
                   <Button
                     className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 h-[38px]"
-                    disabled={goodsReceiptNote.status === 2}
+                    disabled={goodsReceiptNote.status === GOODS_RECEIPT_NOTE_STATUS.PendingApproval}
                     onClick={handleCompleteReceiving}
                   >
                     <CheckCircle className="w-4 h-4 mr-2" />
@@ -485,9 +514,9 @@ export default function GoodsReceiptDetail() {
             {expandedSections.pallet && (
               <div className="p-6 space-y-6">
                 <div className="flex gap-3">
-                  <Button className="bg-orange-600 hover:bg-orange-700 text-white h-[38px]">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Lô Mới
+                  <Button className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 h-[38px] flex items-center gap-2">
+                    <Plus className="w-4 h-4 mr-3" />
+                    Thêm Lô Mới
                   </Button>
                   <Button variant="outline" className="border-orange-300 text-orange-600 hover:bg-orange-50 h-[38px]">
                     <Plus className="w-4 h-4 mr-2" />
@@ -500,13 +529,13 @@ export default function GoodsReceiptDetail() {
                     <AlertCircle className="w-5 h-5" />
                     <span className="font-medium">Lưu ý quan trọng</span>
                   </div>
-                  <p className="text-red-600 text-sm mt-1">Bạn phải thêm ít nhất một dòng pallet để tiếp tục.</p>
+                  <p className="text-red-600 text-sm mt-1">Bạn phải thêm ít nhất một pallet để tiếp tục.</p>
                 </div>
 
                 <div className="flex justify-end pt-4 border-t border-gray-200">
                   <Button
                     className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 h-[38px]"
-                    disabled={goodsReceiptNote.status !== 2}
+                    disabled={goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.PendingApproval}
                     onClick={handleCompleteArranging}
                   >
                     <RefreshCw className="w-4 h-4 mr-2" />
@@ -554,7 +583,7 @@ export default function GoodsReceiptDetail() {
                 <div className="flex justify-end pt-4 border-t border-gray-200">
                   <Button
                     className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 h-[38px]"
-                    disabled={goodsReceiptNote.status !== 3}
+                    disabled={goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.Completed}
                     onClick={handleCompleteArranging}
                   >
                     <CheckCircle className="w-4 h-4 mr-2" />
