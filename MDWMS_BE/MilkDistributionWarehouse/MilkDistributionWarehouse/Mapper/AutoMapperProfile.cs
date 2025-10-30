@@ -279,6 +279,8 @@ namespace MilkDistributionWarehouse.Mapper
             CreateMap<Pallet, PalletUpdateStatusDto>().ReverseMap();
             CreateMap<PalletRequestDto, Pallet>();
             CreateMap<Pallet, PalletActiveDto>();
+            CreateMap<PalletUpdatePQuantityDto, Pallet>();
+            CreateMap<Pallet, PalletUpdatePQuantityDto>();
 
             //Map SalesOrder
             CreateMap<SalesOrder, SalesOrderDtoSalesRepresentative>()
@@ -362,7 +364,7 @@ namespace MilkDistributionWarehouse.Mapper
             CreateMap<GoodsReceiptNoteDetailInspectedDto, GoodsReceiptNoteDetail>()
                 .IncludeBase<GoodsReceiptNoteDetailUpdateStatus, GoodsReceiptNoteDetail>()
                 .ForMember(dest => dest.ActualPackageQuantity, opt => opt.MapFrom(src => src.DeliveredPackageQuantity - src.RejectPackageQuantity))
-                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => ReceiptItemStatus.PendingApproval));
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => ReceiptItemStatus.Inspected));
             CreateMap<GoodsReceiptNoteDetailCancelDto, GoodsReceiptNoteDetail>()
                 .IncludeBase<GoodsReceiptNoteDetailUpdateStatus, GoodsReceiptNoteDetail>()
                 .AfterMap((src, dest) =>
@@ -372,7 +374,18 @@ namespace MilkDistributionWarehouse.Mapper
                     dest.ActualPackageQuantity = null;
                     dest.Note = null;
                     dest.Status = ReceiptItemStatus.Receiving;
+                    dest.UpdatedAt = DateTime.Now;
                 });
+            CreateMap<GoodsReceiptNoteDetailPendingApprovalDto, GoodsReceiptNoteDetail>()
+                .IncludeBase<GoodsReceiptNoteDetailUpdateStatus, GoodsReceiptNoteDetail>()
+                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => ReceiptItemStatus.PendingApproval));
+            CreateMap<GoodsReceiptNoteDetailRejectDto, GoodsReceiptNoteDetail>()
+                .IncludeBase<GoodsReceiptNoteDetailUpdateStatus, GoodsReceiptNoteDetail>()
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => ReceiptItemStatus.Receiving));
+            CreateMap<GoodsReceiptNoteDetailCompletedDto, GoodsReceiptNoteDetail>()
+                .IncludeBase<GoodsReceiptNoteDetailUpdateStatus, GoodsReceiptNoteDetail>()
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => ReceiptItemStatus.Completed));
+
 
             // Map BackOrder
             CreateMap<BackOrder, BackOrderDto.BackOrderResponseDto>()

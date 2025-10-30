@@ -54,14 +54,15 @@ namespace MilkDistributionWarehouse.Services
 
                 if (grnDetail == null) throw new Exception ("GRN detail is not exist.");
                 
-                var createBy = grnDetail.GoodsReceiptNote.CreatedBy;
+                var createdBy = grnDetail.GoodsReceiptNote.CreatedBy;
+                var approvalBy = grnDetail.GoodsReceiptNote.ApprovalBy;
                 var currentStatus = grnDetail.Status;
 
                 if(update is GoodsReceiptNoteDetailInspectedDto inspectedDto)
                 {
                     if (currentStatus != ReceiptItemStatus.Receiving)
                         throw new Exception ("Chỉ được chuyển thạng thái đã kiểm tra khi mục nhập kho chi tiết ở trạng thái Đang tiếp nhận.".ToMessageForUser());
-                    if (createBy != userId)
+                    if (createdBy != userId)
                         throw new Exception("Current User has no permission to update.");
 
                     string msg = CheckGRNDetailUpdateValidation(inspectedDto, grnDetail);
@@ -73,12 +74,43 @@ namespace MilkDistributionWarehouse.Services
 
                 if(update is GoodsReceiptNoteDetailCancelDto)
                 {
-                    if (currentStatus != ReceiptItemStatus.PendingApproval)
-                        throw new Exception("Chỉ được chuyển về trạng thái Đang tiếp nhận khi mục nhập kho chi tiết ở trạng thái Chờ duyệt.".ToMessageForUser());
-                    if (createBy != userId)
+                    if (currentStatus != ReceiptItemStatus.Inspected)
+                        throw new Exception("Chỉ được chuyển về trạng thái Đang tiếp nhận khi mục nhập kho chi tiết ở trạng thái Đã kiểm tra.".ToMessageForUser());
+                    if (createdBy != userId)
                         throw new Exception("Current User has no permission to update.");
 
                     grnDetail = _mapper.Map(update,grnDetail);
+                }
+
+                if(update is GoodsReceiptNoteDetailPendingApprovalDto)
+                {
+                    if (currentStatus != ReceiptItemStatus.Inspected)
+                        throw new Exception("Chỉ được chuyển sang trạng thái Đã kiểm tra khi mục nhập kho chi tiết ở trạng thái Đã kiểm tra.".ToMessageForUser());
+                    if (createdBy != userId)
+                        throw new Exception("Current User has no permission to update.");
+
+                    grnDetail = _mapper.Map(update, grnDetail);
+                }
+
+                if(update is GoodsReceiptNoteDetailRejectDto rejectDto)
+                {
+                    if (currentStatus != ReceiptItemStatus.PendingApproval)
+                        throw new Exception("Chỉ được chuyển sang trạng thái Từ chối khi mục nhập kho chi tiết ở trạng thái Chờ duyệt.".ToMessageForUser());
+
+                    if (string.IsNullOrEmpty(rejectDto.RejectionReason))
+                        throw new Exception("Từ chối phải có lý do.".ToMessageForUser());
+
+                    grnDetail = _mapper.Map(update, grnDetail);
+                    grnDetail.GoodsReceiptNote.Status = GoodsReceiptNoteStatus.Draft;
+                }
+
+                if (update is GoodsReceiptNoteDetailCompletedDto)
+                {
+                    if (currentStatus != ReceiptItemStatus.PendingApproval)
+                        throw new Exception("Chỉ được chuyển sang trạng thái Đã hoàn thành khi mục nhập kho chi tiết ở trạng thái Chờ duyệt.".ToMessageForUser());
+
+                    grnDetail = _mapper.Map(update, grnDetail);
+                    grnDetail.RejectionReason = "";
                 }
 
                 var resultUpdate = await _grndRepository.UpdateGRNDetail(grnDetail);

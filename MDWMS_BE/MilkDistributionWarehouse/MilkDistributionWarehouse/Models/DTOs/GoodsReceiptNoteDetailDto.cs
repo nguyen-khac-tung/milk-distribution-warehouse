@@ -15,6 +15,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
     public class GoodsReceiptNoteDetailListDto
     {
+        public Guid GoodsReceiptNoteDetailId { get; set; }
         public int GoodsId { get; set; }
         public string GoodsCode { get; set; }
         public string GoodsName { get; set; }
@@ -44,7 +45,14 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public string? Note { get; set; }
     }
 
-    public class GoodsReceiptNoteDetailPendingApprovalDto : GoodsReceiptNoteDetailUpdateStatus { }
+    public class GoodsReceiptNoteDetailPendingApprovalDto : GoodsReceiptNoteDetailUpdateStatus {}
 
     public class GoodsReceiptNoteDetailCancelDto : GoodsReceiptNoteDetailUpdateStatus { }
+
+    public class GoodsReceiptNoteDetailRejectDto : GoodsReceiptNoteDetailUpdateStatus
+    {
+        public string? RejectionReason { get; set; }
+    }
+
+    public class GoodsReceiptNoteDetailCompletedDto : GoodsReceiptNoteDetailUpdateStatus { }
 }
