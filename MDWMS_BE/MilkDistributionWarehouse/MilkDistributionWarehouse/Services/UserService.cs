@@ -25,6 +25,7 @@ namespace MilkDistributionWarehouse.Services
         Task<string> UpdateUserStatus(UserStatusUpdateDto userUpdate);
         Task<string> DeleteUser(int? userId);
         Task<(string, List<UserDropDown>?)> GetUserDropDownByRoleName(string roleName);
+        Task<(string, List<UserDropDown>?)> GetAvailableReceiversDropDown();
     }
 
     public class UserService : IUserService
@@ -190,6 +191,21 @@ namespace MilkDistributionWarehouse.Services
 
             if (!userDropDowns.Any())
                 return ("Danh sách người dùng trống.".ToMessageForUser(), default);
+
+            return ("", userDropDowns);
+        }
+
+        public async Task<(string, List<UserDropDown>?)> GetAvailableReceiversDropDown()
+        {
+            var users = await _userRepository.GetUsers()
+             .Where(u => u.Status == CommonStatus.Active 
+             && u.Roles.Any(r => r.RoleName == RoleNames.WarehouseStaff) 
+             && u.PurchaseOrderAssignToNavigations.Count() == 0).ToListAsync();
+
+            var userDropDowns = _mapper.Map<List<UserDropDown>>(users);
+
+            if (!userDropDowns.Any())
+                return ("Danh sách nhân viên kho khả dụng trống.".ToMessageForUser(), default);
 
             return ("", userDropDowns);
         }
