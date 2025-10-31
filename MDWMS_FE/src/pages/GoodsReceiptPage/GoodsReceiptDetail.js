@@ -285,19 +285,33 @@ export default function GoodsReceiptDetail() {
         <Card className="bg-gray-50 border border-slate-200 shadow-sm">
           <CardContent className="p-0">
             <div
-              className="p-6 border-b border-gray-200 cursor-pointer flex items-center justify-between hover:bg-gray-50 transition-colors"
-              onClick={() => toggleSection('receiving')}
+              className="p-6 border-b border-gray-200 flex items-center justify-between hover:bg-gray-50 transition-colors"
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-1">
                 <div className="p-2 bg-green-100 rounded-lg">
                   <RefreshCw className="w-5 h-5 text-green-600" />
                 </div>
-                <div>
+                <div className="flex-1">
                   <h2 className="text-lg font-semibold text-gray-900">Kiểm nhập</h2>
                   <p className="text-sm text-gray-500">Kiểm tra và xác nhận hàng hóa nhập kho</p>
                 </div>
               </div>
-              {expandedSections.receiving ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={fetchGoodsReceiptNoteDetail}
+                  className="flex items-center gap-2 border border-slate-300 hover:bg-slate-50 h-[38px] text-slate-700 bg-white"
+                  disabled={loading}
+                >
+                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                  Làm mới
+                </Button>
+                <button
+                  onClick={() => toggleSection('receiving')}
+                  className="p-2 hover:bg-gray-100 rounded transition-colors"
+                >
+                  {expandedSections.receiving ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+                </button>
+              </div>
             </div>
 
             {expandedSections.receiving && (

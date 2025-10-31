@@ -287,7 +287,12 @@ const PurchaseOrderTable = ({
                       </TableCell>
                     )}
                     <TableCell className="px-6 py-4 text-slate-700 text-center">
-                      {order.createdAt ? new Date(order.createdAt).toLocaleDateString('vi-VN') : '-'}
+                      {order.createdAt ? (() => {
+                        const date = new Date(order.createdAt);
+                        const time = date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                        const dateStr = date.toLocaleDateString('vi-VN');
+                        return `${time} ${dateStr}`;
+                      })() : '-'}
                     </TableCell>
                     <TableCell className="px-6 py-4 text-center">
                       <StatusDisplay status={order.status} />
