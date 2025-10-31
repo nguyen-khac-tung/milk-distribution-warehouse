@@ -25,23 +25,29 @@ namespace MilkDistributionWarehouse.Services
         Task<string> UpdateUserStatus(UserStatusUpdateDto userUpdate);
         Task<string> DeleteUser(int? userId);
         Task<(string, List<UserDropDown>?)> GetUserDropDownByRoleName(string roleName);
-        Task<(string, List<UserDropDown>?)> GetAvailableReceiversDropDown();
+        Task<(string, List<UserAssignedDropDown>?)> GetAvailableReceiversOrPickersDropDown(Guid? purchaseOrderId, Guid? salesOrderId);
     }
 
     public class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
         private readonly IRoleRepository _roleRepository;
+        private readonly IPurchaseOrderRepositoy _purchaseOrderRepositoy;
+        private readonly ISalesOrderRepository _salesOrderRepository;
         private readonly EmailUtility _emailUtility;
         private readonly IMapper _mapper;
 
         public UserService(IUserRepository userRepository,
                            IRoleRepository roleRepository,
+                           IPurchaseOrderRepositoy purchaseOrderRepositoy,
+                           ISalesOrderRepository salesOrderRepository,
                            EmailUtility emailUtility,
                            IMapper mapper)
         {
             _userRepository = userRepository;
             _roleRepository = roleRepository;
+            _purchaseOrderRepositoy = purchaseOrderRepositoy;
+            _salesOrderRepository = salesOrderRepository;
             _emailUtility = emailUtility;
             _mapper = mapper;
         }
@@ -195,17 +201,44 @@ namespace MilkDistributionWarehouse.Services
             return ("", userDropDowns);
         }
 
-        public async Task<(string, List<UserDropDown>?)> GetAvailableReceiversDropDown()
+        public async Task<(string, List<UserAssignedDropDown>?)> GetAvailableReceiversOrPickersDropDown(Guid? purchaseOrderId, Guid? salesOrderId)
         {
+            int? assignedUser = null;
+
+            if (purchaseOrderId != null)
+            {
+                var purchaseOrder = await _purchaseOrderRepositoy.GetPurchaseOrderByPurchaseOrderId((Guid)purchaseOrderId);
+                if (purchaseOrder == null) return ("PurchaseOrder is invalid", null);
+                assignedUser = purchaseOrder.AssignTo;
+            }
+
+            if (salesOrderId != null)
+            {
+                var salesOrder = await _salesOrderRepository.GetSalesOrderById(salesOrderId);
+                if (salesOrder == null) return ("SalesOrderId is invalid", null);
+                assignedUser = salesOrder.AssignTo;
+            }
+
             var users = await _userRepository.GetUsers()
-             .Where(u => u.Status == CommonStatus.Active 
-             && u.Roles.Any(r => r.RoleName == RoleNames.WarehouseStaff) 
-             && u.PurchaseOrderAssignToNavigations.Count() == 0).ToListAsync();
-
-            var userDropDowns = _mapper.Map<List<UserDropDown>>(users);
-
-            if (!userDropDowns.Any())
+                 .Include(u => u.PurchaseOrderAssignToNavigations)
+                 .Include(u => u.SalesOrderAssignToNavigations)
+                 .Where(u => u.Status == CommonStatus.Active
+                             && u.Roles.Any(r => r.RoleName == RoleNames.WarehouseStaff)
+                             && (assignedUser == null || u.UserId != assignedUser))
+                 .OrderBy(u => u.UserId)
+                 .ToListAsync();
+            if (!users.Any())
                 return ("Danh sách nhân viên kho khả dụng trống.".ToMessageForUser(), default);
+
+            var userDropDowns = _mapper.Map<List<UserAssignedDropDown>>(users);
+            userDropDowns.ForEach(u =>
+            {
+                var user = users.FirstOrDefault(us => us.UserId == u.UserId);
+                u.PendingPurchaseOrders = user.PurchaseOrderAssignToNavigations.Where(p => p.Status == PurchaseOrderStatus.AssignedForReceiving).Count();
+                u.ProcessingPurchaseOrders = user.PurchaseOrderAssignToNavigations.Where(p => p.Status == PurchaseOrderStatus.Receiving).Count();
+                u.PendingSalesOrders = user.SalesOrderAssignToNavigations.Where(p => p.Status == SalesOrderStatus.AssignedForPicking).Count();
+                u.ProcessingSalesOrders = user.SalesOrderAssignToNavigations.Where(p => p.Status == SalesOrderStatus.Picking).Count();
+            });
 
             return ("", userDropDowns);
         }
