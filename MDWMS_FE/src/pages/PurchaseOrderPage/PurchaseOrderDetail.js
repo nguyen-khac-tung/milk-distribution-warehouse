@@ -5,7 +5,7 @@ import { Button } from '../../components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { ArrowLeft, Package, User, Calendar, CheckCircle, XCircle, Clock, Truck, CheckSquare, Trash2, Key, Building2, FileText, Hash, Shield, ShoppingCart, Users, UserCheck, UserX, TruckIcon, UserPlus, Store, UserCircle, UserCog, UserCheck2, UserX2, UserMinus, Mail, Phone, MapPin, Play } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
-import { getPurchaseOrderDetail, submitPurchaseOrder, approvePurchaseOrder, rejectPurchaseOrder, confirmGoodsReceived, assignForReceiving, startReceive } from '../../services/PurchaseOrderService';
+import { getPurchaseOrderDetail, submitPurchaseOrder, approvePurchaseOrder, rejectPurchaseOrder, confirmGoodsReceived, assignForReceiving, startReceive, reAssignForReceiving } from '../../services/PurchaseOrderService';
 import { extractErrorMessage } from '../../utils/Validation';
 import ApprovalConfirmationModal from '../../components/PurchaseOrderComponents/ApprovalConfirmationModal';
 import RejectionConfirmationModal from '../../components/PurchaseOrderComponents/RejectionConfirmationModal';
@@ -194,6 +194,11 @@ const PurchaseOrderDetail = () => {
             purchaseOrder?.status === PURCHASE_ORDER_STATUS.GoodsReceived;
     };
 
+    const canReAssignReceiving = () => {
+        return hasPermission(PERMISSIONS.PURCHASE_ORDER_REASSIGN_FOR_RECEIVING) &&
+            purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving;
+    };
+
     const canStartReceive = () => {
         return hasPermission(PERMISSIONS.PURCHASE_ORDER_START_RECEIVE) &&
             purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving;
@@ -272,13 +277,25 @@ const PurchaseOrderDetail = () => {
     const handleAssignReceiving = async (assignTo) => {
         setAssignReceivingLoading(true);
         try {
-            await assignForReceiving(
-                purchaseOrder.purchaseOderId,
-                assignTo
-            );
+            if (purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving) {
+                await reAssignForReceiving(
+                    purchaseOrder.purchaseOderId,
+                    assignTo
+                );
+            } else {
+                await assignForReceiving(
+                    purchaseOrder.purchaseOderId,
+                    assignTo
+                );
+            }
 
             if (window.showToast) {
-                window.showToast("Giao nhiệm vụ nhận hàng thành công!", "success");
+                window.showToast(
+                    purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving
+                        ? "Giao lại nhiệm vụ nhận hàng thành công!"
+                        : "Giao nhiệm vụ nhận hàng thành công!",
+                    "success"
+                );
             }
             setShowAssignReceivingModal(false);
             const response = await getPurchaseOrderDetail(id);
@@ -287,7 +304,9 @@ const PurchaseOrderDetail = () => {
             }
         } catch (error) {
             console.error("Error assigning for receiving:", error);
-            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi giao nhiệm vụ nhận hàng";
+            const errorMessage = extractErrorMessage(error) || (purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving
+                ? "Có lỗi xảy ra khi giao lại nhiệm vụ nhận hàng"
+                : "Có lỗi xảy ra khi giao nhiệm vụ nhận hàng");
             if (window.showToast) {
                 window.showToast(errorMessage, "error");
             }
@@ -562,13 +581,13 @@ const PurchaseOrderDetail = () => {
                                         Xác nhận hàng đã nhận
                                     </Button>
                                 )}
-                                {canAssignReceiving() && (
+                                {(canAssignReceiving() || canReAssignReceiving()) && (
                                     <Button
                                         onClick={() => setShowAssignReceivingModal(true)}
                                         className="bg-green-600 hover:bg-green-700 text-white h-[38px] px-8"
                                     >
                                         <UserPlus className="h-4 w-4 mr-2" />
-                                        Giao cho nhân viên
+                                        {canReAssignReceiving() ? 'Giao lại cho nhân viên' : 'Giao cho nhân viên'}
                                     </Button>
                                 )}
                                 {canStartReceive() && (

@@ -3,6 +3,8 @@ import { X, User, Loader2, AlertCircle, Search } from 'lucide-react';
 import { Button } from '../ui/button';
 import { getAvailableReceiversDropDown } from '../../services/AccountService';
 import { ComponentIcon } from '../IconComponent/Icon';
+import { usePermissions } from '../../hooks/usePermissions';
+import { PERMISSIONS, PURCHASE_ORDER_STATUS } from '../../utils/permissions';
 
 const AssignReceivingModal = ({
     isOpen,
@@ -17,6 +19,12 @@ const AssignReceivingModal = ({
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const dropdownRef = useRef(null);
+    const { hasPermission } = usePermissions();
+
+    // Xác định đây là giao mới hay giao lại dựa trên trạng thái
+    const purchaseOrderId = purchaseOrder?.purchaseOrderId || purchaseOrder?.purchaseOderId || purchaseOrder?.id;
+    const isReassign = purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving || purchaseOrder?.status === 6 || purchaseOrder?.status === '6';
+    const canReassign = hasPermission(PERMISSIONS.PURCHASE_ORDER_REASSIGN_FOR_RECEIVING);
 
     useEffect(() => {
         if (isOpen) {
@@ -132,7 +140,7 @@ const AssignReceivingModal = ({
                         </div>
                         <div>
                             <h3 className="text-lg font-semibold text-gray-900">
-                                Giao cho nhân viên
+                                {isReassign ? 'Giao lại cho nhân viên' : 'Giao cho nhân viên'}
                             </h3>
                             <p className="text-sm text-gray-500">
                                 Chọn nhân viên để giao nhiệm vụ nhận hàng
@@ -180,7 +188,7 @@ const AssignReceivingModal = ({
                                     <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
                                     <div>
                                         <h4 className="font-medium text-blue-800 mb-1">
-                                            Giao nhiệm vụ nhận hàng
+                                            {isReassign ? 'Giao lại nhiệm vụ nhận hàng' : 'Giao nhiệm vụ nhận hàng'}
                                         </h4>
                                         <p className="text-sm text-blue-700">
                                             Nhân viên được chọn sẽ nhận thông báo về nhiệm vụ nhận hàng này.
@@ -277,16 +285,16 @@ const AssignReceivingModal = ({
                         <Button
                             type="button"
                             onClick={handleConfirm}
-                            disabled={loading || !selectedEmployee}
+                            disabled={loading || !selectedEmployee || (isReassign && !canReassign)}
                             className="h-[38px] px-8 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50"
                         >
                             {loading ? (
                                 <div className="flex items-center gap-2">
                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                    Đang giao...
+                                    {isReassign ? 'Đang giao lại...' : 'Đang giao...'}
                                 </div>
                             ) : (
-                                "Giao nhiệm vụ"
+                                (isReassign ? 'Giao lại' : 'Giao nhiệm vụ')
                             )}
                         </Button>
                     </div>

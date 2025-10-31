@@ -600,7 +600,7 @@ export default function GoodsReceiptDetail() {
                   </Button>
                 </div>
 
-                <PalletManager 
+                <PalletManager
                   goodsReceiptNoteId={goodsReceiptNote?.goodsReceiptNoteId}
                   goodsReceiptNoteDetails={goodsReceiptNote?.goodsReceiptNoteDetails || []}
                 />
