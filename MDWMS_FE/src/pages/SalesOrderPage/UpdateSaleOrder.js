@@ -11,9 +11,9 @@ import { Plus, Trash2, ArrowLeft, Save, X } from "lucide-react"
 import { updateSaleOrder, getSalesOrderDetail } from "../../services/SalesOrderService"
 import { getRetailersDropdown } from "../../services/RetailerService"
 import { getSuppliersDropdown } from "../../services/SupplierService"
-import { getGoodsDropDownBySupplierId, getGoodsPackingByGoodsId } from "../../services/PurchaseOrderService"
 import Loading from "../../components/Common/Loading"
 import { extractErrorMessage } from "../../utils/Validation"
+import { getGoodsInventoryBySupplierId } from "../../services/GoodService"
 
 function UpdateSaleOrder() {
     const navigate = useNavigate();
@@ -27,7 +27,6 @@ function UpdateSaleOrder() {
     const [retailersLoading, setRetailersLoading] = useState(false);
     const [suppliersLoading, setSuppliersLoading] = useState(false);
     const [goodsLoading, setGoodsLoading] = useState({}); // Map supplierId -> loading state
-    const [packingLoading, setPackingLoading] = useState(false);
     const [formData, setFormData] = useState({
         retailerName: "",
         estimatedTimeDeparture: "",
@@ -39,9 +38,9 @@ function UpdateSaleOrder() {
     ])
     const [fieldErrors, setFieldErrors] = useState({}) // Lỗi theo từng trường
 
-    // Load existing sales order data
+    // Load all data in parallel for faster loading
     useEffect(() => {
-        const loadSalesOrderData = async () => {
+        const loadAllData = async () => {
             if (!id) {
                 window.showToast("Không tìm thấy ID đơn hàng", "error");
                 navigate("/sales-orders");
@@ -50,12 +49,22 @@ function UpdateSaleOrder() {
 
             try {
                 setLoading(true);
-                const response = await getSalesOrderDetail(id);
-                // console.log("Sales Order Detail Response:", response);
+                
+                // Load all data in parallel
+                const [orderResponse, retailersResponse, suppliersResponse] = await Promise.all([
+                    getSalesOrderDetail(id),
+                    getRetailersDropdown(),
+                    getSuppliersDropdown()
+                ]);
 
-                const orderData = response?.data || response;
-                // console.log("Order Data:", orderData);
+                // Set retailers and suppliers
+                const retailersData = retailersResponse?.data || retailersResponse?.items || retailersResponse || [];
+                const suppliersData = suppliersResponse?.data || suppliersResponse?.items || suppliersResponse || [];
+                setRetailers(retailersData);
+                setSuppliers(suppliersData);
 
+                // Process order data
+                const orderData = orderResponse?.data || orderResponse;
                 if (orderData) {
                     // Set form data
                     setFormData({
@@ -64,10 +73,9 @@ function UpdateSaleOrder() {
                         note: orderData.note || ""
                     });
 
-                    // Set items data - fix the mapping based on actual API structure
+                    // Set items data
                     if (orderData.salesOrderItemDetails && orderData.salesOrderItemDetails.length > 0) {
                         const mappedItems = orderData.salesOrderItemDetails.map((detail, index) => {
-                            // Calculate quantity from packageQuantity and unitPerPackage
                             const unitPerPackage = detail.goodsPacking?.unitPerPackage || 1;
                             const packageQuantity = detail.packageQuantity || 0;
                             const calculatedQuantity = unitPerPackage > 0 ? Math.floor(packageQuantity / unitPerPackage) : packageQuantity;
@@ -79,17 +87,60 @@ function UpdateSaleOrder() {
                                 quantity: calculatedQuantity.toString(),
                                 goodsPackingId: detail.goodsPacking?.goodsPackingId ? detail.goodsPacking.goodsPackingId.toString() : "",
                                 salesOrderDetailId: detail.salesOrderDetailId || 0,
-                                // Store original data for reference
                                 originalGoodsId: detail.goods?.goodsId,
                                 originalSupplierId: detail.goods?.supplierId
                             };
                         });
-                        console.log("Mapped Items:", mappedItems);
                         setItems(mappedItems);
+
+                        // Load goods for all suppliers in parallel
+                        const supplierIds = [...new Set(mappedItems
+                            .filter(item => item.originalSupplierId)
+                            .map(item => item.originalSupplierId)
+                            .filter(Boolean)
+                        )];
+
+                        if (supplierIds.length > 0) {
+                            // Load all goods in parallel directly
+                            await Promise.all(
+                                supplierIds.map(async (supplierId) => {
+                                    if (goodsBySupplier[supplierId]) return; // Already loaded
+                                    
+                                    setGoodsLoading(prev => ({ ...prev, [supplierId]: true }));
+                                    try {
+                                        const response = await getGoodsInventoryBySupplierId(supplierId);
+                                        const goodsData = response?.data || response?.items || response || [];
+                                        
+                                        setGoodsBySupplier(prev => ({
+                                            ...prev,
+                                            [supplierId]: goodsData
+                                        }));
+                                        
+                                        setGoodsPackingsMap(prev => {
+                                            const newPackingsMap = { ...prev };
+                                            goodsData.forEach(good => {
+                                                if (good.goodsId && good.goodsPackings && good.goodsPackings.length > 0) {
+                                                    newPackingsMap[good.goodsId] = good.goodsPackings;
+                                                }
+                                            });
+                                            return newPackingsMap;
+                                        });
+                                    } catch (error) {
+                                        setGoodsBySupplier(prev => ({
+                                            ...prev,
+                                            [supplierId]: []
+                                        }));
+                                    } finally {
+                                        setGoodsLoading(prev => ({ ...prev, [supplierId]: false }));
+                                    }
+                                })
+                            );
+                        }
                     }
                 }
+
+                setDataLoaded(true);
             } catch (error) {
-                console.error("Error loading sales order data:", error);
                 window.showToast("Không thể tải dữ liệu đơn hàng", "error");
                 navigate("/sales-orders");
             } finally {
@@ -97,107 +148,8 @@ function UpdateSaleOrder() {
             }
         };
 
-        loadSalesOrderData();
+        loadAllData();
     }, [id, navigate]);
-
-    // Load goods and packing data immediately after items are set
-    useEffect(() => {
-        const loadGoodsAndPackingData = async () => {
-            if (suppliers.length === 0 || items.length === 0) return;
-
-            console.log("Loading goods and packing data for items:", items);
-
-            // Get unique supplier IDs from items (use original data if available)
-            const supplierIds = [...new Set(items
-                .filter(item => item.supplierName)
-                .map(item => {
-                    // Use original supplier ID if available, otherwise find by name
-                    if (item.originalSupplierId) {
-                        return item.originalSupplierId;
-                    }
-                    const supplier = suppliers.find(s => s.companyName === item.supplierName);
-                    return supplier?.supplierId;
-                })
-                .filter(Boolean)
-            )];
-
-            console.log("Supplier IDs to load:", supplierIds);
-
-            // Load goods for each supplier
-            for (const supplierId of supplierIds) {
-                if (!goodsBySupplier[supplierId]) {
-                    console.log("Loading goods for supplier:", supplierId);
-                    await loadGoodsBySupplier(supplierId);
-                }
-            }
-
-            // Wait a bit for goods to be loaded
-            await new Promise(resolve => setTimeout(resolve, 200));
-
-            // Load packing data for each goods (use original data if available)
-            const goodsIds = [...new Set(items
-                .filter(item => item.goodsName)
-                .map(item => {
-                    // Use original goods ID if available
-                    if (item.originalGoodsId) {
-                        console.log("Using original goods ID:", item.originalGoodsId, "for goods:", item.goodsName);
-                        return item.originalGoodsId;
-                    }
-
-                    // Otherwise try to find by name
-                    const supplier = suppliers.find(s => s.companyName === item.supplierName);
-                    if (!supplier) return null;
-                    const goods = goodsBySupplier[supplier.supplierId] || [];
-                    const good = goods.find(g => g.goodsName === item.goodsName);
-                    return good?.goodsId;
-                })
-                .filter(Boolean)
-            )];
-
-            console.log("Goods IDs to load packing for:", goodsIds);
-
-            for (const goodsId of goodsIds) {
-                if (!goodsPackingsMap[goodsId]) {
-                    console.log("Loading packing for goods:", goodsId);
-                    await loadGoodsPacking(goodsId);
-                }
-            }
-
-            // Mark data as loaded
-            setDataLoaded(true);
-        };
-
-        loadGoodsAndPackingData();
-    }, [items]); // Only depend on items, not suppliers.length
-
-    // Load retailers and suppliers on component mount
-    useEffect(() => {
-        const loadData = async () => {
-            setRetailersLoading(true);
-            setSuppliersLoading(true);
-            try {
-                const [retailersResponse, suppliersResponse] = await Promise.all([
-                    getRetailersDropdown(),
-                    getSuppliersDropdown()
-                ]);
-
-                const retailersData = retailersResponse?.data || retailersResponse?.items || retailersResponse || [];
-                const suppliersData = suppliersResponse?.data || suppliersResponse?.items || suppliersResponse || [];
-
-                setRetailers(retailersData);
-                setSuppliers(suppliersData);
-            } catch (error) {
-                console.error("Error loading data:", error);
-                setRetailers([]);
-                setSuppliers([]);
-            } finally {
-                setRetailersLoading(false);
-                setSuppliersLoading(false);
-            }
-        };
-
-        loadData();
-    }, []);
 
 
     const addItem = (e) => {
@@ -252,20 +204,7 @@ function UpdateSaleOrder() {
                 return;
             }
 
-            // Load goods packing khi chọn goods (chỉ load nếu chưa có trong map)
-            if (value) {
-                const currentItem = items.find(item => item.id === id);
-                if (currentItem && currentItem.supplierName) {
-                    const selectedSupplier = suppliers.find(supplier => supplier.companyName === currentItem.supplierName);
-                    if (selectedSupplier) {
-                        const goods = goodsBySupplier[selectedSupplier.supplierId] || [];
-                        const selectedGood = goods.find(good => good.goodsName === value);
-                        if (selectedGood && !goodsPackingsMap[selectedGood.goodsId]) {
-                            loadGoodsPacking(selectedGood.goodsId);
-                        }
-                    }
-                }
-            }
+            // GoodsPackings đã được load sẵn khi load goods, không cần load riêng nữa
 
             // Reset quantity and packing when goods changes
             updatedItems = updatedItems.map((item) =>
@@ -323,14 +262,26 @@ function UpdateSaleOrder() {
 
         setGoodsLoading(prev => ({ ...prev, [supplierId]: true }));
         try {
-            const response = await getGoodsDropDownBySupplierId(supplierId);
+            const response = await getGoodsInventoryBySupplierId(supplierId);
             const goodsData = response?.data || response?.items || response || [];
+            
+            // Lưu goods vào state và goodsPackings vào map từ response (vì API đã trả về sẵn)
             setGoodsBySupplier(prev => ({
                 ...prev,
                 [supplierId]: goodsData
             }));
+            
+            // Lưu goodsPackings vào map từ response (vì API đã trả về sẵn)
+            setGoodsPackingsMap(prev => {
+                const newPackingsMap = { ...prev };
+                goodsData.forEach(good => {
+                    if (good.goodsId && good.goodsPackings && good.goodsPackings.length > 0) {
+                        newPackingsMap[good.goodsId] = good.goodsPackings;
+                    }
+                });
+                return newPackingsMap;
+            });
         } catch (error) {
-            console.error("Error loading goods by supplier:", error);
             setGoodsBySupplier(prev => ({
                 ...prev,
                 [supplierId]: []
@@ -340,27 +291,6 @@ function UpdateSaleOrder() {
         }
     };
 
-    const loadGoodsPacking = async (goodsId) => {
-        setPackingLoading(true);
-        try {
-            const response = await getGoodsPackingByGoodsId(goodsId);
-            const packingData = response?.data || [];
-            // Lưu vào map theo goodsId
-            setGoodsPackingsMap(prev => ({
-                ...prev,
-                [goodsId]: packingData
-            }));
-        } catch (error) {
-            console.error("Error loading goods packing:", error);
-            // Lưu mảng rỗng vào map
-            setGoodsPackingsMap(prev => ({
-                ...prev,
-                [goodsId]: []
-            }));
-        } finally {
-            setPackingLoading(false);
-        }
-    };
 
     // Create options for dropdowns
     const retailerOptions = retailers.map(retailer => ({
@@ -417,7 +347,7 @@ function UpdateSaleOrder() {
             return [{ value: "", label: "Không tìm thấy hàng hóa" }];
         }
 
-        const unitMeasureName = selectedGood?.name || "đơn vị";
+        const unitMeasureName = selectedGood?.unitMeasureName || "đơn vị";
         const goodsId = selectedGood.goodsId;
 
         // Lấy goodsPackings từ map theo goodsId
@@ -579,7 +509,6 @@ function UpdateSaleOrder() {
             }).filter(item => item !== null);
 
             if (itemsWithIds.length === 0) {
-                console.log("Không tìm thấy hàng hóa hợp lệ");
                 window.showToast("Không tìm thấy hàng hóa hợp lệ!", "error");
                 return;
             }
@@ -596,7 +525,6 @@ function UpdateSaleOrder() {
             window.showToast("Cập nhật đơn bán hàng thành công!", "success");
             navigate("/sales-orders");
         } catch (error) {
-            console.error("Lỗi khi cập nhật đơn bán hàng:", error);
             const message = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật đơn bán hàng!")
 
             if (window.showToast) {
@@ -771,7 +699,7 @@ function UpdateSaleOrder() {
                                                             onChange={(value) => updateItem(item.id, "goodsPackingId", value)}
                                                             options={getGoodsPackingOptions(item.id)}
                                                             placeholder={item.goodsName ? "Chọn đóng gói" : "Chọn hàng hóa trước"}
-                                                            loading={packingLoading}
+                                                            loading={false}
                                                             disabled={!item.goodsName}
                                                         />
                                                         {fieldErrors[`${item.id}-goodsPackingId`] && (
@@ -810,7 +738,7 @@ function UpdateSaleOrder() {
                                                                 if (selectedSupplier) {
                                                                     const goods = goodsBySupplier[selectedSupplier.supplierId] || [];
                                                                     const selectedGood = goods.find(good => good.goodsName === item.goodsName);
-                                                                    return selectedGood ? selectedGood.name : "Chưa chọn";
+                                                                    return selectedGood ? selectedGood.unitMeasureName : "Chưa chọn";
                                                                 }
                                                             }
                                                             return "Chưa chọn";

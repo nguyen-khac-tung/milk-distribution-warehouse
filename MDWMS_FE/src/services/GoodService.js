@@ -114,3 +114,22 @@ export const getGoodsDropdown = async (goodsId) => {
         throw error;
     }
 };
+
+// Lấy danh sách hàng tồn kho theo SupplierId
+export const getGoodsInventoryBySupplierId = async (supplierId) => {
+    try {
+        if (!supplierId) {
+            throw new Error("Thiếu supplierId");
+        }
+
+        const res = await api.get(`/Goods/GetGoodsInventoryBySupplierId/${supplierId}`);
+        console.log("getGoodsInventoryBySupplierId:", res.data);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching goods inventory by supplierId:", error);
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
+        throw error;
+    }
+};

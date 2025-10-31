@@ -259,7 +259,13 @@ const SalesOrderTable = ({
                                         {/* Ngày tạo */}
                                         <TableCell className="text-center px-6 py-4">
                                             {order.createdAt
-                                                ? new Date(order.createdAt).toLocaleDateString("vi-VN")
+                                                ? new Date(order.createdAt).toLocaleString("vi-VN", {
+                                                    day: "2-digit",
+                                                    month: "2-digit",
+                                                    year: "numeric",
+                                                    hour: "2-digit",
+                                                    minute: "2-digit",
+                                                })
                                                 : "-"}
                                         </TableCell>
 
