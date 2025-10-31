@@ -27,7 +27,6 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.FullName.Trim()))
                 .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => DateTime.Now));
             CreateMap<User, UserDropDown>();
-            CreateMap<User, UserAssignedDropDown>();
 
             //Map Role
             CreateMap<Role, RoleDto>();
