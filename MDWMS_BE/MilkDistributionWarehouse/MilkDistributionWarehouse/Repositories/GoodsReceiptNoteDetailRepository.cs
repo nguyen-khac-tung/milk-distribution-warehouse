@@ -30,6 +30,8 @@ namespace MilkDistributionWarehouse.Repositories
         {
             return await _context.GoodsReceiptNoteDetails
                 .Include(x => x.Goods)
+                    .ThenInclude(x => x.UnitMeasure)
+                .Include(x => x.GoodsPacking)
                 .Where(x => x.GoodsReceiptNoteId == grnId)
                 .ToListAsync();
         }
