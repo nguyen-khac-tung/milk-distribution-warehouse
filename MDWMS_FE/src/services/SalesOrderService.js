@@ -282,51 +282,6 @@ export const updateSaleOrderStatusPendingApproval = async (data) => {
     }
 };
 
-// Cập nhật trạng thái từ chối Sale Order
-export const updateSaleOrderStatusReject = async (data) => {
-    try {
-        const res = await api.put("/SalesOrder/UpdateSalesOrderStatusReject", data);
-        console.log("updateSaleOrderStatusReject:", res);
-        return res.data;
-    } catch (error) {
-        console.error("Error rejecting sale order:", error);
-        if (error.response?.data?.message) {
-            throw new Error(error.response.data.message);
-        }
-        throw error;
-    }
-};
-
-// Cập nhật trạng thái đơn hàng sang "Approved"
-export const updateSaleOrderStatusApproval = async (data) => {
-    try {
-        const res = await api.put("/SalesOrder/UpdateSalesOrderStatusApproval", data);
-        console.log("updateSaleOrderStatusApproval:", res);
-        return res.data;
-    } catch (error) {
-        console.error("Error updating status to Approval:", error);
-        if (error.response?.data?.message) {
-            throw new Error(error.response.data.message);
-        }
-        throw error;
-    }
-};
-
-// Cập nhật trạng thái đơn hàng sang "Assigned For Picking"
-export const updateSaleOrderStatusAssignedForPicking = async (data) => {
-    try {
-        const res = await api.put("/SalesOrder/UpdateSalesOrderStatusAssignedForPicking", data);
-        console.log("updateSaleOrderStatusAssignedForPicking:", res);
-        return res.data;
-    } catch (error) {
-        console.error("Error updating status to AssignedForPicking:", error);
-        if (error.response?.data?.message) {
-            throw new Error(error.response.data.message);
-        }
-        throw error;
-    }
-};
-
 // Duyệt đơn hàng
 export const approveSalesOrder = async (data) => {
     try {

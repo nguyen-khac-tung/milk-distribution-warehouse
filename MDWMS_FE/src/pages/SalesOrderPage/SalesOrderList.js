@@ -20,17 +20,6 @@ import SalesOrderTable from "./SalesOrderTable";
 import SaleOrderStatsChart from "../../components/SaleOrderCompoents/SaleOrderStatsChart";
 import SaleOrderFilterToggle from "../../components/SaleOrderCompoents/SaleOrderFilterToggle";
 
-
-
-const sampleUsers = [
-    { userId: 1, fullName: "Nguyen Van A" },
-    { userId: 2, fullName: "Tran Thi B" },
-    { userId: 3, fullName: "Le Van C" },
-    { userId: 4, fullName: "Pham Thi D" },
-    { userId: 5, fullName: "Hoang Van E" },
-    { userId: 6, fullName: "representative 6" }
-];
-
 const SalesOrderList = () => {
     const navigate = useNavigate();
     const { hasPermission, userRoles } = usePermissions();
@@ -56,7 +45,6 @@ const SalesOrderList = () => {
     const [statusFilter, setStatusFilter] = useState("");
     const [showStatusFilter, setShowStatusFilter] = useState(false);
     const [showPageSizeFilter, setShowPageSizeFilter] = useState(false);
-    const [showCreateForm, setShowCreateForm] = useState(false);
 
     // New filter states
     const [retailerFilter, setRetailerFilter] = useState("");
@@ -645,9 +633,9 @@ const SalesOrderList = () => {
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-600">Quản lý đơn hàng xuất</h1>
+                        <h1 className="text-2xl font-bold text-slate-600">Quản lý đơn yêu cầu bán hàng</h1>
                         <p className="text-slate-600 mt-1">
-                            Quản lý các đơn hàng xuât trong hệ thống
+                            Quản lý các đơn yêu cầu bán hàng trong hệ thống
                         </p>
                     </div>
                     <div className="flex space-x-3">
@@ -659,7 +647,7 @@ const SalesOrderList = () => {
                                 }}
                             >
                                 <Plus className="mr-2 h-4 w-4 text-white" />
-                                Thêm yêu cầu xuất đơn
+                                Tạo yêu cầu xuất đơn
                             </Button>
                         </PermissionWrapper>
                     </div>

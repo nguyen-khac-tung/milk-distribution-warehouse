@@ -239,3 +239,22 @@ export const getUserDropDown = async () => {
         };
     }
 };
+
+// Lấy danh sách Picker khả dụng theo SalesOrderId
+export const getAvailablePickersDropdown = async (salesOrderId) => {
+    try {
+        if (!salesOrderId) {
+            throw new Error("Thiếu salesOrderId");
+        }
+
+        const res = await api.get(`/User/GetAvailablePickersDropDown/${salesOrderId}`);
+        console.log("getAvailablePickersDropdown:", res.data);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching available pickers:", error);
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
+        throw error;
+    }
+};

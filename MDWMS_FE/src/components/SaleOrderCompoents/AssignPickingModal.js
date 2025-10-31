@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { X, UserPlus, AlertCircle } from "lucide-react";
 import { Button } from "../ui/button";
-import { Textarea } from "../ui/textarea";
 import FloatingDropdown from "../Common/FloatingDropdown";
-import { getUserDropDownByRoleName } from "../../services/AccountService";
+import { getAvailablePickersDropdown } from "../../services/AccountService";
 
 const AssignPickingModal = ({
   isOpen,
@@ -23,7 +22,7 @@ const AssignPickingModal = ({
   const fetchWarehouseStaff = async () => {
     setLoadingStaff(true);
     try {
-      const response = await getUserDropDownByRoleName("Warehouse Staff");
+      const response = await getAvailablePickersDropdown("Warehouse Staff");
       if (response?.data) setWarehouseStaff(response.data);
     } catch (err) {
       console.error("Error fetching staff:", err);
