@@ -261,9 +261,9 @@ const SalesOrderList = () => {
     const handleDeleteConfirm = async () => {
         if (!selectedPurchaseOrder) return;
 
-        console.log("=== DELETE CONFIRM ===");
-        console.log("Selected purchase order:", selectedPurchaseOrder);
-        console.log("All keys:", Object.keys(selectedPurchaseOrder));
+        // console.log("=== DELETE CONFIRM ===");
+        // console.log("Selected purchase order:", selectedPurchaseOrder);
+        // console.log("All keys:", Object.keys(selectedPurchaseOrder));
 
         setDeleteLoading(true);
         try {

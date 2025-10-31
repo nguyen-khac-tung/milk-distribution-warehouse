@@ -13,6 +13,7 @@ import { getRetailersDropdown } from "../../services/RetailerService"
 import { getSuppliersDropdown } from "../../services/SupplierService"
 import { getGoodsPackingByGoodsId } from "../../services/PurchaseOrderService"
 import { getGoodsInventoryBySupplierId } from "../../services/GoodService"
+import { extractErrorMessage } from "../../utils/Validation"
 
 function CreateSaleOrder({
     isEditMode = false,
@@ -180,13 +181,13 @@ function CreateSaleOrder({
         try {
             const response = await getGoodsInventoryBySupplierId(supplierId);
             const goodsData = response?.data || response?.items || response || [];
-            
+
             // Lưu goods vào state và goodsPackings vào map từ response (vì API đã trả về sẵn)
             setGoodsBySupplier(prev => ({
                 ...prev,
                 [supplierId]: goodsData
             }));
-            
+
             // Lưu goodsPackings vào map từ response (vì API đã trả về sẵn)
             setGoodsPackingsMap(prev => {
                 const newPackingsMap = { ...prev };
@@ -457,8 +458,12 @@ function CreateSaleOrder({
             navigate("/sales-orders");
         } catch (error) {
             console.error("Lỗi khi xử lý đơn bán hàng:", error);
-            const errorMessage = error.response?.data?.message || error.message || "Có lỗi xảy ra khi xử lý đơn bán hàng!";
-            window.showToast(errorMessage, "error");
+            const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi xử lý đơn bán hàng!");
+
+            // Show specific error message
+            if (window.showToast) {
+                window.showToast(errorMessage, "error");
+            }
         }
     }
 
