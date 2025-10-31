@@ -8,9 +8,7 @@ import {
   ChevronUp,
   RefreshCw,
   Plus,
-  Trash2,
   CheckCircle,
-  AlertCircle,
   Printer
 } from "lucide-react";
 import Loading from "../../components/Common/Loading";
@@ -22,6 +20,8 @@ import { GOODS_RECEIPT_NOTE_STATUS, RECEIPT_ITEM_STATUS, getGoodsReceiptNoteStat
 import { getReceiptItemStatusMeta } from "./goodsReceiptNoteStatus";
 import RejectReasonModal from "./RejectReasonModal";
 import { extractErrorMessage } from "../../utils/Validation";
+import CreateBatchModal from "./CreateBatchModal";
+import PalletManager from "./CreatePallet";
 
 // Status labels for Goods Receipt Note - sẽ được lấy từ API
 const getStatusLabel = (status) => {
@@ -54,6 +54,7 @@ export default function GoodsReceiptDetail() {
     pallet: true,
     arranging: true
   });
+  const [showCreateBatchModal, setShowCreateBatchModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [selectedDetailId, setSelectedDetailId] = useState(null);
@@ -578,23 +579,13 @@ export default function GoodsReceiptDetail() {
             {expandedSections.pallet && (
               <div className="p-6 space-y-6">
                 <div className="flex gap-3">
-                  <Button className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 h-[38px] flex items-center gap-2">
+                  <Button className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 h-[38px] flex items-center gap-2" onClick={() => setShowCreateBatchModal(true)}>
                     <Plus className="w-4 h-4 mr-3" />
                     Thêm Lô Mới
                   </Button>
-                  <Button variant="outline" className="border-orange-300 text-orange-600 hover:bg-orange-50 h-[38px]">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Thêm Pallet
-                  </Button>
                 </div>
 
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <div className="flex items-center gap-2 text-red-700">
-                    <AlertCircle className="w-5 h-5" />
-                    <span className="font-medium">Lưu ý quan trọng</span>
-                  </div>
-                  <p className="text-red-600 text-sm mt-1">Bạn phải thêm ít nhất một pallet để tiếp tục.</p>
-                </div>
+                <PalletManager />
 
                 <div className="flex justify-end pt-4 border-t border-gray-200">
                   <Button
@@ -666,6 +657,15 @@ export default function GoodsReceiptDetail() {
         setReason={setRejectReason}
         onCancel={closeRejectModal}
         onConfirm={submitReject}
+      />
+      {/* Modal tạo lô mới */}
+      <CreateBatchModal
+        isOpen={showCreateBatchModal}
+        onClose={() => setShowCreateBatchModal(false)}
+        onSuccess={() => {
+          setShowCreateBatchModal(false);
+          fetchGoodsReceiptNoteDetail();
+        }}
       />
     </div>
   );
