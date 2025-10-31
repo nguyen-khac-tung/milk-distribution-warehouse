@@ -1,5 +1,7 @@
 ﻿using MilkDistributionWarehouse.Models.Entities;
 using System.ComponentModel.DataAnnotations;
+using System.Collections.Generic;
+using System;
 
 namespace MilkDistributionWarehouse.Models.DTOs
 {
@@ -83,6 +85,28 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public string AreaName { get; set; }
             public string AreaCode { get; set; }
             public string UnitOfMeasure { get; set; }
+        }
+
+        public class PalletBulkCreate
+        {
+            [Required(ErrorMessage = "Danh sách pallet không được rỗng")]
+            [MinLength(1, ErrorMessage = "Danh sách pallet không được rỗng")]
+            [MaxLength(1000, ErrorMessage = "Số lượng pallet tối đa 1000")]
+            public List<PalletRequestDto> Pallets { get; set; } = new();
+        }
+
+        public class PalletBulkResponse
+        {
+            public int TotalInserted { get; set; }
+            public int TotalFailed { get; set; }
+            public List<FailedItem> FailedItems { get; set; } = new();
+        }
+
+        public class FailedItem
+        {
+            public int Index { get; set; }
+            public string Code { get; set; } = string.Empty;
+            public string Error { get; set; } = string.Empty;
         }
     }
 }
