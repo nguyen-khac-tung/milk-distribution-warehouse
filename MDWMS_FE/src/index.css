@@ -222,6 +222,12 @@ input:focus,
   outline-offset: 2px;
 }
 
+/* Override focus styles cho ProductSelect dropdown */
+.product-select-dropdown button:focus,
+.product-select-dropdown button:focus-visible {
+  outline: none !important;
+}
+
 /* Loading animation */
 @keyframes pulse {
   0%, 100% {
@@ -303,4 +309,17 @@ input:focus,
 .ant-select-item-option-active {
   background-color: rgb(249 115 22) !important;
   color: white !important;
+}
+
+/* Override cho ProductSelect dropdown - force màu cam */
+.product-select-dropdown button[type="button"]:focus,
+.product-select-dropdown button[type="button"]:focus-visible,
+.product-select-dropdown button[type="button"]:active,
+.product-select-dropdown button[type="button"]:hover {
+  outline: none !important;
+  background-color: #f97316 !important;
+  background: #f97316 !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: none !important;
 }

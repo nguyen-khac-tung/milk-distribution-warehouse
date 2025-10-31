@@ -71,4 +71,15 @@ export const approveGoodsReceiptNote = async (goodsReceiptNoteId) => {
     }
 };
 
+// Lấy danh sách pallet theo Goods Receipt Note ID
+export const getGoodRNDPallet = async (grnId) => {
+    try {
+        const res = await api.get(`/GoodsReceiptNoteDetail/GoodRNDPallet/${grnId}`);
+        return res.data;
+    } catch (error) {
+        console.error('Error fetching goods receipt note pallet:', error);
+        throw error;
+    }
+};
+
 

@@ -600,7 +600,10 @@ export default function GoodsReceiptDetail() {
                   </Button>
                 </div>
 
-                <PalletManager />
+                <PalletManager 
+                  goodsReceiptNoteId={goodsReceiptNote?.goodsReceiptNoteId}
+                  goodsReceiptNoteDetails={goodsReceiptNote?.goodsReceiptNoteDetails || []}
+                />
 
                 <div className="flex justify-end pt-4 border-t border-gray-200">
                   <Button
