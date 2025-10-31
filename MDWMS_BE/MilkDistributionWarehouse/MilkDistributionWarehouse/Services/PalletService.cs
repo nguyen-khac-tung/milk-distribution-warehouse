@@ -17,6 +17,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, PalletDto.PalletResponseDto)> UpdatePallet(string palletId, PalletDto.PalletRequestDto dto);
         Task<(string, PalletDto.PalletResponseDto)> DeletePallet(string palletId);
         Task<(string, List<PalletDto.PalletActiveDto>)> GetPalletDropdown();
+        Task<(string, List<PalletDto.PalletResponseDto>)> GetPalletByGRNID(Guid grnId);
         Task<(string, PalletDto.PalletUpdateStatusDto)> UpdatePalletStatus(PalletDto.PalletUpdateStatusDto update);
         Task<(string, PalletDto.PalletUpdateStatusDto)> UpdatePalletQuantity(string palletId, int takeOutQuantity);
         Task<(string, PalletDto.PalletBulkResponse)> CreatePalletBulk(PalletDto.PalletBulkCreate create, int? userId);
@@ -287,6 +288,15 @@ namespace MilkDistributionWarehouse.Services
                 return ("Không có pallet hoạt động.", new List<PalletDto.PalletActiveDto>());
 
             var dto = _mapper.Map<List<PalletDto.PalletActiveDto>>(pallets);
+            return ("", dto);
+        }
+        
+        public async Task<(string, List<PalletDto.PalletResponseDto>)> GetPalletByGRNID(Guid grnId)
+        {
+            var pallets = await _palletRepository.GetPalletsByGRNID(grnId);
+            if (!pallets.Any())
+                return ("Không có pallet nào cho GoodsReceiptNoteId đã cho.".ToMessageForUser(), new List<PalletDto.PalletResponseDto>());
+            var dto = _mapper.Map<List<PalletDto.PalletResponseDto>>(pallets);
             return ("", dto);
         }
 

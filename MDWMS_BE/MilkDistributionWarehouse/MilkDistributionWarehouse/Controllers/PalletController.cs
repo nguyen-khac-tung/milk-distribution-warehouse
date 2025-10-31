@@ -90,6 +90,15 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<List<PalletActiveDto>>.ToResultOk(pallets);
         }
 
+        [HttpGet("GetPalletByGRNID")]
+        public async Task<IActionResult> GetPalletByGRNID(Guid grnid)
+        {
+            var (msg, pallets) = await _palletService.GetPalletByGRNID(grnid);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<List<PalletResponseDto>>.ToResultOk(pallets);
+        }
+
         [HttpPut("UpdateStatus")]
         public async Task<IActionResult> UpdateStatus(PalletUpdateStatusDto update)
         {
