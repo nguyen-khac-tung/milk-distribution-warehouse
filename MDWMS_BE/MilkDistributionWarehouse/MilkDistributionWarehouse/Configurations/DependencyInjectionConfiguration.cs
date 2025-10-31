@@ -105,6 +105,10 @@ namespace MilkDistributionWarehouse.Configurations
             //GoodsReceiptNote
             services.AddScoped<IGoodsReceiptNoteRepository, GoodsReceiptNoteRepository>();
             services.AddScoped<IGoodsReceiptNoteService, GoodsReceiptNoteService>();
+
+            //GoodsIssueNote
+            services.AddScoped<IGoodsIssueNoteRepository, GoodsIssueNoteRepository>();
+            services.AddScoped<IGoodsIssueNoteService, GoodsIssueNoteService>();
         }
     }
 }

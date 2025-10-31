@@ -164,7 +164,11 @@ public partial class WarehouseContext : DbContext
         {
             entity.Property(e => e.GoodsIssueNoteId).ValueGeneratedNever();
 
-            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.GoodsIssueNotes)
+            entity.HasOne(d => d.ApprovalByNavigation).WithMany(p => p.GoodsIssueNoteApprovalByNavigations)
+                .HasForeignKey(d => d.ApprovalBy)
+                .HasConstraintName("FK_GoodsIssueNotes_Users2");
+
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.GoodsIssueNoteCreatedByNavigations)
                 .HasForeignKey(d => d.CreatedBy)
                 .HasConstraintName("FK_GoodsIssueNotes_Users");
 
