@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
@@ -58,9 +58,14 @@ export default function GoodsReceiptDetail() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [selectedDetailId, setSelectedDetailId] = useState(null);
+  const [submitPalletsFn, setSubmitPalletsFn] = useState(null);
   // Thêm state quản lý kiểm tra từng mặt hàng
   // Xóa hẳn 2 state checkedDetails, notCheckedDetails và các setCheckedDetails/setNotCheckedDetails
 
+  // Dùng useCallback để giữ reference ổn định, tránh loop vô hạn
+  const handleRegisterSubmit = useCallback((fn) => {
+    setSubmitPalletsFn(() => fn);
+  }, []);
 
   useEffect(() => {
     fetchGoodsReceiptNoteDetail();
@@ -600,12 +605,20 @@ export default function GoodsReceiptDetail() {
                   </Button>
                 </div>
 
-                <PalletManager
+                <PalletManager 
                   goodsReceiptNoteId={goodsReceiptNote?.goodsReceiptNoteId}
                   goodsReceiptNoteDetails={goodsReceiptNote?.goodsReceiptNoteDetails || []}
+                  onRegisterSubmit={handleRegisterSubmit}
                 />
 
-                <div className="flex justify-end pt-4 border-t border-gray-200">
+                <div className="flex justify-end gap-2 pt-4 border-t border-gray-200">
+                  <Button
+                    className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 h-[38px]"
+                    onClick={() => submitPalletsFn && submitPalletsFn()}
+                    disabled={!submitPalletsFn}
+                  >
+                    Tạo pallet
+                  </Button>
                   <Button
                     className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 h-[38px]"
                     disabled={goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.PendingApproval}
