@@ -82,4 +82,15 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public string FullName { get; set; }
         public string Phone { get; set; }
     }
+
+    public class UserAssignedDropDown
+    {
+        public int UserId { get; set; }
+        public string FullName { get; set; }
+        public string Phone { get; set; }
+        public int PendingPurchaseOrders { get; set; }
+        public int ProcessingPurchaseOrders { get; set; }
+        public int PendingSalesOrders { get; set; }
+        public int ProcessingSalesOrders { get; set; }
+    }
 }
