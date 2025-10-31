@@ -133,10 +133,16 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int AssignTo { get; set; }
     }
 
+    public class PurchaseOrderReAssignForReceivingDto : PurchaseOrderUpdateStatusDto
+    {
+        [Required(ErrorMessage = "Nhân viên kho không được bỏ trống.")]
+        public int ReAssignTo { get; set; }
+    }
+
     public class PurchaseOrderReceivingDto : PurchaseOrderUpdateStatusDto { }
 
     public class PurchaseOrderInspectDto : PurchaseOrderUpdateStatusDto { }
 
     public class PurchaseOrderCompletedDto : PurchaseOrderUpdateStatusDto { }
-    
+
 }
