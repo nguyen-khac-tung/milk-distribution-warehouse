@@ -230,15 +230,16 @@ namespace MilkDistributionWarehouse.Services
             if (!users.Any())
                 return ("Danh sách nhân viên kho khả dụng trống.".ToMessageForUser(), default);
 
-            var userDropDowns = _mapper.Map<List<UserAssignedDropDown>>(users);
-            userDropDowns.ForEach(u =>
+            var userDropDowns = users.Select(u => new UserAssignedDropDown
             {
-                var user = users.FirstOrDefault(us => us.UserId == u.UserId);
-                u.PendingPurchaseOrders = user.PurchaseOrderAssignToNavigations.Where(p => p.Status == PurchaseOrderStatus.AssignedForReceiving).Count();
-                u.ProcessingPurchaseOrders = user.PurchaseOrderAssignToNavigations.Where(p => p.Status == PurchaseOrderStatus.Receiving).Count();
-                u.PendingSalesOrders = user.SalesOrderAssignToNavigations.Where(p => p.Status == SalesOrderStatus.AssignedForPicking).Count();
-                u.ProcessingSalesOrders = user.SalesOrderAssignToNavigations.Where(p => p.Status == SalesOrderStatus.Picking).Count();
-            });
+                UserId = u.UserId,
+                FullName = u.FullName,
+                Phone = u.Phone,
+                PendingPurchaseOrders = u.PurchaseOrderAssignToNavigations.Where(p => p.Status == PurchaseOrderStatus.AssignedForReceiving).Count(),
+                ProcessingPurchaseOrders = u.PurchaseOrderAssignToNavigations.Where(p => p.Status == PurchaseOrderStatus.Receiving).Count(),
+                PendingSalesOrders = u.SalesOrderAssignToNavigations.Where(p => p.Status == SalesOrderStatus.AssignedForPicking).Count(),
+                ProcessingSalesOrders = u.SalesOrderAssignToNavigations.Where(p => p.Status == SalesOrderStatus.Picking).Count()
+            }).ToList();
 
             return ("", userDropDowns);
         }
