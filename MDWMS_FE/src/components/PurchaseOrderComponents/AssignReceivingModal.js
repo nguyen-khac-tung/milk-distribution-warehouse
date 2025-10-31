@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, User, Loader2, AlertCircle, Search } from 'lucide-react';
+import { X, User, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '../ui/button';
 import { getAvailableReceiversDropDown } from '../../services/AccountService';
 import { ComponentIcon } from '../IconComponent/Icon';
@@ -131,7 +131,7 @@ const AssignReceivingModal = ({
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
-            <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full mx-4">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200">
                     <div className="flex items-center space-x-3">
@@ -157,10 +157,10 @@ const AssignReceivingModal = ({
                 </div>
 
                 {/* Content */}
-                <div className="p-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        {/* Left Column - Purchase Order Info */}
-                        <div className="space-y-6">
+                <div className="p-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-[5.5fr_6.5fr] gap-6">
+                        {/* Left Column - Purchase Order Info (narrow) */}
+                        <div className="space-y-4">
                             <div className="bg-gray-50 rounded-lg p-6">
                                 <div className="flex items-center space-x-2 mb-3">
                                     <AlertCircle className="h-5 w-5 text-amber-500" />
@@ -198,76 +198,59 @@ const AssignReceivingModal = ({
                             </div>
                         </div>
 
-                        {/* Right Column - Form */}
+                        {/* Right Column - Form (wider) */}
                         <div className="space-y-6">
-                            {/* Employee Selection */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Chọn nhân viên <span className="text-red-500">*</span>
-                                </label>
-                                {loadingEmployees ? (
-                                    <div className="flex items-center justify-center p-4">
-                                        <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
-                                        <span className="ml-2 text-sm text-gray-600">Đang tải danh sách nhân viên...</span>
-                                    </div>
-                                ) : (
-                                    <div className="relative" ref={dropdownRef}>
-                                        <div className="relative">
-                                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                                            <input
-                                                type="text"
-                                                placeholder="Chọn nhân viên"
-                                                value={isDropdownOpen ? searchTerm : (selectedEmployee ? `${selectedEmployeeName}${selectedEmployeePhone ? ` - ${selectedEmployeePhone}` : ''}` : '')}
-                                                onChange={handleInputChange}
-                                                onFocus={() => setIsDropdownOpen(true)}
-                                                className="h-[38px] w-full pl-10 pr-10 py-2 text-sm border border-slate-300 rounded-md focus:border-orange-500 focus:ring-orange-500 focus:outline-none bg-white hover:border-orange-500 hover:shadow-sm transition-all duration-200"
-                                                disabled={loading}
-                                            />
+                            <label className="block text-sm font-medium text-gray-700 mb-3">
+                                Chọn nhân viên kho <span className="text-red-500">*</span>
+                            </label>
+                            {loadingEmployees ? (
+                                <div className="text-center py-4 text-gray-500">Đang tải danh sách nhân viên...</div>
+                            ) : employees.length === 0 ? (
+                                <div className="text-center py-4 text-gray-500">Không có nhân viên khả dụng.</div>
+                            ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[320px] overflow-y-auto pr-1">
+                                    {employees.map((emp) => {
+                                        const id = emp.id || emp.userId;
+                                        const isSelected = selectedEmployee === id;
+                                        const name = emp.fullName || emp.name || emp.userName;
+                                        const phone = emp.phone || '';
+                                        const pendingPO = emp.pendingPurchaseOrders ?? 0;
+                                        const processingPO = emp.processingPurchaseOrders ?? 0;
+                                        const pendingSO = emp.pendingSalesOrders ?? 0;
+                                        const processingSO = emp.processingSalesOrders ?? 0;
+                                        return (
                                             <div
-                                                className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer"
-                                                onClick={() => !loading && setIsDropdownOpen(!isDropdownOpen)}
+                                                key={id}
+                                                onClick={() => setSelectedEmployee(id)}
+                                                className={`cursor-pointer border rounded-xl p-3 transition-all ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
                                             >
-                                                <ComponentIcon
-                                                    name={isDropdownOpen ? "up" : "down"}
-                                                    size={10}
-                                                    color="#6b7280"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {isDropdownOpen && (
-                                            <div className="absolute z-50 w-full mt-1 bg-white border border-slate-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                                                {filteredEmployees.length > 0 ? (
-                                                    filteredEmployees.map((employee, index) => (
-                                                        <button
-                                                            key={employee.id || employee.userId}
-                                                            type="button"
-                                                            onClick={() => handleEmployeeSelect(employee.id || employee.userId)}
-                                                            className={`w-full px-3 py-2 text-left hover:bg-orange-500 hover:text-white transition-colors duration-200 ${selectedEmployee === (employee.id || employee.userId) ? "bg-orange-500 text-white" : "text-slate-900"
-                                                                }`}
-                                                        >
-                                                            <div className="flex flex-col">
-                                                                <span className="font-medium">
-                                                                    {employee.name || employee.userName || employee.fullName}
-                                                                </span>
-                                                                {employee.phone && (
-                                                                    <span className="text-xs opacity-75">
-                                                                        {employee.phone}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        </button>
-                                                    ))
-                                                ) : (
-                                                    <div className="px-3 py-2 text-slate-500 text-center">
-                                                        Không tìm thấy nhân viên
+                                                <div className="mb-1">
+                                                    <h4 className="font-semibold text-gray-800">{name}</h4>
+                                                    {phone && <p className="text-sm text-gray-500">{phone}</p>}
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2 text-sm mt-2">
+                                                    <div>
+                                                        <span className="text-gray-500">Đơn mua chờ:</span>
+                                                        <span className="font-medium ml-1">{pendingPO}</span>
                                                     </div>
-                                                )}
+                                                    <div>
+                                                        <span className="text-gray-500">Đơn mua xử lý:</span>
+                                                        <span className="font-medium ml-1">{processingPO}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-500">Đơn bán chờ:</span>
+                                                        <span className="font-medium ml-1">{pendingSO}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-500">Đơn bán xử lý:</span>
+                                                        <span className="font-medium ml-1">{processingSO}</span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                     </div>
 
