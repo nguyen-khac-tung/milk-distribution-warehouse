@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Search,
     Filter,
@@ -142,11 +142,46 @@ export default function SaleOrderFilterToggle({
         searchQuery ||
         statusFilter ||
         retailerFilter ||
+        approverFilter ||
         sellerFilter ||
         confirmerFilter ||
         assigneeFilter ||
         estimatedDateRangeFilter?.fromEstimatedDate ||
         estimatedDateRangeFilter?.toEstimatedDate;
+
+    // Close dropdowns on outside click
+    useEffect(() => {
+        const handleDocumentClick = (e) => {
+            const target = e.target;
+            // If click is inside any dropdown container, do nothing
+            const isInsideAnyDropdown = target.closest?.(
+                '.status-filter-dropdown, .retailer-filter-dropdown, .approver-filter-dropdown, .seller-filter-dropdown, .confirmer-filter-dropdown, .assignee-filter-dropdown, .estimated-date-range-filter-dropdown, .page-size-filter-dropdown'
+            );
+            if (isInsideAnyDropdown) return;
+
+            // Otherwise close all dropdowns
+            if (setShowStatusFilter) setShowStatusFilter(false);
+            if (setShowRetailerFilter) setShowRetailerFilter(false);
+            if (setShowApproverFilter) setShowApproverFilter(false);
+            if (setShowSellerFilter) setShowSellerFilter(false);
+            if (setShowConfirmerFilter) setShowConfirmerFilter(false);
+            if (setShowAssigneeFilter) setShowAssigneeFilter(false);
+            if (setShowEstimatedDateRangeFilter) setShowEstimatedDateRangeFilter(false);
+            if (setShowPageSizeFilter) setShowPageSizeFilter(false);
+        };
+
+        document.addEventListener('mousedown', handleDocumentClick);
+        return () => document.removeEventListener('mousedown', handleDocumentClick);
+    }, [
+        setShowStatusFilter,
+        setShowRetailerFilter,
+        setShowApproverFilter,
+        setShowSellerFilter,
+        setShowConfirmerFilter,
+        setShowAssigneeFilter,
+        setShowEstimatedDateRangeFilter,
+        setShowPageSizeFilter,
+    ]);
 
     return (
         <>

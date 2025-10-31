@@ -87,7 +87,7 @@ export const PERMISSIONS = {
     DASHBOARD_VIEW: 'Dashboard.View',
     ADMIN_DASHBOARD_VIEW: 'AdminDashboard.View',
 
-    // Sales Orde permissions
+    // Sales Order permissions
     SALES_ORDER_VIEW: 'SalesOrder.View',
     SALES_ORDER_VIEW_SR: 'SalesOrder.ViewListSR',
     SALES_ORDER_VIEW_SM: 'SalesOrder.ViewListSM',
@@ -97,11 +97,16 @@ export const PERMISSIONS = {
     SALES_ORDER_UPDATE: 'SalesOrder.Update',
     SALES_ORDER_DELETE: 'SalesOrder.Delete',
     SALES_ORDER_VIEW_DETAILS: 'SalesOrder.ViewDetails',
-    SALES_ORDER_SUBMIT_REQUEST: 'SalesOrder.SubmitRequest',
-    SALES_ORDER_APPROVAL_REQUEST: 'SalesOrder.ApprovalRequest',
+    SALES_ORDER_SUBMIT: 'SalesOrder.Submit',
+    SALES_ORDER_APPROVAL: 'SalesOrder.Approval',
+    SALES_ORDER_REJECT: 'SalesOrder.Reject',
     SALES_ORDER_ASSIGN_PICKING: 'SalesOrder.AssignPicking',
     SALES_ORDER_CREATE_DELIVERY_SLIP: 'SalesOrder.CreateDeliverySlip',
     SALES_ORDER_VIEW_DELIVERY_SLIP: 'SalesOrder.ViewDeliverySlip',
+    SALES_ORDER_SUBMIT_PENDING_APPROVAL: 'SalesOrder.SubmitPendingApproval', // Sales Representative
+    SALES_ORDER_APPROVE: 'SalesOrder.Approve', // Sale Manager
+    SALES_ORDER_REJECT_ORDER: 'SalesOrder.RejectOrder', // Sale Manager
+    SALES_ORDER_ASSIGN_FOR_PICKING: 'SalesOrder.AssignForPicking', // Warehouse Manager
 
     // Purchase Order permissions
     PURCHASE_ORDER_VIEW: 'PurchaseOrder.View',
@@ -179,7 +184,8 @@ export const ROLE_PERMISSIONS = {
         PERMISSIONS.SUPPLIER_VIEW, PERMISSIONS.SUPPLIER_CREATE, PERMISSIONS.SUPPLIER_UPDATE, PERMISSIONS.SUPPLIER_DELETE,
         PERMISSIONS.RETAILER_VIEW, PERMISSIONS.RETAILER_CREATE, PERMISSIONS.RETAILER_UPDATE, PERMISSIONS.RETAILER_DELETE,
         PERMISSIONS.PURCHASE_ORDER_VIEW, PERMISSIONS.PURCHASE_ORDER_VIEW_SM, PERMISSIONS.PURCHASE_ORDER_VIEW_DETAILS, PERMISSIONS.PURCHASE_ORDER_APPROVE, PERMISSIONS.PURCHASE_ORDER_REJECT,
-        PERMISSIONS.SALES_ORDER_VIEW, PERMISSIONS.SALES_ORDER_VIEW_SM, PERMISSIONS.SALES_ORDER_VIEW_DETAILS, PERMISSIONS.SALES_ORDER_APPROVAL_REQUEST,
+        PERMISSIONS.SALES_ORDER_VIEW, PERMISSIONS.SALES_ORDER_VIEW_SM, PERMISSIONS.SALES_ORDER_VIEW_DETAILS,
+        PERMISSIONS.SALES_ORDER_APPROVE, PERMISSIONS.SALES_ORDER_REJECT_ORDER,
         PERMISSIONS.REPORT_VIEW, PERMISSIONS.REPORT_EXPORT
     ],
 
@@ -190,7 +196,7 @@ export const ROLE_PERMISSIONS = {
         PERMISSIONS.PURCHASE_ORDER_VIEW, PERMISSIONS.PURCHASE_ORDER_VIEW_RS, PERMISSIONS.PURCHASE_ORDER_CREATE, PERMISSIONS.PURCHASE_ORDER_UPDATE, PERMISSIONS.PURCHASE_ORDER_DELETE, PERMISSIONS.PURCHASE_ORDER_VIEW_DETAILS,
         PERMISSIONS.PURCHASE_ORDER_SUBMIT_DRAFT,
         PERMISSIONS.SALES_ORDER_VIEW, PERMISSIONS.SALES_ORDER_VIEW_SR, PERMISSIONS.SALES_ORDER_CREATE, PERMISSIONS.SALES_ORDER_UPDATE, PERMISSIONS.SALES_ORDER_DELETE, PERMISSIONS.SALES_ORDER_VIEW_DETAILS,
-        PERMISSIONS.SALES_ORDER_SUBMIT_REQUEST,
+        PERMISSIONS.SALES_ORDER_SUBMIT_PENDING_APPROVAL,
         PERMISSIONS.REPORT_VIEW,
         PERMISSIONS.BACKORDER_CREATE, PERMISSIONS.BACKORDER_UPDATE, PERMISSIONS.BACKORDER_CREATE_SALES_ORDER, PERMISSIONS.BACKORDER_VIEW, PERMISSIONS.BACKORDER_VIEW_DETAILS, PERMISSIONS.BACKORDER_DELETE
     ],
@@ -205,6 +211,8 @@ export const ROLE_PERMISSIONS = {
         PERMISSIONS.GOODS_RECEIPT_NOTE_VIEW_DETAILS,
         PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE, PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT,
         PERMISSIONS.SALES_ORDER_VIEW, PERMISSIONS.SALES_ORDER_VIEW_WM, PERMISSIONS.SALES_ORDER_VIEW_DETAILS, PERMISSIONS.SALES_ORDER_ASSIGN_PICKING,
+        PERMISSIONS.SALES_ORDER_VIEW, PERMISSIONS.SALES_ORDER_VIEW_WM, PERMISSIONS.SALES_ORDER_VIEW_DETAILS,
+        PERMISSIONS.SALES_ORDER_ASSIGN_FOR_PICKING,
         PERMISSIONS.SALES_ORDER_VIEW_DELIVERY_SLIP,
         PERMISSIONS.PALLET_VIEW, PERMISSIONS.PALLET_VIEW_DETAILS,
         PERMISSIONS.PALLET_PRINT_BARCODE, PERMISSIONS.PALLET_SCAN_BARCODE, PERMISSIONS.PALLET_VIEW_SUGGESTED_LOCATIONS,
@@ -377,6 +385,14 @@ export const canPerformSalesOrderDetailAction = (action, order, hasPermission, u
         order?.createdById === currentUserId ||
         order?.createdByUserId === currentUserId;
 
+    // For warehouse staff, actions are based on being the assigned user, not the creator
+    const isAssignedToSelf =
+        order?.assignTo?.userId === currentUserId ||
+        order?.assignTo?.id === currentUserId ||
+        order?.assignTo === currentUserId ||
+        order?.assignToId === currentUserId ||
+        order?.assignToUserId === currentUserId;
+
     const status = order?.status;
 
 
@@ -395,7 +411,13 @@ export const canPerformSalesOrderDetailAction = (action, order, hasPermission, u
                 // Chỉ có thể delete Draft của mình
                 const canDeleteDraft = status === SALES_ORDER_STATUS.Draft || status === 1 || status === "1";
                 return isOwnOrder && canDeleteDraft;
+            case 'submit_pending_approval':
+                // Chỉ có thể submit Draft/Rejected của mình
+                const canSubmitDraft = status === SALES_ORDER_STATUS.Draft || status === 1 || status === "1";
+                const canSubmitRejected = status === SALES_ORDER_STATUS.Rejected || status === 3 || status === "3";
+                return isOwnOrder && (canSubmitDraft || canSubmitRejected);
             case 'approve':
+            case 'reject':
             case 'assign':
             case 'create_delivery_slip':
             case 'view_delivery_slip':
@@ -412,9 +434,13 @@ export const canPerformSalesOrderDetailAction = (action, order, hasPermission, u
                 return true;
             case 'approve':
                 // Chỉ có thể approve PendingApproval
-                return status === SALES_ORDER_STATUS.PendingApproval;
+                return status === SALES_ORDER_STATUS.PendingApproval || status === 2 || status === "2";
+            case 'reject':
+                // Chỉ có thể reject PendingApproval
+                return status === SALES_ORDER_STATUS.PendingApproval || status === 2 || status === "2";
             case 'edit':
             case 'delete':
+            case 'submit_pending_approval':
             case 'assign':
             case 'create_delivery_slip':
             case 'view_delivery_slip':
@@ -429,15 +455,25 @@ export const canPerformSalesOrderDetailAction = (action, order, hasPermission, u
         switch (action) {
             case 'view':
                 return true;
-            case 'assign':
-                // Có thể assign Approved hoặc re-assign AssignedForPicking
-                return status === SALES_ORDER_STATUS.Approved || status === SALES_ORDER_STATUS.AssignedForPicking;
+            case 'assign_for_picking':
+                // Chỉ cho phép phân công/lại nếu trạng thái là Approved hoặc AssignedForPicking (Đã phân công)
+                return (
+                    status === SALES_ORDER_STATUS.Approved ||
+                    status === SALES_ORDER_STATUS.AssignedForPicking ||
+                    status === 4 ||
+                    status === '4' ||
+                    status === 5 ||
+                    status === '5'
+                );
             case 'view_delivery_slip':
                 // Có thể xem delivery slip khi Picking hoặc Completed
-                return status === SALES_ORDER_STATUS.Picking || status === SALES_ORDER_STATUS.Completed;
+                return status === SALES_ORDER_STATUS.Picking || status === SALES_ORDER_STATUS.Completed ||
+                    status === 6 || status === "6" || status === 7 || status === "7";
             case 'edit':
             case 'delete':
             case 'approve':
+            case 'reject':
+            case 'submit_pending_approval':
             case 'create_delivery_slip':
                 return false; // Warehouse Manager không có quyền này
             default:
@@ -451,15 +487,19 @@ export const canPerformSalesOrderDetailAction = (action, order, hasPermission, u
             case 'view':
                 return true;
             case 'create_delivery_slip':
-                // Chỉ có thể tạo delivery slip cho AssignedForPicking của mình
-                return isOwnOrder && status === SALES_ORDER_STATUS.AssignedForPicking;
+                // Chỉ có thể tạo delivery slip cho AssignedForPicking của chính mình (được phân công)
+                return isAssignedToSelf && (status === SALES_ORDER_STATUS.AssignedForPicking || status === 5 || status === "5");
             case 'view_delivery_slip':
-                // Có thể xem delivery slip khi Picking hoặc Completed của mình
-                return isOwnOrder && (status === SALES_ORDER_STATUS.Picking || status === SALES_ORDER_STATUS.Completed);
+                // Có thể xem delivery slip khi Picking hoặc Completed của chính mình (được phân công)
+                return isAssignedToSelf && (status === SALES_ORDER_STATUS.Picking || status === SALES_ORDER_STATUS.Completed ||
+                    status === 6 || status === "6" || status === 7 || status === "7");
             case 'edit':
             case 'delete':
             case 'approve':
+            case 'reject':
+            case 'submit_pending_approval':
             case 'assign':
+            case 'assign_for_picking':
                 return false; // Warehouse Staff không có quyền này
             default:
                 return false;

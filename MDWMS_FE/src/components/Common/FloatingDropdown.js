@@ -21,7 +21,8 @@ const FloatingDropdown = ({
             onChange={onChange}
             loading={loading}
             className="w-full text-sm"
-            popupClassName="rounded-md shadow-2xl"
+            popupClassName="rounded-md shadow-2xl z-[99999]"
+            getPopupContainer={() => document.body}
             optionFilterProp="children"
             filterOption={(input, option) =>
                 (option?.children ?? "").toLowerCase().includes(input.toLowerCase())

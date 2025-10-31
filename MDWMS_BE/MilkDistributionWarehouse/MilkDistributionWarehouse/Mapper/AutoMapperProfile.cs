@@ -27,7 +27,6 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.FullName.Trim()))
                 .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => DateTime.Now));
             CreateMap<User, UserDropDown>();
-            CreateMap<User, UserAssignedDropDown>();
 
             //Map Role
             CreateMap<Role, RoleDto>();
@@ -340,7 +339,10 @@ namespace MilkDistributionWarehouse.Mapper
 
             //Map GoodsReceiptNoteDetail
             CreateMap<GoodsReceiptNoteDetail, GoodsReceiptNoteDetailDto.GoodsReceiptNoteDetailPalletDto>()
+                .ForMember(dest => dest.UnitMeasureName, opt => opt.MapFrom(src => src.Goods.UnitMeasure.Name))
+                .ForMember(dest => dest.UnitPerPackage, opt => opt.MapFrom(src => src.GoodsPacking.UnitPerPackage))
                 .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Goods.GoodsName));
+
             CreateMap<GoodsReceiptNoteDetail, GoodsReceiptNoteDetailListDto>()
                 .ForMember(dest => dest.GoodsCode, opt => opt.MapFrom(src => src.Goods.GoodsCode))
                 .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Goods.GoodsName))

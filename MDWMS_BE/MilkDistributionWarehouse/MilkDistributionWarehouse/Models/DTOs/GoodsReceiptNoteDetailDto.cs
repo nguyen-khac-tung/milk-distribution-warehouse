@@ -10,6 +10,9 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public Guid GoodsReceiptNoteId { get; set; }
             public int GoodsId { get; set; }
             public string GoodsName { get; set; }
+            public int GoodsPackingId { get; set; }
+            public int UnitPerPackage { get; set; }
+            public string UnitMeasureName { get; set; }
         }
     }
 

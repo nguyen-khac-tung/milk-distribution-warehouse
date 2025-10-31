@@ -13,6 +13,7 @@ import { getRetailersDropdown } from "../../services/RetailerService"
 import { getSuppliersDropdown } from "../../services/SupplierService"
 import { getGoodsDropDownBySupplierId, getGoodsPackingByGoodsId } from "../../services/PurchaseOrderService"
 import Loading from "../../components/Common/Loading"
+import { extractErrorMessage } from "../../utils/Validation"
 
 function UpdateSaleOrder() {
     const navigate = useNavigate();
@@ -50,10 +51,10 @@ function UpdateSaleOrder() {
             try {
                 setLoading(true);
                 const response = await getSalesOrderDetail(id);
-                console.log("Sales Order Detail Response:", response);
- 
+                // console.log("Sales Order Detail Response:", response);
+
                 const orderData = response?.data || response;
-                console.log("Order Data:", orderData);
+                // console.log("Order Data:", orderData);
 
                 if (orderData) {
                     // Set form data
@@ -142,7 +143,7 @@ function UpdateSaleOrder() {
                         console.log("Using original goods ID:", item.originalGoodsId, "for goods:", item.goodsName);
                         return item.originalGoodsId;
                     }
-                    
+
                     // Otherwise try to find by name
                     const supplier = suppliers.find(s => s.companyName === item.supplierName);
                     if (!supplier) return null;
@@ -288,9 +289,9 @@ function UpdateSaleOrder() {
             setFieldErrors(newErrors);
         }
 
-        // Validate real-time cho số lượng
+        // Validate real-time cho số lượng (use updatedItems to avoid stale state)
         if (field === "quantity" || field === "goodsPackingId") {
-            const updatedItem = items.find(item => item.id === id);
+            const updatedItem = updatedItems.find(item => item.id === id);
             if (updatedItem) {
                 const tempItem = { ...updatedItem, [field]: value };
                 const quantityError = validateQuantity(tempItem);
@@ -435,27 +436,27 @@ function UpdateSaleOrder() {
     // Tính tổng số đơn vị (số thùng × đơn vị đóng gói)
     const calculateTotalUnits = (item) => {
         if (!item.quantity || !item.goodsPackingId) return 0;
-
-        // Use original goods ID if available
-        const goodsId = item.originalGoodsId;
+        // Determine goodsId: prefer originalGoodsId (from loaded data), otherwise find by supplierName + goodsName
+        let goodsId = item.originalGoodsId;
         if (!goodsId) {
-            console.log("No original goods ID found for item:", item);
-            return 0;
+            if (item.supplierName && item.goodsName) {
+                const selectedSupplier = suppliers.find(s => s.companyName === item.supplierName);
+                if (selectedSupplier) {
+                    const goods = goodsBySupplier[selectedSupplier.supplierId] || [];
+                    const selectedGood = goods.find(g => g.goodsName === item.goodsName);
+                    goodsId = selectedGood?.goodsId;
+                }
+            }
         }
+
+        if (!goodsId) return 0;
 
         const goodsPackings = goodsPackingsMap[goodsId] || [];
-        const selectedPacking = goodsPackings.find(packing =>
-            packing.goodsPackingId.toString() === item.goodsPackingId
-        );
+        const selectedPacking = goodsPackings.find(packing => packing.goodsPackingId.toString() === item.goodsPackingId);
 
-        if (!selectedPacking) {
-            console.log("No packing found for goodsPackingId:", item.goodsPackingId, "in goods:", goodsId);
-            console.log("Available packings:", goodsPackings);
-            return 0;
-        }
+        if (!selectedPacking) return 0;
 
         const total = parseInt(item.quantity) * selectedPacking.unitPerPackage;
-        console.log(`Calculating total: ${item.quantity} × ${selectedPacking.unitPerPackage} = ${total}`);
         return total;
     };
 
@@ -596,8 +597,11 @@ function UpdateSaleOrder() {
             navigate("/sales-orders");
         } catch (error) {
             console.error("Lỗi khi cập nhật đơn bán hàng:", error);
-            const errorMessage = error.response?.data?.message || error.message || "Có lỗi xảy ra khi cập nhật đơn bán hàng!";
-            window.showToast(errorMessage, "error");
+            const message = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật đơn bán hàng!")
+
+            if (window.showToast) {
+                window.showToast(message, "error");
+            }
         }
     }
 
@@ -636,41 +640,68 @@ function UpdateSaleOrder() {
                         {/* Header Information */}
                         <div>
                             <h3 className="text-lg font-semibold text-slate-600 mb-4">Thông Tin Đơn Hàng</h3>
-                            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                            <div className="space-y-6">
+                                <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="retailer" className="text-slate-600 font-medium">
+                                            Nhà Bán Lẻ <span className="text-red-500">*</span>
+                                        </Label>
+                                        <FloatingDropdown
+                                            value={formData.retailerName || undefined}
+                                            onChange={(value) => handleInputChange("retailerName", value)}
+                                            options={retailerOptions}
+                                            placeholder="Chọn nhà bán lẻ"
+                                            loading={retailersLoading}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="estimatedTimeDeparture" className="text-slate-600 font-medium">
+                                            Ngày Dự Kiến Giao <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Input
+                                            type="date"
+                                            value={formData.estimatedTimeDeparture}
+                                            onChange={(e) => handleInputChange("estimatedTimeDeparture", e.target.value)}
+                                            className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Thông tin nhà bán lẻ đã chọn */}
+                                {formData.retailerName && (() => {
+                                    const selectedRetailer = retailers.find(retailer => retailer.retailerName === formData.retailerName);
+                                    return selectedRetailer ? (
+                                        <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-lg p-4">
+                                            <h4 className="text-sm font-semibold text-orange-800 mb-3">Thông Tin Nhà Bán Lẻ</h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                <div className="bg-white rounded-lg p-3 border border-orange-100">
+                                                    <div className="text-xs text-orange-600 font-medium mb-1">Email</div>
+                                                    <div className="text-sm font-semibold text-slate-700">{selectedRetailer.email}</div>
+                                                </div>
+                                                <div className="bg-white rounded-lg p-3 border border-orange-100">
+                                                    <div className="text-xs text-orange-600 font-medium mb-1">Số Điện Thoại</div>
+                                                    <div className="text-sm font-semibold text-slate-700">{selectedRetailer.phone}</div>
+                                                </div>
+                                                <div className="bg-white rounded-lg p-3 border border-orange-100">
+                                                    <div className="text-xs text-orange-600 font-medium mb-1">Địa Chỉ</div>
+                                                    <div className="text-sm font-semibold text-slate-700">{selectedRetailer.address}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : null;
+                                })()}
+
                                 <div className="space-y-2">
-                                    <Label htmlFor="retailer" className="text-slate-600 font-medium">
-                                        Nhà Bán Lẻ <span className="text-red-500">*</span>
+                                    <Label htmlFor="note" className="text-slate-600 font-medium">
+                                        Ghi Chú
                                     </Label>
-                                    <FloatingDropdown
-                                        value={formData.retailerName || undefined}
-                                        onChange={(value) => handleInputChange("retailerName", value)}
-                                        options={retailerOptions}
-                                        placeholder="Chọn nhà bán lẻ"
-                                        loading={retailersLoading}
+                                    <Textarea
+                                        value={formData.note}
+                                        onChange={(e) => handleInputChange("note", e.target.value)}
+                                        placeholder="Nhập ghi chú (tùy chọn)"
+                                        className="min-h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="estimatedTimeDeparture" className="text-slate-600 font-medium">
-                                        Ngày Dự Kiến Giao <span className="text-red-500">*</span>
-                                    </Label>
-                                    <Input
-                                        type="date"
-                                        value={formData.estimatedTimeDeparture}
-                                        onChange={(e) => handleInputChange("estimatedTimeDeparture", e.target.value)}
-                                        className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                                    />
-                                </div>
-                            </div>
-                            <div className="space-y-2 mt-2">
-                                <Label htmlFor="note" className="text-slate-600 font-medium">
-                                    Ghi Chú
-                                </Label>
-                                <Textarea
-                                    value={formData.note}
-                                    onChange={(e) => handleInputChange("note", e.target.value)}
-                                    placeholder="Nhập ghi chú (tùy chọn)"
-                                    className="min-h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                                />
                             </div>
                         </div>
 
@@ -684,24 +715,24 @@ function UpdateSaleOrder() {
                                 <Table>
                                     <TableHeader>
                                         <TableRow className="border-b border-gray-200 hover:bg-transparent">
-                                            <TableHead className="text-slate-600 font-semibold">STT</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold">Nhà Cung Cấp</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold">Tên Hàng Hóa</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold">Đóng Gói</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold">Số Thùng</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold">Tổng Số Đơn Vị</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold">Đơn Vị</TableHead>
+                                            <TableHead className="text-slate-600 font-semibold w-12">STT</TableHead>
+                                            <TableHead className="text-slate-600 font-semibold w-48">Nhà Cung Cấp</TableHead>
+                                            <TableHead className="text-slate-600 font-semibold w-56">Tên Hàng Hóa</TableHead>
+                                            <TableHead className="text-slate-600 font-semibold w-40">Đóng Gói</TableHead>
+                                            <TableHead className="text-slate-600 font-semibold w-32">Số Thùng</TableHead>
+                                            <TableHead className="text-slate-600 font-semibold w-32">Tổng Số Đơn Vị</TableHead>
+                                            <TableHead className="text-slate-600 font-semibold w-24">Đơn Vị</TableHead>
                                             {items.length > 1 && (
-                                                <TableHead className="text-right text-slate-600 font-semibold">Hành Động</TableHead>
+                                                <TableHead className="text-right text-slate-600 font-semibold w-20">Hành Động</TableHead>
                                             )}
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {items.map((item, index) => (
-                                            <TableRow key={item.id} className="border-b border-gray-200 hover:bg-gray-50 py-4">
-                                                <TableCell className="text-slate-700 w-[10px]">{index + 1}</TableCell>
-                                                <TableCell className="relative" style={{ overflow: 'visible', zIndex: 'auto' }}>
-                                                    <div className="w-fit min-w-[180px] max-w-[240px] relative">
+                                            <TableRow key={item.id} className="border-b border-gray-200 hover:bg-gray-50 py-2">
+                                                <TableCell className="text-slate-700 w-12 text-center">{index + 1}</TableCell>
+                                                <TableCell className="relative w-48" style={{ overflow: 'visible', zIndex: 'auto' }}>
+                                                    <div className="w-full relative">
                                                         <FloatingDropdown
                                                             value={item.supplierName || undefined}
                                                             onChange={(value) => updateItem(item.id, "supplierName", value)}
@@ -714,8 +745,8 @@ function UpdateSaleOrder() {
                                                         )}
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="relative" style={{ overflow: 'visible', zIndex: 'auto' }}>
-                                                    <div className="w-fit min-w-[180px] max-w-[200px] relative">
+                                                <TableCell className="relative w-56" style={{ overflow: 'visible', zIndex: 'auto' }}>
+                                                    <div className="w-full relative">
                                                         <FloatingDropdown
                                                             value={item.goodsName || undefined}
                                                             onChange={(value) => updateItem(item.id, "goodsName", value)}
@@ -733,8 +764,8 @@ function UpdateSaleOrder() {
                                                         )}
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="relative" style={{ overflow: 'visible', zIndex: 'auto' }}>
-                                                    <div className="w-fit min-w-[130px] max-w-[160px] relative">
+                                                <TableCell className="relative w-40" style={{ overflow: 'visible', zIndex: 'auto' }}>
+                                                    <div className="w-full relative">
                                                         <FloatingDropdown
                                                             value={item.goodsPackingId || undefined}
                                                             onChange={(value) => updateItem(item.id, "goodsPackingId", value)}
@@ -748,8 +779,8 @@ function UpdateSaleOrder() {
                                                         )}
                                                     </div>
                                                 </TableCell>
-                                                <TableCell>
-                                                    <div className="w-fit min-w-[50px] max-w-[60px] relative">
+                                                <TableCell className="w-32">
+                                                    <div className="w-full relative">
                                                         <Input
                                                             type="number"
                                                             placeholder="0"
@@ -758,12 +789,12 @@ function UpdateSaleOrder() {
                                                             className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${fieldErrors[`${item.id}-quantity`] ? 'border-red-500' : ''}`}
                                                         />
                                                         {fieldErrors[`${item.id}-quantity`] && (
-                                                            <p className="absolute left-0 top-[42px] top-full mt-1 text-red-500 text-xs">{fieldErrors[`${item.id}-quantity`]}</p>
+                                                            <p className="absolute left-0 top-[42px] text-red-500 text-xs">{fieldErrors[`${item.id}-quantity`]}</p>
                                                         )}
                                                     </div>
                                                 </TableCell>
-                                                <TableCell>
-                                                    <div className="h-[38px] flex items-center px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600 font-medium">
+                                                <TableCell className="w-32">
+                                                    <div className="h-[38px] flex items-center px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600 font-medium text-center">
                                                         {(() => {
                                                             const totalUnits = calculateTotalUnits(item);
                                                             if (totalUnits === 0) return "0";
@@ -771,8 +802,8 @@ function UpdateSaleOrder() {
                                                         })()}
                                                     </div>
                                                 </TableCell>
-                                                <TableCell>
-                                                    <div className="h-[38px] flex items-center px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600">
+                                                <TableCell className="w-24">
+                                                    <div className="h-[38px] flex items-center px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600 text-center text-sm">
                                                         {(() => {
                                                             if (item.goodsName && item.supplierName) {
                                                                 const selectedSupplier = suppliers.find(supplier => supplier.companyName === item.supplierName);
@@ -787,7 +818,7 @@ function UpdateSaleOrder() {
                                                     </div>
                                                 </TableCell>
                                                 {items.length > 1 && (
-                                                    <TableCell className="text-right">
+                                                    <TableCell className="text-right w-20">
                                                         <Button
                                                             type="button"
                                                             variant="ghost"
@@ -802,13 +833,13 @@ function UpdateSaleOrder() {
                                             </TableRow>
                                         ))}
                                         <TableRow className="border-b border-gray-200">
-                                            <TableCell className={items.length === 1 ? "py-16" : "py-8"}></TableCell>
-                                            <TableCell className={items.length === 1 ? "py-16" : "py-8"}></TableCell>
-                                            <TableCell className={items.length === 1 ? "py-16" : "py-8"}></TableCell>
-                                            <TableCell className={items.length === 1 ? "py-16" : "py-8"}></TableCell>
-                                            <TableCell className={items.length === 1 ? "py-16" : "py-8"}></TableCell>
-                                            <TableCell className={items.length === 1 ? "py-16" : "py-8"}></TableCell>
-                                            <TableCell className={items.length === 1 ? "py-16" : "py-8"}></TableCell>
+                                            <TableCell className={items.length === 1 ? "py-12" : "py-6"}></TableCell>
+                                            <TableCell className={items.length === 1 ? "py-12" : "py-6"}></TableCell>
+                                            <TableCell className={items.length === 1 ? "py-12" : "py-6"}></TableCell>
+                                            <TableCell className={items.length === 1 ? "py-12" : "py-6"}></TableCell>
+                                            <TableCell className={items.length === 1 ? "py-12" : "py-6"}></TableCell>
+                                            <TableCell className={items.length === 1 ? "py-12" : "py-6"}></TableCell>
+                                            <TableCell className={items.length === 1 ? "py-12" : "py-6"}></TableCell>
                                         </TableRow>
                                     </TableBody>
                                 </Table>
