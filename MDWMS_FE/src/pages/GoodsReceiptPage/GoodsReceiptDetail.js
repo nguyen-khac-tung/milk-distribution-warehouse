@@ -473,7 +473,7 @@ export default function GoodsReceiptDetail() {
                         <TableHead className="font-semibold text-green-900 text-center">Số lượng thùng thực nhận</TableHead>
                         <TableHead className="font-semibold text-green-900">Ghi chú</TableHead>
                         <TableHead className="font-semibold text-green-900 text-center">Trạng thái</TableHead>
-                        {(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) || checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.Inspected)) && (
+                        {(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) || checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.Inspected)) && goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.Completed && (
                           <TableHead className="font-semibold text-green-900 text-center">Hành động</TableHead>
                         )}
                       </TableRow>
@@ -502,7 +502,7 @@ export default function GoodsReceiptDetail() {
                               );
                             })()}
                           </TableCell>
-                          {(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) || checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.Inspected)) && (
+                          {(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) || checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.Inspected)) && goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.Completed && (
                             <TableCell className="text-center">
                               <div className="inline-flex items-center gap-2">
                                 {detail.status === RECEIPT_ITEM_STATUS.Inspected && hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CANCEL) && (
@@ -527,7 +527,7 @@ export default function GoodsReceiptDetail() {
                   {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_COMPLETE_RECEIVING) && (
                     <Button
                       className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 h-[38px]"
-                      disabled={goodsReceiptNote.status === GOODS_RECEIPT_NOTE_STATUS.PendingApproval}
+                      disabled={goodsReceiptNote.status === GOODS_RECEIPT_NOTE_STATUS.PendingApproval || goodsReceiptNote.status === GOODS_RECEIPT_NOTE_STATUS.Completed}
                       onClick={handleCompleteReceiving}
                     >
                       <CheckCircle className="w-4 h-4 mr-2" />
@@ -537,6 +537,7 @@ export default function GoodsReceiptDetail() {
                   {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) && (
                     <Button
                       className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 h-[38px]"
+                      disabled={goodsReceiptNote.status === GOODS_RECEIPT_NOTE_STATUS.Completed}
                       onClick={async () => {
                         try {
                           await approveGoodsReceiptNote(goodsReceiptNote.goodsReceiptNoteId);

@@ -15,7 +15,7 @@ export const RECEIPT_ITEM_STATUS = {
 
 export const GOODS_RECEIPT_NOTE_STATUS_META = {
     [GOODS_RECEIPT_NOTE_STATUS.Draft]: {
-        label: 'Nháp',
+        label: 'Đang tiếp nhận',
         color: 'bg-gray-100 text-gray-800'
     },
     [GOODS_RECEIPT_NOTE_STATUS.PendingApproval]: {

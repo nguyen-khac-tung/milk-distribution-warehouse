@@ -327,6 +327,17 @@ const PurchaseOrderTable = ({
                           </button>
                         )}
 
+                        {/* Goods Receipt button - for status 7 (Đang tiếp nhận) - for Warehouse Manager */}
+                        {order.status === 7 && hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WM) && (
+                          <button
+                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                            title="Xem phiếu nhập kho"
+                            onClick={() => handleGoodsReceiptClick(order)}
+                          >
+                            <Package2 className="h-4 w-4 text-blue-500" />
+                          </button>
+                        )}
+
                         {/* Delete button - conditional based on API flags for Sales Representative */}
                         {canPerformPurchaseOrderAction('delete', order, hasPermission) && (
                           <button
@@ -362,6 +373,17 @@ const PurchaseOrderTable = ({
                                   onClick={() => handleGoodsReceiptClick(order)}
                                 >
                                   <Package2 className={`h-4 w-4 ${order.status === 6 ? 'text-green-500' : 'text-blue-500'}`} />
+                                </button>
+                              )}
+
+                              {/* Goods Receipt button - for status 7 (Đang tiếp nhận) - for Warehouse Manager */}
+                              {(order.status === 7 || order.status === 8 || order.status === 9) && hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WM) && (
+                                <button
+                                  className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                  title="Xem phiếu nhập kho"
+                                  onClick={() => handleGoodsReceiptClick(order)}
+                                >
+                                  <Package2 className="h-4 w-4 text-blue-500" />
                                 </button>
                               )}
                               {!order.isDisable && (

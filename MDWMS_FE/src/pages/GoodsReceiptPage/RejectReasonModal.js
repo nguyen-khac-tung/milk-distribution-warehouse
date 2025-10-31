@@ -15,9 +15,22 @@ export default function RejectReasonModal({ isOpen, reason, setReason, onCancel,
           value={reason}
           onChange={(e) => setReason(e.target.value)}
         />
-        <div className="flex justify-end gap-2 mt-4">
-          <Button variant="outline" onClick={onCancel}>Hủy</Button>
-          <Button variant="destructive" onClick={onConfirm}>Từ chối</Button>
+        <div className="flex justify-end gap-4 mt-4">
+          <Button 
+            type="button"
+            variant="outline" 
+            onClick={onCancel}
+            className="h-[38px] px-8 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all"
+          >
+            Hủy
+          </Button>
+          <Button 
+            type="button"
+            onClick={onConfirm}
+            className="h-[38px] px-8 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all"
+          >
+            Từ chối
+          </Button>
         </div>
       </div>
     </div>
