@@ -77,13 +77,13 @@ const SalesOrderTable = ({
                                     STT
                                 </TableHead>
 
-                                {/* Đại lý */}
+                                {/* Nhà bán lẻ */}
                                 <TableHead
                                     className="font-semibold text-slate-900 px-6 py-3 text-left"
                                     onClick={() => handleSort("retailerName")}
                                 >
                                     <div className="flex items-center space-x-2 cursor-pointer">
-                                        <span>Đại lý</span>
+                                        <span>Nhà bán lẻ</span>
                                         {sortField === "retailerName" ? (
                                             sortAscending ? (
                                                 <ArrowUp className="h-4 w-4 text-orange-500" />
@@ -200,7 +200,7 @@ const SalesOrderTable = ({
                                             {(pagination.current - 1) * pagination.pageSize + index + 1}
                                         </TableCell>
 
-                                        {/* Đại lý */}
+                                        {/* Nhà bán lẻ */}
                                         <TableCell className="text-left px-6 py-4">
                                             {order?.retailerName || "-"}
                                         </TableCell>
