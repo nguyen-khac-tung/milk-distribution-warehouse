@@ -239,3 +239,20 @@ export const getUserDropDown = async () => {
         };
     }
 };
+
+// Get available receivers dropdown by purchase order ID
+export const getAvailableReceiversDropDown = async (purchaseOrderId) => {
+    try {
+        const res = await api.get(`/User/GetAvailableReceiversDropDown/${purchaseOrderId}`);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching available receivers dropdown:", error);
+        return {
+            success: false,
+            status: 500,
+            message: error?.response?.data?.message || "Failed to fetch available receivers dropdown",
+            data: null
+        };
+    }
+};
+

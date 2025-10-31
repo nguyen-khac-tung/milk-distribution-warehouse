@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, User, Loader2, AlertCircle, Search } from 'lucide-react';
 import { Button } from '../ui/button';
-import { getUserDropDown } from '../../services/AccountService';
+import { getAvailableReceiversDropDown } from '../../services/AccountService';
 import { ComponentIcon } from '../IconComponent/Icon';
 
 const AssignReceivingModal = ({
@@ -22,7 +22,7 @@ const AssignReceivingModal = ({
         if (isOpen) {
             fetchEmployees();
         }
-    }, [isOpen]);
+    }, [isOpen, purchaseOrder?.purchaseOrderId, purchaseOrder?.purchaseOderId, purchaseOrder?.id]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -38,9 +38,16 @@ const AssignReceivingModal = ({
     }, []);
 
     const fetchEmployees = async () => {
+        if (!purchaseOrder?.purchaseOrderId && !purchaseOrder?.purchaseOderId && !purchaseOrder?.id) {
+            console.error('Purchase Order ID is missing');
+            setEmployees([]);
+            return;
+        }
+
         setLoadingEmployees(true);
         try {
-            const response = await getUserDropDown();
+            const purchaseOrderId = purchaseOrder?.purchaseOrderId || purchaseOrder?.purchaseOderId || purchaseOrder?.id;
+            const response = await getAvailableReceiversDropDown(purchaseOrderId);
             if (response && response.success) {
                 setEmployees(response.data || []);
             } else {
