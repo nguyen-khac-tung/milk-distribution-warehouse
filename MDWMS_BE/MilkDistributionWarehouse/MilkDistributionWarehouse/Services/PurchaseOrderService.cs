@@ -255,9 +255,7 @@ namespace MilkDistributionWarehouse.Services
                 if (purchaseOrderExist.CreatedBy != userId)
                     throw new Exception("No PO update permission.");
 
-                var purchaseOrderDetails = await _purchaseOrderDetailRepository.GetPurchaseOrderDetail()
-                    .Where(pod => pod.PurchaseOderId == update.PurchaseOderId)
-                    .ToListAsync();
+                var purchaseOrderDetails = await _purchaseOrderDetailRepository.GetPurchaseOrderDetailsByPurchaseOrderId(update.PurchaseOderId);
 
                 if (!purchaseOrderDetails.Any())
                     throw new Exception("List purchase order detail is empty.");
@@ -450,11 +448,9 @@ namespace MilkDistributionWarehouse.Services
                     throw new Exception("No PO delete permission.");
 
                 if (purchaseOrderExist.Status != PurchaseOrderStatus.Draft && purchaseOrderExist.Status != PurchaseOrderStatus.Rejected)
-                    throw new Exception("Chỉ được xoá khi đơn hàng ở trạng thái Nháp hoặc Bị từ chối.");
+                    throw new Exception("Chỉ được xoá khi đơn hàng ở trạng thái Nháp.");
 
-                var podExist = await _purchaseOrderDetailRepository.GetPurchaseOrderDetail()
-                    .Where(pod => pod.PurchaseOderId == purchaseOrderId)
-                    .ToListAsync();
+                var podExist = await _purchaseOrderDetailRepository.GetPurchaseOrderDetailsByPurchaseOrderId(purchaseOrderId);
 
                 if (!podExist.Any())
                     throw new Exception("List purchase order detail is null.");
