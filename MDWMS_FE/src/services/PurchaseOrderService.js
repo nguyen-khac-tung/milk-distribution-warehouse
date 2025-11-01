@@ -296,4 +296,19 @@ export const startReceive = async (purchaseOrderId) => {
     }
 };
 
+// Complete Purchase Order
+export const completePurchaseOrder = async (purchaseOrderId) => {
+    try {
+        const data = {
+            purchaseOrderId: purchaseOrderId
+        };
+
+        const res = await api.put('/PurchaseOrder/Complete', data);
+        return res.data;
+    } catch (error) {
+        console.error("Error completing purchase order:", error);
+        throw error;
+    }
+};
+
 

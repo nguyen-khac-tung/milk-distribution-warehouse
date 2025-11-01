@@ -479,17 +479,18 @@ const PurchaseOrderDetail = () => {
                                             <TableHead className="w-16 text-center font-semibold">STT</TableHead>
                                             <TableHead className="font-semibold">Tên hàng hóa</TableHead>
                                             <TableHead className="font-semibold">Mã hàng</TableHead>
-                                            <TableHead className="text-center font-semibold">Đơn vị tính</TableHead>
-                                            <TableHead className="text-center font-semibold">Đơn vị/thùng</TableHead>
-                                            <TableHead className="text-center font-semibold">Số lượng</TableHead>
-                                            <TableHead className="text-center font-semibold">Số thùng</TableHead>
+                                        <TableHead className="text-center font-semibold">Đơn vị tính</TableHead>
+                                        <TableHead className="text-center font-semibold">Đơn vị/thùng</TableHead>
+                                        <TableHead className="text-center font-semibold">Số thùng</TableHead>
+                                        <TableHead className="text-center font-semibold">Số lượng</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody className="flex-1">
                                         {purchaseOrder.purchaseOrderDetails && purchaseOrder.purchaseOrderDetails.length > 0 ? (
                                             purchaseOrder.purchaseOrderDetails.map((item, index) => {
-                                                const numberOfBoxes = item.unitPerPacking > 0
-                                                    ? Math.floor(item.packageQuantity / item.unitPerPacking)
+                                                // packageQuantity là số thùng, tính số đơn vị = số thùng × đơn vị/thùng
+                                                const totalUnits = item.unitPerPacking > 0
+                                                    ? (item.packageQuantity || 0) * item.unitPerPacking
                                                     : 0;
                                                 return (
                                                     <TableRow key={item.purchaseOrderDetailId} className="border-b">
@@ -499,7 +500,7 @@ const PurchaseOrderDetail = () => {
                                                         <TableCell className="text-center text-gray-600">{item.unitMeasureName || '-'}</TableCell>
                                                         <TableCell className="text-center text-gray-600">{item.unitPerPacking || '-'}</TableCell>
                                                         <TableCell className="text-center font-semibold">{item.packageQuantity || 0}</TableCell>
-                                                        <TableCell className="text-center font-semibold">{numberOfBoxes}</TableCell>
+                                                        <TableCell className="text-center font-semibold">{totalUnits}</TableCell>
                                                     </TableRow>
                                                 );
                                             })
@@ -519,10 +520,10 @@ const PurchaseOrderDetail = () => {
                                                 </TableCell>
                                                 <TableCell className="text-center font-bold">
                                                     {purchaseOrder.purchaseOrderDetails.reduce((sum, item) => {
-                                                        const numberOfBoxes = item.unitPerPacking > 0
-                                                            ? Math.floor(item.packageQuantity / item.unitPerPacking)
+                                                        const totalUnits = item.unitPerPacking > 0
+                                                            ? (item.packageQuantity || 0) * item.unitPerPacking
                                                             : 0;
-                                                        return sum + numberOfBoxes;
+                                                        return sum + totalUnits;
                                                     }, 0)}
                                                 </TableCell>
                                             </TableRow>
