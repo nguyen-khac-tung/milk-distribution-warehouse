@@ -59,7 +59,7 @@ namespace MilkDistributionWarehouse.Controllers
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
 
-            return ApiResponse<LocationActiveDto>.ToResultOk(locations);
+            return ApiResponse<LocationPalletDto>.ToResultOk(locations);
         }
 
         [Authorize(Roles = "Business Owner, Administrator")]
