@@ -22,6 +22,7 @@ import RejectReasonModal from "./RejectReasonModal";
 import { extractErrorMessage } from "../../utils/Validation";
 import CreateBatchModal from "./CreateBatchModal";
 import PalletManager from "./CreatePallet";
+import AddLocationToPalletModal from "./AddLocationToPalletModal";
 
 // Status labels for Goods Receipt Note - sẽ được lấy từ API
 const getStatusLabel = (status) => {
@@ -62,6 +63,8 @@ export default function GoodsReceiptDetail() {
   const [palletCreated, setPalletCreated] = useState(false);
   const [pallets, setPallets] = useState([]);
   const [isSubmittingPallet, setIsSubmittingPallet] = useState(false);
+  const [showAddLocationModal, setShowAddLocationModal] = useState(false);
+  const [selectedPalletForLocation, setSelectedPalletForLocation] = useState(null);
   const arrangingSectionRef = useRef(null);
   // Thêm state quản lý kiểm tra từng mặt hàng
   // Xóa hẳn 2 state checkedDetails, notCheckedDetails và các setCheckedDetails/setNotCheckedDetails
@@ -214,6 +217,13 @@ export default function GoodsReceiptDetail() {
       window.showToast?.(msg, "error");
     }
   };
+
+  // Handler khi thêm location cho pallet thành công
+  const handleLocationAdded = useCallback(async () => {
+    if (goodsReceiptNote?.goodsReceiptNoteId) {
+      await fetchPallets(goodsReceiptNote.goodsReceiptNoteId);
+    }
+  }, [goodsReceiptNote?.goodsReceiptNoteId]);
 
   const handlePrintReceipt = () => {
     // Implement print functionality
@@ -784,8 +794,32 @@ export default function GoodsReceiptDetail() {
                       </TableHeader>
                       <TableBody>
                         {pallets.map((pallet, index) => {
-                          const location = pallet.locationName || pallet.location;
-                          const isEmptyLocation = !location || location === 'Chưa sắp xếp';
+                          // Lấy locationCode từ pallet
+                          const locationCode = pallet.locationCode ? String(pallet.locationCode).trim() : '';
+                          // Chỉ hiển thị nút Add khi chưa có locationCode (chưa được gán vị trí)
+                          const isEmptyLocation = !locationCode || locationCode === '';
+                          
+                          // Hàm hiển thị trạng thái
+                          const getStatusDisplay = (status) => {
+                            if (status === 1 || status === '1') {
+                              return {
+                                label: 'Đã được sắp xếp',
+                                className: 'bg-green-100 text-green-800'
+                              };
+                            } else if (status === 2 || status === '2') {
+                              return {
+                                label: 'Chưa được sắp xếp',
+                                className: 'bg-yellow-100 text-yellow-800'
+                              };
+                            } else {
+                              return {
+                                label: 'Đang xử lý',
+                                className: 'bg-blue-100 text-blue-800'
+                              };
+                            }
+                          };
+
+                          const statusDisplay = getStatusDisplay(pallet.status);
                           
                           return (
                             <TableRow key={pallet.palletId || pallet.id || index} className="hover:bg-purple-50">
@@ -802,11 +836,11 @@ export default function GoodsReceiptDetail() {
                                 {pallet.packageQuantity || pallet.numPackages || 0}
                               </TableCell>
                               <TableCell className="text-xs text-gray-700">
-                                {location || 'Chưa sắp xếp'}
+                                {locationCode || 'Chưa sắp xếp'}
                               </TableCell>
                               <TableCell className="text-center">
-                                <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                  {pallet.status || 'Đang xử lý'}
+                                <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${statusDisplay.className}`}>
+                                  {statusDisplay.label}
                                 </span>
                               </TableCell>
                               <TableCell className="text-center">
@@ -816,8 +850,8 @@ export default function GoodsReceiptDetail() {
                                     size="sm"
                                     className="h-8 w-8 p-0 hover:bg-red-50"
                                     onClick={() => {
-                                      // TODO: Implement add location functionality
-                                      console.log('Add location for pallet:', pallet);
+                                      setSelectedPalletForLocation(pallet);
+                                      setShowAddLocationModal(true);
                                     }}
                                   >
                                     <Plus className="w-4 h-4 text-red-600" />
@@ -863,6 +897,16 @@ export default function GoodsReceiptDetail() {
           setShowCreateBatchModal(false);
           fetchGoodsReceiptNoteDetail();
         }}
+      />
+      {/* Modal thêm vị trí cho pallet */}
+      <AddLocationToPalletModal
+        isOpen={showAddLocationModal}
+        onClose={() => {
+          setShowAddLocationModal(false);
+          setSelectedPalletForLocation(null);
+        }}
+        onSuccess={handleLocationAdded}
+        pallet={selectedPalletForLocation}
       />
     </div>
   );
