@@ -150,6 +150,5 @@ namespace MilkDistributionWarehouse.Repositories
 
             return true;
         }
-
     }
 }
