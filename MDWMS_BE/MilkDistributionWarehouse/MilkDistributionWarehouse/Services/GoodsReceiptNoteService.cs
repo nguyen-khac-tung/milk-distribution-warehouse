@@ -105,7 +105,7 @@ namespace MilkDistributionWarehouse.Services
 
                 if (update is GoodsReceiptNoteSubmitDto)
                 {
-                    if (currentStatus != GoodsReceiptNoteStatus.Draft)
+                    if (currentStatus != GoodsReceiptNoteStatus.Receiving)
                         throw new Exception("Chỉ được chuyển sang trạng thái Chờ duyệt khi đơn ở trạng thái Nháp.".ToMessageForUser());
 
                     if (grn.CreatedBy != userId)

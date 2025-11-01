@@ -98,7 +98,7 @@ namespace MilkDistributionWarehouse.Repositories
         public async Task<bool> HasActiveGoodsReceiptNote(int goodsPackingId)
         {
             return await _context.GoodsReceiptNotes
-                .AnyAsync(grn => grn.Status != GoodsReceiptNoteStatus.Draft && grn.GoodsReceiptNoteDetails
+                .AnyAsync(grn => grn.Status != GoodsReceiptNoteStatus.Receiving && grn.GoodsReceiptNoteDetails
                 .Any(grnd => grnd.GoodsPackingId == goodsPackingId));
         }
 
