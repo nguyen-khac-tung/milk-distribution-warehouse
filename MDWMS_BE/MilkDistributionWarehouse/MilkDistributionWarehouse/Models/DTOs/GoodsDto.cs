@@ -154,6 +154,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
     public class GoodsInventoryDto
     {
         public int GoodsId { get; set; }
+        public string GoodsCode { get; set; }
         public string GoodsName { get; set; }
         public string UnitMeasureName { get; set; }
         public List<GoodsPackingDto> GoodsPackings { get; set; }
