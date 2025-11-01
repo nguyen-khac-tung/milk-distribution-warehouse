@@ -317,15 +317,9 @@ export default function CreatePurchaseOrder({
         try {
             const itemsWithIds = validItems.map(item => {
                 const selectedGood = goods.find(good => good.goodsName === item.goodsName);
-                const goodsPackings = goodsPackingsMap[selectedGood?.goodsId] || [];
-                const selectedPacking = goodsPackings.find(packing =>
-                    packing.goodsPackingId.toString() === item.goodsPackingId
-                );
 
-                // Tính packageQuantity = số thùng × đơn vị đóng gói
-                const packageQuantity = selectedPacking ?
-                    parseInt(item.quantity) * selectedPacking.unitPerPackage :
-                    parseInt(item.quantity);
+                // packageQuantity là số thùng nhập vào (không nhân với unitPerPackage)
+                const packageQuantity = parseInt(item.quantity);
 
                 return {
                     goodsId: selectedGood ? parseInt(selectedGood.goodsId) : null,

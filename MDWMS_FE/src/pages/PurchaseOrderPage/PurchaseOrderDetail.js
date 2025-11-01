@@ -488,8 +488,9 @@ const PurchaseOrderDetail = () => {
                                     <TableBody className="flex-1">
                                         {purchaseOrder.purchaseOrderDetails && purchaseOrder.purchaseOrderDetails.length > 0 ? (
                                             purchaseOrder.purchaseOrderDetails.map((item, index) => {
-                                                const numberOfBoxes = item.unitPerPacking > 0
-                                                    ? Math.floor(item.packageQuantity / item.unitPerPacking)
+                                                // packageQuantity là số thùng, tính số đơn vị = số thùng × đơn vị/thùng
+                                                const totalUnits = item.unitPerPacking > 0
+                                                    ? (item.packageQuantity || 0) * item.unitPerPacking
                                                     : 0;
                                                 return (
                                                     <TableRow key={item.purchaseOrderDetailId} className="border-b">
@@ -498,8 +499,8 @@ const PurchaseOrderDetail = () => {
                                                         <TableCell className="text-gray-600">{item.goodsCode || item.goodsId || '-'}</TableCell>
                                                         <TableCell className="text-center text-gray-600">{item.unitMeasureName || '-'}</TableCell>
                                                         <TableCell className="text-center text-gray-600">{item.unitPerPacking || '-'}</TableCell>
+                                                        <TableCell className="text-center font-semibold">{totalUnits}</TableCell>
                                                         <TableCell className="text-center font-semibold">{item.packageQuantity || 0}</TableCell>
-                                                        <TableCell className="text-center font-semibold">{numberOfBoxes}</TableCell>
                                                     </TableRow>
                                                 );
                                             })
@@ -515,15 +516,15 @@ const PurchaseOrderDetail = () => {
                                             <TableRow className="bg-gray-100 font-bold border-t border-gray-300">
                                                 <TableCell colSpan={5} className="text-right pr-2">Tổng:</TableCell>
                                                 <TableCell className="text-center font-bold">
-                                                    {purchaseOrder.purchaseOrderDetails.reduce((sum, item) => sum + (item.packageQuantity || 0), 0)}
+                                                    {purchaseOrder.purchaseOrderDetails.reduce((sum, item) => {
+                                                        const totalUnits = item.unitPerPacking > 0
+                                                            ? (item.packageQuantity || 0) * item.unitPerPacking
+                                                            : 0;
+                                                        return sum + totalUnits;
+                                                    }, 0)}
                                                 </TableCell>
                                                 <TableCell className="text-center font-bold">
-                                                    {purchaseOrder.purchaseOrderDetails.reduce((sum, item) => {
-                                                        const numberOfBoxes = item.unitPerPacking > 0
-                                                            ? Math.floor(item.packageQuantity / item.unitPerPacking)
-                                                            : 0;
-                                                        return sum + numberOfBoxes;
-                                                    }, 0)}
+                                                    {purchaseOrder.purchaseOrderDetails.reduce((sum, item) => sum + (item.packageQuantity || 0), 0)}
                                                 </TableCell>
                                             </TableRow>
                                         )}
