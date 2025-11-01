@@ -13,7 +13,8 @@ import {
 } from "lucide-react";
 import Loading from "../../components/Common/Loading";
 import { getGoodsReceiptNoteByPurchaseOrderId, verifyRecord, cancelGoodsReceiptNoteDetail, submitGoodsReceiptNote, approveGoodsReceiptNote, rejectGoodsReceiptNoteDetail, getPalletByGRNID } from "../../services/GoodsReceiptService";
-import { PERMISSIONS } from "../../utils/permissions";
+import { completePurchaseOrder } from "../../services/PurchaseOrderService";
+import { PERMISSIONS, PURCHASE_ORDER_STATUS } from "../../utils/permissions";
 import { usePermissions } from "../../hooks/usePermissions";
 import PermissionWrapper from "../../components/Common/PermissionWrapper";
 import { GOODS_RECEIPT_NOTE_STATUS, RECEIPT_ITEM_STATUS, getGoodsReceiptNoteStatusMeta } from "./goodsReceiptNoteStatus";
@@ -65,6 +66,7 @@ export default function GoodsReceiptDetail() {
   const [isSubmittingPallet, setIsSubmittingPallet] = useState(false);
   const [showAddLocationModal, setShowAddLocationModal] = useState(false);
   const [selectedPalletForLocation, setSelectedPalletForLocation] = useState(null);
+  const [isPurchaseOrderCompleted, setIsPurchaseOrderCompleted] = useState(false);
   const arrangingSectionRef = useRef(null);
   // Thêm state quản lý kiểm tra từng mặt hàng
   // Xóa hẳn 2 state checkedDetails, notCheckedDetails và các setCheckedDetails/setNotCheckedDetails
@@ -110,6 +112,11 @@ export default function GoodsReceiptDetail() {
       if (response && response.data) {
         setGoodsReceiptNote(response.data);
         
+        // Kiểm tra xem Purchase Order đã hoàn thành chưa (nếu có thông tin trong response)
+        if (response.data.purchaseOrderStatus !== undefined) {
+          setIsPurchaseOrderCompleted(response.data.purchaseOrderStatus === PURCHASE_ORDER_STATUS.Completed);
+        }
+
         // Sau khi set goodsReceiptNote, check xem đã có pallet chưa (để ẩn nút tạo pallet nếu đã có)
         if (response.data.goodsReceiptNoteId) {
           // Gọi fetchPallets để check, nhưng không hiển thị lỗi nếu chưa có pallet (400/404)
@@ -132,7 +139,7 @@ export default function GoodsReceiptDetail() {
     if (!grnId) return;
     try {
       const response = await getPalletByGRNID(grnId);
-      
+
       // Lưu danh sách pallet vào state
       let palletList = [];
       if (response && response.data && Array.isArray(response.data)) {
@@ -140,9 +147,9 @@ export default function GoodsReceiptDetail() {
       } else if (response && Array.isArray(response)) {
         palletList = response;
       }
-      
+
       setPallets(palletList);
-      
+
       // Nếu đã có pallet thì set palletCreated = true để ẩn nút tạo pallet
       if (palletList.length > 0) {
         setPalletCreated(true);
@@ -209,11 +216,41 @@ export default function GoodsReceiptDetail() {
           arrangingSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       }, 100);
-
-      window.showToast?.("Lấy danh sách pallet thành công", "success");
     } catch (error) {
       console.error("Error fetching pallets:", error);
       const msg = extractErrorMessage(error, "Lấy danh sách pallet thất bại, vui lòng thử lại!");
+      window.showToast?.(msg, "error");
+    }
+  };
+
+  // Handler để hoàn thành Purchase Order
+  const handleCompletePurchaseOrder = async () => {
+    if (!goodsReceiptNote?.purchaseOderId) {
+      window.showToast?.("Không tìm thấy mã đơn nhập hàng", "error");
+      return;
+    }
+
+    // Kiểm tra xem tất cả pallet đã có locationCode chưa
+    const allPalletsHaveLocation = pallets.length > 0 && pallets.every(pallet => {
+      const locationCode = pallet.locationCode ? String(pallet.locationCode).trim() : '';
+      return locationCode && locationCode !== '';
+    });
+
+    if (!allPalletsHaveLocation) {
+      window.showToast?.("Vui lòng đưa tất cả pallet vào kho trước khi hoàn thành!", "warning");
+      return;
+    }
+
+    try {
+      await completePurchaseOrder(goodsReceiptNote.purchaseOderId);
+      window.showToast?.("Hoàn thành đơn nhập hàng thành công!", "success");
+      // Đánh dấu đã hoàn thành để disable nút
+      setIsPurchaseOrderCompleted(true);
+      // Refresh dữ liệu sau khi hoàn thành
+      await fetchGoodsReceiptNoteDetail();
+    } catch (error) {
+      console.error("Error completing purchase order:", error);
+      const msg = extractErrorMessage(error, "Hoàn thành đơn nhập hàng thất bại, vui lòng thử lại!");
       window.showToast?.(msg, "error");
     }
   };
@@ -703,7 +740,7 @@ export default function GoodsReceiptDetail() {
                   </Button>
                 </div>
 
-                <PalletManager 
+                <PalletManager
                   goodsReceiptNoteId={goodsReceiptNote?.goodsReceiptNoteId}
                   goodsReceiptNoteDetails={goodsReceiptNote?.goodsReceiptNoteDetails || []}
                   onRegisterSubmit={handleRegisterSubmit}
@@ -798,7 +835,7 @@ export default function GoodsReceiptDetail() {
                           const locationCode = pallet.locationCode ? String(pallet.locationCode).trim() : '';
                           // Chỉ hiển thị nút Add khi chưa có locationCode (chưa được gán vị trí)
                           const isEmptyLocation = !locationCode || locationCode === '';
-                          
+
                           // Hàm hiển thị trạng thái
                           const getStatusDisplay = (status) => {
                             if (status === 1 || status === '1') {
@@ -820,7 +857,7 @@ export default function GoodsReceiptDetail() {
                           };
 
                           const statusDisplay = getStatusDisplay(pallet.status);
-                          
+
                           return (
                             <TableRow key={pallet.palletId || pallet.id || index} className="hover:bg-purple-50">
                               <TableCell className="font-medium text-gray-900 text-xs">
@@ -867,14 +904,27 @@ export default function GoodsReceiptDetail() {
                 )}
 
                 <div className="flex justify-end pt-4 border-t border-gray-200">
-                  <Button
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 h-[38px]"
-                    disabled={goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.Completed}
-                    onClick={handleCompleteArranging}
-                  >
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Hoàn Thành
-                  </Button>
+                  {(() => {
+                    // Kiểm tra xem tất cả pallet đã có locationCode chưa
+                    const allPalletsHaveLocation = pallets.length > 0 && pallets.every(pallet => {
+                      const locationCode = pallet.locationCode ? String(pallet.locationCode).trim() : '';
+                      return locationCode && locationCode !== '';
+                    });
+
+                    // Disable nút nếu đã hoàn thành hoặc chưa đủ điều kiện
+                    const isDisabled = isPurchaseOrderCompleted || !allPalletsHaveLocation || pallets.length === 0;
+
+                    return (
+                      <Button
+                        className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 h-[38px] disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={isDisabled}
+                        onClick={handleCompletePurchaseOrder}
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Hoàn Thành
+                      </Button>
+                    );
+                  })()}
                 </div>
               </div>
             )}
