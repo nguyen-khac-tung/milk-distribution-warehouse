@@ -373,8 +373,8 @@ export default function SaleOrderFilterToggle({
                                                         ? retailers.find(
                                                             (r) =>
                                                                 r.retailerId.toString() === retailerFilter
-                                                        )?.retailerName || "Chọn đại lý"
-                                                        : "Tất cả đại lý"}
+                                                        )?.retailerName || "Chọn nhà bán lẻ"
+                                                        : "Tất cả nhà bán lẻ"}
                                                 </span>
                                                 <ChevronDown className="h-4 w-4 flex-shrink-0" />
                                             </button>
@@ -389,7 +389,7 @@ export default function SaleOrderFilterToggle({
                                                             }}
                                                             className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 text-slate-700"
                                                         >
-                                                            Tất cả đại lý
+                                                            Tất cả nhà bán lẻ
                                                         </button>
                                                         {retailers.map((retailer) => (
                                                             <button

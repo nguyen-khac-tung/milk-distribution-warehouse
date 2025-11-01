@@ -12,6 +12,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<Pallet?> UpdatePallet(Pallet entity);
         Task<bool> HasDependencies(string palletId);
         Task<List<Pallet>> GetActivePalletsAsync();
+        Task<List<Pallet>> GetPalletsByGRNID(Guid grnId);
         Task<bool> IsLocationAvailable(int? locationId);
         Task<bool> ExistsBatch(Guid? batchId);
         Task<bool> ExistsLocation(int? locationId);
@@ -76,6 +77,19 @@ namespace MilkDistributionWarehouse.Repositories
         {
             return await _context.Pallets
                 .Where(p => p.Status == CommonStatus.Active)
+                .OrderBy(p => p.CreateAt)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        public async Task<List<Pallet>> GetPalletsByGRNID(Guid grnId)
+        {
+            return await _context.Pallets
+                .Include(p => p.Batch)
+                .Include(p => p.Location)
+                .Include(p => p.GoodsPacking)
+                .Include(p => p.CreateByNavigation)
+                .Where(p => p.GoodsReceiptNoteId == grnId)
                 .OrderBy(p => p.CreateAt)
                 .AsNoTracking()
                 .ToListAsync();

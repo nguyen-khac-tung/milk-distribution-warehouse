@@ -340,7 +340,7 @@ const SalesOrderDetail = () => {
                                         <div className="grid grid-cols-[auto_1fr] gap-x-2">
                                             <div className="flex items-center space-x-1">
                                                 <Store className="h-4 w-4 text-green-600" />
-                                                <label className="font-medium text-gray-700">Đại lý:</label>
+                                                <label className="font-medium text-gray-700">Nhà bán lẻ:</label>
                                             </div>
                                             <span className="font-semibold text-gray-900">{salesOrder.retailerName || '—'}</span>
                                         </div>
