@@ -40,6 +40,23 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public string LocationCode { get; set; }
         }
 
+        public class LocationPalletDto
+        {
+            public int LocationId { get; set; }
+
+            public string LocationCode { get; set; }
+
+            public string Rack { get; set; }
+
+            public int Row { get; set; }
+
+            public int Column { get; set; }
+
+            public string AreaName { get; set; }
+
+            public bool IsAvailable { get; set; }
+        }
+
         public class LocationRequestDto
         {
             [Required(ErrorMessage = "Chưa chọn khu vực!")]

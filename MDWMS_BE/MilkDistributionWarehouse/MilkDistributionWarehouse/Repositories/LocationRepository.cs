@@ -91,6 +91,7 @@ namespace MilkDistributionWarehouse.Repositories
         public async Task<Location> GetLocationPallet(string locationcode)
         {
             return await _context.Locations
+                .Include(l => l.Area)
                 .FirstOrDefaultAsync(l => l.LocationCode.ToLower().Trim() == locationcode.ToLower().Trim() && l.Status != CommonStatus.Deleted);
         }
 
