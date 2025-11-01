@@ -128,14 +128,14 @@ namespace MilkDistributionWarehouse.Repositories
         {
             return _context.Retailers
                 .AsNoTracking()
-                .AnyAsync(r => r.RetailerId == retailerId.Value && r.Status != CommonStatus.Deleted);
+                .AnyAsync(r => r.RetailerId == retailerId.Value && r.Status == CommonStatus.Active);
         }
 
         public Task<bool> ExistsGoods(int? goodsId)
         {
             return _context.Goods
                 .AsNoTracking()
-                .AnyAsync(g => g.GoodsId == goodsId.Value && g.Status != CommonStatus.Deleted);
+                .AnyAsync(g => g.GoodsId == goodsId.Value && g.Status == CommonStatus.Active);
         }
     }
 }

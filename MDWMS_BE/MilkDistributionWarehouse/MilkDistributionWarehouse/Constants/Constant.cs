@@ -73,7 +73,7 @@
     /// </summary>
     public static class GoodsIssueNoteStatus
     {
-        public const int Draft = 1;
+        public const int Picking = 1;
         public const int PendingApproval = 2;
         public const int Completed = 3;
     }
@@ -87,6 +87,15 @@
         public const int Picked = 2;
         public const int PendingApproval = 3;
         public const int Completed = 4;
+    }
+
+    /// <summary>
+    /// Các trạng thái của PickAllocation
+    /// </summary>
+    public static class PickAllocationStatus
+    {
+        public const int Scanned = 1;
+        public const int UnScanned = 2;
     }
 
     /// <summary>
@@ -117,4 +126,6 @@
         public const string Administrator = "Administrator";
         public const string BusinessOwner = "Business Owner";
     }
+
+    
 }

@@ -37,5 +37,7 @@ public partial class Pallet
 
     public virtual Location Location { get; set; }
 
+    public virtual ICollection<PickAllocation> PickAllocations { get; set; } = new List<PickAllocation>();
+
     public virtual ICollection<StocktakingPallet> StocktakingPallets { get; set; } = new List<StocktakingPallet>();
 }
