@@ -7,7 +7,7 @@ import { getBatchDropdown } from "../../services/BatchService";
 import FloatingDropdown from "../../components/Common/FloatingDropdown";
 import { createPalletsBulk } from "../../services/PalletService";
 
-export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDetails = [], onRegisterSubmit }) {
+export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDetails = [], onRegisterSubmit, onPalletCreated, hasExistingPallets = false, onSubmittingChange }) {
   const [showPalletTable, setShowPalletTable] = useState(false);
   const [palletRows, setPalletRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -170,6 +170,12 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
       return;
     }
 
+    // Kiểm tra nếu đã có pallet thì không cho tạo lại
+    if (hasExistingPallets) {
+      window.showToast?.("Đã có pallet cho phiếu nhập kho này. Không thể tạo lại!", "warning");
+      return;
+    }
+
     // Validate và hiển thị toast nếu có lỗi
     const errors = [];
     palletRows.forEach(r => {
@@ -233,10 +239,18 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
     if (pallets.length === 0) return;
 
     setSubmitting(true);
+    // Thông báo cho parent component biết đang submitting
+    if (typeof onSubmittingChange === 'function') {
+      onSubmittingChange(true);
+    }
     try {
       const res = await createPalletsBulk(pallets);
       if (res?.success) {
         window.showToast?.("Tạo pallet hàng loạt thành công", "success");
+        // Gọi callback để thông báo cho parent component
+        if (typeof onPalletCreated === 'function') {
+          onPalletCreated();
+        }
       } else {
         window.showToast?.(res?.message || "Tạo pallet thất bại", "error");
       }
@@ -245,6 +259,10 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
       window.showToast?.("Tạo pallet thất bại, vui lòng thử lại", "error");
     } finally {
       setSubmitting(false);
+      // Thông báo cho parent component biết đã xong submitting
+      if (typeof onSubmittingChange === 'function') {
+        onSubmittingChange(false);
+      }
     }
   };
 
@@ -261,28 +279,53 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
 
   return (
     <div>
-      <div className="mt-3">
-        <Button
-          variant="outline"
-          className="border-orange-300 text-orange-600 hover:bg-orange-50 h-[38px]"
-          onClick={ensureTableVisibleWithDefaultRow}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Thêm Pallet
-        </Button>
-      </div>
-
-      {!showPalletTable && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mt-4">
-          <div className="flex items-center gap-2 text-red-700">
+      {hasExistingPallets && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-3">
+          <div className="flex items-center gap-2 text-blue-700">
             <AlertCircle className="w-5 h-5" />
-            <span className="font-medium">Lưu ý quan trọng</span>
+            <span className="font-medium">Đã có pallet</span>
           </div>
-          <p className="text-red-600 text-sm mt-1">Bạn phải thêm ít nhất một pallet để tiếp tục.</p>
+          <p className="text-blue-600 text-sm mt-1">Phiếu nhập kho này đã có pallet. Vui lòng tiếp tục đến bước sắp xếp.</p>
         </div>
       )}
 
-      {showPalletTable && (
+      {!hasExistingPallets && (
+        <>
+          <div className="mt-3">
+            <Button
+              variant="outline"
+              className="border-orange-300 text-orange-600 hover:bg-orange-50 h-[38px]"
+              onClick={ensureTableVisibleWithDefaultRow}
+              disabled={hasExistingPallets}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Thêm Pallet
+            </Button>
+          </div>
+
+          {!showPalletTable && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mt-4">
+              <div className="flex items-center gap-2 text-red-700">
+                <AlertCircle className="w-5 h-5" />
+                <span className="font-medium">Lưu ý quan trọng</span>
+              </div>
+              <p className="text-red-600 text-sm mt-1">Bạn phải thêm ít nhất một pallet để tiếp tục.</p>
+            </div>
+          )}
+        </>
+      )}
+
+      {hasExistingPallets && showPalletTable && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+          <div className="flex items-center gap-2 text-blue-700">
+            <AlertCircle className="w-5 h-5" />
+            <span className="font-medium">Đã có pallet</span>
+          </div>
+          <p className="text-blue-600 text-sm mt-1">Phiếu nhập kho này đã có pallet. Không thể tạo lại.</p>
+        </div>
+      )}
+
+      {showPalletTable && !hasExistingPallets && (
         <div className="space-y-3 mt-4">
           <div className="flex justify-between items-center">
             <h3 className="text-base font-semibold text-gray-900">Pallet</h3>

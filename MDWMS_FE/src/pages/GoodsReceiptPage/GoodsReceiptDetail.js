@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
@@ -12,7 +12,7 @@ import {
   Printer
 } from "lucide-react";
 import Loading from "../../components/Common/Loading";
-import { getGoodsReceiptNoteByPurchaseOrderId, verifyRecord, cancelGoodsReceiptNoteDetail, submitGoodsReceiptNote, approveGoodsReceiptNote, rejectGoodsReceiptNoteDetail } from "../../services/GoodsReceiptService";
+import { getGoodsReceiptNoteByPurchaseOrderId, verifyRecord, cancelGoodsReceiptNoteDetail, submitGoodsReceiptNote, approveGoodsReceiptNote, rejectGoodsReceiptNoteDetail, getPalletByGRNID } from "../../services/GoodsReceiptService";
 import { PERMISSIONS } from "../../utils/permissions";
 import { usePermissions } from "../../hooks/usePermissions";
 import PermissionWrapper from "../../components/Common/PermissionWrapper";
@@ -59,12 +59,30 @@ export default function GoodsReceiptDetail() {
   const [rejectReason, setRejectReason] = useState("");
   const [selectedDetailId, setSelectedDetailId] = useState(null);
   const [submitPalletsFn, setSubmitPalletsFn] = useState(null);
+  const [palletCreated, setPalletCreated] = useState(false);
+  const [pallets, setPallets] = useState([]);
+  const [isSubmittingPallet, setIsSubmittingPallet] = useState(false);
+  const arrangingSectionRef = useRef(null);
   // Thêm state quản lý kiểm tra từng mặt hàng
   // Xóa hẳn 2 state checkedDetails, notCheckedDetails và các setCheckedDetails/setNotCheckedDetails
 
   // Dùng useCallback để giữ reference ổn định, tránh loop vô hạn
   const handleRegisterSubmit = useCallback((fn) => {
     setSubmitPalletsFn(() => fn);
+  }, []);
+
+  // Callback khi tạo pallet thành công
+  const handlePalletCreated = useCallback(async () => {
+    setPalletCreated(true);
+    // Refresh danh sách pallet sau khi tạo thành công
+    if (goodsReceiptNote?.goodsReceiptNoteId) {
+      await fetchPallets(goodsReceiptNote.goodsReceiptNoteId);
+    }
+  }, [goodsReceiptNote?.goodsReceiptNoteId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Callback khi trạng thái submitting thay đổi
+  const handleSubmittingChange = useCallback((isSubmitting) => {
+    setIsSubmittingPallet(isSubmitting);
   }, []);
 
   useEffect(() => {
@@ -88,6 +106,14 @@ export default function GoodsReceiptDetail() {
       }
       if (response && response.data) {
         setGoodsReceiptNote(response.data);
+        
+        // Sau khi set goodsReceiptNote, check xem đã có pallet chưa (để ẩn nút tạo pallet nếu đã có)
+        if (response.data.goodsReceiptNoteId) {
+          // Gọi fetchPallets để check, nhưng không hiển thị lỗi nếu chưa có pallet (400/404)
+          fetchPallets(response.data.goodsReceiptNoteId).catch(() => {
+            // Im lặng xử lý lỗi - đã được xử lý trong fetchPallets
+          });
+        }
       } else {
         setGoodsReceiptNote(null);
       }
@@ -96,6 +122,43 @@ export default function GoodsReceiptDetail() {
       setGoodsReceiptNote(null);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPallets = async (grnId) => {
+    if (!grnId) return;
+    try {
+      const response = await getPalletByGRNID(grnId);
+      
+      // Lưu danh sách pallet vào state
+      let palletList = [];
+      if (response && response.data && Array.isArray(response.data)) {
+        palletList = response.data;
+      } else if (response && Array.isArray(response)) {
+        palletList = response;
+      }
+      
+      setPallets(palletList);
+      
+      // Nếu đã có pallet thì set palletCreated = true để ẩn nút tạo pallet
+      if (palletList.length > 0) {
+        setPalletCreated(true);
+      } else {
+        // Nếu không có pallet thì reset state
+        setPalletCreated(false);
+      }
+    } catch (error) {
+      // Xử lý lỗi 400 một cách graceful - coi như chưa có pallet
+      if (error?.response?.status === 400 || error?.response?.status === 404) {
+        // Chưa có pallet, đây là trường hợp bình thường
+        setPallets([]);
+        setPalletCreated(false);
+      } else {
+        // Lỗi khác, chỉ log ở console, không làm gián đoạn flow
+        console.error("Error fetching pallets:", error);
+        setPallets([]);
+        setPalletCreated(false);
+      }
     }
   };
 
@@ -123,8 +186,33 @@ export default function GoodsReceiptDetail() {
   };
 
   const handleCompleteArranging = async () => {
-    // TODO: Implement complete arranging functionality
-    console.log("Complete arranging clicked");
+    if (!goodsReceiptNote?.goodsReceiptNoteId) {
+      window.showToast?.("Không tìm thấy mã phiếu nhập kho", "error");
+      return;
+    }
+    try {
+      // Refresh danh sách pallet
+      await fetchPallets(goodsReceiptNote.goodsReceiptNoteId);
+
+      // Mở rộng section "Sắp xếp"
+      setExpandedSections(prev => ({
+        ...prev,
+        arranging: true
+      }));
+
+      // Scroll đến phần "Sắp xếp" sau một chút delay để UI cập nhật
+      setTimeout(() => {
+        if (arrangingSectionRef.current) {
+          arrangingSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+
+      window.showToast?.("Lấy danh sách pallet thành công", "success");
+    } catch (error) {
+      console.error("Error fetching pallets:", error);
+      const msg = extractErrorMessage(error, "Lấy danh sách pallet thất bại, vui lòng thử lại!");
+      window.showToast?.(msg, "error");
+    }
   };
 
   const handlePrintReceipt = () => {
@@ -609,24 +697,37 @@ export default function GoodsReceiptDetail() {
                   goodsReceiptNoteId={goodsReceiptNote?.goodsReceiptNoteId}
                   goodsReceiptNoteDetails={goodsReceiptNote?.goodsReceiptNoteDetails || []}
                   onRegisterSubmit={handleRegisterSubmit}
+                  onPalletCreated={handlePalletCreated}
+                  hasExistingPallets={pallets.length > 0}
+                  onSubmittingChange={handleSubmittingChange}
                 />
 
                 <div className="flex justify-end gap-2 pt-4 border-t border-gray-200">
-                  <Button
-                    className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 h-[38px]"
-                    onClick={() => submitPalletsFn && submitPalletsFn()}
-                    disabled={!submitPalletsFn}
-                  >
-                    Tạo pallet
-                  </Button>
-                  <Button
-                    className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 h-[38px]"
-                    disabled={goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.PendingApproval}
-                    onClick={handleCompleteArranging}
-                  >
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Tiếp Tục Đến Sắp Xếp
-                  </Button>
+                  {!palletCreated && (
+                    <Button
+                      className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 h-[38px]"
+                      onClick={() => submitPalletsFn && submitPalletsFn()}
+                      disabled={!submitPalletsFn || isSubmittingPallet}
+                    >
+                      {isSubmittingPallet ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                          Đang tạo pallet...
+                        </>
+                      ) : (
+                        "Tạo pallet"
+                      )}
+                    </Button>
+                  )}
+                  {palletCreated && (
+                    <Button
+                      className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 h-[38px]"
+                      onClick={handleCompleteArranging}
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Tiếp Tục Đến Sắp Xếp
+                    </Button>
+                  )}
                 </div>
               </div>
             )}
@@ -634,7 +735,7 @@ export default function GoodsReceiptDetail() {
         </Card>
 
         {/* Sắp xếp */}
-        <Card className="bg-gray-50 border border-slate-200 shadow-sm">
+        <Card ref={arrangingSectionRef} className="bg-gray-50 border border-slate-200 shadow-sm">
           <CardContent className="p-0">
             <div
               className="p-6 border-b border-gray-200 cursor-pointer flex items-center justify-between hover:bg-gray-50 transition-colors"
@@ -654,17 +755,82 @@ export default function GoodsReceiptDetail() {
 
             {expandedSections.arranging && (
               <div className="p-6 space-y-6">
-                <div className="text-center py-12">
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="p-4 bg-gray-100 rounded-full">
-                      <RefreshCw className="w-8 h-8 text-gray-400" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-900 mb-1">Chưa có pallet nào</h3>
-                      <p className="text-gray-500">Hãy thêm pallet ở bước trước để tiếp tục sắp xếp.</p>
+                {pallets.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="p-4 bg-gray-100 rounded-full">
+                        <RefreshCw className="w-8 h-8 text-gray-400" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-1">Chưa có pallet nào</h3>
+                        <p className="text-gray-500">Hãy thêm pallet ở bước trước để tiếp tục sắp xếp.</p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Danh sách pallet</h3>
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-purple-100">
+                          <TableHead className="font-semibold text-purple-900">Mã pallet</TableHead>
+                          <TableHead className="font-semibold text-purple-900">Tên sản phẩm</TableHead>
+                          <TableHead className="font-semibold text-purple-900 text-center">Số lô</TableHead>
+                          <TableHead className="font-semibold text-purple-900 text-center">Số thùng</TableHead>
+                          <TableHead className="font-semibold text-purple-900">Vị trí</TableHead>
+                          <TableHead className="font-semibold text-purple-900 text-center">Trạng thái</TableHead>
+                          <TableHead className="font-semibold text-purple-900 text-center">Hoạt động</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {pallets.map((pallet, index) => {
+                          const location = pallet.locationName || pallet.location;
+                          const isEmptyLocation = !location || location === 'Chưa sắp xếp';
+                          
+                          return (
+                            <TableRow key={pallet.palletId || pallet.id || index} className="hover:bg-purple-50">
+                              <TableCell className="font-medium text-gray-900 text-xs">
+                                {pallet.palletCode || pallet.code || pallet.palletId || 'N/A'}
+                              </TableCell>
+                              <TableCell className="text-xs text-gray-700">
+                                {pallet.goodsName || pallet.productName || 'N/A'}
+                              </TableCell>
+                              <TableCell className="text-xs text-gray-700 text-center">
+                                {pallet.batchCode || 'N/A'}
+                              </TableCell>
+                              <TableCell className="text-xs text-gray-700 text-center">
+                                {pallet.packageQuantity || pallet.numPackages || 0}
+                              </TableCell>
+                              <TableCell className="text-xs text-gray-700">
+                                {location || 'Chưa sắp xếp'}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                  {pallet.status || 'Đang xử lý'}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {isEmptyLocation && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 hover:bg-red-50"
+                                    onClick={() => {
+                                      // TODO: Implement add location functionality
+                                      console.log('Add location for pallet:', pallet);
+                                    }}
+                                  >
+                                    <Plus className="w-4 h-4 text-red-600" />
+                                  </Button>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
 
                 <div className="flex justify-end pt-4 border-t border-gray-200">
                   <Button
