@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { X, Package, AlertCircle, Loader2 } from 'lucide-react';
+import { X, Package, AlertCircle } from 'lucide-react';
 import { Button } from '../ui/button';
-import { Textarea } from '../ui/textarea';
 
 const CreateDeliverySlipModal = ({
   isOpen,
@@ -10,14 +9,11 @@ const CreateDeliverySlipModal = ({
   saleOrder,
   loading = false
 }) => {
-  const [note, setNote] = useState('');
-
   const handleConfirm = () => {
-    onConfirm(note);
+    onConfirm();
   };
 
   const handleClose = () => {
-    setNote('');
     onClose();
   };
 
@@ -78,21 +74,6 @@ const CreateDeliverySlipModal = ({
                 </span>
               </div>
             </div>
-          </div>
-
-          {/* Note */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Ghi chú phiếu xuất kho (tùy chọn)
-            </label>
-            <Textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Nhập ghi chú cho phiếu xuất kho..."
-              className="w-full"
-              rows={3}
-              disabled={loading}
-            />
           </div>
 
           {/* Warning Message */}
