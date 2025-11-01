@@ -38,7 +38,7 @@
     /// </summary>
     public static class GoodsReceiptNoteStatus
     {
-        public const int Draft = 1;
+        public const int Receiving = 1;
         public const int PendingApproval = 2;
         public const int Completed = 3;
     }
