@@ -165,8 +165,12 @@ namespace MilkDistributionWarehouse.Services
             var user = await _userRepository.GetUserByIdWithAssociations(userId);
             if (user == null) return "Không tìm thấy người dùng!".ToMessageForUser();
 
-            if (user.GoodsIssueNotes.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử phiếu xuất hàng.".ToMessageForUser();
-            if (user.GoodsReceiptNoteApprovalByNavigations.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử phiếu nhập hàng.".ToMessageForUser();
+            if (user.GoodsIssueNoteCreatedByNavigations.Any()
+                || user.GoodsIssueNoteApprovalByNavigations.Any()) 
+                return "Không thể xóa do người dùng này có liên quan đến lịch sử phiếu xuất hàng.".ToMessageForUser();
+            if (user.GoodsIssueNoteCreatedByNavigations.Any() 
+                ||user.GoodsReceiptNoteApprovalByNavigations.Any()) 
+                return "Không thể xóa do người dùng này có liên quan đến lịch sử phiếu nhập hàng.".ToMessageForUser();
             if (user.PurchaseOrderCreatedByNavigations.Any() || user.PurchaseOrderApprovalByNavigations.Any()
                 || user.PurchaseOrderArrivalConfirmedByNavigations.Any() || user.PurchaseOrderAssignToNavigations.Any())
                 return "Không thể xóa do người dùng này có liên quan đến lịch sử đơn đặt hàng mua.".ToMessageForUser();

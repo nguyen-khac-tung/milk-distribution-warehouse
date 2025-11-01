@@ -34,6 +34,7 @@ namespace MilkDistributionWarehouse.Repositories
                 .Include(s => s.ApprovalByNavigation)
                 .Include(s => s.AcknowledgedByNavigation)
                 .Include(s => s.AssignToNavigation)
+                .Include(s => s.SalesOrderDetails)
                 .OrderByDescending(s => s.CreatedAt)
                 .AsNoTracking();
         }

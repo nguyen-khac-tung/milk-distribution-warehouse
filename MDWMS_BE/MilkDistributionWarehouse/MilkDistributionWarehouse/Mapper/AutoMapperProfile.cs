@@ -412,6 +412,34 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.ApprovalByName, opt => opt.MapFrom(src => src.ApprovalByNavigation.FullName))
                 .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => src.CreatedByNavigation.FullName))
                 .ForMember(dest => dest.GoodsReceiptNoteDetails, opt => opt.MapFrom(src => src.GoodsReceiptNoteDetails));
+
+            // Map GoodsIssueNote
+            CreateMap<SalesOrder, GoodsIssueNote>()
+                .ForMember(dest => dest.GoodsIssueNoteId, opt => opt.MapFrom(_ => Guid.NewGuid()))
+                .ForMember(dest => dest.SalesOderId, opt => opt.MapFrom(src => src.SalesOrderId))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => GoodsIssueNoteStatus.Picking))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now));
+            CreateMap<SalesOrderDetail, GoodsIssueNoteDetail>()
+                .ForMember(dest => dest.GoodsIssueNoteDetailId, opt => opt.MapFrom(_ => Guid.NewGuid()))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => IssueItemStatus.Picking))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now))
+                .ForMember(dest => dest.Note, opt => opt.Ignore())
+                .ForMember(dest => dest.RejectionReason, opt => opt.Ignore());
+            CreateMap<GoodsIssueNote, GoodsIssueNoteDetailDto>()
+                .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => src.CreatedByNavigation.FullName))
+                .ForMember(dest => dest.ApprovalByName, opt => opt.MapFrom(src => src.ApprovalByNavigation.FullName));
+            CreateMap<GoodsIssueNoteDetail, GoodsIssueNoteItemDetailDto>()
+                .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Goods.GoodsName))
+                .ForMember(dest => dest.GoodsCode, opt => opt.MapFrom(src => src.Goods.GoodsCode))
+                .ForMember(dest => dest.UnitPerPackage, opt => opt.MapFrom(src => src.GoodsPacking.UnitPerPackage))
+                .ForMember(dest => dest.RequiredPackageQuantity, opt => opt.MapFrom(src => src.PackageQuantity));
+            CreateMap<PickAllocation, PickAllocationDetailDto>()
+                .ForMember(dest => dest.LocationCode, opt => opt.MapFrom(src => src.Pallet.Location.LocationCode))
+                .ForMember(dest => dest.Rack, opt => opt.MapFrom(src => src.Pallet.Location.Rack))
+                .ForMember(dest => dest.Row, opt => opt.MapFrom(src => src.Pallet.Location.Row))
+                .ForMember(dest => dest.Column, opt => opt.MapFrom(src => src.Pallet.Location.Column))
+                .ForMember(dest => dest.AreaName, opt => opt.MapFrom(src => src.Pallet.Location.Area.AreaName))
+                .ForMember(dest => dest.AreaCode, opt => opt.MapFrom(src => src.Pallet.Location.Area.AreaCode));
         }
     }
 }
