@@ -33,9 +33,10 @@ namespace MilkDistributionWarehouse.Services
         private readonly IMapper _mapper;
         private readonly IGoodsReceiptNoteService _goodsReceiptNoteService;
         private readonly IUserRepository _userRepository;
+        private readonly IPalletRepository _palletRepository;
         public PurchaseOrderService(IPurchaseOrderRepositoy purchaseOrderRepository, IMapper mapper, IPurchaseOrderDetailService purchaseOrderDetailService,
             IPurchaseOrderDetailRepository purchaseOrderDetailRepository, IUnitOfWork unitOfWork, IGoodsReceiptNoteService goodsReceiptNoteService,
-            IUserRepository userRepository)
+            IUserRepository userRepository, IPalletRepository palletRepository)
         {
             _purchaseOrderRepository = purchaseOrderRepository;
             _mapper = mapper;
@@ -44,6 +45,7 @@ namespace MilkDistributionWarehouse.Services
             _unitOfWork = unitOfWork;
             _goodsReceiptNoteService = goodsReceiptNoteService;
             _userRepository = userRepository;
+            _palletRepository = palletRepository;
         }
 
         private async Task<(string, PageResult<TDto>?)> GetPurchaseOrdersAsync<TDto>(PagedRequest request, int? userId, string? userRole, params int[] excludedStatuses)
@@ -404,6 +406,19 @@ namespace MilkDistributionWarehouse.Services
                         throw new Exception(msg);
                 }
 
+                if (purchaseOrdersUpdateStatus is PurchaseOrderCompletedDto)
+                {
+                    if (currentStatus != PurchaseOrderStatus.Inspected)
+                        throw new Exception("Chỉ được Hoàn thành đơn hàng khi đơn hàng ở trạng thái Đã kiểm tra.".ToMessageForUser());
+
+                    string msg = await CheckCompletedPO(purchaseOrder.GoodsReceiptNotes.FirstOrDefault(g => g.PurchaseOderId == purchaseOrder.PurchaseOderId));
+                    if (!string.IsNullOrEmpty(msg))
+                        throw new Exception(msg.ToMessageForUser());
+
+                    purchaseOrder.Status = PurchaseOrderStatus.Completed;
+                    purchaseOrder.UpdatedAt = DateTime.Now;
+                }    
+
                 purchaseOrder.UpdatedAt = DateTime.Now;
                 await _purchaseOrderRepository.UpdatePurchaseOrder(purchaseOrder);
                 await _unitOfWork.CommitTransactionAsync();
@@ -533,6 +548,17 @@ namespace MilkDistributionWarehouse.Services
             
             if (isBusy)
                 return "Nhân viên này đã được phân công cho đơn hàng khác.";
+
+            return "";
+        }
+        private async Task<string> CheckCompletedPO(GoodsReceiptNote grn)
+        {
+            if (grn.Status != GoodsReceiptNoteStatus.Completed)
+                return "Không thể hoàn thành đơn mua hàng. Phiếu nhập kho chưa được hoàn thành.";
+
+            var isAnyDiffActivePallet = await _palletRepository.IsAnyDiffActivePalletByGRNId(grn.GoodsReceiptNoteId);
+            if (isAnyDiffActivePallet)
+                return "Không thể hoàn thành đơn mua hàng. Hàng hoá chưa được sắp xếp vào pallet.";
 
             return "";
         }

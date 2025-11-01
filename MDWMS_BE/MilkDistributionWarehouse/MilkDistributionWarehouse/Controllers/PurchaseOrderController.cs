@@ -161,6 +161,16 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<PurchaseOrderReceivingDto>.ToResultOk(purchaseOrderUpdate);
         }
 
+        [HttpPut("Complete")]
+        [Authorize(Roles = "Warehouse Staff")]
+        public async Task<IActionResult> CompletePurchaseOrder([FromBody] PurchaseOrderCompletedDto update)
+        {
+            var (msg, purchaseOrderUpdate) = await _purchaseOrderService.UpdateStatusPurchaseOrder(update, User.GetUserId());
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<PurchaseOrderCompletedDto>.ToResultOk(purchaseOrderUpdate);
+        }
+
         [HttpDelete("DeletePurchaseOrder/{purchaseOrderId}")]
         [Authorize(Roles = "Sales Representative")]
         public async Task<IActionResult> DeletePurchaseOrder(Guid purchaseOrderId)
