@@ -37,5 +37,6 @@ namespace MilkDistributionWarehouse.Controllers
 
             return ApiResponse<GoodsIssueNoteDetailDto>.ToResultOk(goodsIssueNote);
         }
+
     }
 }

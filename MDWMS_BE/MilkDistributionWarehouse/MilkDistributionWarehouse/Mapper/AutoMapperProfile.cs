@@ -433,7 +433,8 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.GoodsCode, opt => opt.MapFrom(src => src.Goods.GoodsCode))
                 .ForMember(dest => dest.UnitPerPackage, opt => opt.MapFrom(src => src.GoodsPacking.UnitPerPackage))
                 .ForMember(dest => dest.RequiredPackageQuantity, opt => opt.MapFrom(src => src.PackageQuantity));
-            CreateMap<PickAllocation, PickAllocationDetailDto>()
+            CreateMap<PickAllocation, PickAllocationDto>()
+                .ForMember(dest => dest.PickPackageQuantity, opt => opt.MapFrom(src => src.PackageQuantity))
                 .ForMember(dest => dest.LocationCode, opt => opt.MapFrom(src => src.Pallet.Location.LocationCode))
                 .ForMember(dest => dest.Rack, opt => opt.MapFrom(src => src.Pallet.Location.Rack))
                 .ForMember(dest => dest.Row, opt => opt.MapFrom(src => src.Pallet.Location.Row))

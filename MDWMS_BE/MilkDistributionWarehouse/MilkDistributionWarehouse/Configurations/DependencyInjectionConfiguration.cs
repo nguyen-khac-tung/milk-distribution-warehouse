@@ -112,6 +112,7 @@ namespace MilkDistributionWarehouse.Configurations
             
             //Picking Allocation
             services.AddScoped<IPickAllocationRepository, PickAllocationRepository>();
+            services.AddScoped<IPickAllocationService, PickAllocationService>();
         }
     }
 }
