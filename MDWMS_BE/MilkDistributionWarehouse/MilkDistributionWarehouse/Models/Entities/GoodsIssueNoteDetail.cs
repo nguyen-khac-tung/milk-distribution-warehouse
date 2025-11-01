@@ -17,9 +17,21 @@ public partial class GoodsIssueNoteDetail
 
     public int? PackageQuantity { get; set; }
 
+    public int? Status { get; set; }
+
+    public string Note { get; set; }
+
+    public string RejectionReason { get; set; }
+
+    public DateTime? CreatedAt { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
+
     public virtual Good Goods { get; set; }
 
     public virtual GoodsIssueNote GoodsIssueNote { get; set; }
 
     public virtual GoodsPacking GoodsPacking { get; set; }
+
+    public virtual ICollection<PickAllocation> PickAllocations { get; set; } = new List<PickAllocation>();
 }

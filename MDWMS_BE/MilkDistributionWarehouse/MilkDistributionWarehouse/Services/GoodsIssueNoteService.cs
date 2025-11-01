@@ -1,6 +1,10 @@
 ﻿using AutoMapper;
+using Microsoft.IdentityModel.Tokens;
+using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
+using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
+using MilkDistributionWarehouse.Utilities;
 
 namespace MilkDistributionWarehouse.Services
 {
@@ -8,22 +12,29 @@ namespace MilkDistributionWarehouse.Services
     public interface IGoodsIssueNoteService
     {
         Task<string> CreateGoodsIssueNote(GoodsIssueNoteCreateDto goodsIssueNoteCreate, int? userId);
+        Task<(string, GoodsIssueNoteDetailDto?)> GetDetailGoodsIssueNote(Guid? goodsIssueNoteId);
     }
 
     public class GoodsIssueNoteService : IGoodsIssueNoteService
     {
         private readonly IGoodsIssueNoteRepository _goodsIssueNoteRepository;
         private readonly ISalesOrderRepository _salesOrderRepository;
+        private readonly IPalletRepository _palletRepository;
+        private readonly IPickAllocationRepository _pickAllocationRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
         public GoodsIssueNoteService(IGoodsIssueNoteRepository goodsIssueNoteRepository,
                                  ISalesOrderRepository salesOrderRepository,
+                                 IPalletRepository palletRepository,
+                                 IPickAllocationRepository pickAllocationRepository,
                                  IUnitOfWork unitOfWork,
                                  IMapper mapper)
         {
             _goodsIssueNoteRepository = goodsIssueNoteRepository;
             _salesOrderRepository = salesOrderRepository;
+            _palletRepository = palletRepository;
+            _pickAllocationRepository = pickAllocationRepository;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
         }
@@ -31,11 +42,101 @@ namespace MilkDistributionWarehouse.Services
         public async Task<string> CreateGoodsIssueNote(GoodsIssueNoteCreateDto goodsIssueNoteCreate, int? userId)
         {
             if (goodsIssueNoteCreate.SalesOrderId == null) return "SalesOrderId to create GoodsIssueNote Data is null.";
-        
+
             var salesOrder = await _salesOrderRepository.GetSalesOrderById(goodsIssueNoteCreate.SalesOrderId);
             if (salesOrder == null) return "Data of SalesOrder to create GoodsIssueNote is null.";
 
+            if (salesOrder.AssignTo != userId) return "Người dùng hiện tại không được phân công cho đơn hàng này.".ToMessageForUser();
 
+            if (salesOrder.EstimatedTimeDeparture > DateOnly.FromDateTime(DateTime.Now))
+                return "Không tạo được phiếu xuất kho trước ngày dự kiến xuất kho.".ToMessageForUser();
+
+            if (salesOrder.Status != SalesOrderStatus.AssignedForPicking)
+                return "Chỉ có thể tạo phiếu xuất kho cho đơn hàng ở trạng thái 'Đã phân công'.".ToMessageForUser();
+
+            if (await _goodsIssueNoteRepository.GetGINBySalesOrderId(salesOrder.SalesOrderId) != null)
+                return "Phiếu xuất kho cho đơn hàng này đã tồn tại.".ToMessageForUser();
+
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                var goodsIssueNote = _mapper.Map<GoodsIssueNote>(salesOrder);
+                goodsIssueNote.CreatedBy = userId;
+
+                var committedQuantities = await _pickAllocationRepository.GetCommittedQuantitiesByPallet();
+
+                foreach (var orderDetail in salesOrder.SalesOrderDetails)
+                {
+                    var issueNoteDetail = _mapper.Map<GoodsIssueNoteDetail>(orderDetail);
+                    var goodsName = orderDetail.Goods.GoodsName;
+                    var requiredQuantity = orderDetail.PackageQuantity ?? 0;
+
+                    var potentialPallets = await _palletRepository.GetPotentiallyPalletsForPicking(orderDetail.GoodsId, orderDetail.GoodsPackingId);
+                    if (potentialPallets.IsNullOrEmpty()) throw new Exception($"Không có kệ hàng nào cho sản phẩm {goodsName}".ToMessageForUser());
+
+                    var availablePallets = potentialPallets.Select(p => new
+                    {
+                        Pallet = p,
+                        AvailableQuantity = (p.PackageQuantity ?? 0) - committedQuantities.GetValueOrDefault(p.PalletId, 0)
+                    })
+                    .Where(p => p.AvailableQuantity > 0)        // Only get pallets with available quantity
+                    .OrderBy(p => p.Pallet.Batch.ExpiryDate)   // Prioritize by earliest Expiration Date(EXP)
+                    .ThenBy(p => p.AvailableQuantity)         // Then pallets with less available quantity
+                    .ToList();
+                    if (availablePallets.IsNullOrEmpty()) throw new Exception($"Không có kệ hàng nào cho sản phẩm {goodsName}".ToMessageForUser());
+
+                    var remainingQuantity = requiredQuantity;
+                    foreach (var pInfo in availablePallets)
+                    {
+                        if (remainingQuantity <= 0) break;
+
+                        var quantityToPick = Math.Min(remainingQuantity, pInfo.AvailableQuantity);
+
+                        var pickAllocation = new PickAllocation
+                        {
+                            GoodsIssueNoteDetailId = issueNoteDetail.GoodsIssueNoteDetailId,
+                            PalletId = pInfo.Pallet.PalletId,
+                            PackageQuantity = quantityToPick,
+                            Status = PickAllocationStatus.UnScanned
+                        };
+
+                        issueNoteDetail.PickAllocations.Add(pickAllocation);
+                        remainingQuantity -= quantityToPick;
+                    }
+
+                    if (remainingQuantity > 0) throw new Exception($"Không đủ tồn kho khả dụng cho sản phẩm {goodsName}".ToMessageForUser());
+
+                    goodsIssueNote.GoodsIssueNoteDetails.Add(issueNoteDetail);
+                }
+
+                await _goodsIssueNoteRepository.CreateGoodsIssueNote(goodsIssueNote);
+
+                salesOrder.Status = SalesOrderStatus.Picking;
+                salesOrder.PickingAt = DateTime.Now;
+                await _salesOrderRepository.UpdateSalesOrder(salesOrder);
+
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                return "";
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                if (ex.Message.Contains("[User]")) return ex.Message;
+                return "Đã xảy ra lỗi hệ thống khi tạo phiếu xuất kho.".ToMessageForUser();
+            }
+        }
+
+        public async Task<(string, GoodsIssueNoteDetailDto?)> GetDetailGoodsIssueNote(Guid? goodsIssueNoteId)
+        {
+            if (goodsIssueNoteId == Guid.Empty) return ("Goods Issue Note is not valid", null);
+            var goodsIssueNote = await _goodsIssueNoteRepository.GetByIdWithDetails(goodsIssueNoteId);
+            if (goodsIssueNote == null) return ("Không tìm thấy phiếu xuất kho.".ToMessageForUser(), null);
+
+            var resultDto = _mapper.Map<GoodsIssueNoteDetailDto>(goodsIssueNote);
+            return ("", resultDto);
         }
     }
 }

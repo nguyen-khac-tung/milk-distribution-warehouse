@@ -27,5 +27,15 @@ namespace MilkDistributionWarehouse.Controllers
 
             return ApiResponse<string>.ToResultOkMessage();
         }
+
+        [Authorize(Roles = "Warehouse Staff, Warehouse Manager")]
+        [HttpGet("GetDetailGoodsIssueNote/{goodsIssueNoteId}")]
+        public async Task<IActionResult> GetDetailGoodsIssueNote(Guid? goodsIssueNoteId)
+        {
+            var (msg, goodsIssueNote) = await _goodsIssueNoteService.GetDetailGoodsIssueNote(goodsIssueNoteId);
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<GoodsIssueNoteDetailDto>.ToResultOk(goodsIssueNote);
+        }
     }
 }

@@ -109,6 +109,9 @@ namespace MilkDistributionWarehouse.Configurations
             //GoodsIssueNote
             services.AddScoped<IGoodsIssueNoteRepository, GoodsIssueNoteRepository>();
             services.AddScoped<IGoodsIssueNoteService, GoodsIssueNoteService>();
+            
+            //Picking Allocation
+            services.AddScoped<IPickAllocationRepository, PickAllocationRepository>();
         }
     }
 }

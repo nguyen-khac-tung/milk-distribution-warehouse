@@ -57,7 +57,8 @@ namespace MilkDistributionWarehouse.Repositories
             return await _context.Users
                 .Include(u => u.Batches)
                 .Include(u => u.Pallets)
-                .Include(u => u.GoodsIssueNotes)
+                .Include(u => u.GoodsIssueNoteCreatedByNavigations)
+                .Include(u => u.GoodsIssueNoteApprovalByNavigations)
                 .Include(u => u.GoodsReceiptNoteApprovalByNavigations)
                 .Include(u => u.PurchaseOrderCreatedByNavigations)
                 .Include(u => u.SalesOrderCreatedByNavigations)

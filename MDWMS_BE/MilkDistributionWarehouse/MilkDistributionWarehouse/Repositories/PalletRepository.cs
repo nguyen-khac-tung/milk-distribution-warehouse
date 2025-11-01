@@ -16,6 +16,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> ExistsBatch(Guid? batchId);
         Task<bool> ExistsLocation(int? locationId);
         Task<bool> ExistsGoodRecieveNote(Guid? goodRcNoteId);
+        Task<List<Pallet>> GetPotentiallyPalletsForPicking(int? goodsId, int? goodsPackingId);
     }
 
     public class PalletRepository : IPalletRepository
@@ -124,6 +125,18 @@ namespace MilkDistributionWarehouse.Repositories
             return _context.GoodsPackings
                 .AsNoTracking()
                 .AnyAsync(g => g.GoodsPackingId == gpId.Value && g.Status == CommonStatus.Active);
+        }
+
+        public async Task<List<Pallet>> GetPotentiallyPalletsForPicking(int? goodsId, int? goodsPackingId)
+        {
+            return await _context.Pallets
+                .Include(p => p.Batch)
+                .Where(p => p.Batch.GoodsId == goodsId &&
+                            p.GoodsPackingId == goodsPackingId &&
+                            p.PackageQuantity > 0 &&
+                            p.Status == CommonStatus.Active &&
+                            p.Batch.ExpiryDate >= DateOnly.FromDateTime(DateTime.Now))
+                .ToListAsync();
         }
     }
 }
