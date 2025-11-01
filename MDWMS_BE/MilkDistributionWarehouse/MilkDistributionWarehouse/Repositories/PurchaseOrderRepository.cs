@@ -37,7 +37,9 @@ namespace MilkDistributionWarehouse.Repositories
 
         public async Task<PurchaseOrder?> GetPurchaseOrderByPurchaseOrderId(Guid purchaseOrderId)
         {
-            return await _context.PurchaseOrders.FirstOrDefaultAsync(po => po.PurchaseOderId == purchaseOrderId);
+            return await _context.PurchaseOrders
+                .Include(po => po.PurchaseOderDetails)
+                .FirstOrDefaultAsync(po => po.PurchaseOderId == purchaseOrderId);
         }
 
         public async Task<PurchaseOrder?> CreatePurchaseOrder(PurchaseOrder create)
