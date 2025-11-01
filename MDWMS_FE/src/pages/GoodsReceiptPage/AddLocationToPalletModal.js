@@ -4,10 +4,8 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { X, CheckCircle2, AlertCircle } from "lucide-react";
 import { validateLocationCode } from "../../services/LocationServices";
-import { getAreaDropdown } from "../../services/AreaServices";
 import { updatePallet } from "../../services/PalletService";
 import { extractErrorMessage } from "../../utils/Validation";
-import CustomDropdown from "../../components/Common/CustomDropdown";
 
 export default function AddLocationToPalletModal({ isOpen, onClose, onSuccess, pallet }) {
   const [formData, setFormData] = useState({
@@ -22,8 +20,6 @@ export default function AddLocationToPalletModal({ isOpen, onClose, onSuccess, p
   const [checkingLocation, setCheckingLocation] = useState(false);
   const [locationValidated, setLocationValidated] = useState(false);
   const [validatedLocationData, setValidatedLocationData] = useState(null);
-  const [areas, setAreas] = useState([]);
-  const [loadingData, setLoadingData] = useState(false);
   const [error, setError] = useState("");
   const checkTimeoutRef = useRef(null);
 
@@ -40,7 +36,6 @@ export default function AddLocationToPalletModal({ isOpen, onClose, onSuccess, p
       setLocationValidated(false);
       setValidatedLocationData(null);
       setError("");
-      loadDropdownData();
     }
 
     // Cleanup timeout khi unmount hoặc đóng modal
@@ -50,21 +45,6 @@ export default function AddLocationToPalletModal({ isOpen, onClose, onSuccess, p
       }
     };
   }, [isOpen]);
-
-  const loadDropdownData = async () => {
-    try {
-      setLoadingData(true);
-      const areasRes = await getAreaDropdown({ pageNumber: 1, pageSize: 100 });
-      const areasData = areasRes?.items || areasRes?.data?.items || areasRes?.data || [];
-      setAreas(Array.isArray(areasData) ? areasData : []);
-    } catch (error) {
-      console.error("Error loading dropdown data:", error);
-      const errorMessage = extractErrorMessage(error, "Lỗi khi tải danh sách khu vực");
-      window.showToast?.(errorMessage, "error");
-    } finally {
-      setLoadingData(false);
-    }
-  };
 
   const handleCheckLocationCode = async (locationCodeToCheck = null) => {
     // Sử dụng locationCodeToCheck nếu có (từ quét), nếu không thì dùng formData.locationCode
@@ -91,16 +71,8 @@ export default function AddLocationToPalletModal({ isOpen, onClose, onSuccess, p
         setLocationValidated(true);
         setValidatedLocationData(result.data);
         
-        // Tự động điền thông tin từ location đã validate
-        if (result.data && result.data.areaId) {
-          setFormData(prev => ({
-            ...prev,
-            areaId: result.data.areaId != null ? String(result.data.areaId) : "",
-            rack: result.data.rack != null ? String(result.data.rack) : "",
-            row: result.data.row != null ? String(result.data.row) : "",
-            column: result.data.column != null ? String(result.data.column) : "",
-          }));
-        }
+        // Dữ liệu đã được lưu trong validatedLocationData để hiển thị
+        // Không cần lưu vào formData vì các trường chỉ hiển thị (read-only)
         
         window.showToast?.("Mã vị trí hợp lệ", "success");
       } else {
@@ -296,78 +268,93 @@ export default function AddLocationToPalletModal({ isOpen, onClose, onSuccess, p
               )}
             </div>
 
-            {/* Khu vực */}
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="areaId" className="text-sm font-medium text-slate-700">
-                Khu vực
-              </Label>
-              <CustomDropdown
-                value={formData.areaId}
-                onChange={(value) => setFormData({ ...formData, areaId: value })}
-                options={[
-                  { value: "", label: "Chọn khu vực..." },
-                  ...areas.map((a) => ({
-                    value: (a.areaId || a.id || "").toString(),
-                    label: a.areaName || a.name || "",
-                  })),
-                ]}
-                placeholder="Chọn khu vực..."
-                loading={loadingData}
-                disabled={loading || locationValidated}
-              />
-            </div>
-
-            {/* Kệ, Hàng, Cột */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Kệ */}
+            {/* Khu vực - Chỉ hiển thị (read-only) khi đã validate */}
+            {locationValidated && validatedLocationData ? (
               <div className="flex flex-col gap-2">
-                <Label htmlFor="rack" className="text-sm font-medium text-slate-700">
-                  Kệ
+                <Label htmlFor="areaName" className="text-sm font-medium text-slate-700">
+                  Khu vực
                 </Label>
-                <Input
-                  id="rack"
-                  placeholder="Kệ"
-                  value={formData.rack}
-                  onChange={(e) => setFormData({ ...formData, rack: e.target.value })}
-                  className="h-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg"
-                  disabled={loading || locationValidated}
-                />
+                <div className="h-10 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-700 flex items-center">
+                  {validatedLocationData.areaName || 'N/A'}
+                </div>
               </div>
-
-              {/* Hàng */}
+            ) : (
               <div className="flex flex-col gap-2">
-                <Label htmlFor="row" className="text-sm font-medium text-slate-700">
-                  Hàng
+                <Label htmlFor="areaId" className="text-sm font-medium text-slate-700">
+                  Khu vực
                 </Label>
-                <Input
-                  id="row"
-                  type="number"
-                  min="1"
-                  placeholder="Hàng"
-                  value={formData.row}
-                  onChange={(e) => setFormData({ ...formData, row: e.target.value })}
-                  className="h-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg"
-                  disabled={loading || locationValidated}
-                />
+                <div className="h-10 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-400 flex items-center">
+                  Vui lòng kiểm tra mã vị trí trước
+                </div>
               </div>
+            )}
 
-              {/* Cột */}
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="column" className="text-sm font-medium text-slate-700">
-                  Cột
-                </Label>
-                <Input
-                  id="column"
-                  type="number"
-                  min="1"
-                  placeholder="Cột"
-                  value={formData.column}
-                  onChange={(e) => setFormData({ ...formData, column: e.target.value })}
-                  className="h-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg"
-                  disabled={loading || locationValidated}
-                />
+            {/* Kệ, Hàng, Cột - Chỉ hiển thị (read-only) khi đã validate */}
+            {locationValidated && validatedLocationData ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Kệ */}
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="rack" className="text-sm font-medium text-slate-700">
+                    Kệ
+                  </Label>
+                  <div className="h-10 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-700 flex items-center">
+                    {validatedLocationData.rack || 'N/A'}
+                  </div>
+                </div>
+
+                {/* Hàng */}
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="row" className="text-sm font-medium text-slate-700">
+                    Hàng
+                  </Label>
+                  <div className="h-10 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-700 flex items-center">
+                    {validatedLocationData.row != null ? validatedLocationData.row : 'N/A'}
+                  </div>
+                </div>
+
+                {/* Cột */}
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="column" className="text-sm font-medium text-slate-700">
+                    Cột
+                  </Label>
+                  <div className="h-10 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-700 flex items-center">
+                    {validatedLocationData.column != null ? validatedLocationData.column : 'N/A'}
+                  </div>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Kệ */}
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="rack" className="text-sm font-medium text-slate-700">
+                    Kệ
+                  </Label>
+                  <div className="h-10 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-400 flex items-center">
+                    Vui lòng kiểm tra mã vị trí
+                  </div>
+                </div>
+
+                {/* Hàng */}
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="row" className="text-sm font-medium text-slate-700">
+                    Hàng
+                  </Label>
+                  <div className="h-10 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-400 flex items-center">
+                    Vui lòng kiểm tra mã vị trí
+                  </div>
+                </div>
+
+                {/* Cột */}
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="column" className="text-sm font-medium text-slate-700">
+                    Cột
+                  </Label>
+                  <div className="h-10 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-400 flex items-center">
+                    Vui lòng kiểm tra mã vị trí
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Actions */}
             <div className="flex justify-end gap-4 pt-6 border-t">
@@ -382,7 +369,7 @@ export default function AddLocationToPalletModal({ isOpen, onClose, onSuccess, p
               </Button>
               <Button
                 type="submit"
-                disabled={loading || !locationValidated || checkingLocation || loadingData}
+                disabled={loading || !locationValidated || checkingLocation}
                 className="h-10 px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md transition-all disabled:opacity-50"
               >
                 {loading ? "Đang thêm..." : "Thêm"}
