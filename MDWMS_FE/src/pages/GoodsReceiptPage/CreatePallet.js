@@ -40,6 +40,18 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
     return map;
   }, [goodsReceiptNoteDetails]);
 
+  // Map detailId -> actualPackageQuantity (số lượng thùng thực nhận) để validate
+  const actualPackageQuantityByDetailId = useMemo(() => {
+    const map = {};
+    (goodsReceiptNoteDetails || []).forEach(d => {
+      const key = d.goodsReceiptNoteDetailId || d.id;
+      if (key) {
+        map[key] = Number(d.actualPackageQuantity) || 0;
+      }
+    });
+    return map;
+  }, [goodsReceiptNoteDetails]);
+
   const fetchBatchOptionsByGoodsId = async (goodsId) => {
     if (!goodsId) return [];
     try {
@@ -169,6 +181,36 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
       if (!(Number(r.numPackages) > 0)) {
         if (!errors.includes("Nhập số thùng phải lớn hơn 0")) {
           errors.push("Nhập số thùng phải lớn hơn 0");
+        }
+      }
+    });
+
+    // Validate tổng số thùng phải BẰNG số lượng thùng thực nhận cho từng mặt hàng
+    const totalPackagesByProduct = {};
+    palletRows.forEach(r => {
+      if (r.productId && Number(r.numPackages) > 0) {
+        if (!totalPackagesByProduct[r.productId]) {
+          totalPackagesByProduct[r.productId] = 0;
+        }
+        totalPackagesByProduct[r.productId] += Number(r.numPackages);
+      }
+    });
+
+    // Kiểm tra từng mặt hàng: tổng số thùng phải BẰNG số thùng thực nhận (không được lớn hơn hoặc nhỏ hơn)
+    Object.keys(totalPackagesByProduct).forEach(productId => {
+      const requiredQuantity = actualPackageQuantityByDetailId[productId] || 0;
+      const total = totalPackagesByProduct[productId];
+      const productName = productOptions.find(p => p.value === productId)?.label || productId;
+      
+      if (requiredQuantity > 0) {
+        if (total > requiredQuantity) {
+          if (!errors.includes(`Tổng số thùng của "${productName}" vượt quá số lượng thực nhận (${requiredQuantity} thùng). Tổng hiện tại: ${total} thùng`)) {
+            errors.push(`Tổng số thùng của "${productName}" vượt quá số lượng thực nhận (${requiredQuantity} thùng). Tổng hiện tại: ${total} thùng`);
+          }
+        } else if (total < requiredQuantity) {
+          if (!errors.includes(`Tổng số thùng của "${productName}" chưa đủ số lượng thực nhận (${requiredQuantity} thùng). Tổng hiện tại: ${total} thùng`)) {
+            errors.push(`Tổng số thùng của "${productName}" chưa đủ số lượng thực nhận (${requiredQuantity} thùng). Tổng hiện tại: ${total} thùng`);
+          }
         }
       }
     });
