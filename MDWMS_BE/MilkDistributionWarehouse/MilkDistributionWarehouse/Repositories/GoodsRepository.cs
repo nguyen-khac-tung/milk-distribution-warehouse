@@ -108,9 +108,9 @@ namespace MilkDistributionWarehouse.Repositories
                 .Include(g => g.UnitMeasure)
                 .Include(g => g.GoodsPackings)
                 .Include(g => g.Batches)
-                .ThenInclude(b => b.Pallets.Where(p=> p.Status == CommonStatus.Active))
-                .ThenInclude(p => p.GoodsPacking)
-                .Where(g => g.SupplierId == supplierId)
+                    .ThenInclude(b => b.Pallets)
+                        .ThenInclude(p => p.GoodsPacking)
+                .Where(g => g.SupplierId == supplierId && g.Status == CommonStatus.Active)
                 .ToListAsync();
         }
 

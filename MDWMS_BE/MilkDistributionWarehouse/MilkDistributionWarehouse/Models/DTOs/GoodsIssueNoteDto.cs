@@ -26,19 +26,6 @@
         public int Status { get; set; }
         public string? Note { get; set; }
         public string? RejectionReason { get; set; }
-        public List<PickAllocationDetailDto> PickAllocations { get; set; } = new();
-    }
-
-    public class PickAllocationDetailDto
-    {
-        public int PickAllocationId { get; set; }
-        public int PackageQuantity { get; set; }
-        public string? LocationCode { get; set; }
-        public string Rack { get; set; }
-        public int? Row { get; set; }
-        public int? Column { get; set; }
-        public string? AreaName { get; set; }
-        public string? AreaCode { get; set; }
-        public int Status { get; set; }
+        public List<PickAllocationDto> PickAllocations { get; set; } = new();
     }
 }
