@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.Entities;
+using System.Threading.Tasks;
 
 namespace MilkDistributionWarehouse.Repositories
 {
@@ -18,6 +19,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> ExistsLocation(int? locationId);
         Task<bool> ExistsGoodRecieveNote(Guid? goodRcNoteId);
         Task<List<Pallet>> GetPotentiallyPalletsForPicking(int? goodsId, int? goodsPackingId);
+        Task<bool> IsAnyDiffActivePalletByGRNId(Guid grndId);
     }
 
     public class PalletRepository : IPalletRepository
@@ -151,6 +153,14 @@ namespace MilkDistributionWarehouse.Repositories
                             p.Status == CommonStatus.Active &&
                             p.Batch.ExpiryDate >= DateOnly.FromDateTime(DateTime.Now))
                 .ToListAsync();
+        }
+
+        public async Task<bool> IsAnyDiffActivePalletByGRNId(Guid grndId)
+        {
+            return await _context.Pallets
+                .AnyAsync(p => p.GoodsReceiptNoteId == grndId
+                && (p.Status != CommonStatus.Active
+                || p.LocationId == null));
         }
     }
 }
