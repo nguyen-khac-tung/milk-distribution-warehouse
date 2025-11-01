@@ -479,10 +479,10 @@ const PurchaseOrderDetail = () => {
                                             <TableHead className="w-16 text-center font-semibold">STT</TableHead>
                                             <TableHead className="font-semibold">Tên hàng hóa</TableHead>
                                             <TableHead className="font-semibold">Mã hàng</TableHead>
-                                            <TableHead className="text-center font-semibold">Đơn vị tính</TableHead>
-                                            <TableHead className="text-center font-semibold">Đơn vị/thùng</TableHead>
-                                            <TableHead className="text-center font-semibold">Số lượng</TableHead>
-                                            <TableHead className="text-center font-semibold">Số thùng</TableHead>
+                                        <TableHead className="text-center font-semibold">Đơn vị tính</TableHead>
+                                        <TableHead className="text-center font-semibold">Đơn vị/thùng</TableHead>
+                                        <TableHead className="text-center font-semibold">Số thùng</TableHead>
+                                        <TableHead className="text-center font-semibold">Số lượng</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody className="flex-1">
@@ -499,8 +499,8 @@ const PurchaseOrderDetail = () => {
                                                         <TableCell className="text-gray-600">{item.goodsCode || item.goodsId || '-'}</TableCell>
                                                         <TableCell className="text-center text-gray-600">{item.unitMeasureName || '-'}</TableCell>
                                                         <TableCell className="text-center text-gray-600">{item.unitPerPacking || '-'}</TableCell>
-                                                        <TableCell className="text-center font-semibold">{totalUnits}</TableCell>
                                                         <TableCell className="text-center font-semibold">{item.packageQuantity || 0}</TableCell>
+                                                        <TableCell className="text-center font-semibold">{totalUnits}</TableCell>
                                                     </TableRow>
                                                 );
                                             })
@@ -516,15 +516,15 @@ const PurchaseOrderDetail = () => {
                                             <TableRow className="bg-gray-100 font-bold border-t border-gray-300">
                                                 <TableCell colSpan={5} className="text-right pr-2">Tổng:</TableCell>
                                                 <TableCell className="text-center font-bold">
+                                                    {purchaseOrder.purchaseOrderDetails.reduce((sum, item) => sum + (item.packageQuantity || 0), 0)}
+                                                </TableCell>
+                                                <TableCell className="text-center font-bold">
                                                     {purchaseOrder.purchaseOrderDetails.reduce((sum, item) => {
                                                         const totalUnits = item.unitPerPacking > 0
                                                             ? (item.packageQuantity || 0) * item.unitPerPacking
                                                             : 0;
                                                         return sum + totalUnits;
                                                     }, 0)}
-                                                </TableCell>
-                                                <TableCell className="text-center font-bold">
-                                                    {purchaseOrder.purchaseOrderDetails.reduce((sum, item) => sum + (item.packageQuantity || 0), 0)}
                                                 </TableCell>
                                             </TableRow>
                                         )}

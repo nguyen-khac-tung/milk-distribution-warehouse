@@ -60,7 +60,7 @@ export default function UpdatePurchaseOrder() {
                     // Set supplier
                     const supplier = suppliersData.find(s => s.supplierId === orderData.supplierId);
                     if (supplier) {
-                        setFormData({ 
+                        setFormData({
                             supplierName: supplier.companyName,
                             note: orderData.note || ""
                         });
@@ -256,7 +256,7 @@ export default function UpdatePurchaseOrder() {
         if (item.goodsId) {
             selectedGood = goods.find(good => good.goodsId === item.goodsId);
         }
-        
+
         // Nếu không tìm thấy, thử tìm theo goodsName
         if (!selectedGood && item.goodsName) {
             selectedGood = goods.find(good => good.goodsName === item.goodsName);
@@ -268,11 +268,11 @@ export default function UpdatePurchaseOrder() {
         }
 
         const goodsPackings = goodsPacking[selectedGood.goodsId] || [];
-        
+
         // So sánh cả số và chuỗi để đảm bảo tìm được
         const targetPackingId = parseInt(item.goodsPackingId);
         const selectedPacking = goodsPackings.find(packing =>
-            packing.goodsPackingId === targetPackingId || 
+            packing.goodsPackingId === targetPackingId ||
             parseInt(packing.goodsPackingId) === targetPackingId
         );
 
@@ -335,9 +335,22 @@ export default function UpdatePurchaseOrder() {
 
         try {
             const itemsWithIds = validItems.map(item => {
-                const selectedGood = goods.find(good => good.goodsName === item.goodsName);
-                if (!selectedGood) {
-                    console.error("Selected good not found for:", item.goodsName);
+                // Ưu tiên dùng goodsId từ item (đã có từ dữ liệu load)
+                let finalGoodsId = null;
+                
+                if (item.goodsId && item.goodsId !== 0) {
+                    // Dùng goodsId từ item trước
+                    finalGoodsId = parseInt(item.goodsId);
+                } else {
+                    // Tìm theo goodsName nếu không có goodsId
+                    const selectedGood = goods.find(good => good.goodsName === item.goodsName);
+                    if (selectedGood) {
+                        finalGoodsId = parseInt(selectedGood.goodsId);
+                    }
+                }
+
+                if (!finalGoodsId) {
+                    console.error("Cannot find goodsId for item:", item.goodsName, "item.goodsId:", item.goodsId);
                     return null;
                 }
 
@@ -345,7 +358,7 @@ export default function UpdatePurchaseOrder() {
                 const packageQuantity = parseInt(item.quantity);
 
                 return {
-                    goodsId: parseInt(selectedGood.goodsId),
+                    goodsId: finalGoodsId,
                     packageQuantity: packageQuantity,
                     goodsPackingId: parseInt(item.goodsPackingId),
                     purchaseOrderDetailId: item.purchaseOrderDetailId || 0
@@ -359,7 +372,7 @@ export default function UpdatePurchaseOrder() {
 
             // Cấu trúc đúng theo API documentation
             const submitData = {
-                purchaseOderId: id, 
+                purchaseOderId: id,
                 purchaseOrderDetailUpdates: itemsWithIds,
                 note: formData.note || ""
             };
