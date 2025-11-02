@@ -107,7 +107,14 @@ namespace MilkDistributionWarehouse.Services
             entity.CreatedAt = DateTime.Now;
             var created = await _backOrderRepository.CreateBackOrder(entity);
             var createdResponse = await _backOrderRepository.GetBackOrderById(created.BackOrderId);
-            return ("", _mapper.Map<BackOrderDto.BackOrderResponseDto>(createdResponse));
+            var response = _mapper.Map<BackOrderDto.BackOrderResponseDto>(createdResponse);
+
+            var availableQuantity = await _backOrderRepository.GetAvailableQuantity(created.GoodsId, created.GoodsPackingId);
+            response.StatusDinamic = availableQuantity > created.PackageQuantity
+                ? BackOrderStatus.Available
+                : BackOrderStatus.Unavailable;
+
+            return ("", response);
         }
 
         public async Task<(string, BackOrderDto.BackOrderResponseDto)> UpdateBackOrder(Guid backOrderId, BackOrderDto.BackOrderRequestDto dto)
@@ -130,7 +137,14 @@ namespace MilkDistributionWarehouse.Services
 
             var updated = await _backOrderRepository.UpdateBackOrder(backOrder);
             var updateResponse = await _backOrderRepository.GetBackOrderById(updated.BackOrderId);
-            return ("", _mapper.Map<BackOrderDto.BackOrderResponseDto>(updateResponse));
+            var response = _mapper.Map<BackOrderDto.BackOrderResponseDto>(updateResponse);
+
+            var availableQuantity = await _backOrderRepository.GetAvailableQuantity(backOrder.GoodsId, backOrder.GoodsPackingId);
+            response.StatusDinamic = availableQuantity > backOrder.PackageQuantity
+                ? BackOrderStatus.Available
+                : BackOrderStatus.Unavailable;
+
+            return ("", response);
         }
 
         public async Task<(string, BackOrderDto.BackOrderResponseDto)> DeleteBackOrder(Guid backOrderId)
