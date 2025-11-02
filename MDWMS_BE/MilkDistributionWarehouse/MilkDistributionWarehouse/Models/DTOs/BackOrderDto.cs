@@ -1,4 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Collections.Generic;
+using System;
 
 namespace MilkDistributionWarehouse.Models.DTOs
 {
@@ -36,6 +38,28 @@ namespace MilkDistributionWarehouse.Models.DTOs
             [Required(ErrorMessage = "Quantity không được để trống")]
             [Range(1, int.MaxValue, ErrorMessage = "Quantity phải lớn hơn 0")]
             public int PackageQuantity { get; set; }
+        }
+
+        public class BackOrderBulkCreate
+        {
+            [Required]
+            [MinLength(1, ErrorMessage = "Danh sách backorder không được rỗng")]
+            [MaxLength(1000, ErrorMessage = "Số lượng backorder tối đa 1000")]
+            public List<BackOrderRequestDto> BackOrders { get; set; } = new();
+        }
+
+        public class BackOrderBulkResponse
+        {
+            public int TotalInserted { get; set; }
+            public int TotalFailed { get; set; }
+            public List<FailedItem> FailedItems { get; set; } = new();
+        }
+
+        public class FailedItem
+        {
+            public int Index { get; set; }
+            public string Code { get; set; } = string.Empty;
+            public string Error { get; set; } = string.Empty;
         }
     }
 }
