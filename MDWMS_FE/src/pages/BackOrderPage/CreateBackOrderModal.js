@@ -378,7 +378,7 @@ export default function CreateBackOrderModal({ isOpen, onClose, onSuccess, selec
             className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50"
             form="backorder-form"
           >
-            {loading ? (isBulkMode ? "Đang tạo..." : "Đang thêm...") : (isBulkMode ? `Tạo ${selectedItems?.length || 0} đơn` : "Thêm")}
+            {loading ? (isBulkMode ? "Đang tạo..." : "Đang thêm...") : (isBulkMode ? `Thêm` : "Thêm")}
           </Button>
         </div>
       </div>

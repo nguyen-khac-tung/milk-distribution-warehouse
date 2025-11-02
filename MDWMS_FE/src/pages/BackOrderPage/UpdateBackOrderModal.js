@@ -299,7 +299,7 @@ export default function UpdateBackOrderModal({ isOpen, onClose, onSuccess, backO
                                 goodsPackings.length > 0
                                   ? goodsPackings.map((packing) => ({
                                     value: packing.goodsPackingId.toString(),
-                                    label: `${packing.unitPerPackage} đơn vị/thùng`,
+                                    label: `${packing.unitPerPackage}/thùng`,
                                   }))
                                   : [{ value: "", label: "Không có đóng gói", disabled: true }]
                               }
@@ -346,7 +346,7 @@ export default function UpdateBackOrderModal({ isOpen, onClose, onSuccess, backO
                               Đơn vị / thùng
                             </Label>
                             <div className="h-[38px] px-3 flex items-center border border-slate-200 bg-slate-50 rounded-lg">
-                              <span className="text-slate-700">{unitPerPackage || 'N/A'} đơn vị</span>
+                              <span className="text-slate-700">{unitPerPackage || 'N/A'}</span>
                             </div>
                           </div>
                         )}
@@ -359,7 +359,7 @@ export default function UpdateBackOrderModal({ isOpen, onClose, onSuccess, backO
                               Tổng số đơn vị
                             </Label>
                             <div className="h-[38px] px-3 flex items-center border border-green-200 bg-green-50 rounded-lg">
-                              <span className="text-green-700 font-semibold text-base">{totalUnits.toLocaleString('vi-VN')} đơn vị</span>
+                              <span className="text-green-700 font-semibold text-base">{totalUnits.toLocaleString('vi-VN')}</span>
                             </div>
                           </div>
                         )}

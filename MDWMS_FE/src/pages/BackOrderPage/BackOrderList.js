@@ -577,7 +577,7 @@ export default function BackOrderList() {
                                                 Tên sản phẩm
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                                                Quy cách (đv/thùng)
+                                                Quy cách đóng gói
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                                                 Số thùng
@@ -800,7 +800,7 @@ export default function BackOrderList() {
                 isOpen={showDeleteModal}
                 onClose={handleDeleteCancel}
                 onConfirm={handleDeleteConfirm}
-                itemName={itemToDelete?.retailerName || ""}
+                itemName={"đơn bổ sung này"}
             />
 
             {/* View BackOrder Detail Modal */}
