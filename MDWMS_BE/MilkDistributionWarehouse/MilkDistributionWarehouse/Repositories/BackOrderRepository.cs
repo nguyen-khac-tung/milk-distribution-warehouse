@@ -118,10 +118,14 @@ namespace MilkDistributionWarehouse.Repositories
 
         public async Task<BackOrder?> UpdateBackOrder(BackOrder entity)
         {
-            _context.BackOrders.Attach(entity);
-            _context.Entry(entity).State = EntityState.Modified;
+            var existing = await _context.BackOrders
+                .FirstOrDefaultAsync(x => x.BackOrderId == entity.BackOrderId);
+
+            if (existing == null) return null;
+
+            _context.Entry(existing).CurrentValues.SetValues(entity);
             await _context.SaveChangesAsync();
-            return entity;
+            return existing;
         }
 
         public Task<bool> ExistsRetailer(int? retailerId)
