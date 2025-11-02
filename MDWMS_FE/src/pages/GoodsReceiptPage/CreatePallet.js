@@ -207,7 +207,7 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
       const requiredQuantity = actualPackageQuantityByDetailId[productId] || 0;
       const total = totalPackagesByProduct[productId];
       const productName = productOptions.find(p => p.value === productId)?.label || productId;
-      
+
       if (requiredQuantity > 0) {
         if (total > requiredQuantity) {
           if (!errors.includes(`Tổng số thùng của "${productName}" vượt quá số lượng thực nhận (${requiredQuantity} thùng). Tổng hiện tại: ${total} thùng`)) {
@@ -332,11 +332,11 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
             <Button
               variant="outline"
               className="h-[38px] text-sm"
-                onClick={async () => {
-                  const first = productOptions[0];
-                  const options = await fetchBatchOptionsByGoodsId(first?.goodsId);
-                  setPalletRows(prev => ([...prev, { productId: first?.value || "", productName: first?.label || "", batchId: "", batchCode: "", unitName: first?.unitName || "", unitsPerPackage: first?.unitsPerPackage || "", numPackages: "", goodsPackingId: goodsPackingByDetailId[first?.value] || null, batchOptions: options }]));
-                }}
+              onClick={async () => {
+                const first = productOptions[0];
+                const options = await fetchBatchOptionsByGoodsId(first?.goodsId);
+                setPalletRows(prev => ([...prev, { productId: first?.value || "", productName: first?.label || "", batchId: "", batchCode: "", unitName: first?.unitName || "", unitsPerPackage: first?.unitsPerPackage || "", numPackages: "", goodsPackingId: goodsPackingByDetailId[first?.value] || null, batchOptions: options }]));
+              }}
             >
               <Plus className="w-4 h-4 mr-1" /> Thêm dòng
             </Button>
@@ -346,10 +346,10 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
               <TableRow>
                 <TableHead className="w-[22%]">Tên sản phẩm</TableHead>
                 <TableHead className="w-[14%]">Số Lô</TableHead>
-                <TableHead className="w-[14%] text-center">Đơn vị tính</TableHead>
-                <TableHead className="w-[10%] text-center">Số lượng một thùng</TableHead>
+                <TableHead className="w-[14%] text-center">Đơn vị</TableHead>
+                <TableHead className="w-[10%] text-center">Đơn vị/thùng</TableHead>
                 <TableHead className="w-[12%] text-center">Số thùng</TableHead>
-                <TableHead className="w-[14%]">Tổng số hộp</TableHead>
+                <TableHead className="w-[14%]">Tổng số đơn vị</TableHead>
                 <TableHead className="w-[8%] text-center">Hoạt động</TableHead>
               </TableRow>
             </TableHeader>
@@ -396,7 +396,7 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
                             readOnly
                           />
                         )}
-                        
+
                       </TableCell>
                       <TableCell className="text-center">
                         <input
@@ -426,7 +426,7 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
                           onChange={e => setPalletRows(prev => prev.map((r, i) => i === idx ? { ...r, numPackages: e.target.value } : r))}
                           placeholder="Nhập số thùng"
                         />
-                        
+
                       </TableCell>
                       <TableCell className="text-sm font-semibold">{totalUnits}</TableCell>
                       <TableCell className="text-center">

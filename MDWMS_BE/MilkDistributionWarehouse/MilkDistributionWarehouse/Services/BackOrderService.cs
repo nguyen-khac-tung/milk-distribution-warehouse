@@ -122,7 +122,10 @@ namespace MilkDistributionWarehouse.Services
             if (!await _backOrderRepository.ExistsGoods(dto.GoodsId))
                 return ("Goods do not exist.", new BackOrderDto.BackOrderResponseDto());
 
-            _mapper.Map(dto, backOrder);
+            backOrder.RetailerId = dto.RetailerId;
+            backOrder.GoodsId = dto.GoodsId;
+            backOrder.GoodsPackingId = dto.GoodsPackingId;
+            backOrder.PackageQuantity = dto.PackageQuantity;
             backOrder.UpdateAt = DateTime.Now;
 
             var updated = await _backOrderRepository.UpdateBackOrder(backOrder);
