@@ -13,6 +13,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<Location?> UpdateLocation(Location entity);
         Task<bool> HasDependentPalletsAsync(int locationId);
         Task<List<Location>> GetActiveLocationsAsync();
+        Task<List<Location>> GetSuggestLocationsAsync(string palletId);
         Task<Location> GetLocationPallet(string locationcode);
         Task<List<string>> GetExistingLocationKeys(List<int> areaIds);
         Task<int> CreateLocationsBulk(List<Location> locations);
@@ -93,6 +94,22 @@ namespace MilkDistributionWarehouse.Repositories
             return await _context.Locations
                 .Include(l => l.Area)
                 .FirstOrDefaultAsync(l => l.LocationCode.ToLower().Trim() == locationcode.ToLower().Trim() && l.Status != CommonStatus.Deleted);
+        }
+
+        public async Task<List<Location>> GetSuggestLocationsAsync(string palletId)
+        {
+            var pallet = await _context.Pallets
+                .Include(p => p.Batch)
+                    .ThenInclude(p => p.Goods)
+                .FirstOrDefaultAsync(p => p.PalletId == palletId && p.Status != CommonStatus.Deleted);
+            if (pallet == null || pallet.Batch == null)
+                return new List<Location>();
+            var storageConditionPallet = pallet.Batch.Goods.StorageConditionId;
+            return await _context.Locations
+                .Where(l => l.Status == CommonStatus.Active && l.IsAvailable == true &&
+                            l.Area.StorageConditionId == storageConditionPallet )
+                .AsNoTracking()
+                .ToListAsync();
         }
 
         public async Task<bool> IsDuplicateLocationCodeInAreaAsync(string locationCode, int areaId, int? excludeId = null)
