@@ -18,6 +18,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, LocationResponseDto)> DeleteLocation(int locationId);
         Task<(string, LocationResponseDto)> UpdateStatus(int locationId, int status);
         Task<(string, List<LocationActiveDto>)> GetActiveLocations();
+        Task<(string, List<LocationActiveDto>)> GetSuggestLocation(string palletId);
         Task<(string, LocationPalletDto)> GetLocationsPallet(string locationcode);
         Task<(string, LocationBulkResponse)> CreateLocationsBulk(LocationBulkCreate create);
     }
@@ -184,6 +185,15 @@ namespace MilkDistributionWarehouse.Services
             if (locations == null || !locations.Any())
                 return ("Không có vị trí nào đang hoạt động.".ToMessageForUser(), new List<LocationActiveDto>());
 
+            var dtoList = _mapper.Map<List<LocationActiveDto>>(locations);
+            return ("", dtoList);
+        }
+
+        public async Task<(string, List<LocationActiveDto>)> GetSuggestLocation(string palletId)
+        {
+            var locations = await _locationRepository.GetSuggestLocationsAsync(palletId);
+            if (locations == null || !locations.Any())
+                return ("Không có vị trí gợi ý nào.".ToMessageForUser(), new List<LocationActiveDto>());
             var dtoList = _mapper.Map<List<LocationActiveDto>>(locations);
             return ("", dtoList);
         }
