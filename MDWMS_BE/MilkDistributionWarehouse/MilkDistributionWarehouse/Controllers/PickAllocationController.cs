@@ -19,10 +19,10 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [Authorize(Roles = "Warehouse Staff")]
-        [HttpGet("GetPickAllocationDetail/{id}")]
-        public async Task<IActionResult> GetPickAllocationDetailById(int? id)
+        [HttpGet("GetPickAllocationDetail/{pickAllocationId}")]
+        public async Task<IActionResult> GetPickAllocationDetailById(int? pickAllocationId)
         {
-            var (msg, pickAllocation) = await _pickAllocationService.GetPickAllocationDetailById(id);
+            var (msg, pickAllocation) = await _pickAllocationService.GetPickAllocationDetailById(pickAllocationId);
             if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
 
             return ApiResponse<PickAllocationDetailDto>.ToResultOk(pickAllocation);

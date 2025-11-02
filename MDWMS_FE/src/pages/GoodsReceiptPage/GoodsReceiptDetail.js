@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import Loading from "../../components/Common/Loading";
 import { getGoodsReceiptNoteByPurchaseOrderId, verifyRecord, cancelGoodsReceiptNoteDetail, submitGoodsReceiptNote, approveGoodsReceiptNote, rejectGoodsReceiptNoteDetail, getPalletByGRNID } from "../../services/GoodsReceiptService";
-import { completePurchaseOrder } from "../../services/PurchaseOrderService";
+import { completePurchaseOrder, getPurchaseOrderDetail } from "../../services/PurchaseOrderService";
 import { PERMISSIONS, PURCHASE_ORDER_STATUS } from "../../utils/permissions";
 import { usePermissions } from "../../hooks/usePermissions";
 import PermissionWrapper from "../../components/Common/PermissionWrapper";
@@ -116,9 +116,25 @@ export default function GoodsReceiptDetail() {
         // Reset validation errors khi fetch lại dữ liệu
         setValidationErrors({});
         
-        // Kiểm tra xem Purchase Order đã hoàn thành chưa (nếu có thông tin trong response)
+        // Kiểm tra xem Purchase Order đã hoàn thành chưa
+        // Nếu có purchaseOrderStatus trong response, dùng nó
         if (response.data.purchaseOrderStatus !== undefined) {
           setIsPurchaseOrderCompleted(response.data.purchaseOrderStatus === PURCHASE_ORDER_STATUS.Completed);
+        } else {
+          // Nếu không có, fetch Purchase Order detail để lấy status
+          if (response.data.purchaseOderId) {
+            try {
+              const poResponse = await getPurchaseOrderDetail(response.data.purchaseOderId);
+              if (poResponse && poResponse.success && poResponse.data) {
+                const poStatus = poResponse.data.status;
+                setIsPurchaseOrderCompleted(poStatus === PURCHASE_ORDER_STATUS.Completed);
+              }
+            } catch (error) {
+              console.error("Error fetching purchase order status:", error);
+              // Nếu không fetch được, mặc định là false
+              setIsPurchaseOrderCompleted(false);
+            }
+          }
         }
 
         // Sau khi set goodsReceiptNote, check xem đã có pallet chưa (để ẩn nút tạo pallet nếu đã có)
@@ -1041,7 +1057,7 @@ export default function GoodsReceiptDetail() {
                       return locationCode && locationCode !== '';
                     });
 
-                    // Disable nút nếu đã hoàn thành hoặc chưa đủ điều kiện
+                    // Disable nút nếu Purchase Order đã hoàn thành (status = 9 - Đã nhập kho) hoặc chưa đủ điều kiện
                     const isDisabled = isPurchaseOrderCompleted || !allPalletsHaveLocation || pallets.length === 0;
 
                     return (
