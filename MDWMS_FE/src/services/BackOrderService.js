@@ -63,7 +63,8 @@ export const updateBackOrder = async (id, data) => {
         const body = {
             retailerId: data.retailerId,
             goodsId: data.goodsId,
-            quantity: data.quantity,
+            goodsPackingId: data.goodsPackingId,
+            packageQuantity: data.packageQuantity,
         };
 
         const res = await api.put(`/BackOrder/Update/${id}`, body);

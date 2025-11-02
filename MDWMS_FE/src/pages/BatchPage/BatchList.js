@@ -309,7 +309,7 @@ const BatchList = () => {
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                                                 Ngày hết hạn
                                             </TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-48">
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-22">
                                                 Trạng thái
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
@@ -338,9 +338,17 @@ const BatchList = () => {
                                                                 : batch.description
                                                             : ""}
                                                     </TableCell>
-                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">{batch?.manufacturingDate || ''}</TableCell>
-                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">{batch?.expiryDate || ''}</TableCell>
-                                                    <TableCell className="px-6 py-4 text-center">
+                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">
+                                                        {batch?.manufacturingDate
+                                                            ? new Date(batch.manufacturingDate).toLocaleDateString('vi-VN')
+                                                            : ''}
+                                                    </TableCell>
+                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">
+                                                        {batch?.expiryDate
+                                                            ? new Date(batch.expiryDate).toLocaleDateString('vi-VN')
+                                                            : ''}
+                                                    </TableCell>
+                                                    <TableCell className="px-6 py-4 text-center w-22">
                                                         <div className="flex justify-center">
                                                             <StatusToggle
                                                                 status={batch?.status}

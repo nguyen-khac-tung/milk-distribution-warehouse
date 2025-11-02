@@ -140,3 +140,27 @@ export const updatePallet = async (palletId, palletData) => {
     }
 };
 
+// Tạo nhiều kệ kê hàng cùng lúc
+export const createPalletsBulk = async (pallets = []) => {
+    // Chuẩn hóa body theo API backend
+    const body = {
+        pallets: (pallets || []).map(p => ({
+            batchId: p.batchId,
+            locationId: p.locationId != null ? parseInt(p.locationId) : null,
+            packageQuantity: parseInt(p.packageQuantity),
+            goodsPackingId: parseInt(p.goodsPackingId),
+            goodsReceiptNoteId: p.goodsReceiptNoteId
+        }))
+    };
+
+    try {
+        const res = await api.post('/Pallet/CreateBulk', body);
+        return res.data;
+    } catch (error) {
+        console.error('Error creating pallets in bulk:', error);
+        console.error('Error response:', error.response?.data);
+        console.error('Error status:', error.response?.status);
+        console.error('Request body was:', body);
+        throw error;
+    }
+};
