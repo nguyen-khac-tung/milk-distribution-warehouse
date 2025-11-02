@@ -34,9 +34,11 @@ namespace MilkDistributionWarehouse.Services
         private readonly IGoodsReceiptNoteService _goodsReceiptNoteService;
         private readonly IUserRepository _userRepository;
         private readonly IPalletRepository _palletRepository;
+        private readonly ISalesOrderRepository _saleOrderRepository;
         public PurchaseOrderService(IPurchaseOrderRepositoy purchaseOrderRepository, IMapper mapper, IPurchaseOrderDetailService purchaseOrderDetailService,
             IPurchaseOrderDetailRepository purchaseOrderDetailRepository, IUnitOfWork unitOfWork, IGoodsReceiptNoteService goodsReceiptNoteService,
-            IUserRepository userRepository, IPalletRepository palletRepository)
+            IUserRepository userRepository, IPalletRepository palletRepository,
+            ISalesOrderRepository salesOrderRepository)
         {
             _purchaseOrderRepository = purchaseOrderRepository;
             _mapper = mapper;
@@ -46,6 +48,7 @@ namespace MilkDistributionWarehouse.Services
             _goodsReceiptNoteService = goodsReceiptNoteService;
             _userRepository = userRepository;
             _palletRepository = palletRepository;
+            _saleOrderRepository = salesOrderRepository;
         }
 
         private async Task<(string, PageResult<TDto>?)> GetPurchaseOrdersAsync<TDto>(PagedRequest request, int? userId, string? userRole, params int[] excludedStatuses)
@@ -537,12 +540,19 @@ namespace MilkDistributionWarehouse.Services
             if (!isWarehouseStaff)
                 return "Nhân viên được phân công phải là nhân viên kho và đang hoạt động.";
 
-            var isBusy = await _purchaseOrderRepository.GetPurchaseOrder()
+            var isBusyPurchaseOrder = await _purchaseOrderRepository.GetPurchaseOrder()
                     .AnyAsync(po => po.AssignTo == assignTo
-                    && (po.Status == PurchaseOrderStatus.AssignedForReceiving || po.Status == PurchaseOrderStatus.Receiving)
+                    && (po.Status == PurchaseOrderStatus.AssignedForReceiving 
+                    || po.Status == PurchaseOrderStatus.Receiving 
+                    || po.Status == PurchaseOrderStatus.Inspected)
                     && po.PurchaseOderId != purchaseOrder.PurchaseOderId);
-            
-            if (isBusy)
+
+            var isBusySaleOrder = await _saleOrderRepository.GetAllSalesOrders()
+                .AnyAsync(so => so.AssignTo == assignTo
+                && (so.Status == SalesOrderStatus.AssignedForPicking
+                || so.Status == SalesOrderStatus.Picking));
+
+            if (isBusyPurchaseOrder || isBusySaleOrder)
                 return "Nhân viên này đã được phân công cho đơn hàng khác.";
 
             return "";
