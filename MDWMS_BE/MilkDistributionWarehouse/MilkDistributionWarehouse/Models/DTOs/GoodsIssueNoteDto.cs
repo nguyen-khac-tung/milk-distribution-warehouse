@@ -8,11 +8,11 @@
     public class GoodsIssueNoteDetailDto
     {
         public Guid GoodsIssueNoteId { get; set; }
+        public Guid SalesOderId { get; set; }
         public int Status { get; set; }
         public DateTime? CreatedAt { get; set; }
         public string? CreatedByName { get; set; }
         public string? ApprovalByName { get; set; }
-
         public List<GoodsIssueNoteItemDetailDto> GoodsIssueNoteDetails { get; set; } = new();
     }
 

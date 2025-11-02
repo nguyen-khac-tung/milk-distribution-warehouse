@@ -12,7 +12,7 @@ namespace MilkDistributionWarehouse.Services
     public interface IGoodsIssueNoteService
     {
         Task<string> CreateGoodsIssueNote(GoodsIssueNoteCreateDto goodsIssueNoteCreate, int? userId);
-        Task<(string, GoodsIssueNoteDetailDto?)> GetDetailGoodsIssueNote(Guid? goodsIssueNoteId);
+        Task<(string, GoodsIssueNoteDetailDto?)> GetDetailGoodsIssueNote(Guid? salesOrderId);
     }
 
     public class GoodsIssueNoteService : IGoodsIssueNoteService
@@ -129,10 +129,10 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
-        public async Task<(string, GoodsIssueNoteDetailDto?)> GetDetailGoodsIssueNote(Guid? goodsIssueNoteId)
+        public async Task<(string, GoodsIssueNoteDetailDto?)> GetDetailGoodsIssueNote(Guid? salesOrderId)
         {
-            if (goodsIssueNoteId == Guid.Empty) return ("Goods Issue Note is not valid", null);
-            var goodsIssueNote = await _goodsIssueNoteRepository.GetByIdWithDetails(goodsIssueNoteId);
+            if (salesOrderId == Guid.Empty) return ("Sales Order Id is not valid", null);
+            var goodsIssueNote = await _goodsIssueNoteRepository.GetGINDetailBySalesOrderId(salesOrderId);
             if (goodsIssueNote == null) return ("Không tìm thấy phiếu xuất kho.".ToMessageForUser(), null);
 
             var resultDto = _mapper.Map<GoodsIssueNoteDetailDto>(goodsIssueNote);

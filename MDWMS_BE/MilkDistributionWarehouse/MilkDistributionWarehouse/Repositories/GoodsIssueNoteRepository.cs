@@ -6,7 +6,7 @@ namespace MilkDistributionWarehouse.Repositories
     public interface IGoodsIssueNoteRepository
     {
         Task<GoodsIssueNote?> GetGINBySalesOrderId(Guid? salesOrderId);
-        Task<GoodsIssueNote?> GetByIdWithDetails(Guid? goodsIssueNoteId);
+        Task<GoodsIssueNote?> GetGINDetailBySalesOrderId(Guid? salesOrderId);
         Task CreateGoodsIssueNote(GoodsIssueNote goodsIssueNote);
     }
 
@@ -24,10 +24,10 @@ namespace MilkDistributionWarehouse.Repositories
             return await _context.GoodsIssueNotes.FirstOrDefaultAsync(g => g.SalesOderId == salesOrderId);
         }
 
-        public async Task<GoodsIssueNote?> GetByIdWithDetails(Guid? goodsIssueNoteId)
+        public async Task<GoodsIssueNote?> GetGINDetailBySalesOrderId(Guid? salesOrderId)
         {
             return await _context.GoodsIssueNotes
-                .Where(g => g.GoodsIssueNoteId == goodsIssueNoteId)
+                .Where(g => g.SalesOderId == salesOrderId)
                 .Include(gin => gin.CreatedByNavigation)
                 .Include(gin => gin.ApprovalByNavigation)
                 .Include(gin => gin.GoodsIssueNoteDetails)

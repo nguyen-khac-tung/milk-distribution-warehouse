@@ -29,10 +29,10 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [Authorize(Roles = "Warehouse Staff, Warehouse Manager")]
-        [HttpGet("GetDetailGoodsIssueNote/{goodsIssueNoteId}")]
-        public async Task<IActionResult> GetDetailGoodsIssueNote(Guid? goodsIssueNoteId)
+        [HttpGet("GetDetailGoodsIssueNote/{salesOrderId}")]
+        public async Task<IActionResult> GetDetailGoodsIssueNote(Guid? salesOrderId)
         {
-            var (msg, goodsIssueNote) = await _goodsIssueNoteService.GetDetailGoodsIssueNote(goodsIssueNoteId);
+            var (msg, goodsIssueNote) = await _goodsIssueNoteService.GetDetailGoodsIssueNote(salesOrderId);
             if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
 
             return ApiResponse<GoodsIssueNoteDetailDto>.ToResultOk(goodsIssueNote);
