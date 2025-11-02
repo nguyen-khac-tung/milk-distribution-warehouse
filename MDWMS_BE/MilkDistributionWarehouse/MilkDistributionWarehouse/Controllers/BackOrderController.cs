@@ -48,6 +48,18 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<BackOrderResponseDto>.ToResultOk(created);
         }
 
+        [HttpPost("CreateBulk")]
+        public async Task<IActionResult> CreateBackOrdersBulk([FromBody] BackOrderBulkCreate create)
+        {
+            if (!ModelState.IsValid)
+                return ApiResponse<string>.ToResultError("Dữ liệu không hợp lệ.");
+            int? userId = User.GetUserId();
+            var (msg, result) = await _backOrderService.CreateBackOrderBulk(create, userId);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<BackOrderBulkResponse>.ToResultOk(result);
+        }
+
         [HttpPut("Update/{id}")]
         public async Task<IActionResult> UpdateBackOrder(Guid id, [FromBody] BackOrderRequestDto dto)
         {
