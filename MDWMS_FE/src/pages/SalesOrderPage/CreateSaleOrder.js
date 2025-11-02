@@ -30,11 +30,11 @@ function CreateSaleOrder({
     const [suppliersLoading, setSuppliersLoading] = useState(false);
     const [goodsLoading, setGoodsLoading] = useState({}); // Map supplierId -> loading state
     const [packingLoading, setPackingLoading] = useState(false);
-    
+
     // Lấy dữ liệu từ localStorage nếu có (từ BackOrderList)
     const getInitialData = () => {
         if (initialData) return initialData;
-        
+
         try {
             const storedData = localStorage.getItem('saleOrderFromBackOrder');
             if (storedData) {
@@ -50,7 +50,7 @@ function CreateSaleOrder({
     };
 
     const dataFromBackOrder = getInitialData();
-    
+
     const [formData, setFormData] = useState({
         retailerName: dataFromBackOrder?.retailerName || initialData?.retailerName || "",
         estimatedTimeDeparture: initialData?.estimatedTimeDeparture || "",
@@ -159,10 +159,10 @@ function CreateSaleOrder({
     useEffect(() => {
         if (dataFromBackOrder && dataFromBackOrder.items && suppliers.length > 0 && Object.keys(goodsBySupplier).length > 0) {
             // Đảm bảo goodsPackings được load cho tất cả items có goodsPackingId
-            const itemsWithPackingId = dataFromBackOrder.items.filter(item => 
+            const itemsWithPackingId = dataFromBackOrder.items.filter(item =>
                 item.goodsPackingId && item.supplierName && item.goodsName
             );
-            
+
             itemsWithPackingId.forEach(item => {
                 const supplier = suppliers.find(s => s.companyName === item.supplierName);
                 if (supplier) {
@@ -375,13 +375,13 @@ function CreateSaleOrder({
         }
 
         if (goodsPackings.length === 0) {
-            return currentItem.goodsPackingId 
+            return currentItem.goodsPackingId
                 ? [{ value: currentItem.goodsPackingId.toString(), label: "Đang tải..." }]
                 : [];
         }
 
         return goodsPackings.map(packing => {
-            const inventory = inventoryData.find(inv => 
+            const inventory = inventoryData.find(inv =>
                 inv.goodsPackingId?.toString() === packing.goodsPackingId?.toString() ||
                 inv.goodsPackingId === packing.goodsPackingId
             );
@@ -435,7 +435,7 @@ function CreateSaleOrder({
         if (!selectedGood) return null;
 
         const inventoryData = inventoryMap[selectedGood.goodsId] || [];
-        const inventory = inventoryData.find(inv => 
+        const inventory = inventoryData.find(inv =>
             inv.goodsPackingId?.toString() === item.goodsPackingId?.toString() ||
             inv.goodsPackingId === parseInt(item.goodsPackingId)
         );
@@ -473,10 +473,10 @@ function CreateSaleOrder({
             if (!selectedGood) return null;
 
             const inventoryData = inventoryMap[selectedGood.goodsId] || [];
-                const inventory = inventoryData.find(inv => 
-                    inv.goodsPackingId?.toString() === item.goodsPackingId?.toString() ||
-                    inv.goodsPackingId === parseInt(item.goodsPackingId)
-                );
+            const inventory = inventoryData.find(inv =>
+                inv.goodsPackingId?.toString() === item.goodsPackingId?.toString() ||
+                inv.goodsPackingId === parseInt(item.goodsPackingId)
+            );
             const availableQuantity = inventory?.availablePackageQuantity || 0;
             const requestedQuantity = parseInt(item.quantity) || 0;
             const isSufficient = requestedQuantity <= availableQuantity;
@@ -522,10 +522,10 @@ function CreateSaleOrder({
             if (!selectedGood) return null;
 
             const inventoryData = inventoryMap[selectedGood.goodsId] || [];
-                const inventory = inventoryData.find(inv => 
-                    inv.goodsPackingId?.toString() === item.goodsPackingId?.toString() ||
-                    inv.goodsPackingId === parseInt(item.goodsPackingId)
-                );
+            const inventory = inventoryData.find(inv =>
+                inv.goodsPackingId?.toString() === item.goodsPackingId?.toString() ||
+                inv.goodsPackingId === parseInt(item.goodsPackingId)
+            );
             const availableQuantity = inventory?.availablePackageQuantity || 0;
             const requestedQuantity = parseInt(item.quantity) || 0;
 
@@ -764,17 +764,6 @@ function CreateSaleOrder({
                                     ) : null;
                                 })()}
 
-                                <div className="space-y-2 mt-2">
-                                    <Label htmlFor="note" className="text-slate-600 font-medium">
-                                        Ghi Chú
-                                    </Label>
-                                    <Textarea
-                                        value={formData.note}
-                                        onChange={(e) => handleInputChange("note", e.target.value)}
-                                        placeholder="Nhập ghi chú (tùy chọn)"
-                                        className="min-h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                                    />
-                                </div>
                             </div>
 
                         </div>
@@ -937,10 +926,10 @@ function CreateSaleOrder({
                                                                         );
                                                                         return selectedGood
                                                                             ? selectedGood.unitMeasureName
-                                                                            : "Chưa chọn";
+                                                                            : "Trống";
                                                                     }
                                                                 }
-                                                                return "Chưa chọn";
+                                                                return "Trống";
                                                             })()}
                                                         </div>
                                                     </TableCell>
@@ -1003,108 +992,18 @@ function CreateSaleOrder({
                                 </button>
                             </div>
 
-                            {/* Stock Information Card */}
-                            {(() => {
-                                const stockInfo = getStockInformation();
-                                if (stockInfo.totalGoods === 0) return null;
-
-                                return (
-                                    <div className="mt-6 space-y-4">
-                                        {/* Header */}
-                                        <div className="flex items-center gap-2">
-                                            <BarChart3 className="h-5 w-5 text-blue-600" />
-                                            <h3 className="text-lg font-semibold text-blue-600">Thông Tin Tồn Kho</h3>
-                                        </div>
-
-                                        {/* Status Banner */}
-                                        <div className={`rounded-lg p-4 ${stockInfo.allSufficient
-                                            ? 'bg-green-50 border border-green-200'
-                                            : 'bg-red-50 border border-red-200'
-                                            }`}>
-                                            <div className="flex items-center justify-between gap-4">
-                                                <div className="flex items-center gap-2">
-                                                    <CheckCircle className={`h-5 w-5 ${stockInfo.allSufficient ? 'text-green-600' : 'text-red-600'}`} />
-                                                    <ArrowRightLeft className={`h-5 w-5 ${stockInfo.allSufficient ? 'text-green-600' : 'text-red-600'}`} />
-                                                    <span className={`font-medium ${stockInfo.allSufficient ? 'text-green-700' : 'text-red-700'
-                                                        }`}>
-                                                        {stockInfo.allSufficient
-                                                            ? 'Đủ tồn kho - Có thể tạo đơn xuất'
-                                                            : 'Thiếu tồn kho - Vui lòng kiểm tra lại'
-                                                        }
-                                                    </span>
-                                                </div>
-                                                {/* Button để tạo BackOrder cho các mặt hàng thiếu - Góc phải */}
-                                                {!stockInfo.allSufficient && stockInfo.insufficientCount > 0 && (
-                                                    <Button
-                                                        type="button"
-                                                        onClick={handleOpenBackOrderModal}
-                                                        className="h-[38px] px-4 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all whitespace-nowrap"
-                                                    >
-                                                        <Plus className="h-4 w-4 mr-2" />
-                                                        Tạo đơn bổ sung cho {stockInfo.insufficientCount} mặt hàng thiếu
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Goods Cards */}
-                                        {stockInfo.goods.length > 0 && (
-                                            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                                                {stockInfo.goods.map((goods, idx) => (
-                                                    <div
-                                                        key={idx}
-                                                        className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-                                                    >
-                                                        <div className="flex items-center gap-2 mb-3">
-                                                            <CheckCircle className={`h-5 w-5 ${goods.isSufficient ? 'text-green-600' : 'text-red-600'}`} />
-                                                            <h4 className="font-semibold text-slate-700">{goods.goodsName}</h4>
-                                                        </div>
-
-                                                        <div className="text-sm text-slate-600 mb-2">
-                                                            Mã sản phẩm: <span className="font-medium">{goods.goodsCode}</span>
-                                                        </div>
-
-                                                        <div className="space-y-1">
-                                                            <div className="text-sm">
-                                                                <span className="text-slate-600">Yêu cầu: </span>
-                                                                <span className="font-semibold text-slate-800">{goods.requestedQuantity}</span>
-                                                            </div>
-                                                            <div className="text-sm">
-                                                                <span className="text-slate-600">Có sẵn: </span>
-                                                                <span className={`font-semibold ${goods.isSufficient ? 'text-green-600' : 'text-red-600'}`}>
-                                                                    {goods.availableQuantity}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-
-                                        {/* Stock Summary */}
-                                        <div className="space-y-2">
-                                            <h4 className="text-sm font-semibold text-slate-600">Tóm Tắt Tồn Kho:</h4>
-                                            <div className="flex flex-wrap gap-2">
-                                                <div className="px-3 py-1.5 bg-gray-100 rounded-full">
-                                                    <span className="text-sm font-medium text-blue-600">
-                                                        Tổng: {stockInfo.totalGoods} mặt hàng
-                                                    </span>
-                                                </div>
-                                                <div className="px-3 py-1.5 bg-green-100 rounded-full">
-                                                    <span className="text-sm font-medium text-green-600">
-                                                        Đủ: {stockInfo.sufficientCount} mặt hàng
-                                                    </span>
-                                                </div>
-                                                <div className="px-3 py-1.5 bg-red-100 rounded-full">
-                                                    <span className="text-sm font-medium text-red-600">
-                                                        Thiếu: {stockInfo.insufficientCount} mặt hàng
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })()}
+                            <div className="space-y-2 mt-2">
+                                <Label htmlFor="note" className="text-slate-600 font-medium">
+                                    Ghi Chú
+                                </Label>
+                                <Textarea
+                                    value={formData.note}
+                                    rows={4}
+                                    onChange={(e) => handleInputChange("note", e.target.value)}
+                                    placeholder="Nhập ghi chú (tùy chọn)"
+                                    className="min-h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                                />
+                            </div>
 
                             {/* Actions */}
                             <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-4">
@@ -1119,6 +1018,111 @@ function CreateSaleOrder({
                         </div>
                     </div>
                 </Card>
+
+                {/* Stock Information Card */}
+                {(() => {
+                    const stockInfo = getStockInformation();
+                    if (stockInfo.totalGoods === 0) return null;
+
+                    return (
+                        <Card className="bg-white border border-gray-200 shadow-sm">
+                            <div className="p-6 space-y-4">
+                                {/* Header */}
+                                <div className="flex items-center gap-2">
+                                    <BarChart3 className="h-5 w-5 text-blue-600" />
+                                    <h3 className="text-lg font-semibold text-blue-600">Thông Tin Tồn Kho</h3>
+                                </div>
+
+                                {/* Status Banner */}
+                                <div className={`rounded-lg p-4 ${stockInfo.allSufficient
+                                    ? 'bg-green-50 border border-green-200'
+                                    : 'bg-red-50 border border-red-200'
+                                    }`}>
+                                    <div className="flex items-center justify-between gap-4">
+                                        <div className="flex items-center gap-2">
+                                            <CheckCircle className={`h-5 w-5 ${stockInfo.allSufficient ? 'text-green-600' : 'text-red-600'}`} />
+                                            <ArrowRightLeft className={`h-5 w-5 ${stockInfo.allSufficient ? 'text-green-600' : 'text-red-600'}`} />
+                                            <span className={`font-medium ${stockInfo.allSufficient ? 'text-green-700' : 'text-red-700'
+                                                }`}>
+                                                {stockInfo.allSufficient
+                                                    ? 'Đủ tồn kho - Có thể tạo đơn xuất'
+                                                    : 'Thiếu tồn kho - Vui lòng kiểm tra lại'
+                                                }
+                                            </span>
+                                        </div>
+                                        {/* Button để tạo BackOrder cho các mặt hàng thiếu - Góc phải */}
+                                        {!stockInfo.allSufficient && stockInfo.insufficientCount > 0 && (
+                                            <Button
+                                                type="button"
+                                                onClick={handleOpenBackOrderModal}
+                                                className="h-[38px] px-4 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all whitespace-nowrap"
+                                            >
+                                                <Plus className="h-4 w-4 mr-2" />
+                                                Tạo đơn bổ sung cho {stockInfo.insufficientCount} mặt hàng thiếu
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Goods Cards */}
+                                {stockInfo.goods.length > 0 && (
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                                        {stockInfo.goods.map((goods, idx) => (
+                                            <div
+                                                key={idx}
+                                                className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                                            >
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <CheckCircle className={`h-5 w-5 ${goods.isSufficient ? 'text-green-600' : 'text-red-600'}`} />
+                                                    <h4 className="font-semibold text-slate-700">{goods.goodsName}</h4>
+                                                </div>
+
+                                                <div className="text-sm text-slate-600 mb-2">
+                                                    Mã sản phẩm: <span className="font-medium">{goods.goodsCode}</span>
+                                                </div>
+
+                                                <div className="space-y-1">
+                                                    <div className="text-sm">
+                                                        <span className="text-slate-600">Yêu cầu: </span>
+                                                        <span className="font-semibold text-slate-800">{goods.requestedQuantity}</span>
+                                                    </div>
+                                                    <div className="text-sm">
+                                                        <span className="text-slate-600">Có sẵn: </span>
+                                                        <span className={`font-semibold ${goods.isSufficient ? 'text-green-600' : 'text-red-600'}`}>
+                                                            {goods.availableQuantity}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Stock Summary */}
+                                <div className="space-y-2">
+                                    <h4 className="text-sm font-semibold text-slate-600">Tóm Tắt Tồn Kho:</h4>
+                                    <div className="flex flex-wrap gap-2">
+                                        <div className="px-3 py-1.5 bg-gray-100 rounded-full">
+                                            <span className="text-sm font-medium text-blue-600">
+                                                Tổng: {stockInfo.totalGoods} mặt hàng
+                                            </span>
+                                        </div>
+                                        <div className="px-3 py-1.5 bg-green-100 rounded-full">
+                                            <span className="text-sm font-medium text-green-600">
+                                                Đủ: {stockInfo.sufficientCount} mặt hàng
+                                            </span>
+                                        </div>
+                                        <div className="px-3 py-1.5 bg-red-100 rounded-full">
+                                            <span className="text-sm font-medium text-red-600">
+                                                Thiếu: {stockInfo.insufficientCount} mặt hàng
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </Card>
+                    );
+                })()}
             </div>
 
             {/* BackOrder Modal */}

@@ -1,16 +1,13 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent } from "../../components/ui/card";
+import { Card } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
-import { Search, Plus, Edit, Trash2, Eye, ArrowUp, ArrowDown, ArrowUpDown, Package } from "lucide-react";
-import Loading from "../../components/Common/Loading";
-import EmptyState from "../../components/Common/EmptyState";
+import { Plus } from "lucide-react";
 import Pagination from "../../components/Common/Pagination";
-import StatusDisplaySaleOrder, { STATUS_LABELS, SALE_ORDER_STATUS } from "../../components/SaleOrderCompoents/StatusDisplaySaleOrder";
+import { STATUS_LABELS, SALE_ORDER_STATUS } from "../../components/SaleOrderCompoents/StatusDisplaySaleOrder";
 import DeleteModal from "../../components/Common/DeleteModal";
 import { extractErrorMessage } from "../../utils/Validation";
-import { deleteSaleOrder, getSalesOrderListSaleManager, getSalesOrderListSalesRepresentatives, getSalesOrderListWarehouseManager, getSalesOrderListWarehouseStaff } from "../../services/SalesOrderService";
+import { deleteSaleOrder, getSalesOrderListSaleManager, getSalesOrderListSalesRepresentatives, getSalesOrderListWarehouseManager, getSalesOrderListWarehouseStaff, getSalesOrderDetail } from "../../services/SalesOrderService";
 import { getAllRetailersDropdown } from "../../services/RetailerService";
 import { getUserDropDownByRoleName } from "../../services/AccountService";
 import { PERMISSIONS } from "../../utils/permissions";
@@ -256,6 +253,17 @@ const SalesOrderList = () => {
     const handleDeleteClick = (order) => {
         setSelectedPurchaseOrder(order);
         setShowDeleteModal(true);
+    };
+
+    const handleGoodsIssueNoteDetailClick = async (order) => {
+        try {
+            navigate(`/goods-issue-note-detail/${order.salesOrderId}`);
+        } catch (error) {
+            console.error("Error navigating to goods issue note detail:", error);
+            if (window.showToast) {
+                window.showToast("Không thể mở phiếu xuất kho", "error");
+            }
+        }
     };
 
     const handleDeleteConfirm = async () => {
@@ -633,9 +641,9 @@ const SalesOrderList = () => {
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-600">Quản lý đơn yêu cầu bán hàng</h1>
+                        <h1 className="text-2xl font-bold text-slate-600">Quản lý đơn bán hàng</h1>
                         <p className="text-slate-600 mt-1">
-                            Quản lý các đơn yêu cầu bán hàng trong hệ thống
+                            Quản lý các đơn bán hàng trong hệ thống
                         </p>
                     </div>
                     <div className="flex space-x-3">
@@ -647,7 +655,7 @@ const SalesOrderList = () => {
                                 }}
                             >
                                 <Plus className="mr-2 h-4 w-4 text-white" />
-                                Tạo yêu cầu xuất đơn
+                                Tạo đơn bán hàng
                             </Button>
                         </PermissionWrapper>
                     </div>
@@ -753,6 +761,7 @@ const SalesOrderList = () => {
                         sortAscending={sortAscending}
                         onSort={handleSort}
                         onView={handleViewClick}
+                        onGoodsIssueNoteDetail={handleGoodsIssueNoteDetailClick}
                         onEdit={handleEditClick}
                         onDelete={handleDeleteClick}
                         onClearFilters={clearAllFilters}
@@ -779,7 +788,7 @@ const SalesOrderList = () => {
                     isOpen={showDeleteModal}
                     onClose={handleDeleteCancel}
                     onConfirm={handleDeleteConfirm}
-                    itemName="đơn xuất hàng này"
+                    itemName="đơn bán hàng này"
                 />
             </div>
         </div>
