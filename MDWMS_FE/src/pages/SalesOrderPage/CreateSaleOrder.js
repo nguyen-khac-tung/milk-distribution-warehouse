@@ -14,6 +14,7 @@ import { getSuppliersDropdown } from "../../services/SupplierService"
 import { getGoodsPackingByGoodsId } from "../../services/PurchaseOrderService"
 import { getGoodsInventoryBySupplierId } from "../../services/GoodService"
 import { extractErrorMessage } from "../../utils/Validation"
+import CreateBackOrderModal from "../BackOrderPage/CreateBackOrderModal"
 
 function CreateSaleOrder({
     isEditMode = false,
@@ -29,18 +30,90 @@ function CreateSaleOrder({
     const [suppliersLoading, setSuppliersLoading] = useState(false);
     const [goodsLoading, setGoodsLoading] = useState({}); // Map supplierId -> loading state
     const [packingLoading, setPackingLoading] = useState(false);
+    
+    // Lấy dữ liệu từ localStorage nếu có (từ BackOrderList)
+    const getInitialData = () => {
+        if (initialData) return initialData;
+        
+        try {
+            const storedData = localStorage.getItem('saleOrderFromBackOrder');
+            if (storedData) {
+                const parsed = JSON.parse(storedData);
+                // Xóa dữ liệu sau khi lấy để tránh tái sử dụng
+                localStorage.removeItem('saleOrderFromBackOrder');
+                return parsed;
+            }
+        } catch (error) {
+            console.error("Error parsing stored sale order data:", error);
+        }
+        return null;
+    };
+
+    const dataFromBackOrder = getInitialData();
+    
     const [formData, setFormData] = useState({
-        retailerName: initialData?.retailerName || "",
+        retailerName: dataFromBackOrder?.retailerName || initialData?.retailerName || "",
         estimatedTimeDeparture: initialData?.estimatedTimeDeparture || "",
         note: initialData?.note || ""
     });
 
     const [items, setItems] = useState(
-        initialData?.items || [
+        dataFromBackOrder?.items || initialData?.items || [
             { id: 1, supplierName: "", goodsName: "", quantity: "", goodsPackingId: "" },
         ],
     )
     const [fieldErrors, setFieldErrors] = useState({}) // Lỗi theo từng trường
+    const [showBackOrderModal, setShowBackOrderModal] = useState(false)
+    const [insufficientItems, setInsufficientItems] = useState([])
+
+    const loadGoodsBySupplier = async (supplierId) => {
+        // Check if goods already loaded for this supplier
+        if (goodsBySupplier[supplierId]) {
+            return;
+        }
+
+        setGoodsLoading(prev => ({ ...prev, [supplierId]: true }));
+        try {
+            const response = await getGoodsInventoryBySupplierId(supplierId);
+            const goodsData = response?.data || response?.items || response || [];
+
+            // Lưu goods vào state và goodsPackings vào map từ response (vì API đã trả về sẵn)
+            setGoodsBySupplier(prev => ({
+                ...prev,
+                [supplierId]: goodsData
+            }));
+
+            // Lưu goodsPackings vào map từ response (vì API đã trả về sẵn)
+            setGoodsPackingsMap(prev => {
+                const newPackingsMap = { ...prev };
+                goodsData.forEach(good => {
+                    if (good.goodsId && good.goodsPackings && good.goodsPackings.length > 0) {
+                        newPackingsMap[good.goodsId] = good.goodsPackings;
+                    }
+                });
+                return newPackingsMap;
+            });
+
+            // Lưu inventory data vào map
+            setInventoryMap(prev => {
+                const newInventoryMap = { ...prev };
+                goodsData.forEach(good => {
+                    if (good.goodsId && good.inventoryPackingDtos && good.inventoryPackingDtos.length > 0) {
+                        newInventoryMap[good.goodsId] = good.inventoryPackingDtos;
+                    }
+                });
+                return newInventoryMap;
+            });
+        } catch (error) {
+            console.error("Error loading goods by supplier:", error);
+            setGoodsBySupplier(prev => ({
+                ...prev,
+                [supplierId]: []
+            }));
+        } finally {
+            setGoodsLoading(prev => ({ ...prev, [supplierId]: false }));
+        }
+    };
 
     // Load retailers and suppliers on component mount
     useEffect(() => {
@@ -58,6 +131,17 @@ function CreateSaleOrder({
 
                 setRetailers(retailersData);
                 setSuppliers(suppliersData);
+
+                // Nếu có dữ liệu từ BackOrder, load goods cho các supplier đã có trong items
+                if (dataFromBackOrder && dataFromBackOrder.items && suppliersData.length > 0) {
+                    const supplierNames = [...new Set(dataFromBackOrder.items.map(item => item.supplierName).filter(Boolean))];
+                    for (const supplierName of supplierNames) {
+                        const supplier = suppliersData.find(s => s.companyName === supplierName);
+                        if (supplier) {
+                            await loadGoodsBySupplier(supplier.supplierId);
+                        }
+                    }
+                }
             } catch (error) {
                 console.error("Error loading data:", error);
                 setRetailers([]);
@@ -70,6 +154,28 @@ function CreateSaleOrder({
 
         loadData();
     }, []);
+
+    // Đảm bảo goodsPackings được load khi có items từ BackOrder với goodsPackingId
+    useEffect(() => {
+        if (dataFromBackOrder && dataFromBackOrder.items && suppliers.length > 0 && Object.keys(goodsBySupplier).length > 0) {
+            // Đảm bảo goodsPackings được load cho tất cả items có goodsPackingId
+            const itemsWithPackingId = dataFromBackOrder.items.filter(item => 
+                item.goodsPackingId && item.supplierName && item.goodsName
+            );
+            
+            itemsWithPackingId.forEach(item => {
+                const supplier = suppliers.find(s => s.companyName === item.supplierName);
+                if (supplier) {
+                    const goods = goodsBySupplier[supplier.supplierId] || [];
+                    const selectedGood = goods.find(g => g.goodsName === item.goodsName);
+                    if (selectedGood && (!goodsPackingsMap[selectedGood.goodsId] || goodsPackingsMap[selectedGood.goodsId].length === 0)) {
+                        // Nếu chưa có packings, thử load lại
+                        loadGoodsBySupplier(supplier.supplierId);
+                    }
+                }
+            });
+        }
+    }, [suppliers, goodsBySupplier, dataFromBackOrder]);
 
     const addItem = (e) => {
         // Ngăn chặn mọi event propagation
@@ -172,55 +278,6 @@ function CreateSaleOrder({
         setFormData(prev => ({ ...prev, [field]: value }));
     }
 
-    const loadGoodsBySupplier = async (supplierId) => {
-        // Check if goods already loaded for this supplier
-        if (goodsBySupplier[supplierId]) {
-            return;
-        }
-
-        setGoodsLoading(prev => ({ ...prev, [supplierId]: true }));
-        try {
-            const response = await getGoodsInventoryBySupplierId(supplierId);
-            const goodsData = response?.data || response?.items || response || [];
-
-            // Lưu goods vào state và goodsPackings vào map từ response (vì API đã trả về sẵn)
-            setGoodsBySupplier(prev => ({
-                ...prev,
-                [supplierId]: goodsData
-            }));
-
-            // Lưu goodsPackings vào map từ response (vì API đã trả về sẵn)
-            setGoodsPackingsMap(prev => {
-                const newPackingsMap = { ...prev };
-                goodsData.forEach(good => {
-                    if (good.goodsId && good.goodsPackings && good.goodsPackings.length > 0) {
-                        newPackingsMap[good.goodsId] = good.goodsPackings;
-                    }
-                });
-                return newPackingsMap;
-            });
-
-            // Lưu inventory data vào map
-            setInventoryMap(prev => {
-                const newInventoryMap = { ...prev };
-                goodsData.forEach(good => {
-                    if (good.goodsId && good.inventoryPackingDtos && good.inventoryPackingDtos.length > 0) {
-                        newInventoryMap[good.goodsId] = good.inventoryPackingDtos;
-                    }
-                });
-                return newInventoryMap;
-            });
-        } catch (error) {
-            console.error("Error loading goods by supplier:", error);
-            setGoodsBySupplier(prev => ({
-                ...prev,
-                [supplierId]: []
-            }));
-        } finally {
-            setGoodsLoading(prev => ({ ...prev, [supplierId]: false }));
-        }
-    };
-
     const loadGoodsPacking = async (goodsId) => {
         setPackingLoading(true);
         try {
@@ -302,18 +359,36 @@ function CreateSaleOrder({
         const goodsId = selectedGood.goodsId;
 
         // Lấy goodsPackings từ map theo goodsId
-        const goodsPackings = goodsPackingsMap[goodsId] || [];
+        let goodsPackings = goodsPackingsMap[goodsId] || [];
         const inventoryData = inventoryMap[goodsId] || [];
 
+        // Nếu chưa có packings và có goodsPackingId từ BackOrder, thử load lại
+        if (goodsPackings.length === 0 && currentItem.goodsPackingId && !goodsLoading[selectedSupplier.supplierId]) {
+            // Trigger load nếu chưa có packings
+            if (goodsBySupplier[selectedSupplier.supplierId] && goodsBySupplier[selectedSupplier.supplierId].length > 0) {
+                // Goods đã được load nhưng chưa có packings, có thể là vấn đề về data structure
+                console.warn(`No packings found for goodsId ${goodsId}, goodsName: ${currentItem.goodsName}`);
+            } else {
+                // Goods chưa được load, trigger load
+                loadGoodsBySupplier(selectedSupplier.supplierId);
+            }
+        }
+
         if (goodsPackings.length === 0) {
-            return [];
+            return currentItem.goodsPackingId 
+                ? [{ value: currentItem.goodsPackingId.toString(), label: "Đang tải..." }]
+                : [];
         }
 
         return goodsPackings.map(packing => {
-            const inventory = inventoryData.find(inv => inv.goodsPackingId === packing.goodsPackingId);
+            const inventory = inventoryData.find(inv => 
+                inv.goodsPackingId?.toString() === packing.goodsPackingId?.toString() ||
+                inv.goodsPackingId === packing.goodsPackingId
+            );
             const availableQuantity = inventory?.availablePackageQuantity || 0;
+            const packingIdStr = packing.goodsPackingId?.toString() || "";
             return {
-                value: packing.goodsPackingId.toString(),
+                value: packingIdStr,
                 label: `${packing.unitPerPackage} ${unitMeasureName}/thùng (Tồn: ${availableQuantity} thùng)`
             };
         });
@@ -332,7 +407,8 @@ function CreateSaleOrder({
 
         const goodsPackings = goodsPackingsMap[selectedGood.goodsId] || [];
         const selectedPacking = goodsPackings.find(packing =>
-            packing.goodsPackingId.toString() === item.goodsPackingId
+            packing.goodsPackingId?.toString() === item.goodsPackingId?.toString() ||
+            packing.goodsPackingId === parseInt(item.goodsPackingId)
         );
 
         if (!selectedPacking) return 0;
@@ -359,7 +435,10 @@ function CreateSaleOrder({
         if (!selectedGood) return null;
 
         const inventoryData = inventoryMap[selectedGood.goodsId] || [];
-        const inventory = inventoryData.find(inv => inv.goodsPackingId.toString() === item.goodsPackingId);
+        const inventory = inventoryData.find(inv => 
+            inv.goodsPackingId?.toString() === item.goodsPackingId?.toString() ||
+            inv.goodsPackingId === parseInt(item.goodsPackingId)
+        );
         const availableQuantity = inventory?.availablePackageQuantity || 0;
 
         // if (quantity > availableQuantity) {
@@ -394,7 +473,10 @@ function CreateSaleOrder({
             if (!selectedGood) return null;
 
             const inventoryData = inventoryMap[selectedGood.goodsId] || [];
-            const inventory = inventoryData.find(inv => inv.goodsPackingId.toString() === item.goodsPackingId);
+                const inventory = inventoryData.find(inv => 
+                    inv.goodsPackingId?.toString() === item.goodsPackingId?.toString() ||
+                    inv.goodsPackingId === parseInt(item.goodsPackingId)
+                );
             const availableQuantity = inventory?.availablePackageQuantity || 0;
             const requestedQuantity = parseInt(item.quantity) || 0;
             const isSufficient = requestedQuantity <= availableQuantity;
@@ -419,6 +501,65 @@ function CreateSaleOrder({
             goods,
             allSufficient
         };
+    };
+
+    // Tính toán danh sách mặt hàng thiếu để tạo BackOrder
+    const getInsufficientItemsForBackOrder = () => {
+        const validItems = items.filter(item =>
+            item.supplierName && item.goodsName && item.quantity && item.goodsPackingId && parseInt(item.quantity) > 0
+        );
+
+        if (validItems.length === 0) {
+            return [];
+        }
+
+        const insufficientItems = validItems.map(item => {
+            const selectedSupplier = suppliers.find(s => s.companyName === item.supplierName);
+            if (!selectedSupplier) return null;
+
+            const goods = goodsBySupplier[selectedSupplier.supplierId] || [];
+            const selectedGood = goods.find(g => g.goodsName === item.goodsName);
+            if (!selectedGood) return null;
+
+            const inventoryData = inventoryMap[selectedGood.goodsId] || [];
+                const inventory = inventoryData.find(inv => 
+                    inv.goodsPackingId?.toString() === item.goodsPackingId?.toString() ||
+                    inv.goodsPackingId === parseInt(item.goodsPackingId)
+                );
+            const availableQuantity = inventory?.availablePackageQuantity || 0;
+            const requestedQuantity = parseInt(item.quantity) || 0;
+
+            // Chỉ lấy những mặt hàng thiếu (yêu cầu > có sẵn)
+            if (requestedQuantity <= availableQuantity) {
+                return null;
+            }
+
+            // Tính số lượng thiếu
+            const shortageQuantity = requestedQuantity - availableQuantity;
+
+            return {
+                goodsId: selectedGood.goodsId,
+                goodsPackingId: parseInt(item.goodsPackingId),
+                goodsName: selectedGood.goodsName,
+                goodsCode: selectedGood.goodsCode || "-",
+                requestedQuantity: requestedQuantity,
+                availableQuantity: availableQuantity,
+                packageQuantity: shortageQuantity, // Số lượng thiếu
+            };
+        }).filter(item => item !== null);
+
+        return insufficientItems;
+    };
+
+    // Mở modal BackOrder với danh sách mặt hàng thiếu
+    const handleOpenBackOrderModal = () => {
+        const insufficient = getInsufficientItemsForBackOrder();
+        if (insufficient.length === 0) {
+            window.showToast("Không có mặt hàng nào bị thiếu tồn kho", "info");
+            return;
+        }
+        setInsufficientItems(insufficient);
+        setShowBackOrderModal(true);
     };
 
     const handleSubmit = async (e) => {
@@ -732,7 +873,7 @@ function CreateSaleOrder({
                                                     <TableCell className="relative align-top pb-6">
                                                         <div className="relative min-w-[130px] max-w-[140px] w-full">
                                                             <FloatingDropdown
-                                                                value={item.goodsPackingId || undefined}
+                                                                value={item.goodsPackingId ? item.goodsPackingId.toString() : undefined}
                                                                 onChange={(value) => updateItem(item.id, "goodsPackingId", value)}
                                                                 options={getGoodsPackingOptions(item.id)}
                                                                 placeholder={
@@ -741,7 +882,7 @@ function CreateSaleOrder({
                                                                 loading={packingLoading}
                                                                 disabled={!item.goodsName}
                                                                 className="truncate w-full"
-                                                                title={item.goodsPackingId || ""}
+                                                                title={item.goodsPackingId ? item.goodsPackingId.toString() : ""}
                                                             />
                                                             {fieldErrors[`${item.id}-goodsPackingId`] && (
                                                                 <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">
@@ -880,16 +1021,29 @@ function CreateSaleOrder({
                                             ? 'bg-green-50 border border-green-200'
                                             : 'bg-red-50 border border-red-200'
                                             }`}>
-                                            <div className="flex items-center gap-2">
-                                                <CheckCircle className={`h-5 w-5 ${stockInfo.allSufficient ? 'text-green-600' : 'text-red-600'}`} />
-                                                <ArrowRightLeft className={`h-5 w-5 ${stockInfo.allSufficient ? 'text-green-600' : 'text-red-600'}`} />
-                                                <span className={`font-medium ${stockInfo.allSufficient ? 'text-green-700' : 'text-red-700'
-                                                    }`}>
-                                                    {stockInfo.allSufficient
-                                                        ? 'Đủ tồn kho - Có thể tạo đơn xuất'
-                                                        : 'Thiếu tồn kho - Vui lòng kiểm tra lại'
-                                                    }
-                                                </span>
+                                            <div className="flex items-center justify-between gap-4">
+                                                <div className="flex items-center gap-2">
+                                                    <CheckCircle className={`h-5 w-5 ${stockInfo.allSufficient ? 'text-green-600' : 'text-red-600'}`} />
+                                                    <ArrowRightLeft className={`h-5 w-5 ${stockInfo.allSufficient ? 'text-green-600' : 'text-red-600'}`} />
+                                                    <span className={`font-medium ${stockInfo.allSufficient ? 'text-green-700' : 'text-red-700'
+                                                        }`}>
+                                                        {stockInfo.allSufficient
+                                                            ? 'Đủ tồn kho - Có thể tạo đơn xuất'
+                                                            : 'Thiếu tồn kho - Vui lòng kiểm tra lại'
+                                                        }
+                                                    </span>
+                                                </div>
+                                                {/* Button để tạo BackOrder cho các mặt hàng thiếu - Góc phải */}
+                                                {!stockInfo.allSufficient && stockInfo.insufficientCount > 0 && (
+                                                    <Button
+                                                        type="button"
+                                                        onClick={handleOpenBackOrderModal}
+                                                        className="h-[38px] px-4 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all whitespace-nowrap"
+                                                    >
+                                                        <Plus className="h-4 w-4 mr-2" />
+                                                        Tạo đơn bổ sung cho {stockInfo.insufficientCount} mặt hàng thiếu
+                                                    </Button>
+                                                )}
                                             </div>
                                         </div>
 
@@ -966,6 +1120,43 @@ function CreateSaleOrder({
                     </div>
                 </Card>
             </div>
+
+            {/* BackOrder Modal */}
+            <CreateBackOrderModal
+                isOpen={showBackOrderModal}
+                onClose={() => setShowBackOrderModal(false)}
+                onSuccess={() => {
+                    setShowBackOrderModal(false);
+                    window.showToast("Tạo đơn đặt hàng thành công!", "success");
+                }}
+                selectedItems={insufficientItems.map(item => ({
+                    goodsId: item.goodsId,
+                    goodsPackingId: item.goodsPackingId,
+                    goodsName: item.goodsName,
+                    goodsCode: item.goodsCode,
+                    requestedQuantity: item.packageQuantity, // Số lượng thiếu
+                    availableQuantity: 0, // Không có sẵn vì đây là số lượng thiếu
+                    packageQuantity: item.packageQuantity // Số lượng thiếu
+                }))}
+                retailerId={(() => {
+                    if (!formData.retailerName || retailers.length === 0) {
+                        console.log("No retailerName or retailers not loaded yet");
+                        return null;
+                    }
+                    const selectedRetailer = retailers.find(r =>
+                        r.retailerName === formData.retailerName ||
+                        r.RetailerName === formData.retailerName ||
+                        (r.retailerName || r.RetailerName)?.toLowerCase() === formData.retailerName?.toLowerCase()
+                    );
+                    if (selectedRetailer) {
+                        const retailerIdValue = selectedRetailer.retailerId || selectedRetailer.RetailerId;
+                        console.log("Found retailer:", selectedRetailer, "retailerId:", retailerIdValue);
+                        return retailerIdValue ? retailerIdValue.toString() : null;
+                    }
+                    console.log("Retailer not found. formData.retailerName:", formData.retailerName, "retailers:", retailers);
+                    return null;
+                })()}
+            />
         </div>
     )
 }

@@ -112,10 +112,10 @@ export default function GoodsReceiptDetail() {
       }
       if (response && response.data) {
         setGoodsReceiptNote(response.data);
-        
+
         // Reset validation errors khi fetch lại dữ liệu
         setValidationErrors({});
-        
+
         // Kiểm tra xem Purchase Order đã hoàn thành chưa
         // Nếu có purchaseOrderStatus trong response, dùng nó
         if (response.data.purchaseOrderStatus !== undefined) {
@@ -347,7 +347,6 @@ export default function GoodsReceiptDetail() {
             </Button>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Chi tiết phiếu nhập kho</h1>
-              <p className="text-gray-600 mt-1">Mã phiếu: {goodsReceiptNote.goodsReceiptNoteId}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -454,7 +453,7 @@ export default function GoodsReceiptDetail() {
                 </div>
                 <div className="flex-1">
                   <h2 className="text-lg font-semibold text-gray-900">Kiểm nhập</h2>
-                  <p className="text-sm text-gray-500">Kiểm tra và xác nhận hàng hóa nhập kho</p>
+                  <p className="text-sm text-gray-500">Kiểm nhập và xác nhận hàng hóa nhập kho</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -481,7 +480,7 @@ export default function GoodsReceiptDetail() {
                   {!(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT)) && (
                     <>
                       {/* TABLE 1: CẦN KIỂM TRA (status==1) */}
-                      <h2 className="text-lg font-semibold mb-3">Cần kiểm tra</h2>
+                      <h2 className="text-lg font-semibold mb-3">Đang kiểm nhập</h2>
                       <Table>
                         <TableHeader>
                           <TableRow className="bg-gray-100">
@@ -508,11 +507,11 @@ export default function GoodsReceiptDetail() {
                             const expectedPackageQuantity = Number(detail.expectedPackageQuantity) || 0;
                             const deliveredPackageQuantity = Number(detail.deliveredPackageQuantity) || 0;
                             const rejectPackageQuantity = Number(detail.rejectPackageQuantity) || 0;
-                            
+
                             // Validation logic theo quy tắc
                             const validateRejectQuantity = (delivered, reject, expected) => {
                               if (delivered === 0 && reject === 0) return null; // Cho phép cả 2 = 0
-                              
+
                               if (expected > delivered) {
                                 // Rule 1: a > b -> 0 <= c <= a - 1
                                 const maxReject = expected - 1;
@@ -537,7 +536,7 @@ export default function GoodsReceiptDetail() {
 
                             const detailId = detail.goodsReceiptNoteDetailId;
                             const errorMessage = validateRejectQuantity(deliveredPackageQuantity, rejectPackageQuantity, expectedPackageQuantity);
-                            
+
                             return (
                               <>
                                 <TableRow key={index} className="hover:bg-gray-50">
@@ -552,9 +551,8 @@ export default function GoodsReceiptDetail() {
                                     <div className="flex flex-col items-center">
                                       <input
                                         type="number"
-                                        className={`w-20 h-8 px-2 rounded border text-center text-xs focus:outline-none focus:border-blue-500 ${
-                                          validationErrors[detailId] ? 'border-red-500' : 'border-gray-300'
-                                        }`}
+                                        className={`w-20 h-8 px-2 rounded border text-center text-xs focus:outline-none focus:border-blue-500 ${validationErrors[detailId] ? 'border-red-500' : 'border-gray-300'
+                                          }`}
                                         value={detail.deliveredPackageQuantity === '' || detail.deliveredPackageQuantity === null || detail.deliveredPackageQuantity === undefined ? '' : detail.deliveredPackageQuantity}
                                         min={0}
                                         onChange={e => {
@@ -564,7 +562,7 @@ export default function GoodsReceiptDetail() {
                                             ...detail,
                                             deliveredPackageQuantity: value === '' ? '' : numValue
                                           };
-                                          
+
                                           setGoodsReceiptNote(prev => ({
                                             ...prev,
                                             goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
@@ -584,7 +582,7 @@ export default function GoodsReceiptDetail() {
                                         onBlur={e => {
                                           const value = e.target.value;
                                           const numValue = value === '' ? 0 : Number(value) || 0;
-                                          
+
                                           if (value === '') {
                                             setGoodsReceiptNote(prev => ({
                                               ...prev,
@@ -611,15 +609,14 @@ export default function GoodsReceiptDetail() {
                                     <div className="flex flex-col items-center">
                                       <input
                                         type="number"
-                                        className={`w-20 h-8 px-2 rounded border text-center text-xs focus:outline-none focus:border-blue-500 ${
-                                          validationErrors[detailId] ? 'border-red-500' : 'border-gray-300'
-                                        }`}
+                                        className={`w-20 h-8 px-2 rounded border text-center text-xs focus:outline-none focus:border-blue-500 ${validationErrors[detailId] ? 'border-red-500' : 'border-gray-300'
+                                          }`}
                                         value={detail.rejectPackageQuantity === '' || detail.rejectPackageQuantity === null || detail.rejectPackageQuantity === undefined ? '' : detail.rejectPackageQuantity}
                                         min={0}
                                         onChange={e => {
                                           const value = e.target.value;
                                           const numValue = value === '' ? 0 : Math.max(0, Number(value));
-                                          
+
                                           setGoodsReceiptNote(prev => ({
                                             ...prev,
                                             goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
@@ -639,7 +636,7 @@ export default function GoodsReceiptDetail() {
                                         onBlur={e => {
                                           const value = e.target.value;
                                           const numValue = value === '' ? 0 : Number(value) || 0;
-                                          
+
                                           if (value === '') {
                                             setGoodsReceiptNote(prev => ({
                                               ...prev,
@@ -695,10 +692,10 @@ export default function GoodsReceiptDetail() {
                                   </TableCell>
                                   <TableCell className="text-center">
                                     {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CHECK) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && (
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm" 
-                                        className="text-green-600 hover:text-white hover:bg-green-600 h-[38px] mr-2 disabled:opacity-50 disabled:cursor-not-allowed" 
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-green-600 hover:text-white hover:bg-green-600 h-[38px] mr-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                         disabled={!!validationErrors[detailId]}
                                         onClick={async () => {
                                           // Validate trước khi submit
@@ -707,12 +704,12 @@ export default function GoodsReceiptDetail() {
                                             Number(detail.rejectPackageQuantity) || 0,
                                             expectedPackageQuantity
                                           );
-                                          
+
                                           if (error) {
                                             window.showToast?.(error, "error");
                                             return;
                                           }
-                                          
+
                                           await verifyRecord({
                                             goodsReceiptNoteDetailId: detail.goodsReceiptNoteDetailId,
                                             deliveredPackageQuantity: Number(detail.deliveredPackageQuantity) || 0,
@@ -727,7 +724,7 @@ export default function GoodsReceiptDetail() {
                                           fetchGoodsReceiptNoteDetail();
                                         }}
                                       >
-                                        Kiểm tra
+                                        Kiểm nhập
                                       </Button>
                                     )}
                                   </TableCell>
@@ -759,7 +756,7 @@ export default function GoodsReceiptDetail() {
                   )}
 
                   {/* TABLE 2: ĐÃ KIỂM TRA (status==2) */}
-                  <h2 className="text-lg font-semibold text-green-700 mt-10 mb-3">Đã kiểm tra</h2>
+                  <h2 className="text-lg font-semibold text-green-700 mt-10 mb-3">Đã kiểm nhập</h2>
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-green-100">
@@ -809,7 +806,7 @@ export default function GoodsReceiptDetail() {
                                   <Button variant="outline" size="sm" className="text-yellow-600 border-yellow-300 hover:text-white hover:bg-yellow-500 h-[30px] rounded" onClick={async () => {
                                     await cancelGoodsReceiptNoteDetail(detail.goodsReceiptNoteDetailId);
                                     fetchGoodsReceiptNoteDetail();
-                                  }}>Kiểm tra lại</Button>
+                                  }}>Kiểm nhập lại</Button>
                                 )}
                                 {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && (
                                   <Button variant="outline" size="sm" className="text-red-600 border-red-300 hover:text-white hover:bg-red-600 h-[30px] rounded" onClick={() => openRejectModal(detail.goodsReceiptNoteDetailId)}>Từ chối</Button>
