@@ -7,7 +7,9 @@ namespace MilkDistributionWarehouse.Repositories
     {
         Task<GoodsIssueNote?> GetGINBySalesOrderId(Guid? salesOrderId);
         Task<GoodsIssueNote?> GetGINDetailBySalesOrderId(Guid? salesOrderId);
+        Task<GoodsIssueNote?> GetGINByGoodsIssueNoteId(Guid? goodsIssueNoteId);
         Task CreateGoodsIssueNote(GoodsIssueNote goodsIssueNote);
+        Task UpdateGoodsIssueNote(GoodsIssueNote goodsIssueNote);
     }
 
     public class GoodsIssueNoteRepository : IGoodsIssueNoteRepository
@@ -42,9 +44,25 @@ namespace MilkDistributionWarehouse.Repositories
                 .FirstOrDefaultAsync();
         }
 
+        public async Task<GoodsIssueNote?> GetGINByGoodsIssueNoteId(Guid? goodsIssueNoteId)
+        {
+            return await _context.GoodsIssueNotes
+                .Include(gin => gin.SalesOder)
+                .Include(gin => gin.GoodsIssueNoteDetails)
+                    .ThenInclude(gd => gd.PickAllocations)
+                        .ThenInclude(p => p.Pallet)
+                .FirstOrDefaultAsync(gin => gin.GoodsIssueNoteId == goodsIssueNoteId);
+        }
+
         public async Task CreateGoodsIssueNote(GoodsIssueNote goodsIssueNote)
         {
             await _context.GoodsIssueNotes.AddAsync(goodsIssueNote);
+        }
+
+        public async Task UpdateGoodsIssueNote(GoodsIssueNote goodsIssueNote)
+        {
+            _context.GoodsIssueNotes.Update(goodsIssueNote);
+            await Task.CompletedTask;
         }
     }
 }

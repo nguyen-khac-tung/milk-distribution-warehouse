@@ -21,7 +21,10 @@ namespace MilkDistributionWarehouse.Repositories
 
         public async Task<GoodsIssueNoteDetail?> GetGoodsIssueNoteDetailById(Guid? id)
         {
-            return await _context.GoodsIssueNoteDetails.FirstOrDefaultAsync(g => g.GoodsIssueNoteDetailId == id);
+            return await _context.GoodsIssueNoteDetails
+                .Include(d => d.GoodsIssueNote)
+                .Include(d => d.PickAllocations)
+                .FirstOrDefaultAsync(d => d.GoodsIssueNoteDetailId == id);
         }
 
         public async Task<List<PickAllocation>?> GetPickAllocationsByGIN(Guid? id)

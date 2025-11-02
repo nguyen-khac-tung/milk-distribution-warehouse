@@ -9,7 +9,7 @@ namespace MilkDistributionWarehouse.Services
 {
     public interface IPickAllocationService
     {
-        Task<(string, PickAllocationDetailDto?)> GetPickAllocationDetailById(int? id);
+        Task<(string, PickAllocationDetailDto?)> GetPickAllocationDetailById(int? pickAllocationId);
         Task<string> ConfirmPickAllocation(ConfirmPickAllocationDto confirmPickAllocation);
     }
 
@@ -31,11 +31,11 @@ namespace MilkDistributionWarehouse.Services
             _mapper = mapper;
         }
 
-        public async Task<(string, PickAllocationDetailDto?)> GetPickAllocationDetailById(int? id)
+        public async Task<(string, PickAllocationDetailDto?)> GetPickAllocationDetailById(int? pickAllocationId)
         {
-            if (id == null) return ("PickAllocationId is invalid.", null);
+            if (pickAllocationId == null) return ("PickAllocationId is invalid.", null);
 
-            var pickAllocation = await _pickAllocationRepository.GetPickAllocationDetailById(id);
+            var pickAllocation = await _pickAllocationRepository.GetPickAllocationDetailById(pickAllocationId);
             if (pickAllocation == null) return ("Pick Allocation exist is null", null);
 
             var pickDetailDto = _mapper.Map<PickAllocationDetailDto>(pickAllocation);

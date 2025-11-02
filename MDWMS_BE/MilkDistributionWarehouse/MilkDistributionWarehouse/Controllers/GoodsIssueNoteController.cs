@@ -38,5 +38,24 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<GoodsIssueNoteDetailDto>.ToResultOk(goodsIssueNote);
         }
 
+        [Authorize(Roles = "Warehouse Staff")]
+        [HttpPut("SubmitGoodsIssueNote")]
+        public async Task<IActionResult> SubmitGoodsIssueNote(SubmitGoodsIssueNoteDto submitGoodsIssueDto)
+        {
+            var msg = await _goodsIssueNoteService.SubmitGoodsIssueNote(submitGoodsIssueDto, User.GetUserId());
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<string>.ToResultOkMessage();
+        }
+
+        [Authorize(Roles = "Warehouse Manager")]
+        [HttpPut("ApproveGoodsIssueNote")]
+        public async Task<IActionResult> ApproveGoodsIssueNote(ApproveGoodsIssueNoteDto approveGoodsIssueDto)
+        {
+            var msg = await _goodsIssueNoteService.ApproveGoodsIssueNote(approveGoodsIssueDto, User.GetUserId());
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<string>.ToResultOkMessage();
+        }
     }
 }

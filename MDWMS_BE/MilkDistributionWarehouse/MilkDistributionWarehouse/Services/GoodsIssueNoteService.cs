@@ -13,6 +13,8 @@ namespace MilkDistributionWarehouse.Services
     {
         Task<string> CreateGoodsIssueNote(GoodsIssueNoteCreateDto goodsIssueNoteCreate, int? userId);
         Task<(string, GoodsIssueNoteDetailDto?)> GetDetailGoodsIssueNote(Guid? salesOrderId);
+        Task<string> SubmitGoodsIssueNote(SubmitGoodsIssueNoteDto submitGoodsIssueDto, int? userId);
+        Task<string> ApproveGoodsIssueNote(ApproveGoodsIssueNoteDto approveGoodsIssueDto, int? userId);
     }
 
     public class GoodsIssueNoteService : IGoodsIssueNoteService
@@ -116,7 +118,6 @@ namespace MilkDistributionWarehouse.Services
                 salesOrder.PickingAt = DateTime.Now;
                 await _salesOrderRepository.UpdateSalesOrder(salesOrder);
 
-                await _unitOfWork.SaveChangesAsync();
                 await _unitOfWork.CommitTransactionAsync();
 
                 return "";
@@ -137,6 +138,104 @@ namespace MilkDistributionWarehouse.Services
 
             var resultDto = _mapper.Map<GoodsIssueNoteDetailDto>(goodsIssueNote);
             return ("", resultDto);
+        }
+
+        public async Task<string> SubmitGoodsIssueNote(SubmitGoodsIssueNoteDto submitGoodsIssueDto, int? userId)
+        {
+            if (submitGoodsIssueDto.GoodsIssueNoteId == Guid.Empty) return "GoodsIssueNoteId is null.";
+
+            var goodsIssueNote = await _goodsIssueNoteRepository.GetGINByGoodsIssueNoteId(submitGoodsIssueDto.GoodsIssueNoteId);
+            if (goodsIssueNote == null) return "Không tìm thấy phiếu xuất kho.".ToMessageForUser();
+
+            if (goodsIssueNote.CreatedBy != userId)
+                return "Người dùng hiện tại không được phân công cho đơn hàng này.".ToMessageForUser();
+
+            if (goodsIssueNote.Status != GoodsIssueNoteStatus.Picking)
+                return "Chỉ có thể nộp đơn khi phiếu đang ở trạng thái 'Đang lấy hàng'.".ToMessageForUser();
+
+            if (goodsIssueNote.GoodsIssueNoteDetails.Any(g => g.Status == IssueItemStatus.Picking))
+                return "Không thể nộp đơn. Vẫn còn hạng mục đang trong quá trình lấy hàng.".ToMessageForUser();
+
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                foreach (var issueNoteDetail in goodsIssueNote.GoodsIssueNoteDetails)
+                {
+                    if (issueNoteDetail.Status == IssueItemStatus.Picked)
+                    {
+                        issueNoteDetail.Status = IssueItemStatus.PendingApproval;
+                        issueNoteDetail.UpdatedAt = DateTime.Now;
+                    }
+                }
+
+                goodsIssueNote.Status = GoodsIssueNoteStatus.PendingApproval;
+                goodsIssueNote.UpdatedAt = DateTime.Now;
+
+                await _goodsIssueNoteRepository.UpdateGoodsIssueNote(goodsIssueNote);
+                await _unitOfWork.CommitTransactionAsync();
+
+                return "";
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return "Đã xảy ra lỗi hệ thống khi nộp đơn.".ToMessageForUser();
+            }
+        }
+
+        public async Task<string> ApproveGoodsIssueNote(ApproveGoodsIssueNoteDto approveGoodsIssueDto, int? userId)
+        {
+            if (approveGoodsIssueDto.GoodsIssueNoteId == Guid.Empty) return "GoodsIssueNoteId is null.";
+
+            var goodsIssueNote = await _goodsIssueNoteRepository.GetGINByGoodsIssueNoteId(approveGoodsIssueDto.GoodsIssueNoteId);
+            if (goodsIssueNote == null) return "Không tìm thấy phiếu xuất kho.".ToMessageForUser();
+
+            if (goodsIssueNote.Status != GoodsIssueNoteStatus.PendingApproval)
+                return "Chỉ có thể duyệt phiếu xuất kho đang ở trạng thái 'Chờ duyệt'.".ToMessageForUser();
+
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                goodsIssueNote.Status = GoodsIssueNoteStatus.Completed;
+                goodsIssueNote.ApprovalBy = userId;
+                goodsIssueNote.UpdatedAt = DateTime.Now;
+
+                goodsIssueNote.SalesOder.Status = SalesOrderStatus.Completed;
+                goodsIssueNote.SalesOder.UpdateAt = DateTime.Now;
+
+                foreach (var issueNoteDetail in goodsIssueNote.GoodsIssueNoteDetails)
+                {
+                    issueNoteDetail.Status = IssueItemStatus.Completed;
+                    issueNoteDetail.UpdatedAt = DateTime.Now;
+                }
+
+                var pickAllocationList = goodsIssueNote.GoodsIssueNoteDetails.SelectMany(g => g.PickAllocations).ToList();
+                pickAllocationList.ForEach(pick =>
+                {
+                    var palletPackageQuantity = pick.Pallet.PackageQuantity ?? 0;
+                    var pickPackageQuantity = pick.PackageQuantity ?? 0;
+
+                    if (palletPackageQuantity < pickPackageQuantity)
+                        throw new Exception($"Thao tác thất bại: Kệ kê hàng '{pick.Pallet.PalletId}' không đủ số lượng để trừ kho (cần {pickPackageQuantity}, chỉ có {palletPackageQuantity}).".ToMessageForUser());
+
+                    pick.Pallet.PackageQuantity = palletPackageQuantity - pickPackageQuantity;
+                    if (pick.Pallet.PackageQuantity == 0) pick.Pallet.Status = CommonStatus.Inactive;
+                    pick.Pallet.UpdateAt = DateTime.Now;
+                });
+
+                await _goodsIssueNoteRepository.UpdateGoodsIssueNote(goodsIssueNote);
+                await _unitOfWork.CommitTransactionAsync();
+
+                return "";
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                if (ex.Message.Contains("[User]")) return ex.Message;
+                return "Đã xảy ra lỗi hệ thống khi duyệt phiếu xuất kho.".ToMessageForUser();
+            }
         }
     }
 }

@@ -1,4 +1,6 @@
-﻿namespace MilkDistributionWarehouse.Models.DTOs
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace MilkDistributionWarehouse.Models.DTOs
 {
     public class GoodsIssueNoteCreateDto
     {
@@ -27,5 +29,23 @@
         public string? Note { get; set; }
         public string? RejectionReason { get; set; }
         public List<PickAllocationDto> PickAllocations { get; set; } = new();
+    }
+
+    public class RePickGoodsIssueNoteDetailDto
+    {
+        [Required(ErrorMessage = "Mã chi tiết phiếu xuất kho không được để trống.")]
+        public Guid? GoodsIssueNoteDetailId { get; set; }
+
+        public string? RejectionReason { get; set; }
+    }
+
+    public class SubmitGoodsIssueNoteDto
+    {
+        public Guid? GoodsIssueNoteId { get; set; }
+    }
+
+    public class ApproveGoodsIssueNoteDto
+    {
+        public Guid GoodsIssueNoteId { get; set; }
     }
 }
