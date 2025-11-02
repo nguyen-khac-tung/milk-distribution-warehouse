@@ -94,8 +94,54 @@ export default function CreatePurchaseOrder({
                 return;
             }
 
-            // Load goods packing khi chọn goods (chỉ load nếu chưa có trong map)
-            if (value) {
+            // Lấy thông tin mặt hàng cũ để so sánh
+            const currentItem = items.find(item => item.id === id);
+            const oldGoodsName = currentItem?.goodsName;
+
+            // Nếu thay đổi mặt hàng (bao gồm cả khi xóa/chọn lại), reset goodsPackingId và quantity
+            if (value !== oldGoodsName) {
+                if (value) {
+                    // Chọn mặt hàng mới - Load goods packing cho mặt hàng mới
+                    const selectedGood = goods.find(good => good.goodsName === value);
+                    if (selectedGood) {
+                        // Load goods packing (load lại ngay cả khi đã có trong map để đảm bảo data mới nhất)
+                        loadGoodsPacking(selectedGood.goodsId);
+
+                        // Reset goodsPackingId và quantity khi đổi mặt hàng
+                        setItems(items.map((item) =>
+                            item.id === id
+                                ? { ...item, goodsName: value, goodsPackingId: "", quantity: "" }
+                                : item
+                        ));
+
+                        // Xóa lỗi validation liên quan đến packing và quantity khi đổi mặt hàng
+                        setFieldErrors(prev => {
+                            const newErrors = { ...prev };
+                            delete newErrors[`${id}-goodsPackingId`];
+                            delete newErrors[`${id}-quantity`];
+                            return newErrors;
+                        });
+                        return;
+                    }
+                } else {
+                    // Xóa mặt hàng - Reset tất cả các trường liên quan
+                    setItems(items.map((item) =>
+                        item.id === id
+                            ? { ...item, goodsName: "", goodsPackingId: "", quantity: "" }
+                            : item
+                    ));
+
+                    // Xóa lỗi validation liên quan
+                    setFieldErrors(prev => {
+                        const newErrors = { ...prev };
+                        delete newErrors[`${id}-goodsPackingId`];
+                        delete newErrors[`${id}-quantity`];
+                        return newErrors;
+                    });
+                    return;
+                }
+            } else if (value) {
+                // Lần đầu chọn mặt hàng (chưa có oldGoodsName), chỉ load packing nếu chưa có trong map
                 const selectedGood = goods.find(good => good.goodsName === value);
                 if (selectedGood && !goodsPackingsMap[selectedGood.goodsId]) {
                     loadGoodsPacking(selectedGood.goodsId);
