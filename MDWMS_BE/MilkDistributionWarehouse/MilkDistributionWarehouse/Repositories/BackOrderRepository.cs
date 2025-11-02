@@ -31,6 +31,7 @@ namespace MilkDistributionWarehouse.Repositories
         {
             return _context.BackOrders
                 .Include(bo => bo.Goods)
+                    .ThenInclude(g => g.UnitMeasure)
                 .Include(bo => bo.Retailer)
                 .Include(bo => bo.GoodsPacking)
                 .Include(bo => bo.CreatedByNavigation)
@@ -43,6 +44,7 @@ namespace MilkDistributionWarehouse.Repositories
         {
             var query = from bo in _context.BackOrders
                        .Include(bo => bo.Goods)
+                            .ThenInclude(g => g.UnitMeasure)
                        .Include(bo => bo.Retailer)
                        .Include(bo => bo.GoodsPacking)
                        .Include(bo => bo.CreatedByNavigation)
@@ -183,7 +185,7 @@ namespace MilkDistributionWarehouse.Repositories
 
             _context.Entry(existing).CurrentValues.SetValues(entity);
             await _context.SaveChangesAsync();
-            return existing;
+            return existing; 
         }
 
         public Task<bool> ExistsRetailer(int? retailerId)
