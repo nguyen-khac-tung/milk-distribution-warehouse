@@ -249,32 +249,6 @@ const UserInfoDisplay = ({
                 </div>
             )}
 
-            {/* Giao cho - Ẩn khi ở trạng thái Draft */}
-            {canViewOtherInfo() && (
-                <div className="mb-4">
-                    <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-2">
-                            <UserCog className="h-4 w-4 text-purple-600" />
-                            <span className="text-sm font-medium text-gray-700">Giao cho</span>
-                        </div>
-                    </div>
-                    <div className="space-y-1">
-                        <input
-                            type="text"
-                            value={order.assignToByName || 'Chưa có thông tin'}
-                            readOnly
-                            className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
-                        />
-                        <input
-                            type="text"
-                            value={order.assignToByName ? formatDate(order.assignedAt) : 'Chưa có thông tin'}
-                            readOnly
-                            className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
-                        />
-                    </div>
-                </div>
-            )}
-
             {/* Xác nhận hàng giao đến - Ẩn khi ở trạng thái Draft */}
             {canViewOtherInfo() && (
                 <div className="mb-4">
@@ -294,6 +268,32 @@ const UserInfoDisplay = ({
                         <input
                             type="text"
                             value={order.arrivalConfirmedByName ? formatDate(order.arrivalConfirmedAt) : 'Chưa có thông tin'}
+                            readOnly
+                            className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
+                        />
+                    </div>
+                </div>
+            )}
+
+            {/* Giao cho - Ẩn khi ở trạng thái Draft */}
+            {canViewOtherInfo() && (
+                <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                            <UserCog className="h-4 w-4 text-purple-600" />
+                            <span className="text-sm font-medium text-gray-700">Giao cho</span>
+                        </div>
+                    </div>
+                    <div className="space-y-1">
+                        <input
+                            type="text"
+                            value={order.assignToByName || 'Chưa có thông tin'}
+                            readOnly
+                            className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
+                        />
+                        <input
+                            type="text"
+                            value={order.assignToByName ? formatDate(order.assignedAt) : 'Chưa có thông tin'}
                             readOnly
                             className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
                         />

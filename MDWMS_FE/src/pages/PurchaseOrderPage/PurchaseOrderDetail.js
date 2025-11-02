@@ -478,10 +478,10 @@ const PurchaseOrderDetail = () => {
                                             <TableHead className="w-16 text-center font-semibold">STT</TableHead>
                                             <TableHead className="font-semibold">Tên hàng hóa</TableHead>
                                             <TableHead className="font-semibold">Mã hàng</TableHead>
-                                            <TableHead className="text-center font-semibold">Đơn vị</TableHead>
                                             <TableHead className="text-center font-semibold">Đơn vị/thùng</TableHead>
                                             <TableHead className="text-center font-semibold">Số thùng</TableHead>
                                             <TableHead className="text-center font-semibold">Tổng số đơn vị</TableHead>
+                                            <TableHead className="text-center font-semibold">Đơn vị</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody className="flex-1">
@@ -496,10 +496,10 @@ const PurchaseOrderDetail = () => {
                                                         <TableCell className="text-center font-medium">{index + 1}</TableCell>
                                                         <TableCell className="font-medium">{item.goodsName}</TableCell>
                                                         <TableCell className="text-gray-600">{item.goodsCode || item.goodsId || '-'}</TableCell>
-                                                        <TableCell className="text-center text-gray-600">{item.unitMeasureName || '-'}</TableCell>
                                                         <TableCell className="text-center text-gray-600">{item.unitPerPacking || '-'}</TableCell>
                                                         <TableCell className="text-center font-semibold">{item.packageQuantity || 0}</TableCell>
                                                         <TableCell className="text-center font-semibold">{totalUnits}</TableCell>
+                                                        <TableCell className="text-center text-gray-600">{item.unitMeasureName || '-'}</TableCell>
                                                     </TableRow>
                                                 );
                                             })
@@ -513,7 +513,7 @@ const PurchaseOrderDetail = () => {
                                         {/* Total Row */}
                                         {purchaseOrder.purchaseOrderDetails && purchaseOrder.purchaseOrderDetails.length > 0 && (
                                             <TableRow className="bg-gray-100 font-bold border-t border-gray-300">
-                                                <TableCell colSpan={5} className="text-right pr-2">Tổng:</TableCell>
+                                                <TableCell colSpan={4} className="text-right pr-2">Tổng:</TableCell>
                                                 <TableCell className="text-center font-bold">
                                                     {purchaseOrder.purchaseOrderDetails.reduce((sum, item) => sum + (item.packageQuantity || 0), 0)}
                                                 </TableCell>
@@ -525,11 +525,26 @@ const PurchaseOrderDetail = () => {
                                                         return sum + totalUnits;
                                                     }, 0)}
                                                 </TableCell>
+                                                <TableCell className="text-center">-</TableCell>
                                             </TableRow>
                                         )}
                                     </TableBody>
                                 </Table>
                             </div>
+                            {/* Ghi chú */}
+                            {(purchaseOrder.note || (canSubmitDraft() || canResubmit())) && (
+                                <div className="bg-gray-200 rounded-lg p-4 mt-6">
+                                    <div className="flex items-center space-x-2 mb-2">
+                                        <FileText className="h-4 w-4 text-gray-600" />
+                                        <h3 className="text-sm font-semibold text-gray-700">Ghi chú:</h3>
+                                    </div>
+                                    <div className="bg-white rounded-lg p-3 border border-gray-300 min-h-[60px]">
+                                        <p className="text-sm text-gray-900 whitespace-pre-wrap">
+                                            {purchaseOrder.note || 'Không có ghi chú'}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
                             {/* Action Buttons at bottom of card */}
                             <div className="mt-6 flex justify-center space-x-4">
                                 {canSubmitDraft() && (

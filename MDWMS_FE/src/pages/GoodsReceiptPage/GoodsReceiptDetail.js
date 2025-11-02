@@ -150,6 +150,8 @@ export default function GoodsReceiptDetail() {
       }
     } catch (error) {
       console.error("Error fetching goods receipt note detail:", error);
+      const msg = extractErrorMessage(error, "Không thể tải thông tin phiếu nhập kho!");
+      window.showToast?.(msg, "error");
       setGoodsReceiptNote(null);
     } finally {
       setLoading(false);
@@ -212,7 +214,8 @@ export default function GoodsReceiptDetail() {
       await fetchGoodsReceiptNoteDetail();
     } catch (error) {
       console.error('Submit goods receipt note failed:', error);
-      window.showToast("Nộp đơn kiểm nhập thất bại, vui lòng thử lại!", "error");
+      const msg = extractErrorMessage(error, "Nộp đơn kiểm nhập thất bại, vui lòng thử lại!");
+      window.showToast?.(msg, "error");
     }
   };
 
@@ -308,7 +311,8 @@ export default function GoodsReceiptDetail() {
       fetchGoodsReceiptNoteDetail();
     } catch (e) {
       console.error(e);
-      window.showToast("Từ chối thất bại, vui lòng thử lại!", "error");
+      const msg = extractErrorMessage(e, "Từ chối thất bại, vui lòng thử lại!");
+      window.showToast?.(msg, "error");
     }
   };
 
@@ -429,7 +433,7 @@ export default function GoodsReceiptDetail() {
                         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
                           <div className="text-gray-800">Dự kiến: <span className="font-semibold">{detail.expectedPackageQuantity || 0}</span></div>
                           <div className="text-green-600">Đã nhận: <span className="font-semibold">{detail.deliveredPackageQuantity || 0}</span></div>
-                          <div className="text-blue-600">Thực nhập: <span className="font-semibold">{detail.actualPackageQuantity || 0}</span></div>
+                          <div className="text-blue-600">Thực nhập: <span className="font-semibold">{Math.max(0, detail.actualPackageQuantity || 0)}</span></div>
                           <div className="text-red-600">Loại bỏ: <span className="font-semibold">{detail.rejectPackageQuantity || 0}</span></div>
                         </div>
                       </div>
@@ -503,32 +507,40 @@ export default function GoodsReceiptDetail() {
                               <TableCell colSpan={10} className="text-center text-gray-500 py-8">Tất cả mặt hàng đã kiểm tra</TableCell>
                             </TableRow>
                           ) : needCheckDetails.map((detail, index) => {
-                            const actualPackageQuantity = (Number(detail.deliveredPackageQuantity) || 0) - (Number(detail.rejectPackageQuantity) || 0);
                             const expectedPackageQuantity = Number(detail.expectedPackageQuantity) || 0;
                             const deliveredPackageQuantity = Number(detail.deliveredPackageQuantity) || 0;
                             const rejectPackageQuantity = Number(detail.rejectPackageQuantity) || 0;
+                            // Đảm bảo số lượng thực nhận không bao giờ âm, nếu âm thì là 0
+                            const actualPackageQuantity = Math.max(0, deliveredPackageQuantity - rejectPackageQuantity);
 
                             // Validation logic theo quy tắc
+                            // a = expected (số lượng dự kiến), b = delivered (số lượng giao đến), c = reject (số lượng trả lại)
                             const validateRejectQuantity = (delivered, reject, expected) => {
                               if (delivered === 0 && reject === 0) return null; // Cho phép cả 2 = 0
 
+                              // Kiểm tra số lượng thực nhận không được âm (reject không được lớn hơn delivered)
+                              if (reject > delivered) {
+                                return `Số lượng trả lại không được lớn hơn số lượng giao đến`;
+                              }
+
                               if (expected > delivered) {
-                                // Rule 1: a > b -> 0 <= c <= a - 1
-                                const maxReject = expected - 1;
-                                if (reject < 0 || reject > maxReject) {
-                                  return `Số lượng trả lại phải từ 0 đến ${maxReject} (vì số lượng dự kiến > số lượng giao đến)`;
+                                // TH1: a > b -> 0 <= c <= b
+                                if (reject < 0 || reject > delivered) {
+                                  return `Số lượng trả lại phải từ 0 đến ${delivered} (vì số lượng dự kiến > số lượng giao đến)`;
                                 }
                               } else if (expected < delivered) {
-                                // Rule 2: a < b -> b - a <= c <= b
+                                // TH2: a < b -> b - a <= c <= b
                                 const minReject = delivered - expected;
-                                const maxReject = delivered;
-                                if (reject < minReject || reject > maxReject) {
-                                  return `Số lượng trả lại phải từ ${minReject} đến ${maxReject} (vì số lượng giao đến > số lượng dự kiến)`;
+                                if (reject < minReject) {
+                                  return `Số lượng trả lại  tối thiểu phải là ${minReject} (vì số lượng giao đến > số lượng dự kiến)`;
+                                }
+                                if (reject > delivered) {
+                                  return `Số lượng trả lại không được lớn hơn số lượng giao đến`;
                                 }
                               } else {
-                                // a = b -> c = 0
-                                if (reject !== 0) {
-                                  return `Số lượng trả lại phải bằng 0 (vì số lượng giao đến = số lượng dự kiến)`;
+                                // TH3: a = b -> 0 <= c <= b
+                                if (reject < 0 || reject > delivered) {
+                                  return `Số lượng trả lại phải từ 0 đến ${delivered} (vì số lượng giao đến = số lượng dự kiến)`;
                                 }
                               }
                               return null;
@@ -693,9 +705,8 @@ export default function GoodsReceiptDetail() {
                                   <TableCell className="text-center">
                                     {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CHECK) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && (
                                       <Button
-                                        variant="outline"
                                         size="sm"
-                                        className="text-green-600 hover:text-white hover:bg-green-600 h-[38px] mr-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="bg-green-600 text-white hover:bg-green-700 h-[38px] mr-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                         disabled={!!validationErrors[detailId]}
                                         onClick={async () => {
                                           // Validate trước khi submit
@@ -710,18 +721,24 @@ export default function GoodsReceiptDetail() {
                                             return;
                                           }
 
-                                          await verifyRecord({
-                                            goodsReceiptNoteDetailId: detail.goodsReceiptNoteDetailId,
-                                            deliveredPackageQuantity: Number(detail.deliveredPackageQuantity) || 0,
-                                            rejectPackageQuantity: Number(detail.rejectPackageQuantity) || 0,
-                                            note: detail.note || ''
-                                          });
-                                          setValidationErrors(prev => {
-                                            const newErrors = { ...prev };
-                                            delete newErrors[detailId];
-                                            return newErrors;
-                                          });
-                                          fetchGoodsReceiptNoteDetail();
+                                          try {
+                                            await verifyRecord({
+                                              goodsReceiptNoteDetailId: detail.goodsReceiptNoteDetailId,
+                                              deliveredPackageQuantity: Number(detail.deliveredPackageQuantity) || 0,
+                                              rejectPackageQuantity: Number(detail.rejectPackageQuantity) || 0,
+                                              note: detail.note || ''
+                                            });
+                                            setValidationErrors(prev => {
+                                              const newErrors = { ...prev };
+                                              delete newErrors[detailId];
+                                              return newErrors;
+                                            });
+                                            fetchGoodsReceiptNoteDetail();
+                                          } catch (error) {
+                                            console.error("Error verifying record:", error);
+                                            const msg = extractErrorMessage(error, "Kiểm nhập thất bại, vui lòng thử lại!");
+                                            window.showToast?.(msg, "error");
+                                          }
                                         }}
                                       >
                                         Kiểm nhập
@@ -789,7 +806,7 @@ export default function GoodsReceiptDetail() {
                           <TableCell className="text-center text-xs">{detail.expectedPackageQuantity}</TableCell>
                           <TableCell className="text-center text-xs">{detail.deliveredPackageQuantity}</TableCell>
                           <TableCell className="text-center text-xs">{detail.rejectPackageQuantity}</TableCell>
-                          <TableCell className="text-center text-xs">{detail.actualPackageQuantity}</TableCell>
+                          <TableCell className="text-center text-xs">{Math.max(0, detail.actualPackageQuantity || 0)}</TableCell>
                           <TableCell className="text-green-700">{detail.note || ''}</TableCell>
                           {/* Cột trạng thái */}
                           <TableCell className="text-center min-w-[110px]">
@@ -803,9 +820,15 @@ export default function GoodsReceiptDetail() {
                             <TableCell className="text-center">
                               <div className="inline-flex items-center gap-2">
                                 {detail.status === RECEIPT_ITEM_STATUS.Inspected && hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CANCEL) && (
-                                  <Button variant="outline" size="sm" className="text-yellow-600 border-yellow-300 hover:text-white hover:bg-yellow-500 h-[30px] rounded" onClick={async () => {
-                                    await cancelGoodsReceiptNoteDetail(detail.goodsReceiptNoteDetailId);
-                                    fetchGoodsReceiptNoteDetail();
+                                  <Button size="sm" className="bg-yellow-500 text-white hover:bg-yellow-600 h-[30px] rounded" onClick={async () => {
+                                    try {
+                                      await cancelGoodsReceiptNoteDetail(detail.goodsReceiptNoteDetailId);
+                                      fetchGoodsReceiptNoteDetail();
+                                    } catch (error) {
+                                      console.error("Error canceling goods receipt note detail:", error);
+                                      const msg = extractErrorMessage(error, "Kiểm nhập lại thất bại, vui lòng thử lại!");
+                                      window.showToast?.(msg, "error");
+                                    }
                                   }}>Kiểm nhập lại</Button>
                                 )}
                                 {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && (
@@ -902,10 +925,10 @@ export default function GoodsReceiptDetail() {
                       {isSubmittingPallet ? (
                         <>
                           <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                          Đang tạo pallet...
+                          Đang tạo kệ kê hàng...
                         </>
                       ) : (
-                        "Tạo pallet"
+                        "Tạo kệ kê hàng"
                       )}
                     </Button>
                   )}
