@@ -13,8 +13,10 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public string RetailerName { get; set; }
             public int GoodsId { get; set; }
             public string GoodsName { get; set; }
+            public int UnitMeasureId { get; set; }
+            public string UnitMeasureName { get; set; }
             public int GoodsPackingId { get; set; }
-            public string UnitPerPackage { get; set; }
+            public int UnitPerPackage { get; set; }
             public int PackageQuantity { get; set; }
             public int CreatedBy { get; set; }
             public string CreatedByName { get; set; }
