@@ -160,7 +160,7 @@ namespace MilkDistributionWarehouse.Repositories
                 return false;
 
             location.IsAvailable = isAvailable;
-            location.UpdateAt = DateTime.UtcNow;
+            location.UpdateAt = DateTime.Now;
 
             _context.Locations.Update(location);
             await _context.SaveChangesAsync();

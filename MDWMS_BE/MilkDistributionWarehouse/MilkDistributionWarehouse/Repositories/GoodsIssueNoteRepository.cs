@@ -6,8 +6,10 @@ namespace MilkDistributionWarehouse.Repositories
     public interface IGoodsIssueNoteRepository
     {
         Task<GoodsIssueNote?> GetGINBySalesOrderId(Guid? salesOrderId);
-        Task<GoodsIssueNote?> GetByIdWithDetails(Guid? goodsIssueNoteId);
+        Task<GoodsIssueNote?> GetGINDetailBySalesOrderId(Guid? salesOrderId);
+        Task<GoodsIssueNote?> GetGINByGoodsIssueNoteId(Guid? goodsIssueNoteId);
         Task CreateGoodsIssueNote(GoodsIssueNote goodsIssueNote);
+        Task UpdateGoodsIssueNote(GoodsIssueNote goodsIssueNote);
     }
 
     public class GoodsIssueNoteRepository : IGoodsIssueNoteRepository
@@ -24,10 +26,10 @@ namespace MilkDistributionWarehouse.Repositories
             return await _context.GoodsIssueNotes.FirstOrDefaultAsync(g => g.SalesOderId == salesOrderId);
         }
 
-        public async Task<GoodsIssueNote?> GetByIdWithDetails(Guid? goodsIssueNoteId)
+        public async Task<GoodsIssueNote?> GetGINDetailBySalesOrderId(Guid? salesOrderId)
         {
             return await _context.GoodsIssueNotes
-                .Where(g => g.GoodsIssueNoteId == goodsIssueNoteId)
+                .Where(g => g.SalesOderId == salesOrderId)
                 .Include(gin => gin.CreatedByNavigation)
                 .Include(gin => gin.ApprovalByNavigation)
                 .Include(gin => gin.GoodsIssueNoteDetails)
@@ -42,9 +44,25 @@ namespace MilkDistributionWarehouse.Repositories
                 .FirstOrDefaultAsync();
         }
 
+        public async Task<GoodsIssueNote?> GetGINByGoodsIssueNoteId(Guid? goodsIssueNoteId)
+        {
+            return await _context.GoodsIssueNotes
+                .Include(gin => gin.SalesOder)
+                .Include(gin => gin.GoodsIssueNoteDetails)
+                    .ThenInclude(gd => gd.PickAllocations)
+                        .ThenInclude(p => p.Pallet)
+                .FirstOrDefaultAsync(gin => gin.GoodsIssueNoteId == goodsIssueNoteId);
+        }
+
         public async Task CreateGoodsIssueNote(GoodsIssueNote goodsIssueNote)
         {
             await _context.GoodsIssueNotes.AddAsync(goodsIssueNote);
+        }
+
+        public async Task UpdateGoodsIssueNote(GoodsIssueNote goodsIssueNote)
+        {
+            _context.GoodsIssueNotes.Update(goodsIssueNote);
+            await Task.CompletedTask;
         }
     }
 }
