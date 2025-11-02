@@ -59,12 +59,31 @@ namespace MilkDistributionWarehouse.Repositories
             if (goodsId == null || goodsPackingId == null)
                 return 0;
 
-            return await _context.Pallets
+            // Sum on-hand packages from pallets
+            var onHand = await _context.Pallets
                 .AsNoTracking()
                 .Where(p => p.Batch.GoodsId == goodsId
                         && p.GoodsPackingId == goodsPackingId
                         && p.Status == CommonStatus.Active)
                 .SumAsync(p => p.PackageQuantity) ?? 0;
+
+            // Sum committed packages from active sales orders (Approved / AssignedForPicking / Picking)
+            var committedStatuses = new[] {
+                Constants.SalesOrderStatus.Approved,
+                Constants.SalesOrderStatus.AssignedForPicking,
+                Constants.SalesOrderStatus.Picking
+            };
+
+            var committed = await (from so in _context.SalesOrders
+                                   join sod in _context.SalesOrderDetails on so.SalesOrderId equals sod.SalesOrderId
+                                   where so.Status.HasValue && committedStatuses.Contains(so.Status.Value)
+                                         && sod.GoodsId == goodsId
+                                         && sod.GoodsPackingId == goodsPackingId
+                                   select sod.PackageQuantity)
+                                  .SumAsync() ?? 0;
+
+            var available = onHand - committed;
+            return available > 0 ? available : 0;
         }
 
         public async Task<Dictionary<(int, int), int>> GetAvailableQuantitiesAsync(List<(int GoodsId, int GoodsPackingId)> pairs)
@@ -75,8 +94,8 @@ namespace MilkDistributionWarehouse.Repositories
             var goodsIds = pairs.Select(p => p.GoodsId).Distinct().ToList();
             var packingIds = pairs.Select(p => p.GoodsPackingId).Distinct().ToList();
 
-            // Optimize by using a single query with optimized filters
-            var quantities = await _context.Pallets
+            // Get on-hand totals grouped by goods & packing
+            var onHandQuery = await _context.Pallets
                 .AsNoTracking()
                 .Where(p => p.Status == CommonStatus.Active
                         && p.Batch.GoodsId.HasValue
@@ -90,12 +109,51 @@ namespace MilkDistributionWarehouse.Repositories
                     g.Key.GoodsPackingId,
                     Total = g.Sum(x => x.PackageQuantity)
                 })
-                .ToDictionaryAsync(
-                    x => (x.GoodsId ?? 0, x.GoodsPackingId ?? 0),
-                    x => x.Total ?? 0
-                );
+                .ToListAsync();
 
-            return quantities;
+            // Get committed totals from active sales orders grouped by goods & packing
+            var committedStatuses = new[] {
+                Constants.SalesOrderStatus.Approved,
+                Constants.SalesOrderStatus.AssignedForPicking,
+                Constants.SalesOrderStatus.Picking
+            };
+
+            var committedQuery = await (from so in _context.SalesOrders
+                                        join sod in _context.SalesOrderDetails on so.SalesOrderId equals sod.SalesOrderId
+                                        where so.Status.HasValue && committedStatuses.Contains(so.Status.Value)
+                                              && sod.GoodsId.HasValue && goodsIds.Contains(sod.GoodsId.Value)
+                                              && sod.GoodsPackingId.HasValue && packingIds.Contains(sod.GoodsPackingId.Value)
+                                        group sod by new { sod.GoodsId, sod.GoodsPackingId } into g
+                                        select new
+                                        {
+                                            GoodsId = g.Key.GoodsId,
+                                            GoodsPackingId = g.Key.GoodsPackingId,
+                                            Total = g.Sum(x => x.PackageQuantity)
+                                        }).ToListAsync();
+
+            var onHandDict = onHandQuery.ToDictionary(
+                x => (x.GoodsId ?? 0, x.GoodsPackingId ?? 0),
+                x => x.Total ?? 0
+            );
+
+            var committedDict = committedQuery.ToDictionary(
+                x => (x.GoodsId ?? 0, x.GoodsPackingId ?? 0),
+                x => x.Total ?? 0
+            );
+
+            var result = new Dictionary<(int, int), int>();
+
+            foreach (var pair in pairs)
+            {
+                var key = (pair.GoodsId, pair.GoodsPackingId);
+                onHandDict.TryGetValue(key, out var onHandVal);
+                committedDict.TryGetValue(key, out var committedVal);
+                var available = (onHandVal) - (committedVal);
+                if (available < 0) available = 0;
+                result[key] = available;
+            }
+
+            return result;
         }
 
         public async Task<BackOrder?> DeleteBackOrder(Guid backOrderId)
