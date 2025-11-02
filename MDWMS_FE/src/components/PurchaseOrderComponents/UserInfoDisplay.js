@@ -29,51 +29,23 @@ const UserInfoDisplay = ({
 
     // Logic hiển thị theo role và trạng thái
     const canViewApprovalInfo = () => {
-        // Nhân viên kinh doanh ở trạng thái Draft và PendingApproval chỉ thấy "Tạo bởi"
-        if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS) &&
-            (status === PURCHASE_ORDER_STATUS.Draft || status === PURCHASE_ORDER_STATUS.PendingApproval)) {
+        // Không hiển thị "Duyệt bởi" khi ở trạng thái Draft, PendingApproval, hoặc Rejected
+        if (status === PURCHASE_ORDER_STATUS.Draft || 
+            status === PURCHASE_ORDER_STATUS.PendingApproval || 
+            status === PURCHASE_ORDER_STATUS.Rejected) {
             return false;
         }
-        // Nhân viên kinh doanh ở trạng thái Approved thấy "Duyệt bởi"
-        if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS) && status === PURCHASE_ORDER_STATUS.Approved) {
+        // Hiển thị "Duyệt bởi" khi đã duyệt (Approved) hoặc các trạng thái sau khi đã duyệt
+        // Bao gồm: Approved, GoodsReceived, AssignedForReceiving, Receiving, Inspected (Checked), Completed
+        if (status >= PURCHASE_ORDER_STATUS.Approved) {
             return true;
         }
-        // Nhân viên kinh doanh ở trạng thái Rejected không thấy "Duyệt bởi"
-        if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS) && status === PURCHASE_ORDER_STATUS.Rejected) {
-            return false;
-        }
-        // Quản lý kinh doanh: nếu bị từ chối thì ẩn "Duyệt bởi"
-        if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_SM) && status === PURCHASE_ORDER_STATUS.Rejected) {
-            return false; // Ẩn "Duyệt bởi" khi bị từ chối
-        }
-        // Quản lý kho: nếu bị từ chối thì ẩn "Duyệt bởi"
-        if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WM) && status === PURCHASE_ORDER_STATUS.Rejected) {
-            return false; // Ẩn "Duyệt bởi" khi bị từ chối
-        }
-        return true; // Các trường hợp khác đều thấy
+        return false;
     };
 
     const canViewRejectionInfo = () => {
-        // Nhân viên kinh doanh ở trạng thái Draft và PendingApproval chỉ thấy "Tạo bởi"
-        if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS) &&
-            (status === PURCHASE_ORDER_STATUS.Draft || status === PURCHASE_ORDER_STATUS.PendingApproval)) {
-            return false;
-        }
-        // Nhân viên kinh doanh ở trạng thái Approved không thấy "Từ chối bởi"
-        if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS) && status === PURCHASE_ORDER_STATUS.Approved) {
-            return false;
-        }
-        // Nhân viên kinh doanh ở trạng thái Rejected thấy "Từ chối bởi" và note
-        if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS) && status === PURCHASE_ORDER_STATUS.Rejected) {
-            return true;
-        }
-        // Nhân viên kinh doanh ở trạng thái đã giao hàng không thấy "Từ chối bởi"
-        if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS) &&
-            (status === PURCHASE_ORDER_STATUS.GoodsReceived ||
-                status === PURCHASE_ORDER_STATUS.AssignedForReceiving ||
-                status === PURCHASE_ORDER_STATUS.Receiving ||
-                status === PURCHASE_ORDER_STATUS.Checked ||
-                status === PURCHASE_ORDER_STATUS.Completed)) {
+        // Nhân viên kinh doanh: không bao giờ thấy "Từ chối bởi" ở tất cả các trạng thái
+        if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS)) {
             return false;
         }
         // Quản lý kinh doanh: nếu đã duyệt, đã nhận hàng, hoặc đã giao hàng thì ẩn "Từ chối bởi"
@@ -82,7 +54,7 @@ const UserInfoDisplay = ({
                 status === PURCHASE_ORDER_STATUS.GoodsReceived ||
                 status === PURCHASE_ORDER_STATUS.AssignedForReceiving ||
                 status === PURCHASE_ORDER_STATUS.Receiving ||
-                status === PURCHASE_ORDER_STATUS.Checked ||
+                status === PURCHASE_ORDER_STATUS.Inspected ||
                 status === PURCHASE_ORDER_STATUS.Completed)) {
             return false; // Ẩn "Từ chối bởi" khi đã duyệt, nhận hàng, hoặc giao hàng
         }
@@ -92,7 +64,7 @@ const UserInfoDisplay = ({
                 status === PURCHASE_ORDER_STATUS.GoodsReceived ||
                 status === PURCHASE_ORDER_STATUS.AssignedForReceiving ||
                 status === PURCHASE_ORDER_STATUS.Receiving ||
-                status === PURCHASE_ORDER_STATUS.Checked ||
+                status === PURCHASE_ORDER_STATUS.Inspected ||
                 status === PURCHASE_ORDER_STATUS.Completed)) {
             return false; // Ẩn "Từ chối bởi" khi đã duyệt, nhận hàng, hoặc giao hàng
         }
@@ -104,45 +76,17 @@ const UserInfoDisplay = ({
         if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WS) && status === PURCHASE_ORDER_STATUS.Receiving) {
             return false; // Ẩn "Từ chối bởi" khi đang tiếp nhận
         }
-        return true; // Các trường hợp khác đều thấy
+        // Chỉ hiển thị "Từ chối bởi" khi status là Rejected
+        if (status === PURCHASE_ORDER_STATUS.Rejected) {
+            return true;
+        }
+        return false;
     };
 
     const canViewOtherInfo = () => {
-        // Nhân viên kinh doanh ở trạng thái Draft và PendingApproval chỉ thấy "Tạo bởi"
-        if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS) &&
-            (status === PURCHASE_ORDER_STATUS.Draft || status === PURCHASE_ORDER_STATUS.PendingApproval)) {
+        // Nhân viên kinh doanh: không bao giờ thấy "Xác nhận hàng giao đến" và "Giao cho" ở tất cả các trạng thái
+        if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS)) {
             return false;
-        }
-        // Nhân viên kinh doanh ở trạng thái Approved chỉ thấy "Tạo bởi" và "Duyệt bởi"
-        if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS) && status === PURCHASE_ORDER_STATUS.Approved) {
-            return false;
-        }
-        // Nhân viên kinh doanh ở trạng thái Rejected chỉ thấy "Tạo bởi" và "Từ chối bởi"
-        if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS) && status === PURCHASE_ORDER_STATUS.Rejected) {
-            return false;
-        }
-        // Nhân viên kinh doanh ở trạng thái GoodsReceived chỉ thấy "Tạo bởi" và "Duyệt bởi"
-        if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS) && status === PURCHASE_ORDER_STATUS.GoodsReceived) {
-            return false;
-        }
-        // Nhân viên kinh doanh ở trạng thái AssignedForReceiving (Đã phân công) không thấy "Giao cho" và "Xác nhận hàng giao đến"
-        if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS) && status === PURCHASE_ORDER_STATUS.AssignedForReceiving) {
-            return false;
-        }
-        // Nhân viên kinh doanh ở trạng thái Receiving (Đã nhận hàng) chỉ thấy "Tạo bởi" và "Duyệt bởi"
-        if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS) && status === PURCHASE_ORDER_STATUS.Receiving) {
-            return false;
-        }
-        // Nhân viên kinh doanh ở các trạng thái khác thấy "Giao cho" và "Xác nhận hàng giao đến"
-        if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS) &&
-            status !== PURCHASE_ORDER_STATUS.Draft &&
-            status !== PURCHASE_ORDER_STATUS.PendingApproval &&
-            status !== PURCHASE_ORDER_STATUS.Approved &&
-            status !== PURCHASE_ORDER_STATUS.Rejected &&
-            status !== PURCHASE_ORDER_STATUS.GoodsReceived &&
-            status !== PURCHASE_ORDER_STATUS.AssignedForReceiving &&
-            status !== PURCHASE_ORDER_STATUS.Receiving) {
-            return true;
         }
         return true; // Các trường hợp khác đều thấy
     };
@@ -185,24 +129,14 @@ const UserInfoDisplay = ({
                     <div className="space-y-1">
                         <input
                             type="text"
-                            value={(status === PURCHASE_ORDER_STATUS.Approved ||
-                                status === PURCHASE_ORDER_STATUS.GoodsReceived ||
-                                status === PURCHASE_ORDER_STATUS.AssignedForReceiving ||
-                                status === PURCHASE_ORDER_STATUS.Receiving ||
-                                status === PURCHASE_ORDER_STATUS.Checked ||
-                                status === PURCHASE_ORDER_STATUS.Completed) ?
+                            value={(status >= PURCHASE_ORDER_STATUS.Approved && status !== PURCHASE_ORDER_STATUS.Rejected) ?
                                 (order.approvalByName || 'Chưa có thông tin') : 'Chưa duyệt'}
                             readOnly
                             className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
                         />
                         <input
                             type="text"
-                            value={(status === PURCHASE_ORDER_STATUS.Approved ||
-                                status === PURCHASE_ORDER_STATUS.GoodsReceived ||
-                                status === PURCHASE_ORDER_STATUS.AssignedForReceiving ||
-                                status === PURCHASE_ORDER_STATUS.Receiving ||
-                                status === PURCHASE_ORDER_STATUS.Checked ||
-                                status === PURCHASE_ORDER_STATUS.Completed) ?
+                            value={(status >= PURCHASE_ORDER_STATUS.Approved && status !== PURCHASE_ORDER_STATUS.Rejected) ?
                                 (order.approvalByName ? formatDate(order.approvedAt) : 'Chưa có thông tin') : 'Chưa duyệt'}
                             readOnly
                             className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"

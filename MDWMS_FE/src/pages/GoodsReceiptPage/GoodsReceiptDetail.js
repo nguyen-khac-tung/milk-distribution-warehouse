@@ -890,8 +890,8 @@ export default function GoodsReceiptDetail() {
                   <Plus className="w-5 h-5 text-orange-600" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Pallet</h2>
-                  <p className="text-sm text-gray-500">Quản lý pallet và lô hàng</p>
+                  <h2 className="text-lg font-semibold text-gray-900">Kệ kê hàng</h2>
+                  <p className="text-sm text-gray-500">Quản lý kệ kê hàng và lô hàng</p>
                 </div>
               </div>
               {expandedSections.pallet ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}

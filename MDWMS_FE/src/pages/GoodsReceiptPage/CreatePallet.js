@@ -299,7 +299,7 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
               disabled={hasExistingPallets}
             >
               <Plus className="w-4 h-4 mr-2" />
-              Thêm Pallet
+              Thêm kệ kê hàng
             </Button>
           </div>
 
