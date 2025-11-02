@@ -94,8 +94,8 @@
     /// </summary>
     public static class PickAllocationStatus
     {
-        public const int Scanned = 1;
-        public const int UnScanned = 2;
+        public const int UnScanned = 1;
+        public const int Scanned = 2;
     }
 
     /// <summary>

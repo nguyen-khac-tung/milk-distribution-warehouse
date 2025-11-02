@@ -173,7 +173,7 @@ namespace MilkDistributionWarehouse.Mapper
             CreateMap<Good, GoodsInventoryDto>()
                 .ForMember(dest => dest.UnitMeasureName, opt => opt.MapFrom(src => src.UnitMeasure.Name))
                 .ForMember(dest => dest.GoodsPackings, opt => opt.MapFrom(src => src.GoodsPackings));
-                
+
 
             //Map Supplier
             CreateMap<Supplier, SupplierDto>();
@@ -433,14 +433,22 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.GoodsCode, opt => opt.MapFrom(src => src.Goods.GoodsCode))
                 .ForMember(dest => dest.UnitPerPackage, opt => opt.MapFrom(src => src.GoodsPacking.UnitPerPackage))
                 .ForMember(dest => dest.RequiredPackageQuantity, opt => opt.MapFrom(src => src.PackageQuantity));
+
+            // Map PickAllocation            
             CreateMap<PickAllocation, PickAllocationDto>()
                 .ForMember(dest => dest.PickPackageQuantity, opt => opt.MapFrom(src => src.PackageQuantity))
                 .ForMember(dest => dest.LocationCode, opt => opt.MapFrom(src => src.Pallet.Location.LocationCode))
                 .ForMember(dest => dest.Rack, opt => opt.MapFrom(src => src.Pallet.Location.Rack))
                 .ForMember(dest => dest.Row, opt => opt.MapFrom(src => src.Pallet.Location.Row))
                 .ForMember(dest => dest.Column, opt => opt.MapFrom(src => src.Pallet.Location.Column))
-                .ForMember(dest => dest.AreaName, opt => opt.MapFrom(src => src.Pallet.Location.Area.AreaName))
-                .ForMember(dest => dest.AreaCode, opt => opt.MapFrom(src => src.Pallet.Location.Area.AreaCode));
+                .ForMember(dest => dest.AreaName, opt => opt.MapFrom(src => src.Pallet.Location.Area.AreaName));
+            CreateMap<PickAllocation, PickAllocationDetailDto>()
+                .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Pallet.Batch.Goods.GoodsName))
+                .ForMember(dest => dest.BatchCode, opt => opt.MapFrom(src => src.Pallet.Batch.BatchCode))
+                .ForMember(dest => dest.ExpiryDate, opt => opt.MapFrom(src => src.Pallet.Batch.ExpiryDate))
+                .ForMember(dest => dest.UnitPerPackage, opt => opt.MapFrom(src => src.Pallet.GoodsPacking.UnitPerPackage))
+                .ForMember(dest => dest.PalletPackageQuantity, opt => opt.MapFrom(src => src.Pallet.PackageQuantity))
+                .ForMember(dest => dest.PickPackageQuantity, opt => opt.MapFrom(src => src.PackageQuantity));
         }
     }
 }
