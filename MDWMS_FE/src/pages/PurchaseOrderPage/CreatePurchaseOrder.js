@@ -341,12 +341,12 @@ export default function CreatePurchaseOrder({
                 note: formData.note || ""
             };
             await createPurchaseOrder(submitData);
-            window.showToast("Tạo đơn nhập thành công!", "success");
+            window.showToast("Tạo đơn mua hàng thành công!", "success");
 
             navigate("/purchase-orders");
         } catch (error) {
-            console.error("Lỗi khi xử lý đơn nhập:", error);
-            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi xử lý đơn nhập!";
+            console.error("Lỗi khi xử lý đơn mua hàng:", error);
+            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi xử lý đơn mua hàng!";
             window.showToast(errorMessage, "error");
         }
     }
@@ -581,7 +581,7 @@ export default function CreatePurchaseOrder({
                                     onClick={handleSubmit}
                                     className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
                                 >
-                                    {isEditMode ? "Cập Nhật Đơn Nhập" : "Tạo Đơn Nhập"}
+                                    {isEditMode ? "Cập Nhật Đơn Mua Hàng" : "Tạo Đơn Mua Hàng"}
                                 </Button>
                             </div>
                         </div>

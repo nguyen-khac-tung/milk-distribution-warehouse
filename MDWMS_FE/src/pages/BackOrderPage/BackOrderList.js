@@ -1,10 +1,13 @@
 import React, { useEffect, useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { getBackOrders, deleteBackOrder, updateBackOrder, updateBackOrderStatus } from "../../services/BackOrderService";
+import { getGoodDetail } from "../../services/GoodService";
+import { getSuppliersDropdown } from "../../services/SupplierService";
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
-import { Plus, Edit, Trash2, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Eye, Building2 } from "lucide-react";
-import CreateBackOrder from "./CreateBackOrderModal";
+import { Checkbox } from "../../components/ui/checkbox";
+import { Edit, Trash2, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Eye, Building2, Plus } from "lucide-react";
 import { BackOrderDetail } from "./ViewBackOrderModal";
 import UpdateBackOrder from "./UpdateBackOrderModal";
 import DeleteModal from "../../components/Common/DeleteModal";
@@ -40,6 +43,7 @@ const getStatusDynamicLabel = (statusDinamic) => {
 
 
 export default function BackOrderList() {
+    const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState("")
     const [statusFilter, setStatusFilter] = useState("")
     const [showStatusFilter, setShowStatusFilter] = useState(false)
@@ -49,13 +53,14 @@ export default function BackOrderList() {
     const [backOrders, setBackOrders] = useState([])
     const [loading, setLoading] = useState(true)
     const [searchLoading, setSearchLoading] = useState(false)
-    const [showCreateModal, setShowCreateModal] = useState(false)
     const [showUpdateModal, setShowUpdateModal] = useState(false)
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [showViewModal, setShowViewModal] = useState(false)
     const [itemToDelete, setItemToDelete] = useState(null)
     const [updateBackOrderId, setUpdateBackOrderId] = useState(null)
     const [itemToView, setItemToView] = useState(null)
+    const [selectedBackOrders, setSelectedBackOrders] = useState(new Set())
+    const [suppliers, setSuppliers] = useState([])
     const [pagination, setPagination] = useState({
         pageNumber: 1,
         pageSize: 10,
@@ -146,6 +151,21 @@ export default function BackOrderList() {
         }
     }
 
+    // Load suppliers on mount
+    useEffect(() => {
+        const loadSuppliers = async () => {
+            try {
+                const response = await getSuppliersDropdown();
+                const suppliersData = response?.data || response?.items || response || [];
+                setSuppliers(suppliersData);
+            } catch (error) {
+                console.error("Error loading suppliers:", error);
+                setSuppliers([]);
+            }
+        };
+        loadSuppliers();
+    }, []);
+
     // Initial load
     useEffect(() => {
         // Fetch tổng thống kê khi component mount
@@ -222,28 +242,6 @@ export default function BackOrderList() {
 
     const activeCount = Array.isArray(backOrders) ? backOrders.filter((s) => s.status === 1).length : 0
     const inactiveCount = Array.isArray(backOrders) ? backOrders.filter((s) => s.status === 2).length : 0
-
-    const handleCreateSuccess = () => {
-        // Refresh tổng thống kê
-        fetchTotalStats()
-
-        // Reset về trang đầu và không có sort/filter để item mới hiển thị ở đầu
-        setSearchQuery("")
-        setStatusFilter("")
-        setSortField("")
-        setSortAscending(true)
-        setPagination(prev => ({ ...prev, pageNumber: 1 }))
-
-        // Refresh data after successful creation
-        fetchData({
-            pageNumber: 1,
-            pageSize: pagination.pageSize,
-            search: "",
-            sortField: "",
-            sortAscending: true,
-            status: ""
-        })
-    }
 
     const handleViewClick = (backOrder) => {
         setItemToView(backOrder)
@@ -387,24 +385,123 @@ export default function BackOrderList() {
         }
     }
 
+    // Xử lý checkbox cho từng đơn
+    const handleCheckboxChange = (backOrderId, checked) => {
+        setSelectedBackOrders(prev => {
+            const newSet = new Set(prev);
+            if (checked) {
+                newSet.add(backOrderId);
+            } else {
+                newSet.delete(backOrderId);
+            }
+            return newSet;
+        });
+    };
+
+    // Xử lý select all (chỉ chọn các đơn có statusDinamic === 'Available')
+    const handleSelectAll = (checked) => {
+        if (checked) {
+            const availableBackOrderIds = filteredBackOrders
+                .filter(bo => bo.statusDinamic === 'Available')
+                .map(bo => bo.backOrderId);
+            setSelectedBackOrders(new Set(availableBackOrderIds));
+        } else {
+            setSelectedBackOrders(new Set());
+        }
+    };
+
+    // Kiểm tra xem có tất cả các đơn "Có sẵn" được chọn không
+    const availableBackOrders = filteredBackOrders.filter(bo => bo.statusDinamic === 'Available');
+    const allAvailableSelected = availableBackOrders.length > 0 &&
+        availableBackOrders.every(bo => selectedBackOrders.has(bo.backOrderId));
+
+    // Xử lý tạo đơn từ các đơn đã chọn
+    const handleCreateOrder = async () => {
+        if (selectedBackOrders.size === 0) {
+            window.showToast("Vui lòng chọn ít nhất một đơn hàng có sẵn", "error");
+            return;
+        }
+
+        try {
+            // Lấy thông tin các đơn đã chọn
+            const selectedOrders = filteredBackOrders.filter(bo => selectedBackOrders.has(bo.backOrderId));
+
+            // Kiểm tra xem tất cả các đơn đã chọn có cùng retailer không
+            const retailerIds = [...new Set(selectedOrders.map(order => order.retailerId))];
+            if (retailerIds.length > 1) {
+                window.showToast("Vui lòng chọn các đơn hàng của cùng một nhà bán lẻ", "error");
+                return;
+            }
+
+            // Lấy thông tin supplier từ goodsId cho mỗi đơn
+            const itemsWithSupplier = await Promise.all(
+                selectedOrders.map(async (order, index) => {
+                    try {
+                        // Lấy thông tin goods để có supplierId
+                        const goodsDetail = await getGoodDetail(order.goodsId);
+                        const goodsData = goodsDetail?.data || goodsDetail;
+                        const supplierId = goodsData?.supplierId;
+
+                        // Tìm supplierName từ suppliers list
+                        const supplier = suppliers.find(s => s.supplierId === supplierId);
+                        const supplierName = supplier?.companyName || "";
+
+                        return {
+                            id: Date.now() + index,
+                            supplierName: supplierName,
+                            goodsName: order.goodsName || "",
+                            quantity: order.packageQuantity?.toString() || "",
+                            goodsPackingId: order.goodsPackingId?.toString() || "",
+                        };
+                    } catch (error) {
+                        console.error(`Error getting supplier for goodsId ${order.goodsId}:`, error);
+                        return {
+                            id: Date.now() + index,
+                            supplierName: "",
+                            goodsName: order.goodsName || "",
+                            quantity: order.packageQuantity?.toString() || "",
+                            goodsPackingId: order.goodsPackingId?.toString() || "",
+                        };
+                    }
+                })
+            );
+
+            // Format dữ liệu để truyền vào CreateSaleOrder
+            const initialData = {
+                retailerId: retailerIds[0],
+                retailerName: selectedOrders[0]?.retailerName || "",
+                items: itemsWithSupplier
+            };
+
+            // Lưu vào localStorage để truyền sang CreateSaleOrder
+            localStorage.setItem('saleOrderFromBackOrder', JSON.stringify(initialData));
+
+            // Điều hướng sang màn hình tạo đơn
+            navigate("/sales-orders/create");
+        } catch (error) {
+            console.error("Error preparing order data:", error);
+            window.showToast("Có lỗi xảy ra khi chuẩn bị dữ liệu đơn hàng", "error");
+        }
+    };
+
     return (
         <div className="min-h-screen">
             <div className="max-w-7xl mx-auto space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-600">Quản lý đơn hàng chờ</h1>
-                        <p className="text-slate-600 mt-1">Quản lý các đơn hàng chờ trong hệ thống</p>
+                        <h1 className="text-2xl font-bold text-slate-600">Quản lý đơn bổ sung</h1>
+                        <p className="text-slate-600 mt-1">Quản lý các đơn bổ sung trong hệ thống</p>
                     </div>
-                    <PermissionWrapper requiredPermission={PERMISSIONS.BACKORDER_CREATE}>
+                    {selectedBackOrders.size > 0 && (
                         <Button
                             className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
-                            onClick={() => setShowCreateModal(true)}
+                            onClick={handleCreateOrder}
                         >
                             <Plus className="mr-2 h-4 w-4 text-white" />
-                            Thêm đơn đặt hàng
+                            Tạo đơn ({selectedBackOrders.size})
                         </Button>
-                    </PermissionWrapper>
+                    )}
                 </div>
 
                 {/* Stats Cards */}
@@ -412,7 +509,7 @@ export default function BackOrderList() {
                     totalCount={totalStats.totalCount}
                     activeCount={totalStats.activeCount}
                     inactiveCount={totalStats.inactiveCount}
-                    totalLabel="Tổng đơn hàng chờ"
+                    totalLabel="Tổng đơn bổ sung"
                     activeLabel="Đang xử lý"
                     inactiveLabel="Đã hoàn thành"
                 />
@@ -452,6 +549,13 @@ export default function BackOrderList() {
                                 <Table className="w-full">
                                     <TableHeader>
                                         <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-16">
+                                                <Checkbox
+                                                    checked={allAvailableSelected}
+                                                    onChange={(e) => handleSelectAll(e.target.checked)}
+                                                    disabled={availableBackOrders.length === 0}
+                                                />
+                                            </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-16">
                                                 STT
                                             </TableHead>
@@ -499,6 +603,16 @@ export default function BackOrderList() {
                                                     key={index}
                                                     className="hover:bg-slate-50 border-b border-slate-200"
                                                 >
+                                                    <TableCell className="px-6 py-4">
+                                                        {backOrder.statusDinamic === 'Available' ? (
+                                                            <Checkbox
+                                                                checked={selectedBackOrders.has(backOrder.backOrderId)}
+                                                                onChange={(e) => handleCheckboxChange(backOrder.backOrderId, e.target.checked)}
+                                                            />
+                                                        ) : (
+                                                            <div className="w-4"></div>
+                                                        )}
+                                                    </TableCell>
                                                     <TableCell className="px-6 py-4 text-slate-600 font-medium">
                                                         {index + 1}
                                                     </TableCell>
@@ -566,7 +680,7 @@ export default function BackOrderList() {
                                                 actionText="Xóa bộ lọc"
                                                 onAction={clearAllFilters}
                                                 showAction={!!(searchQuery || statusFilter)}
-                                                colSpan={7}
+                                                colSpan={9}
                                             />
                                         )}
                                     </TableBody>
@@ -672,13 +786,6 @@ export default function BackOrderList() {
                     </Card>
                 )}
             </div>
-
-            {/* Create BackOrder Modal */}
-            <CreateBackOrder
-                isOpen={showCreateModal}
-                onClose={() => setShowCreateModal(false)}
-                onSuccess={handleCreateSuccess}
-            />
 
             {/* Update BackOrder Modal */}
             <UpdateBackOrder
