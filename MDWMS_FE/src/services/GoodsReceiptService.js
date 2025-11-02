@@ -82,4 +82,19 @@ export const getGoodRNDPallet = async (grnId) => {
     }
 };
 
+// Lấy danh sách pallet theo Goods Receipt Note ID (từ Pallet service)
+export const getPalletByGRNID = async (grnid) => {
+    try {
+        const res = await api.get(`/Pallet/GetPalletByGRNID?grnid=${grnid}`);
+        return res.data;
+    } catch (error) {
+        // Không log lỗi 400/404 vì đây là trường hợp bình thường khi chưa có pallet
+        if (error?.response?.status !== 400 && error?.response?.status !== 404) {
+            console.error('Error fetching pallet by GRN ID:', error);
+        }
+        throw error;
+    }
+};
+
+
 

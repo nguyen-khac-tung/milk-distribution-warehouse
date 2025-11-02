@@ -60,7 +60,7 @@ export default function UpdatePurchaseOrder() {
                     // Set supplier
                     const supplier = suppliersData.find(s => s.supplierId === orderData.supplierId);
                     if (supplier) {
-                        setFormData({ 
+                        setFormData({
                             supplierName: supplier.companyName,
                             note: orderData.note || ""
                         });
@@ -71,15 +71,13 @@ export default function UpdatePurchaseOrder() {
                     // Set items - giữ nguyên dữ liệu từ detail
                     if (orderData.purchaseOrderDetails && orderData.purchaseOrderDetails.length > 0) {
                         const formattedItems = orderData.purchaseOrderDetails.map((detail, index) => {
-                            // Tính số thùng từ packageQuantity và unitPerPacking
-                            const unitPerPacking = detail.unitPerPacking || 1;
+                            // packageQuantity giờ đã là số thùng (không phải số đơn vị)
                             const packageQuantity = detail.packageQuantity || 0;
-                            const numberOfBoxes = unitPerPacking > 0 ? Math.floor(packageQuantity / unitPerPacking) : 0;
 
                             return {
                                 id: index + 1,
                                 goodsName: detail.goodsName || "",
-                                quantity: numberOfBoxes.toString(), // Số thùng
+                                quantity: packageQuantity.toString(), // packageQuantity đã là số thùng
                                 goodsPackingId: detail.goodsPackingId || 0,
                                 goodsId: detail.goodsId || 0,
                                 purchaseOrderDetailId: detail.purchaseOrderDetailId,
@@ -251,24 +249,39 @@ export default function UpdatePurchaseOrder() {
 
     // Tính tổng số đơn vị (số thùng × đơn vị đóng gói)
     const calculateTotalUnits = (item) => {
-        if (!item.quantity || !item.goodsPackingId) return 0;
+        if (!item.quantity || !item.goodsPackingId || item.goodsPackingId === 0) return 0;
 
-        const selectedGood = goods.find(good => good.goodsName === item.goodsName);
+        // Ưu tiên tìm theo goodsId nếu có
+        let selectedGood = null;
+        if (item.goodsId) {
+            selectedGood = goods.find(good => good.goodsId === item.goodsId);
+        }
+
+        // Nếu không tìm thấy, thử tìm theo goodsName
+        if (!selectedGood && item.goodsName) {
+            selectedGood = goods.find(good => good.goodsName === item.goodsName);
+        }
+
         if (!selectedGood) {
-            console.log("Selected good not found for:", item.goodsName);
+            console.log("Selected good not found for:", item.goodsName, "goodsId:", item.goodsId);
             return 0;
         }
 
         const goodsPackings = goodsPacking[selectedGood.goodsId] || [];
-        console.log("Goods packings for", selectedGood.goodsId, ":", goodsPackings);
-        console.log("Looking for goodsPackingId:", item.goodsPackingId);
-        
+
+        // So sánh cả số và chuỗi để đảm bảo tìm được
+        const targetPackingId = parseInt(item.goodsPackingId);
         const selectedPacking = goodsPackings.find(packing =>
-            packing.goodsPackingId === parseInt(item.goodsPackingId)
+            packing.goodsPackingId === targetPackingId ||
+            parseInt(packing.goodsPackingId) === targetPackingId
         );
 
         if (!selectedPacking) {
-            console.log("Selected packing not found for goodsPackingId:", item.goodsPackingId);
+            console.log("Selected packing not found for goodsPackingId:", item.goodsPackingId, "Available packings:", goodsPackings.map(p => p.goodsPackingId));
+            // Nếu không tìm thấy trong goodsPacking, thử dùng unitPerPacking từ item (khi load từ API)
+            if (item.unitPerPacking && item.quantity) {
+                return parseInt(item.quantity) * item.unitPerPacking;
+            }
             return 0;
         }
 
@@ -322,24 +335,35 @@ export default function UpdatePurchaseOrder() {
 
         try {
             const itemsWithIds = validItems.map(item => {
-                const selectedGood = goods.find(good => good.goodsName === item.goodsName);
-                const goodsPackings = goodsPacking[selectedGood?.goodsId] || [];
-                const selectedPacking = goodsPackings.find(packing =>
-                    packing.goodsPackingId === item.goodsPackingId
-                );
+                // Ưu tiên dùng goodsId từ item (đã có từ dữ liệu load)
+                let finalGoodsId = null;
+                
+                if (item.goodsId && item.goodsId !== 0) {
+                    // Dùng goodsId từ item trước
+                    finalGoodsId = parseInt(item.goodsId);
+                } else {
+                    // Tìm theo goodsName nếu không có goodsId
+                    const selectedGood = goods.find(good => good.goodsName === item.goodsName);
+                    if (selectedGood) {
+                        finalGoodsId = parseInt(selectedGood.goodsId);
+                    }
+                }
 
-                // Tính packageQuantity = số thùng × đơn vị đóng gói
-                const packageQuantity = selectedPacking ?
-                    parseInt(item.quantity) * selectedPacking.unitPerPackage :
-                    parseInt(item.quantity);
+                if (!finalGoodsId) {
+                    console.error("Cannot find goodsId for item:", item.goodsName, "item.goodsId:", item.goodsId);
+                    return null;
+                }
+
+                // packageQuantity là số thùng nhập vào (không nhân với unitPerPackage)
+                const packageQuantity = parseInt(item.quantity);
 
                 return {
-                    goodsId: parseInt(item.goodsId),
+                    goodsId: finalGoodsId,
                     packageQuantity: packageQuantity,
                     goodsPackingId: parseInt(item.goodsPackingId),
                     purchaseOrderDetailId: item.purchaseOrderDetailId || 0
                 };
-            }).filter(item => item.goodsId);
+            }).filter(item => item !== null && item.goodsId);
 
             if (itemsWithIds.length === 0) {
                 window.showToast("Không tìm thấy hàng hóa hợp lệ!", "error");
@@ -348,7 +372,7 @@ export default function UpdatePurchaseOrder() {
 
             // Cấu trúc đúng theo API documentation
             const submitData = {
-                purchaseOderId: id, 
+                purchaseOderId: id,
                 purchaseOrderDetailUpdates: itemsWithIds,
                 note: formData.note || ""
             };
