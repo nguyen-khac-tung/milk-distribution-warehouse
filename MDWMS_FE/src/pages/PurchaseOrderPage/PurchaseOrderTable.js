@@ -36,7 +36,7 @@ const PurchaseOrderTable = ({
         window.showToast?.('Bắt đầu quá trình nhận hàng thành công!', 'success');
         navigate(`/goods-receipt-notes/${order.purchaseOderId}`);
       } else if (order.status === 5 || order.status === 7 || order.status === 8 || order.status === 9) {
-        // Trạng thái = 5 (Đã giao đến), 7 (Đang tiếp nhận), 8 (Đã kiểm tra), 9 (Hoàn thành): Chỉ navigate
+        // Trạng thái = 5 (Đã giao đến), 7 (Đang tiếp nhận), 8 (Đã kiểm nhập), 9 (Hoàn thành): Chỉ navigate
         console.log(`Status ${order.status}: Navigating directly for order:`, order.purchaseOderId);
         navigate(`/goods-receipt-notes/${order.purchaseOderId}`);
       }

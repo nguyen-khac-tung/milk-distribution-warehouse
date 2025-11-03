@@ -377,7 +377,7 @@ export default function GoodsReceiptDetail() {
   // Handler để hoàn thành Purchase Order
   const handleCompletePurchaseOrder = async () => {
     if (!goodsReceiptNote?.purchaseOderId) {
-      window.showToast?.("Không tìm thấy mã đơn nhập hàng", "error");
+      window.showToast?.("Không tìm thấy mã đơn mua hàng", "error");
       return;
     }
 
@@ -394,14 +394,14 @@ export default function GoodsReceiptDetail() {
 
     try {
       await completePurchaseOrder(goodsReceiptNote.purchaseOderId);
-      window.showToast?.("Hoàn thành đơn nhập hàng thành công!", "success");
+      window.showToast?.("Hoàn thành đơn mua hàng thành công!", "success");
       // Đánh dấu đã hoàn thành để disable nút
       setIsPurchaseOrderCompleted(true);
       // Refresh dữ liệu sau khi hoàn thành
       await fetchGoodsReceiptNoteDetail();
     } catch (error) {
       console.error("Error completing purchase order:", error);
-      const msg = extractErrorMessage(error, "Hoàn thành đơn nhập hàng thất bại, vui lòng thử lại!");
+      const msg = extractErrorMessage(error, "Hoàn thành đơn mua hàng thất bại, vui lòng thử lại!");
       window.showToast?.(msg, "error");
     }
   };
@@ -558,7 +558,7 @@ export default function GoodsReceiptDetail() {
                 {/* Thông tin cơ bản */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div>
-                    <div className="text-xs text-gray-500 mb-0.5">Mã đơn nhập</div>
+                    <div className="text-xs text-gray-500 mb-0.5">Mã đơn mua hàng</div>
                     <div className="text-base font-semibold text-gray-900">{goodsReceiptNote.purchaseOderId || 'N/A'}</div>
                   </div>
                   <div>

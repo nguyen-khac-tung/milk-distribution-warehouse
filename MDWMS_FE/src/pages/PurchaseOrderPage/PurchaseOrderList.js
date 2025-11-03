@@ -298,14 +298,14 @@ export default function PurchaseOrderList() {
 
       if (!orderId) {
         console.error("No valid ID found. Available fields:", Object.keys(selectedPurchaseOrder));
-        throw new Error("Không tìm thấy ID của đơn nhập");
+        throw new Error("Không tìm thấy ID của đơn mua hàng");
       }
 
       await deletePurchaseOrder(orderId);
 
       // Show success message
       if (window.showToast) {
-        window.showToast("Xóa đơn nhập thành công!", "success");
+        window.showToast("Xóa đơn mua hàng thành công!", "success");
       }
 
       // Close modal and refresh data
