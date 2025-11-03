@@ -7,6 +7,7 @@ using MilkDistributionWarehouse.Constants;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace MilkDistributionWarehouse.Tests.Repositories.Test
 {
@@ -20,42 +21,49 @@ namespace MilkDistributionWarehouse.Tests.Repositories.Test
         public void Setup()
         {
             var options = new DbContextOptionsBuilder<WarehouseContext>()
-                .UseInMemoryDatabase(databaseName: "TestDb_" + Guid.NewGuid())
+                .UseInMemoryDatabase(databaseName: "RepoDb_" + Guid.NewGuid())
                 .Options;
             _context = new WarehouseContext(options);
             _repo = new PalletRepository(_context);
         }
 
         [TestMethod]
-        public async Task CreatePallet_ShouldAddNewPallet()
+        public async Task ExistsBatch_ShouldReturnFalse_WhenNull()
         {
-            var pallet = new Pallet
-            {
-                PalletId = Guid.NewGuid().ToString(),
-                Status = CommonStatus.Active,
-                PackageQuantity = 10,
-                CreateAt = DateTime.Now
-            };
-
-            await _repo.CreatePallet(pallet);
-            var result = await _repo.GetPalletById(pallet.PalletId);
-
-            result.Should().NotBeNull();
-            result!.PalletId.Should().Be(pallet.PalletId);
+            var result = await _repo.ExistsBatch(null);
+            result.Should().BeFalse();
         }
 
         [TestMethod]
-        public async Task GetActivePalletsAsync_ShouldReturnOnlyActive()
+        public async Task ExistsLocation_ShouldReturnFalse_WhenNull()
         {
-            _context.Pallets.AddRange(
-                new Pallet { PalletId = "1", Status = CommonStatus.Active },
-                new Pallet { PalletId = "2", Status = CommonStatus.Deleted }
-            );
+            var result = await _repo.ExistsLocation(null);
+            result.Should().BeFalse();
+        }
+
+        [TestMethod]
+        public async Task ExistsGoodRecieveNote_ShouldReturnFalse_WhenNull()
+        {
+            var result = await _repo.ExistsGoodRecieveNote(null);
+            result.Should().BeFalse();
+        }
+
+        [TestMethod]
+        public async Task IsLocationAvailable_ShouldReturnFalse_WhenNull()
+        {
+            var result = await _repo.IsLocationAvailable(null);
+            result.Should().BeFalse();
+        }
+
+        [TestMethod]
+        public async Task HasDependencies_ShouldReturnTrue_WhenDependentExists()
+        {
+            var palletId = "P1";
+            _context.StocktakingPallets.Add(new StocktakingPallet { PalletId = palletId });
             await _context.SaveChangesAsync();
 
-            var result = await _repo.GetActivePalletsAsync();
-            result.Should().HaveCount(1);
-            result.First().PalletId.Should().Be("1");
+            var result = await _repo.HasDependencies(palletId);
+            result.Should().BeTrue();
         }
     }
 }

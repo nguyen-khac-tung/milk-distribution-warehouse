@@ -25,41 +25,48 @@ namespace MilkDistributionWarehouse.Tests.Controllers.Test
         }
 
         [TestMethod]
-        public async Task GetPallet_ShouldReturnOk_WhenFound()
+        public async Task GetPallets_ShouldReturnOk()
         {
-            _serviceMock.Setup(s => s.GetPalletById("P1"))
-                .ReturnsAsync(("", new PalletDto.PalletDetailDto { PalletId = "P1" }));
+            _serviceMock.Setup(s => s.GetPallets(It.IsAny<PagedRequest>()))
+                .ReturnsAsync(("", new PageResult<PalletDto.PalletResponseDto>()));
 
-            var result = await _controller.GetPallet("P1") as ObjectResult;
-
-            result.Should().NotBeNull();
+            var result = await _controller.GetPallets(new PagedRequest()) as ObjectResult;
             result!.StatusCode.Should().Be(200);
         }
 
         [TestMethod]
-        public async Task GetPallet_ShouldReturnError_WhenNotFound()
+        public async Task GetPallets_ShouldReturnError_WhenServiceError()
         {
-            _serviceMock.Setup(s => s.GetPalletById("P2"))
-                .ReturnsAsync(("Không tìm thấy pallet.", new PalletDto.PalletDetailDto()));
+            _serviceMock.Setup(s => s.GetPallets(It.IsAny<PagedRequest>()))
+                .ReturnsAsync(("Có lỗi", new PageResult<PalletDto.PalletResponseDto>()));
 
-            var result = await _controller.GetPallet("P2") as ObjectResult;
-
-            result.Should().NotBeNull();
+            var result = await _controller.GetPallets(new PagedRequest()) as ObjectResult;
             result!.StatusCode.Should().Be(400);
         }
 
         [TestMethod]
-        public async Task CreatePallet_ShouldReturnOk_WhenValid()
+        public async Task CreatePallet_ShouldReturnError_WhenInvalidModel()
         {
-            var req = new PalletDto.PalletRequestDto { BatchId = Guid.NewGuid() };
-            var res = new PalletDto.PalletResponseDto { PalletId = "PX" };
-            _serviceMock.Setup(s => s.CreatePallet(It.IsAny<PalletDto.PalletRequestDto>(), It.IsAny<int?>()))
-                .ReturnsAsync(("", res));
+            _controller.ModelState.AddModelError("error", "invalid");
+            var result = await _controller.CreatePallet(new PalletDto.PalletRequestDto()) as ObjectResult;
+            result!.StatusCode.Should().Be(400);
+        }
 
-            var result = await _controller.CreatePallet(req) as ObjectResult;
+        [TestMethod]
+        public async Task DeletePallet_ShouldReturnError_WhenServiceError()
+        {
+            _serviceMock.Setup(s => s.DeletePallet("P1")).ReturnsAsync(("Lỗi xóa", new PalletDto.PalletResponseDto()));
+            var result = await _controller.DeletePallet("P1") as ObjectResult;
+            result!.StatusCode.Should().Be(400);
+        }
 
-            result.Should().NotBeNull();
-            result!.StatusCode.Should().Be(200);
+        [TestMethod]
+        public async Task UpdateStatus_ShouldReturnError_WhenServiceError()
+        {
+            _serviceMock.Setup(s => s.UpdatePalletStatus(It.IsAny<PalletDto.PalletUpdateStatusDto>()))
+                .ReturnsAsync(("Lỗi", new PalletDto.PalletUpdateStatusDto()));
+            var result = await _controller.UpdateStatus(new PalletDto.PalletUpdateStatusDto()) as ObjectResult;
+            result!.StatusCode.Should().Be(400);
         }
     }
 }

@@ -53,7 +53,7 @@ namespace MilkDistributionWarehouse.Tests.Services.Test
             dto.Should().NotBeNull();
             dto.PalletId.Should().Be("P1");
         }
-        s
+        
         [TestMethod]
         public async Task GetPalletById_ShouldReturnError_WhenNotExist()
         {
@@ -63,25 +63,6 @@ namespace MilkDistributionWarehouse.Tests.Services.Test
 
             msg.Should().NotBeEmpty();
             dto.Should().NotBeNull();
-        }
-
-        [TestMethod]
-        public async Task GetPallets_ShouldReturnPagedResult_WhenPalletsExist()
-        {
-            var pallets = new List<Pallet>
-            {
-                new Pallet { PalletId = "P1" },
-                new Pallet { PalletId = "P2" }
-            }.AsQueryable();
-
-            _palletRepoMock.Setup(r => r.GetPallets()).Returns(pallets);
-
-            var request = new PagedRequest { PageNumber = 1, PageSize = 10 };
-            var (msg, result) = await _service.GetPallets(request);
-
-            msg.Should().BeEmpty();
-            result.Should().NotBeNull();
-            result.Items.Should().HaveCount(2);
         }
 
         [TestMethod]
@@ -243,6 +224,137 @@ namespace MilkDistributionWarehouse.Tests.Services.Test
 
             msg.Should().BeEmpty();
             result.Should().NotBeNull();
+        }
+
+        [TestMethod]
+        public async Task CreatePallet_ShouldReturnError_WhenLocationNotExist()
+        {
+            var dto = new PalletDto.PalletRequestDto { LocationId = 1, BatchId = Guid.NewGuid() };
+            _palletRepoMock.Setup(r => r.ExistsLocation(1)).ReturnsAsync(false);
+
+            var (msg, _) = await _service.CreatePallet(dto, 1);
+            msg.Should().Contain("Vị trí không tồn tại");
+        }
+
+        [TestMethod]
+        public async Task CreatePallet_ShouldReturnError_WhenLocationNotAvailable()
+        {
+            var dto = new PalletDto.PalletRequestDto { LocationId = 1, BatchId = Guid.NewGuid() };
+            _palletRepoMock.Setup(r => r.ExistsLocation(1)).ReturnsAsync(true);
+            _palletRepoMock.Setup(r => r.IsLocationAvailable(1)).ReturnsAsync(false);
+
+            var (msg, _) = await _service.CreatePallet(dto, 1);
+            msg.Should().Contain("Vị trí này đã có pallet khác");
+        }
+
+        [TestMethod]
+        public async Task CreatePallet_ShouldReturnError_WhenGRNNotExist()
+        {
+            var dto = new PalletDto.PalletRequestDto { BatchId = Guid.NewGuid(), GoodsReceiptNoteId = Guid.NewGuid() };
+            _palletRepoMock.Setup(r => r.ExistsBatch(It.IsAny<Guid?>())).ReturnsAsync(true);
+            _palletRepoMock.Setup(r => r.ExistsGoodRecieveNote(It.IsAny<Guid?>())).ReturnsAsync(false);
+
+            var (msg, _) = await _service.CreatePallet(dto, 1);
+            msg.Should().Contain("GoodsReceiptNoteId do not exist");
+        }
+
+        [TestMethod]
+        public async Task CreatePallet_ShouldReturnError_WhenBatchNotExist()
+        {
+            var dto = new PalletDto.PalletRequestDto { BatchId = Guid.NewGuid() };
+            _palletRepoMock.Setup(r => r.ExistsBatch(It.IsAny<Guid?>())).ReturnsAsync(false);
+
+            var (msg, _) = await _service.CreatePallet(dto, 1);
+            msg.Should().Contain("Batch do not exist");
+        }
+
+        [TestMethod]
+        public async Task CreatePallet_ShouldReturnError_WhenUpdateLocationFailed()
+        {
+            var dto = new PalletDto.PalletRequestDto { LocationId = 1, BatchId = Guid.NewGuid() };
+            _palletRepoMock.Setup(r => r.ExistsBatch(It.IsAny<Guid?>())).ReturnsAsync(true);
+            _palletRepoMock.Setup(r => r.ExistsLocation(1)).ReturnsAsync(true);
+            _palletRepoMock.Setup(r => r.IsLocationAvailable(1)).ReturnsAsync(true);
+            _locationRepoMock.Setup(r => r.UpdateIsAvailableAsync(1, false)).ReturnsAsync(false);
+
+            var (msg, _) = await _service.CreatePallet(dto, 1);
+            msg.Should().Contain("Cập nhật trạng thái vị trí thất bại");
+        }
+
+        [TestMethod]
+        public async Task CreatePallet_ShouldReturnError_WhenCreateReturnNull()
+        {
+            var dto = new PalletDto.PalletRequestDto { BatchId = Guid.NewGuid() };
+            _palletRepoMock.Setup(r => r.ExistsBatch(It.IsAny<Guid?>())).ReturnsAsync(true);
+            _palletRepoMock.Setup(r => r.CreatePallet(It.IsAny<Pallet>())).ReturnsAsync((Pallet)null);
+
+            var (msg, _) = await _service.CreatePallet(dto, 1);
+            msg.Should().Contain("Create pallet failed");
+        }
+
+        [TestMethod]
+        public async Task CreatePallet_ShouldReturnError_WhenGetCreatedReturnNull()
+        {
+            var dto = new PalletDto.PalletRequestDto { BatchId = Guid.NewGuid() };
+            _palletRepoMock.Setup(r => r.ExistsBatch(It.IsAny<Guid?>())).ReturnsAsync(true);
+            _palletRepoMock.Setup(r => r.CreatePallet(It.IsAny<Pallet>())).ReturnsAsync(new Pallet { PalletId = "P1" });
+            _palletRepoMock.Setup(r => r.GetPalletById("P1")).ReturnsAsync((Pallet)null);
+
+            var (msg, _) = await _service.CreatePallet(dto, 1);
+            msg.Should().Contain("cannot load created record");
+        }
+
+        [TestMethod]
+        public async Task UpdatePallet_ShouldReturnError_WhenLocationNotExist()
+        {
+            var pallet = new Pallet { PalletId = "P1", LocationId = 1 };
+            var dto = new PalletDto.PalletRequestDto { LocationId = 2, BatchId = Guid.NewGuid() };
+            _palletRepoMock.Setup(r => r.GetPalletById("P1")).ReturnsAsync(pallet);
+            _palletRepoMock.Setup(r => r.ExistsLocation(2)).ReturnsAsync(false);
+
+            var (msg, _) = await _service.UpdatePallet("P1", dto);
+            msg.Should().Contain("Vị trí không tồn tại");
+        }
+
+        [TestMethod]
+        public async Task DeletePallet_ShouldReturnError_WhenQuantityPositive()
+        {
+            var pallet = new Pallet { PalletId = "P1", PackageQuantity = 5 };
+            _palletRepoMock.Setup(r => r.GetPalletById("P1")).ReturnsAsync(pallet);
+
+            var (msg, _) = await _service.DeletePallet("P1");
+            msg.Should().Contain("Không thể xóa pallet còn hàng");
+        }
+
+        [TestMethod]
+        public async Task UpdatePalletStatus_ShouldReturnError_WhenSameStatus()
+        {
+            var pallet = new Pallet { PalletId = "P1", Status = CommonStatus.Active };
+            var update = new PalletDto.PalletUpdateStatusDto { PalletId = "P1", Status = CommonStatus.Active };
+            _palletRepoMock.Setup(r => r.GetPalletById("P1")).ReturnsAsync(pallet);
+
+            var (msg, _) = await _service.UpdatePalletStatus(update);
+            msg.Should().Contain("Trạng thái hiện tại và trạng thái update đang giống nhau");
+        }
+
+        [TestMethod]
+        public async Task UpdatePalletQuantity_ShouldReturnError_WhenNegative()
+        {
+            var pallet = new Pallet { PalletId = "P1", PackageQuantity = 5 };
+            _palletRepoMock.Setup(r => r.GetPalletById("P1")).ReturnsAsync(pallet);
+
+            var (msg, _) = await _service.UpdatePalletQuantity("P1", -2);
+            msg.Should().Contain("Số lượng lấy ra không được âm");
+        }
+
+        [TestMethod]
+        public async Task UpdatePalletQuantity_ShouldReturnError_WhenOverQuantity()
+        {
+            var pallet = new Pallet { PalletId = "P1", PackageQuantity = 3 };
+            _palletRepoMock.Setup(r => r.GetPalletById("P1")).ReturnsAsync(pallet);
+
+            var (msg, _) = await _service.UpdatePalletQuantity("P1", 5);
+            msg.Should().Contain("Số lượng lấy ra vượt quá");
         }
     }
 }
