@@ -204,7 +204,7 @@ namespace MilkDistributionWarehouse.Services
                     return ("PurchaseOrder data create is null.", default);
 
                 if (!string.IsNullOrEmpty(create.Note))
-                    create.Note = $"[{userName}] - " + create.Note;
+                    create.Note = create.Note;
 
                 var purchaseOrderCreate = _mapper.Map<PurchaseOrder>(create);
 
@@ -269,6 +269,9 @@ namespace MilkDistributionWarehouse.Services
                     throw new Exception("Delete PO Details is failed.");
 
                 var newDetails = _mapper.Map<List<PurchaseOderDetail>>(update.PurchaseOrderDetailUpdates);
+                
+                if(!string.IsNullOrEmpty(update.Note))
+                    purchaseOrderExist.Note = update.Note;
 
                 newDetails.ForEach(pod =>
                 {
