@@ -367,9 +367,9 @@ namespace MilkDistributionWarehouse.Services
                     if (currentStatus != PurchaseOrderStatus.GoodsReceived)
                         throw new Exception("Chỉ được phân công đơn hàng khi đơn hàng ở trạng thái đơn hàng Đã xác nhận đến.".ToMessageForUser());
 
-                    var msg = await CheckAssignedForReceivingPO(assignedForReceivingDto.AssignTo, purchaseOrder);
-                    if (!string.IsNullOrEmpty(msg))
-                        throw new Exception(msg.ToMessageForUser());
+                    //var msg = await CheckAssignedForReceivingPO(assignedForReceivingDto.AssignTo, purchaseOrder);
+                    //if (!string.IsNullOrEmpty(msg))
+                    //    throw new Exception(msg.ToMessageForUser());
 
                     purchaseOrder.Status = PurchaseOrderStatus.AssignedForReceiving;
                     purchaseOrder.AssignTo = assignedForReceivingDto.AssignTo;
@@ -384,9 +384,9 @@ namespace MilkDistributionWarehouse.Services
                     if (purchaseOrder.AssignTo == reAssignForReceivingDto.ReAssignTo)
                         throw new Exception("Phải phân công cho người khác khi phân công lại.".ToMessageForUser());
 
-                    var msg = await CheckAssignedForReceivingPO(reAssignForReceivingDto.ReAssignTo, purchaseOrder);
-                    if (!string.IsNullOrEmpty(msg))
-                        throw new Exception(msg.ToMessageForUser());
+                    //var msg = await CheckAssignedForReceivingPO(reAssignForReceivingDto.ReAssignTo, purchaseOrder);
+                    //if (!string.IsNullOrEmpty(msg))
+                    //    throw new Exception(msg.ToMessageForUser());
 
                     purchaseOrder.AssignTo = reAssignForReceivingDto.ReAssignTo;
                     purchaseOrder.AssignedAt = DateTime.Now;
@@ -547,8 +547,11 @@ namespace MilkDistributionWarehouse.Services
                     || po.Status == PurchaseOrderStatus.Inspected)
                     && po.PurchaseOderId != purchaseOrder.PurchaseOderId);
 
+            var today = DateOnly.FromDateTime(DateTime.Now);
+
             var isBusySaleOrder = await _saleOrderRepository.GetAllSalesOrders()
-                .AnyAsync(so => so.AssignTo == assignTo
+                .AnyAsync(so => so.AssignTo == assignTo 
+                && so.EstimatedTimeDeparture == today
                 && (so.Status == SalesOrderStatus.AssignedForPicking
                 || so.Status == SalesOrderStatus.Picking));
 
