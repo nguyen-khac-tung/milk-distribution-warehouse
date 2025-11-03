@@ -266,6 +266,22 @@ export const assignForReceiving = async (purchaseOrderId, assignTo) => {
     }
 };
 
+// Re-Assign Purchase Order for Receiving
+export const reAssignForReceiving = async (purchaseOrderId, reAssignTo) => {
+    try {
+        const data = {
+            purchaseOrderId: purchaseOrderId,
+            reAssignTo: reAssignTo
+        };
+
+        const res = await api.put('/PurchaseOrder/ReAssignForReceiving', data);
+        return res.data;
+    } catch (error) {
+        console.error("Error re-assigning for receiving:", error);
+        throw error;
+    }
+};
+
 // Start Receiving Process for Purchase Order
 export const startReceive = async (purchaseOrderId) => {
     try {
@@ -276,6 +292,21 @@ export const startReceive = async (purchaseOrderId) => {
         return res.data;
     } catch (error) {
         console.error("Error starting receive process:", error);
+        throw error;
+    }
+};
+
+// Complete Purchase Order
+export const completePurchaseOrder = async (purchaseOrderId) => {
+    try {
+        const data = {
+            purchaseOrderId: purchaseOrderId
+        };
+
+        const res = await api.put('/PurchaseOrder/Complete', data);
+        return res.data;
+    } catch (error) {
+        console.error("Error completing purchase order:", error);
         throw error;
     }
 };

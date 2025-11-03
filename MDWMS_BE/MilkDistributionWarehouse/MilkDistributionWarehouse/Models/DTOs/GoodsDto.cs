@@ -154,6 +154,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
     public class GoodsInventoryDto
     {
         public int GoodsId { get; set; }
+        public string GoodsCode { get; set; }
         public string GoodsName { get; set; }
         public string UnitMeasureName { get; set; }
         public List<GoodsPackingDto> GoodsPackings { get; set; }
@@ -164,6 +165,6 @@ namespace MilkDistributionWarehouse.Models.DTOs
     {
         public int GoodsPackingId { get; set; }
         public int UnitPerPackage { get; set; }
-        public int TotalPackageQuantity { get; set; }
+        public int AvailablePackageQuantity { get; set; }
     }
 }

@@ -5,6 +5,7 @@ using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
 using MilkDistributionWarehouse.Utilities;
+using System.Linq;
 
 namespace MilkDistributionWarehouse.Services
 {
@@ -16,8 +17,10 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, PalletDto.PalletResponseDto)> UpdatePallet(string palletId, PalletDto.PalletRequestDto dto);
         Task<(string, PalletDto.PalletResponseDto)> DeletePallet(string palletId);
         Task<(string, List<PalletDto.PalletActiveDto>)> GetPalletDropdown();
+        Task<(string, List<PalletDto.PalletResponseDto>)> GetPalletByGRNID(Guid grnId);
         Task<(string, PalletDto.PalletUpdateStatusDto)> UpdatePalletStatus(PalletDto.PalletUpdateStatusDto update);
         Task<(string, PalletDto.PalletUpdateStatusDto)> UpdatePalletQuantity(string palletId, int takeOutQuantity);
+        Task<(string, PalletDto.PalletBulkResponse)> CreatePalletBulk(PalletDto.PalletBulkCreate create, int? userId);
     }
 
     public class PalletService : IPalletService
@@ -101,6 +104,94 @@ namespace MilkDistributionWarehouse.Services
             return ("", createdDto);
         }
 
+        // Bulk create pallets: create multiple pallets based on provided list
+        public async Task<(string, PalletDto.PalletBulkResponse)> CreatePalletBulk(PalletDto.PalletBulkCreate create, int? userId)
+        {
+            var result = new PalletDto.PalletBulkResponse();
+
+            if (userId == null)
+                return ("The user is not logged into the system.".ToMessageForUser(), result);
+
+            if (create == null || create.Pallets == null || !create.Pallets.Any())
+                return ("Danh sách pallet trống.".ToMessageForUser(), result);
+
+            for (int i = 0; i < create.Pallets.Count; i++)
+            {
+                var dto = create.Pallets[i];
+
+                // Validate batch
+                if (!await _palletRepository.ExistsBatch(dto.BatchId))
+                {
+                    result.FailedItems.Add(new PalletDto.FailedItem { Index = i, Code = dto.BatchId.ToString(), Error = "Batch do not exist.".ToMessageForUser() });
+                    result.TotalFailed++;
+                    continue;
+                }
+
+                // Validate goods receipt note
+                if (dto.GoodsReceiptNoteId.HasValue && !await _palletRepository.ExistsGoodRecieveNote(dto.GoodsReceiptNoteId))
+                {
+                    result.FailedItems.Add(new PalletDto.FailedItem { Index = i, Code = dto.GoodsReceiptNoteId.ToString(), Error = "GoodsReceiptNoteId do not exist.".ToMessageForUser() });
+                    result.TotalFailed++;
+                    continue;
+                }
+
+                // Validate location
+                if (dto.LocationId.HasValue)
+                {
+                    if (!await _palletRepository.ExistsLocation(dto.LocationId))
+                    {
+                        result.FailedItems.Add(new PalletDto.FailedItem { Index = i, Code = dto.LocationId.Value.ToString(), Error = "Vị trí không tồn tại.".ToMessageForUser() });
+                        result.TotalFailed++;
+                        continue;
+                    }
+
+                    if (!await _palletRepository.IsLocationAvailable(dto.LocationId))
+                    {
+                        result.FailedItems.Add(new PalletDto.FailedItem { Index = i, Code = dto.LocationId.Value.ToString(), Error = "Vị trí này đã có pallet khác.".ToMessageForUser() });
+                        result.TotalFailed++;
+                        continue;
+                    }
+                }
+
+                try
+                {
+                    var entity = _mapper.Map<Pallet>(dto);
+                    entity.PalletId = Ulid.NewUlid().ToString();
+                    entity.CreateBy = userId;
+                    entity.CreateAt = DateTime.Now;
+                    entity.Status = dto.LocationId.HasValue ? CommonStatus.Active : CommonStatus.Inactive;
+
+                    if (dto.LocationId.HasValue)
+                    {
+                        var updateIsAvail = await _locationRepository.UpdateIsAvailableAsync(dto.LocationId, false);
+                        if (!updateIsAvail)
+                        {
+                            result.FailedItems.Add(new PalletDto.FailedItem { Index = i, Code = dto.LocationId.Value.ToString(), Error = "Cập nhật trạng thái vị trí thất bại.".ToMessageForUser() });
+                            result.TotalFailed++;
+                            continue;
+                        }
+                    }
+
+                    var created = await _palletRepository.CreatePallet(entity);
+                    if (created == null)
+                    {
+                        result.FailedItems.Add(new PalletDto.FailedItem { Index = i, Code = dto.BatchId.ToString(), Error = "Create pallet failed.".ToMessageForUser() });
+                        result.TotalFailed++;
+                        continue;
+                    }
+
+                    result.TotalInserted++;
+                }
+                catch (Exception ex)
+                {
+                    result.FailedItems.Add(new PalletDto.FailedItem { Index = i, Code = dto.BatchId.ToString(), Error = ex.Message.ToMessageForUser() });
+                    result.TotalFailed++;
+                }
+            }
+
+            return ("", result);
+        }
+
         public async Task<(string, PalletDto.PalletResponseDto)> UpdatePallet(string palletId, PalletDto.PalletRequestDto dto)
         {
             var pallet = await _palletRepository.GetPalletById(palletId);
@@ -109,12 +200,16 @@ namespace MilkDistributionWarehouse.Services
 
             if (dto.LocationId.HasValue)
             {
-                if (!await _palletRepository.ExistsLocation(dto.LocationId))
-                    return ("Vị trí không tồn tại.".ToMessageForUser(), new());
                 if (dto.LocationId != pallet.LocationId)
                 {
                     if (!await _palletRepository.IsLocationAvailable(dto.LocationId))
-                        return ("Vị trí mới đã có pallet khác.".ToMessageForUser(), new());
+                        return ("Vị trí mới đã có pallet khác.".ToMessageForUser(), new PalletDto.PalletResponseDto());
+                }
+                var location = await _locationRepository.GetLocationById(dto.LocationId.Value);
+                if (location == null)
+                    return ("Vị trí không tồn tại.".ToMessageForUser(), new());
+                if (location.Area.StorageConditionId != pallet.Batch.Goods.StorageConditionId) { 
+                    return ("Vị trí không phù hợp với điều kiện bảo quản của hàng hóa.".ToMessageForUser(), new());
                 }
             }
 
@@ -197,6 +292,15 @@ namespace MilkDistributionWarehouse.Services
                 return ("Không có pallet hoạt động.", new List<PalletDto.PalletActiveDto>());
 
             var dto = _mapper.Map<List<PalletDto.PalletActiveDto>>(pallets);
+            return ("", dto);
+        }
+        
+        public async Task<(string, List<PalletDto.PalletResponseDto>)> GetPalletByGRNID(Guid grnId)
+        {
+            var pallets = await _palletRepository.GetPalletsByGRNID(grnId);
+            if (!pallets.Any())
+                return ("Không có pallet nào cho GoodsReceiptNoteId đã cho.".ToMessageForUser(), new List<PalletDto.PalletResponseDto>());
+            var dto = _mapper.Map<List<PalletDto.PalletResponseDto>>(pallets);
             return ("", dto);
         }
 

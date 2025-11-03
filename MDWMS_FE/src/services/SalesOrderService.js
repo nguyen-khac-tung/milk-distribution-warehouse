@@ -252,23 +252,6 @@ export const updateSaleOrder = async (data) => {
     }
 };
 
-
-// Cập nhật trạng thái từ chối Sale Order
-export const updateSaleOrderStatusReject = async (data) => {
-    try {
-        const res = await api.put("/SalesOrder/UpdateSalesOrderStatusReject", data);
-        console.log("updateSaleOrderStatusReject:", res);
-        return res.data;
-    } catch (error) {
-        console.error("Error rejecting sale order:", error);
-        if (error.response?.data?.message) {
-            throw new Error(error.response.data.message);
-        }
-        throw error;
-    }
-};
-
-
 // Xóa Sale Order
 export const deleteSaleOrder = async (id) => {
     try {
@@ -277,6 +260,81 @@ export const deleteSaleOrder = async (id) => {
         return res.data;
     } catch (error) {
         console.error("Error deleting sale order:", error);
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
+        throw error;
+    }
+};
+
+// Cập nhật trạng thái đơn hàng sang "Pending Approval"
+export const updateSaleOrderStatusPendingApproval = async (data) => {
+    try {
+        const res = await api.put("/SalesOrder/UpdateSalesOrderStatusPendingApproval", data);
+        console.log("updateSaleOrderStatusPendingApproval:", res);
+        return res.data;
+    } catch (error) {
+        console.error("Error updating status to Pending Approval:", error);
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
+        throw error;
+    }
+};
+
+// Duyệt đơn hàng
+export const approveSalesOrder = async (data) => {
+    try {
+        const res = await api.put("/SalesOrder/UpdateSalesOrderStatusApproval", data);
+        console.log("approveSalesOrder:", res);
+        return res.data;
+    } catch (error) {
+        console.error("Error approving sales order:", error);
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
+        throw error;
+    }
+};
+
+// Từ chối đơn hàng
+export const rejectSalesOrder = async (data) => {
+    try {
+        const res = await api.put("/SalesOrder/UpdateSalesOrderStatusReject", data);
+        console.log("rejectSalesOrder:", res);
+        return res.data;
+    } catch (error) {
+        console.error("Error rejecting sales order:", error);
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
+        throw error;
+    }
+};
+
+// Phân công lấy hàng
+export const assignForPicking = async (data) => {
+    try {
+        const res = await api.put("/SalesOrder/UpdateSalesOrderStatusAssignedForPicking", data);
+        console.log("assignForPicking:", res);
+        return res.data;
+    } catch (error) {
+        console.error("Error assigning for picking:", error);
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
+        throw error;
+    }
+};
+
+// Tạo phiếu xuất kho
+export const createDeliverySlip = async (data) => {
+    try {
+        const res = await api.post("/SalesOrder/CreateDeliverySlip", data);
+        console.log("createDeliverySlip:", res);
+        return res.data;
+    } catch (error) {
+        console.error("Error creating delivery slip:", error);
         if (error.response?.data?.message) {
             throw new Error(error.response.data.message);
         }

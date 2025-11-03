@@ -31,11 +31,12 @@ namespace MilkDistributionWarehouse.Services
         private readonly ICategoryRepository _categoryRepository;
         private readonly IUnitMeasureRepository _unitMeasureRepository;
         private readonly IStorageConditionRepository _storageConditionRepository;
+        private readonly ISalesOrderRepository _salesOrderRepository;
         private readonly IMapper _mapper;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICacheService _cacheService;
         private readonly IGoodsPackingService _goodsPackingService;
-        public GoodsService(IGoodsRepository goodRepository, IMapper mapper, ICategoryRepository categoryRepository,
+        public GoodsService(IGoodsRepository goodRepository, IMapper mapper, ICategoryRepository categoryRepository, ISalesOrderRepository salesOrderRepository,
             IUnitMeasureRepository unitMeasureRepository, IStorageConditionRepository storageConditionRepository,
             IUnitOfWork unitOfWork, ICacheService cacheService, IGoodsPackingService goodsPackingService)
         {
@@ -44,6 +45,7 @@ namespace MilkDistributionWarehouse.Services
             _categoryRepository = categoryRepository;
             _unitMeasureRepository = unitMeasureRepository;
             _storageConditionRepository = storageConditionRepository;
+            _salesOrderRepository = salesOrderRepository;
             _unitOfWork = unitOfWork;
             _cacheService = cacheService;
             _goodsPackingService = goodsPackingService;
@@ -81,22 +83,38 @@ namespace MilkDistributionWarehouse.Services
             var goodsList = await _goodRepository.GetActiveGoodsBySupplierId(supplierId);
             if (goodsList == null || !goodsList.Any())
                 return ("Danh sách sản phẩm trống.".ToMessageForUser(), default);
+            var goodsIds = goodsList.Select(g => g.GoodsId).ToList();
+
+            var goodsCommittedList = await _salesOrderRepository.GetAllSalesOrders()
+                .Where(s => s.Status == SalesOrderStatus.Approved
+                       || s.Status == SalesOrderStatus.AssignedForPicking
+                       || s.Status == SalesOrderStatus.Picking)
+                .SelectMany(s => s.SalesOrderDetails)
+                .Where(sd => goodsIds.Contains(sd.GoodsId ?? 0))
+                .ToListAsync();
 
             var goodsInventoryDtos = _mapper.Map<List<GoodsInventoryDto>>(goodsList);
 
-            goodsInventoryDtos.ForEach(goods =>
+            goodsInventoryDtos.ForEach(goodsDto =>
             {
-                goods.GoodsPackings.ForEach(packing =>
+                var goods = goodsList.First(g => g.GoodsId == goodsDto.GoodsId);
+                goodsDto.GoodsPackings.ForEach(packing =>
                 {
-                    var totalPackageQuantity = goodsList.FirstOrDefault(g => g.GoodsId == goods.GoodsId)
-                                                        ?.Batches.SelectMany(b => b.Pallets)
-                                                        .Where(p => p.GoodsPackingId == packing.GoodsPackingId)
-                                                        .Sum(p => p.PackageQuantity);
-                    goods.InventoryPackingDtos.Add(new InventoryPackagingDto()
+                    var packageQuantityOnHand = goods?.Batches.SelectMany(b => b.Pallets)
+                                                      .Where(p => p.GoodsPackingId == packing.GoodsPackingId 
+                                                                && p.Status == CommonStatus.Active
+                                                                && p.Batch.ExpiryDate >= DateOnly.FromDateTime(DateTime.Now))
+                                                      .Sum(p => p.PackageQuantity) ?? 0;
+                    var packageQuantityCommitted = goodsCommittedList.Where(g => g.GoodsId == goodsDto.GoodsId
+                                                        && g.GoodsPackingId == packing.GoodsPackingId)
+                                                        .Sum(g => g.PackageQuantity) ?? 0;
+                    var availablePackageQuantity = packageQuantityOnHand - packageQuantityCommitted;
+
+                    goodsDto.InventoryPackingDtos.Add(new InventoryPackagingDto()
                     {
                         GoodsPackingId = packing.GoodsPackingId,
                         UnitPerPackage = packing.UnitPerPackage,
-                        TotalPackageQuantity = totalPackageQuantity ?? 0
+                        AvailablePackageQuantity = availablePackageQuantity >= 0 ? availablePackageQuantity : 0
                     });
                 });
             });
@@ -263,14 +281,14 @@ namespace MilkDistributionWarehouse.Services
 
                 var (msg, goodsPackingUpdates) = await _goodsPackingService.UpdateGoodsPacking(update.GoodsId, update.GoodsPackingUpdates);
 
-                if(!string.IsNullOrEmpty(msg))
+                if (!string.IsNullOrEmpty(msg))
                     throw new Exception(msg);
 
                 await _unitOfWork.CommitTransactionAsync();
 
                 return ("", _mapper.Map<GoodsDto>(goodsExist));
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
                 return ($"{ex.Message}".ToMessageForUser(), default);

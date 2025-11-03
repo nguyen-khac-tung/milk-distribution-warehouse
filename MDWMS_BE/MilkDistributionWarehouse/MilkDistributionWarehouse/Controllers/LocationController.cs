@@ -51,6 +51,17 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<List<LocationActiveDto>>.ToResultOk(locations);
         }
 
+        [HttpGet("LocationSuggest")]
+        public async Task<IActionResult> GetLocationSuggest(string palletId)
+        {
+            var (msg, locations) = await _locationService.GetSuggestLocation(palletId);
+
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<List<LocationActiveDto>>.ToResultOk(locations);
+        }
+
         [HttpGet("LocationPallet/{locationcode}")]
         public async Task<IActionResult> GetLocationPallet(string locationcode)
         {
@@ -59,7 +70,7 @@ namespace MilkDistributionWarehouse.Controllers
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
 
-            return ApiResponse<LocationActiveDto>.ToResultOk(locations);
+            return ApiResponse<LocationPalletDto>.ToResultOk(locations);
         }
 
         [Authorize(Roles = "Business Owner, Administrator")]

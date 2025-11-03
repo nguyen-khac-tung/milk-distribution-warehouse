@@ -63,7 +63,8 @@ export const updateBackOrder = async (id, data) => {
         const body = {
             retailerId: data.retailerId,
             goodsId: data.goodsId,
-            quantity: data.quantity,
+            goodsPackingId: data.goodsPackingId,
+            packageQuantity: data.packageQuantity,
         };
 
         const res = await api.put(`/BackOrder/Update/${id}`, body);
@@ -131,3 +132,28 @@ export const getBackOrderDropdown = async () => {
         throw error;
     }
 };
+
+// Tạo mới nhiều BackOrder cùng lúc
+export const createBulkBackOrder = async (backOrders) => {
+    try {
+        const body = {
+            backOrders: backOrders.map((order) => ({
+                retailerId: order.retailerId,
+                goodsId: order.goodsId,
+                goodsPackingId: order.goodsPackingId,
+                packageQuantity: order.packageQuantity,
+            })),
+        };
+
+        const res = await api.post("/BackOrder/CreateBulk", body);
+        console.log("BackOrder CreateBulk API response:", res.data);
+        return res.data;
+    } catch (error) {
+        console.error("Error creating bulk BackOrder:", error);
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
+        throw error;
+    }
+};
+

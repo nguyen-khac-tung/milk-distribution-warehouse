@@ -46,6 +46,24 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<List<UserDropDown>>.ToResultOk(userDropDown);
         }
 
+        [HttpGet("GetAvailableReceiversDropDown/{purchaseOrderId}")]
+        public async Task<IActionResult> GetAvailableReceiversDropDown(Guid? purchaseOrderId)
+        {
+            var (msg, userDropDown) = await _userService.GetAvailableReceiversOrPickersDropDown(purchaseOrderId, null);
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<List<UserAssignedDropDown>>.ToResultOk(userDropDown);
+        }
+
+        [HttpGet("GetAvailablePickersDropDown/{salesOrderId}")]
+        public async Task<IActionResult> GetAvailablePickersDropDown(Guid? salesOrderId)
+        {
+            var (msg, userDropDown) = await _userService.GetAvailableReceiversOrPickersDropDown(null, salesOrderId);
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<List<UserAssignedDropDown>>.ToResultOk(userDropDown);
+        }
+
         [Authorize(Roles = "Administrator, Business Owner")]
         [HttpPost("GetUserList")]
         public async Task<IActionResult> GetUserList(PagedRequest request)

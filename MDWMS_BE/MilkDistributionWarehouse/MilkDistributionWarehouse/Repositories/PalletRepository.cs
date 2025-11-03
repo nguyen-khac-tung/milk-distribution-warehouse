@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.Entities;
+using System.Threading.Tasks;
 
 namespace MilkDistributionWarehouse.Repositories
 {
@@ -12,10 +13,13 @@ namespace MilkDistributionWarehouse.Repositories
         Task<Pallet?> UpdatePallet(Pallet entity);
         Task<bool> HasDependencies(string palletId);
         Task<List<Pallet>> GetActivePalletsAsync();
+        Task<List<Pallet>> GetPalletsByGRNID(Guid grnId);
         Task<bool> IsLocationAvailable(int? locationId);
         Task<bool> ExistsBatch(Guid? batchId);
         Task<bool> ExistsLocation(int? locationId);
         Task<bool> ExistsGoodRecieveNote(Guid? goodRcNoteId);
+        Task<List<Pallet>> GetPotentiallyPalletsForPicking(int? goodsId, int? goodsPackingId);
+        Task<bool> IsAnyDiffActivePalletByGRNId(Guid grndId);
     }
 
     public class PalletRepository : IPalletRepository
@@ -81,6 +85,20 @@ namespace MilkDistributionWarehouse.Repositories
                 .ToListAsync();
         }
 
+        public async Task<List<Pallet>> GetPalletsByGRNID(Guid grnId)
+        {
+            return await _context.Pallets
+                .Include(p => p.Batch)
+                    .ThenInclude(p => p.Goods)
+                .Include(p => p.Location)
+                .Include(p => p.GoodsPacking)
+                .Include(p => p.CreateByNavigation)
+                .Where(p => p.GoodsReceiptNoteId == grnId)
+                .OrderBy(p => p.CreateAt)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
         public Task<bool> IsLocationAvailable(int? locationId)
         {
             if (!locationId.HasValue) return Task.FromResult(false);
@@ -124,6 +142,26 @@ namespace MilkDistributionWarehouse.Repositories
             return _context.GoodsPackings
                 .AsNoTracking()
                 .AnyAsync(g => g.GoodsPackingId == gpId.Value && g.Status == CommonStatus.Active);
+        }
+
+        public async Task<List<Pallet>> GetPotentiallyPalletsForPicking(int? goodsId, int? goodsPackingId)
+        {
+            return await _context.Pallets
+                .Include(p => p.Batch)
+                .Where(p => p.Batch.GoodsId == goodsId &&
+                            p.GoodsPackingId == goodsPackingId &&
+                            p.PackageQuantity > 0 &&
+                            p.Status == CommonStatus.Active &&
+                            p.Batch.ExpiryDate >= DateOnly.FromDateTime(DateTime.Now))
+                .ToListAsync();
+        }
+
+        public async Task<bool> IsAnyDiffActivePalletByGRNId(Guid grndId)
+        {
+            return await _context.Pallets
+                .AnyAsync(p => p.GoodsReceiptNoteId == grndId
+                && (p.Status != CommonStatus.Active
+                || p.LocationId == null));
         }
     }
 }

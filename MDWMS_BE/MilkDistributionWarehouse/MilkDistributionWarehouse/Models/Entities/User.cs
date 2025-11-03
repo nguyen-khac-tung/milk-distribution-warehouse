@@ -35,7 +35,9 @@ public partial class User
 
     public virtual ICollection<Batch> Batches { get; set; } = new List<Batch>();
 
-    public virtual ICollection<GoodsIssueNote> GoodsIssueNotes { get; set; } = new List<GoodsIssueNote>();
+    public virtual ICollection<GoodsIssueNote> GoodsIssueNoteApprovalByNavigations { get; set; } = new List<GoodsIssueNote>();
+
+    public virtual ICollection<GoodsIssueNote> GoodsIssueNoteCreatedByNavigations { get; set; } = new List<GoodsIssueNote>();
 
     public virtual ICollection<GoodsReceiptNote> GoodsReceiptNoteApprovalByNavigations { get; set; } = new List<GoodsReceiptNote>();
 

@@ -7,11 +7,14 @@ import { Label } from "../../components/ui/label"
 import { Textarea } from "../../components/ui/textarea"
 import FloatingDropdown from "../../components/Common/FloatingDropdown"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
-import { Plus, Trash2, ArrowLeft, Save, X } from "lucide-react"
+import { Plus, Trash2, ArrowLeft, Save, X, CheckCircle, BarChart3, ArrowRightLeft } from "lucide-react"
 import { createSaleOrder, getSalesOrderDetail } from "../../services/SalesOrderService"
 import { getRetailersDropdown } from "../../services/RetailerService"
 import { getSuppliersDropdown } from "../../services/SupplierService"
-import { getGoodsDropDownBySupplierId, getGoodsPackingByGoodsId } from "../../services/PurchaseOrderService"
+import { getGoodsPackingByGoodsId } from "../../services/PurchaseOrderService"
+import { getGoodsInventoryBySupplierId } from "../../services/GoodService"
+import { extractErrorMessage } from "../../utils/Validation"
+import CreateBackOrderModal from "../BackOrderPage/CreateBackOrderModal"
 
 function CreateSaleOrder({
     isEditMode = false,
@@ -22,22 +25,95 @@ function CreateSaleOrder({
     const [suppliers, setSuppliers] = useState([]);
     const [goodsBySupplier, setGoodsBySupplier] = useState({}); // Map supplierId -> goods
     const [goodsPackingsMap, setGoodsPackingsMap] = useState({}); // Map goodsId -> packings
+    const [inventoryMap, setInventoryMap] = useState({}); // Map goodsId -> inventoryPackingDtos
     const [retailersLoading, setRetailersLoading] = useState(false);
     const [suppliersLoading, setSuppliersLoading] = useState(false);
     const [goodsLoading, setGoodsLoading] = useState({}); // Map supplierId -> loading state
     const [packingLoading, setPackingLoading] = useState(false);
+    
+    // Lấy dữ liệu từ localStorage nếu có (từ BackOrderList)
+    const getInitialData = () => {
+        if (initialData) return initialData;
+        
+        try {
+            const storedData = localStorage.getItem('saleOrderFromBackOrder');
+            if (storedData) {
+                const parsed = JSON.parse(storedData);
+                // Xóa dữ liệu sau khi lấy để tránh tái sử dụng
+                localStorage.removeItem('saleOrderFromBackOrder');
+                return parsed;
+            }
+        } catch (error) {
+            console.error("Error parsing stored sale order data:", error);
+        }
+        return null;
+    };
+
+    const dataFromBackOrder = getInitialData();
+    
     const [formData, setFormData] = useState({
-        retailerName: initialData?.retailerName || "",
+        retailerName: dataFromBackOrder?.retailerName || initialData?.retailerName || "",
         estimatedTimeDeparture: initialData?.estimatedTimeDeparture || "",
         note: initialData?.note || ""
     });
 
     const [items, setItems] = useState(
-        initialData?.items || [
+        dataFromBackOrder?.items || initialData?.items || [
             { id: 1, supplierName: "", goodsName: "", quantity: "", goodsPackingId: "" },
         ],
     )
     const [fieldErrors, setFieldErrors] = useState({}) // Lỗi theo từng trường
+    const [showBackOrderModal, setShowBackOrderModal] = useState(false)
+    const [insufficientItems, setInsufficientItems] = useState([])
+
+    const loadGoodsBySupplier = async (supplierId) => {
+        // Check if goods already loaded for this supplier
+        if (goodsBySupplier[supplierId]) {
+            return;
+        }
+
+        setGoodsLoading(prev => ({ ...prev, [supplierId]: true }));
+        try {
+            const response = await getGoodsInventoryBySupplierId(supplierId);
+            const goodsData = response?.data || response?.items || response || [];
+
+            // Lưu goods vào state và goodsPackings vào map từ response (vì API đã trả về sẵn)
+            setGoodsBySupplier(prev => ({
+                ...prev,
+                [supplierId]: goodsData
+            }));
+
+            // Lưu goodsPackings vào map từ response (vì API đã trả về sẵn)
+            setGoodsPackingsMap(prev => {
+                const newPackingsMap = { ...prev };
+                goodsData.forEach(good => {
+                    if (good.goodsId && good.goodsPackings && good.goodsPackings.length > 0) {
+                        newPackingsMap[good.goodsId] = good.goodsPackings;
+                    }
+                });
+                return newPackingsMap;
+            });
+
+            // Lưu inventory data vào map
+            setInventoryMap(prev => {
+                const newInventoryMap = { ...prev };
+                goodsData.forEach(good => {
+                    if (good.goodsId && good.inventoryPackingDtos && good.inventoryPackingDtos.length > 0) {
+                        newInventoryMap[good.goodsId] = good.inventoryPackingDtos;
+                    }
+                });
+                return newInventoryMap;
+            });
+        } catch (error) {
+            console.error("Error loading goods by supplier:", error);
+            setGoodsBySupplier(prev => ({
+                ...prev,
+                [supplierId]: []
+            }));
+        } finally {
+            setGoodsLoading(prev => ({ ...prev, [supplierId]: false }));
+        }
+    };
 
     // Load retailers and suppliers on component mount
     useEffect(() => {
@@ -55,6 +131,17 @@ function CreateSaleOrder({
 
                 setRetailers(retailersData);
                 setSuppliers(suppliersData);
+
+                // Nếu có dữ liệu từ BackOrder, load goods cho các supplier đã có trong items
+                if (dataFromBackOrder && dataFromBackOrder.items && suppliersData.length > 0) {
+                    const supplierNames = [...new Set(dataFromBackOrder.items.map(item => item.supplierName).filter(Boolean))];
+                    for (const supplierName of supplierNames) {
+                        const supplier = suppliersData.find(s => s.companyName === supplierName);
+                        if (supplier) {
+                            await loadGoodsBySupplier(supplier.supplierId);
+                        }
+                    }
+                }
             } catch (error) {
                 console.error("Error loading data:", error);
                 setRetailers([]);
@@ -67,6 +154,28 @@ function CreateSaleOrder({
 
         loadData();
     }, []);
+
+    // Đảm bảo goodsPackings được load khi có items từ BackOrder với goodsPackingId
+    useEffect(() => {
+        if (dataFromBackOrder && dataFromBackOrder.items && suppliers.length > 0 && Object.keys(goodsBySupplier).length > 0) {
+            // Đảm bảo goodsPackings được load cho tất cả items có goodsPackingId
+            const itemsWithPackingId = dataFromBackOrder.items.filter(item => 
+                item.goodsPackingId && item.supplierName && item.goodsName
+            );
+            
+            itemsWithPackingId.forEach(item => {
+                const supplier = suppliers.find(s => s.companyName === item.supplierName);
+                if (supplier) {
+                    const goods = goodsBySupplier[supplier.supplierId] || [];
+                    const selectedGood = goods.find(g => g.goodsName === item.goodsName);
+                    if (selectedGood && (!goodsPackingsMap[selectedGood.goodsId] || goodsPackingsMap[selectedGood.goodsId].length === 0)) {
+                        // Nếu chưa có packings, thử load lại
+                        loadGoodsBySupplier(supplier.supplierId);
+                    }
+                }
+            });
+        }
+    }, [suppliers, goodsBySupplier, dataFromBackOrder]);
 
     const addItem = (e) => {
         // Ngăn chặn mọi event propagation
@@ -119,20 +228,7 @@ function CreateSaleOrder({
                 return;
             }
 
-            // Load goods packing khi chọn goods (chỉ load nếu chưa có trong map)
-            if (value) {
-                const currentItem = items.find(item => item.id === id);
-                if (currentItem && currentItem.supplierName) {
-                    const selectedSupplier = suppliers.find(supplier => supplier.companyName === currentItem.supplierName);
-                    if (selectedSupplier) {
-                        const goods = goodsBySupplier[selectedSupplier.supplierId] || [];
-                        const selectedGood = goods.find(good => good.goodsName === value);
-                        if (selectedGood && !goodsPackingsMap[selectedGood.goodsId]) {
-                            loadGoodsPacking(selectedGood.goodsId);
-                        }
-                    }
-                }
-            }
+            // GoodsPackings đã được load sẵn khi load goods, không cần load riêng nữa
 
             // Reset quantity and packing when goods changes
             updatedItems = updatedItems.map((item) =>
@@ -156,9 +252,9 @@ function CreateSaleOrder({
             setFieldErrors(newErrors);
         }
 
-        // Validate real-time cho số lượng
+        // Validate real-time cho số lượng (use updatedItems to avoid stale state)
         if (field === "quantity" || field === "goodsPackingId") {
-            const updatedItem = items.find(item => item.id === id);
+            const updatedItem = updatedItems.find(item => item.id === id);
             if (updatedItem) {
                 const tempItem = { ...updatedItem, [field]: value };
                 const quantityError = validateQuantity(tempItem);
@@ -181,31 +277,6 @@ function CreateSaleOrder({
     const handleInputChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     }
-
-    const loadGoodsBySupplier = async (supplierId) => {
-        // Check if goods already loaded for this supplier
-        if (goodsBySupplier[supplierId]) {
-            return;
-        }
-
-        setGoodsLoading(prev => ({ ...prev, [supplierId]: true }));
-        try {
-            const response = await getGoodsDropDownBySupplierId(supplierId);
-            const goodsData = response?.data || response?.items || response || [];
-            setGoodsBySupplier(prev => ({
-                ...prev,
-                [supplierId]: goodsData
-            }));
-        } catch (error) {
-            console.error("Error loading goods by supplier:", error);
-            setGoodsBySupplier(prev => ({
-                ...prev,
-                [supplierId]: []
-            }));
-        } finally {
-            setGoodsLoading(prev => ({ ...prev, [supplierId]: false }));
-        }
-    };
 
     const loadGoodsPacking = async (goodsId) => {
         setPackingLoading(true);
@@ -284,20 +355,43 @@ function CreateSaleOrder({
             return [{ value: "", label: "Không tìm thấy hàng hóa" }];
         }
 
-        const unitMeasureName = selectedGood?.name || "đơn vị";
+        const unitMeasureName = selectedGood?.unitMeasureName || "đơn vị";
         const goodsId = selectedGood.goodsId;
 
         // Lấy goodsPackings từ map theo goodsId
-        const goodsPackings = goodsPackingsMap[goodsId] || [];
+        let goodsPackings = goodsPackingsMap[goodsId] || [];
+        const inventoryData = inventoryMap[goodsId] || [];
 
-        if (goodsPackings.length === 0) {
-            return [];
+        // Nếu chưa có packings và có goodsPackingId từ BackOrder, thử load lại
+        if (goodsPackings.length === 0 && currentItem.goodsPackingId && !goodsLoading[selectedSupplier.supplierId]) {
+            // Trigger load nếu chưa có packings
+            if (goodsBySupplier[selectedSupplier.supplierId] && goodsBySupplier[selectedSupplier.supplierId].length > 0) {
+                // Goods đã được load nhưng chưa có packings, có thể là vấn đề về data structure
+                console.warn(`No packings found for goodsId ${goodsId}, goodsName: ${currentItem.goodsName}`);
+            } else {
+                // Goods chưa được load, trigger load
+                loadGoodsBySupplier(selectedSupplier.supplierId);
+            }
         }
 
-        return goodsPackings.map(packing => ({
-            value: packing.goodsPackingId.toString(),
-            label: `${packing.unitPerPackage} ${unitMeasureName}/thùng`
-        }));
+        if (goodsPackings.length === 0) {
+            return currentItem.goodsPackingId 
+                ? [{ value: currentItem.goodsPackingId.toString(), label: "Đang tải..." }]
+                : [];
+        }
+
+        return goodsPackings.map(packing => {
+            const inventory = inventoryData.find(inv => 
+                inv.goodsPackingId?.toString() === packing.goodsPackingId?.toString() ||
+                inv.goodsPackingId === packing.goodsPackingId
+            );
+            const availableQuantity = inventory?.availablePackageQuantity || 0;
+            const packingIdStr = packing.goodsPackingId?.toString() || "";
+            return {
+                value: packingIdStr,
+                label: `${packing.unitPerPackage} ${unitMeasureName}/thùng (Tồn: ${availableQuantity} thùng)`
+            };
+        });
     };
 
     // Tính tổng số đơn vị (số thùng × đơn vị đóng gói)
@@ -313,7 +407,8 @@ function CreateSaleOrder({
 
         const goodsPackings = goodsPackingsMap[selectedGood.goodsId] || [];
         const selectedPacking = goodsPackings.find(packing =>
-            packing.goodsPackingId.toString() === item.goodsPackingId
+            packing.goodsPackingId?.toString() === item.goodsPackingId?.toString() ||
+            packing.goodsPackingId === parseInt(item.goodsPackingId)
         );
 
         if (!selectedPacking) return 0;
@@ -323,7 +418,7 @@ function CreateSaleOrder({
 
     // Kiểm tra validation cho số thùng
     const validateQuantity = (item) => {
-        if (!item.quantity || !item.goodsPackingId) return null;
+        if (!item.quantity || !item.goodsPackingId || !item.supplierName) return null;
 
         const quantity = parseInt(item.quantity);
 
@@ -331,7 +426,140 @@ function CreateSaleOrder({
             return "Số thùng phải lớn hơn 0";
         }
 
+        // Kiểm tra tồn kho
+        const selectedSupplier = suppliers.find(s => s.companyName === item.supplierName);
+        if (!selectedSupplier) return null;
+
+        const goods = goodsBySupplier[selectedSupplier.supplierId] || [];
+        const selectedGood = goods.find(g => g.goodsName === item.goodsName);
+        if (!selectedGood) return null;
+
+        const inventoryData = inventoryMap[selectedGood.goodsId] || [];
+        const inventory = inventoryData.find(inv => 
+            inv.goodsPackingId?.toString() === item.goodsPackingId?.toString() ||
+            inv.goodsPackingId === parseInt(item.goodsPackingId)
+        );
+        const availableQuantity = inventory?.availablePackageQuantity || 0;
+
+        // if (quantity > availableQuantity) {
+        //     return `Số lượng vượt quá tồn kho (Tồn: ${availableQuantity} thùng)`;
+        // }
+
         return null;
+    };
+
+    // Tính toán thông tin tồn kho để hiển thị
+    const getStockInformation = () => {
+        const validItems = items.filter(item =>
+            item.supplierName && item.goodsName && item.quantity && item.goodsPackingId && parseInt(item.quantity) > 0
+        );
+
+        if (validItems.length === 0) {
+            return {
+                totalGoods: 0,
+                sufficientCount: 0,
+                insufficientCount: 0,
+                goods: [],
+                allSufficient: false
+            };
+        }
+
+        const goods = validItems.map(item => {
+            const selectedSupplier = suppliers.find(s => s.companyName === item.supplierName);
+            if (!selectedSupplier) return null;
+
+            const goods = goodsBySupplier[selectedSupplier.supplierId] || [];
+            const selectedGood = goods.find(g => g.goodsName === item.goodsName);
+            if (!selectedGood) return null;
+
+            const inventoryData = inventoryMap[selectedGood.goodsId] || [];
+                const inventory = inventoryData.find(inv => 
+                    inv.goodsPackingId?.toString() === item.goodsPackingId?.toString() ||
+                    inv.goodsPackingId === parseInt(item.goodsPackingId)
+                );
+            const availableQuantity = inventory?.availablePackageQuantity || 0;
+            const requestedQuantity = parseInt(item.quantity) || 0;
+            const isSufficient = requestedQuantity <= availableQuantity;
+
+            return {
+                goodsName: item.goodsName,
+                goodsCode: selectedGood.goodsCode || "-",
+                requestedQuantity,
+                availableQuantity,
+                isSufficient
+            };
+        }).filter(item => item !== null);
+
+        const sufficientCount = goods.filter(m => m.isSufficient).length;
+        const insufficientCount = goods.filter(m => !m.isSufficient).length;
+        const allSufficient = sufficientCount === goods.length && goods.length > 0;
+
+        return {
+            totalGoods: goods.length,
+            sufficientCount,
+            insufficientCount,
+            goods,
+            allSufficient
+        };
+    };
+
+    // Tính toán danh sách mặt hàng thiếu để tạo BackOrder
+    const getInsufficientItemsForBackOrder = () => {
+        const validItems = items.filter(item =>
+            item.supplierName && item.goodsName && item.quantity && item.goodsPackingId && parseInt(item.quantity) > 0
+        );
+
+        if (validItems.length === 0) {
+            return [];
+        }
+
+        const insufficientItems = validItems.map(item => {
+            const selectedSupplier = suppliers.find(s => s.companyName === item.supplierName);
+            if (!selectedSupplier) return null;
+
+            const goods = goodsBySupplier[selectedSupplier.supplierId] || [];
+            const selectedGood = goods.find(g => g.goodsName === item.goodsName);
+            if (!selectedGood) return null;
+
+            const inventoryData = inventoryMap[selectedGood.goodsId] || [];
+                const inventory = inventoryData.find(inv => 
+                    inv.goodsPackingId?.toString() === item.goodsPackingId?.toString() ||
+                    inv.goodsPackingId === parseInt(item.goodsPackingId)
+                );
+            const availableQuantity = inventory?.availablePackageQuantity || 0;
+            const requestedQuantity = parseInt(item.quantity) || 0;
+
+            // Chỉ lấy những mặt hàng thiếu (yêu cầu > có sẵn)
+            if (requestedQuantity <= availableQuantity) {
+                return null;
+            }
+
+            // Tính số lượng thiếu
+            const shortageQuantity = requestedQuantity - availableQuantity;
+
+            return {
+                goodsId: selectedGood.goodsId,
+                goodsPackingId: parseInt(item.goodsPackingId),
+                goodsName: selectedGood.goodsName,
+                goodsCode: selectedGood.goodsCode || "-",
+                requestedQuantity: requestedQuantity,
+                availableQuantity: availableQuantity,
+                packageQuantity: shortageQuantity, // Số lượng thiếu
+            };
+        }).filter(item => item !== null);
+
+        return insufficientItems;
+    };
+
+    // Mở modal BackOrder với danh sách mặt hàng thiếu
+    const handleOpenBackOrderModal = () => {
+        const insufficient = getInsufficientItemsForBackOrder();
+        if (insufficient.length === 0) {
+            window.showToast("Không có mặt hàng nào bị thiếu tồn kho", "info");
+            return;
+        }
+        setInsufficientItems(insufficient);
+        setShowBackOrderModal(true);
     };
 
     const handleSubmit = async (e) => {
@@ -420,21 +648,11 @@ function CreateSaleOrder({
                 const selectedGood = goods.find(good => good.goodsName === item.goodsName);
                 if (!selectedGood) return null;
 
-                const goodsPackings = goodsPackingsMap[selectedGood.goodsId] || [];
-                const selectedPacking = goodsPackings.find(packing =>
-                    packing.goodsPackingId.toString() === item.goodsPackingId
-                );
-
-                // Tính packageQuantity = số thùng × đơn vị đóng gói
-                const packageQuantity = selectedPacking ?
-                    parseInt(item.quantity) * selectedPacking.unitPerPackage :
-                    parseInt(item.quantity);
-
                 return {
                     supplierId: parseInt(selectedSupplier.supplierId),
                     goodsId: parseInt(selectedGood.goodsId),
                     goodsPackingId: parseInt(item.goodsPackingId),
-                    packageQuantity: packageQuantity
+                    packageQuantity: parseInt(item.quantity)
                 };
             }).filter(item => item !== null);
 
@@ -456,8 +674,12 @@ function CreateSaleOrder({
             navigate("/sales-orders");
         } catch (error) {
             console.error("Lỗi khi xử lý đơn bán hàng:", error);
-            const errorMessage = error.response?.data?.message || error.message || "Có lỗi xảy ra khi xử lý đơn bán hàng!";
-            window.showToast(errorMessage, "error");
+            const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi xử lý đơn bán hàng!");
+
+            // Show specific error message
+            if (window.showToast) {
+                window.showToast(errorMessage, "error");
+            }
         }
     }
 
@@ -492,31 +714,57 @@ function CreateSaleOrder({
                         {/* Header Information */}
                         <div>
                             <h3 className="text-lg font-semibold text-slate-600 mb-4">Thông Tin Đơn Hàng</h3>
-                            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                                <div className="space-y-2">
-                                    <Label htmlFor="retailer" className="text-slate-600 font-medium">
-                                        Nhà Bán Lẻ <span className="text-red-500">*</span>
-                                    </Label>
-                                    <FloatingDropdown
-                                        value={formData.retailerName || undefined}
-                                        onChange={(value) => handleInputChange("retailerName", value)}
-                                        options={retailerOptions}
-                                        placeholder="Chọn nhà bán lẻ"
-                                        loading={retailersLoading}
-                                    />
+                            <div className="space-y-6">
+                                <div className="grid grid-cols-1 gap-6 md:grid-cols-3 mb-2">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="retailer" className="text-slate-600 font-medium">
+                                            Nhà Bán Lẻ <span className="text-red-500">*</span>
+                                        </Label>
+                                        <FloatingDropdown
+                                            value={formData.retailerName || undefined}
+                                            onChange={(value) => handleInputChange("retailerName", value)}
+                                            options={retailerOptions}
+                                            placeholder="Chọn nhà bán lẻ"
+                                            loading={retailersLoading}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="estimatedTimeDeparture" className="text-slate-600 font-medium">
+                                            Ngày Dự Kiến Giao <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Input
+                                            type="date"
+                                            value={formData.estimatedTimeDeparture}
+                                            onChange={(e) => handleInputChange("estimatedTimeDeparture", e.target.value)}
+                                            className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                                        />
+                                    </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="estimatedTimeDeparture" className="text-slate-600 font-medium">
-                                        Ngày Dự Kiến Giao <span className="text-red-500">*</span>
-                                    </Label>
-                                    <Input
-                                        type="date"
-                                        value={formData.estimatedTimeDeparture}
-                                        onChange={(e) => handleInputChange("estimatedTimeDeparture", e.target.value)}
-                                        className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                                    />
-                                </div>
-                                {/* <div className="space-y-2">
+                                {/* Thông tin nhà bán lẻ đã chọn */}
+                                {formData.retailerName && (() => {
+                                    const selectedRetailer = retailers.find(retailer => retailer.retailerName === formData.retailerName);
+                                    return selectedRetailer ? (
+                                        <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-lg p-4">
+                                            <h4 className="text-sm font-semibold text-orange-800 mb-3">Thông Tin Nhà Bán Lẻ</h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                <div className="bg-white rounded-lg p-3 border border-orange-100">
+                                                    <div className="text-xs text-orange-600 font-medium mb-1">Email</div>
+                                                    <div className="text-sm font-semibold text-slate-700">{selectedRetailer.email}</div>
+                                                </div>
+                                                <div className="bg-white rounded-lg p-3 border border-orange-100">
+                                                    <div className="text-xs text-orange-600 font-medium mb-1">Số Điện Thoại</div>
+                                                    <div className="text-sm font-semibold text-slate-700">{selectedRetailer.phone}</div>
+                                                </div>
+                                                <div className="bg-white rounded-lg p-3 border border-orange-100">
+                                                    <div className="text-xs text-orange-600 font-medium mb-1">Địa Chỉ</div>
+                                                    <div className="text-sm font-semibold text-slate-700">{selectedRetailer.address}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : null;
+                                })()}
+
+                                <div className="space-y-2 mt-2">
                                     <Label htmlFor="note" className="text-slate-600 font-medium">
                                         Ghi Chú
                                     </Label>
@@ -526,19 +774,9 @@ function CreateSaleOrder({
                                         placeholder="Nhập ghi chú (tùy chọn)"
                                         className="min-h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                                     />
-                                </div> */}
+                                </div>
                             </div>
-                            <div className="space-y-2 mt-2">
-                                <Label htmlFor="note" className="text-slate-600 font-medium">
-                                    Ghi Chú
-                                </Label>
-                                <Textarea
-                                    value={formData.note}
-                                    onChange={(e) => handleInputChange("note", e.target.value)}
-                                    placeholder="Nhập ghi chú (tùy chọn)"
-                                    className="min-h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                                />
-                            </div>
+
                         </div>
 
                         {/* Items Table */}
@@ -548,137 +786,209 @@ function CreateSaleOrder({
                             </div>
 
                             <div className="rounded-lg border border-gray-200 bg-white" style={{ overflow: 'visible' }}>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow className="border-b border-gray-200 hover:bg-transparent">
-                                            <TableHead className="text-slate-600 font-semibold">STT</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold">Nhà Cung Cấp</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold">Tên Hàng Hóa</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold">Quy cách đóng Gói</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold">Số Lượng Thùng</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold">Tổng Số Đơn Vị</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold">Đơn Vị</TableHead>
-                                            {items.length > 1 && (
-                                                <TableHead className="text-right text-slate-600 font-semibold">Hành Động</TableHead>
-                                            )}
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {items.map((item, index) => (
-                                            <TableRow key={item.id} className="border-b border-gray-200 hover:bg-gray-50 py-4">
-                                                <TableCell className="text-slate-700 w-[10px]">{index + 1}</TableCell>
-                                                <TableCell className="relative" style={{ overflow: 'visible', zIndex: 'auto' }}>
-                                                    <div className="w-fit min-w-[180px] max-w-[240px] relative">
-                                                        <FloatingDropdown
-                                                            value={item.supplierName || undefined}
-                                                            onChange={(value) => updateItem(item.id, "supplierName", value)}
-                                                            options={supplierOptions}
-                                                            placeholder="Chọn nhà cung cấp"
-                                                            loading={suppliersLoading}
-                                                        />
-                                                        {fieldErrors[`${item.id}-supplierName`] && (
-                                                            <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">{fieldErrors[`${item.id}-supplierName`]}</p>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="relative" style={{ overflow: 'visible', zIndex: 'auto' }}>
-                                                    <div className="w-fit min-w-[180px] max-w-[200px] relative">
-                                                        <FloatingDropdown
-                                                            value={item.goodsName || undefined}
-                                                            onChange={(value) => updateItem(item.id, "goodsName", value)}
-                                                            options={getAvailableGoodsOptions(item.id)}
-                                                            placeholder={item.supplierName ? "Chọn hàng hóa" : "Chọn nhà cung cấp trước"}
-                                                            loading={(() => {
-                                                                if (!item.supplierName) return false;
-                                                                const selectedSupplier = suppliers.find(supplier => supplier.companyName === item.supplierName);
-                                                                return selectedSupplier ? goodsLoading[selectedSupplier.supplierId] || false : false;
-                                                            })()}
-                                                            disabled={!item.supplierName}
-                                                        />
-                                                        {fieldErrors[`${item.id}-goodsName`] && (
-                                                            <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">{fieldErrors[`${item.id}-goodsName`]}</p>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="relative" style={{ overflow: 'visible', zIndex: 'auto' }}>
-                                                    <div className="w-fit min-w-[130px] max-w-[160px] relative">
-                                                        <FloatingDropdown
-                                                            value={item.goodsPackingId || undefined}
-                                                            onChange={(value) => updateItem(item.id, "goodsPackingId", value)}
-                                                            options={getGoodsPackingOptions(item.id)}
-                                                            placeholder={item.goodsName ? "Chọn đóng gói" : "Chọn hàng hóa trước"}
-                                                            loading={packingLoading}
-                                                            disabled={!item.goodsName}
-                                                        />
-                                                        {fieldErrors[`${item.id}-goodsPackingId`] && (
-                                                            <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">{fieldErrors[`${item.id}-goodsPackingId`]}</p>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="w-fit min-w-[50px] max-w-[60px] relative">
-                                                        <Input
-                                                            type="number"
-                                                            placeholder="0"
-                                                            value={item.quantity === "" ? "" : item.quantity}
-                                                            onChange={(e) => updateItem(item.id, "quantity", e.target.value)}
-                                                            className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${fieldErrors[`${item.id}-quantity`] ? 'border-red-500' : ''}`}
-                                                        />
-                                                        {fieldErrors[`${item.id}-quantity`] && (
-                                                            <p className="absolute left-0 top-[42px] top-full mt-1 text-red-500 text-xs">{fieldErrors[`${item.id}-quantity`]}</p>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="h-[38px] flex items-center px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600 font-medium">
-                                                        {(() => {
-                                                            const totalUnits = calculateTotalUnits(item);
-                                                            if (totalUnits === 0) return "0";
-                                                            return totalUnits.toString();
-                                                        })()}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="h-[38px] flex items-center px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600">
-                                                        {(() => {
-                                                            if (item.goodsName && item.supplierName) {
-                                                                const selectedSupplier = suppliers.find(supplier => supplier.companyName === item.supplierName);
-                                                                if (selectedSupplier) {
-                                                                    const goods = goodsBySupplier[selectedSupplier.supplierId] || [];
-                                                                    const selectedGood = goods.find(good => good.goodsName === item.goodsName);
-                                                                    return selectedGood ? selectedGood.name : "Chưa chọn";
-                                                                }
-                                                            }
-                                                            return "Chưa chọn";
-                                                        })()}
-                                                    </div>
-                                                </TableCell>
+                                <div className="overflow-x-auto w-full">
+                                    <Table className="min-w-[1000px]">
+                                        <TableHeader>
+                                            <TableRow className="border-b border-gray-200 hover:bg-transparent">
+                                                <TableHead className="text-slate-600 font-semibold w-[4%]">STT</TableHead>
+                                                <TableHead className="text-slate-600 font-semibold w-[18%]">Nhà Cung Cấp</TableHead>
+                                                <TableHead className="text-slate-600 font-semibold w-[22%]">Tên Hàng Hóa</TableHead>
+                                                <TableHead className="text-slate-600 font-semibold w-[15%]">Quy Cách Đóng Gói</TableHead>
+                                                <TableHead className="text-slate-600 font-semibold text-center w-[150px]">Số Lượng Thùng</TableHead>
+                                                <TableHead className="text-slate-600 font-semibold text-center w-[130px]">Tổng Số Đơn Vị</TableHead>
+                                                <TableHead className="text-slate-600 font-semibold text-center w-[130px]">Đơn Vị</TableHead>
                                                 {items.length > 1 && (
-                                                    <TableCell className="text-right">
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => removeItem(item.id)}
-                                                            className="text-red-600 hover:bg-red-50"
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
-                                                    </TableCell>
+                                                    <TableHead className="text-right text-slate-600 font-semibold w-[6%]">
+                                                        Hành Động
+                                                    </TableHead>
                                                 )}
                                             </TableRow>
-                                        ))}
-                                        <TableRow className="border-b border-gray-200">
-                                            <TableCell className={items.length === 1 ? "py-16" : "py-8"}></TableCell>
-                                            <TableCell className={items.length === 1 ? "py-16" : "py-8"}></TableCell>
-                                            <TableCell className={items.length === 1 ? "py-16" : "py-8"}></TableCell>
-                                            <TableCell className={items.length === 1 ? "py-16" : "py-8"}></TableCell>
-                                            <TableCell className={items.length === 1 ? "py-16" : "py-8"}></TableCell>
-                                            <TableCell className={items.length === 1 ? "py-16" : "py-8"}></TableCell>
-                                            <TableCell className={items.length === 1 ? "py-16" : "py-8"}></TableCell>
-                                        </TableRow>
-                                    </TableBody>
-                                </Table>
+                                        </TableHeader>
+
+                                        <TableBody>
+                                            {items.map((item, index) => (
+                                                <TableRow
+                                                    key={item.id}
+                                                    className="border-b border-gray-200 hover:bg-gray-50 min-h-[70px]"
+                                                >
+                                                    {/* STT */}
+                                                    <TableCell className="text-center text-slate-700 align-top pb-6">
+                                                        {index + 1}
+                                                    </TableCell>
+
+                                                    {/* Nhà cung cấp */}
+                                                    <TableCell className="relative align-top pb-6">
+                                                        <div className="relative min-w-[160px] max-w-[220px] w-full">
+                                                            <FloatingDropdown
+                                                                value={item.supplierName || undefined}
+                                                                onChange={(value) => updateItem(item.id, "supplierName", value)}
+                                                                options={supplierOptions}
+                                                                placeholder="Chọn nhà cung cấp"
+                                                                loading={suppliersLoading}
+                                                                className="truncate w-full"
+                                                                title={item.supplierName || ""}
+                                                            />
+                                                            {fieldErrors[`${item.id}-supplierName`] && (
+                                                                <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">
+                                                                    {fieldErrors[`${item.id}-supplierName`]}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+
+                                                    {/* Tên hàng hóa */}
+                                                    <TableCell className="relative align-top pb-6">
+                                                        <div className="relative min-w-[180px] max-w-[260px] w-full">
+                                                            <FloatingDropdown
+                                                                value={item.goodsName || undefined}
+                                                                onChange={(value) => updateItem(item.id, "goodsName", value)}
+                                                                options={getAvailableGoodsOptions(item.id)}
+                                                                placeholder={
+                                                                    item.supplierName
+                                                                        ? "Chọn hàng hóa"
+                                                                        : "Chọn nhà cung cấp trước"
+                                                                }
+                                                                loading={(() => {
+                                                                    if (!item.supplierName) return false;
+                                                                    const selectedSupplier = suppliers.find(
+                                                                        (s) => s.companyName === item.supplierName
+                                                                    );
+                                                                    return selectedSupplier
+                                                                        ? goodsLoading[selectedSupplier.supplierId] || false
+                                                                        : false;
+                                                                })()}
+                                                                disabled={!item.supplierName}
+                                                                className="truncate w-full"
+                                                                title={item.goodsName || ""}
+                                                            />
+                                                            {fieldErrors[`${item.id}-goodsName`] && (
+                                                                <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">
+                                                                    {fieldErrors[`${item.id}-goodsName`]}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+
+                                                    {/* Quy cách đóng gói */}
+                                                    <TableCell className="relative align-top pb-6">
+                                                        <div className="relative min-w-[130px] max-w-[140px] w-full">
+                                                            <FloatingDropdown
+                                                                value={item.goodsPackingId ? item.goodsPackingId.toString() : undefined}
+                                                                onChange={(value) => updateItem(item.id, "goodsPackingId", value)}
+                                                                options={getGoodsPackingOptions(item.id)}
+                                                                placeholder={
+                                                                    item.goodsName ? "Chọn đóng gói" : "Chọn hàng hóa trước"
+                                                                }
+                                                                loading={packingLoading}
+                                                                disabled={!item.goodsName}
+                                                                className="truncate w-full"
+                                                                title={item.goodsPackingId ? item.goodsPackingId.toString() : ""}
+                                                            />
+                                                            {fieldErrors[`${item.id}-goodsPackingId`] && (
+                                                                <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">
+                                                                    {fieldErrors[`${item.id}-goodsPackingId`]}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+
+                                                    {/* Số lượng thùng */}
+                                                    <TableCell className="w-[150px] relative align-top pb-6">
+                                                        <div className="relative">
+                                                            <Input
+                                                                type="number"
+                                                                placeholder="0"
+                                                                min="0"
+                                                                value={item.quantity === "" ? "" : item.quantity}
+                                                                onChange={(e) =>
+                                                                    updateItem(item.id, "quantity", e.target.value)
+                                                                }
+                                                                className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${fieldErrors[`${item.id}-quantity`] ? "border-red-500" : ""
+                                                                    }`}
+                                                            />
+                                                            {fieldErrors[`${item.id}-quantity`] && (
+                                                                <p className="absolute left-0 top-full mt-1 text-red-500 text-xs whitespace-nowrap">
+                                                                    {fieldErrors[`${item.id}-quantity`]}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+
+                                                    {/* Tổng số đơn vị */}
+                                                    <TableCell className="w-[130px] text-center align-top pb-6">
+                                                        <div className="h-[38px] flex items-center justify-center px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600 font-medium">
+                                                            {calculateTotalUnits(item) || "0"}
+                                                        </div>
+                                                    </TableCell>
+
+                                                    {/* Đơn vị */}
+                                                    <TableCell className="w-[100px] text-center align-top pb-6">
+                                                        <div className="h-[38px] flex items-center justify-center px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600 text-sm">
+                                                            {(() => {
+                                                                if (item.goodsName && item.supplierName) {
+                                                                    const selectedSupplier = suppliers.find(
+                                                                        (s) => s.companyName === item.supplierName
+                                                                    );
+                                                                    if (selectedSupplier) {
+                                                                        const goods =
+                                                                            goodsBySupplier[selectedSupplier.supplierId] || [];
+                                                                        const selectedGood = goods.find(
+                                                                            (good) => good.goodsName === item.goodsName
+                                                                        );
+                                                                        return selectedGood
+                                                                            ? selectedGood.unitMeasureName
+                                                                            : "Chưa chọn";
+                                                                    }
+                                                                }
+                                                                return "Chưa chọn";
+                                                            })()}
+                                                        </div>
+                                                    </TableCell>
+
+                                                    {/* Hành động */}
+                                                    {items.length > 1 && (
+                                                        <TableCell className="text-right align-top pb-6">
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => removeItem(item.id)}
+                                                                className="text-red-600 hover:bg-red-50"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </TableCell>
+                                                    )}
+                                                </TableRow>
+                                            ))}
+
+                                            {/* Hàng trống cuối cùng */}
+                                            <TableRow className="border-b border-gray-200">
+                                                <TableCell
+                                                    className={items.length === 1 ? "py-12" : "py-6"}
+                                                ></TableCell>
+                                                <TableCell
+                                                    className={items.length === 1 ? "py-12" : "py-6"}
+                                                ></TableCell>
+                                                <TableCell
+                                                    className={items.length === 1 ? "py-12" : "py-6"}
+                                                ></TableCell>
+                                                <TableCell
+                                                    className={items.length === 1 ? "py-12" : "py-6"}
+                                                ></TableCell>
+                                                <TableCell
+                                                    className={items.length === 1 ? "py-12" : "py-6"}
+                                                ></TableCell>
+                                                <TableCell
+                                                    className={items.length === 1 ? "py-12" : "py-6"}
+                                                ></TableCell>
+                                                <TableCell
+                                                    className={items.length === 1 ? "py-12" : "py-6"}
+                                                ></TableCell>
+                                            </TableRow>
+                                        </TableBody>
+                                    </Table>
+                                </div>
                             </div>
 
                             {/* Add Item Text - Centered below table */}
@@ -692,6 +1002,109 @@ function CreateSaleOrder({
                                     Thêm mặt hàng
                                 </button>
                             </div>
+
+                            {/* Stock Information Card */}
+                            {(() => {
+                                const stockInfo = getStockInformation();
+                                if (stockInfo.totalGoods === 0) return null;
+
+                                return (
+                                    <div className="mt-6 space-y-4">
+                                        {/* Header */}
+                                        <div className="flex items-center gap-2">
+                                            <BarChart3 className="h-5 w-5 text-blue-600" />
+                                            <h3 className="text-lg font-semibold text-blue-600">Thông Tin Tồn Kho</h3>
+                                        </div>
+
+                                        {/* Status Banner */}
+                                        <div className={`rounded-lg p-4 ${stockInfo.allSufficient
+                                            ? 'bg-green-50 border border-green-200'
+                                            : 'bg-red-50 border border-red-200'
+                                            }`}>
+                                            <div className="flex items-center justify-between gap-4">
+                                                <div className="flex items-center gap-2">
+                                                    <CheckCircle className={`h-5 w-5 ${stockInfo.allSufficient ? 'text-green-600' : 'text-red-600'}`} />
+                                                    <ArrowRightLeft className={`h-5 w-5 ${stockInfo.allSufficient ? 'text-green-600' : 'text-red-600'}`} />
+                                                    <span className={`font-medium ${stockInfo.allSufficient ? 'text-green-700' : 'text-red-700'
+                                                        }`}>
+                                                        {stockInfo.allSufficient
+                                                            ? 'Đủ tồn kho - Có thể tạo đơn xuất'
+                                                            : 'Thiếu tồn kho - Vui lòng kiểm tra lại'
+                                                        }
+                                                    </span>
+                                                </div>
+                                                {/* Button để tạo BackOrder cho các mặt hàng thiếu - Góc phải */}
+                                                {!stockInfo.allSufficient && stockInfo.insufficientCount > 0 && (
+                                                    <Button
+                                                        type="button"
+                                                        onClick={handleOpenBackOrderModal}
+                                                        className="h-[38px] px-4 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all whitespace-nowrap"
+                                                    >
+                                                        <Plus className="h-4 w-4 mr-2" />
+                                                        Tạo đơn bổ sung cho {stockInfo.insufficientCount} mặt hàng thiếu
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Goods Cards */}
+                                        {stockInfo.goods.length > 0 && (
+                                            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                                                {stockInfo.goods.map((goods, idx) => (
+                                                    <div
+                                                        key={idx}
+                                                        className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                                                    >
+                                                        <div className="flex items-center gap-2 mb-3">
+                                                            <CheckCircle className={`h-5 w-5 ${goods.isSufficient ? 'text-green-600' : 'text-red-600'}`} />
+                                                            <h4 className="font-semibold text-slate-700">{goods.goodsName}</h4>
+                                                        </div>
+
+                                                        <div className="text-sm text-slate-600 mb-2">
+                                                            Mã sản phẩm: <span className="font-medium">{goods.goodsCode}</span>
+                                                        </div>
+
+                                                        <div className="space-y-1">
+                                                            <div className="text-sm">
+                                                                <span className="text-slate-600">Yêu cầu: </span>
+                                                                <span className="font-semibold text-slate-800">{goods.requestedQuantity}</span>
+                                                            </div>
+                                                            <div className="text-sm">
+                                                                <span className="text-slate-600">Có sẵn: </span>
+                                                                <span className={`font-semibold ${goods.isSufficient ? 'text-green-600' : 'text-red-600'}`}>
+                                                                    {goods.availableQuantity}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Stock Summary */}
+                                        <div className="space-y-2">
+                                            <h4 className="text-sm font-semibold text-slate-600">Tóm Tắt Tồn Kho:</h4>
+                                            <div className="flex flex-wrap gap-2">
+                                                <div className="px-3 py-1.5 bg-gray-100 rounded-full">
+                                                    <span className="text-sm font-medium text-blue-600">
+                                                        Tổng: {stockInfo.totalGoods} mặt hàng
+                                                    </span>
+                                                </div>
+                                                <div className="px-3 py-1.5 bg-green-100 rounded-full">
+                                                    <span className="text-sm font-medium text-green-600">
+                                                        Đủ: {stockInfo.sufficientCount} mặt hàng
+                                                    </span>
+                                                </div>
+                                                <div className="px-3 py-1.5 bg-red-100 rounded-full">
+                                                    <span className="text-sm font-medium text-red-600">
+                                                        Thiếu: {stockInfo.insufficientCount} mặt hàng
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
 
                             {/* Actions */}
                             <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-4">
@@ -707,6 +1120,43 @@ function CreateSaleOrder({
                     </div>
                 </Card>
             </div>
+
+            {/* BackOrder Modal */}
+            <CreateBackOrderModal
+                isOpen={showBackOrderModal}
+                onClose={() => setShowBackOrderModal(false)}
+                onSuccess={() => {
+                    setShowBackOrderModal(false);
+                    window.showToast("Tạo đơn đặt hàng thành công!", "success");
+                }}
+                selectedItems={insufficientItems.map(item => ({
+                    goodsId: item.goodsId,
+                    goodsPackingId: item.goodsPackingId,
+                    goodsName: item.goodsName,
+                    goodsCode: item.goodsCode,
+                    requestedQuantity: item.packageQuantity, // Số lượng thiếu
+                    availableQuantity: 0, // Không có sẵn vì đây là số lượng thiếu
+                    packageQuantity: item.packageQuantity // Số lượng thiếu
+                }))}
+                retailerId={(() => {
+                    if (!formData.retailerName || retailers.length === 0) {
+                        console.log("No retailerName or retailers not loaded yet");
+                        return null;
+                    }
+                    const selectedRetailer = retailers.find(r =>
+                        r.retailerName === formData.retailerName ||
+                        r.RetailerName === formData.retailerName ||
+                        (r.retailerName || r.RetailerName)?.toLowerCase() === formData.retailerName?.toLowerCase()
+                    );
+                    if (selectedRetailer) {
+                        const retailerIdValue = selectedRetailer.retailerId || selectedRetailer.RetailerId;
+                        console.log("Found retailer:", selectedRetailer, "retailerId:", retailerIdValue);
+                        return retailerIdValue ? retailerIdValue.toString() : null;
+                    }
+                    console.log("Retailer not found. formData.retailerName:", formData.retailerName, "retailers:", retailers);
+                    return null;
+                })()}
+            />
         </div>
     )
 }

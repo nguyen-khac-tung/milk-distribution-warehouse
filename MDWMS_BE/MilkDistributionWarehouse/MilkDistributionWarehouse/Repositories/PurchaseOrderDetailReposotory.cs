@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Client;
+using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 using System.Threading.Tasks;
 
@@ -10,6 +11,7 @@ namespace MilkDistributionWarehouse.Repositories
         IQueryable<PurchaseOderDetail> GetPurchaseOrderDetail();
         Task<int> CreatePODetailBulk(List<PurchaseOderDetail> creates);
         Task<int> DeletePODetailBulk(List<PurchaseOderDetail> poDetailsToDelete);
+        Task<List<PurchaseOderDetail>> GetPurchaseOrderDetailsByPurchaseOrderId(Guid purchaseOrderId);
     }
 
     public class PurchaseOrderDetailReposotory : IPurchaseOrderDetailRepository
@@ -25,6 +27,12 @@ namespace MilkDistributionWarehouse.Repositories
             return _context.PurchaseOderDetails.AsNoTracking();
         }
 
+        public async Task<List<PurchaseOderDetail>> GetPurchaseOrderDetailsByPurchaseOrderId(Guid purchaseOrderId)
+        {
+            return await _context.PurchaseOderDetails
+                .Where(pod => pod.PurchaseOderId == purchaseOrderId)
+                .ToListAsync();
+        } 
 
         public async Task<int> CreatePODetailBulk(List<PurchaseOderDetail> poDetailsToCreate)
         {

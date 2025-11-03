@@ -101,7 +101,7 @@ namespace MilkDistributionWarehouse.Services
                         throw new Exception("Từ chối phải có lý do.".ToMessageForUser());
 
                     grnDetail = _mapper.Map(update, grnDetail);
-                    grnDetail.GoodsReceiptNote.Status = GoodsReceiptNoteStatus.Draft;
+                    grnDetail.GoodsReceiptNote.Status = GoodsReceiptNoteStatus.Receiving;
                 }
 
                 if (update is GoodsReceiptNoteDetailCompletedDto)
@@ -127,13 +127,23 @@ namespace MilkDistributionWarehouse.Services
 
         private string CheckGRNDetailUpdateValidation(GoodsReceiptNoteDetailInspectedDto inspectedDto, GoodsReceiptNoteDetail grnDetail)
         {
-            if (inspectedDto.RejectPackageQuantity > inspectedDto.DeliveredPackageQuantity)
+            var delivered = inspectedDto.DeliveredPackageQuantity;
+            var expected = grnDetail.ExpectedPackageQuantity;
+            var rejected = inspectedDto.RejectPackageQuantity;
+
+            if (rejected > delivered)
                 return "Số lượng thùng từ chối không thể lớn hơn số lượng thùng được vận chuyển đến.".ToMessageForUser();
 
-            if (inspectedDto.RejectPackageQuantity > 0 && string.IsNullOrEmpty(inspectedDto.Note))
+            var exceededQuantity = delivered - expected;
+
+            if (exceededQuantity > 0 && rejected < exceededQuantity)
+                return $"Phải trả lại ít nhất {exceededQuantity} thùng khi số lượng giao đến vượt dự kiến.";
+
+            if (rejected > 0 && string.IsNullOrEmpty(inspectedDto.Note))
                 return "Từ chối thùng hàng phải có lý do.".ToMessageForUser();
 
-            return "";
+            return string.Empty;
         }
+
     }
 }

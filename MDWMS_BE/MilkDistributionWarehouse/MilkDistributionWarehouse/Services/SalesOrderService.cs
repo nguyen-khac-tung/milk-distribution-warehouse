@@ -272,8 +272,8 @@ namespace MilkDistributionWarehouse.Services
 
                 if (salesOrderUpdateStatus is SalesOrderAssignedForPickingDto assignedForPickingDto)
                 {
-                    if (salesOrder.Status != SalesOrderStatus.Approved)
-                        return ("Chỉ được phân công khi đơn hàng ở trạng thái Đã duyệt.".ToMessageForUser(), null);
+                    if (salesOrder.Status != SalesOrderStatus.Approved && salesOrder.Status != SalesOrderStatus.AssignedForPicking)
+                        return ("Chỉ được phân công khi đơn hàng ở trạng thái Đã duyệt hoặc Đã phân công".ToMessageForUser(), null);
                     salesOrder.Status = SalesOrderStatus.AssignedForPicking;
                     salesOrder.AcknowledgedBy = userId;
                     salesOrder.AssignTo = assignedForPickingDto.AssignTo;

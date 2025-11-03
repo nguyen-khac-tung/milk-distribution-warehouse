@@ -39,6 +39,10 @@ const PurchaseOrderTable = ({
         // Trạng thái = 7 (Đang tiếp nhận): Chỉ navigate
         console.log('Status 7: Navigating directly for order:', order.purchaseOderId);
         navigate(`/goods-receipt-notes/${order.purchaseOderId}`);
+      } else if (order.status === 8 || order.status === 9) {
+        // Trạng thái = 8 (Đã kiểm tra) hoặc 9 (Hoàn thành): vẫn cho phép xem phiếu nhập kho
+        console.log('Status 8/9: Navigating to goods receipt note for order:', order.purchaseOderId);
+        navigate(`/goods-receipt-notes/${order.purchaseOderId}`);
       }
     } catch (error) {
       console.error('Error handling goods receipt:', error);
@@ -47,10 +51,10 @@ const PurchaseOrderTable = ({
         statusText: error.response?.statusText,
         data: error.response?.data
       });
-      
+
       // Sử dụng extractErrorMessage để lấy message lỗi từ backend
       const errorMessage = extractErrorMessage(error) || 'Có lỗi xảy ra khi xử lý phiếu nhập kho';
-      
+
       window.showToast?.(errorMessage, 'error');
     }
   };
@@ -283,7 +287,12 @@ const PurchaseOrderTable = ({
                       </TableCell>
                     )}
                     <TableCell className="px-6 py-4 text-slate-700 text-center">
-                      {order.createdAt ? new Date(order.createdAt).toLocaleDateString('vi-VN') : '-'}
+                      {order.createdAt ? (() => {
+                        const date = new Date(order.createdAt);
+                        const time = date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                        const dateStr = date.toLocaleDateString('vi-VN');
+                        return `${time} ${dateStr}`;
+                      })() : '-'}
                     </TableCell>
                     <TableCell className="px-6 py-4 text-center">
                       <StatusDisplay status={order.status} />
@@ -312,14 +321,25 @@ const PurchaseOrderTable = ({
                           </button>
                         )}
 
-                        {/* Goods Receipt button - for status 6 and 7 - only for Warehouse Staff */}
-                        {(order.status === 6 || order.status === 7) && hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WS) && (
+                        {/* Goods Receipt button - for status 6, 7, 8, 9 - only for Warehouse Staff */}
+                        {(order.status === 6 || order.status === 7 || order.status === 8 || order.status === 9) && hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WS) && (
                           <button
                             className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                             title={order.status === 6 ? "Bắt đầu nhận hàng" : "Xem phiếu nhập kho"}
                             onClick={() => handleGoodsReceiptClick(order)}
                           >
                             <Package2 className={`h-4 w-4 ${order.status === 6 ? 'text-green-500' : 'text-blue-500'}`} />
+                          </button>
+                        )}
+
+                        {/* Goods Receipt button - for status 7 (Đang tiếp nhận) - for Warehouse Manager */}
+                        {order.status === 7 && hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WM) && (
+                          <button
+                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                            title="Xem phiếu nhập kho"
+                            onClick={() => handleGoodsReceiptClick(order)}
+                          >
+                            <Package2 className="h-4 w-4 text-blue-500" />
                           </button>
                         )}
 
@@ -349,15 +369,26 @@ const PurchaseOrderTable = ({
                                   <Eye className="h-4 w-4 text-orange-500" />
                                 </button>
                               </PermissionWrapper>
-                              
-                              {/* Goods Receipt button - for status 6 and 7 - only for Warehouse Staff */}
-                              {(order.status === 6 || order.status === 7) && hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WS) && (
+
+                              {/* Goods Receipt button - for status 6, 7, 8, 9 - only for Warehouse Staff */}
+                              {(order.status === 6 || order.status === 7 || order.status === 8 || order.status === 9) && hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WS) && (
                                 <button
                                   className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                   title={order.status === 6 ? "Bắt đầu nhận hàng" : "Xem phiếu nhập kho"}
                                   onClick={() => handleGoodsReceiptClick(order)}
                                 >
                                   <Package2 className={`h-4 w-4 ${order.status === 6 ? 'text-green-500' : 'text-blue-500'}`} />
+                                </button>
+                              )}
+
+                              {/* Goods Receipt button - for status 7 (Đang tiếp nhận) - for Warehouse Manager */}
+                              {(order.status === 7 || order.status === 8 || order.status === 9) && hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WM) && (
+                                <button
+                                  className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                  title="Xem phiếu nhập kho"
+                                  onClick={() => handleGoodsReceiptClick(order)}
+                                >
+                                  <Package2 className="h-4 w-4 text-blue-500" />
                                 </button>
                               )}
                               {!order.isDisable && (

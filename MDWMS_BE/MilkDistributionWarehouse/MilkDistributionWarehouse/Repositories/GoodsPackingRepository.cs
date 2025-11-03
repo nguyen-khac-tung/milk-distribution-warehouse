@@ -98,14 +98,14 @@ namespace MilkDistributionWarehouse.Repositories
         public async Task<bool> HasActiveGoodsReceiptNote(int goodsPackingId)
         {
             return await _context.GoodsReceiptNotes
-                .AnyAsync(grn => grn.Status != GoodsReceiptNoteStatus.Draft && grn.GoodsReceiptNoteDetails
+                .AnyAsync(grn => grn.Status != GoodsReceiptNoteStatus.Receiving && grn.GoodsReceiptNoteDetails
                 .Any(grnd => grnd.GoodsPackingId == goodsPackingId));
         }
 
         public async Task<bool> HasActiveGoodsIssueNote(int goodsPackingId)
         {
             return await _context.GoodsIssueNotes
-                .AnyAsync(gin => gin.Status != GoodsIssueNoteStatus.Draft && gin.GoodsIssueNoteDetails
+                .AnyAsync(gin => gin.Status != GoodsIssueNoteStatus.Picking && gin.GoodsIssueNoteDetails
                 .Any(gin => gin.GoodsPackingId == goodsPackingId));
         }
 

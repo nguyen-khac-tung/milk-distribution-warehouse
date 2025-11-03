@@ -1,6 +1,6 @@
 import React from "react";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "../../components/ui/table";
-import { ArrowUp, ArrowDown, ArrowUpDown, Eye, Edit, Trash2, CheckCircle, UserPlus, FileText } from "lucide-react";
+import { ArrowUp, ArrowDown, ArrowUpDown, Eye, Edit, Trash2, CheckCircle, UserPlus, FileText, XCircle } from "lucide-react";
 import EmptyState from "../../components/Common/EmptyState";
 import { Package } from "lucide-react";
 import { PERMISSIONS, canPerformSalesOrderAction } from "../../utils/permissions";
@@ -77,13 +77,13 @@ const SalesOrderTable = ({
                                     STT
                                 </TableHead>
 
-                                {/* Đại lý */}
+                                {/* Nhà bán lẻ */}
                                 <TableHead
                                     className="font-semibold text-slate-900 px-6 py-3 text-left"
                                     onClick={() => handleSort("retailerName")}
                                 >
                                     <div className="flex items-center space-x-2 cursor-pointer">
-                                        <span>Đại lý</span>
+                                        <span>Nhà bán lẻ</span>
                                         {sortField === "retailerName" ? (
                                             sortAscending ? (
                                                 <ArrowUp className="h-4 w-4 text-orange-500" />
@@ -95,6 +95,13 @@ const SalesOrderTable = ({
                                         )}
                                     </div>
                                 </TableHead>
+
+                                {/* Người tạo */}
+                                {availableFields.hasCreatedByName && (
+                                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                                        Người tạo
+                                    </TableHead>
+                                )}
 
                                 {/* Người duyệt */}
                                 {availableFields.hasApprovalByName && (
@@ -114,13 +121,6 @@ const SalesOrderTable = ({
                                                 <ArrowUpDown className="h-4 w-4 text-slate-400" />
                                             )}
                                         </div>
-                                    </TableHead>
-                                )}
-
-                                {/* Người tạo */}
-                                {availableFields.hasCreatedByName && (
-                                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                                        Người tạo
                                     </TableHead>
                                 )}
 
@@ -200,10 +200,17 @@ const SalesOrderTable = ({
                                             {(pagination.current - 1) * pagination.pageSize + index + 1}
                                         </TableCell>
 
-                                        {/* Đại lý */}
+                                        {/* Nhà bán lẻ */}
                                         <TableCell className="text-left px-6 py-4">
                                             {order?.retailerName || "-"}
                                         </TableCell>
+
+                                        {/* Người tạo */}
+                                        {availableFields.hasCreatedByName && (
+                                            <TableCell className="text-center px-6 py-4">
+                                                {order.createdByName || "-"}
+                                            </TableCell>
+                                        )}
 
                                         {/* Người duyệt */}
                                         {availableFields.hasApprovalByName && (
@@ -215,13 +222,6 @@ const SalesOrderTable = ({
                                                 ) : (
                                                     <span className="text-gray-400 italic text-sm">Chưa duyệt</span>
                                                 )}
-                                            </TableCell>
-                                        )}
-
-                                        {/* Người tạo */}
-                                        {availableFields.hasCreatedByName && (
-                                            <TableCell className="text-center px-6 py-4">
-                                                {order.createdByName || "-"}
                                             </TableCell>
                                         )}
 
@@ -259,7 +259,13 @@ const SalesOrderTable = ({
                                         {/* Ngày tạo */}
                                         <TableCell className="text-center px-6 py-4">
                                             {order.createdAt
-                                                ? new Date(order.createdAt).toLocaleDateString("vi-VN")
+                                                ? new Date(order.createdAt).toLocaleString("vi-VN", {
+                                                    day: "2-digit",
+                                                    month: "2-digit",
+                                                    year: "numeric",
+                                                    hour: "2-digit",
+                                                    minute: "2-digit",
+                                                })
                                                 : "-"}
                                         </TableCell>
 
@@ -283,7 +289,7 @@ const SalesOrderTable = ({
                                                 </PermissionWrapper>
 
                                                 {/* Approve Button - Sale Manager for PendingApproval */}
-                                                {canPerformSalesOrderAction('approve', order, hasPermission, userInfo) && (
+                                                {/* {canPerformSalesOrderAction('approve', order, hasPermission, userInfo) && (
                                                     <button
                                                         className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                                         title="Duyệt phiếu"
@@ -294,10 +300,24 @@ const SalesOrderTable = ({
                                                     >
                                                         <CheckCircle className="h-4 w-4 text-green-500" />
                                                     </button>
-                                                )}
+                                                )} */}
+
+                                                {/* Reject Button - Sale Manager for PendingApproval */}
+                                                {/* {canPerformSalesOrderAction('reject', order, hasPermission, userInfo) && (
+                                                    <button
+                                                        className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                        title="Từ chối phiếu"
+                                                        onClick={() => {
+                                                            // TODO: Implement reject functionality
+                                                            console.log('Reject order:', order.salesOrderId);
+                                                        }}
+                                                    >
+                                                        <XCircle className="h-4 w-4 text-red-500" />
+                                                    </button>
+                                                )} */}
 
                                                 {/* Assign Button - Warehouse Manager */}
-                                                {canPerformSalesOrderAction('assign', order, hasPermission, userInfo) && (
+                                                {/* {canPerformSalesOrderAction('assign_for_picking', order, hasPermission, userInfo) && (
                                                     <button
                                                         className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                                         title={order.status === 4 ? 'Phân công' : 'Phân công lại'}
@@ -308,10 +328,10 @@ const SalesOrderTable = ({
                                                     >
                                                         <UserPlus className="h-4 w-4 text-blue-500" />
                                                     </button>
-                                                )}
+                                                )} */}
 
                                                 {/* Create Delivery Slip Button - Warehouse Staff */}
-                                                {canPerformSalesOrderAction('create_delivery_slip', order, hasPermission, userInfo) && (
+                                                {/* {canPerformSalesOrderAction('create_delivery_slip', order, hasPermission, userInfo) && (
                                                     <button
                                                         className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                                         title="Tạo phiếu xuất kho"
@@ -322,10 +342,24 @@ const SalesOrderTable = ({
                                                     >
                                                         <FileText className="h-4 w-4 text-purple-500" />
                                                     </button>
-                                                )}
+                                                )} */}
+
+                                                {/* Submit Pending Approval Button - Sales Representative */}
+                                                {/* {canPerformSalesOrderAction('submit_pending_approval', order, hasPermission, userInfo) && (
+                                                    <button
+                                                        className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                        title="Nộp bản nháp"
+                                                        onClick={() => {
+                                                            // TODO: Implement submit pending approval functionality
+                                                            console.log('Submit pending approval:', order.salesOrderId);
+                                                        }}
+                                                    >
+                                                        <FileText className="h-4 w-4 text-orange-500" />
+                                                    </button>
+                                                )} */}
 
                                                 {/* View Delivery Slip Button - Warehouse Manager/Staff */}
-                                                {canPerformSalesOrderAction('view_delivery_slip', order, hasPermission, userInfo) && (
+                                                {/* {canPerformSalesOrderAction('view_delivery_slip', order, hasPermission, userInfo) && (
                                                     <button
                                                         className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                                         title="Xem phiếu xuất kho"
@@ -336,7 +370,7 @@ const SalesOrderTable = ({
                                                     >
                                                         <FileText className="h-4 w-4 text-orange-500" />
                                                     </button>
-                                                )}
+                                                )} */}
 
                                                 {/* Edit Button - Sales Representative */}
                                                 {canPerformSalesOrderAction('edit', order, hasPermission, userInfo) && (

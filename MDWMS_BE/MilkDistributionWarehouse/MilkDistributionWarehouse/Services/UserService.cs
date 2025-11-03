@@ -25,22 +25,29 @@ namespace MilkDistributionWarehouse.Services
         Task<string> UpdateUserStatus(UserStatusUpdateDto userUpdate);
         Task<string> DeleteUser(int? userId);
         Task<(string, List<UserDropDown>?)> GetUserDropDownByRoleName(string roleName);
+        Task<(string, List<UserAssignedDropDown>?)> GetAvailableReceiversOrPickersDropDown(Guid? purchaseOrderId, Guid? salesOrderId);
     }
 
     public class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
         private readonly IRoleRepository _roleRepository;
+        private readonly IPurchaseOrderRepositoy _purchaseOrderRepositoy;
+        private readonly ISalesOrderRepository _salesOrderRepository;
         private readonly EmailUtility _emailUtility;
         private readonly IMapper _mapper;
 
         public UserService(IUserRepository userRepository,
                            IRoleRepository roleRepository,
+                           IPurchaseOrderRepositoy purchaseOrderRepositoy,
+                           ISalesOrderRepository salesOrderRepository,
                            EmailUtility emailUtility,
                            IMapper mapper)
         {
             _userRepository = userRepository;
             _roleRepository = roleRepository;
+            _purchaseOrderRepositoy = purchaseOrderRepositoy;
+            _salesOrderRepository = salesOrderRepository;
             _emailUtility = emailUtility;
             _mapper = mapper;
         }
@@ -158,8 +165,12 @@ namespace MilkDistributionWarehouse.Services
             var user = await _userRepository.GetUserByIdWithAssociations(userId);
             if (user == null) return "Không tìm thấy người dùng!".ToMessageForUser();
 
-            if (user.GoodsIssueNotes.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử phiếu xuất hàng.".ToMessageForUser();
-            if (user.GoodsReceiptNoteApprovalByNavigations.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử phiếu nhập hàng.".ToMessageForUser();
+            if (user.GoodsIssueNoteCreatedByNavigations.Any()
+                || user.GoodsIssueNoteApprovalByNavigations.Any()) 
+                return "Không thể xóa do người dùng này có liên quan đến lịch sử phiếu xuất hàng.".ToMessageForUser();
+            if (user.GoodsIssueNoteCreatedByNavigations.Any() 
+                ||user.GoodsReceiptNoteApprovalByNavigations.Any()) 
+                return "Không thể xóa do người dùng này có liên quan đến lịch sử phiếu nhập hàng.".ToMessageForUser();
             if (user.PurchaseOrderCreatedByNavigations.Any() || user.PurchaseOrderApprovalByNavigations.Any()
                 || user.PurchaseOrderArrivalConfirmedByNavigations.Any() || user.PurchaseOrderAssignToNavigations.Any())
                 return "Không thể xóa do người dùng này có liên quan đến lịch sử đơn đặt hàng mua.".ToMessageForUser();
@@ -190,6 +201,49 @@ namespace MilkDistributionWarehouse.Services
 
             if (!userDropDowns.Any())
                 return ("Danh sách người dùng trống.".ToMessageForUser(), default);
+
+            return ("", userDropDowns);
+        }
+
+        public async Task<(string, List<UserAssignedDropDown>?)> GetAvailableReceiversOrPickersDropDown(Guid? purchaseOrderId, Guid? salesOrderId)
+        {
+            int? assignedUser = null;
+
+            if (purchaseOrderId != null)
+            {
+                var purchaseOrder = await _purchaseOrderRepositoy.GetPurchaseOrderByPurchaseOrderId((Guid)purchaseOrderId);
+                if (purchaseOrder == null) return ("PurchaseOrder is invalid", null);
+                assignedUser = purchaseOrder.AssignTo;
+            }
+
+            if (salesOrderId != null)
+            {
+                var salesOrder = await _salesOrderRepository.GetSalesOrderById(salesOrderId);
+                if (salesOrder == null) return ("SalesOrderId is invalid", null);
+                assignedUser = salesOrder.AssignTo;
+            }
+
+            var users = await _userRepository.GetUsers()
+                 .Include(u => u.PurchaseOrderAssignToNavigations)
+                 .Include(u => u.SalesOrderAssignToNavigations)
+                 .Where(u => u.Status == CommonStatus.Active
+                             && u.Roles.Any(r => r.RoleName == RoleNames.WarehouseStaff)
+                             && (assignedUser == null || u.UserId != assignedUser))
+                 .OrderBy(u => u.UserId)
+                 .ToListAsync();
+            if (!users.Any())
+                return ("Danh sách nhân viên kho khả dụng trống.".ToMessageForUser(), default);
+
+            var userDropDowns = users.Select(u => new UserAssignedDropDown
+            {
+                UserId = u.UserId,
+                FullName = u.FullName,
+                Phone = u.Phone,
+                PendingPurchaseOrders = u.PurchaseOrderAssignToNavigations.Where(p => p.Status == PurchaseOrderStatus.AssignedForReceiving).Count(),
+                ProcessingPurchaseOrders = u.PurchaseOrderAssignToNavigations.Where(p => p.Status == PurchaseOrderStatus.Receiving).Count(),
+                PendingSalesOrders = u.SalesOrderAssignToNavigations.Where(p => p.Status == SalesOrderStatus.AssignedForPicking).Count(),
+                ProcessingSalesOrders = u.SalesOrderAssignToNavigations.Where(p => p.Status == SalesOrderStatus.Picking).Count()
+            }).ToList();
 
             return ("", userDropDowns);
         }

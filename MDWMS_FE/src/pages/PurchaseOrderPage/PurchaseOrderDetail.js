@@ -5,7 +5,7 @@ import { Button } from '../../components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { ArrowLeft, Package, User, Calendar, CheckCircle, XCircle, Clock, Truck, CheckSquare, Trash2, Key, Building2, FileText, Hash, Shield, ShoppingCart, Users, UserCheck, UserX, TruckIcon, UserPlus, Store, UserCircle, UserCog, UserCheck2, UserX2, UserMinus, Mail, Phone, MapPin, Play } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
-import { getPurchaseOrderDetail, submitPurchaseOrder, approvePurchaseOrder, rejectPurchaseOrder, confirmGoodsReceived, assignForReceiving, startReceive } from '../../services/PurchaseOrderService';
+import { getPurchaseOrderDetail, submitPurchaseOrder, approvePurchaseOrder, rejectPurchaseOrder, confirmGoodsReceived, assignForReceiving, startReceive, reAssignForReceiving } from '../../services/PurchaseOrderService';
 import { extractErrorMessage } from '../../utils/Validation';
 import ApprovalConfirmationModal from '../../components/PurchaseOrderComponents/ApprovalConfirmationModal';
 import RejectionConfirmationModal from '../../components/PurchaseOrderComponents/RejectionConfirmationModal';
@@ -194,6 +194,11 @@ const PurchaseOrderDetail = () => {
             purchaseOrder?.status === PURCHASE_ORDER_STATUS.GoodsReceived;
     };
 
+    const canReAssignReceiving = () => {
+        return hasPermission(PERMISSIONS.PURCHASE_ORDER_REASSIGN_FOR_RECEIVING) &&
+            purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving;
+    };
+
     const canStartReceive = () => {
         return hasPermission(PERMISSIONS.PURCHASE_ORDER_START_RECEIVE) &&
             purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving;
@@ -219,8 +224,8 @@ const PurchaseOrderDetail = () => {
             );
 
             if (window.showToast) {
-                const message = purchaseOrder.status === PURCHASE_ORDER_STATUS.Rejected 
-                    ? "Nộp lại đơn hàng thành công!" 
+                const message = purchaseOrder.status === PURCHASE_ORDER_STATUS.Rejected
+                    ? "Nộp lại đơn hàng thành công!"
                     : "Nộp bản nháp thành công!";
                 window.showToast(message, "success");
             }
@@ -272,13 +277,25 @@ const PurchaseOrderDetail = () => {
     const handleAssignReceiving = async (assignTo) => {
         setAssignReceivingLoading(true);
         try {
-            await assignForReceiving(
-                purchaseOrder.purchaseOderId,
-                assignTo
-            );
+            if (purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving) {
+                await reAssignForReceiving(
+                    purchaseOrder.purchaseOderId,
+                    assignTo
+                );
+            } else {
+                await assignForReceiving(
+                    purchaseOrder.purchaseOderId,
+                    assignTo
+                );
+            }
 
             if (window.showToast) {
-                window.showToast("Giao nhiệm vụ nhận hàng thành công!", "success");
+                window.showToast(
+                    purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving
+                        ? "Giao lại nhiệm vụ nhận hàng thành công!"
+                        : "Giao nhiệm vụ nhận hàng thành công!",
+                    "success"
+                );
             }
             setShowAssignReceivingModal(false);
             const response = await getPurchaseOrderDetail(id);
@@ -287,7 +304,9 @@ const PurchaseOrderDetail = () => {
             }
         } catch (error) {
             console.error("Error assigning for receiving:", error);
-            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi giao nhiệm vụ nhận hàng";
+            const errorMessage = extractErrorMessage(error) || (purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving
+                ? "Có lỗi xảy ra khi giao lại nhiệm vụ nhận hàng"
+                : "Có lỗi xảy ra khi giao nhiệm vụ nhận hàng");
             if (window.showToast) {
                 window.showToast(errorMessage, "error");
             }
@@ -380,8 +399,7 @@ const PurchaseOrderDetail = () => {
                             <span>Quay lại</span>
                         </Button>
                         <div>
-                            <h1 className="text-2xl font-bold text-gray-900">ĐƠN NHẬP HÀNG</h1>
-                            <p className="text-gray-600">Mã đơn hàng: {purchaseOrder.purchaseOderId}</p>
+                            <h1 className="text-2xl font-bold text-gray-900">ĐƠN MUA HÀNG</h1>
                         </div>
                     </div>
                 </div>
@@ -391,7 +409,7 @@ const PurchaseOrderDetail = () => {
                         <div className="bg-white border-2 border-gray-400 rounded-lg p-6 h-full flex flex-col">
                             {/* Title */}
                             <div className="text-center mb-6">
-                                <h1 className="text-2xl font-bold text-gray-900 uppercase">ĐƠN NHẬP HÀNG</h1>
+                                <h1 className="text-2xl font-bold text-gray-900 uppercase">ĐƠN MUA HÀNG</h1>
                             </div>
                             {/* General Information */}
                             <div className="bg-gray-200 rounded-lg p-4 mb-6">
@@ -460,27 +478,28 @@ const PurchaseOrderDetail = () => {
                                             <TableHead className="w-16 text-center font-semibold">STT</TableHead>
                                             <TableHead className="font-semibold">Tên hàng hóa</TableHead>
                                             <TableHead className="font-semibold">Mã hàng</TableHead>
-                                            <TableHead className="text-center font-semibold">Đơn vị tính</TableHead>
                                             <TableHead className="text-center font-semibold">Đơn vị/thùng</TableHead>
-                                            <TableHead className="text-center font-semibold">Số lượng</TableHead>
                                             <TableHead className="text-center font-semibold">Số thùng</TableHead>
+                                            <TableHead className="text-center font-semibold">Tổng số đơn vị</TableHead>
+                                            <TableHead className="text-center font-semibold">Đơn vị</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody className="flex-1">
                                         {purchaseOrder.purchaseOrderDetails && purchaseOrder.purchaseOrderDetails.length > 0 ? (
                                             purchaseOrder.purchaseOrderDetails.map((item, index) => {
-                                                const numberOfBoxes = item.unitPerPacking > 0
-                                                    ? Math.floor(item.packageQuantity / item.unitPerPacking)
+                                                // packageQuantity là số thùng, tính số đơn vị = số thùng × đơn vị/thùng
+                                                const totalUnits = item.unitPerPacking > 0
+                                                    ? (item.packageQuantity || 0) * item.unitPerPacking
                                                     : 0;
                                                 return (
                                                     <TableRow key={item.purchaseOrderDetailId} className="border-b">
                                                         <TableCell className="text-center font-medium">{index + 1}</TableCell>
                                                         <TableCell className="font-medium">{item.goodsName}</TableCell>
                                                         <TableCell className="text-gray-600">{item.goodsCode || item.goodsId || '-'}</TableCell>
-                                                        <TableCell className="text-center text-gray-600">{item.unitMeasureName || '-'}</TableCell>
                                                         <TableCell className="text-center text-gray-600">{item.unitPerPacking || '-'}</TableCell>
                                                         <TableCell className="text-center font-semibold">{item.packageQuantity || 0}</TableCell>
-                                                        <TableCell className="text-center font-semibold">{numberOfBoxes}</TableCell>
+                                                        <TableCell className="text-center font-semibold">{totalUnits}</TableCell>
+                                                        <TableCell className="text-center text-gray-600">{item.unitMeasureName || '-'}</TableCell>
                                                     </TableRow>
                                                 );
                                             })
@@ -494,23 +513,38 @@ const PurchaseOrderDetail = () => {
                                         {/* Total Row */}
                                         {purchaseOrder.purchaseOrderDetails && purchaseOrder.purchaseOrderDetails.length > 0 && (
                                             <TableRow className="bg-gray-100 font-bold border-t border-gray-300">
-                                                <TableCell colSpan={5} className="text-right pr-2">Tổng:</TableCell>
+                                                <TableCell colSpan={4} className="text-right pr-2">Tổng:</TableCell>
                                                 <TableCell className="text-center font-bold">
                                                     {purchaseOrder.purchaseOrderDetails.reduce((sum, item) => sum + (item.packageQuantity || 0), 0)}
                                                 </TableCell>
                                                 <TableCell className="text-center font-bold">
                                                     {purchaseOrder.purchaseOrderDetails.reduce((sum, item) => {
-                                                        const numberOfBoxes = item.unitPerPacking > 0
-                                                            ? Math.floor(item.packageQuantity / item.unitPerPacking)
+                                                        const totalUnits = item.unitPerPacking > 0
+                                                            ? (item.packageQuantity || 0) * item.unitPerPacking
                                                             : 0;
-                                                        return sum + numberOfBoxes;
+                                                        return sum + totalUnits;
                                                     }, 0)}
                                                 </TableCell>
+                                                <TableCell className="text-center">-</TableCell>
                                             </TableRow>
                                         )}
                                     </TableBody>
                                 </Table>
                             </div>
+                            {/* Ghi chú */}
+                            {(purchaseOrder.note || (canSubmitDraft() || canResubmit())) && (
+                                <div className="bg-gray-200 rounded-lg p-4 mt-6">
+                                    <div className="flex items-center space-x-2 mb-2">
+                                        <FileText className="h-4 w-4 text-gray-600" />
+                                        <h3 className="text-sm font-semibold text-gray-700">Ghi chú:</h3>
+                                    </div>
+                                    <div className="bg-white rounded-lg p-3 border border-gray-300 min-h-[60px]">
+                                        <p className="text-sm text-gray-900 whitespace-pre-wrap">
+                                            {purchaseOrder.note || 'Không có ghi chú'}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
                             {/* Action Buttons at bottom of card */}
                             <div className="mt-6 flex justify-center space-x-4">
                                 {canSubmitDraft() && (
@@ -562,13 +596,13 @@ const PurchaseOrderDetail = () => {
                                         Xác nhận hàng đã nhận
                                     </Button>
                                 )}
-                                {canAssignReceiving() && (
+                                {(canAssignReceiving() || canReAssignReceiving()) && (
                                     <Button
                                         onClick={() => setShowAssignReceivingModal(true)}
                                         className="bg-green-600 hover:bg-green-700 text-white h-[38px] px-8"
                                     >
                                         <UserPlus className="h-4 w-4 mr-2" />
-                                        Giao cho nhân viên
+                                        {canReAssignReceiving() ? 'Giao lại cho nhân viên' : 'Giao cho nhân viên'}
                                     </Button>
                                 )}
                                 {canStartReceive() && (

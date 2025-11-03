@@ -48,6 +48,19 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<PalletResponseDto>.ToResultOk(created);
         }
 
+        // New endpoint: create one or many pallets depending on list provided
+        [HttpPost("CreateBulk")]
+        public async Task<IActionResult> CreatePalletsBulk([FromBody] PalletBulkCreate create)
+        {
+            if (!ModelState.IsValid)
+                return ApiResponse<string>.ToResultError("Dữ liệu không hợp lệ.");
+            int? userId = User.GetUserId();
+            var (msg, result) = await _palletService.CreatePalletBulk(create, userId);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<PalletBulkResponse>.ToResultOk(result);
+        }
+
         [HttpPut("Update/{id}")]
         public async Task<IActionResult> UpdatePallet(string id, [FromBody] PalletRequestDto dto)
         {
@@ -75,6 +88,15 @@ namespace MilkDistributionWarehouse.Controllers
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<List<PalletActiveDto>>.ToResultOk(pallets);
+        }
+
+        [HttpGet("GetPalletByGRNID")]
+        public async Task<IActionResult> GetPalletByGRNID(Guid grnid)
+        {
+            var (msg, pallets) = await _palletService.GetPalletByGRNID(grnid);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<List<PalletResponseDto>>.ToResultOk(pallets);
         }
 
         [HttpPut("UpdateStatus")]

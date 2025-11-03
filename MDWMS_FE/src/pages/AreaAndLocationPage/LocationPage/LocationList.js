@@ -583,7 +583,7 @@ const LocationList = () => {
             </h2>
             <div className="flex justify-center w-full mt-[2px]">
                 <Barcode
-                    value={`${location.areaCode}-${location.locationCode}`}
+                    value={`${location.locationCode}`}
                     height={100}
                     width={3}
                     margin={0}
@@ -622,7 +622,7 @@ const LocationList = () => {
                             </h2>
                             <div className="flex justify-center w-full mt-[2px]">
                                 <Barcode
-                                    value={`${location.areaCode}-${location.locationCode}`}
+                                    value={`${location.locationCode}`}
                                     height={100}
                                     width={3}
                                     margin={0}

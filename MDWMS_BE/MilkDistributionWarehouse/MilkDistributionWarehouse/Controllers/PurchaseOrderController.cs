@@ -141,6 +141,16 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<PurchaseOrderAssignedForReceivingDto>.ToResultOk(purchaseOrderUpdate);
         }
 
+        [HttpPut("ReAssignForReceiving")]
+        [Authorize(Roles = "Warehouse Manager")]
+        public async Task<IActionResult> ReAssignForReceivingPurchaseOrder([FromBody] PurchaseOrderReAssignForReceivingDto update)
+        {
+            var (msg, purchaseOrderUpdate) = await _purchaseOrderService.UpdateStatusPurchaseOrder(update, User.GetUserId());
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<PurchaseOrderReAssignForReceivingDto>.ToResultOk(purchaseOrderUpdate);
+        }
+
         [HttpPut("StartReceive")]
         [Authorize(Roles = "Warehouse Staff")]
         public async Task<IActionResult> StartReceivingPurchaseOrder([FromBody] PurchaseOrderReceivingDto update)
@@ -149,6 +159,16 @@ namespace MilkDistributionWarehouse.Controllers
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<PurchaseOrderReceivingDto>.ToResultOk(purchaseOrderUpdate);
+        }
+
+        [HttpPut("Complete")]
+        [Authorize(Roles = "Warehouse Staff")]
+        public async Task<IActionResult> CompletePurchaseOrder([FromBody] PurchaseOrderCompletedDto update)
+        {
+            var (msg, purchaseOrderUpdate) = await _purchaseOrderService.UpdateStatusPurchaseOrder(update, User.GetUserId());
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<PurchaseOrderCompletedDto>.ToResultOk(purchaseOrderUpdate);
         }
 
         [HttpDelete("DeletePurchaseOrder/{purchaseOrderId}")]

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Search,
     Filter,
@@ -118,6 +118,18 @@ export default function SaleOrderFilterToggle({
 
     const handleToggle = () => setShowSearchFilter(!showSearchFilter);
 
+    // Function to close all dropdowns except the one being opened
+    const closeAllDropdownsExcept = (dropdownToKeep) => {
+        if (dropdownToKeep !== 'status' && setShowStatusFilter) setShowStatusFilter(false);
+        if (dropdownToKeep !== 'retailer' && setShowRetailerFilter) setShowRetailerFilter(false);
+        if (dropdownToKeep !== 'approver' && setShowApproverFilter) setShowApproverFilter(false);
+        if (dropdownToKeep !== 'seller' && setShowSellerFilter) setShowSellerFilter(false);
+        if (dropdownToKeep !== 'confirmer' && setShowConfirmerFilter) setShowConfirmerFilter(false);
+        if (dropdownToKeep !== 'assignee' && setShowAssigneeFilter) setShowAssigneeFilter(false);
+        if (dropdownToKeep !== 'estimatedDateRange' && setShowEstimatedDateRangeFilter) setShowEstimatedDateRangeFilter(false);
+        if (dropdownToKeep !== 'pageSize' && setShowPageSizeFilter) setShowPageSizeFilter(false);
+    };
+
     const handleClearAll = () => {
         setShowStatusFilter(false);
         setShowRetailerFilter(false);
@@ -142,11 +154,46 @@ export default function SaleOrderFilterToggle({
         searchQuery ||
         statusFilter ||
         retailerFilter ||
+        approverFilter ||
         sellerFilter ||
         confirmerFilter ||
         assigneeFilter ||
         estimatedDateRangeFilter?.fromEstimatedDate ||
         estimatedDateRangeFilter?.toEstimatedDate;
+
+    // Close dropdowns on outside click
+    useEffect(() => {
+        const handleDocumentClick = (e) => {
+            const target = e.target;
+            // If click is inside any dropdown container, do nothing
+            const isInsideAnyDropdown = target.closest?.(
+                '.status-filter-dropdown, .retailer-filter-dropdown, .approver-filter-dropdown, .seller-filter-dropdown, .confirmer-filter-dropdown, .assignee-filter-dropdown, .estimated-date-range-filter-dropdown, .page-size-filter-dropdown'
+            );
+            if (isInsideAnyDropdown) return;
+
+            // Otherwise close all dropdowns
+            if (setShowStatusFilter) setShowStatusFilter(false);
+            if (setShowRetailerFilter) setShowRetailerFilter(false);
+            if (setShowApproverFilter) setShowApproverFilter(false);
+            if (setShowSellerFilter) setShowSellerFilter(false);
+            if (setShowConfirmerFilter) setShowConfirmerFilter(false);
+            if (setShowAssigneeFilter) setShowAssigneeFilter(false);
+            if (setShowEstimatedDateRangeFilter) setShowEstimatedDateRangeFilter(false);
+            if (setShowPageSizeFilter) setShowPageSizeFilter(false);
+        };
+
+        document.addEventListener('mousedown', handleDocumentClick);
+        return () => document.removeEventListener('mousedown', handleDocumentClick);
+    }, [
+        setShowStatusFilter,
+        setShowRetailerFilter,
+        setShowApproverFilter,
+        setShowSellerFilter,
+        setShowConfirmerFilter,
+        setShowAssigneeFilter,
+        setShowEstimatedDateRangeFilter,
+        setShowPageSizeFilter,
+    ]);
 
     return (
         <>
@@ -198,7 +245,10 @@ export default function SaleOrderFilterToggle({
                             {showPageSizeButton && (
                                 <div className="relative page-size-filter-dropdown">
                                     <button
-                                        onClick={() => setShowPageSizeFilter(!showPageSizeFilter)}
+                                        onClick={() => {
+                                            closeAllDropdownsExcept('pageSize');
+                                            setShowPageSizeFilter(!showPageSizeFilter);
+                                        }}
                                         className="flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706] transition-colors bg-white text-slate-700"
                                     >
                                         <span className="text-sm font-medium">
@@ -257,7 +307,10 @@ export default function SaleOrderFilterToggle({
                                     {/* Status Filter */}
                                     <div className="relative status-filter-dropdown flex-1 min-w-[140px]">
                                         <button
-                                            onClick={() => setShowStatusFilter(!showStatusFilter)}
+                                            onClick={() => {
+                                                closeAllDropdownsExcept('status');
+                                                setShowStatusFilter(!showStatusFilter);
+                                            }}
                                             className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors w-full
                                             focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
                                             ${statusFilter
@@ -303,9 +356,10 @@ export default function SaleOrderFilterToggle({
                                     {showRetailer && retailers.length > 0 && (
                                         <div className="relative retailer-filter-dropdown flex-1 min-w-[160px]">
                                             <button
-                                                onClick={() =>
-                                                    setShowRetailerFilter(!showRetailerFilter)
-                                                }
+                                                onClick={() => {
+                                                    closeAllDropdownsExcept('retailer');
+                                                    setShowRetailerFilter(!showRetailerFilter);
+                                                }}
                                                 className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors w-full
                                                 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
                                                 ${retailerFilter
@@ -319,8 +373,8 @@ export default function SaleOrderFilterToggle({
                                                         ? retailers.find(
                                                             (r) =>
                                                                 r.retailerId.toString() === retailerFilter
-                                                        )?.retailerName || "Chọn đại lý"
-                                                        : "Tất cả đại lý"}
+                                                        )?.retailerName || "Chọn nhà bán lẻ"
+                                                        : "Tất cả nhà bán lẻ"}
                                                 </span>
                                                 <ChevronDown className="h-4 w-4 flex-shrink-0" />
                                             </button>
@@ -335,7 +389,7 @@ export default function SaleOrderFilterToggle({
                                                             }}
                                                             className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 text-slate-700"
                                                         >
-                                                            Tất cả đại lý
+                                                            Tất cả nhà bán lẻ
                                                         </button>
                                                         {retailers.map((retailer) => (
                                                             <button
@@ -369,7 +423,10 @@ export default function SaleOrderFilterToggle({
                                     {showApprover && approvers.length > 0 && (
                                         <div className="relative approver-filter-dropdown flex-1 min-w-[150px]">
                                             <button
-                                                onClick={() => setShowApproverFilter(!showApproverFilter)}
+                                                onClick={() => {
+                                                    closeAllDropdownsExcept('approver');
+                                                    setShowApproverFilter(!showApproverFilter);
+                                                }}
                                                 className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors w-full
                                                 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
                                                 ${approverFilter
@@ -425,7 +482,10 @@ export default function SaleOrderFilterToggle({
                                     {showSeller && sellers.length > 0 && (
                                         <div className="relative seller-filter-dropdown flex-1 min-w-[150px]">
                                             <button
-                                                onClick={() => setShowSellerFilter(!showSellerFilter)}
+                                                onClick={() => {
+                                                    closeAllDropdownsExcept('seller');
+                                                    setShowSellerFilter(!showSellerFilter);
+                                                }}
                                                 className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors w-full
                                                 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
                                                 ${sellerFilter
@@ -481,9 +541,10 @@ export default function SaleOrderFilterToggle({
                                     {showConfirmer && confirmers.length > 0 && (
                                         <div className="relative confirmer-filter-dropdown flex-1 min-w-[150px]">
                                             <button
-                                                onClick={() =>
-                                                    setShowConfirmerFilter(!showConfirmerFilter)
-                                                }
+                                                onClick={() => {
+                                                    closeAllDropdownsExcept('confirmer');
+                                                    setShowConfirmerFilter(!showConfirmerFilter);
+                                                }}
                                                 className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors w-full
                                                 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
                                                 ${confirmerFilter
@@ -542,7 +603,10 @@ export default function SaleOrderFilterToggle({
                                     {showAssignee && assignees.length > 0 && (
                                         <div className="relative assignee-filter-dropdown flex-1 min-w-[160px]">
                                             <button
-                                                onClick={() => setShowAssigneeFilter(!showAssigneeFilter)}
+                                                onClick={() => {
+                                                    closeAllDropdownsExcept('assignee');
+                                                    setShowAssigneeFilter(!showAssigneeFilter);
+                                                }}
                                                 className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors w-full
                                                 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
                                                 ${assigneeFilter
@@ -598,7 +662,10 @@ export default function SaleOrderFilterToggle({
                                     {/* Estimated Date Range Filter */}
                                     <div className="relative estimated-date-range-filter-dropdown flex-1 min-w-[160px]">
                                         <button
-                                            onClick={() => setShowEstimatedDateRangeFilter(!showEstimatedDateRangeFilter)}
+                                            onClick={() => {
+                                                closeAllDropdownsExcept('estimatedDateRange');
+                                                setShowEstimatedDateRangeFilter(!showEstimatedDateRangeFilter);
+                                            }}
                                             className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors w-full
                                             focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
                                             ${estimatedDateRangeFilter?.fromEstimatedDate || estimatedDateRangeFilter?.toEstimatedDate ? 'bg-[#d97706] text-white hover:bg-[#d97706]' : 'bg-white text-slate-700 hover:bg-slate-50'}`}

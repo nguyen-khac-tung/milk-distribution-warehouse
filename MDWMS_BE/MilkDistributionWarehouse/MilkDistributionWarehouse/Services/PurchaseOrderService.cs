@@ -32,8 +32,13 @@ namespace MilkDistributionWarehouse.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly IGoodsReceiptNoteService _goodsReceiptNoteService;
+        private readonly IUserRepository _userRepository;
+        private readonly IPalletRepository _palletRepository;
+        private readonly ISalesOrderRepository _saleOrderRepository;
         public PurchaseOrderService(IPurchaseOrderRepositoy purchaseOrderRepository, IMapper mapper, IPurchaseOrderDetailService purchaseOrderDetailService,
-            IPurchaseOrderDetailRepository purchaseOrderDetailRepository, IUnitOfWork unitOfWork, IGoodsReceiptNoteService goodsReceiptNoteService)
+            IPurchaseOrderDetailRepository purchaseOrderDetailRepository, IUnitOfWork unitOfWork, IGoodsReceiptNoteService goodsReceiptNoteService,
+            IUserRepository userRepository, IPalletRepository palletRepository,
+            ISalesOrderRepository salesOrderRepository)
         {
             _purchaseOrderRepository = purchaseOrderRepository;
             _mapper = mapper;
@@ -41,6 +46,9 @@ namespace MilkDistributionWarehouse.Services
             _purchaseOrderDetailRepository = purchaseOrderDetailRepository;
             _unitOfWork = unitOfWork;
             _goodsReceiptNoteService = goodsReceiptNoteService;
+            _userRepository = userRepository;
+            _palletRepository = palletRepository;
+            _saleOrderRepository = salesOrderRepository;
         }
 
         private async Task<(string, PageResult<TDto>?)> GetPurchaseOrdersAsync<TDto>(PagedRequest request, int? userId, string? userRole, params int[] excludedStatuses)
@@ -90,9 +98,7 @@ namespace MilkDistributionWarehouse.Services
         {
             var excludedStatus = new int[]
             {
-                PurchaseOrderStatus.Draft,
-                PurchaseOrderStatus.PendingApproval,
-                PurchaseOrderStatus.Rejected,
+                PurchaseOrderStatus.Draft
             };
 
             var (msg, item) = await GetPurchaseOrdersAsync<PurchaseOrderDtoSaleRepresentative>(request, userId, RoleNames.SalesRepresentative, excludedStatus);
@@ -252,9 +258,7 @@ namespace MilkDistributionWarehouse.Services
                 if (purchaseOrderExist.CreatedBy != userId)
                     throw new Exception("No PO update permission.");
 
-                var purchaseOrderDetails = await _purchaseOrderDetailRepository.GetPurchaseOrderDetail()
-                    .Where(pod => pod.PurchaseOderId == update.PurchaseOderId)
-                    .ToListAsync();
+                var purchaseOrderDetails = await _purchaseOrderDetailRepository.GetPurchaseOrderDetailsByPurchaseOrderId(update.PurchaseOderId);
 
                 if (!purchaseOrderDetails.Any())
                     throw new Exception("List purchase order detail is empty.");
@@ -312,9 +316,9 @@ namespace MilkDistributionWarehouse.Services
                         throw new Exception("Chỉ được nộp đơn khi đơn hàng ở trạng thái Nháp hoặc Bị từ chối.".ToMessageForUser());
 
                     if (purchaseOrder.CreatedBy != userId)
-                        throw new Exception ("Current User has no permission to update.");
+                        throw new Exception("Current User has no permission to update.");
 
-                    var msg = await CheckPendingPurchaseOrderValidation(purchaseOrder);
+                    var msg = await CheckPendingPurchaseOrderValidation(purchaseOrder, userId);
 
                     if (!string.IsNullOrEmpty(msg)) return (msg, default);
 
@@ -363,28 +367,58 @@ namespace MilkDistributionWarehouse.Services
                     if (currentStatus != PurchaseOrderStatus.GoodsReceived)
                         throw new Exception("Chỉ được phân công đơn hàng khi đơn hàng ở trạng thái đơn hàng Đã xác nhận đến.".ToMessageForUser());
 
-                    var msg = await CheckAssignedForReceivingPO(assignedForReceivingDto.AssignTo);
-                    if (!string.IsNullOrEmpty(msg))
-                        throw new Exception(msg.ToMessageForUser());
+                    //var msg = await CheckAssignedForReceivingPO(assignedForReceivingDto.AssignTo, purchaseOrder);
+                    //if (!string.IsNullOrEmpty(msg))
+                    //    throw new Exception(msg.ToMessageForUser());
 
                     purchaseOrder.Status = PurchaseOrderStatus.AssignedForReceiving;
                     purchaseOrder.AssignTo = assignedForReceivingDto.AssignTo;
                     purchaseOrder.AssignedAt = DateTime.Now;
                 }
 
-                if(purchaseOrdersUpdateStatus is PurchaseOrderReceivingDto)
+                if (purchaseOrdersUpdateStatus is PurchaseOrderReAssignForReceivingDto reAssignForReceivingDto)
                 {
                     if (currentStatus != PurchaseOrderStatus.AssignedForReceiving)
-                        throw new Exception ("Chỉ được tiếp nhận đơn hàng khi đơn hàng ở trạng thái Đã phân công.".ToMessageForUser());
+                        throw new Exception("Chỉ được phân công lại đơn hàng khi đơn hàng ở trạng thái đơn hàng Đã phân công.".ToMessageForUser());
+
+                    if (purchaseOrder.AssignTo == reAssignForReceivingDto.ReAssignTo)
+                        throw new Exception("Phải phân công cho người khác khi phân công lại.".ToMessageForUser());
+
+                    //var msg = await CheckAssignedForReceivingPO(reAssignForReceivingDto.ReAssignTo, purchaseOrder);
+                    //if (!string.IsNullOrEmpty(msg))
+                    //    throw new Exception(msg.ToMessageForUser());
+
+                    purchaseOrder.AssignTo = reAssignForReceivingDto.ReAssignTo;
+                    purchaseOrder.AssignedAt = DateTime.Now;
+                }
+
+                if (purchaseOrdersUpdateStatus is PurchaseOrderReceivingDto)
+                {
+                    if (currentStatus != PurchaseOrderStatus.AssignedForReceiving)
+                        throw new Exception("Chỉ được tiếp nhận đơn hàng khi đơn hàng ở trạng thái Đã phân công.".ToMessageForUser());
 
                     purchaseOrder.Status = PurchaseOrderStatus.Receiving;
+                    purchaseOrder.UpdatedAt = DateTime.Now;
 
                     var (msg, grnCreate) = await _goodsReceiptNoteService.CreateGoodsReceiptNote(
                         new GoodsReceiptNoteCreate { PurchaseOderId = purchaseOrder.PurchaseOderId }, userId);
-                    
+
                     if (!string.IsNullOrEmpty(msg))
                         throw new Exception(msg);
                 }
+
+                if (purchaseOrdersUpdateStatus is PurchaseOrderCompletedDto)
+                {
+                    if (currentStatus != PurchaseOrderStatus.Inspected)
+                        throw new Exception("Chỉ được Hoàn thành đơn hàng khi đơn hàng ở trạng thái Đã kiểm tra.".ToMessageForUser());
+
+                    string msg = await CheckCompletedPO(purchaseOrder.GoodsReceiptNotes.FirstOrDefault(g => g.PurchaseOderId == purchaseOrder.PurchaseOderId));
+                    if (!string.IsNullOrEmpty(msg))
+                        throw new Exception(msg.ToMessageForUser());
+
+                    purchaseOrder.Status = PurchaseOrderStatus.Completed;
+                    purchaseOrder.UpdatedAt = DateTime.Now;
+                }    
 
                 purchaseOrder.UpdatedAt = DateTime.Now;
                 await _purchaseOrderRepository.UpdatePurchaseOrder(purchaseOrder);
@@ -417,11 +451,9 @@ namespace MilkDistributionWarehouse.Services
                     throw new Exception("No PO delete permission.");
 
                 if (purchaseOrderExist.Status != PurchaseOrderStatus.Draft && purchaseOrderExist.Status != PurchaseOrderStatus.Rejected)
-                    throw new Exception("Chỉ được xoá khi đơn hàng ở trạng thái Nháp hoặc Bị từ chối.");
+                    throw new Exception("Chỉ được xoá khi đơn hàng ở trạng thái Nháp.");
 
-                var podExist = await _purchaseOrderDetailRepository.GetPurchaseOrderDetail()
-                    .Where(pod => pod.PurchaseOderId == purchaseOrderId)
-                    .ToListAsync();
+                var podExist = await _purchaseOrderDetailRepository.GetPurchaseOrderDetailsByPurchaseOrderId(purchaseOrderId);
 
                 if (!podExist.Any())
                     throw new Exception("List purchase order detail is null.");
@@ -446,48 +478,96 @@ namespace MilkDistributionWarehouse.Services
                 return ($"{ex.Message}".ToMessageForUser(), default);
             }
         }
-        private async Task<string> CheckPendingPurchaseOrderValidation(PurchaseOrder purchaseOrder)
+        private async Task<string> CheckPendingPurchaseOrderValidation(PurchaseOrder purchaseOrder, int? userId)
         {
-            var purchaseOrders = _purchaseOrderRepository.GetPurchaseOrder().Where(po => po.PurchaseOderId != purchaseOrder.PurchaseOderId);
+            var query = _purchaseOrderRepository.GetPurchaseOrder()
+                .Where(po => po.PurchaseOderId != purchaseOrder.PurchaseOderId
+                          && po.SupplierId == purchaseOrder.SupplierId);
 
-            var hasPODraft = await purchaseOrders.AnyAsync(po => po.Status == PurchaseOrderStatus.PendingApproval && po.SupplierId == purchaseOrder.SupplierId);
+            var hasPOPendingApproval = await query
+                .AnyAsync(po => po.Status == PurchaseOrderStatus.PendingApproval
+                             && po.CreatedBy == userId);
 
-            if (hasPODraft)
-                return "Không thể gửi duyệt. Nhà cung cấp này đã có một đơn mua khác đang chờ duyệt.".ToMessageForUser();
+            if (hasPOPendingApproval)
+                return "Không thể gửi duyệt. Nhà cung cấp này đã có một đơn mua khác đang chờ duyệt."
+                    .ToMessageForUser();
 
-            var approvalPurchaseOrderQuery = await purchaseOrders.Where(po => po.Status == PurchaseOrderStatus.Approved
-                                    && po.SupplierId == purchaseOrder.SupplierId
-                                    && po.PurchaseOderDetails.Count == purchaseOrder.PurchaseOderDetails.Count).ToListAsync();
+            var approvalPurchaseOrders = await query
+                .Where(po => po.Status == PurchaseOrderStatus.PendingApproval
+                          || po.Status == PurchaseOrderStatus.Approved)
+                .Include(po => po.PurchaseOderDetails)
+                .ToListAsync();
 
-            var hasApprovalPurchaseOrder = approvalPurchaseOrderQuery.Any(po =>
-                                            AreDetailListsPOEqual(po.PurchaseOderDetails, purchaseOrder.PurchaseOderDetails));
+            var hasApprovalPurchaseOrder = approvalPurchaseOrders.Any(po =>
+                AreDetailListsPOEqual(po.PurchaseOderDetails, purchaseOrder.PurchaseOderDetails));
 
             if (hasApprovalPurchaseOrder)
-                return "Không thể gửi duyệt vì đơn mua này trùng lặp hoàn toàn với một đơn mua đã được duyệt trước đó.".ToMessageForUser();
+                return "Không thể gửi duyệt vì đơn mua này trùng lặp hoàn toàn với một đơn mua Đang chờ duyệt/Đã được duyệt trước đó."
+                    .ToMessageForUser();
 
             return "";
         }
 
-        private bool AreDetailListsPOEqual(ICollection<PurchaseOderDetail> purchaseOderDetails1, ICollection<PurchaseOderDetail> purchaseOderDetails2)
+        private bool AreDetailListsPOEqual(ICollection<PurchaseOderDetail> d1, ICollection<PurchaseOderDetail> d2)
         {
-            if (purchaseOderDetails1.Count != purchaseOderDetails2.Count) return false;
+            if (d1 == null || d2 == null) return false;
+            if (d1.Count != d2.Count) return false;
 
-            var dicPOls1 = purchaseOderDetails1.GroupBy(d => (d.GoodsId, d.GoodsPackingId, d.PackageQuantity))
-                .ToDictionary(g => g.Key, g => g.Count());
+            var dic1 = d1.GroupBy(d => (d.GoodsId, d.GoodsPackingId, d.PackageQuantity))
+                         .ToDictionary(g => g.Key, g => g.Count());
 
-            var dicPOls2 = purchaseOderDetails2.GroupBy(d => (d.GoodsId, d.GoodsPackingId, d.PackageQuantity))
-                .ToDictionary(g => g.Key, g => g.Count());
+            var dic2 = d2.GroupBy(d => (d.GoodsId, d.GoodsPackingId, d.PackageQuantity))
+                         .ToDictionary(g => g.Key, g => g.Count());
 
-            if (dicPOls1.Count != dicPOls2.Count) return false;
-
-            return dicPOls1.All(kvp => dicPOls2.TryGetValue(kvp.Key, out var count) && count == kvp.Value);
+            return dic1.Count == dic2.Count &&
+                   dic1.All(kvp => dic2.TryGetValue(kvp.Key, out var c) && c == kvp.Value);
         }
 
-        private async Task<string> CheckAssignedForReceivingPO(int assignTo)
+
+        private async Task<string> CheckAssignedForReceivingPO(int assignTo, PurchaseOrder purchaseOrder)
         {
-            var hasUserAssignedToOtherReceivingPOAsync = await _purchaseOrderRepository.HasUserAssignedToOtherReceivingPOAsync(assignTo);
-            if (hasUserAssignedToOtherReceivingPOAsync)
-                return "Không theo phân công cho nhân viên. Nhân viên này đã được phân công cho đơn hàng khác.";
+            if (assignTo <= 0)
+                return "Vui lòng chọn nhân viên kho để phân công.";
+
+            if (assignTo == purchaseOrder.AssignTo)
+                return "Vui lòng chọn nhân viên kho khác nhân viên kho hiện tại.";
+
+            var isWarehouseStaff = await _userRepository.GetUsers()
+                .AnyAsync(u => u.UserId == assignTo 
+                && u.Status == CommonStatus.Active 
+                && u.Roles.Any(r => r.RoleName.Equals("Warehouse Staff")));
+
+            if (!isWarehouseStaff)
+                return "Nhân viên được phân công phải là nhân viên kho và đang hoạt động.";
+
+            var isBusyPurchaseOrder = await _purchaseOrderRepository.GetPurchaseOrder()
+                    .AnyAsync(po => po.AssignTo == assignTo
+                    && (po.Status == PurchaseOrderStatus.AssignedForReceiving 
+                    || po.Status == PurchaseOrderStatus.Receiving 
+                    || po.Status == PurchaseOrderStatus.Inspected)
+                    && po.PurchaseOderId != purchaseOrder.PurchaseOderId);
+
+            var today = DateOnly.FromDateTime(DateTime.Now);
+
+            var isBusySaleOrder = await _saleOrderRepository.GetAllSalesOrders()
+                .AnyAsync(so => so.AssignTo == assignTo 
+                && so.EstimatedTimeDeparture == today
+                && (so.Status == SalesOrderStatus.AssignedForPicking
+                || so.Status == SalesOrderStatus.Picking));
+
+            if (isBusyPurchaseOrder || isBusySaleOrder)
+                return "Nhân viên này đã được phân công cho đơn hàng khác.";
+
+            return "";
+        }
+        private async Task<string> CheckCompletedPO(GoodsReceiptNote grn)
+        {
+            if (grn.Status != GoodsReceiptNoteStatus.Completed)
+                return "Không thể hoàn thành đơn mua hàng. Phiếu nhập kho chưa được hoàn thành.";
+
+            var isAnyDiffActivePallet = await _palletRepository.IsAnyDiffActivePalletByGRNId(grn.GoodsReceiptNoteId);
+            if (isAnyDiffActivePallet)
+                return "Không thể hoàn thành đơn mua hàng. Hàng hoá chưa được sắp xếp vào pallet.";
 
             return "";
         }
