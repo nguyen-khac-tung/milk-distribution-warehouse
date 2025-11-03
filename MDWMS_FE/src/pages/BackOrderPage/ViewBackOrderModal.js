@@ -156,18 +156,23 @@ export function BackOrderDetail({ backOrder, onClose }) {
                     <InfoRow
                       icon={<ComponentIcon name="box" size={20} color="#6b7280" />}
                       label="Số thùng"
-                      value={backOrderData?.packageQuantity || 'N/A'}
+                      value={backOrderData?.packageQuantity ? `${backOrderData.packageQuantity} thùng` : 'N/A'}
                     />
                     <InfoRow
                       icon={<ComponentIcon name="layers" size={20} color="#6b7280" />}
-                      label="Số đơn vị / thùng"
-                      value={backOrderData?.unitPerPackage || 'N/A'}
+                      label="Quy cách đóng gói"
+                      value={backOrderData?.unitPerPackage ? `${backOrderData.unitPerPackage}${backOrderData?.unitMeasureName ? ' ' + backOrderData.unitMeasureName : ''}/thùng` : 'N/A'}
+                    />
+                    <InfoRow
+                      icon={<ComponentIcon name="ruler" size={20} color="#6b7280" />}
+                      label="Đơn vị"
+                      value={backOrderData?.unitMeasureName || 'N/A'}
                     />
                     <div className="pt-2 border-t border-gray-200">
                       <InfoRow
                         icon={<ComponentIcon name="calculator" size={20} color="#10b981" />}
                         label="Tổng số lượng"
-                        value={totalQuantity > 0 ? totalQuantity.toLocaleString('vi-VN') : 'N/A'}
+                        value={totalQuantity > 0 ? `${totalQuantity.toLocaleString('vi-VN')}${backOrderData?.unitMeasureName ? ' ' + backOrderData.unitMeasureName : ''}` : 'N/A'}
                         isTotal={true}
                       />
                     </div>
