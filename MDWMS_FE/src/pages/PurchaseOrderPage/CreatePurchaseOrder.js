@@ -180,11 +180,33 @@ export default function CreatePurchaseOrder({
         }
     }
     const handleInputChange = (field, value) => {
+        // Lấy nhà cung cấp cũ để so sánh
+        const oldSupplierName = formData.supplierName;
+        
         setFormData(prev => ({ ...prev, [field]: value }));
-        if (field === "supplierName" && value) {
-            const selectedSupplier = suppliers.find(supplier => supplier.companyName === value);
-            if (selectedSupplier) {
-                loadGoodsBySupplier(selectedSupplier.supplierId);
+        
+        if (field === "supplierName") {
+            if (value) {
+                const selectedSupplier = suppliers.find(supplier => supplier.companyName === value);
+                if (selectedSupplier) {
+                    // Nếu đổi nhà cung cấp (không phải lần đầu chọn), reset items và goodsPackingsMap
+                    if (oldSupplierName && oldSupplierName !== value) {
+                        // Reset items về mặc định (1 item trống)
+                        setItems([{ id: Date.now(), goodsName: "", quantity: "", goodsPackingId: "" }]);
+                        // Clear goodsPackingsMap
+                        setGoodsPackingsMap({});
+                        // Clear validation errors
+                        setFieldErrors({});
+                    }
+                    // Load lại danh sách hàng hóa từ nhà cung cấp mới
+                    loadGoodsBySupplier(selectedSupplier.supplierId);
+                }
+            } else {
+                // Nếu xóa nhà cung cấp, reset tất cả
+                setGoods([]);
+                setItems([{ id: Date.now(), goodsName: "", quantity: "", goodsPackingId: "" }]);
+                setGoodsPackingsMap({});
+                setFieldErrors({});
             }
         }
     }
