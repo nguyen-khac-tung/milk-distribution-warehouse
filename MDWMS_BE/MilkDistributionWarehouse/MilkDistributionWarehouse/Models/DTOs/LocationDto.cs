@@ -33,6 +33,29 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public DateTime? UpdateAt { get; set; }
         }
 
+        public class LocationSuggestDto
+        {
+            public int LocationId { get; set; }
+
+            public int AreaId { get; set; }
+
+            public string AreaName { get; set; }
+
+            public string AreaCode { get; set; }
+
+            public string LocationCode { get; set; }
+
+            public string Rack { get; set; }
+
+            public int Row { get; set; }
+
+            public int Column { get; set; }
+
+            public bool IsAvailable { get; set; }
+
+            public int Status { get; set; }
+        }
+
         public class LocationActiveDto
         {
             public int LocationId { get; set; }

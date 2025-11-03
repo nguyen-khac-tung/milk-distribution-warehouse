@@ -589,6 +589,9 @@ export default function PalletList() {
                                         <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-16">
                                             STT
                                         </TableHead>
+                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left max-w-[150px]">
+                                            Mã Pallet
+                                        </TableHead>
                                         <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                                             <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("batchCode")}>
                                                 <span>Mã lô hàng</span>
@@ -642,6 +645,12 @@ export default function PalletList() {
                                                 )}
                                                 <TableCell className="px-6 py-4 text-slate-600 font-medium">
                                                     {index + 1}
+                                                </TableCell>
+                                                <TableCell 
+                                                    className="px-6 py-4 text-slate-700 font-medium max-w-[150px] truncate" 
+                                                    title={pallet?.palletId || ''}
+                                                >
+                                                    {pallet?.palletId || ''}
                                                 </TableCell>
                                                 <TableCell className="px-6 py-4 text-slate-700 font-medium">{pallet?.batchCode || ''}</TableCell>
                                                 <TableCell className="px-6 py-4 text-slate-700">{pallet?.locationCode || ''}</TableCell>
@@ -721,7 +730,7 @@ export default function PalletList() {
                                             actionText="Xóa bộ lọc"
                                             onAction={clearAllFilters}
                                             showAction={!!(searchQuery || statusFilter || creatorFilter)}
-                                            colSpan={hasPrintPermission ? 9 : 8}
+                                            colSpan={hasPrintPermission ? 10 : 9}
                                         />
                                     )}
                                 </TableBody>

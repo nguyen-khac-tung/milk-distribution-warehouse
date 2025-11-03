@@ -25,9 +25,10 @@ export default function AddLocationToPalletModal({ isOpen, onClose, onSuccess, p
 
   useEffect(() => {
     if (isOpen) {
-      // Reset form khi mở modal
+      // Reset form khi mở modal, nhưng giữ lại suggestedLocationCode nếu có
+      const suggestedCode = pallet?.suggestedLocationCode || "";
       setFormData({
-        locationCode: "",
+        locationCode: suggestedCode,
         areaId: "",
         rack: "",
         row: "",
@@ -36,6 +37,13 @@ export default function AddLocationToPalletModal({ isOpen, onClose, onSuccess, p
       setLocationValidated(false);
       setValidatedLocationData(null);
       setError("");
+      
+      // Nếu có suggestedLocationCode, tự động kiểm tra sau một chút delay
+      if (suggestedCode) {
+        setTimeout(() => {
+          handleCheckLocationCode(suggestedCode);
+        }, 300);
+      }
     }
 
     // Cleanup timeout khi unmount hoặc đóng modal
@@ -44,7 +52,7 @@ export default function AddLocationToPalletModal({ isOpen, onClose, onSuccess, p
         clearTimeout(checkTimeoutRef.current);
       }
     };
-  }, [isOpen]);
+  }, [isOpen, pallet?.suggestedLocationCode]);
 
   const handleCheckLocationCode = async (locationCodeToCheck = null) => {
     // Sử dụng locationCodeToCheck nếu có (từ quét), nếu không thì dùng formData.locationCode
@@ -183,13 +191,19 @@ export default function AddLocationToPalletModal({ isOpen, onClose, onSuccess, p
       } else {
         const errorMsg = response?.message || "Có lỗi xảy ra khi thêm vị trí";
         window.showToast?.(errorMsg, "error");
-        setError(errorMsg);
+        // Chỉ hiển thị error trong UI nếu không phải lỗi "Vị trí mới đã có pallet khác"
+        if (!errorMsg.includes("pallet khác") && !errorMsg.includes("đã có pallet")) {
+          setError(errorMsg);
+        }
       }
     } catch (error) {
       console.error("Error adding location to pallet:", error);
       const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi thêm vị trí cho pallet");
       window.showToast?.(errorMessage, "error");
-      setError(errorMessage);
+      // Chỉ hiển thị error trong UI nếu không phải lỗi "Vị trí mới đã có pallet khác"
+      if (!errorMessage.includes("pallet khác") && !errorMessage.includes("đã có pallet")) {
+        setError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }

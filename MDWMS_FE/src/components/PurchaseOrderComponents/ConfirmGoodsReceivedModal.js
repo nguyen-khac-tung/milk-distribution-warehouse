@@ -30,7 +30,7 @@ const ConfirmGoodsReceivedModal = ({
                         </div>
                         <div>
                             <h3 className="text-lg font-semibold text-gray-900">
-                                Xác nhận hàng đã nhận
+                                Xác nhận hàng đã đến
                             </h3>
                             <p className="text-sm text-gray-500">
                                 Xác nhận đơn hàng đã được giao đến kho
@@ -82,7 +82,7 @@ const ConfirmGoodsReceivedModal = ({
                             <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
                             <div>
                                 <h4 className="font-medium text-blue-800 mb-1">
-                                    Xác nhận hàng đã nhận
+                                    Xác nhận hàng đã đến
                                 </h4>
                                 <p className="text-sm text-blue-700">
                                     Bạn có chắc chắn muốn xác nhận đơn hàng này đã được giao đến kho? Hành động này không thể hoàn tác.
@@ -114,7 +114,7 @@ const ConfirmGoodsReceivedModal = ({
                                     Đang xác nhận...
                                 </div>
                             ) : (
-                                "Xác nhận hàng đã nhận"
+                                "Xác nhận hàng đã đến"
                             )}
                         </Button>
                     </div>

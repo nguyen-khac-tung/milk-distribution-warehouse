@@ -59,7 +59,7 @@ namespace MilkDistributionWarehouse.Controllers
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
 
-            return ApiResponse<List<LocationActiveDto>>.ToResultOk(locations);
+            return ApiResponse<List<LocationSuggestDto>>.ToResultOk(locations);
         }
 
         [HttpGet("LocationPallet/{locationcode}")]

@@ -8,7 +8,7 @@ export const GOODS_RECEIPT_NOTE_STATUS = {
 // Trạng thái của từng dòng sản phẩm trong Phiếu Nhập Kho (Goods Receipt Note Item)
 export const RECEIPT_ITEM_STATUS = {
     Receiving: 1,         // Đang kiểm nhập
-    Inspected: 2,         // Đã kiểm tra
+    Inspected: 2,         // Đã kiểm nhập
     PendingApproval: 3,   // Chờ duyệt
     Completed: 4          // Hoàn thành
 };
@@ -34,7 +34,7 @@ export const RECEIPT_ITEM_STATUS_META = {
         color: 'bg-blue-100 text-blue-800'
     },
     [RECEIPT_ITEM_STATUS.Inspected]: {
-        label: 'Đã kiểm tra',
+        label: 'Đã kiểm nhập',
         color: 'bg-green-100 text-green-800'
     },
     [RECEIPT_ITEM_STATUS.PendingApproval]: {

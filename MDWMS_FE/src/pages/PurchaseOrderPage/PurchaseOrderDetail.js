@@ -112,7 +112,7 @@ const PurchaseOrderDetail = () => {
             4: 'Đã duyệt',
             5: 'Đã giao đến',
             6: 'Đã phân công',
-            7: 'Đã nhận hàng',
+            7: 'Đang tiếp nhận',
             8: 'Đã kiểm nhập',
             9: 'Đã nhập kho'
         };
@@ -256,7 +256,7 @@ const PurchaseOrderDetail = () => {
             );
 
             if (window.showToast) {
-                window.showToast("Xác nhận hàng đã nhận thành công!", "success");
+                window.showToast("Xác nhận đã tiếp nhận thành công!", "success");
             }
             setShowConfirmGoodsReceivedModal(false);
             const response = await getPurchaseOrderDetail(id);
@@ -265,7 +265,7 @@ const PurchaseOrderDetail = () => {
             }
         } catch (error) {
             console.error("Error confirming goods received:", error);
-            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi xác nhận hàng đã nhận";
+            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi xác nhận đã tiếp nhận";
             if (window.showToast) {
                 window.showToast(errorMessage, "error");
             }
@@ -323,7 +323,7 @@ const PurchaseOrderDetail = () => {
             );
 
             if (window.showToast) {
-                window.showToast("Bắt đầu nhận hàng thành công!", "success");
+                window.showToast("Bắt đầu tiếp nhận thành công!", "success");
             }
             setShowStartReceiveModal(false);
             const response = await getPurchaseOrderDetail(id);
@@ -332,7 +332,7 @@ const PurchaseOrderDetail = () => {
             }
         } catch (error) {
             console.error("Error starting receive:", error);
-            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi bắt đầu nhận hàng";
+            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi bắt đầu tiếp nhận";
             if (window.showToast) {
                 window.showToast(errorMessage, "error");
             }
@@ -525,7 +525,7 @@ const PurchaseOrderDetail = () => {
                                                         return sum + totalUnits;
                                                     }, 0)}
                                                 </TableCell>
-                                                <TableCell className="text-center">-</TableCell>
+                                                <TableCell className="text-center"></TableCell>
                                             </TableRow>
                                         )}
                                     </TableBody>
@@ -593,7 +593,7 @@ const PurchaseOrderDetail = () => {
                                         className="bg-blue-600 hover:bg-blue-700 text-white h-[38px] px-8"
                                     >
                                         <Package className="h-4 w-4 mr-2" />
-                                        Xác nhận hàng đã nhận
+                                        Xác nhận hàng đã đến
                                     </Button>
                                 )}
                                 {(canAssignReceiving() || canReAssignReceiving()) && (
@@ -611,7 +611,7 @@ const PurchaseOrderDetail = () => {
                                         className="bg-green-600 hover:bg-green-700 text-white h-[38px] px-8"
                                     >
                                         <Play className="h-4 w-4 mr-2" />
-                                        Bắt đầu nhận hàng
+                                        Bắt đầu tiếp nhận
                                     </Button>
                                 )}
                             </div>

@@ -66,6 +66,7 @@ namespace MilkDistributionWarehouse.Repositories
                 .AsNoTracking()
                 .Where(p => p.Batch.GoodsId == goodsId
                         && p.GoodsPackingId == goodsPackingId
+                        && p.Batch.ExpiryDate >= DateOnly.FromDateTime(DateTime.Now)
                         && p.Status == CommonStatus.Active)
                 .SumAsync(p => p.PackageQuantity) ?? 0;
 
@@ -103,7 +104,8 @@ namespace MilkDistributionWarehouse.Repositories
                         && p.Batch.GoodsId.HasValue
                         && goodsIds.Contains(p.Batch.GoodsId.Value)
                         && p.GoodsPackingId.HasValue
-                        && packingIds.Contains(p.GoodsPackingId.Value))
+                        && packingIds.Contains(p.GoodsPackingId.Value)
+                        && p.Batch.ExpiryDate >= DateOnly.FromDateTime(DateTime.Now))
                 .GroupBy(p => new { p.Batch.GoodsId, p.GoodsPackingId })
                 .Select(g => new
                 {

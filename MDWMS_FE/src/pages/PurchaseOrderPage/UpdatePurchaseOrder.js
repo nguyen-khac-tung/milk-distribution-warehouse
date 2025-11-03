@@ -378,11 +378,11 @@ export default function UpdatePurchaseOrder() {
             };
 
             await updatePurchaseOrder(submitData);
-            window.showToast("Cập nhật đơn nhập thành công!", "success");
+            window.showToast("Cập nhật đơn mua hàng thành công!", "success");
             navigate("/purchase-orders");
         } catch (error) {
-            console.error("Lỗi khi cập nhật đơn nhập:", error);
-            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi cập nhật đơn nhập!";
+            console.error("Lỗi khi cập nhật đơn mua", error);
+            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi cập nhật đơn mua hàng!";
             window.showToast(errorMessage, "error");
         }
     }
