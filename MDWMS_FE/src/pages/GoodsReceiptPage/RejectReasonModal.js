@@ -19,14 +19,18 @@ export default function RejectReasonModal({ isOpen, reason, setReason, onCancel,
             <Table>
               <TableHeader>
                 <TableRow className="bg-gray-100">
+                  <TableHead className="font-semibold text-gray-700 text-center w-16">STT</TableHead>
                   <TableHead className="font-semibold text-gray-700">Mã hàng</TableHead>
                   <TableHead className="font-semibold text-gray-700">Tên hàng</TableHead>
                   <TableHead className="font-semibold text-gray-700">Lý do từ chối</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {selectedDetails.map((detail) => (
+                {selectedDetails.map((detail, index) => (
                   <TableRow key={detail.goodsReceiptNoteDetailId}>
+                    <TableCell className="text-center text-gray-600 text-sm">
+                      {index + 1}
+                    </TableCell>
                     <TableCell className="font-medium text-gray-900 text-sm">
                       {detail.goodsCode}
                     </TableCell>
