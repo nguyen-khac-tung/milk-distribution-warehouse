@@ -7,13 +7,14 @@ import { getBatchDropdown } from "../../services/BatchService";
 import FloatingDropdown from "../../components/Common/FloatingDropdown";
 import { createPalletsBulk } from "../../services/PalletService";
 
-export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDetails = [], onRegisterSubmit, onPalletCreated, hasExistingPallets = false, onSubmittingChange }) {
+export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDetails = [], onRegisterSubmit, onPalletCreated, hasExistingPallets = false, onSubmittingChange, onBatchCreated }) {
   const [showPalletTable, setShowPalletTable] = useState(false);
   const [palletRows, setPalletRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const handleSubmitRef = useRef(null);
   const [goodsPackingByDetailId, setGoodsPackingByDetailId] = useState({});
+  const refreshBatchOptionsRef = useRef(null);
 
   // Tạo danh sách sản phẩm từ goodsReceiptNoteDetails
   const productOptions = useMemo(() => {
@@ -266,16 +267,46 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
     }
   };
 
+  // Function để refresh batch options cho tất cả các dòng đã chọn sản phẩm
+  const refreshBatchOptionsForAllRows = async () => {
+    // Lấy tất cả rows hiện tại
+    const currentRows = [...palletRows];
+    
+    // Refresh batch options cho từng row đã có sản phẩm
+    const updatedRows = await Promise.all(
+      currentRows.map(async (row) => {
+        if (row.productId) {
+          const selectedProduct = productOptions.find(p => p.value === row.productId);
+          if (selectedProduct?.goodsId) {
+            const batchOptions = await fetchBatchOptionsByGoodsId(selectedProduct.goodsId);
+            return {
+              ...row,
+              batchOptions
+            };
+          }
+        }
+        return row;
+      })
+    );
+    
+    // Cập nhật state với batch options mới
+    setPalletRows(updatedRows);
+  };
+
   // Lưu function mới nhất vào ref để không trigger re-register
   handleSubmitRef.current = handleSubmitCreatePallets;
+  refreshBatchOptionsRef.current = refreshBatchOptionsForAllRows;
 
   // Đăng ký hàm submit ra parent chỉ một lần khi mount, dùng ref để luôn gọi function mới nhất
   useEffect(() => {
     if (typeof onRegisterSubmit === 'function') {
       onRegisterSubmit(() => handleSubmitRef.current?.());
     }
+    if (typeof onBatchCreated === 'function') {
+      onBatchCreated(() => refreshBatchOptionsRef.current?.());
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onRegisterSubmit]);
+  }, [onRegisterSubmit, onBatchCreated]);
 
   return (
     <div>
@@ -338,15 +369,15 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
                 setPalletRows(prev => ([...prev, { productId: first?.value || "", productName: first?.label || "", batchId: "", batchCode: "", unitName: first?.unitName || "", unitsPerPackage: first?.unitsPerPackage || "", numPackages: "", goodsPackingId: goodsPackingByDetailId[first?.value] || null, batchOptions: options }]));
               }}
             >
-              <Plus className="w-4 h-4 mr-1" /> Thêm dòng
             </Button>
           </div>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[22%]">Tên sản phẩm</TableHead>
+                <TableHead className="w-[4%] text-center"></TableHead>
+                <TableHead className="w-[20%]">Tên sản phẩm</TableHead>
                 <TableHead className="w-[14%]">Số Lô</TableHead>
-                <TableHead className="w-[14%] text-center">Đơn vị</TableHead>
+                <TableHead className="w-[12%] text-center">Đơn vị</TableHead>
                 <TableHead className="w-[10%] text-center">Đơn vị/thùng</TableHead>
                 <TableHead className="w-[12%] text-center">Số thùng</TableHead>
                 <TableHead className="w-[14%]">Tổng số đơn vị</TableHead>
@@ -356,7 +387,7 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
             <TableBody>
               {palletRows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-gray-500">Chưa có pallet nào</TableCell>
+                  <TableCell colSpan={8} className="text-center text-gray-500">Chưa có pallet nào</TableCell>
                 </TableRow>
               ) : (
                 palletRows.map((row, idx) => {
@@ -367,6 +398,30 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
 
                   return (
                     <TableRow key={idx}>
+                      <TableCell className="text-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 hover:bg-green-50"
+                          onClick={() => {
+                            // Duplicate row với số thùng = 0
+                            const duplicatedRow = {
+                              ...row,
+                              numPackages: 0,
+                              batchId: row.batchId || "",
+                              batchCode: row.batchCode || ""
+                            };
+                            setPalletRows(prev => {
+                              const newRows = [...prev];
+                              newRows.splice(idx + 1, 0, duplicatedRow);
+                              return newRows;
+                            });
+                          }}
+                          title="Thêm dòng giống mặt hàng này"
+                        >
+                          <Plus className="w-4 h-4 text-green-600" />
+                        </Button>
+                      </TableCell>
                       <TableCell>
                         <FloatingDropdown
                           value={row.productId || undefined}
