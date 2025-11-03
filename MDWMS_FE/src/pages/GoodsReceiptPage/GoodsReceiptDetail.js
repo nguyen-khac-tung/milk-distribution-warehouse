@@ -525,7 +525,7 @@ export default function GoodsReceiptDetail() {
             <span className={`px-3 py-1 rounded-full text-sm font-medium ${getGoodsReceiptNoteStatusMeta(goodsReceiptNote.status).color}`}>
               {getGoodsReceiptNoteStatusMeta(goodsReceiptNote.status).label}
             </span>
-            <Button onClick={handlePrintReceipt} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 h-[38px] text-white">
+            <Button onClick={handlePrintReceipt} className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 h-[38px] px-4 text-white">
               <Printer className="w-4 h-4" />
               In Phiếu
             </Button>
@@ -631,7 +631,7 @@ export default function GoodsReceiptDetail() {
               <div className="flex items-center gap-2">
                 <Button
                   onClick={fetchGoodsReceiptNoteDetail}
-                  className="flex items-center gap-2 border border-slate-300 hover:bg-slate-50 h-[38px] text-slate-700 bg-white"
+                  className="flex items-center justify-center gap-2 border border-slate-300 hover:bg-slate-50 h-[38px] px-4 text-slate-700 bg-white"
                   disabled={loading}
                 >
                   <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -874,7 +874,7 @@ export default function GoodsReceiptDetail() {
                                     {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CHECK) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && (
                                       <Button
                                         size="sm"
-                                        className="bg-green-600 text-white hover:bg-green-700 h-[38px] mr-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="bg-green-600 text-white hover:bg-green-700 h-[38px] px-4 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                                         disabled={!!validationErrors[detailId]}
                                         onClick={async () => {
                                           // Validate trước khi submit
@@ -1016,7 +1016,7 @@ export default function GoodsReceiptDetail() {
                                 <TableCell className="text-center">
                                   <div className="inline-flex items-center gap-2">
                                     {detail.status === RECEIPT_ITEM_STATUS.Inspected && hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CANCEL) && (
-                                      <Button size="sm" className="bg-yellow-500 text-white hover:bg-yellow-600 h-[30px] rounded" onClick={async () => {
+                                      <Button size="sm" className="bg-yellow-500 text-white hover:bg-yellow-600 h-[38px] px-4 flex items-center justify-center rounded" onClick={async () => {
                                         try {
                                           await cancelGoodsReceiptNoteDetail(detail.goodsReceiptNoteDetailId);
                                           fetchGoodsReceiptNoteDetail();

@@ -112,7 +112,7 @@ const PurchaseOrderDetail = () => {
             4: 'Đã duyệt',
             5: 'Đã giao đến',
             6: 'Đã phân công',
-            7: 'Đã tiếp nhận',
+            7: 'Đang tiếp nhận',
             8: 'Đã kiểm nhập',
             9: 'Đã nhập kho'
         };
