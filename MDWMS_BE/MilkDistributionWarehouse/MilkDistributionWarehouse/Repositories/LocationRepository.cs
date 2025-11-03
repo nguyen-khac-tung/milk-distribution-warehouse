@@ -18,7 +18,6 @@ namespace MilkDistributionWarehouse.Repositories
         Task<List<string>> GetExistingLocationKeys(List<int> areaIds);
         Task<int> CreateLocationsBulk(List<Location> locations);
         Task<bool> IsDuplicateLocationCodeInAreaAsync(string locationCode, int areaId, int? excludeId = null);
-        Task<bool> InUsed(int locationId);
         Task<bool> UpdateIsAvailableAsync(int? locationId, bool isAvailable);
     }
 
@@ -77,7 +76,7 @@ namespace MilkDistributionWarehouse.Repositories
 
         public async Task<bool> HasDependentPalletsAsync(int locationId)
         {
-            return await _context.Pallets.AnyAsync(p => p.LocationId == locationId && p.Status != CommonStatus.Deleted);
+            return await _context.Pallets.AnyAsync(p => p.LocationId == locationId && p.Status == CommonStatus.Active);
         }
 
         public async Task<List<Location>> GetActiveLocationsAsync()
@@ -142,11 +141,6 @@ namespace MilkDistributionWarehouse.Repositories
             {
                 return 0;
             }
-        }
-        public async Task<bool> InUsed(int locationId)
-        {
-            return await _context.Locations
-                .AnyAsync(l => l.LocationId == locationId && l.IsAvailable == false);
         }
         public async Task<bool> UpdateIsAvailableAsync(int? locationId, bool isAvailable)
         {

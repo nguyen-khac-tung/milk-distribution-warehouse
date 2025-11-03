@@ -134,9 +134,6 @@ namespace MilkDistributionWarehouse.Services
             if (await _locationRepository.HasDependentPalletsAsync(locationId))
                 return ("Không thể xoá vì vị trí này đang được sử dụng.".ToMessageForUser(), new LocationResponseDto());
 
-            if (await _locationRepository.InUsed(locationId))
-                return ("Không thể xóa vì vị trí này đang được sử dụng.".ToMessageForUser(), new LocationResponseDto());
-
             locationExists.Status = CommonStatus.Deleted;
             locationExists.UpdateAt = DateTime.Now;
 
@@ -164,9 +161,6 @@ namespace MilkDistributionWarehouse.Services
 
             if (await _locationRepository.HasDependentPalletsAsync(locationId))
                 return ("Không thể cập nhật trạng thái vì vị trí này đang được sử dụng cho pallet.".ToMessageForUser(), new LocationResponseDto());
-            
-            if (await _locationRepository.InUsed(locationId))
-                return ("Không thể cập nhật trạng thái vì vị trí này hiện đang được sử dụng.".ToMessageForUser(), new LocationResponseDto());
 
             location.Status = status;
             location.UpdateAt = DateTime.Now;
