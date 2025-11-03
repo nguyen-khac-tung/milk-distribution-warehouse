@@ -89,13 +89,18 @@ const ScanPalletModal = ({
                                     <div className="text-xs text-gray-500 mb-1">Hạn sử dụng</div>
                                     <div className="font-medium text-gray-900">
                                         {pickDetailData.expiryDate
-                                            ? new Date(pickDetailData.expiryDate).toLocaleDateString('vi-VN')
-                                            : 'N/A'}
+                                            ? new Date(pickDetailData.expiryDate).toLocaleDateString('vi-VN', {
+                                                year: 'numeric',
+                                                month: '2-digit',
+                                                day: '2-digit',
+                                            }) : 'N/A'}
                                     </div>
                                 </div>
                                 <div>
                                     <div className="text-xs text-gray-500 mb-1">Số đơn vị/thùng</div>
-                                    <div className="font-medium text-gray-900">{pickDetailData.unitPerPackage}</div>
+                                    <div className="font-medium text-gray-900">
+                                        {pickDetailData.unitPerPackage} {pickDetailData.unitMeasure || 'đơn vị'}/thùng
+                                    </div>
                                 </div>
                                 <div>
                                     <div className="text-xs text-gray-500 mb-1">Tổng số thùng trên pallet</div>
@@ -114,34 +119,38 @@ const ScanPalletModal = ({
                     )}
 
                     {/* Scan Pallet Input */}
+                    {/* Scan Pallet Input */}
                     <div className="mb-4">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             Mã Pallet <span className="text-red-500">*</span>
                         </label>
-                        <div className="flex gap-2">
+
+                        <div className="relative">
                             <input
                                 type="text"
                                 value={scanPalletId}
                                 onChange={(e) => setScanPalletId(e.target.value.trim())}
                                 onKeyDown={(e) => e.key === 'Enter' && !isDisabled && handleConfirm()}
                                 placeholder="Nhập hoặc quét mã pallet..."
-                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
+                                className="w-full px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
                                 autoFocus
                                 disabled={loading}
                             />
+
+                            {/* Nút X xoá nội dung */}
                             {scanPalletId && (
-                                <Button
+                                <button
                                     type="button"
-                                    variant="ghost"
                                     onClick={() => setScanPalletId("")}
-                                    className="text-gray-500 hover:text-red-600"
+                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-600 focus:outline-none"
                                     disabled={loading}
                                 >
                                     <X className="h-4 w-4" />
-                                </Button>
+                                </button>
                             )}
                         </div>
-                        {pickDetailData && (
+
+                        {/* {pickDetailData && (
                             <div className={`mt-2 flex items-center gap-2 text-sm leading-none ${validationStatus === 'valid' ? 'text-green-600' :
                                 validationStatus === 'invalid' ? 'text-red-600' :
                                     'text-gray-600'
@@ -158,7 +167,7 @@ const ScanPalletModal = ({
                                     <span className="font-semibold">{pickDetailData.palletId}</span>
                                 </p>
                             </div>
-                        )}
+                        )} */}
                     </div>
 
                     {/* Action Buttons */}

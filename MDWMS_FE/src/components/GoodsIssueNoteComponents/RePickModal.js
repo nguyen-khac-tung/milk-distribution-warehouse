@@ -92,25 +92,25 @@ const RePickModal = ({
                         </div>
                     )}
 
-                    {/* Reason */}
-                    <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Lý do {isWarehouseManager && <span className="text-red-500">*</span>}
-                        </label>
-                        <Textarea
-                            value={rejectionReason}
-                            onChange={(e) => setRejectionReason(e.target.value)}
-                            placeholder={isWarehouseManager ? "Nhập lý do yêu cầu lấy lại (bắt buộc)..." : "Nhập lý do yêu cầu lấy lại (tùy chọn)..."}
-                            className="w-full"
-                            rows={2}
-                            disabled={loading}
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                            {isWarehouseManager
-                                ? 'Quản lý kho phải cung cấp lý do khi yêu cầu lấy lại hàng.'
-                                : 'Nhập lý do để người lấy hàng hiểu và xử lý.'}
-                        </p>
-                    </div>
+                    {/* Reason - Chỉ hiển thị cho Warehouse Manager */}
+                    {isWarehouseManager && (
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Lý do <span className="text-red-500">*</span>
+                            </label>
+                            <Textarea
+                                value={rejectionReason}
+                                onChange={(e) => setRejectionReason(e.target.value)}
+                                placeholder="Nhập lý do yêu cầu lấy lại (bắt buộc)..."
+                                className="w-full"
+                                rows={2}
+                                disabled={loading}
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                                Quản lý kho phải cung cấp lý do khi yêu cầu lấy lại hàng.
+                            </p>
+                        </div>
+                    )}
 
                     {/* Warning Message */}
                     <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">

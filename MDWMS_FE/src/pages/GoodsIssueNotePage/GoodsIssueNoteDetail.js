@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -12,6 +12,8 @@ import { extractErrorMessage } from '../../utils/Validation';
 import ScanPalletModal from '../../components/GoodsIssueNoteComponents/ScanPalletModal';
 import { usePermissions } from '../../hooks/usePermissions';
 import RePickModal from '../../components/GoodsIssueNoteComponents/RePickModal';
+import PickAllocationsTableStaff from '../../components/GoodsIssueNoteComponents/PickAllocationsTableStaff';
+import PickAllocationsTableManager from '../../components/GoodsIssueNoteComponents/PickAllocationsTableManager';
 
 const GoodsIssueNoteDetail = () => {
     const { id } = useParams();
@@ -20,6 +22,38 @@ const GoodsIssueNoteDetail = () => {
     const [loading, setLoading] = useState(true);
     const [goodsIssueNote, setGoodsIssueNote] = useState(null);
     const [error, setError] = useState(null);
+
+    // Get current user info from localStorage - useMemo to recalculate when needed
+    const currentUserInfo = useMemo(() => {
+        try {
+            const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+            return {
+                userId: userInfo?.userId || userInfo?.id || null,
+                fullName: userInfo?.fullName || userInfo?.fullname || userInfo?.name || null,
+                userName: userInfo?.userName || userInfo?.username || null
+            };
+        } catch {
+            return { userId: null, fullName: null, userName: null };
+        }
+    }, []);
+
+    // Check if current user is assigned to this order (AssignTo) - compare by name since backend doesn't return AssignTo ID
+    const isAssigned = useMemo(() => {
+        if (!goodsIssueNote || !currentUserInfo) {
+            return false;
+        }
+
+        // Check AssignToName (người được phân công) 
+        const assignToName = goodsIssueNote.assignToName || '';
+        const currentFullName = currentUserInfo.fullName || '';
+        const currentUserName = currentUserInfo.userName || '';
+
+        // Compare by full name (case-insensitive)
+        const isMatch = assignToName.toLowerCase().trim() === currentFullName.toLowerCase().trim() ||
+            assignToName.toLowerCase().trim() === currentUserName.toLowerCase().trim();
+
+        return isMatch;
+    }, [goodsIssueNote, currentUserInfo]);
     const [expandedItems, setExpandedItems] = useState({});
     const [expandedGroups, setExpandedGroups] = useState({});
     const [confirmingPickId, setConfirmingPickId] = useState(null);
@@ -343,21 +377,33 @@ const GoodsIssueNoteDetail = () => {
                                                                 }`}
                                                         </div>
                                                     </div>
-                                                    {/* <span className={`px-3 py-1 rounded-full text-xs font-medium ${detailStatusInfo.color}`}>
-                                                        {detailStatusInfo.label}
-                                                    </span> */}
-                                                    {/* RePick Button - Show for Picked and PendingApproval status */}
-                                                    {(detail.status === ISSUE_ITEM_STATUS.Picked || detail.status === ISSUE_ITEM_STATUS.PendingApproval) && (
+                                                    {/* RePick Button - Phân quyền theo role */}
+
+                                                    {isWarehouseStaff &&
+                                                        detail.status === ISSUE_ITEM_STATUS.Picked &&
+                                                        isAssigned && (
+                                                            <Button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleRePick(detail);
+                                                                }}
+                                                                className="flex items-center gap-2 h-9 bg-red-600 hover:bg-red-700 text-white shadow-sm rounded-lg px-3"
+                                                            >
+                                                                <RefreshCw className="w-4 h-4" />
+                                                                Lấy lại
+                                                            </Button>
+                                                        )}
+
+                                                    {/* Warehouse Manager button - Không ẩn khi có rejectionReason vì Manager có thể repick để yêu cầu lấy lại */}
+                                                    {isWarehouseManager && detail.status === ISSUE_ITEM_STATUS.PendingApproval && (
                                                         <Button
-                                                            variant="outline"
-                                                            size="sm"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 handleRePick(detail);
                                                             }}
-                                                            className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                                                            className="flex items-center gap-2 h-9 bg-red-600 hover:bg-red-700 text-white shadow-sm rounded-lg px-3"
                                                         >
-                                                            <RefreshCw className="h-3 w-3 mr-1" />
+                                                            <RefreshCw className="w-4 h-4" />
                                                             Lấy lại
                                                         </Button>
                                                     )}
@@ -368,94 +414,37 @@ const GoodsIssueNoteDetail = () => {
                                         {/* Chi tiết pickAllocations */}
                                         {isExpanded && (
                                             <div className="p-6 bg-gray-50 border-t border-gray-200">
-                                                {detail.pickAllocations && detail.pickAllocations.length > 0 ? (
-                                                    <div className="overflow-x-auto">
-                                                        <Table>
-                                                            <TableHeader>
-                                                                <TableRow className="bg-white">
-                                                                    <TableHead className="w-16 text-center font-semibold">STT</TableHead>
-                                                                    <TableHead className="font-semibold text-center">Kệ</TableHead>
-                                                                    <TableHead className="font-semibold text-center">Hàng</TableHead>
-                                                                    <TableHead className="font-semibold text-center">Cột</TableHead>
-                                                                    <TableHead className="font-semibold">Khu vực</TableHead>
-                                                                    <TableHead className="font-semibold text-left">Mã vị trí</TableHead>
-                                                                    <TableHead className="font-semibold text-center">Số lượng</TableHead>
-                                                                    <TableHead className="font-semibold text-center">Trạng thái</TableHead>
-                                                                    {statusCode !== ISSUE_ITEM_STATUS.Completed && (
-                                                                        <TableHead className="font-semibold text-center w-32">Hành động</TableHead>
-                                                                    )}
-                                                                </TableRow>
-                                                            </TableHeader>
-                                                            <TableBody>
-                                                                {detail.pickAllocations.map((pick, pickIndex) => {
-                                                                    const pickStatusInfo = getPickAllocationStatusMeta(pick.status);
-                                                                    const isPicked = pick.status === 2;
-
-                                                                    return (
-                                                                        <TableRow
-                                                                            key={pick.pickAllocationId}
-                                                                            className={`border-b border-gray-200 hover:bg-blue-50 transition-colors ${isPicked ? 'bg-green-50' : ''
-                                                                                }`}
-                                                                        >
-                                                                            <TableCell className="text-center text-gray-900 font-medium">
-                                                                                {pickIndex + 1}
-                                                                            </TableCell>
-                                                                            <TableCell className="text-center text-gray-900 font-semibold">
-                                                                                {pick.rack}
-                                                                            </TableCell>
-                                                                            <TableCell className="text-center text-gray-900 font-semibold">
-                                                                                {pick.row}
-                                                                            </TableCell>
-                                                                            <TableCell className="text-center text-gray-900 font-semibold">
-                                                                                {pick.column}
-                                                                            </TableCell>
-                                                                            <TableCell className="text-gray-900 font-medium">
-                                                                                {pick.areaName}
-                                                                            </TableCell>
-                                                                            <TableCell className="text-gray-700">
-                                                                                {pick.locationCode}
-                                                                            </TableCell>
-                                                                            <TableCell className="text-center font-semibold text-gray-900">
-                                                                                {pick.pickPackageQuantity} thùng
-                                                                            </TableCell>
-                                                                            <TableCell className="text-center">
-                                                                                <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${pickStatusInfo.color}`}>
-                                                                                    {pickStatusInfo.label}
-                                                                                </span>
-                                                                            </TableCell>
-                                                                            {statusCode !== ISSUE_ITEM_STATUS.Completed && (
-                                                                                <TableCell className="text-center">
-                                                                                    {!isPicked && statusCode === ISSUE_ITEM_STATUS.Picking && isWarehouseStaff && (
-                                                                                        <Button
-                                                                                            onClick={() => handleProceedPick(pick.pickAllocationId)}
-                                                                                            disabled={confirmingPickId === pick.pickAllocationId}
-                                                                                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 h-auto"
-                                                                                            size="sm"
-                                                                                        >
-                                                                                            {confirmingPickId === pick.pickAllocationId ? (
-                                                                                                <>
-                                                                                                    <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
-                                                                                                    Đang xử lý...
-                                                                                                </>
-                                                                                            ) : (
-                                                                                                <>
-                                                                                                    <Barcode className="h-3 w-3 mr-1" />
-                                                                                                    Lấy hàng
-                                                                                                </>
-                                                                                            )}
-                                                                                        </Button>
-                                                                                    )}
-                                                                                    {isPicked && <CheckCircle className="h-5 w-5 text-green-600 mx-auto" />}
-                                                                                </TableCell>
-                                                                            )}
-                                                                        </TableRow>
-                                                                    );
-                                                                })}
-                                                            </TableBody>
-                                                        </Table>
+                                                {/* Lý do từ chối/yêu cầu lấy lại */}
+                                                {detail.rejectionReason && (
+                                                    <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+                                                        <div className="flex items-start gap-3">
+                                                            <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                                                            <div className="flex-1">
+                                                                <div className="text-sm font-semibold text-red-800 mb-1">
+                                                                    Lý do yêu cầu lấy lại
+                                                                </div>
+                                                                <div className="text-sm text-red-700">
+                                                                    {detail.rejectionReason}
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </div>
+                                                )}
+
+                                                {/* Warehouse Staff: Hiển thị bảng chi tiết đầy đủ */}
+                                                {!isWarehouseManager ? (
+                                                    <PickAllocationsTableStaff
+                                                        pickAllocations={detail.pickAllocations}
+                                                        statusCode={statusCode}
+                                                        onProceedPick={handleProceedPick}
+                                                        confirmingPickId={confirmingPickId}
+                                                        isWarehouseStaff={isWarehouseStaff}
+                                                    />
                                                 ) : (
-                                                    <div className="text-center py-8 text-gray-500">Không có thông tin lấy hàng</div>
+                                                    /* Warehouse Manager: Hiển thị UI dạng card đơn giản */
+                                                    <PickAllocationsTableManager
+                                                        pickAllocations={detail.pickAllocations}
+                                                    />
                                                 )}
                                             </div>
                                         )}
@@ -541,43 +530,6 @@ const GoodsIssueNoteDetail = () => {
                                 Làm mới
                             </Button>
 
-                            {/* Nút Nộp phiếu (kho xuất) */}
-                            {isWarehouseStaff &&
-                                goodsIssueNote.status === GOODS_ISSUE_NOTE_STATUS.Picking &&
-                                !goodsIssueNote.goodsIssueNoteDetails.some(
-                                    (d) => d.status === ISSUE_ITEM_STATUS.Picking
-                                ) && (
-                                    <Button
-                                        onClick={handleSubmit}
-                                        disabled={submitLoading}
-                                        className="flex items-center gap-2 h-9 bg-green-600 hover:bg-green-700 text-white shadow-sm rounded-lg px-3"
-                                    >
-                                        {submitLoading ? (
-                                            <RefreshCw className="w-4 h-4 animate-spin" />
-                                        ) : (
-                                            <Send className="w-4 h-4" />
-                                        )}
-                                        Nộp phiếu
-                                    </Button>
-                                )}
-
-                            {/* Nút Duyệt phiếu (quản lý) */}
-                            {isWarehouseManager &&
-                                goodsIssueNote.status === GOODS_ISSUE_NOTE_STATUS.PendingApproval && (
-                                    <Button
-                                        onClick={handleApprove}
-                                        disabled={approveLoading}
-                                        className="flex items-center gap-2 h-9 bg-purple-600 hover:bg-purple-700 text-white shadow-sm rounded-lg px-3"
-                                    >
-                                        {approveLoading ? (
-                                            <RefreshCw className="w-4 h-4 animate-spin" />
-                                        ) : (
-                                            <ShieldCheck className="w-4 h-4" />
-                                        )}
-                                        Duyệt phiếu
-                                    </Button>
-                                )}
-
                             {/* Nút In phiếu */}
                             <Button
                                 onClick={() => window.print()}
@@ -604,27 +556,80 @@ const GoodsIssueNoteDetail = () => {
                                 <h2 className="text-lg font-semibold text-gray-900">Thông tin phiếu xuất kho</h2>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div className="bg-gray-50 rounded-lg p-4">
-                                    <div className="text-xs text-gray-500 mb-1">Người tạo</div>
-                                    <div className="text-base font-semibold text-gray-900">{goodsIssueNote.createdByName || 'N/A'}</div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Nhóm thông tin xử lý */}
+                                <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
+                                    <h3 className="text-sm font-semibold text-slate-700 mb-3 border-b border-gray-100 pb-2">
+                                        Thông tin xử lý
+                                    </h3>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+                                        <div>
+                                            <div className="text-xs text-gray-500">Người tạo</div>
+                                            <div className="text-base font-medium text-gray-900">
+                                                {goodsIssueNote.createdByName || "N/A"}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-gray-500">Người duyệt</div>
+                                            <div className="text-base font-medium text-gray-900">
+                                                {goodsIssueNote.approvalByName || "Chưa có"}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-gray-500">Ngày tạo</div>
+                                            <div className="text-base font-medium text-gray-900">
+                                                {goodsIssueNote.createdAt
+                                                    ? new Date(goodsIssueNote.createdAt).toLocaleString("vi-VN", {
+                                                        day: "2-digit",
+                                                        month: "2-digit",
+                                                        year: "numeric",
+                                                        hour: "2-digit",
+                                                        minute: "2-digit",
+                                                    })
+                                                    : "N/A"}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-gray-500">Ngày dự kiến giao</div>
+                                            <div className="text-base font-medium text-gray-900">
+                                                {goodsIssueNote.estimatedTimeDeparture
+                                                    ? new Date(
+                                                        goodsIssueNote.estimatedTimeDeparture
+                                                    ).toLocaleDateString("vi-VN", {
+                                                        day: "2-digit",
+                                                        month: "2-digit",
+                                                        year: "numeric",
+                                                    })
+                                                    : "N/A"}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="bg-gray-50 rounded-lg p-4">
-                                    <div className="text-xs text-gray-500 mb-1">Người duyệt</div>
-                                    <div className="text-base font-semibold text-gray-900">{goodsIssueNote.approvalByName || 'Chưa có'}</div>
-                                </div>
-                                <div className="bg-gray-50 rounded-lg p-4">
-                                    <div className="text-xs text-gray-500 mb-1">Ngày tạo</div>
-                                    <div className="text-base font-semibold text-gray-900">
-                                        {goodsIssueNote.createdAt
-                                            ? new Date(goodsIssueNote.createdAt).toLocaleString('vi-VN', {
-                                                day: '2-digit',
-                                                month: '2-digit',
-                                                year: 'numeric',
-                                                hour: '2-digit',
-                                                minute: '2-digit',
-                                            })
-                                            : 'N/A'}
+
+                                {/* Nhóm thông tin nhà bán lẻ */}
+                                <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
+                                    <h3 className="text-sm font-semibold text-slate-700 mb-3 border-b border-gray-100 pb-2">
+                                        Thông tin nhà bán lẻ
+                                    </h3>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+                                        <div>
+                                            <div className="text-xs text-gray-500">Tên nhà bán lẻ</div>
+                                            <div className="text-base font-medium text-gray-900">
+                                                {goodsIssueNote.retailerName || "N/A"}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-gray-500">Số điện thoại</div>
+                                            <div className="text-base font-medium text-gray-900">
+                                                {goodsIssueNote.retailerPhone || "N/A"}
+                                            </div>
+                                        </div>
+                                        <div className="sm:col-span-2">
+                                            <div className="text-xs text-gray-500">Địa chỉ</div>
+                                            <div className="text-base font-medium text-gray-900">
+                                                {goodsIssueNote.retailerAddress || "N/A"}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -671,6 +676,63 @@ const GoodsIssueNoteDetail = () => {
                             )}
                         </>
                     )}
+
+                    {/* Actions Card - Nộp phiếu và Duyệt phiếu */}
+                    {(() => {
+                        const canShowSubmitButton = isWarehouseStaff &&
+                            goodsIssueNote.status === GOODS_ISSUE_NOTE_STATUS.Picking &&
+                            !goodsIssueNote.goodsIssueNoteDetails.some(
+                                (d) => d.status === ISSUE_ITEM_STATUS.Picking
+                            ) &&
+                            isAssigned;
+
+                        const canShowApproveButton = isWarehouseManager &&
+                            goodsIssueNote.status === GOODS_ISSUE_NOTE_STATUS.PendingApproval;
+
+                        if (!canShowSubmitButton && !canShowApproveButton) {
+                            return null;
+                        }
+
+                        return (
+                            <Card className="bg-white border border-gray-200 shadow-sm">
+                                <div className="p-6">
+                                    <div className="flex justify-end gap-3">
+                                        {/* Nút Nộp phiếu (kho xuất) - Chỉ Warehouse Staff và phải là người được phân công */}
+                                        {canShowSubmitButton && (
+                                            <Button
+                                                onClick={handleSubmit}
+                                                disabled={submitLoading}
+                                                className="flex items-center gap-2 h-[42px] px-6 bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg transition-all"
+                                            >
+                                                {submitLoading ? (
+                                                    <RefreshCw className="w-5 h-5 animate-spin" />
+                                                ) : (
+                                                    <Send className="w-5 h-5" />
+                                                )}
+                                                Nộp phiếu
+                                            </Button>
+                                        )}
+
+                                        {/* Nút Duyệt phiếu (quản lý) */}
+                                        {canShowApproveButton && (
+                                            <Button
+                                                onClick={handleApprove}
+                                                disabled={approveLoading}
+                                                className="flex items-center gap-2 h-[42px] px-6 bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:shadow-lg transition-all"
+                                            >
+                                                {approveLoading ? (
+                                                    <RefreshCw className="w-5 h-5 animate-spin" />
+                                                ) : (
+                                                    <ShieldCheck className="w-5 h-5" />
+                                                )}
+                                                Duyệt phiếu
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+                            </Card>
+                        );
+                    })()}
                 </div>
             </div>
 
