@@ -586,7 +586,7 @@ export default function GoodsReceiptDetail() {
                 {/* Danh sách mặt hàng */}
                 <div>
                   <h3 className="text-xs font-medium text-gray-500 mb-1">Danh sách mặt hàng</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                     {goodsReceiptNote.goodsReceiptNoteDetails?.map((detail, index) => (
                       <div key={index} className="rounded border border-gray-200 bg-white p-2 flex flex-col gap-1">
                         <div className="mb-1">
@@ -896,12 +896,35 @@ export default function GoodsReceiptDetail() {
                                               rejectPackageQuantity: Number(detail.rejectPackageQuantity) || 0,
                                               note: detail.note || ''
                                             });
+                                            
+                                            // Xóa validation error cho item này
                                             setValidationErrors(prev => {
                                               const newErrors = { ...prev };
                                               delete newErrors[detailId];
                                               return newErrors;
                                             });
-                                            fetchGoodsReceiptNoteDetail();
+                                            
+                                            // Chỉ update item vừa verify trong state, không fetch lại toàn bộ để giữ dữ liệu đã nhập ở các item khác
+                                            setGoodsReceiptNote(prev => {
+                                              if (!prev) return prev;
+                                              return {
+                                                ...prev,
+                                                goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
+                                                  d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId
+                                                    ? {
+                                                        ...d,
+                                                        status: RECEIPT_ITEM_STATUS.Inspected, // Update status thành Inspected
+                                                        deliveredPackageQuantity: Number(detail.deliveredPackageQuantity) || 0,
+                                                        rejectPackageQuantity: Number(detail.rejectPackageQuantity) || 0,
+                                                        actualPackageQuantity: Math.max(0, (Number(detail.deliveredPackageQuantity) || 0) - (Number(detail.rejectPackageQuantity) || 0)),
+                                                        note: detail.note || ''
+                                                      }
+                                                    : d // Giữ nguyên các item khác với dữ liệu đã nhập
+                                                )
+                                              };
+                                            });
+                                            
+                                            window.showToast?.("Kiểm nhập thành công!", "success");
                                           } catch (error) {
                                             console.error("Error verifying record:", error);
                                             const msg = extractErrorMessage(error, "Kiểm nhập thất bại, vui lòng thử lại!");
