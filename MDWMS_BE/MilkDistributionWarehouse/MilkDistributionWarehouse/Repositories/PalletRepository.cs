@@ -113,7 +113,7 @@ namespace MilkDistributionWarehouse.Repositories
 
             return _context.Batchs
                 .AsNoTracking()
-                .AnyAsync(b => b.BatchId == batchId.Value && b.Status != CommonStatus.Deleted);
+                .AnyAsync(b => b.BatchId == batchId.Value && b.Status == CommonStatus.Active);
         }
 
         public Task<bool> ExistsLocation(int? locationId)
@@ -122,7 +122,7 @@ namespace MilkDistributionWarehouse.Repositories
 
             return _context.Locations
                 .AsNoTracking()
-                .AnyAsync(l => l.LocationId == locationId.Value && l.Status != CommonStatus.Deleted);
+                .AnyAsync(l => l.LocationId == locationId.Value && l.Status == CommonStatus.Active);
         }
 
         public Task<bool> ExistsGoodRecieveNote(Guid? goodRcNoteId)
