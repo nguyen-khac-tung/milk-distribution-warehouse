@@ -91,9 +91,35 @@ export default function GoodsReceiptDetail() {
     setIsSubmittingPallet(isSubmitting);
   }, []);
 
+  // Callback để refresh batch options trong PalletManager khi tạo lô mới
+  const handleBatchCreatedRef = useRef(null);
+  
+  const handleBatchCreated = useCallback((fn) => {
+    handleBatchCreatedRef.current = fn;
+  }, []);
+
   useEffect(() => {
     fetchGoodsReceiptNoteDetail();
   }, [id]);
+
+  // Đóng cart pallet và arranging nếu status không phải Completed
+  useEffect(() => {
+    if (!goodsReceiptNote) return;
+    
+    if (goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.Completed) {
+      setExpandedSections(prev => {
+        // Chỉ đóng nếu đang mở, tránh re-render không cần thiết
+        if (!prev.pallet && !prev.arranging) {
+          return prev;
+        }
+        return {
+          ...prev,
+          pallet: false,
+          arranging: false
+        };
+      });
+    }
+  }, [goodsReceiptNote?.status]);
 
   const fetchGoodsReceiptNoteDetail = async () => {
     setLoading(true);
@@ -150,6 +176,8 @@ export default function GoodsReceiptDetail() {
       }
     } catch (error) {
       console.error("Error fetching goods receipt note detail:", error);
+      const msg = extractErrorMessage(error, "Không thể tải thông tin phiếu nhập kho!");
+      window.showToast?.(msg, "error");
       setGoodsReceiptNote(null);
     } finally {
       setLoading(false);
@@ -194,6 +222,14 @@ export default function GoodsReceiptDetail() {
   };
 
   const toggleSection = (section) => {
+    // Chỉ cho mở cart pallet và arranging khi status là Completed
+    if (section === 'pallet' || section === 'arranging') {
+      if (goodsReceiptNote?.status !== GOODS_RECEIPT_NOTE_STATUS.Completed) {
+        window.showToast?.("Phiếu phải được Quản lý kho duyệt thì mới được đưa vào kệ kê hàng", "warning");
+        return;
+      }
+    }
+    
     setExpandedSections(prev => ({
       ...prev,
       [section]: !prev[section]
@@ -212,7 +248,8 @@ export default function GoodsReceiptDetail() {
       await fetchGoodsReceiptNoteDetail();
     } catch (error) {
       console.error('Submit goods receipt note failed:', error);
-      window.showToast("Nộp đơn kiểm nhập thất bại, vui lòng thử lại!", "error");
+      const msg = extractErrorMessage(error, "Nộp đơn kiểm nhập thất bại, vui lòng thử lại!");
+      window.showToast?.(msg, "error");
     }
   };
 
@@ -308,7 +345,8 @@ export default function GoodsReceiptDetail() {
       fetchGoodsReceiptNoteDetail();
     } catch (e) {
       console.error(e);
-      window.showToast("Từ chối thất bại, vui lòng thử lại!", "error");
+      const msg = extractErrorMessage(e, "Từ chối thất bại, vui lòng thử lại!");
+      window.showToast?.(msg, "error");
     }
   };
 
@@ -429,7 +467,7 @@ export default function GoodsReceiptDetail() {
                         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
                           <div className="text-gray-800">Dự kiến: <span className="font-semibold">{detail.expectedPackageQuantity || 0}</span></div>
                           <div className="text-green-600">Đã nhận: <span className="font-semibold">{detail.deliveredPackageQuantity || 0}</span></div>
-                          <div className="text-blue-600">Thực nhập: <span className="font-semibold">{detail.actualPackageQuantity || 0}</span></div>
+                          <div className="text-blue-600">Thực nhập: <span className="font-semibold">{Math.max(0, detail.actualPackageQuantity || 0)}</span></div>
                           <div className="text-red-600">Loại bỏ: <span className="font-semibold">{detail.rejectPackageQuantity || 0}</span></div>
                         </div>
                       </div>
@@ -477,9 +515,9 @@ export default function GoodsReceiptDetail() {
             {expandedSections.receiving && (
               <>
                 <div className="p-6 space-y-6">
+                  {/* TABLE 1: CẦN KIỂM TRA (status==1) - Luôn hiển thị cho nhân viên kho khi có item Receiving */}
                   {!(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT)) && (
                     <>
-                      {/* TABLE 1: CẦN KIỂM TRA (status==1) */}
                       <h2 className="text-lg font-semibold mb-3">Đang kiểm nhập</h2>
                       <Table>
                         <TableHeader>
@@ -500,35 +538,43 @@ export default function GoodsReceiptDetail() {
                         <TableBody>
                           {needCheckDetails.length === 0 ? (
                             <TableRow>
-                              <TableCell colSpan={10} className="text-center text-gray-500 py-8">Tất cả mặt hàng đã kiểm tra</TableCell>
+                              <TableCell colSpan={11} className="text-center text-gray-500 py-8">Chưa có mặt hàng cần kiểm nhập</TableCell>
                             </TableRow>
                           ) : needCheckDetails.map((detail, index) => {
-                            const actualPackageQuantity = (Number(detail.deliveredPackageQuantity) || 0) - (Number(detail.rejectPackageQuantity) || 0);
                             const expectedPackageQuantity = Number(detail.expectedPackageQuantity) || 0;
                             const deliveredPackageQuantity = Number(detail.deliveredPackageQuantity) || 0;
                             const rejectPackageQuantity = Number(detail.rejectPackageQuantity) || 0;
+                            // Đảm bảo số lượng thực nhận không bao giờ âm, nếu âm thì là 0
+                            const actualPackageQuantity = Math.max(0, deliveredPackageQuantity - rejectPackageQuantity);
 
                             // Validation logic theo quy tắc
+                            // a = expected (số lượng dự kiến), b = delivered (số lượng giao đến), c = reject (số lượng trả lại)
                             const validateRejectQuantity = (delivered, reject, expected) => {
                               if (delivered === 0 && reject === 0) return null; // Cho phép cả 2 = 0
 
+                              // Kiểm tra số lượng thực nhận không được âm (reject không được lớn hơn delivered)
+                              if (reject > delivered) {
+                                return `Số lượng trả lại không được lớn hơn số lượng giao đến`;
+                              }
+
                               if (expected > delivered) {
-                                // Rule 1: a > b -> 0 <= c <= a - 1
-                                const maxReject = expected - 1;
-                                if (reject < 0 || reject > maxReject) {
-                                  return `Số lượng trả lại phải từ 0 đến ${maxReject} (vì số lượng dự kiến > số lượng giao đến)`;
+                                // TH1: a > b -> 0 <= c <= b
+                                if (reject < 0 || reject > delivered) {
+                                  return `Số lượng trả lại phải từ 0 đến ${delivered} (vì số lượng dự kiến > số lượng giao đến)`;
                                 }
                               } else if (expected < delivered) {
-                                // Rule 2: a < b -> b - a <= c <= b
+                                // TH2: a < b -> b - a <= c <= b
                                 const minReject = delivered - expected;
-                                const maxReject = delivered;
-                                if (reject < minReject || reject > maxReject) {
-                                  return `Số lượng trả lại phải từ ${minReject} đến ${maxReject} (vì số lượng giao đến > số lượng dự kiến)`;
+                                if (reject < minReject) {
+                                  return `Số lượng trả lại  tối thiểu phải là ${minReject} (vì số lượng giao đến > số lượng dự kiến)`;
+                                }
+                                if (reject > delivered) {
+                                  return `Số lượng trả lại không được lớn hơn số lượng giao đến`;
                                 }
                               } else {
-                                // a = b -> c = 0
-                                if (reject !== 0) {
-                                  return `Số lượng trả lại phải bằng 0 (vì số lượng giao đến = số lượng dự kiến)`;
+                                // TH3: a = b -> 0 <= c <= b
+                                if (reject < 0 || reject > delivered) {
+                                  return `Số lượng trả lại phải từ 0 đến ${delivered} (vì số lượng giao đến = số lượng dự kiến)`;
                                 }
                               }
                               return null;
@@ -543,7 +589,7 @@ export default function GoodsReceiptDetail() {
                                   <TableCell className="font-medium text-gray-900 text-xs max-w-[70px] truncate" title={detail.goodsCode}>{detail.goodsCode}</TableCell>
                                   <TableCell className="text-xs text-gray-700 max-w-[90px] truncate" title={detail.goodsName}>{detail.goodsName}</TableCell>
                                   <TableCell className="text-xs text-gray-700 text-center">{detail.unitMeasureName}</TableCell>
-                                  <TableCell className="text-xs text-gray-700 text-center">{detail.unitPerPackage}/thùng</TableCell>
+                                  <TableCell className="text-xs text-gray-700 text-center">{detail.unitPerPackage ? `${detail.unitPerPackage}${detail.unitMeasureName ? ' ' + detail.unitMeasureName : ''}/thùng` : '-'}</TableCell>
                                   {/* Số lượng thùng dự kiến */}
                                   <TableCell className="text-center text-xs">{detail.expectedPackageQuantity ?? 0}</TableCell>
                                   {/* Số lượng thùng giao đến */}
@@ -693,9 +739,8 @@ export default function GoodsReceiptDetail() {
                                   <TableCell className="text-center">
                                     {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CHECK) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && (
                                       <Button
-                                        variant="outline"
                                         size="sm"
-                                        className="text-green-600 hover:text-white hover:bg-green-600 h-[38px] mr-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="bg-green-600 text-white hover:bg-green-700 h-[38px] mr-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                         disabled={!!validationErrors[detailId]}
                                         onClick={async () => {
                                           // Validate trước khi submit
@@ -710,18 +755,24 @@ export default function GoodsReceiptDetail() {
                                             return;
                                           }
 
-                                          await verifyRecord({
-                                            goodsReceiptNoteDetailId: detail.goodsReceiptNoteDetailId,
-                                            deliveredPackageQuantity: Number(detail.deliveredPackageQuantity) || 0,
-                                            rejectPackageQuantity: Number(detail.rejectPackageQuantity) || 0,
-                                            note: detail.note || ''
-                                          });
-                                          setValidationErrors(prev => {
-                                            const newErrors = { ...prev };
-                                            delete newErrors[detailId];
-                                            return newErrors;
-                                          });
-                                          fetchGoodsReceiptNoteDetail();
+                                          try {
+                                            await verifyRecord({
+                                              goodsReceiptNoteDetailId: detail.goodsReceiptNoteDetailId,
+                                              deliveredPackageQuantity: Number(detail.deliveredPackageQuantity) || 0,
+                                              rejectPackageQuantity: Number(detail.rejectPackageQuantity) || 0,
+                                              note: detail.note || ''
+                                            });
+                                            setValidationErrors(prev => {
+                                              const newErrors = { ...prev };
+                                              delete newErrors[detailId];
+                                              return newErrors;
+                                            });
+                                            fetchGoodsReceiptNoteDetail();
+                                          } catch (error) {
+                                            console.error("Error verifying record:", error);
+                                            const msg = extractErrorMessage(error, "Kiểm nhập thất bại, vui lòng thử lại!");
+                                            window.showToast?.(msg, "error");
+                                          }
                                         }}
                                       >
                                         Kiểm nhập
@@ -755,69 +806,105 @@ export default function GoodsReceiptDetail() {
                     </>
                   )}
 
-                  {/* TABLE 2: ĐÃ KIỂM TRA (status==2) */}
-                  <h2 className="text-lg font-semibold text-green-700 mt-10 mb-3">Đã kiểm nhập</h2>
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-green-100">
-                        <TableHead className="font-semibold text-green-900">Mã hàng</TableHead>
-                        <TableHead className="font-semibold text-green-900">Tên hàng</TableHead>
-                        <TableHead className="font-semibold text-green-900 text-center">Đơn vị tính</TableHead>
-                        <TableHead className="font-semibold text-green-900 text-center">Quy cách đóng gói</TableHead>
-                        <TableHead className="font-semibold text-green-900 text-center">Số lượng thùng dự kiến</TableHead>
-                        <TableHead className="font-semibold text-green-900 text-center">Số lượng thùng giao đến</TableHead>
-                        <TableHead className="font-semibold text-green-900 text-center">Số lượng thùng trả lại</TableHead>
-                        <TableHead className="font-semibold text-green-900 text-center">Số lượng thùng thực nhận</TableHead>
-                        <TableHead className="font-semibold text-green-900">Ghi chú</TableHead>
-                        <TableHead className="font-semibold text-green-900 text-center">Trạng thái</TableHead>
-                        {(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) || checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.Inspected)) && goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.Completed && (
-                          <TableHead className="font-semibold text-green-900 text-center">Hành động</TableHead>
-                        )}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {checkedDetails.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={10} className="text-center text-green-500 py-8">Chưa có mặt hàng đã kiểm tra</TableCell>
-                        </TableRow>
-                      ) : checkedDetails.map((detail, idx) => (
-                        <TableRow key={idx} className="hover:bg-green-50">
-                          <TableCell className="font-medium text-green-800 text-xs">{detail.goodsCode}</TableCell>
-                          <TableCell className="text-xs text-green-700">{detail.goodsName}</TableCell>
-                          <TableCell className="text-xs text-green-700 text-center">{detail.unitMeasureName}</TableCell>
-                          <TableCell className="text-xs text-green-700 text-center">{detail.unitPerPackage}/thùng</TableCell>
-                          <TableCell className="text-center text-xs">{detail.expectedPackageQuantity}</TableCell>
-                          <TableCell className="text-center text-xs">{detail.deliveredPackageQuantity}</TableCell>
-                          <TableCell className="text-center text-xs">{detail.rejectPackageQuantity}</TableCell>
-                          <TableCell className="text-center text-xs">{detail.actualPackageQuantity}</TableCell>
-                          <TableCell className="text-green-700">{detail.note || ''}</TableCell>
-                          {/* Cột trạng thái */}
-                          <TableCell className="text-center min-w-[110px]">
-                            {(() => {
-                              const meta = getReceiptItemStatusMeta(detail.status); return (
-                                <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium break-words ${meta.color}`}>{meta.label}</span>
-                              );
-                            })()}
-                          </TableCell>
-                          {(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) || checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.Inspected)) && goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.Completed && (
-                            <TableCell className="text-center">
-                              <div className="inline-flex items-center gap-2">
-                                {detail.status === RECEIPT_ITEM_STATUS.Inspected && hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CANCEL) && (
-                                  <Button variant="outline" size="sm" className="text-yellow-600 border-yellow-300 hover:text-white hover:bg-yellow-500 h-[30px] rounded" onClick={async () => {
-                                    await cancelGoodsReceiptNoteDetail(detail.goodsReceiptNoteDetailId);
-                                    fetchGoodsReceiptNoteDetail();
-                                  }}>Kiểm nhập lại</Button>
-                                )}
-                                {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && (
-                                  <Button variant="outline" size="sm" className="text-red-600 border-red-300 hover:text-white hover:bg-red-600 h-[30px] rounded" onClick={() => openRejectModal(detail.goodsReceiptNoteDetailId)}>Từ chối</Button>
-                                )}
-                              </div>
-                            </TableCell>
-                          )}
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  {/* TABLE 2: ĐÃ KIỂM TRA (status==2, 3, 4) */}
+                  {/* Nhân viên kho: luôn thấy bảng này để có thể kiểm nhập lại
+                      Quản lý kho: thấy khi đơn đã được nộp (PendingApproval/Completed) HOẶC có item đang chờ duyệt/hoàn thành (để từ chối) */}
+                  {(() => {
+                    const isWarehouseManager = hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT);
+                    
+                    // Nhân viên kho: luôn hiển thị để có thể xem và kiểm nhập lại
+                    if (!isWarehouseManager) {
+                      return true;
+                    }
+                    
+                    // Quản lý kho: hiển thị nếu:
+                    // 1. Status GRN là PendingApproval hoặc Completed (đã nộp đơn)
+                    // 2. HOẶC có item đang ở trạng thái PendingApproval hoặc Completed (để có thể tiếp tục từ chối)
+                    const isPendingOrCompleted = goodsReceiptNote.status === GOODS_RECEIPT_NOTE_STATUS.PendingApproval || goodsReceiptNote.status === GOODS_RECEIPT_NOTE_STATUS.Completed;
+                    const hasPendingOrCompletedItems = checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.PendingApproval || d.status === RECEIPT_ITEM_STATUS.Completed);
+                    
+                    return isPendingOrCompleted || hasPendingOrCompletedItems;
+                  })() ? (
+                    <>
+                      <h2 className="text-lg font-semibold text-green-700 mt-10 mb-3">Đã kiểm nhập</h2>
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-green-100">
+                            <TableHead className="font-semibold text-green-900">Mã hàng</TableHead>
+                            <TableHead className="font-semibold text-green-900">Tên hàng</TableHead>
+                            <TableHead className="font-semibold text-green-900 text-center">Đơn vị tính</TableHead>
+                            <TableHead className="font-semibold text-green-900 text-center">Quy cách đóng gói</TableHead>
+                            <TableHead className="font-semibold text-green-900 text-center">Số lượng thùng dự kiến</TableHead>
+                            <TableHead className="font-semibold text-green-900 text-center">Số lượng thùng giao đến</TableHead>
+                            <TableHead className="font-semibold text-green-900 text-center">Số lượng thùng trả lại</TableHead>
+                            <TableHead className="font-semibold text-green-900 text-center">Số lượng thùng thực nhận</TableHead>
+                            <TableHead className="font-semibold text-green-900">Ghi chú</TableHead>
+                            <TableHead className="font-semibold text-green-900 text-center">Trạng thái</TableHead>
+                            {(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) || checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.Inspected)) && goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.Completed && (
+                              <TableHead className="font-semibold text-green-900 text-center">Hành động</TableHead>
+                            )}
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {checkedDetails.length === 0 ? (
+                            <TableRow>
+                              <TableCell 
+                                colSpan={
+                                  ((hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT)) && goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.Completed) 
+                                    ? 12 
+                                    : 11
+                                } 
+                                className="text-center text-green-500 py-8"
+                              >
+                                Chưa có mặt hàng đã kiểm nhập
+                              </TableCell>
+                            </TableRow>
+                          ) : checkedDetails.map((detail, idx) => (
+                            <TableRow key={idx} className="hover:bg-green-50">
+                              <TableCell className="font-medium text-green-800 text-xs">{detail.goodsCode}</TableCell>
+                              <TableCell className="text-xs text-green-700">{detail.goodsName}</TableCell>
+                              <TableCell className="text-xs text-green-700 text-center">{detail.unitMeasureName}</TableCell>
+                              <TableCell className="text-xs text-green-700 text-center">{detail.unitPerPackage ? `${detail.unitPerPackage}${detail.unitMeasureName ? ' ' + detail.unitMeasureName : ''}/thùng` : '-'}</TableCell>
+                              <TableCell className="text-center text-xs">{detail.expectedPackageQuantity}</TableCell>
+                              <TableCell className="text-center text-xs">{detail.deliveredPackageQuantity}</TableCell>
+                              <TableCell className="text-center text-xs">{detail.rejectPackageQuantity}</TableCell>
+                              <TableCell className="text-center text-xs">{Math.max(0, detail.actualPackageQuantity || 0)}</TableCell>
+                              <TableCell className="text-green-700">{detail.note || ''}</TableCell>
+                              {/* Cột trạng thái */}
+                              <TableCell className="text-center min-w-[110px]">
+                                {(() => {
+                                  const meta = getReceiptItemStatusMeta(detail.status); return (
+                                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium break-words ${meta.color}`}>{meta.label}</span>
+                                  );
+                                })()}
+                              </TableCell>
+                              {(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) || checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.Inspected)) && goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.Completed && (
+                                <TableCell className="text-center">
+                                  <div className="inline-flex items-center gap-2">
+                                    {detail.status === RECEIPT_ITEM_STATUS.Inspected && hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CANCEL) && (
+                                      <Button size="sm" className="bg-yellow-500 text-white hover:bg-yellow-600 h-[30px] rounded" onClick={async () => {
+                                        try {
+                                          await cancelGoodsReceiptNoteDetail(detail.goodsReceiptNoteDetailId);
+                                          fetchGoodsReceiptNoteDetail();
+                                        } catch (error) {
+                                          console.error("Error canceling goods receipt note detail:", error);
+                                          const msg = extractErrorMessage(error, "Kiểm nhập lại thất bại, vui lòng thử lại!");
+                                          window.showToast?.(msg, "error");
+                                        }
+                                      }}>Kiểm nhập lại</Button>
+                                    )}
+                                    {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && (
+                                      <Button variant="outline" size="sm" className="text-red-600 border-red-300 hover:text-white hover:bg-red-600 h-[30px] rounded" onClick={() => openRejectModal(detail.goodsReceiptNoteDetailId)}>Từ chối</Button>
+                                    )}
+                                  </div>
+                                </TableCell>
+                              )}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </>
+                  ) : null}
                 </div>
 
                 <div className="flex justify-end gap-2 pt-4 border-t border-gray-200 mr-6">
@@ -833,8 +920,12 @@ export default function GoodsReceiptDetail() {
                   )}
                   {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) && (
                     <Button
-                      className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 h-[38px]"
-                      disabled={goodsReceiptNote.status === GOODS_RECEIPT_NOTE_STATUS.Completed}
+                      className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 h-[38px] disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={
+                        goodsReceiptNote.status === GOODS_RECEIPT_NOTE_STATUS.Completed || 
+                        checkedDetails.length === 0 ||
+                        goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.PendingApproval
+                      }
                       onClick={async () => {
                         try {
                           await approveGoodsReceiptNote(goodsReceiptNote.goodsReceiptNoteId);
@@ -855,7 +946,8 @@ export default function GoodsReceiptDetail() {
           </CardContent>
         </Card>
 
-        {/* Pallet */}
+        {/* Pallet - Ẩn cho quản lý kho */}
+        {!(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT)) && (
         <Card className="bg-gray-50 border border-slate-200 shadow-sm">
           <CardContent className="p-0">
             <div
@@ -867,30 +959,34 @@ export default function GoodsReceiptDetail() {
                   <Plus className="w-5 h-5 text-orange-600" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Pallet</h2>
-                  <p className="text-sm text-gray-500">Quản lý pallet và lô hàng</p>
+                  <h2 className="text-lg font-semibold text-gray-900">Kệ kê hàng</h2>
+                  <p className="text-sm text-gray-500">Quản lý kệ kê hàng và lô hàng</p>
                 </div>
               </div>
               {expandedSections.pallet ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
             </div>
 
-            {expandedSections.pallet && (
-              <div className="p-6 space-y-6">
-                <div className="flex gap-3">
+            {/* Luôn render PalletManager để giữ state, chỉ ẩn/hiện bằng CSS */}
+            <div className={`p-6 space-y-6 ${expandedSections.pallet ? '' : 'hidden'}`}>
+              <div className="flex gap-3">
+                {/* Ẩn nút "Thêm Lô Mới" cho nhân viên kho khi đã tạo pallet */}
+                {!(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CHECK) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && palletCreated) && (
                   <Button className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 h-[38px] flex items-center gap-2" onClick={() => setShowCreateBatchModal(true)}>
                     <Plus className="w-4 h-4 mr-3" />
                     Thêm Lô Mới
                   </Button>
-                </div>
+                )}
+              </div>
 
-                <PalletManager
-                  goodsReceiptNoteId={goodsReceiptNote?.goodsReceiptNoteId}
-                  goodsReceiptNoteDetails={goodsReceiptNote?.goodsReceiptNoteDetails || []}
-                  onRegisterSubmit={handleRegisterSubmit}
-                  onPalletCreated={handlePalletCreated}
-                  hasExistingPallets={pallets.length > 0}
-                  onSubmittingChange={handleSubmittingChange}
-                />
+              <PalletManager
+                goodsReceiptNoteId={goodsReceiptNote?.goodsReceiptNoteId}
+                goodsReceiptNoteDetails={goodsReceiptNote?.goodsReceiptNoteDetails || []}
+                onRegisterSubmit={handleRegisterSubmit}
+                onPalletCreated={handlePalletCreated}
+                hasExistingPallets={pallets.length > 0}
+                onSubmittingChange={handleSubmittingChange}
+                onBatchCreated={handleBatchCreated}
+              />
 
                 <div className="flex justify-end gap-2 pt-4 border-t border-gray-200">
                   {!palletCreated && (
@@ -902,10 +998,10 @@ export default function GoodsReceiptDetail() {
                       {isSubmittingPallet ? (
                         <>
                           <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                          Đang tạo pallet...
+                          Đang tạo kệ kê hàng...
                         </>
                       ) : (
-                        "Tạo pallet"
+                        "Tạo kệ kê hàng"
                       )}
                     </Button>
                   )}
@@ -919,12 +1015,13 @@ export default function GoodsReceiptDetail() {
                     </Button>
                   )}
                 </div>
-              </div>
-            )}
+            </div>
           </CardContent>
         </Card>
+        )}
 
-        {/* Sắp xếp */}
+        {/* Sắp xếp - Ẩn cho quản lý kho */}
+        {!(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT)) && (
         <Card ref={arrangingSectionRef} className="bg-gray-50 border border-slate-200 shadow-sm">
           <CardContent className="p-0">
             <div
@@ -1073,6 +1170,7 @@ export default function GoodsReceiptDetail() {
             )}
           </CardContent>
         </Card>
+        )}
       </div>
       {/* Modal nhập lý do từ chối */}
       <RejectReasonModal
@@ -1088,7 +1186,10 @@ export default function GoodsReceiptDetail() {
         onClose={() => setShowCreateBatchModal(false)}
         onSuccess={() => {
           setShowCreateBatchModal(false);
-          fetchGoodsReceiptNoteDetail();
+          // Chỉ refresh batch options trong PalletManager, không reload toàn bộ component
+          if (handleBatchCreatedRef.current) {
+            handleBatchCreatedRef.current();
+          }
         }}
       />
       {/* Modal thêm vị trí cho pallet */}

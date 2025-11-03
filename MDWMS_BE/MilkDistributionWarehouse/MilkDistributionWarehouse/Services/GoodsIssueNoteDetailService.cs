@@ -37,12 +37,23 @@ namespace MilkDistributionWarehouse.Services
             var user = await _userRepository.GetUserById(userId);
             if (user == null) return "Current user is null";
 
-            if (user.Roles.Any(r => r.RoleId == RoleType.WarehouseStaff) && user.UserId != issueNoteDetail.GoodsIssueNote.CreatedBy)
-                return "Người dùng hiện tại không được phân công cho đơn hàng này.".ToMessageForUser();
+            if (user.Roles.Any(r => r.RoleId == RoleType.WarehouseStaff))
+            {
+                if (issueNoteDetail.Status != IssueItemStatus.Picked)
+                    return "Nhân viên kho chỉ có thể thực hiện thao tác này khi hạng mục đang ở trạng thái 'Đã lấy hàng'".ToMessageForUser();
 
-            if(user.Roles.Any(r => r.RoleId == RoleType.WarehouseManager) && string.IsNullOrWhiteSpace(rePickGoodsIssue.RejectionReason))
-                return "Quản lý kho phải cung cấp lý do từ chối.".ToMessageForUser();
+                if (user.UserId != issueNoteDetail.GoodsIssueNote.CreatedBy)
+                    return "Người dùng hiện tại không được phân công cho đơn hàng này.".ToMessageForUser();
+            }
 
+            if (user.Roles.Any(r => r.RoleId == RoleType.WarehouseManager))
+            {
+                if (issueNoteDetail.Status != IssueItemStatus.PendingApproval)
+                    return "Quản lý kho chỉ có thể thực hiện thao tác này khi hạng mục đang ở trạng thái 'Chờ duyệt'".ToMessageForUser();
+
+                if (string.IsNullOrWhiteSpace(rePickGoodsIssue.RejectionReason))
+                    return "Quản lý kho phải cung cấp lý do từ chối.".ToMessageForUser();
+            }
             try
             {
                 await _unitOfWork.BeginTransactionAsync();
