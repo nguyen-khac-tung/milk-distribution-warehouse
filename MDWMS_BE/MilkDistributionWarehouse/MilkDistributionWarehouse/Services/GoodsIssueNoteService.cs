@@ -50,8 +50,8 @@ namespace MilkDistributionWarehouse.Services
 
             if (salesOrder.AssignTo != userId) return "Người dùng hiện tại không được phân công cho đơn hàng này.".ToMessageForUser();
 
-            if (salesOrder.EstimatedTimeDeparture > DateOnly.FromDateTime(DateTime.Now))
-                return "Không tạo được phiếu xuất kho trước ngày dự kiến xuất kho.".ToMessageForUser();
+            //if (salesOrder.EstimatedTimeDeparture > DateOnly.FromDateTime(DateTime.Now))
+            //    return "Không tạo được phiếu xuất kho trước ngày dự kiến xuất kho.".ToMessageForUser();
 
             if (salesOrder.Status != SalesOrderStatus.AssignedForPicking)
                 return "Chỉ có thể tạo phiếu xuất kho cho đơn hàng ở trạng thái 'Đã phân công'.".ToMessageForUser();
@@ -75,7 +75,7 @@ namespace MilkDistributionWarehouse.Services
                     var requiredQuantity = orderDetail.PackageQuantity ?? 0;
 
                     var potentialPallets = await _palletRepository.GetPotentiallyPalletsForPicking(orderDetail.GoodsId, orderDetail.GoodsPackingId);
-                    if (potentialPallets.IsNullOrEmpty()) throw new Exception($"Không có kệ hàng nào cho sản phẩm {goodsName}".ToMessageForUser());
+                    if (potentialPallets.IsNullOrEmpty()) throw new Exception($"Không có kệ hàng nào cho sản phẩm {goodsName} loại đóng gói {orderDetail.GoodsPacking.UnitPerPackage} {orderDetail.Goods.UnitMeasure.Name.ToLower()}/thùng".ToMessageForUser());
 
                     var availablePallets = potentialPallets.Select(p => new
                     {
@@ -86,7 +86,7 @@ namespace MilkDistributionWarehouse.Services
                     .OrderBy(p => p.Pallet.Batch.ExpiryDate)   // Prioritize by earliest Expiration Date(EXP)
                     .ThenBy(p => p.AvailableQuantity)         // Then pallets with less available quantity
                     .ToList();
-                    if (availablePallets.IsNullOrEmpty()) throw new Exception($"Không có kệ hàng nào cho sản phẩm {goodsName}".ToMessageForUser());
+                    if (availablePallets.IsNullOrEmpty()) throw new Exception($"Không có kệ hàng nào cho sản phẩm {goodsName} loại đóng gói {orderDetail.GoodsPacking.UnitPerPackage} {orderDetail.Goods.UnitMeasure.Name.ToLower()}/thùng".ToMessageForUser());
 
                     var remainingQuantity = requiredQuantity;
                     foreach (var pInfo in availablePallets)

@@ -101,17 +101,20 @@ namespace MilkDistributionWarehouse.Services
                 goodsDto.GoodsPackings.ForEach(packing =>
                 {
                     var packageQuantityOnHand = goods?.Batches.SelectMany(b => b.Pallets)
-                                                      .Where(p => p.GoodsPackingId == packing.GoodsPackingId && p.Status == CommonStatus.Active)
-                                                      .Sum(p => p.PackageQuantity);
+                                                      .Where(p => p.GoodsPackingId == packing.GoodsPackingId 
+                                                                && p.Status == CommonStatus.Active
+                                                                && p.Batch.ExpiryDate >= DateOnly.FromDateTime(DateTime.Now))
+                                                      .Sum(p => p.PackageQuantity) ?? 0;
                     var packageQuantityCommitted = goodsCommittedList.Where(g => g.GoodsId == goodsDto.GoodsId
                                                         && g.GoodsPackingId == packing.GoodsPackingId)
-                                                        .Sum(g => g.PackageQuantity);
+                                                        .Sum(g => g.PackageQuantity) ?? 0;
+                    var availablePackageQuantity = packageQuantityOnHand - packageQuantityCommitted;
 
                     goodsDto.InventoryPackingDtos.Add(new InventoryPackagingDto()
                     {
                         GoodsPackingId = packing.GoodsPackingId,
                         UnitPerPackage = packing.UnitPerPackage,
-                        AvailablePackageQuantity = (packageQuantityOnHand ?? 0) - (packageQuantityCommitted ?? 0)
+                        AvailablePackageQuantity = availablePackageQuantity >= 0 ? availablePackageQuantity : 0
                     });
                 });
             });

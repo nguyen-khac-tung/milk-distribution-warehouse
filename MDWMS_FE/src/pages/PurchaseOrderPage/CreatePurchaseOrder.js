@@ -407,7 +407,7 @@ export default function CreatePurchaseOrder({
                             Quay Lại
                         </Button>
                         <h1 className="text-2xl font-bold text-slate-600">
-                            {isEditMode ? "Cập Nhật Đơn Nhập Hàng" : "Tạo Đơn Nhập Hàng Mới"}
+                            {isEditMode ? "Cập Nhật Đơn Mua Hàng" : "Tạo Đơn Mua Hàng Mới"}
                         </h1>
                     </div>
                 </div>

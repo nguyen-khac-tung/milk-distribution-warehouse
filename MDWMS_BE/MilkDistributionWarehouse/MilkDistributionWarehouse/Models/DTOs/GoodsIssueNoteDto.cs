@@ -12,6 +12,10 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public Guid GoodsIssueNoteId { get; set; }
         public Guid SalesOderId { get; set; }
         public int Status { get; set; }
+        public DateOnly? EstimatedTimeDeparture { get; set; }
+        public string? RetailerName { get; set; }
+        public string? RetailerAddress { get; set; }
+        public string? RetailerPhone { get; set; }
         public DateTime? CreatedAt { get; set; }
         public string? CreatedByName { get; set; }
         public string? ApprovalByName { get; set; }

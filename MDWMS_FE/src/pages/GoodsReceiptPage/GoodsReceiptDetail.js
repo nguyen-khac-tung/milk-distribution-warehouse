@@ -9,10 +9,13 @@ import {
   RefreshCw,
   Plus,
   CheckCircle,
-  Printer
+  Printer,
+  Lightbulb
 } from "lucide-react";
+import { useReactToPrint } from "react-to-print";
+import { PrintablePalletLabel, PrintableMultiplePalletLabels } from "../../components/PalletComponents/PrintPalletLabel";
 import Loading from "../../components/Common/Loading";
-import { getGoodsReceiptNoteByPurchaseOrderId, verifyRecord, cancelGoodsReceiptNoteDetail, submitGoodsReceiptNote, approveGoodsReceiptNote, rejectGoodsReceiptNoteDetail, getPalletByGRNID } from "../../services/GoodsReceiptService";
+import { getGoodsReceiptNoteByPurchaseOrderId, verifyRecord, cancelGoodsReceiptNoteDetail, submitGoodsReceiptNote, approveGoodsReceiptNote, rejectGoodsReceiptNoteDetail, getPalletByGRNID, getLocationSuggest } from "../../services/GoodsReceiptService";
 import { completePurchaseOrder, getPurchaseOrderDetail } from "../../services/PurchaseOrderService";
 import { PERMISSIONS, PURCHASE_ORDER_STATUS } from "../../utils/permissions";
 import { usePermissions } from "../../hooks/usePermissions";
@@ -24,6 +27,7 @@ import { extractErrorMessage } from "../../utils/Validation";
 import CreateBatchModal from "./CreateBatchModal";
 import PalletManager from "./CreatePallet";
 import AddLocationToPalletModal from "./AddLocationToPalletModal";
+import LocationSuggestionModal from "./LocationSuggestionModal";
 
 // Status labels for Goods Receipt Note - sẽ được lấy từ API
 const getStatusLabel = (status) => {
@@ -66,9 +70,18 @@ export default function GoodsReceiptDetail() {
   const [isSubmittingPallet, setIsSubmittingPallet] = useState(false);
   const [showAddLocationModal, setShowAddLocationModal] = useState(false);
   const [selectedPalletForLocation, setSelectedPalletForLocation] = useState(null);
+  const [selectedPalletForSuggestion, setSelectedPalletForSuggestion] = useState(null);
+  const [showLocationSuggestionModal, setShowLocationSuggestionModal] = useState(false);
+  const [locationSuggestions, setLocationSuggestions] = useState([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [isPurchaseOrderCompleted, setIsPurchaseOrderCompleted] = useState(false);
   const [validationErrors, setValidationErrors] = useState({}); // Lưu lỗi validation cho từng detail
   const arrangingSectionRef = useRef(null);
+  const [selectedPalletForPrint, setSelectedPalletForPrint] = useState(null);
+  const [selectedPallets, setSelectedPallets] = useState([]);
+  const [selectAll, setSelectAll] = useState(false);
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
+  const printRef = useRef(null);
   // Thêm state quản lý kiểm tra từng mặt hàng
   // Xóa hẳn 2 state checkedDetails, notCheckedDetails và các setCheckedDetails/setNotCheckedDetails
 
@@ -91,9 +104,115 @@ export default function GoodsReceiptDetail() {
     setIsSubmittingPallet(isSubmitting);
   }, []);
 
+  // Callback để refresh batch options trong PalletManager khi tạo lô mới
+  const handleBatchCreatedRef = useRef(null);
+  
+  const handleBatchCreated = useCallback((fn) => {
+    handleBatchCreatedRef.current = fn;
+  }, []);
+
+  // Xử lý in pallet
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: "Phiếu dán mã kệ kê hàng",
+    pageStyle: `
+      @page { 
+        size: A4; 
+        margin: 10mm; 
+      } 
+      body { 
+        -webkit-print-color-adjust: exact; 
+        print-color-adjust: exact; 
+        margin: 0;
+        padding: 0;
+      }
+      .print-container {
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+      }
+    `,
+  });
+
+  const handlePrintPallet = (pallet) => {
+    setSelectedPalletForPrint(pallet);
+    setTimeout(() => handlePrint(), 100);
+  };
+
+  // Cập nhật selectAll khi selectedPallets thay đổi
+  useEffect(() => {
+    if (selectedPallets.length === 0) {
+      setSelectAll(false);
+    } else if (selectedPallets.length === pallets.length && pallets.length > 0) {
+      setSelectAll(true);
+    } else {
+      setSelectAll(false);
+    }
+  }, [selectedPallets, pallets]);
+
+  // Xử lý chọn/bỏ chọn tất cả
+  const handleSelectAll = (checked) => {
+    setSelectAll(checked);
+    if (checked) {
+      setSelectedPallets([...pallets]);
+    } else {
+      setSelectedPallets([]);
+    }
+  };
+
+  // Xử lý chọn/bỏ chọn một pallet
+  const handleSelectPallet = (pallet, checked) => {
+    if (checked) {
+      setSelectedPallets(prev => [...prev, pallet]);
+    } else {
+      setSelectedPallets(prev => prev.filter(p => (p.palletId || p.id) === (pallet.palletId || pallet.id)));
+    }
+  };
+
+  // Kiểm tra xem một pallet có được chọn không
+  const isPalletSelected = (pallet) => {
+    return selectedPallets.some(p => (p.palletId || p.id) === (pallet.palletId || pallet.id));
+  };
+
+  // In nhiều pallet đã chọn
+  const handlePrintSelected = () => {
+    if (selectedPallets.length === 0) {
+      window.showToast?.("Vui lòng chọn ít nhất một kệ kê hàng để in", "warning");
+      return;
+    }
+    // Hiển thị modal preview trước khi in
+    setShowPrintPreview(true);
+  };
+
+  // Xác nhận in từ modal preview
+  const handleConfirmPrint = () => {
+    setShowPrintPreview(false);
+    setSelectedPalletForPrint(null); // Reset để dùng selectedPallets
+    setTimeout(() => handlePrint(), 100);
+  };
+
   useEffect(() => {
     fetchGoodsReceiptNoteDetail();
   }, [id]);
+
+  // Đóng cart pallet và arranging nếu status không phải Completed
+  useEffect(() => {
+    if (!goodsReceiptNote) return;
+    
+    if (goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.Completed) {
+      setExpandedSections(prev => {
+        // Chỉ đóng nếu đang mở, tránh re-render không cần thiết
+        if (!prev.pallet && !prev.arranging) {
+          return prev;
+        }
+        return {
+          ...prev,
+          pallet: false,
+          arranging: false
+        };
+      });
+    }
+  }, [goodsReceiptNote?.status]);
 
   const fetchGoodsReceiptNoteDetail = async () => {
     setLoading(true);
@@ -150,6 +269,8 @@ export default function GoodsReceiptDetail() {
       }
     } catch (error) {
       console.error("Error fetching goods receipt note detail:", error);
+      const msg = extractErrorMessage(error, "Không thể tải thông tin phiếu nhập kho!");
+      window.showToast?.(msg, "error");
       setGoodsReceiptNote(null);
     } finally {
       setLoading(false);
@@ -194,6 +315,14 @@ export default function GoodsReceiptDetail() {
   };
 
   const toggleSection = (section) => {
+    // Chỉ cho mở cart pallet và arranging khi status là Completed
+    if (section === 'pallet' || section === 'arranging') {
+      if (goodsReceiptNote?.status !== GOODS_RECEIPT_NOTE_STATUS.Completed) {
+        window.showToast?.("Phiếu phải được Quản lý kho duyệt thì mới được đưa vào kệ kê hàng", "warning");
+        return;
+      }
+    }
+    
     setExpandedSections(prev => ({
       ...prev,
       [section]: !prev[section]
@@ -212,7 +341,8 @@ export default function GoodsReceiptDetail() {
       await fetchGoodsReceiptNoteDetail();
     } catch (error) {
       console.error('Submit goods receipt note failed:', error);
-      window.showToast("Nộp đơn kiểm nhập thất bại, vui lòng thử lại!", "error");
+      const msg = extractErrorMessage(error, "Nộp đơn kiểm nhập thất bại, vui lòng thử lại!");
+      window.showToast?.(msg, "error");
     }
   };
 
@@ -247,7 +377,7 @@ export default function GoodsReceiptDetail() {
   // Handler để hoàn thành Purchase Order
   const handleCompletePurchaseOrder = async () => {
     if (!goodsReceiptNote?.purchaseOderId) {
-      window.showToast?.("Không tìm thấy mã đơn nhập hàng", "error");
+      window.showToast?.("Không tìm thấy mã đơn mua hàng", "error");
       return;
     }
 
@@ -264,14 +394,14 @@ export default function GoodsReceiptDetail() {
 
     try {
       await completePurchaseOrder(goodsReceiptNote.purchaseOderId);
-      window.showToast?.("Hoàn thành đơn nhập hàng thành công!", "success");
+      window.showToast?.("Hoàn thành đơn mua hàng thành công!", "success");
       // Đánh dấu đã hoàn thành để disable nút
       setIsPurchaseOrderCompleted(true);
       // Refresh dữ liệu sau khi hoàn thành
       await fetchGoodsReceiptNoteDetail();
     } catch (error) {
       console.error("Error completing purchase order:", error);
-      const msg = extractErrorMessage(error, "Hoàn thành đơn nhập hàng thất bại, vui lòng thử lại!");
+      const msg = extractErrorMessage(error, "Hoàn thành đơn mua hàng thất bại, vui lòng thử lại!");
       window.showToast?.(msg, "error");
     }
   };
@@ -282,6 +412,47 @@ export default function GoodsReceiptDetail() {
       await fetchPallets(goodsReceiptNote.goodsReceiptNoteId);
     }
   }, [goodsReceiptNote?.goodsReceiptNoteId]);
+
+  // Handler mở modal gợi ý vị trí
+  const handleOpenLocationSuggestion = async (pallet) => {
+    const palletId = pallet?.palletId || pallet?.id;
+    if (!palletId) {
+      window.showToast?.("Không tìm thấy mã pallet", "error");
+      return;
+    }
+    
+    setSelectedPalletForSuggestion(pallet);
+    setShowLocationSuggestionModal(true);
+    setLoadingSuggestions(true);
+    setLocationSuggestions([]);
+
+    try {
+      const response = await getLocationSuggest(palletId);
+      const suggestions = response?.data || response?.items || response || [];
+      setLocationSuggestions(Array.isArray(suggestions) ? suggestions : []);
+    } catch (error) {
+      console.error("Error fetching location suggestions:", error);
+      const errorMessage = extractErrorMessage(error, "Lấy danh sách gợi ý vị trí thất bại");
+      window.showToast?.(errorMessage, "error");
+      setLocationSuggestions([]);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
+  // Handler chọn vị trí từ gợi ý
+  const handleSelectSuggestedLocation = (location) => {
+    const locationCode = location?.locationCode || location?.code || "";
+    if (locationCode && selectedPalletForSuggestion) {
+      setShowLocationSuggestionModal(false);
+      setSelectedPalletForLocation({
+        ...selectedPalletForSuggestion,
+        suggestedLocationCode: locationCode,
+        suggestedLocationId: location?.locationId || location?.id
+      });
+      setShowAddLocationModal(true);
+    }
+  };
 
   const handlePrintReceipt = () => {
     // Implement print functionality
@@ -308,7 +479,8 @@ export default function GoodsReceiptDetail() {
       fetchGoodsReceiptNoteDetail();
     } catch (e) {
       console.error(e);
-      window.showToast("Từ chối thất bại, vui lòng thử lại!", "error");
+      const msg = extractErrorMessage(e, "Từ chối thất bại, vui lòng thử lại!");
+      window.showToast?.(msg, "error");
     }
   };
 
@@ -386,7 +558,7 @@ export default function GoodsReceiptDetail() {
                 {/* Thông tin cơ bản */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div>
-                    <div className="text-xs text-gray-500 mb-0.5">Mã đơn nhập</div>
+                    <div className="text-xs text-gray-500 mb-0.5">Mã đơn mua hàng</div>
                     <div className="text-base font-semibold text-gray-900">{goodsReceiptNote.purchaseOderId || 'N/A'}</div>
                   </div>
                   <div>
@@ -429,7 +601,7 @@ export default function GoodsReceiptDetail() {
                         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
                           <div className="text-gray-800">Dự kiến: <span className="font-semibold">{detail.expectedPackageQuantity || 0}</span></div>
                           <div className="text-green-600">Đã nhận: <span className="font-semibold">{detail.deliveredPackageQuantity || 0}</span></div>
-                          <div className="text-blue-600">Thực nhập: <span className="font-semibold">{detail.actualPackageQuantity || 0}</span></div>
+                          <div className="text-blue-600">Thực nhập: <span className="font-semibold">{Math.max(0, detail.actualPackageQuantity || 0)}</span></div>
                           <div className="text-red-600">Loại bỏ: <span className="font-semibold">{detail.rejectPackageQuantity || 0}</span></div>
                         </div>
                       </div>
@@ -477,9 +649,9 @@ export default function GoodsReceiptDetail() {
             {expandedSections.receiving && (
               <>
                 <div className="p-6 space-y-6">
+                  {/* TABLE 1: CẦN KIỂM TRA (status==1) - Luôn hiển thị cho nhân viên kho khi có item Receiving */}
                   {!(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT)) && (
                     <>
-                      {/* TABLE 1: CẦN KIỂM TRA (status==1) */}
                       <h2 className="text-lg font-semibold mb-3">Đang kiểm nhập</h2>
                       <Table>
                         <TableHeader>
@@ -500,35 +672,43 @@ export default function GoodsReceiptDetail() {
                         <TableBody>
                           {needCheckDetails.length === 0 ? (
                             <TableRow>
-                              <TableCell colSpan={10} className="text-center text-gray-500 py-8">Tất cả mặt hàng đã kiểm tra</TableCell>
+                              <TableCell colSpan={11} className="text-center text-gray-500 py-8">Chưa có mặt hàng cần kiểm nhập</TableCell>
                             </TableRow>
                           ) : needCheckDetails.map((detail, index) => {
-                            const actualPackageQuantity = (Number(detail.deliveredPackageQuantity) || 0) - (Number(detail.rejectPackageQuantity) || 0);
                             const expectedPackageQuantity = Number(detail.expectedPackageQuantity) || 0;
                             const deliveredPackageQuantity = Number(detail.deliveredPackageQuantity) || 0;
                             const rejectPackageQuantity = Number(detail.rejectPackageQuantity) || 0;
+                            // Đảm bảo số lượng thực nhận không bao giờ âm, nếu âm thì là 0
+                            const actualPackageQuantity = Math.max(0, deliveredPackageQuantity - rejectPackageQuantity);
 
                             // Validation logic theo quy tắc
+                            // a = expected (số lượng dự kiến), b = delivered (số lượng giao đến), c = reject (số lượng trả lại)
                             const validateRejectQuantity = (delivered, reject, expected) => {
                               if (delivered === 0 && reject === 0) return null; // Cho phép cả 2 = 0
 
+                              // Kiểm tra số lượng thực nhận không được âm (reject không được lớn hơn delivered)
+                              if (reject > delivered) {
+                                return `Số lượng trả lại không được lớn hơn số lượng giao đến`;
+                              }
+
                               if (expected > delivered) {
-                                // Rule 1: a > b -> 0 <= c <= a - 1
-                                const maxReject = expected - 1;
-                                if (reject < 0 || reject > maxReject) {
-                                  return `Số lượng trả lại phải từ 0 đến ${maxReject} (vì số lượng dự kiến > số lượng giao đến)`;
+                                // TH1: a > b -> 0 <= c <= b
+                                if (reject < 0 || reject > delivered) {
+                                  return `Số lượng trả lại phải từ 0 đến ${delivered} (vì số lượng dự kiến > số lượng giao đến)`;
                                 }
                               } else if (expected < delivered) {
-                                // Rule 2: a < b -> b - a <= c <= b
+                                // TH2: a < b -> b - a <= c <= b
                                 const minReject = delivered - expected;
-                                const maxReject = delivered;
-                                if (reject < minReject || reject > maxReject) {
-                                  return `Số lượng trả lại phải từ ${minReject} đến ${maxReject} (vì số lượng giao đến > số lượng dự kiến)`;
+                                if (reject < minReject) {
+                                  return `Số lượng trả lại  tối thiểu phải là ${minReject} (vì số lượng giao đến > số lượng dự kiến)`;
+                                }
+                                if (reject > delivered) {
+                                  return `Số lượng trả lại không được lớn hơn số lượng giao đến`;
                                 }
                               } else {
-                                // a = b -> c = 0
-                                if (reject !== 0) {
-                                  return `Số lượng trả lại phải bằng 0 (vì số lượng giao đến = số lượng dự kiến)`;
+                                // TH3: a = b -> 0 <= c <= b
+                                if (reject < 0 || reject > delivered) {
+                                  return `Số lượng trả lại phải từ 0 đến ${delivered} (vì số lượng giao đến = số lượng dự kiến)`;
                                 }
                               }
                               return null;
@@ -543,7 +723,7 @@ export default function GoodsReceiptDetail() {
                                   <TableCell className="font-medium text-gray-900 text-xs max-w-[70px] truncate" title={detail.goodsCode}>{detail.goodsCode}</TableCell>
                                   <TableCell className="text-xs text-gray-700 max-w-[90px] truncate" title={detail.goodsName}>{detail.goodsName}</TableCell>
                                   <TableCell className="text-xs text-gray-700 text-center">{detail.unitMeasureName}</TableCell>
-                                  <TableCell className="text-xs text-gray-700 text-center">{detail.unitPerPackage}/thùng</TableCell>
+                                  <TableCell className="text-xs text-gray-700 text-center">{detail.unitPerPackage ? `${detail.unitPerPackage}${detail.unitMeasureName ? ' ' + detail.unitMeasureName : ''}/thùng` : '-'}</TableCell>
                                   {/* Số lượng thùng dự kiến */}
                                   <TableCell className="text-center text-xs">{detail.expectedPackageQuantity ?? 0}</TableCell>
                                   {/* Số lượng thùng giao đến */}
@@ -693,9 +873,8 @@ export default function GoodsReceiptDetail() {
                                   <TableCell className="text-center">
                                     {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CHECK) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && (
                                       <Button
-                                        variant="outline"
                                         size="sm"
-                                        className="text-green-600 hover:text-white hover:bg-green-600 h-[38px] mr-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="bg-green-600 text-white hover:bg-green-700 h-[38px] mr-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                         disabled={!!validationErrors[detailId]}
                                         onClick={async () => {
                                           // Validate trước khi submit
@@ -710,18 +889,24 @@ export default function GoodsReceiptDetail() {
                                             return;
                                           }
 
-                                          await verifyRecord({
-                                            goodsReceiptNoteDetailId: detail.goodsReceiptNoteDetailId,
-                                            deliveredPackageQuantity: Number(detail.deliveredPackageQuantity) || 0,
-                                            rejectPackageQuantity: Number(detail.rejectPackageQuantity) || 0,
-                                            note: detail.note || ''
-                                          });
-                                          setValidationErrors(prev => {
-                                            const newErrors = { ...prev };
-                                            delete newErrors[detailId];
-                                            return newErrors;
-                                          });
-                                          fetchGoodsReceiptNoteDetail();
+                                          try {
+                                            await verifyRecord({
+                                              goodsReceiptNoteDetailId: detail.goodsReceiptNoteDetailId,
+                                              deliveredPackageQuantity: Number(detail.deliveredPackageQuantity) || 0,
+                                              rejectPackageQuantity: Number(detail.rejectPackageQuantity) || 0,
+                                              note: detail.note || ''
+                                            });
+                                            setValidationErrors(prev => {
+                                              const newErrors = { ...prev };
+                                              delete newErrors[detailId];
+                                              return newErrors;
+                                            });
+                                            fetchGoodsReceiptNoteDetail();
+                                          } catch (error) {
+                                            console.error("Error verifying record:", error);
+                                            const msg = extractErrorMessage(error, "Kiểm nhập thất bại, vui lòng thử lại!");
+                                            window.showToast?.(msg, "error");
+                                          }
                                         }}
                                       >
                                         Kiểm nhập
@@ -755,69 +940,105 @@ export default function GoodsReceiptDetail() {
                     </>
                   )}
 
-                  {/* TABLE 2: ĐÃ KIỂM TRA (status==2) */}
-                  <h2 className="text-lg font-semibold text-green-700 mt-10 mb-3">Đã kiểm nhập</h2>
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-green-100">
-                        <TableHead className="font-semibold text-green-900">Mã hàng</TableHead>
-                        <TableHead className="font-semibold text-green-900">Tên hàng</TableHead>
-                        <TableHead className="font-semibold text-green-900 text-center">Đơn vị tính</TableHead>
-                        <TableHead className="font-semibold text-green-900 text-center">Quy cách đóng gói</TableHead>
-                        <TableHead className="font-semibold text-green-900 text-center">Số lượng thùng dự kiến</TableHead>
-                        <TableHead className="font-semibold text-green-900 text-center">Số lượng thùng giao đến</TableHead>
-                        <TableHead className="font-semibold text-green-900 text-center">Số lượng thùng trả lại</TableHead>
-                        <TableHead className="font-semibold text-green-900 text-center">Số lượng thùng thực nhận</TableHead>
-                        <TableHead className="font-semibold text-green-900">Ghi chú</TableHead>
-                        <TableHead className="font-semibold text-green-900 text-center">Trạng thái</TableHead>
-                        {(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) || checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.Inspected)) && goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.Completed && (
-                          <TableHead className="font-semibold text-green-900 text-center">Hành động</TableHead>
-                        )}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {checkedDetails.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={10} className="text-center text-green-500 py-8">Chưa có mặt hàng đã kiểm tra</TableCell>
-                        </TableRow>
-                      ) : checkedDetails.map((detail, idx) => (
-                        <TableRow key={idx} className="hover:bg-green-50">
-                          <TableCell className="font-medium text-green-800 text-xs">{detail.goodsCode}</TableCell>
-                          <TableCell className="text-xs text-green-700">{detail.goodsName}</TableCell>
-                          <TableCell className="text-xs text-green-700 text-center">{detail.unitMeasureName}</TableCell>
-                          <TableCell className="text-xs text-green-700 text-center">{detail.unitPerPackage}/thùng</TableCell>
-                          <TableCell className="text-center text-xs">{detail.expectedPackageQuantity}</TableCell>
-                          <TableCell className="text-center text-xs">{detail.deliveredPackageQuantity}</TableCell>
-                          <TableCell className="text-center text-xs">{detail.rejectPackageQuantity}</TableCell>
-                          <TableCell className="text-center text-xs">{detail.actualPackageQuantity}</TableCell>
-                          <TableCell className="text-green-700">{detail.note || ''}</TableCell>
-                          {/* Cột trạng thái */}
-                          <TableCell className="text-center min-w-[110px]">
-                            {(() => {
-                              const meta = getReceiptItemStatusMeta(detail.status); return (
-                                <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium break-words ${meta.color}`}>{meta.label}</span>
-                              );
-                            })()}
-                          </TableCell>
-                          {(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) || checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.Inspected)) && goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.Completed && (
-                            <TableCell className="text-center">
-                              <div className="inline-flex items-center gap-2">
-                                {detail.status === RECEIPT_ITEM_STATUS.Inspected && hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CANCEL) && (
-                                  <Button variant="outline" size="sm" className="text-yellow-600 border-yellow-300 hover:text-white hover:bg-yellow-500 h-[30px] rounded" onClick={async () => {
-                                    await cancelGoodsReceiptNoteDetail(detail.goodsReceiptNoteDetailId);
-                                    fetchGoodsReceiptNoteDetail();
-                                  }}>Kiểm nhập lại</Button>
-                                )}
-                                {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && (
-                                  <Button variant="outline" size="sm" className="text-red-600 border-red-300 hover:text-white hover:bg-red-600 h-[30px] rounded" onClick={() => openRejectModal(detail.goodsReceiptNoteDetailId)}>Từ chối</Button>
-                                )}
-                              </div>
-                            </TableCell>
-                          )}
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  {/* TABLE 2: ĐÃ KIỂM TRA (status==2, 3, 4) */}
+                  {/* Nhân viên kho: luôn thấy bảng này để có thể kiểm nhập lại
+                      Quản lý kho: thấy khi đơn đã được nộp (PendingApproval/Completed) HOẶC có item đang chờ duyệt/hoàn thành (để từ chối) */}
+                  {(() => {
+                    const isWarehouseManager = hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT);
+                    
+                    // Nhân viên kho: luôn hiển thị để có thể xem và kiểm nhập lại
+                    if (!isWarehouseManager) {
+                      return true;
+                    }
+                    
+                    // Quản lý kho: hiển thị nếu:
+                    // 1. Status GRN là PendingApproval hoặc Completed (đã nộp đơn)
+                    // 2. HOẶC có item đang ở trạng thái PendingApproval hoặc Completed (để có thể tiếp tục từ chối)
+                    const isPendingOrCompleted = goodsReceiptNote.status === GOODS_RECEIPT_NOTE_STATUS.PendingApproval || goodsReceiptNote.status === GOODS_RECEIPT_NOTE_STATUS.Completed;
+                    const hasPendingOrCompletedItems = checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.PendingApproval || d.status === RECEIPT_ITEM_STATUS.Completed);
+                    
+                    return isPendingOrCompleted || hasPendingOrCompletedItems;
+                  })() ? (
+                    <>
+                      <h2 className="text-lg font-semibold text-green-700 mt-10 mb-3">Đã kiểm nhập</h2>
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-green-100">
+                            <TableHead className="font-semibold text-green-900">Mã hàng</TableHead>
+                            <TableHead className="font-semibold text-green-900">Tên hàng</TableHead>
+                            <TableHead className="font-semibold text-green-900 text-center">Đơn vị tính</TableHead>
+                            <TableHead className="font-semibold text-green-900 text-center">Quy cách đóng gói</TableHead>
+                            <TableHead className="font-semibold text-green-900 text-center">Số lượng thùng dự kiến</TableHead>
+                            <TableHead className="font-semibold text-green-900 text-center">Số lượng thùng giao đến</TableHead>
+                            <TableHead className="font-semibold text-green-900 text-center">Số lượng thùng trả lại</TableHead>
+                            <TableHead className="font-semibold text-green-900 text-center">Số lượng thùng thực nhận</TableHead>
+                            <TableHead className="font-semibold text-green-900">Ghi chú</TableHead>
+                            <TableHead className="font-semibold text-green-900 text-center">Trạng thái</TableHead>
+                            {(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) || checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.Inspected)) && goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.Completed && (
+                              <TableHead className="font-semibold text-green-900 text-center">Hành động</TableHead>
+                            )}
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {checkedDetails.length === 0 ? (
+                            <TableRow>
+                              <TableCell 
+                                colSpan={
+                                  ((hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT)) && goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.Completed) 
+                                    ? 12 
+                                    : 11
+                                } 
+                                className="text-center text-green-500 py-8"
+                              >
+                                Chưa có mặt hàng đã kiểm nhập
+                              </TableCell>
+                            </TableRow>
+                          ) : checkedDetails.map((detail, idx) => (
+                            <TableRow key={idx} className="hover:bg-green-50">
+                              <TableCell className="font-medium text-green-800 text-xs">{detail.goodsCode}</TableCell>
+                              <TableCell className="text-xs text-green-700">{detail.goodsName}</TableCell>
+                              <TableCell className="text-xs text-green-700 text-center">{detail.unitMeasureName}</TableCell>
+                              <TableCell className="text-xs text-green-700 text-center">{detail.unitPerPackage ? `${detail.unitPerPackage}${detail.unitMeasureName ? ' ' + detail.unitMeasureName : ''}/thùng` : '-'}</TableCell>
+                              <TableCell className="text-center text-xs">{detail.expectedPackageQuantity}</TableCell>
+                              <TableCell className="text-center text-xs">{detail.deliveredPackageQuantity}</TableCell>
+                              <TableCell className="text-center text-xs">{detail.rejectPackageQuantity}</TableCell>
+                              <TableCell className="text-center text-xs">{Math.max(0, detail.actualPackageQuantity || 0)}</TableCell>
+                              <TableCell className="text-green-700">{detail.note || ''}</TableCell>
+                              {/* Cột trạng thái */}
+                              <TableCell className="text-center min-w-[110px]">
+                                {(() => {
+                                  const meta = getReceiptItemStatusMeta(detail.status); return (
+                                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium break-words ${meta.color}`}>{meta.label}</span>
+                                  );
+                                })()}
+                              </TableCell>
+                              {(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) || checkedDetails.some(d => d.status === RECEIPT_ITEM_STATUS.Inspected)) && goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.Completed && (
+                                <TableCell className="text-center">
+                                  <div className="inline-flex items-center gap-2">
+                                    {detail.status === RECEIPT_ITEM_STATUS.Inspected && hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CANCEL) && (
+                                      <Button size="sm" className="bg-yellow-500 text-white hover:bg-yellow-600 h-[30px] rounded" onClick={async () => {
+                                        try {
+                                          await cancelGoodsReceiptNoteDetail(detail.goodsReceiptNoteDetailId);
+                                          fetchGoodsReceiptNoteDetail();
+                                        } catch (error) {
+                                          console.error("Error canceling goods receipt note detail:", error);
+                                          const msg = extractErrorMessage(error, "Kiểm nhập lại thất bại, vui lòng thử lại!");
+                                          window.showToast?.(msg, "error");
+                                        }
+                                      }}>Kiểm nhập lại</Button>
+                                    )}
+                                    {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && (
+                                      <Button onClick={() => openRejectModal(detail.goodsReceiptNoteDetailId)} className="h-[38px] px-4 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all">Từ chối</Button>
+                                    )}
+                                  </div>
+                                </TableCell>
+                              )}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </>
+                  ) : null}
                 </div>
 
                 <div className="flex justify-end gap-2 pt-4 border-t border-gray-200 mr-6">
@@ -833,8 +1054,12 @@ export default function GoodsReceiptDetail() {
                   )}
                   {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) && (
                     <Button
-                      className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 h-[38px]"
-                      disabled={goodsReceiptNote.status === GOODS_RECEIPT_NOTE_STATUS.Completed}
+                      className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 h-[38px] disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={
+                        goodsReceiptNote.status === GOODS_RECEIPT_NOTE_STATUS.Completed || 
+                        checkedDetails.length === 0 ||
+                        goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.PendingApproval
+                      }
                       onClick={async () => {
                         try {
                           await approveGoodsReceiptNote(goodsReceiptNote.goodsReceiptNoteId);
@@ -855,7 +1080,8 @@ export default function GoodsReceiptDetail() {
           </CardContent>
         </Card>
 
-        {/* Pallet */}
+        {/* Pallet - Ẩn cho quản lý kho */}
+        {!(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT)) && (
         <Card className="bg-gray-50 border border-slate-200 shadow-sm">
           <CardContent className="p-0">
             <div
@@ -867,30 +1093,34 @@ export default function GoodsReceiptDetail() {
                   <Plus className="w-5 h-5 text-orange-600" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Pallet</h2>
-                  <p className="text-sm text-gray-500">Quản lý pallet và lô hàng</p>
+                  <h2 className="text-lg font-semibold text-gray-900">Kệ kê hàng</h2>
+                  <p className="text-sm text-gray-500">Quản lý kệ kê hàng và lô hàng</p>
                 </div>
               </div>
               {expandedSections.pallet ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
             </div>
 
-            {expandedSections.pallet && (
-              <div className="p-6 space-y-6">
-                <div className="flex gap-3">
+            {/* Luôn render PalletManager để giữ state, chỉ ẩn/hiện bằng CSS */}
+            <div className={`p-6 space-y-6 ${expandedSections.pallet ? '' : 'hidden'}`}>
+              <div className="flex gap-3">
+                {/* Ẩn nút "Thêm Lô Mới" cho nhân viên kho khi đã tạo pallet */}
+                {!(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CHECK) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && palletCreated) && (
                   <Button className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 h-[38px] flex items-center gap-2" onClick={() => setShowCreateBatchModal(true)}>
                     <Plus className="w-4 h-4 mr-3" />
                     Thêm Lô Mới
                   </Button>
-                </div>
+                )}
+              </div>
 
-                <PalletManager
-                  goodsReceiptNoteId={goodsReceiptNote?.goodsReceiptNoteId}
-                  goodsReceiptNoteDetails={goodsReceiptNote?.goodsReceiptNoteDetails || []}
-                  onRegisterSubmit={handleRegisterSubmit}
-                  onPalletCreated={handlePalletCreated}
-                  hasExistingPallets={pallets.length > 0}
-                  onSubmittingChange={handleSubmittingChange}
-                />
+              <PalletManager
+                goodsReceiptNoteId={goodsReceiptNote?.goodsReceiptNoteId}
+                goodsReceiptNoteDetails={goodsReceiptNote?.goodsReceiptNoteDetails || []}
+                onRegisterSubmit={handleRegisterSubmit}
+                onPalletCreated={handlePalletCreated}
+                hasExistingPallets={pallets.length > 0}
+                onSubmittingChange={handleSubmittingChange}
+                onBatchCreated={handleBatchCreated}
+              />
 
                 <div className="flex justify-end gap-2 pt-4 border-t border-gray-200">
                   {!palletCreated && (
@@ -902,10 +1132,10 @@ export default function GoodsReceiptDetail() {
                       {isSubmittingPallet ? (
                         <>
                           <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                          Đang tạo pallet...
+                          Đang tạo kệ kê hàng...
                         </>
                       ) : (
-                        "Tạo pallet"
+                        "Tạo kệ kê hàng"
                       )}
                     </Button>
                   )}
@@ -919,12 +1149,26 @@ export default function GoodsReceiptDetail() {
                     </Button>
                   )}
                 </div>
-              </div>
-            )}
+            </div>
           </CardContent>
         </Card>
+        )}
 
-        {/* Sắp xếp */}
+        {/* Sắp xếp - Hiển thị cho nhân viên kho hoặc quản lý kho (khi đã có pallet và phiếu đã được duyệt) */}
+        {(() => {
+          const isWarehouseManager = hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT);
+          
+          // Nhân viên kho: luôn hiển thị
+          if (!isWarehouseManager) {
+            return true;
+          }
+          
+          // Quản lý kho: chỉ hiển thị khi đã có pallet VÀ phiếu đã được duyệt (Completed)
+          const hasPallets = pallets.length > 0;
+          const isApproved = goodsReceiptNote?.status === GOODS_RECEIPT_NOTE_STATUS.Completed;
+          
+          return hasPallets && isApproved;
+        })() && (
         <Card ref={arrangingSectionRef} className="bg-gray-50 border border-slate-200 shadow-sm">
           <CardContent className="p-0">
             <div
@@ -959,12 +1203,46 @@ export default function GoodsReceiptDetail() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Danh sách pallet</h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-gray-900">Danh sách pallet</h3>
+                      {/* Nút in đã chọn */}
+                      {hasPermission(PERMISSIONS.PALLET_PRINT_BARCODE) && selectedPallets.length > 0 && (
+                        <div className="flex items-center gap-3">
+                          <Button
+                            className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white transition-colors duration-200"
+                            onClick={handlePrintSelected}
+                          >
+                            <Printer className="mr-2 h-4 w-4 text-white" />
+                            In đã chọn ({selectedPallets.length})
+                          </Button>
+                          <Button
+                            className="bg-slate-800 hover:bg-slate-900 h-[38px] px-6 text-white transition-colors duration-200"
+                            onClick={() => {
+                              setSelectedPallets([]);
+                              setSelectAll(false);
+                            }}
+                          >
+                            Bỏ chọn tất cả
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                     <Table>
                       <TableHeader>
                         <TableRow className="bg-purple-100">
+                          {hasPermission(PERMISSIONS.PALLET_PRINT_BARCODE) && (
+                            <TableHead className="font-semibold text-purple-900 text-center w-12">
+                              <input
+                                type="checkbox"
+                                checked={selectAll}
+                                onChange={(e) => handleSelectAll(e.target.checked)}
+                                className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                              />
+                            </TableHead>
+                          )}
                           <TableHead className="font-semibold text-purple-900">Mã pallet</TableHead>
                           <TableHead className="font-semibold text-purple-900">Tên sản phẩm</TableHead>
+                          <TableHead className="font-semibold text-purple-900">Mã hàng</TableHead>
                           <TableHead className="font-semibold text-purple-900 text-center">Số lô</TableHead>
                           <TableHead className="font-semibold text-purple-900 text-center">Số thùng</TableHead>
                           <TableHead className="font-semibold text-purple-900">Vị trí</TableHead>
@@ -1003,11 +1281,24 @@ export default function GoodsReceiptDetail() {
 
                           return (
                             <TableRow key={pallet.palletId || pallet.id || index} className="hover:bg-purple-50">
+                              {hasPermission(PERMISSIONS.PALLET_PRINT_BARCODE) && (
+                                <TableCell className="px-6 py-4 text-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={isPalletSelected(pallet)}
+                                    onChange={(e) => handleSelectPallet(pallet, e.target.checked)}
+                                    className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                                  />
+                                </TableCell>
+                              )}
                               <TableCell className="font-medium text-gray-900 text-xs">
                                 {pallet.palletCode || pallet.code || pallet.palletId || 'N/A'}
                               </TableCell>
                               <TableCell className="text-xs text-gray-700">
-                                {pallet.goodsName || pallet.productName || 'N/A'}
+                                {pallet.goodName || 'N/A'}
+                              </TableCell>
+                              <TableCell className="text-xs text-gray-700">
+                                {pallet.goodCode || pallet.goodsCode || 'N/A'}
                               </TableCell>
                               <TableCell className="text-xs text-gray-700 text-center">
                                 {pallet.batchCode || 'N/A'}
@@ -1016,7 +1307,7 @@ export default function GoodsReceiptDetail() {
                                 {pallet.packageQuantity || pallet.numPackages || 0}
                               </TableCell>
                               <TableCell className="text-xs text-gray-700">
-                                {locationCode || 'Chưa sắp xếp'}
+                                {locationCode || 'Chưa đưa vào vị trí'}
                               </TableCell>
                               <TableCell className="text-center">
                                 <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${statusDisplay.className}`}>
@@ -1024,19 +1315,44 @@ export default function GoodsReceiptDetail() {
                                 </span>
                               </TableCell>
                               <TableCell className="text-center">
-                                {isEmptyLocation && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-8 w-8 p-0 hover:bg-red-50"
-                                    onClick={() => {
-                                      setSelectedPalletForLocation(pallet);
-                                      setShowAddLocationModal(true);
-                                    }}
-                                  >
-                                    <Plus className="w-4 h-4 text-red-600" />
-                                  </Button>
-                                )}
+                                <div className="flex items-center justify-center gap-2">
+                                  {isEmptyLocation && !(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT)) && (
+                                    <>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0 hover:bg-yellow-50"
+                                        onClick={() => handleOpenLocationSuggestion(pallet)}
+                                        title="Gợi ý vị trí"
+                                      >
+                                        <Lightbulb className="w-4 h-4 text-yellow-600" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0 hover:bg-red-50"
+                                        onClick={() => {
+                                          setSelectedPalletForLocation(pallet);
+                                          setShowAddLocationModal(true);
+                                        }}
+                                        title="Thêm vị trí"
+                                      >
+                                        <Plus className="w-4 h-4 text-red-600" />
+                                      </Button>
+                                    </>
+                                  )}
+                                  {hasPermission(PERMISSIONS.PALLET_PRINT_BARCODE) && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 w-8 p-0 hover:bg-blue-50"
+                                      onClick={() => handlePrintPallet(pallet)}
+                                      title="In mã pallet"
+                                    >
+                                      <Printer className="w-4 h-4 text-blue-600" />
+                                    </Button>
+                                  )}
+                                </div>
                               </TableCell>
                             </TableRow>
                           );
@@ -1048,6 +1364,12 @@ export default function GoodsReceiptDetail() {
 
                 <div className="flex justify-end pt-4 border-t border-gray-200">
                   {(() => {
+                    // Ẩn nút "Hoàn Thành" cho quản lý kho, chỉ hiển thị cho nhân viên kho
+                    const isWarehouseManager = hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT);
+                    if (isWarehouseManager) {
+                      return null;
+                    }
+
                     // Kiểm tra xem tất cả pallet đã có locationCode chưa
                     const allPalletsHaveLocation = pallets.length > 0 && pallets.every(pallet => {
                       const locationCode = pallet.locationCode ? String(pallet.locationCode).trim() : '';
@@ -1073,6 +1395,7 @@ export default function GoodsReceiptDetail() {
             )}
           </CardContent>
         </Card>
+        )}
       </div>
       {/* Modal nhập lý do từ chối */}
       <RejectReasonModal
@@ -1088,8 +1411,24 @@ export default function GoodsReceiptDetail() {
         onClose={() => setShowCreateBatchModal(false)}
         onSuccess={() => {
           setShowCreateBatchModal(false);
-          fetchGoodsReceiptNoteDetail();
+          // Chỉ refresh batch options trong PalletManager, không reload toàn bộ component
+          if (handleBatchCreatedRef.current) {
+            handleBatchCreatedRef.current();
+          }
         }}
+      />
+      {/* Modal gợi ý vị trí */}
+      <LocationSuggestionModal
+        isOpen={showLocationSuggestionModal}
+        onClose={() => {
+          setShowLocationSuggestionModal(false);
+          setSelectedPalletForSuggestion(null);
+          setLocationSuggestions([]);
+        }}
+        onSelectLocation={handleSelectSuggestedLocation}
+        suggestions={locationSuggestions}
+        loading={loadingSuggestions}
+        palletInfo={selectedPalletForSuggestion}
       />
       {/* Modal thêm vị trí cho pallet */}
       <AddLocationToPalletModal
@@ -1101,6 +1440,57 @@ export default function GoodsReceiptDetail() {
         onSuccess={handleLocationAdded}
         pallet={selectedPalletForLocation}
       />
+      {/* Modal Preview In */}
+      {showPrintPreview && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style={{ zIndex: 9999 }}>
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Xem trước barcode ({selectedPallets.length} kệ kê hàng)
+              </h3>
+              <button
+                onClick={() => setShowPrintPreview(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              <PrintableMultiplePalletLabels pallets={selectedPallets} />
+            </div>
+            <div className="flex items-center justify-end gap-3 p-4 border-t">
+              <button
+                onClick={() => setShowPrintPreview(false)}
+                className="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleConfirmPrint}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center gap-2"
+              >
+                <Printer className="w-4 h-4" />
+                In ngay
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Vùng in phiếu - căn giữa khi in */}
+      <div className="print-wrapper" style={{ display: 'none' }}>
+        <div ref={printRef} className="print-container">
+          {selectedPallets.length > 1 ? (
+            <PrintableMultiplePalletLabels pallets={selectedPallets} />
+          ) : selectedPallets.length === 1 ? (
+            <PrintablePalletLabel pallet={selectedPallets[0]} />
+          ) : selectedPalletForPrint ? (
+            <PrintablePalletLabel pallet={selectedPalletForPrint} />
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }

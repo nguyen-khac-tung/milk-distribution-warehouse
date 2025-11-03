@@ -89,6 +89,7 @@ namespace MilkDistributionWarehouse.Repositories
         {
             return await _context.Pallets
                 .Include(p => p.Batch)
+                    .ThenInclude(p => p.Goods)
                 .Include(p => p.Location)
                 .Include(p => p.GoodsPacking)
                 .Include(p => p.CreateByNavigation)

@@ -337,7 +337,7 @@ export default function UpdatePurchaseOrder() {
             const itemsWithIds = validItems.map(item => {
                 // Ưu tiên dùng goodsId từ item (đã có từ dữ liệu load)
                 let finalGoodsId = null;
-                
+
                 if (item.goodsId && item.goodsId !== 0) {
                     // Dùng goodsId từ item trước
                     finalGoodsId = parseInt(item.goodsId);
@@ -378,11 +378,11 @@ export default function UpdatePurchaseOrder() {
             };
 
             await updatePurchaseOrder(submitData);
-            window.showToast("Cập nhật đơn nhập thành công!", "success");
+            window.showToast("Cập nhật đơn mua hàng thành công!", "success");
             navigate("/purchase-orders");
         } catch (error) {
-            console.error("Lỗi khi cập nhật đơn nhập:", error);
-            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi cập nhật đơn nhập!";
+            console.error("Lỗi khi cập nhật đơn mua", error);
+            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi cập nhật đơn mua hàng!";
             window.showToast(errorMessage, "error");
         }
     }
@@ -419,7 +419,7 @@ export default function UpdatePurchaseOrder() {
                     <div className="p-6 space-y-6">
                         {/* Header Information */}
                         <div>
-                            <h3 className="text-lg font-semibold text-slate-600 mb-4">Thông Tin Đơn Hàng</h3>
+                            <h3 className="text-lg font-semibold text-slate-600 mb-4">Thông Tin Đơn Mua Hàng</h3>
                             <div className="space-y-6">
                                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                                     <div className="space-y-2">

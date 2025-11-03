@@ -45,8 +45,10 @@ namespace MilkDistributionWarehouse.Repositories
         public async Task<List<Batch>> GetActiveBatchesByGoodsId(int goodsId)
         {
             return await _context.Batchs
-                .Where(b => b.GoodsId == goodsId && b.Status == CommonStatus.Active)
-                .OrderByDescending(b => b.CreateAt)
+                .Where(b => b.GoodsId == goodsId 
+                    && b.ExpiryDate > DateOnly.FromDateTime(DateTime.Now) 
+                    && b.Status == CommonStatus.Active)
+                .OrderByDescending(b => b.ExpiryDate)
                 .AsNoTracking()
                 .ToListAsync();
         }

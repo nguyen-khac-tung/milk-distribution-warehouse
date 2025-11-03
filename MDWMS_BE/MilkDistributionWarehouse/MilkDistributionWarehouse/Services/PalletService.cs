@@ -200,12 +200,16 @@ namespace MilkDistributionWarehouse.Services
 
             if (dto.LocationId.HasValue)
             {
-                if (!await _palletRepository.ExistsLocation(dto.LocationId))
-                    return ("Vị trí không tồn tại.".ToMessageForUser(), new());
                 if (dto.LocationId != pallet.LocationId)
                 {
                     if (!await _palletRepository.IsLocationAvailable(dto.LocationId))
                         return ("Vị trí mới đã có pallet khác.".ToMessageForUser(), new PalletDto.PalletResponseDto());
+                }
+                var location = await _locationRepository.GetLocationById(dto.LocationId.Value);
+                if (location == null)
+                    return ("Vị trí không tồn tại.".ToMessageForUser(), new());
+                if (location.Area.StorageConditionId != pallet.Batch.Goods.StorageConditionId) { 
+                    return ("Vị trí không phù hợp với điều kiện bảo quản của hàng hóa.".ToMessageForUser(), new());
                 }
             }
 

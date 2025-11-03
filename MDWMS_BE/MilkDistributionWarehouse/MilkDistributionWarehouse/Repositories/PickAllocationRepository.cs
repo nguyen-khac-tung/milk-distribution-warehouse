@@ -43,6 +43,7 @@ namespace MilkDistributionWarehouse.Repositories
                 .Include(p => p.Pallet)
                     .ThenInclude(p => p.Batch)
                         .ThenInclude(b => b.Goods)
+                            .ThenInclude(g => g.UnitMeasure)
                 .FirstOrDefaultAsync(p => p.PickAllocationId == id);
         }
 

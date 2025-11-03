@@ -55,6 +55,14 @@ export default function SearchFilterToggle({
   suppliers = [],
   onSupplierFilter,
   clearSupplierFilter,
+  // Retailer Filter
+  retailerFilter,
+  setRetailerFilter,
+  showRetailerFilter,
+  setShowRetailerFilter,
+  retailers = [],
+  onRetailerFilter,
+  clearRetailerFilter,
   // Unit Measure Filter
   unitMeasureFilter,
   setUnitMeasureFilter,
@@ -119,6 +127,9 @@ export default function SearchFilterToggle({
       if (clearSupplierFilter) {
         clearSupplierFilter();
       }
+      if (clearRetailerFilter) {
+        clearRetailerFilter();
+      }
       if (clearUnitMeasureFilter) {
         clearUnitMeasureFilter();
       }
@@ -131,7 +142,7 @@ export default function SearchFilterToggle({
     }
   };
 
-  const hasActiveFilters = searchQuery || statusFilter || roleFilter || categoryFilter || supplierFilter || unitMeasureFilter || areaFilter || creatorFilter;
+  const hasActiveFilters = searchQuery || statusFilter || roleFilter || categoryFilter || supplierFilter || retailerFilter || unitMeasureFilter || areaFilter || creatorFilter;
 
   return (
     <>
@@ -425,6 +436,49 @@ export default function SearchFilterToggle({
                             {supplier.companyName}
                           </button>
                         ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Retailer Filter */}
+              {retailers.length > 0 && (
+                <div className="relative retailer-filter-dropdown">
+                  <button
+                    onClick={() => setShowRetailerFilter(!showRetailerFilter)}
+                    className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors min-w-0 max-w-48
+                      focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
+                      ${retailerFilter ? 'bg-[#d97706] text-white hover:bg-[#d97706]' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
+                  >
+                    <span className="text-sm font-medium truncate">
+                      {retailerFilter ? retailers.find(r => r.retailerId?.toString() === retailerFilter || r.retailerId === retailerFilter)?.companyName || retailers.find(r => r.retailerId?.toString() === retailerFilter || r.retailerId === retailerFilter)?.retailerName || "Chọn nhà bán lẻ" : "Tất cả nhà bán lẻ"}
+                    </span>
+                    <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                  </button>
+
+                  {showRetailerFilter && (
+                    <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-50 max-h-48 overflow-y-auto dropdown-scroll" style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 #f1f5f9' }}>
+                      <div className="py-1">
+                        <button
+                          onClick={() => { clearRetailerFilter(); setShowRetailerFilter(false); }}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 text-slate-700"
+                        >
+                          Tất cả nhà bán lẻ
+                        </button>
+                        {retailers.map((retailer) => {
+                          const retailerId = retailer.retailerId?.toString() || retailer.retailerId;
+                          const retailerName = retailer.companyName || retailer.retailerName || '';
+                          return (
+                            <button
+                              key={retailerId}
+                              onClick={() => { onRetailerFilter(retailerId); setShowRetailerFilter(false); }}
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${retailerFilter === retailerId ? 'bg-orange-500 text-white' : 'text-slate-700'}`}
+                            >
+                              {retailerName}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   )}

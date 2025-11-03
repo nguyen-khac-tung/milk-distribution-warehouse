@@ -230,19 +230,19 @@ const AssignReceivingModal = ({
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-2 text-sm mt-2">
                                                     <div>
-                                                        <span className="text-gray-500">Đơn mua chờ:</span>
+                                                        <span className="text-gray-500">Đơn mua chờ xử lý:</span>
                                                         <span className="font-medium ml-1">{pendingPO}</span>
                                                     </div>
                                                     <div>
-                                                        <span className="text-gray-500">Đơn mua xử lý:</span>
+                                                        <span className="text-gray-500">Đơn mua chờ xử lý:</span>
                                                         <span className="font-medium ml-1">{processingPO}</span>
                                                     </div>
                                                     <div>
-                                                        <span className="text-gray-500">Đơn bán chờ:</span>
+                                                        <span className="text-gray-500">Đơn bán chờ xử lý:</span>
                                                         <span className="font-medium ml-1">{pendingSO}</span>
                                                     </div>
                                                     <div>
-                                                        <span className="text-gray-500">Đơn bán xử lý:</span>
+                                                        <span className="text-gray-500">Đơn bán chờ xử lý:</span>
                                                         <span className="font-medium ml-1">{processingSO}</span>
                                                     </div>
                                                 </div>
