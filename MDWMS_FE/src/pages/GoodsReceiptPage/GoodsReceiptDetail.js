@@ -1028,7 +1028,7 @@ export default function GoodsReceiptDetail() {
                                       }}>Kiểm nhập lại</Button>
                                     )}
                                     {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && (
-                                      <Button variant="outline" size="sm" className="text-red-600 border-red-300 hover:text-white hover:bg-red-600 h-[30px] rounded" onClick={() => openRejectModal(detail.goodsReceiptNoteDetailId)}>Từ chối</Button>
+                                      <Button onClick={() => openRejectModal(detail.goodsReceiptNoteDetailId)} className="h-[38px] px-4 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all">Từ chối</Button>
                                     )}
                                   </div>
                                 </TableCell>

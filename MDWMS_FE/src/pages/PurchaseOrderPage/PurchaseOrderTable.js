@@ -30,18 +30,14 @@ const PurchaseOrderTable = ({
   const handleGoodsReceiptClick = async (order) => {
     try {
       if (order.status === 6) {
-        // Trạng thái = 6 (Đã phân công): Gọi API startReceive trước
+        // Trạng thái = 6 (Đã phân công): Gọi API startReceive trước (chỉ cho Warehouse Staff)
         console.log('Status 6: Calling startReceive API for order:', order.purchaseOderId);
         await startReceive(order.purchaseOderId);
         window.showToast?.('Bắt đầu quá trình nhận hàng thành công!', 'success');
         navigate(`/goods-receipt-notes/${order.purchaseOderId}`);
-      } else if (order.status === 7) {
-        // Trạng thái = 7 (Đang tiếp nhận): Chỉ navigate
-        console.log('Status 7: Navigating directly for order:', order.purchaseOderId);
-        navigate(`/goods-receipt-notes/${order.purchaseOderId}`);
-      } else if (order.status === 8 || order.status === 9) {
-        // Trạng thái = 8 (Đã kiểm tra) hoặc 9 (Hoàn thành): vẫn cho phép xem phiếu nhập kho
-        console.log('Status 8/9: Navigating to goods receipt note for order:', order.purchaseOderId);
+      } else if (order.status === 5 || order.status === 7 || order.status === 8 || order.status === 9) {
+        // Trạng thái = 5 (Đã giao đến), 7 (Đang tiếp nhận), 8 (Đã kiểm tra), 9 (Hoàn thành): Chỉ navigate
+        console.log(`Status ${order.status}: Navigating directly for order:`, order.purchaseOderId);
         navigate(`/goods-receipt-notes/${order.purchaseOderId}`);
       }
     } catch (error) {
@@ -332,8 +328,8 @@ const PurchaseOrderTable = ({
                           </button>
                         )}
 
-                        {/* Goods Receipt button - for status 7 (Đang tiếp nhận) - for Warehouse Manager */}
-                        {order.status === 7 && hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WM) && (
+                        {/* Goods Receipt button - for status 5, 6, 7, 8, 9 (các trạng thái sau GoodsReceived) - for Warehouse Manager */}
+                        {(order.status === 7 || order.status === 8 || order.status === 9) && hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WM) && (
                           <button
                             className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                             title="Xem phiếu nhập kho"
@@ -381,8 +377,8 @@ const PurchaseOrderTable = ({
                                 </button>
                               )}
 
-                              {/* Goods Receipt button - for status 7 (Đang tiếp nhận) - for Warehouse Manager */}
-                              {(order.status === 7 || order.status === 8 || order.status === 9) && hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WM) && (
+                              {/* Goods Receipt button - for status 5, 6, 7, 8, 9 (các trạng thái sau GoodsReceived) - for Warehouse Manager */}
+                              {(order.status === 5 || order.status === 6 || order.status === 7 || order.status === 8 || order.status === 9) && hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WM) && (
                                 <button
                                   className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                   title="Xem phiếu nhập kho"
