@@ -140,10 +140,10 @@ const AssignReceivingModal = ({
                         </div>
                         <div>
                             <h3 className="text-lg font-semibold text-gray-900">
-                                {isReassign ? 'Giao lại cho nhân viên' : 'Giao cho nhân viên'}
+                                {isReassign ? 'Phân công tiếp nhận' : 'Phân công cho nhân viên'}
                             </h3>
                             <p className="text-sm text-gray-500">
-                                Chọn nhân viên để giao nhiệm vụ nhận hàng
+                                Chọn nhân viên để phân công tiếp nhận
                             </p>
                         </div>
                     </div>
@@ -182,16 +182,48 @@ const AssignReceivingModal = ({
                                 </div>
                             </div>
 
+                            {/* Previous Assignment Info - Chỉ hiển thị khi giao lại */}
+                            {isReassign && purchaseOrder?.assignToByName && (
+                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                    <div className="flex items-center space-x-2 mb-2">
+                                        <AlertCircle className="h-4 w-4 text-yellow-600" />
+                                        <span className="font-medium text-yellow-800 text-sm">Thông tin người được phân công trước đó</span>
+                                    </div>
+                                    <div className="space-y-1 text-sm">
+                                        <div className="flex justify-between">
+                                            <span className="text-yellow-700">Nhân viên đã được phân công:</span>
+                                            <span className="font-medium text-yellow-900">{purchaseOrder.assignToByName}</span>
+                                        </div>
+                                        {purchaseOrder.assignedAt && (
+                                            <div className="flex justify-between">
+                                                <span className="text-yellow-700">Thời gian phân công:</span>
+                                                <span className="font-medium text-yellow-900">
+                                                    {new Date(purchaseOrder.assignedAt).toLocaleDateString('vi-VN', {
+                                                        year: 'numeric',
+                                                        month: '2-digit',
+                                                        day: '2-digit',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit'
+                                                    })}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Warning Message */}
                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
                                 <div className="flex items-start space-x-3">
                                     <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
                                     <div>
                                         <h4 className="font-medium text-blue-800 mb-1">
-                                            {isReassign ? 'Giao lại nhiệm vụ nhận hàng' : 'Giao nhiệm vụ nhận hàng'}
+                                            {isReassign ? 'Phân công lại nhiệm vụ nhận hàng' : 'Phân công nhiệm vụ nhận hàng'}
                                         </h4>
                                         <p className="text-sm text-blue-700">
-                                            Nhân viên được chọn sẽ nhận thông báo về nhiệm vụ nhận hàng này.
+                                            {isReassign
+                                                ? 'Nhân viên được chọn mới sẽ thay thế nhân viên đã được giao trước đó và nhận thông báo về nhiệm vụ nhận hàng này.'
+                                                : 'Nhân viên được chọn sẽ nhận thông báo về nhiệm vụ nhận hàng này.'}
                                         </p>
                                     </div>
                                 </div>
@@ -208,7 +240,7 @@ const AssignReceivingModal = ({
                             ) : employees.length === 0 ? (
                                 <div className="text-center py-4 text-gray-500">Không có nhân viên khả dụng.</div>
                             ) : (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[320px] overflow-y-auto pr-1">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[395px] overflow-y-auto pr-1">
                                     {employees.map((emp) => {
                                         const id = emp.id || emp.userId;
                                         const isSelected = selectedEmployee === id;
@@ -274,10 +306,10 @@ const AssignReceivingModal = ({
                             {loading ? (
                                 <div className="flex items-center gap-2">
                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                    {isReassign ? 'Đang giao lại...' : 'Đang giao...'}
+                                    {isReassign ? 'Đang tiếp nhận lại...' : 'Đang tiếp nhận...'}
                                 </div>
                             ) : (
-                                (isReassign ? 'Giao lại' : 'Giao nhiệm vụ')
+                                (isReassign ? 'Phân công lại' : 'Phân công tiếp nhận')
                             )}
                         </Button>
                     </div>

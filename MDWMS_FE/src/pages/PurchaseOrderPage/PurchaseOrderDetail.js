@@ -525,7 +525,7 @@ const PurchaseOrderDetail = () => {
                                                         return sum + totalUnits;
                                                     }, 0)}
                                                 </TableCell>
-                                                <TableCell className="text-center">-</TableCell>
+                                                <TableCell className="text-center"></TableCell>
                                             </TableRow>
                                         )}
                                     </TableBody>
@@ -593,7 +593,7 @@ const PurchaseOrderDetail = () => {
                                         className="bg-blue-600 hover:bg-blue-700 text-white h-[38px] px-8"
                                     >
                                         <Package className="h-4 w-4 mr-2" />
-                                        Xác nhận hàng đã nhận
+                                        Xác nhận hàng đã đến
                                     </Button>
                                 )}
                                 {(canAssignReceiving() || canReAssignReceiving()) && (
