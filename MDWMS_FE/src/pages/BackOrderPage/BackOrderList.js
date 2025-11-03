@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getBackOrders, deleteBackOrder, updateBackOrder, updateBackOrderStatus } from "../../services/BackOrderService";
 import { getGoodDetail } from "../../services/GoodService";
 import { getSuppliersDropdown } from "../../services/SupplierService";
+import { getAllRetailersDropdown } from "../../services/RetailerService";
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
@@ -47,6 +48,8 @@ export default function BackOrderList() {
     const [searchQuery, setSearchQuery] = useState("")
     const [statusFilter, setStatusFilter] = useState("")
     const [showStatusFilter, setShowStatusFilter] = useState(false)
+    const [retailerFilter, setRetailerFilter] = useState("")
+    const [showRetailerFilter, setShowRetailerFilter] = useState(false)
     const [sortField, setSortField] = useState("retailerName")
     const [sortAscending, setSortAscending] = useState(true)
     const [isInitialMount, setIsInitialMount] = useState(true)
@@ -61,6 +64,7 @@ export default function BackOrderList() {
     const [itemToView, setItemToView] = useState(null)
     const [selectedBackOrders, setSelectedBackOrders] = useState(new Set())
     const [suppliers, setSuppliers] = useState([])
+    const [retailers, setRetailers] = useState([])
     const [pagination, setPagination] = useState({
         pageNumber: 1,
         pageSize: 10,
@@ -120,7 +124,10 @@ export default function BackOrderList() {
                 search: searchParams.search !== undefined ? searchParams.search : "",
                 sortField: searchParams.sortField || "",
                 sortAscending: searchParams.sortAscending !== undefined ? searchParams.sortAscending : true,
-                status: searchParams.status
+                filters: {
+                    status: searchParams.status || "",
+                    retailerId: searchParams.retailerId || ""
+                }
             })
 
             console.log("BackOrder response: ", response)
@@ -166,6 +173,21 @@ export default function BackOrderList() {
         loadSuppliers();
     }, []);
 
+    // Load retailers on mount
+    useEffect(() => {
+        const loadRetailers = async () => {
+            try {
+                const response = await getAllRetailersDropdown();
+                const retailersData = response?.data || response?.items || response || [];
+                setRetailers(Array.isArray(retailersData) ? retailersData : []);
+            } catch (error) {
+                console.error("Error loading retailers:", error);
+                setRetailers([]);
+            }
+        };
+        loadRetailers();
+    }, []);
+
     // Initial load
     useEffect(() => {
         // Fetch tổng thống kê khi component mount
@@ -174,6 +196,7 @@ export default function BackOrderList() {
         // Reset tất cả filter và sort về mặc định
         setSearchQuery("")
         setStatusFilter("")
+        setRetailerFilter("")
         setSortField("")
         setSortAscending(true)
         setPagination({
@@ -189,7 +212,8 @@ export default function BackOrderList() {
             search: "",
             sortField: "",
             sortAscending: true,
-            status: ""
+            status: "",
+            retailerId: ""
         })
 
         // Mark as initialized after initial load
@@ -226,13 +250,14 @@ export default function BackOrderList() {
                 search: searchQuery || "",
                 sortField: sortField,
                 sortAscending: sortAscending,
-                status: statusFilter
+                status: statusFilter,
+                retailerId: retailerFilter
             })
             setPagination(prev => ({ ...prev, pageNumber: 1 }))
         }, searchQuery ? 500 : 0) // Only debounce for search, immediate for filters
 
         return () => clearTimeout(timeoutId)
-    }, [searchQuery, statusFilter, sortField, sortAscending, isInitialized])
+    }, [searchQuery, statusFilter, retailerFilter, sortField, sortAscending, isInitialized])
 
     // Remove client-side filtering since backend already handles search and filter
     const filteredBackOrders = useMemo(() => {
@@ -266,7 +291,15 @@ export default function BackOrderList() {
     const handleUpdateSuccess = () => {
         setShowUpdateModal(false)
         setUpdateBackOrderId(null)
-        fetchData()
+        fetchData({
+            pageNumber: pagination.pageNumber,
+            pageSize: pagination.pageSize,
+            search: searchQuery || "",
+            sortField: sortField,
+            sortAscending: sortAscending,
+            status: statusFilter,
+            retailerId: retailerFilter
+        })
     }
 
     const handleUpdateCancel = () => {
@@ -303,7 +336,8 @@ export default function BackOrderList() {
                 search: searchQuery || "",
                 sortField: sortField,
                 sortAscending: sortAscending,
-                status: statusFilter
+                status: statusFilter,
+                retailerId: retailerFilter
             })
         } catch (error) {
             console.error("Error deleting backOrder:", error)
@@ -351,10 +385,22 @@ export default function BackOrderList() {
         setShowStatusFilter(false)
     }
 
+    const handleRetailerFilter = (retailerId) => {
+        setRetailerFilter(retailerId)
+        setShowRetailerFilter(false)
+    }
+
+    const clearRetailerFilter = () => {
+        setRetailerFilter("")
+        setShowRetailerFilter(false)
+    }
+
     const handleClearAllFilters = () => {
         setSearchQuery("")
         setStatusFilter("")
         setShowStatusFilter(false)
+        setRetailerFilter("")
+        setShowRetailerFilter(false)
     }
 
     const clearAllFilters = handleClearAllFilters
@@ -370,7 +416,8 @@ export default function BackOrderList() {
             search: searchQuery || "",
             sortField: sortField,
             sortAscending: sortAscending,
-            status: statusFilter
+            status: statusFilter,
+            retailerId: retailerFilter
         })
     }
 
@@ -531,6 +578,13 @@ export default function BackOrderList() {
                         ]}
                         onStatusFilter={handleStatusFilter}
                         clearStatusFilter={clearStatusFilter}
+                        retailerFilter={retailerFilter}
+                        setRetailerFilter={setRetailerFilter}
+                        showRetailerFilter={showRetailerFilter}
+                        setShowRetailerFilter={setShowRetailerFilter}
+                        retailers={retailers}
+                        onRetailerFilter={handleRetailerFilter}
+                        clearRetailerFilter={clearRetailerFilter}
                         onClearAll={handleClearAllFilters}
                         searchWidth="w-80"
                         showToggle={true}
@@ -585,6 +639,9 @@ export default function BackOrderList() {
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                                                 Tổng đơn vị
                                             </TableHead>
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                                Đơn vị
+                                            </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-[150px]">
                                                 Người tạo
                                             </TableHead>
@@ -618,7 +675,7 @@ export default function BackOrderList() {
                                                     </TableCell>
                                                     <TableCell className="px-6 py-4 text-slate-700 font-medium">{backOrder?.retailerName || ''}</TableCell>
                                                     <TableCell className="px-6 py-4 text-slate-700">{backOrder?.goodsName || ''}</TableCell>
-                                                    <TableCell className="px-6 py-4 text-slate-700">{backOrder?.unitPerPackage ?? ''}</TableCell>
+                                                    <TableCell className="px-6 py-4 text-slate-700">{backOrder?.unitPerPackage ?? ''}{backOrder?.unitMeasureName ? ' ' + backOrder.unitMeasureName : ''}/thùng</TableCell>
                                                     <TableCell className="px-6 py-4 text-slate-700">{backOrder?.packageQuantity ?? ''}</TableCell>
                                                     <TableCell className="px-6 py-4 text-slate-700">{(() => {
                                                         const up = parseInt(backOrder?.unitPerPackage ?? 0);
@@ -626,6 +683,7 @@ export default function BackOrderList() {
                                                         if (isNaN(up) || isNaN(pq)) return '';
                                                         return up * pq;
                                                     })()}</TableCell>
+                                                    <TableCell className="px-6 py-4 text-slate-700">{backOrder?.unitMeasureName || ''}</TableCell>
                                                     <TableCell className="px-6 py-4 text-slate-700">{backOrder?.createdByName || backOrder?.createdBy || ''}</TableCell>
                                                     <TableCell className="px-6 py-4">
                                                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${backOrder?.statusDinamic === 'Available' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
@@ -673,14 +731,14 @@ export default function BackOrderList() {
                                                 icon={Building2}
                                                 title="Không tìm thấy đơn đặt hàng nào"
                                                 description={
-                                                    searchQuery || statusFilter
+                                                    searchQuery || statusFilter || retailerFilter
                                                         ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
                                                         : "Chưa có đơn đặt hàng nào trong hệ thống"
                                                 }
                                                 actionText="Xóa bộ lọc"
                                                 onAction={clearAllFilters}
-                                                showAction={!!(searchQuery || statusFilter)}
-                                                colSpan={9}
+                                                showAction={!!(searchQuery || statusFilter || retailerFilter)}
+                                                colSpan={10}
                                             />
                                         )}
                                     </TableBody>
@@ -713,7 +771,8 @@ export default function BackOrderList() {
                                                         search: searchQuery || "",
                                                         sortField: sortField,
                                                         sortAscending: sortAscending,
-                                                        status: statusFilter
+                                                        status: statusFilter,
+                                                        retailerId: retailerFilter
                                                     })
                                                     setPagination(prev => ({ ...prev, pageNumber: prev.pageNumber - 1 }))
                                                 }
@@ -737,7 +796,8 @@ export default function BackOrderList() {
                                                         search: searchQuery || "",
                                                         sortField: sortField,
                                                         sortAscending: sortAscending,
-                                                        status: statusFilter
+                                                        status: statusFilter,
+                                                        retailerId: retailerFilter
                                                     })
                                                     setPagination(prev => ({ ...prev, pageNumber: prev.pageNumber + 1 }))
                                                 }
