@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Search,
   Filter,
@@ -186,6 +186,36 @@ export default function PurchaseOrderFilterToggle({
 
   const hasActiveFilters = searchQuery || statusFilter || supplierFilter || approverFilter || creatorFilter || confirmerFilter || assigneeFilter || dateRangeFilter?.fromDate || dateRangeFilter?.toDate;
 
+  // Helper function to close all dropdowns except the one specified
+  const closeAllDropdownsExcept = (except = null) => {
+    if (except !== 'status') setShowStatusFilter(false);
+    if (except !== 'supplier') setShowSupplierFilter(false);
+    if (except !== 'approver') setShowApproverFilter(false);
+    if (except !== 'creator') setShowCreatorFilter(false);
+    if (except !== 'confirmer') setShowConfirmerFilter(false);
+    if (except !== 'assignee') setShowAssigneeFilter(false);
+    if (except !== 'dateRange') setShowDateRangeFilter(false);
+    if (except !== 'pageSize') setShowPageSizeFilter(false);
+  };
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handleDocumentClick = (e) => {
+      const target = e.target;
+      // If click is inside any dropdown container, do nothing
+      const isInsideAnyDropdown = target.closest?.(
+        '.status-filter-dropdown, .supplier-filter-dropdown, .approver-filter-dropdown, .creator-filter-dropdown, .confirmer-filter-dropdown, .assignee-filter-dropdown, .date-range-filter-dropdown, .page-size-filter-dropdown'
+      );
+      if (isInsideAnyDropdown) return;
+
+      // Otherwise close all dropdowns
+      closeAllDropdownsExcept();
+    };
+
+    document.addEventListener('mousedown', handleDocumentClick);
+    return () => document.removeEventListener('mousedown', handleDocumentClick);
+  }, []);
+
   return (
     <>
       {/* Custom scrollbar styles */}
@@ -239,7 +269,10 @@ export default function PurchaseOrderFilterToggle({
               {showPageSizeButton && (
                 <div className="relative page-size-filter-dropdown">
                   <button
-                    onClick={() => setShowPageSizeFilter(!showPageSizeFilter)}
+                    onClick={() => {
+                      closeAllDropdownsExcept('pageSize');
+                      setShowPageSizeFilter(!showPageSizeFilter);
+                    }}
                     className="flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706] transition-colors bg-white text-slate-700"
                   >
                     <span className="text-sm font-medium">
@@ -295,7 +328,10 @@ export default function PurchaseOrderFilterToggle({
                   {/* Status Filter */}
                   <div className="relative status-filter-dropdown flex-1 min-w-[140px]">
                     <button
-                      onClick={() => setShowStatusFilter(!showStatusFilter)}
+                      onClick={() => {
+                        closeAllDropdownsExcept('status');
+                        setShowStatusFilter(!showStatusFilter);
+                      }}
                       className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors w-full
                         focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
                         ${statusFilter
@@ -355,7 +391,10 @@ export default function PurchaseOrderFilterToggle({
                   {showSupplier && suppliers.length > 0 && (
                     <div className="relative supplier-filter-dropdown flex-1 min-w-[160px]">
                       <button
-                        onClick={() => setShowSupplierFilter(!showSupplierFilter)}
+                        onClick={() => {
+                          closeAllDropdownsExcept('supplier');
+                          setShowSupplierFilter(!showSupplierFilter);
+                        }}
                         className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors w-full
                           focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
                           ${supplierFilter ? 'bg-[#d97706] text-white hover:bg-[#d97706]' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
@@ -425,7 +464,10 @@ export default function PurchaseOrderFilterToggle({
                   {showApprover && approvers.length > 0 && (
                     <div className="relative approver-filter-dropdown flex-1 min-w-[150px]">
                       <button
-                        onClick={() => setShowApproverFilter(!showApproverFilter)}
+                        onClick={() => {
+                          closeAllDropdownsExcept('approver');
+                          setShowApproverFilter(!showApproverFilter);
+                        }}
                         className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors w-full
                           focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
                           ${approverFilter ? 'bg-[#d97706] text-white hover:bg-[#d97706]' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
@@ -491,7 +533,10 @@ export default function PurchaseOrderFilterToggle({
                   {showCreator && creators.length > 0 && (
                     <div className="relative creator-filter-dropdown flex-1 min-w-[140px]">
                       <button
-                        onClick={() => setShowCreatorFilter(!showCreatorFilter)}
+                        onClick={() => {
+                          closeAllDropdownsExcept('creator');
+                          setShowCreatorFilter(!showCreatorFilter);
+                        }}
                         className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors w-full
                           focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
                           ${creatorFilter ? 'bg-[#d97706] text-white hover:bg-[#d97706]' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
@@ -558,7 +603,10 @@ export default function PurchaseOrderFilterToggle({
                   {showConfirmer && confirmers.length > 0 && (
                     <div className="relative confirmer-filter-dropdown flex-1 min-w-[160px]">
                       <button
-                        onClick={() => setShowConfirmerFilter(!showConfirmerFilter)}
+                        onClick={() => {
+                          closeAllDropdownsExcept('confirmer');
+                          setShowConfirmerFilter(!showConfirmerFilter);
+                        }}
                         className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors w-full
                           focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
                           ${confirmerFilter ? 'bg-[#d97706] text-white hover:bg-[#d97706]' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
@@ -625,7 +673,10 @@ export default function PurchaseOrderFilterToggle({
                   {showAssignee && (
                     <div className="relative assignee-filter-dropdown flex-1 min-w-[170px]">
                       <button
-                        onClick={() => setShowAssigneeFilter(!showAssigneeFilter)}
+                        onClick={() => {
+                          closeAllDropdownsExcept('assignee');
+                          setShowAssigneeFilter(!showAssigneeFilter);
+                        }}
                         className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors w-full
                           focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
                           ${assigneeFilter ? 'bg-[#d97706] text-white hover:bg-[#d97706]' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
@@ -691,7 +742,10 @@ export default function PurchaseOrderFilterToggle({
                   {/* Date Range Filter */}
                   <div className="relative date-range-filter-dropdown flex-1 min-w-[140px]">
                     <button
-                      onClick={() => setShowDateRangeFilter(!showDateRangeFilter)}
+                      onClick={() => {
+                        closeAllDropdownsExcept('dateRange');
+                        setShowDateRangeFilter(!showDateRangeFilter);
+                      }}
                       className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors w-full
                       focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
                       ${dateRangeFilter ? 'bg-white text-slate-700 hover:bg-slate-50' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
