@@ -105,6 +105,7 @@ namespace MilkDistributionWarehouse.Repositories
                 return new List<Location>();
             var storageConditionPallet = pallet.Batch.Goods.StorageConditionId;
             return await _context.Locations
+                .Include(l => l.Area)
                 .Where(l => l.Status == CommonStatus.Active && l.IsAvailable == true &&
                             l.Area.StorageConditionId == storageConditionPallet )
                 .AsNoTracking()
