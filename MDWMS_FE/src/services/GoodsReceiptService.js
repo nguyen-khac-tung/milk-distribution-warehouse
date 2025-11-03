@@ -96,5 +96,16 @@ export const getPalletByGRNID = async (grnid) => {
     }
 };
 
+// Lấy danh sách vị trí gợi ý cho pallet
+export const getLocationSuggest = async (palletId) => {
+    try {
+        const res = await api.get(`/Location/LocationSuggest?palletId=${palletId}`);
+        return res.data;
+    } catch (error) {
+        console.error('Error fetching location suggestions:', error);
+        throw error;
+    }
+};
+
 
 

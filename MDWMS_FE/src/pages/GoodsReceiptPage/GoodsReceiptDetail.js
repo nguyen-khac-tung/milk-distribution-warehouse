@@ -9,10 +9,13 @@ import {
   RefreshCw,
   Plus,
   CheckCircle,
-  Printer
+  Printer,
+  Lightbulb
 } from "lucide-react";
+import { useReactToPrint } from "react-to-print";
+import { PrintablePalletLabel, PrintableMultiplePalletLabels } from "../../components/PalletComponents/PrintPalletLabel";
 import Loading from "../../components/Common/Loading";
-import { getGoodsReceiptNoteByPurchaseOrderId, verifyRecord, cancelGoodsReceiptNoteDetail, submitGoodsReceiptNote, approveGoodsReceiptNote, rejectGoodsReceiptNoteDetail, getPalletByGRNID } from "../../services/GoodsReceiptService";
+import { getGoodsReceiptNoteByPurchaseOrderId, verifyRecord, cancelGoodsReceiptNoteDetail, submitGoodsReceiptNote, approveGoodsReceiptNote, rejectGoodsReceiptNoteDetail, getPalletByGRNID, getLocationSuggest } from "../../services/GoodsReceiptService";
 import { completePurchaseOrder, getPurchaseOrderDetail } from "../../services/PurchaseOrderService";
 import { PERMISSIONS, PURCHASE_ORDER_STATUS } from "../../utils/permissions";
 import { usePermissions } from "../../hooks/usePermissions";
@@ -24,6 +27,7 @@ import { extractErrorMessage } from "../../utils/Validation";
 import CreateBatchModal from "./CreateBatchModal";
 import PalletManager from "./CreatePallet";
 import AddLocationToPalletModal from "./AddLocationToPalletModal";
+import LocationSuggestionModal from "./LocationSuggestionModal";
 
 // Status labels for Goods Receipt Note - sẽ được lấy từ API
 const getStatusLabel = (status) => {
@@ -66,9 +70,18 @@ export default function GoodsReceiptDetail() {
   const [isSubmittingPallet, setIsSubmittingPallet] = useState(false);
   const [showAddLocationModal, setShowAddLocationModal] = useState(false);
   const [selectedPalletForLocation, setSelectedPalletForLocation] = useState(null);
+  const [selectedPalletForSuggestion, setSelectedPalletForSuggestion] = useState(null);
+  const [showLocationSuggestionModal, setShowLocationSuggestionModal] = useState(false);
+  const [locationSuggestions, setLocationSuggestions] = useState([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [isPurchaseOrderCompleted, setIsPurchaseOrderCompleted] = useState(false);
   const [validationErrors, setValidationErrors] = useState({}); // Lưu lỗi validation cho từng detail
   const arrangingSectionRef = useRef(null);
+  const [selectedPalletForPrint, setSelectedPalletForPrint] = useState(null);
+  const [selectedPallets, setSelectedPallets] = useState([]);
+  const [selectAll, setSelectAll] = useState(false);
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
+  const printRef = useRef(null);
   // Thêm state quản lý kiểm tra từng mặt hàng
   // Xóa hẳn 2 state checkedDetails, notCheckedDetails và các setCheckedDetails/setNotCheckedDetails
 
@@ -97,6 +110,86 @@ export default function GoodsReceiptDetail() {
   const handleBatchCreated = useCallback((fn) => {
     handleBatchCreatedRef.current = fn;
   }, []);
+
+  // Xử lý in pallet
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: "Phiếu dán mã kệ kê hàng",
+    pageStyle: `
+      @page { 
+        size: A4; 
+        margin: 10mm; 
+      } 
+      body { 
+        -webkit-print-color-adjust: exact; 
+        print-color-adjust: exact; 
+        margin: 0;
+        padding: 0;
+      }
+      .print-container {
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+      }
+    `,
+  });
+
+  const handlePrintPallet = (pallet) => {
+    setSelectedPalletForPrint(pallet);
+    setTimeout(() => handlePrint(), 100);
+  };
+
+  // Cập nhật selectAll khi selectedPallets thay đổi
+  useEffect(() => {
+    if (selectedPallets.length === 0) {
+      setSelectAll(false);
+    } else if (selectedPallets.length === pallets.length && pallets.length > 0) {
+      setSelectAll(true);
+    } else {
+      setSelectAll(false);
+    }
+  }, [selectedPallets, pallets]);
+
+  // Xử lý chọn/bỏ chọn tất cả
+  const handleSelectAll = (checked) => {
+    setSelectAll(checked);
+    if (checked) {
+      setSelectedPallets([...pallets]);
+    } else {
+      setSelectedPallets([]);
+    }
+  };
+
+  // Xử lý chọn/bỏ chọn một pallet
+  const handleSelectPallet = (pallet, checked) => {
+    if (checked) {
+      setSelectedPallets(prev => [...prev, pallet]);
+    } else {
+      setSelectedPallets(prev => prev.filter(p => (p.palletId || p.id) === (pallet.palletId || pallet.id)));
+    }
+  };
+
+  // Kiểm tra xem một pallet có được chọn không
+  const isPalletSelected = (pallet) => {
+    return selectedPallets.some(p => (p.palletId || p.id) === (pallet.palletId || pallet.id));
+  };
+
+  // In nhiều pallet đã chọn
+  const handlePrintSelected = () => {
+    if (selectedPallets.length === 0) {
+      window.showToast?.("Vui lòng chọn ít nhất một kệ kê hàng để in", "warning");
+      return;
+    }
+    // Hiển thị modal preview trước khi in
+    setShowPrintPreview(true);
+  };
+
+  // Xác nhận in từ modal preview
+  const handleConfirmPrint = () => {
+    setShowPrintPreview(false);
+    setSelectedPalletForPrint(null); // Reset để dùng selectedPallets
+    setTimeout(() => handlePrint(), 100);
+  };
 
   useEffect(() => {
     fetchGoodsReceiptNoteDetail();
@@ -319,6 +412,47 @@ export default function GoodsReceiptDetail() {
       await fetchPallets(goodsReceiptNote.goodsReceiptNoteId);
     }
   }, [goodsReceiptNote?.goodsReceiptNoteId]);
+
+  // Handler mở modal gợi ý vị trí
+  const handleOpenLocationSuggestion = async (pallet) => {
+    const palletId = pallet?.palletId || pallet?.id;
+    if (!palletId) {
+      window.showToast?.("Không tìm thấy mã pallet", "error");
+      return;
+    }
+    
+    setSelectedPalletForSuggestion(pallet);
+    setShowLocationSuggestionModal(true);
+    setLoadingSuggestions(true);
+    setLocationSuggestions([]);
+
+    try {
+      const response = await getLocationSuggest(palletId);
+      const suggestions = response?.data || response?.items || response || [];
+      setLocationSuggestions(Array.isArray(suggestions) ? suggestions : []);
+    } catch (error) {
+      console.error("Error fetching location suggestions:", error);
+      const errorMessage = extractErrorMessage(error, "Lấy danh sách gợi ý vị trí thất bại");
+      window.showToast?.(errorMessage, "error");
+      setLocationSuggestions([]);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
+  // Handler chọn vị trí từ gợi ý
+  const handleSelectSuggestedLocation = (location) => {
+    const locationCode = location?.locationCode || location?.code || "";
+    if (locationCode && selectedPalletForSuggestion) {
+      setShowLocationSuggestionModal(false);
+      setSelectedPalletForLocation({
+        ...selectedPalletForSuggestion,
+        suggestedLocationCode: locationCode,
+        suggestedLocationId: location?.locationId || location?.id
+      });
+      setShowAddLocationModal(true);
+    }
+  };
 
   const handlePrintReceipt = () => {
     // Implement print functionality
@@ -1056,10 +1190,43 @@ export default function GoodsReceiptDetail() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Danh sách pallet</h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-gray-900">Danh sách pallet</h3>
+                      {/* Nút in đã chọn */}
+                      {hasPermission(PERMISSIONS.PALLET_PRINT_BARCODE) && selectedPallets.length > 0 && (
+                        <div className="flex items-center gap-3">
+                          <Button
+                            className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white transition-colors duration-200"
+                            onClick={handlePrintSelected}
+                          >
+                            <Printer className="mr-2 h-4 w-4 text-white" />
+                            In đã chọn ({selectedPallets.length})
+                          </Button>
+                          <Button
+                            className="bg-slate-800 hover:bg-slate-900 h-[38px] px-6 text-white transition-colors duration-200"
+                            onClick={() => {
+                              setSelectedPallets([]);
+                              setSelectAll(false);
+                            }}
+                          >
+                            Bỏ chọn tất cả
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                     <Table>
                       <TableHeader>
                         <TableRow className="bg-purple-100">
+                          {hasPermission(PERMISSIONS.PALLET_PRINT_BARCODE) && (
+                            <TableHead className="font-semibold text-purple-900 text-center w-12">
+                              <input
+                                type="checkbox"
+                                checked={selectAll}
+                                onChange={(e) => handleSelectAll(e.target.checked)}
+                                className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                              />
+                            </TableHead>
+                          )}
                           <TableHead className="font-semibold text-purple-900">Mã pallet</TableHead>
                           <TableHead className="font-semibold text-purple-900">Tên sản phẩm</TableHead>
                           <TableHead className="font-semibold text-purple-900 text-center">Số lô</TableHead>
@@ -1100,11 +1267,21 @@ export default function GoodsReceiptDetail() {
 
                           return (
                             <TableRow key={pallet.palletId || pallet.id || index} className="hover:bg-purple-50">
+                              {hasPermission(PERMISSIONS.PALLET_PRINT_BARCODE) && (
+                                <TableCell className="px-6 py-4 text-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={isPalletSelected(pallet)}
+                                    onChange={(e) => handleSelectPallet(pallet, e.target.checked)}
+                                    className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                                  />
+                                </TableCell>
+                              )}
                               <TableCell className="font-medium text-gray-900 text-xs">
                                 {pallet.palletCode || pallet.code || pallet.palletId || 'N/A'}
                               </TableCell>
                               <TableCell className="text-xs text-gray-700">
-                                {pallet.goodsName || pallet.productName || 'N/A'}
+                                {pallet.goodName || 'N/A'}
                               </TableCell>
                               <TableCell className="text-xs text-gray-700 text-center">
                                 {pallet.batchCode || 'N/A'}
@@ -1121,19 +1298,44 @@ export default function GoodsReceiptDetail() {
                                 </span>
                               </TableCell>
                               <TableCell className="text-center">
-                                {isEmptyLocation && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-8 w-8 p-0 hover:bg-red-50"
-                                    onClick={() => {
-                                      setSelectedPalletForLocation(pallet);
-                                      setShowAddLocationModal(true);
-                                    }}
-                                  >
-                                    <Plus className="w-4 h-4 text-red-600" />
-                                  </Button>
-                                )}
+                                <div className="flex items-center justify-center gap-2">
+                                  {isEmptyLocation && (
+                                    <>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0 hover:bg-yellow-50"
+                                        onClick={() => handleOpenLocationSuggestion(pallet)}
+                                        title="Gợi ý vị trí"
+                                      >
+                                        <Lightbulb className="w-4 h-4 text-yellow-600" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0 hover:bg-red-50"
+                                        onClick={() => {
+                                          setSelectedPalletForLocation(pallet);
+                                          setShowAddLocationModal(true);
+                                        }}
+                                        title="Thêm vị trí"
+                                      >
+                                        <Plus className="w-4 h-4 text-red-600" />
+                                      </Button>
+                                    </>
+                                  )}
+                                  {hasPermission(PERMISSIONS.PALLET_PRINT_BARCODE) && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 w-8 p-0 hover:bg-blue-50"
+                                      onClick={() => handlePrintPallet(pallet)}
+                                      title="In mã pallet"
+                                    >
+                                      <Printer className="w-4 h-4 text-blue-600" />
+                                    </Button>
+                                  )}
+                                </div>
                               </TableCell>
                             </TableRow>
                           );
@@ -1192,6 +1394,19 @@ export default function GoodsReceiptDetail() {
           }
         }}
       />
+      {/* Modal gợi ý vị trí */}
+      <LocationSuggestionModal
+        isOpen={showLocationSuggestionModal}
+        onClose={() => {
+          setShowLocationSuggestionModal(false);
+          setSelectedPalletForSuggestion(null);
+          setLocationSuggestions([]);
+        }}
+        onSelectLocation={handleSelectSuggestedLocation}
+        suggestions={locationSuggestions}
+        loading={loadingSuggestions}
+        palletInfo={selectedPalletForSuggestion}
+      />
       {/* Modal thêm vị trí cho pallet */}
       <AddLocationToPalletModal
         isOpen={showAddLocationModal}
@@ -1202,6 +1417,57 @@ export default function GoodsReceiptDetail() {
         onSuccess={handleLocationAdded}
         pallet={selectedPalletForLocation}
       />
+      {/* Modal Preview In */}
+      {showPrintPreview && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style={{ zIndex: 9999 }}>
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Xem trước barcode ({selectedPallets.length} kệ kê hàng)
+              </h3>
+              <button
+                onClick={() => setShowPrintPreview(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              <PrintableMultiplePalletLabels pallets={selectedPallets} />
+            </div>
+            <div className="flex items-center justify-end gap-3 p-4 border-t">
+              <button
+                onClick={() => setShowPrintPreview(false)}
+                className="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleConfirmPrint}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center gap-2"
+              >
+                <Printer className="w-4 h-4" />
+                In ngay
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Vùng in phiếu - căn giữa khi in */}
+      <div className="print-wrapper" style={{ display: 'none' }}>
+        <div ref={printRef} className="print-container">
+          {selectedPallets.length > 1 ? (
+            <PrintableMultiplePalletLabels pallets={selectedPallets} />
+          ) : selectedPallets.length === 1 ? (
+            <PrintablePalletLabel pallet={selectedPallets[0]} />
+          ) : selectedPalletForPrint ? (
+            <PrintablePalletLabel pallet={selectedPalletForPrint} />
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }
