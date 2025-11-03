@@ -309,6 +309,9 @@ const SalesOrderDetail = () => {
                         </Button>
                         <div>
                             <h1 className="text-2xl font-bold text-gray-900">ĐƠN BÁN HÀNG</h1>
+                            {/* <p className="text-gray-600 text-sm mt-1">
+                                Mã phiếu: {salesOrder.salesOrderId}
+                            </p> */}
                         </div>
                     </div>
                 </div>

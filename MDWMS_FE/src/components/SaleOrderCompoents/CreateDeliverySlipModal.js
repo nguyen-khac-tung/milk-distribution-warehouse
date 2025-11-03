@@ -70,7 +70,13 @@ const CreateDeliverySlipModal = ({
               <div className="flex justify-between">
                 <span className="text-gray-600">Thời gian dự kiến xuất:</span>
                 <span className="font-medium">
-                  {saleOrder?.estimatedTimeDeparture ? new Date(saleOrder.estimatedTimeDeparture).toLocaleDateString('vi-VN') : '-'}
+                  {saleOrder?.estimatedTimeDeparture
+                    ? new Date(saleOrder.estimatedTimeDeparture).toLocaleDateString('vi-VN', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                    })
+                    : 'N/A'}
                 </span>
               </div>
             </div>

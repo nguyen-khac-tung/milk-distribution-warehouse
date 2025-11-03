@@ -563,6 +563,34 @@ function UpdateSaleOrder() {
             return;
         }
 
+        // Kiểm tra inventory - chặn submit nếu có item vượt quá tồn kho
+        const insufficientItems = validItems.filter(item => {
+            const selectedSupplier = suppliers.find(s => s.companyName === item.supplierName);
+            if (!selectedSupplier) return false;
+
+            const goods = goodsBySupplier[selectedSupplier.supplierId] || [];
+            const selectedGood = goods.find(g => g.goodsName === item.goodsName);
+            if (!selectedGood) return false;
+
+            const inventoryData = inventoryMap[selectedGood.goodsId] || [];
+            const inventory = inventoryData.find(inv => inv.goodsPackingId.toString() === item.goodsPackingId);
+            const availableQuantity = inventory?.availablePackageQuantity || 0;
+            const requestedQuantity = parseInt(item.quantity) || 0;
+
+            return requestedQuantity > availableQuantity;
+        });
+
+        if (insufficientItems.length > 0) {
+            const firstItem = insufficientItems[0];
+            const message =
+                insufficientItems.length === 1
+                    ? `Sản phẩm "${firstItem.goodsName}" vượt quá tồn kho.`
+                    : `Có ${insufficientItems.length} sản phẩm vượt quá tồn kho.`;
+
+            window.showToast(message, "error");
+            return;
+        }
+
         try {
             const itemsWithIds = validItems.map(item => {
                 const selectedSupplier = suppliers.find(supplier => supplier.companyName === item.supplierName);
@@ -973,7 +1001,7 @@ function UpdateSaleOrder() {
                                         <span className={`font-medium ${stockInfo.allSufficient ? 'text-green-700' : 'text-red-700'
                                             }`}>
                                             {stockInfo.allSufficient
-                                                ? 'Đủ tồn kho - Có thể tạo đơn xuất'
+                                                ? 'Đủ tồn kho - Có thể tạo đơn bán hàng'
                                                 : 'Thiếu tồn kho - Vui lòng kiểm tra lại'
                                             }
                                         </span>

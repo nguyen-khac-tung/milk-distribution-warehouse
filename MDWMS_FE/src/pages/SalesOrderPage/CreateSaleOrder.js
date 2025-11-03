@@ -389,7 +389,7 @@ function CreateSaleOrder({
             const packingIdStr = packing.goodsPackingId?.toString() || "";
             return {
                 value: packingIdStr,
-                label: `${packing.unitPerPackage} ${unitMeasureName}/thùng (Tồn: ${availableQuantity} thùng)`
+                label: `${packing.unitPerPackage} ${unitMeasureName}/thùng`
             };
         });
     };
@@ -636,6 +636,38 @@ function CreateSaleOrder({
         const validItems = items.filter(item => item.supplierName && item.goodsName && item.quantity && item.goodsPackingId);
         if (validItems.length === 0) {
             window.showToast("Vui lòng thêm ít nhất một hàng hóa với đầy đủ thông tin", "error");
+            return;
+        }
+
+        // Kiểm tra inventory - chặn submit nếu có item vượt quá tồn kho
+        // Kiểm tra tồn kho
+        const insufficientItems = validItems.filter(item => {
+            const selectedSupplier = suppliers.find(s => s.companyName === item.supplierName);
+            if (!selectedSupplier) return false;
+
+            const goods = goodsBySupplier[selectedSupplier.supplierId] || [];
+            const selectedGood = goods.find(g => g.goodsName === item.goodsName);
+            if (!selectedGood) return false;
+
+            const inventoryData = inventoryMap[selectedGood.goodsId] || [];
+            const inventory = inventoryData.find(inv =>
+                inv.goodsPackingId?.toString() === item.goodsPackingId?.toString() ||
+                inv.goodsPackingId === parseInt(item.goodsPackingId)
+            );
+
+            const availableQuantity = inventory?.availablePackageQuantity || 0;
+            const requestedQuantity = parseInt(item.quantity) || 0;
+
+            return requestedQuantity > availableQuantity;
+        });
+
+        if (insufficientItems.length > 0) {
+            const firstItem = insufficientItems[0];
+            const message = insufficientItems.length === 1
+                ? `Sản phẩm "${firstItem.goodsName}" vượt quá tồn kho.`
+                : `Có ${insufficientItems.length} sản phẩm vượt quá tồn kho.`;
+
+            window.showToast(message, "error");
             return;
         }
 
@@ -1045,7 +1077,7 @@ function CreateSaleOrder({
                                             <span className={`font-medium ${stockInfo.allSufficient ? 'text-green-700' : 'text-red-700'
                                                 }`}>
                                                 {stockInfo.allSufficient
-                                                    ? 'Đủ tồn kho - Có thể tạo đơn xuất'
+                                                    ? 'Đủ tồn kho - Có thể tạo đơn bán hàng'
                                                     : 'Thiếu tồn kho - Vui lòng kiểm tra lại'
                                                 }
                                             </span>
