@@ -17,10 +17,11 @@ namespace MilkDistributionWarehouse.Models.DTOs
     public class PickAllocationDetailDto
     {
         public int PickAllocationId { get; set; }
-        public int PalletId { get; set; }
+        public string? PalletId { get; set; }
         public string? GoodsName { get; set; }
         public string? BatchCode { get; set; }
         public DateOnly? ExpiryDate { get; set; }
+        public string? UnitMeasure { get; set; }
         public int? UnitPerPackage { get; set; }
         public int? PalletPackageQuantity { get; set; }
         public int? PickPackageQuantity { get; set; }

@@ -18,7 +18,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, LocationResponseDto)> DeleteLocation(int locationId);
         Task<(string, LocationResponseDto)> UpdateStatus(int locationId, int status);
         Task<(string, List<LocationActiveDto>)> GetActiveLocations();
-        Task<(string, List<LocationActiveDto>)> GetSuggestLocation(string palletId);
+        Task<(string, List<LocationSuggestDto>)> GetSuggestLocation(string palletId);
         Task<(string, LocationPalletDto)> GetLocationsPallet(string locationcode);
         Task<(string, LocationBulkResponse)> CreateLocationsBulk(LocationBulkCreate create);
     }
@@ -134,9 +134,6 @@ namespace MilkDistributionWarehouse.Services
             if (await _locationRepository.HasDependentPalletsAsync(locationId))
                 return ("Không thể xoá vì vị trí này đang được sử dụng.".ToMessageForUser(), new LocationResponseDto());
 
-            if (await _locationRepository.InUsed(locationId))
-                return ("Không thể xóa vì vị trí này đang được sử dụng.".ToMessageForUser(), new LocationResponseDto());
-
             locationExists.Status = CommonStatus.Deleted;
             locationExists.UpdateAt = DateTime.Now;
 
@@ -164,9 +161,6 @@ namespace MilkDistributionWarehouse.Services
 
             if (await _locationRepository.HasDependentPalletsAsync(locationId))
                 return ("Không thể cập nhật trạng thái vì vị trí này đang được sử dụng cho pallet.".ToMessageForUser(), new LocationResponseDto());
-            
-            if (await _locationRepository.InUsed(locationId))
-                return ("Không thể cập nhật trạng thái vì vị trí này hiện đang được sử dụng.".ToMessageForUser(), new LocationResponseDto());
 
             location.Status = status;
             location.UpdateAt = DateTime.Now;
@@ -189,12 +183,12 @@ namespace MilkDistributionWarehouse.Services
             return ("", dtoList);
         }
 
-        public async Task<(string, List<LocationActiveDto>)> GetSuggestLocation(string palletId)
+        public async Task<(string, List<LocationSuggestDto>)> GetSuggestLocation(string palletId)
         {
             var locations = await _locationRepository.GetSuggestLocationsAsync(palletId);
             if (locations == null || !locations.Any())
-                return ("Không có vị trí gợi ý nào.".ToMessageForUser(), new List<LocationActiveDto>());
-            var dtoList = _mapper.Map<List<LocationActiveDto>>(locations);
+                return ("Không có vị trí gợi ý nào.".ToMessageForUser(), new List<LocationSuggestDto>());
+            var dtoList = _mapper.Map<List<LocationSuggestDto>>(locations);
             return ("", dtoList);
         }
 

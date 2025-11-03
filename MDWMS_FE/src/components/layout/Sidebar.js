@@ -78,14 +78,14 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                     {
                         key: "/purchase-orders",
                         icon: <ComponentIcon name="cart" size={14} collapsed={collapsed} />,
-                        label: "Danh sách đơn nhập",
+                        label: "Danh sách đơn mua hàng",
                         permission: [PERMISSIONS.PURCHASE_ORDER_VIEW, PERMISSIONS.PURCHASE_ORDER_VIEW_RS, PERMISSIONS.PURCHASE_ORDER_VIEW_SM],
                         requireAll: false,
                     },
                     {
                         key: "/purchase-orders/create",
                         icon: <ComponentIcon name="createpuscharorder" size={14} collapsed={collapsed} />,
-                        label: "Tạo đơn nhập",
+                        label: "Tạo đơn mua hàng",
                         permission: PERMISSIONS.PURCHASE_ORDER_CREATE,
                     }
                 ],
@@ -100,14 +100,14 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                     {
                         key: "/sales-orders",
                         icon: <ComponentIcon name="cart" size={14} collapsed={collapsed} />,
-                        label: "Danh sách đơn xuất",
+                        label: "Danh sách đơn bán hàng",
                         permission: [PERMISSIONS.SALES_ORDER_VIEW, PERMISSIONS.SALES_ORDER_VIEW_SR, PERMISSIONS.SALES_ORDER_VIEW_SM, PERMISSIONS.SALES_ORDER_VIEW_WM, PERMISSIONS.SALES_ORDER_VIEW_WS],
                         requireAll: false,
                     },
                     {
                         key: "/sales-orders/create",
                         icon: <ComponentIcon name="createpuscharorder" size={14} collapsed={collapsed} />,
-                        label: "Tạo đơn xuất",
+                        label: "Tạo đơn bán hàng",
                         permission: [PERMISSIONS.PURCHASE_ORDER_CREATE],
                     }
                 ],
@@ -135,7 +135,7 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
             {
                 key: "/backorder",
                 icon: <ComponentIcon name="backorder" size={16} collapsed={collapsed} />,
-                label: "Quản lý đơn hàng chờ",
+                label: "Quản lý đơn bổ sung",
                 permission: PERMISSIONS.BACKORDER_VIEW
             },
             {
