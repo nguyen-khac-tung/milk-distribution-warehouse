@@ -896,12 +896,35 @@ export default function GoodsReceiptDetail() {
                                               rejectPackageQuantity: Number(detail.rejectPackageQuantity) || 0,
                                               note: detail.note || ''
                                             });
+                                            
+                                            // Xóa validation error cho item này
                                             setValidationErrors(prev => {
                                               const newErrors = { ...prev };
                                               delete newErrors[detailId];
                                               return newErrors;
                                             });
-                                            fetchGoodsReceiptNoteDetail();
+                                            
+                                            // Chỉ update item vừa verify trong state, không fetch lại toàn bộ để giữ dữ liệu đã nhập ở các item khác
+                                            setGoodsReceiptNote(prev => {
+                                              if (!prev) return prev;
+                                              return {
+                                                ...prev,
+                                                goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
+                                                  d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId
+                                                    ? {
+                                                        ...d,
+                                                        status: RECEIPT_ITEM_STATUS.Inspected, // Update status thành Inspected
+                                                        deliveredPackageQuantity: Number(detail.deliveredPackageQuantity) || 0,
+                                                        rejectPackageQuantity: Number(detail.rejectPackageQuantity) || 0,
+                                                        actualPackageQuantity: Math.max(0, (Number(detail.deliveredPackageQuantity) || 0) - (Number(detail.rejectPackageQuantity) || 0)),
+                                                        note: detail.note || ''
+                                                      }
+                                                    : d // Giữ nguyên các item khác với dữ liệu đã nhập
+                                                )
+                                              };
+                                            });
+                                            
+                                            window.showToast?.("Kiểm nhập thành công!", "success");
                                           } catch (error) {
                                             console.error("Error verifying record:", error);
                                             const msg = extractErrorMessage(error, "Kiểm nhập thất bại, vui lòng thử lại!");
