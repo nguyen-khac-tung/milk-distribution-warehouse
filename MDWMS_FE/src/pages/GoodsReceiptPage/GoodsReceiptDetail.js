@@ -1242,6 +1242,7 @@ export default function GoodsReceiptDetail() {
                           )}
                           <TableHead className="font-semibold text-purple-900">Mã pallet</TableHead>
                           <TableHead className="font-semibold text-purple-900">Tên sản phẩm</TableHead>
+                          <TableHead className="font-semibold text-purple-900">Mã hàng</TableHead>
                           <TableHead className="font-semibold text-purple-900 text-center">Số lô</TableHead>
                           <TableHead className="font-semibold text-purple-900 text-center">Số thùng</TableHead>
                           <TableHead className="font-semibold text-purple-900">Vị trí</TableHead>
@@ -1296,6 +1297,9 @@ export default function GoodsReceiptDetail() {
                               <TableCell className="text-xs text-gray-700">
                                 {pallet.goodName || 'N/A'}
                               </TableCell>
+                              <TableCell className="text-xs text-gray-700">
+                                {pallet.goodCode || pallet.goodsCode || 'N/A'}
+                              </TableCell>
                               <TableCell className="text-xs text-gray-700 text-center">
                                 {pallet.batchCode || 'N/A'}
                               </TableCell>
@@ -1303,7 +1307,7 @@ export default function GoodsReceiptDetail() {
                                 {pallet.packageQuantity || pallet.numPackages || 0}
                               </TableCell>
                               <TableCell className="text-xs text-gray-700">
-                                {locationCode || 'Chưa sắp xếp'}
+                                {locationCode || 'Chưa đưa vào vị trí'}
                               </TableCell>
                               <TableCell className="text-center">
                                 <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${statusDisplay.className}`}>
