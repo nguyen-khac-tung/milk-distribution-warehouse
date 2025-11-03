@@ -1154,8 +1154,21 @@ export default function GoodsReceiptDetail() {
         </Card>
         )}
 
-        {/* Sắp xếp - Ẩn cho quản lý kho */}
-        {!(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT)) && (
+        {/* Sắp xếp - Hiển thị cho nhân viên kho hoặc quản lý kho (khi đã có pallet và phiếu đã được duyệt) */}
+        {(() => {
+          const isWarehouseManager = hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT);
+          
+          // Nhân viên kho: luôn hiển thị
+          if (!isWarehouseManager) {
+            return true;
+          }
+          
+          // Quản lý kho: chỉ hiển thị khi đã có pallet VÀ phiếu đã được duyệt (Completed)
+          const hasPallets = pallets.length > 0;
+          const isApproved = goodsReceiptNote?.status === GOODS_RECEIPT_NOTE_STATUS.Completed;
+          
+          return hasPallets && isApproved;
+        })() && (
         <Card ref={arrangingSectionRef} className="bg-gray-50 border border-slate-200 shadow-sm">
           <CardContent className="p-0">
             <div
@@ -1299,7 +1312,7 @@ export default function GoodsReceiptDetail() {
                               </TableCell>
                               <TableCell className="text-center">
                                 <div className="flex items-center justify-center gap-2">
-                                  {isEmptyLocation && (
+                                  {isEmptyLocation && !(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT)) && (
                                     <>
                                       <Button
                                         variant="ghost"
@@ -1347,6 +1360,12 @@ export default function GoodsReceiptDetail() {
 
                 <div className="flex justify-end pt-4 border-t border-gray-200">
                   {(() => {
+                    // Ẩn nút "Hoàn Thành" cho quản lý kho, chỉ hiển thị cho nhân viên kho
+                    const isWarehouseManager = hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT);
+                    if (isWarehouseManager) {
+                      return null;
+                    }
+
                     // Kiểm tra xem tất cả pallet đã có locationCode chưa
                     const allPalletsHaveLocation = pallets.length > 0 && pallets.every(pallet => {
                       const locationCode = pallet.locationCode ? String(pallet.locationCode).trim() : '';
