@@ -77,7 +77,7 @@ namespace MilkDistributionWarehouse.Repositories
 
         public async Task<bool> HasDependentPalletsAsync(int locationId)
         {
-            return await _context.Pallets.AnyAsync(p => p.LocationId == locationId && p.Status != CommonStatus.Deleted);
+            return await _context.Pallets.AnyAsync(p => p.LocationId == locationId && p.Status == CommonStatus.Active);
         }
 
         public async Task<List<Location>> GetActiveLocationsAsync()
