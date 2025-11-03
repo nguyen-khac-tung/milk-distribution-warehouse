@@ -30,6 +30,8 @@ namespace MilkDistributionWarehouse.Repositories
         {
             return await _context.GoodsIssueNotes
                 .Where(g => g.SalesOderId == salesOrderId)
+                .Include(gin => gin.SalesOder)
+                    .ThenInclude(s => s.Retailer)
                 .Include(gin => gin.CreatedByNavigation)
                 .Include(gin => gin.ApprovalByNavigation)
                 .Include(gin => gin.GoodsIssueNoteDetails)
