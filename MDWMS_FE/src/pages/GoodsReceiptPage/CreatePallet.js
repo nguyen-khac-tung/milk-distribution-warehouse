@@ -15,6 +15,7 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
   const handleSubmitRef = useRef(null);
   const [goodsPackingByDetailId, setGoodsPackingByDetailId] = useState({});
   const refreshBatchOptionsRef = useRef(null);
+  const [rowErrors, setRowErrors] = useState({}); // Lưu lỗi theo index của row
 
   // Tạo danh sách sản phẩm từ goodsReceiptNoteDetails
   const productOptions = useMemo(() => {
@@ -165,6 +166,73 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
     }
   };
 
+  // Validate và trả về lỗi theo từng row
+  const validateRows = () => {
+    const newRowErrors = {};
+    let hasErrors = false;
+
+    // Validate từng row
+    palletRows.forEach((r, idx) => {
+      const rowErrors = [];
+      
+      if (!r.batchId) {
+        rowErrors.push("Chưa chọn số lô");
+      }
+      if (!(Number(r.numPackages) > 0)) {
+        rowErrors.push("Số thùng phải lớn hơn 0");
+      }
+
+      if (rowErrors.length > 0) {
+        newRowErrors[idx] = rowErrors;
+        hasErrors = true;
+      }
+    });
+
+    // Validate tổng số thùng phải BẰNG số lượng thùng thực nhận cho từng mặt hàng
+    const totalPackagesByProduct = {};
+    palletRows.forEach((r, idx) => {
+      if (r.productId && Number(r.numPackages) > 0) {
+        if (!totalPackagesByProduct[r.productId]) {
+          totalPackagesByProduct[r.productId] = { total: 0, rowIndices: [] };
+        }
+        totalPackagesByProduct[r.productId].total += Number(r.numPackages);
+        totalPackagesByProduct[r.productId].rowIndices.push(idx);
+      }
+    });
+
+    // Kiểm tra từng mặt hàng: tổng số thùng phải BẰNG số thùng thực nhận
+    Object.keys(totalPackagesByProduct).forEach(productId => {
+      const requiredQuantity = actualPackageQuantityByDetailId[productId] || 0;
+      const { total, rowIndices } = totalPackagesByProduct[productId];
+      const productName = productOptions.find(p => p.value === productId)?.label || productId;
+
+      if (requiredQuantity > 0) {
+        if (total > requiredQuantity) {
+          const errorMsg = `Tổng số thùng vượt quá số lượng thực nhận (${requiredQuantity} thùng). Hiện tại: ${total} thùng`;
+          rowIndices.forEach(idx => {
+            if (!newRowErrors[idx]) newRowErrors[idx] = [];
+            if (!newRowErrors[idx].includes(errorMsg)) {
+              newRowErrors[idx].push(errorMsg);
+            }
+          });
+          hasErrors = true;
+        } else if (total < requiredQuantity) {
+          const errorMsg = `Tổng số thùng chưa đủ (${requiredQuantity} thùng). Hiện tại: ${total} thùng`;
+          rowIndices.forEach(idx => {
+            if (!newRowErrors[idx]) newRowErrors[idx] = [];
+            if (!newRowErrors[idx].includes(errorMsg)) {
+              newRowErrors[idx].push(errorMsg);
+            }
+          });
+          hasErrors = true;
+        }
+      }
+    });
+
+    setRowErrors(newRowErrors);
+    return !hasErrors;
+  };
+
   const handleSubmitCreatePallets = async () => {
     if (!goodsReceiptNoteId) {
       window.showToast?.("Thiếu mã phiếu nhập kho", "error");
@@ -177,53 +245,9 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
       return;
     }
 
-    // Validate và hiển thị toast nếu có lỗi
-    const errors = [];
-    palletRows.forEach(r => {
-      if (!r.batchId) {
-        if (!errors.includes("Không được bỏ trống số lô")) {
-          errors.push("Không được bỏ trống số lô");
-        }
-      }
-      if (!(Number(r.numPackages) > 0)) {
-        if (!errors.includes("Nhập số thùng phải lớn hơn 0")) {
-          errors.push("Nhập số thùng phải lớn hơn 0");
-        }
-      }
-    });
-
-    // Validate tổng số thùng phải BẰNG số lượng thùng thực nhận cho từng mặt hàng
-    const totalPackagesByProduct = {};
-    palletRows.forEach(r => {
-      if (r.productId && Number(r.numPackages) > 0) {
-        if (!totalPackagesByProduct[r.productId]) {
-          totalPackagesByProduct[r.productId] = 0;
-        }
-        totalPackagesByProduct[r.productId] += Number(r.numPackages);
-      }
-    });
-
-    // Kiểm tra từng mặt hàng: tổng số thùng phải BẰNG số thùng thực nhận (không được lớn hơn hoặc nhỏ hơn)
-    Object.keys(totalPackagesByProduct).forEach(productId => {
-      const requiredQuantity = actualPackageQuantityByDetailId[productId] || 0;
-      const total = totalPackagesByProduct[productId];
-      const productName = productOptions.find(p => p.value === productId)?.label || productId;
-
-      if (requiredQuantity > 0) {
-        if (total > requiredQuantity) {
-          if (!errors.includes(`Tổng số thùng của "${productName}" vượt quá số lượng thực nhận (${requiredQuantity} thùng). Tổng hiện tại: ${total} thùng`)) {
-            errors.push(`Tổng số thùng của "${productName}" vượt quá số lượng thực nhận (${requiredQuantity} thùng). Tổng hiện tại: ${total} thùng`);
-          }
-        } else if (total < requiredQuantity) {
-          if (!errors.includes(`Tổng số thùng của "${productName}" chưa đủ số lượng thực nhận (${requiredQuantity} thùng). Tổng hiện tại: ${total} thùng`)) {
-            errors.push(`Tổng số thùng của "${productName}" chưa đủ số lượng thực nhận (${requiredQuantity} thùng). Tổng hiện tại: ${total} thùng`);
-          }
-        }
-      }
-    });
-
-    if (errors.length > 0) {
-      window.showToast?.(errors.join("; "), "warning");
+    // Validate và hiển thị lỗi theo từng dòng
+    if (!validateRows()) {
+      window.showToast?.("Vui lòng kiểm tra và sửa các lỗi trong bảng", "warning");
       return;
     }
 
@@ -307,6 +331,17 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onRegisterSubmit, onBatchCreated]);
+
+  // Validate khi palletRows thay đổi (debounce)
+  useEffect(() => {
+    if (palletRows.length > 0 && showPalletTable) {
+      const timer = setTimeout(() => {
+        validateRows();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [palletRows, showPalletTable]);
 
   return (
     <div>
@@ -395,37 +430,41 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
                   const numPackages = Number(row.numPackages) || 0;
                   const totalUnits = unitsPerPackage * numPackages;
                   const hasSelectedProduct = !!row.productId;
+                  const hasError = rowErrors[idx] && rowErrors[idx].length > 0;
 
                   return (
-                    <TableRow key={idx}>
-                      <TableCell className="text-center">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 hover:bg-green-50"
-                          onClick={() => {
-                            // Duplicate row với số thùng = 0
-                            const duplicatedRow = {
-                              ...row,
-                              numPackages: 0,
-                              batchId: row.batchId || "",
-                              batchCode: row.batchCode || ""
-                            };
-                            setPalletRows(prev => {
-                              const newRows = [...prev];
-                              newRows.splice(idx + 1, 0, duplicatedRow);
-                              return newRows;
-                            });
-                          }}
-                          title="Thêm dòng giống mặt hàng này"
-                        >
-                          <Plus className="w-4 h-4 text-green-600" />
-                        </Button>
-                      </TableCell>
+                    <React.Fragment key={idx}>
+                      <TableRow>
+                        <TableCell className="text-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`h-8 w-8 p-0 hover:bg-green-50 ${hasError ? 'border-2 border-red-500' : ''}`}
+                            onClick={() => {
+                              // Duplicate row với số thùng = 0
+                              const duplicatedRow = {
+                                ...row,
+                                numPackages: 0,
+                                batchId: row.batchId || "",
+                                batchCode: row.batchCode || ""
+                              };
+                              setPalletRows(prev => {
+                                const newRows = [...prev];
+                                newRows.splice(idx + 1, 0, duplicatedRow);
+                                return newRows;
+                              });
+                            }}
+                            title="Thêm dòng giống mặt hàng này"
+                          >
+                            <Plus className="w-4 h-4 text-green-600" />
+                          </Button>
+                        </TableCell>
                       <TableCell>
                         <FloatingDropdown
                           value={row.productId || undefined}
-                          onChange={(value) => handleProductSelect(idx, value || "")}
+                          onChange={(value) => {
+                            handleProductSelect(idx, value || "");
+                          }}
                           options={productOptions}
                           placeholder="Chọn sản phẩm..."
                         />
@@ -488,12 +527,46 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setPalletRows(prev => prev.filter((_, i) => i !== idx))}
+                          className={hasError ? 'border-2 border-red-500' : ''}
+                          onClick={() => {
+                            setPalletRows(prev => prev.filter((_, i) => i !== idx));
+                            // Xóa lỗi của row này
+                            setRowErrors(prev => {
+                              const newErrors = { ...prev };
+                              delete newErrors[idx];
+                              // Cập nhật lại index của các lỗi sau row bị xóa
+                              const updatedErrors = {};
+                              Object.keys(newErrors).forEach(key => {
+                                const keyNum = parseInt(key);
+                                if (keyNum < idx) {
+                                  updatedErrors[keyNum] = newErrors[keyNum];
+                                } else if (keyNum > idx) {
+                                  updatedErrors[keyNum - 1] = newErrors[keyNum];
+                                }
+                              });
+                              return updatedErrors;
+                            });
+                          }}
                         >
                           <Trash2 className="w-4 h-4 text-red-600" />
                         </Button>
                       </TableCell>
                     </TableRow>
+                    {hasError && (
+                      <TableRow>
+                        <TableCell colSpan={8} className="bg-red-50 py-2">
+                          <div className="text-red-600 text-xs space-y-1">
+                            {rowErrors[idx].map((error, errorIdx) => (
+                              <div key={errorIdx} className="flex items-start gap-1">
+                                <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                                <span>{error}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </React.Fragment>
                   );
                 })
               )}
