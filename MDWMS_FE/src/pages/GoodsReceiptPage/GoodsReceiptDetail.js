@@ -769,6 +769,14 @@ export default function GoodsReceiptDetail() {
                             // Validation logic theo quy tắc
                             // a = expected (số lượng dự kiến), b = delivered (số lượng giao đến), c = reject (số lượng trả lại)
                             const validateRejectQuantity = (delivered, reject, expected) => {
+                              // Kiểm tra chỉ cho phép số nguyên
+                              if (delivered !== 0 && delivered % 1 !== 0) {
+                                return `Số lượng giao đến phải là số nguyên`;
+                              }
+                              if (reject !== 0 && reject % 1 !== 0) {
+                                return `Số lượng trả lại phải là số nguyên`;
+                              }
+
                               if (delivered === 0 && reject === 0) return null; // Cho phép cả 2 = 0
 
                               // Kiểm tra số lượng thực nhận không được âm (reject không được lớn hơn delivered)
@@ -816,13 +824,15 @@ export default function GoodsReceiptDetail() {
                                     <div className="flex flex-col items-center">
                                       <input
                                         type="number"
+                                        step="1"
                                         className={`w-20 h-8 px-2 rounded border text-center text-xs focus:outline-none focus:border-blue-500 ${validationErrors[detailId] ? 'border-red-500' : 'border-gray-300'
                                           }`}
                                         value={detail.deliveredPackageQuantity === '' || detail.deliveredPackageQuantity === null || detail.deliveredPackageQuantity === undefined ? '' : detail.deliveredPackageQuantity}
                                         min={0}
                                         onChange={e => {
                                           const value = e.target.value;
-                                          const numValue = value === '' ? 0 : Math.max(0, Number(value));
+                                          // Làm tròn thành số nguyên nếu nhập số thập phân
+                                          const numValue = value === '' ? 0 : Math.max(0, Math.floor(Number(value)));
                                           const updatedDetail = {
                                             ...detail,
                                             deliveredPackageQuantity: value === '' ? '' : numValue
@@ -846,13 +856,22 @@ export default function GoodsReceiptDetail() {
                                         }}
                                         onBlur={e => {
                                           const value = e.target.value;
-                                          const numValue = value === '' ? 0 : Number(value) || 0;
+                                          // Làm tròn thành số nguyên
+                                          const numValue = value === '' ? 0 : Math.floor(Number(value) || 0);
 
                                           if (value === '') {
                                             setGoodsReceiptNote(prev => ({
                                               ...prev,
                                               goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
                                                 d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? { ...d, deliveredPackageQuantity: 0 } : d
+                                              )
+                                            }));
+                                          } else {
+                                            // Cập nhật giá trị đã làm tròn
+                                            setGoodsReceiptNote(prev => ({
+                                              ...prev,
+                                              goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
+                                                d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? { ...d, deliveredPackageQuantity: numValue } : d
                                               )
                                             }));
                                           }
@@ -874,13 +893,15 @@ export default function GoodsReceiptDetail() {
                                     <div className="flex flex-col items-center">
                                       <input
                                         type="number"
+                                        step="1"
                                         className={`w-20 h-8 px-2 rounded border text-center text-xs focus:outline-none focus:border-blue-500 ${validationErrors[detailId] ? 'border-red-500' : 'border-gray-300'
                                           }`}
                                         value={detail.rejectPackageQuantity === '' || detail.rejectPackageQuantity === null || detail.rejectPackageQuantity === undefined ? '' : detail.rejectPackageQuantity}
                                         min={0}
                                         onChange={e => {
                                           const value = e.target.value;
-                                          const numValue = value === '' ? 0 : Math.max(0, Number(value));
+                                          // Làm tròn thành số nguyên nếu nhập số thập phân
+                                          const numValue = value === '' ? 0 : Math.max(0, Math.floor(Number(value)));
 
                                           setGoodsReceiptNote(prev => ({
                                             ...prev,
@@ -900,13 +921,22 @@ export default function GoodsReceiptDetail() {
                                         }}
                                         onBlur={e => {
                                           const value = e.target.value;
-                                          const numValue = value === '' ? 0 : Number(value) || 0;
+                                          // Làm tròn thành số nguyên
+                                          const numValue = value === '' ? 0 : Math.floor(Number(value) || 0);
 
                                           if (value === '') {
                                             setGoodsReceiptNote(prev => ({
                                               ...prev,
                                               goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
                                                 d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? { ...d, rejectPackageQuantity: 0 } : d
+                                              )
+                                            }));
+                                          } else {
+                                            // Cập nhật giá trị đã làm tròn
+                                            setGoodsReceiptNote(prev => ({
+                                              ...prev,
+                                              goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
+                                                d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? { ...d, rejectPackageQuantity: numValue } : d
                                               )
                                             }));
                                           }
