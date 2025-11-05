@@ -5,6 +5,7 @@ import { Button } from '../../components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { ArrowLeft, Package, User, Calendar, CheckCircle, XCircle, Clock, Truck, CheckSquare, Trash2, Key, Building2, FileText, Hash, Shield, ShoppingCart, Users, UserCheck, UserX, TruckIcon, UserPlus, Store, UserCircle, UserCog, UserCheck2, UserX2, UserMinus, Mail, Phone, MapPin, Play } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
+import { ComponentIcon } from '../../components/IconComponent/Icon';
 import { getPurchaseOrderDetail, submitPurchaseOrder, approvePurchaseOrder, rejectPurchaseOrder, confirmGoodsReceived, assignForReceiving, startReceive, reAssignForReceiving } from '../../services/PurchaseOrderService';
 import { extractErrorMessage } from '../../utils/Validation';
 import ApprovalConfirmationModal from '../../components/PurchaseOrderComponents/ApprovalConfirmationModal';
@@ -357,8 +358,8 @@ const PurchaseOrderDetail = () => {
                             <p>URL: /PurchaseOrder/GetPurchaseOrder/{id}</p>
                         </div>
                         <Button onClick={() => navigate('/purchase-orders')} variant="outline">
-                            <ArrowLeft className="h-4 w-4 mr-2" />
-                            Quay lại
+                            <ComponentIcon name="arrowBackCircleOutline" size={18} />
+                            <span className="ml-2">Quay lại</span>
                         </Button>
                     </CardContent>
                 </Card>
@@ -374,8 +375,8 @@ const PurchaseOrderDetail = () => {
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">Không tìm thấy</h3>
                         <p className="text-gray-600 mb-4">Đơn hàng không tồn tại hoặc đã bị xóa</p>
                         <Button onClick={() => navigate('/purchase-orders')} variant="outline">
-                            <ArrowLeft className="h-4 w-4 mr-2" />
-                            Quay lại
+                            <ComponentIcon name="arrowBackCircleOutline" size={18} />
+                            <span className="ml-2">Quay lại</span>
                         </Button>
                     </CardContent>
                 </Card>
@@ -387,20 +388,15 @@ const PurchaseOrderDetail = () => {
         <div className="min-h-screen bg-gray-100">
             <div className="max-w-7xl mx-auto p-6">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center space-x-4">
-                        <Button
-                            variant="outline"
-                            size="sm"
+                <div className="bg-white border-b border-gray-200 px-6 py-4 rounded-lg shadow-sm mb-6">
+                    <div className="flex items-center gap-4">
+                        <button
                             onClick={() => navigate('/purchase-orders')}
-                            className="flex items-center space-x-2"
+                            className="flex items-center justify-center hover:opacity-80 transition-opacity p-0"
                         >
-                            <ArrowLeft className="h-4 w-4" />
-                            <span>Quay lại</span>
-                        </Button>
-                        <div>
-                            <h1 className="text-2xl font-bold text-gray-900">ĐƠN MUA HÀNG</h1>
-                        </div>
+                            <ComponentIcon name="arrowBackCircleOutline" size={28} />
+                        </button>
+                        <h1 className="text-2xl font-bold text-slate-600 m-0">ĐƠN MUA HÀNG</h1>
                     </div>
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
