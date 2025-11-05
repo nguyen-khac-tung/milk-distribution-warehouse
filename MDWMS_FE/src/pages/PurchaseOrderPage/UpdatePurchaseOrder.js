@@ -8,7 +8,7 @@ import { Label } from "../../components/ui/label"
 import FloatingDropdown from "../../components/Common/FloatingDropdown"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
 import { Plus, Trash2, ArrowLeft, Save, X } from "lucide-react"
-import { updatePurchaseOrder, getGoodsDropDownBySupplierId, getPurchaseOrderDetail, getGoodsPackingByGoodsId } from "../../services/PurchaseOrderService"
+import { updatePurchaseOrder, getGoodsDropDownBySupplierId, getPurchaseOrderDetail, getGoodsPackingByGoodsId, submitPurchaseOrder } from "../../services/PurchaseOrderService"
 import { extractErrorMessage } from '../../utils/Validation';
 import { getSuppliersDropdown } from "../../services/SupplierService"
 
@@ -21,6 +21,7 @@ export default function UpdatePurchaseOrder() {
     const [suppliersLoading, setSuppliersLoading] = useState(false);
     const [goodsLoading, setGoodsLoading] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [submitLoading, setSubmitLoading] = useState(false);
     const [formData, setFormData] = useState({
         supplierName: "",
         note: ""
@@ -387,6 +388,101 @@ export default function UpdatePurchaseOrder() {
         }
     }
 
+    const handleSubmitForApproval = async (e) => {
+        e.preventDefault();
+
+        // Reset validation errors
+        setFieldErrors({});
+        const newFieldErrors = {};
+
+        // Kiểm tra từng mặt hàng
+        items.forEach((item, index) => {
+            if (!item.goodsName) {
+                newFieldErrors[`${item.id}-goodsName`] = "Vui lòng chọn tên hàng hóa";
+            }
+            if (!item.goodsPackingId) {
+                newFieldErrors[`${item.id}-goodsPackingId`] = "Vui lòng chọn đóng gói";
+            }
+            if (!item.quantity || item.quantity <= 0) {
+                newFieldErrors[`${item.id}-quantity`] = "Vui lòng nhập số thùng lớn hơn 0";
+            }
+
+            // Kiểm tra validation số thùng
+            const quantityError = validateQuantity(item);
+            if (quantityError) {
+                newFieldErrors[`${item.id}-quantity`] = quantityError;
+            }
+        });
+
+        if (Object.keys(newFieldErrors).length > 0) {
+            setFieldErrors(newFieldErrors);
+            return;
+        }
+
+        const validItems = items.filter(item => item.goodsName && item.quantity && item.goodsPackingId);
+        if (validItems.length === 0) {
+            window.showToast("Vui lòng thêm ít nhất một hàng hóa với đầy đủ thông tin", "error");
+            return;
+        }
+
+        setSubmitLoading(true);
+        try {
+            // Cập nhật đơn hàng trước
+            const itemsWithIds = validItems.map(item => {
+                let finalGoodsId = null;
+
+                if (item.goodsId && item.goodsId !== 0) {
+                    finalGoodsId = parseInt(item.goodsId);
+                } else {
+                    const selectedGood = goods.find(good => good.goodsName === item.goodsName);
+                    if (selectedGood) {
+                        finalGoodsId = parseInt(selectedGood.goodsId);
+                    }
+                }
+
+                if (!finalGoodsId) {
+                    console.error("Cannot find goodsId for item:", item.goodsName, "item.goodsId:", item.goodsId);
+                    return null;
+                }
+
+                const packageQuantity = parseInt(item.quantity);
+
+                return {
+                    goodsId: finalGoodsId,
+                    packageQuantity: packageQuantity,
+                    goodsPackingId: parseInt(item.goodsPackingId),
+                    purchaseOrderDetailId: item.purchaseOrderDetailId || 0
+                };
+            }).filter(item => item !== null && item.goodsId);
+
+            if (itemsWithIds.length === 0) {
+                window.showToast("Không tìm thấy hàng hóa hợp lệ!", "error");
+                return;
+            }
+
+            const submitData = {
+                purchaseOderId: id,
+                purchaseOrderDetailUpdates: itemsWithIds,
+                note: formData.note || ""
+            };
+
+            // Cập nhật đơn hàng
+            await updatePurchaseOrder(submitData);
+            
+            // Sau đó gửi phê duyệt
+            await submitPurchaseOrder(id);
+            
+            window.showToast("Cập nhật và gửi phê duyệt đơn mua hàng thành công!", "success");
+            navigate("/purchase-orders");
+        } catch (error) {
+            console.error("Lỗi khi cập nhật và gửi phê duyệt đơn mua", error);
+            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi cập nhật và gửi phê duyệt đơn mua hàng!";
+            window.showToast(errorMessage, "error");
+        } finally {
+            setSubmitLoading(false);
+        }
+    }
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
@@ -657,6 +753,14 @@ export default function UpdatePurchaseOrder() {
                                 className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
                             >
                                 Cập Nhật Đơn Mua Hàng
+                            </Button>
+                            <Button
+                                type="button"
+                                onClick={handleSubmitForApproval}
+                                disabled={submitLoading}
+                                className="h-[38px] px-6 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {submitLoading ? "Đang xử lý..." : "Gửi Phê Duyệt"}
                             </Button>
                         </div>
                     </div>

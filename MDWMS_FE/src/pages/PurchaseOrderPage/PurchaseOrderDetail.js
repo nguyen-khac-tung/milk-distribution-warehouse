@@ -225,8 +225,8 @@ const PurchaseOrderDetail = () => {
 
             if (window.showToast) {
                 const message = purchaseOrder.status === PURCHASE_ORDER_STATUS.Rejected
-                    ? "Nộp lại đơn hàng thành công!"
-                    : "Nộp bản nháp thành công!";
+                    ? "Gửi lại phê duyệt đơn hàng thành công!"
+                    : "Gửi phê duyệt thành công!";
                 window.showToast(message, "success");
             }
 
@@ -419,24 +419,20 @@ const PurchaseOrderDetail = () => {
                                 </div>
                                 <div className="space-y-3">
                                     {/* Supplier and Address on same line */}
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-[1.2fr_1fr] gap-4">
                                         {/* Left: Supplier */}
-                                        <div className="flex items-center space-x-2">
-                                            <div className="flex items-center space-x-2">
-                                                <Store className="h-4 w-4 text-green-600" />
-                                                <label className="text-sm font-medium text-gray-700">Nhà cung cấp:</label>
-                                            </div>
-                                            <span className="text-sm font-semibold text-gray-900 bg-gray-200 px-3 py-1 rounded border">
+                                        <div className="flex items-center space-x-2 min-w-0">
+                                            <Store className="h-4 w-4 text-green-600 flex-shrink-0" />
+                                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0 w-[85px]">Nhà cung cấp:</label>
+                                            <span className="text-sm font-semibold text-gray-900 bg-gray-200 px-3 py-1 rounded border whitespace-nowrap flex-1">
                                                 {purchaseOrder.supplierName || 'Chưa có thông tin'}
                                             </span>
                                         </div>
 
                                         {/* Right: Address */}
-                                        <div className="flex items-center space-x-2">
-                                            <div className="flex items-center space-x-2">
-                                                <MapPin className="h-4 w-4 text-red-600" />
-                                                <label className="text-sm font-medium text-gray-700">Địa chỉ:</label>
-                                            </div>
+                                        <div className="flex items-center space-x-2 min-w-0">
+                                            <MapPin className="h-4 w-4 text-red-600 flex-shrink-0" />
+                                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0 w-[40px]">Địa chỉ:</label>
                                             <span className="text-sm text-gray-900 bg-gray-200 px-3 py-1 rounded border">
                                                 {purchaseOrder.address || 'Chưa có thông tin'}
                                             </span>
@@ -444,24 +440,20 @@ const PurchaseOrderDetail = () => {
                                     </div>
 
                                     {/* Email and Phone on same line */}
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-[1.2fr_1fr] gap-4">
                                         {/* Left: Email */}
-                                        <div className="flex items-center space-x-2">
-                                            <div className="flex items-center space-x-2">
-                                                <Mail className="h-4 w-4 text-orange-600" />
-                                                <label className="text-sm font-medium text-gray-700">Email:</label>
-                                            </div>
-                                            <span className="text-sm text-gray-900 bg-gray-200 px-3 py-1 rounded border">
+                                        <div className="flex items-center space-x-2 min-w-0">
+                                            <Mail className="h-4 w-4 text-orange-600 flex-shrink-0" />
+                                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0 w-[85px]">Email:</label>
+                                            <span className="text-sm text-gray-900 bg-gray-200 px-3 py-1 rounded border whitespace-nowrap flex-1">
                                                 {purchaseOrder.email || 'Chưa có thông tin'}
                                             </span>
                                         </div>
 
                                         {/* Right: Phone */}
-                                        <div className="flex items-center space-x-2">
-                                            <div className="flex items-center space-x-2">
-                                                <Phone className="h-4 w-4 text-blue-600" />
-                                                <label className="text-sm font-medium text-gray-700">SĐT:</label>
-                                            </div>
+                                        <div className="flex items-center space-x-2 min-w-0">
+                                            <Phone className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0 w-[40px]">SĐT:</label>
                                             <span className="text-sm text-gray-900 bg-gray-200 px-3 py-1 rounded border">
                                                 {purchaseOrder.phone || 'Chưa có thông tin'}
                                             </span>
@@ -553,7 +545,7 @@ const PurchaseOrderDetail = () => {
                                         className="bg-orange-600 hover:bg-orange-700 text-white h-[38px] px-8"
                                     >
                                         <FileText className="h-4 w-4 mr-2" />
-                                        Nộp bản nháp
+                                        Gửi phê duyệt
                                     </Button>
                                 )}
 
@@ -563,7 +555,7 @@ const PurchaseOrderDetail = () => {
                                         className="bg-orange-600 hover:bg-orange-700 text-white h-[38px] px-8"
                                     >
                                         <FileText className="h-4 w-4 mr-2" />
-                                        Nộp lại
+                                        Gửi phê duyệt
                                     </Button>
                                 )}
 
