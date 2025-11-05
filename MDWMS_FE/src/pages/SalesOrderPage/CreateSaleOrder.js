@@ -8,7 +8,7 @@ import { Textarea } from "../../components/ui/textarea"
 import FloatingDropdown from "../../components/Common/FloatingDropdown"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
 import { Plus, Trash2, ArrowLeft, Save, X, CheckCircle, BarChart3, ArrowRightLeft, Calendar } from "lucide-react"
-import { createSaleOrder, getSalesOrderDetail } from "../../services/SalesOrderService"
+import { createSaleOrder, getSalesOrderDetail, updateSaleOrderStatusPendingApproval, getSalesOrderListSalesRepresentatives } from "../../services/SalesOrderService"
 import { getRetailersDropdown } from "../../services/RetailerService"
 import { getSuppliersDropdown } from "../../services/SupplierService"
 import { getGoodsPackingByGoodsId } from "../../services/PurchaseOrderService"
@@ -68,6 +68,8 @@ function CreateSaleOrder({
     const [showBackOrderModal, setShowBackOrderModal] = useState(false)
     const [insufficientItems, setInsufficientItems] = useState([])
     const [itemsExceedingStock, setItemsExceedingStock] = useState({}) // Map itemId -> { availableQuantity, requestedQuantity }
+    const [saveDraftLoading, setSaveDraftLoading] = useState(false)
+    const [submitApprovalLoading, setSubmitApprovalLoading] = useState(false)
 
     const loadGoodsBySupplier = async (supplierId) => {
         // Check if goods already loaded for this supplier
@@ -635,9 +637,8 @@ function CreateSaleOrder({
         setShowBackOrderModal(true);
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-
+    // Validate form data
+    const validateFormData = () => {
         // Reset validation errors
         setFieldErrors({});
         const newFieldErrors = {};
@@ -679,7 +680,7 @@ function CreateSaleOrder({
             if (Object.keys(newFieldErrors).length > 0) {
                 setFieldErrors(newFieldErrors);
             }
-            return;
+            return { isValid: false, errors: newFieldErrors };
         }
 
         // Kiểm tra ngày giao hàng
@@ -688,40 +689,55 @@ function CreateSaleOrder({
             if (Object.keys(newFieldErrors).length > 0) {
                 setFieldErrors(newFieldErrors);
             }
-            return;
+            return { isValid: false, errors: newFieldErrors };
         }
 
-        // Kiểm tra ngày giao hàng phải trong tương lai
-        const selectedDate = new Date(formData.estimatedTimeDeparture);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (selectedDate <= today) {
-            window.showToast("Ngày giao hàng phải trong tương lai", "error");
-            if (Object.keys(newFieldErrors).length > 0) {
-                setFieldErrors(newFieldErrors);
-            }
-            return;
-        }
+        // Kiểm tra ngày giao hàng phải trong tương lai (chỉ khi submit for approval)
+        // Không validate cho save draft
+        // const selectedDate = new Date(formData.estimatedTimeDeparture);
+        // const today = new Date();
+        // today.setHours(0, 0, 0, 0);
+        // if (selectedDate <= today) {
+        //     window.showToast("Ngày giao hàng phải trong tương lai", "error");
+        //     if (Object.keys(newFieldErrors).length > 0) {
+        //         setFieldErrors(newFieldErrors);
+        //     }
+        //     return { isValid: false, errors: newFieldErrors };
+        // }
 
         if (Object.keys(newFieldErrors).length > 0) {
             setFieldErrors(newFieldErrors);
-            return;
+            return { isValid: false, errors: newFieldErrors };
         }
 
         const selectedRetailer = retailers.find(retailer => retailer.retailerName === formData.retailerName);
         if (!selectedRetailer) {
             window.showToast("Không tìm thấy nhà bán lẻ", "error");
-            return;
+            return { isValid: false, errors: newFieldErrors };
         }
 
         const validItems = items.filter(item => item.supplierName && item.goodsName && item.quantity && item.goodsPackingId);
         if (validItems.length === 0) {
             window.showToast("Vui lòng thêm ít nhất một hàng hóa với đầy đủ thông tin", "error");
+            return { isValid: false, errors: newFieldErrors };
+        }
+
+        return { isValid: true, errors: newFieldErrors, selectedRetailer, validItems };
+    };
+
+    // Lưu lại thành bản nháp
+    const handleSaveAsDraft = async (e) => {
+        e.preventDefault();
+
+        const validation = validateFormData();
+        if (!validation.isValid) {
             return;
         }
 
-        // Kiểm tra inventory - chặn submit nếu có item vượt quá tồn kho
-        // Kiểm tra tồn kho và lưu thông tin các items vượt quá tồn kho
+        const { selectedRetailer, validItems } = validation;
+
+        // Kiểm tra inventory - chặn submit nếu có item vượt quá tồn kho (chỉ warning, không block)
+        // Lưu thông tin các items vượt quá tồn kho
         const itemsExceedingStockMap = {};
         const insufficientItems = validItems.filter(item => {
             const stockInfo = getItemStockInfo(item);
@@ -738,20 +754,13 @@ function CreateSaleOrder({
         if (insufficientItems.length > 0) {
             // Lưu thông tin các items vượt quá tồn kho để hiển thị viền đỏ
             setItemsExceedingStock(itemsExceedingStockMap);
-
-            const firstItem = insufficientItems[0];
-            const message = insufficientItems.length === 1
-                ? `Sản phẩm "${firstItem.goodsName}" vượt quá tồn kho.`
-                : `Có ${insufficientItems.length} sản phẩm vượt quá tồn kho.`;
-
-            window.showToast(message, "error");
-            return;
+        } else {
+            setItemsExceedingStock({});
         }
 
-        // Nếu không có items vượt quá tồn kho, reset state
-        setItemsExceedingStock({});
-
         try {
+            setSaveDraftLoading(true);
+
             const itemsWithIds = validItems.map(item => {
                 const selectedSupplier = suppliers.find(supplier => supplier.companyName === item.supplierName);
                 if (!selectedSupplier) return null;
@@ -782,16 +791,145 @@ function CreateSaleOrder({
             };
 
             await createSaleOrder(submitData);
-            window.showToast("Tạo đơn bán hàng thành công!", "success");
+            window.showToast("Lưu bản nháp thành công!", "success");
             navigate("/sales-orders");
         } catch (error) {
-            console.error("Lỗi khi xử lý đơn bán hàng:", error);
-            const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi xử lý đơn bán hàng!");
+            console.error("Lỗi khi lưu bản nháp:", error);
+            const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi lưu bản nháp!");
 
-            // Show specific error message
             if (window.showToast) {
                 window.showToast(errorMessage, "error");
             }
+        } finally {
+            setSaveDraftLoading(false);
+        }
+    };
+
+    // Gửi phê duyệt (tạo và submit ngay)
+    const handleSubmitForApproval = async (e) => {
+        e.preventDefault();
+
+        const validation = validateFormData();
+        if (!validation.isValid) {
+            return;
+        }
+
+        const { selectedRetailer, validItems } = validation;
+
+        // Kiểm tra ngày giao hàng phải trong tương lai (chỉ khi submit for approval)
+        const selectedDate = new Date(formData.estimatedTimeDeparture);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (selectedDate <= today) {
+            window.showToast("Ngày giao hàng phải trong tương lai", "error");
+            return;
+        }
+
+        // Kiểm tra inventory - chặn submit nếu có item vượt quá tồn kho
+        const itemsExceedingStockMap = {};
+        const insufficientItems = validItems.filter(item => {
+            const stockInfo = getItemStockInfo(item);
+            if (stockInfo && stockInfo.isExceeding) {
+                itemsExceedingStockMap[item.id] = {
+                    availableQuantity: stockInfo.availableQuantity,
+                    requestedQuantity: stockInfo.requestedQuantity
+                };
+                return true;
+            }
+            return false;
+        });
+
+        if (insufficientItems.length > 0) {
+            // Lưu thông tin các items vượt quá tồn kho để hiển thị viền đỏ
+            setItemsExceedingStock(itemsExceedingStockMap);
+
+            const firstItem = insufficientItems[0];
+            const message = insufficientItems.length === 1
+                ? `Sản phẩm "${firstItem.goodsName}" vượt quá tồn kho.`
+                : `Có ${insufficientItems.length} sản phẩm vượt quá tồn kho.`;
+
+            window.showToast(message, "error");
+            return;
+        }
+
+        // Nếu không có items vượt quá tồn kho, reset state
+        setItemsExceedingStock({});
+
+        try {
+            setSubmitApprovalLoading(true);
+
+            const itemsWithIds = validItems.map(item => {
+                const selectedSupplier = suppliers.find(supplier => supplier.companyName === item.supplierName);
+                if (!selectedSupplier) return null;
+
+                const goods = goodsBySupplier[selectedSupplier.supplierId] || [];
+                const selectedGood = goods.find(good => good.goodsName === item.goodsName);
+                if (!selectedGood) return null;
+
+                return {
+                    supplierId: parseInt(selectedSupplier.supplierId),
+                    goodsId: parseInt(selectedGood.goodsId),
+                    goodsPackingId: parseInt(item.goodsPackingId),
+                    packageQuantity: parseInt(item.quantity)
+                };
+            }).filter(item => item !== null);
+
+            if (itemsWithIds.length === 0) {
+                console.log("Không tìm thấy hàng hóa hợp lệ");
+                window.showToast("Không tìm thấy hàng hóa hợp lệ!", "error");
+                return;
+            }
+
+            const submitData = {
+                retailerId: parseInt(selectedRetailer.retailerId),
+                estimatedTimeDeparture: formData.estimatedTimeDeparture,
+                note: formData.note || "",
+                salesOrderItemDetailCreateDtos: itemsWithIds
+            };
+
+            // Tạo Sales Order
+            await createSaleOrder(submitData);
+
+            // Fetch lại list để lấy salesOrderId mới tạo
+            try {
+                const listResponse = await getSalesOrderListSalesRepresentatives({
+                    pageNumber: 1,
+                    pageSize: 1,
+                    sortField: "createdAt",
+                    sortAscending: false
+                });
+
+                if (listResponse && listResponse.success && listResponse.data && listResponse.data.items && listResponse.data.items.length > 0) {
+                    const latestOrder = listResponse.data.items[0];
+                    const salesOrderId = latestOrder.salesOrderId;
+
+                    // Gửi phê duyệt
+                    await updateSaleOrderStatusPendingApproval({
+                        salesOrderId: salesOrderId
+                    });
+
+                    window.showToast("Tạo và gửi phê duyệt đơn bán hàng thành công!", "success");
+                    navigate("/sales-orders");
+                } else {
+                    // Nếu không lấy được ID, vẫn báo thành công (đã tạo)
+                    window.showToast("Tạo đơn bán hàng thành công! Vui lòng gửi phê duyệt từ trang chi tiết.", "success");
+                    navigate("/sales-orders");
+                }
+            } catch (fetchError) {
+                console.error("Error fetching sales order list:", fetchError);
+                // Nếu không fetch được, vẫn báo thành công (đã tạo)
+                window.showToast("Tạo đơn bán hàng thành công! Vui lòng gửi phê duyệt từ trang chi tiết.", "success");
+                navigate("/sales-orders");
+            }
+        } catch (error) {
+            console.error("Lỗi khi tạo và gửi phê duyệt đơn bán hàng:", error);
+            const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi tạo và gửi phê duyệt đơn bán hàng!");
+
+            if (window.showToast) {
+                window.showToast(errorMessage, "error");
+            }
+        } finally {
+            setSubmitApprovalLoading(false);
         }
     }
 
@@ -1144,10 +1282,19 @@ function CreateSaleOrder({
                             <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-4">
                                 <Button
                                     type="button"
-                                    onClick={handleSubmit}
-                                    className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
+                                    onClick={handleSaveAsDraft}
+                                    disabled={saveDraftLoading || submitApprovalLoading}
+                                    className="h-[38px] px-6 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {isEditMode ? "Cập Nhật Đơn Bán Hàng" : "Tạo Đơn Bán Hàng"}
+                                    {saveDraftLoading ? "Đang lưu..." : "Lưu lại"}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    onClick={handleSubmitForApproval}
+                                    disabled={saveDraftLoading || submitApprovalLoading}
+                                    className="h-[38px] px-6 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {submitApprovalLoading ? "Đang xử lý..." : "Gửi phê duyệt"}
                                 </Button>
                             </div>
                         </div>
