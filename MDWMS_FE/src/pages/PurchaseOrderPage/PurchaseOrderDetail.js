@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { ArrowLeft, Package, User, Calendar, CheckCircle, XCircle, Clock, Truck, CheckSquare, Trash2, Key, Building2, FileText, Hash, Shield, ShoppingCart, Users, UserCheck, UserX, TruckIcon, UserPlus, Store, UserCircle, UserCog, UserCheck2, UserX2, UserMinus, Mail, Phone, MapPin, Play } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
-import { getPurchaseOrderDetail, submitPurchaseOrder, approvePurchaseOrder, rejectPurchaseOrder, confirmGoodsReceived, assignForReceiving, startReceive, reAssignForReceiving } from '../../services/PurchaseOrderService';
+import { getPurchaseOrderDetail, submitPurchaseOrder, approvePurchaseOrder, rejectPurchaseOrder, confirmGoodsReceived, assignForReceiving, startReceive, reAssignForReceiving, updatePurchaseOrderAsOrdered } from '../../services/PurchaseOrderService';
 import { extractErrorMessage } from '../../utils/Validation';
 import ApprovalConfirmationModal from '../../components/PurchaseOrderComponents/ApprovalConfirmationModal';
 import RejectionConfirmationModal from '../../components/PurchaseOrderComponents/RejectionConfirmationModal';
@@ -14,6 +14,7 @@ import SubmitDraftConfirmationModal from '../../components/PurchaseOrderComponen
 import ConfirmGoodsReceivedModal from '../../components/PurchaseOrderComponents/ConfirmGoodsReceivedModal';
 import AssignReceivingModal from '../../components/PurchaseOrderComponents/AssignReceivingModal';
 import StartReceiveModal from '../../components/PurchaseOrderComponents/StartReceiveModal';
+import ConfirmOrderedModal from '../../components/PurchaseOrderComponents/ConfirmOrderedModal';
 import UserInfoDisplay from '../../components/PurchaseOrderComponents/UserInfoDisplay';
 import { PURCHASE_ORDER_STATUS } from '../../utils/permissions';
 import { usePermissions } from '../../hooks/usePermissions';
@@ -34,12 +35,14 @@ const PurchaseOrderDetail = () => {
     const [showConfirmGoodsReceivedModal, setShowConfirmGoodsReceivedModal] = useState(false);
     const [showAssignReceivingModal, setShowAssignReceivingModal] = useState(false);
     const [showStartReceiveModal, setShowStartReceiveModal] = useState(false);
+    const [showConfirmOrderedModal, setShowConfirmOrderedModal] = useState(false);
     const [approvalLoading, setApprovalLoading] = useState(false);
     const [rejectionLoading, setRejectionLoading] = useState(false);
     const [submitLoading, setSubmitLoading] = useState(false);
     const [confirmGoodsReceivedLoading, setConfirmGoodsReceivedLoading] = useState(false);
     const [assignReceivingLoading, setAssignReceivingLoading] = useState(false);
     const [startReceiveLoading, setStartReceiveLoading] = useState(false);
+    const [confirmOrderedLoading, setConfirmOrderedLoading] = useState(false);
 
     useEffect(() => {
         const fetchPurchaseOrderDetail = async () => {
@@ -85,7 +88,8 @@ const PurchaseOrderDetail = () => {
             6: 'bg-purple-100 text-purple-800', // Assigned for Receiving
             7: 'bg-orange-100 text-orange-800', // Receiving
             8: 'bg-indigo-100 text-indigo-800', // Inspected
-            9: 'bg-emerald-100 text-emerald-800' // Completed
+            9: 'bg-emerald-100 text-emerald-800', // Completed
+            10: 'bg-green-100 text-green-800' // Ordered
         };
         return statusColors[status] || 'bg-gray-100 text-gray-800';
     };
@@ -100,7 +104,8 @@ const PurchaseOrderDetail = () => {
             6: <User className="h-3 w-3" />, // Assigned for Receiving
             7: <Package className="h-3 w-3" />, // Receiving
             8: <CheckSquare className="h-3 w-3" />, // Inspected
-            9: <CheckCircle className="h-3 w-3" /> // Completed
+            9: <CheckCircle className="h-3 w-3" />, // Completed
+            10: <ShoppingCart className="h-3 w-3" /> // Ordered
         };
         return statusIcons[status] || <Clock className="h-3 w-3" />;
     };
@@ -115,7 +120,8 @@ const PurchaseOrderDetail = () => {
             6: 'Đã phân công',
             7: 'Đang tiếp nhận',
             8: 'Đã kiểm nhập',
-            9: 'Đã nhập kho'
+            9: 'Đã nhập kho',
+            10: 'Đã đặt hàng'
         };
         return statusTexts[status] || 'Không xác định';
     };
@@ -203,6 +209,11 @@ const PurchaseOrderDetail = () => {
     const canStartReceive = () => {
         return hasPermission(PERMISSIONS.PURCHASE_ORDER_START_RECEIVE) &&
             purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving;
+    };
+
+    const canConfirmOrdered = () => {
+        return hasPermission(PERMISSIONS.PURCHASE_ORDER_CONFIRM_ORDERED) &&
+            purchaseOrder?.status === PURCHASE_ORDER_STATUS.Approved;
     };
 
     const canSubmitDraft = () => {
@@ -339,6 +350,33 @@ const PurchaseOrderDetail = () => {
             }
         } finally {
             setStartReceiveLoading(false);
+        }
+    };
+
+    const handleConfirmOrdered = async (estimatedTimeArrival) => {
+        setConfirmOrderedLoading(true);
+        try {
+            await updatePurchaseOrderAsOrdered(
+                purchaseOrder.purchaseOderId,
+                estimatedTimeArrival
+            );
+
+            if (window.showToast) {
+                window.showToast("Xác nhận đã đặt hàng thành công!", "success");
+            }
+            setShowConfirmOrderedModal(false);
+            const response = await getPurchaseOrderDetail(id);
+            if (response && response.success) {
+                setPurchaseOrder(response.data);
+            }
+        } catch (error) {
+            console.error("Error confirming ordered:", error);
+            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi xác nhận đã đặt hàng";
+            if (window.showToast) {
+                window.showToast(errorMessage, "error");
+            }
+        } finally {
+            setConfirmOrderedLoading(false);
         }
     };
     if (loading) {
@@ -602,6 +640,16 @@ const PurchaseOrderDetail = () => {
                                         Bắt đầu tiếp nhận
                                     </Button>
                                 )}
+
+                                {canConfirmOrdered() && (
+                                    <Button
+                                        onClick={() => setShowConfirmOrderedModal(true)}
+                                        className="bg-yellow-600 hover:bg-yellow-700 text-white h-[38px] px-8"
+                                    >
+                                        <ShoppingCart className="h-4 w-4 mr-2" />
+                                        Xác nhận đã đặt hàng
+                                    </Button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -687,6 +735,15 @@ const PurchaseOrderDetail = () => {
                 onConfirm={handleSubmitDraftConfirm}
                 purchaseOrder={purchaseOrder}
                 loading={submitLoading}
+            />
+
+            {/* Confirm Ordered Modal */}
+            <ConfirmOrderedModal
+                isOpen={showConfirmOrderedModal}
+                onClose={() => setShowConfirmOrderedModal(false)}
+                onConfirm={handleConfirmOrdered}
+                purchaseOrder={purchaseOrder}
+                loading={confirmOrderedLoading}
             />
         </div>
     );

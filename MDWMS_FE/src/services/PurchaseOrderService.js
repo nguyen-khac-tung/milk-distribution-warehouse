@@ -311,4 +311,20 @@ export const completePurchaseOrder = async (purchaseOrderId) => {
     }
 };
 
+// Update Purchase Order as Ordered
+export const updatePurchaseOrderAsOrdered = async (purchaseOrderId, estimatedTimeArrival) => {
+    try {
+        const data = {
+            purchaseOrderId: purchaseOrderId,
+            estimatedTimeArrival: estimatedTimeArrival
+        };
+
+        const res = await api.put('/PurchaseOrder/Ordered', data);
+        return res.data;
+    } catch (error) {
+        console.error("Error updating purchase order as ordered:", error);
+        throw error;
+    }
+};
+
 
