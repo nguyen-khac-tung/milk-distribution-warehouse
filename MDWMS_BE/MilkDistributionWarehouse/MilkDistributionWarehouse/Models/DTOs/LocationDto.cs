@@ -101,6 +101,13 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public bool? IsAvailable { get; set; } = true;
         }
 
+        public class LocationCheckPalletDto
+        {
+            public string LocationCode { get; set; }
+
+            public string PalletId { get; set; }
+        }
+
         public class LocationBulkCreate
         {
             [Required(ErrorMessage = "Danh sách vị trí không được rỗng")]
