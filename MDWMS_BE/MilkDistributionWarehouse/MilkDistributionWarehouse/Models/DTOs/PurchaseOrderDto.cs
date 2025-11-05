@@ -97,6 +97,11 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public List<PurchaseOrderDetailCreate> PurchaseOrderDetailCreate { get; set; } = new();
     }
 
+    public class PurchaseOrderCreateResponse
+    {
+        public Guid PurchaseOderId { get; set; }
+    }
+
     public class PurchaseOrderUpdate
     {
         public Guid PurchaseOderId { get; set; }
