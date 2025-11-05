@@ -192,12 +192,25 @@ const PurchaseOrderDetail = () => {
     };
 
     const canConfirmGoodsReceived = () => {
+        // Không cho phép nếu đã xác nhận giao đến rồi
+        if (purchaseOrder?.arrivalConfirmedBy || purchaseOrder?.arrivalConfirmedAt) {
+            return false;
+        }
+        
+        // Cho phép xác nhận giao đến khi:
+        // - Approved: đã duyệt (cho phép xác nhận giao đến)
+        // - Ordered: đã đặt hàng (có thể xác nhận giao đến trước hoặc sau phân công)
+        // - AssignedForReceiving: đã phân công (cho phép xác nhận giao đến sau khi phân công)
+        // Không cho phép khi status là GoodsReceived (đã xác nhận)
         return hasPermission(PERMISSIONS.PURCHASE_ORDER_CONFIRM_GOODS_RECEIVED) &&
+            purchaseOrder?.status !== PURCHASE_ORDER_STATUS.GoodsReceived &&
             (purchaseOrder?.status === PURCHASE_ORDER_STATUS.Approved ||
-             purchaseOrder?.status === PURCHASE_ORDER_STATUS.Ordered);
+             purchaseOrder?.status === PURCHASE_ORDER_STATUS.Ordered ||
+             purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving);
     };
 
     const canAssignReceiving = () => {
+        // Cho phép phân công khi status là Ordered hoặc GoodsReceived
         return hasPermission(PERMISSIONS.PURCHASE_ORDER_ASSIGN_FOR_RECEIVING) &&
             (purchaseOrder?.status === PURCHASE_ORDER_STATUS.Ordered ||
              purchaseOrder?.status === PURCHASE_ORDER_STATUS.GoodsReceived);
