@@ -94,9 +94,17 @@ const UpdatePalletModal = ({
 
     try {
       setLocationValidating(true);
-      const result = await validateLocationCode(locationCode);
+      // Lấy palletId từ pallet prop
+      const palletIdRaw = pallet?.palletId || pallet?.id;
+      const palletId = palletIdRaw != null ? String(palletIdRaw) : "";
+      const result = await validateLocationCode(locationCode, palletId);
       setLocationValidationResult(result);
 
+      // Lấy message từ result - chỉ hiển thị toast nếu là message từ API (không phải default "Mã vị trí hợp lệ")
+      const message = result.message || "";
+      const isDefaultMessage = message === "Mã vị trí hợp lệ";
+      const processedMessage = message ? extractErrorMessage({ response: { data: { message } } }, message) : (result.success ? "Mã vị trí hợp lệ" : "Mã vị trí không tồn tại");
+      
       if (result.success) {
         // Lưu locationId từ response
         console.log("Location validation result:", result);
@@ -104,13 +112,22 @@ const UpdatePalletModal = ({
           ...prev,
           locationId: result.data?.locationId || ''
         }));
+        // Chỉ hiển thị toast khi có message từ API (cảnh báo), không hiển thị default message "Mã vị trí hợp lệ"
+        if (message && !isDefaultMessage) {
+          window.showToast?.(processedMessage, "error");
+        }
+        // Không hiển thị toast khi validate thành công với default message (đã có hiển thị trong modal)
+      } else {
+        window.showToast?.(processedMessage, "error");
       }
     } catch (error) {
       console.error("Error validating location:", error);
+      const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi kiểm tra mã vị trí");
       setLocationValidationResult({
         success: false,
-        message: "Có lỗi xảy ra khi kiểm tra mã vị trí"
+        message: errorMessage
       });
+      window.showToast?.(errorMessage, "error");
     } finally {
       setLocationValidating(false);
     }
@@ -190,14 +207,22 @@ const UpdatePalletModal = ({
     if (formData.locationCode && formData.locationCode.trim() !== '') {
       try {
         setLocationValidating(true);
-        const result = await validateLocationCode(formData.locationCode);
+        // Lấy palletId từ pallet prop
+        const palletIdRaw = pallet?.palletId || pallet?.id;
+        const palletId = palletIdRaw != null ? String(palletIdRaw) : "";
+        const result = await validateLocationCode(formData.locationCode, palletId);
         setLocationValidationResult(result);
+
+        // Lấy message từ result và xử lý qua extractErrorMessage
+        const message = result.message || "";
+        const processedMessage = message ? extractErrorMessage({ response: { data: { message } } }, message) : "Mã vị trí không tồn tại";
 
         if (!result.success) {
           setErrors(prev => ({
             ...prev,
-            locationCode: result.message
+            locationCode: processedMessage
           }));
+          window.showToast?.(processedMessage, "error");
           setLocationValidating(false);
           return;
         }
