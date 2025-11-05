@@ -367,7 +367,7 @@ export default function SaleOrderFilterToggle({
             {showSearchFilter && (
                 <div className="bg-gray-50 border-b border-slate-200 px-8 py-4 relative overflow-visible">
                     <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                        <div className="flex-1 w-full lg:w-5/6">
+                        <div className="flex-1 w-full lg:w-11/12">
                             <div className="space-y-3">
                                 {/* First Row */}
                                 <div className="flex flex-wrap gap-2 sm:gap-3 relative overflow-visible">
@@ -986,7 +986,7 @@ export default function SaleOrderFilterToggle({
 
                         {/* Clear Filters Button */}
                         {showClearButton && (
-                            <div className="w-full lg:w-1/6 flex justify-end">
+                            <div className="w-full lg:w-1/12 flex justify-end">
                                 <ClearFiltersButton
                                     onClear={handleClearAll}
                                     hasActiveFilters={hasActiveFilters}

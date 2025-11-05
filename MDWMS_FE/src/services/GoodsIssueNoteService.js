@@ -83,3 +83,18 @@ export const rePickGoodsIssueNoteDetail = async (data) => {
     }
 };
 
+// Re-pick danh sách chi tiết phiếu xuất kho (dành cho quản lý kho)
+export const rePickGoodsIssueNoteDetailList = async (items) => {
+    try {
+        const res = await api.put(`/GoodsIssueNoteDetail/RePickGoodsIssueNoteDetailList`, items);
+        console.log("rePickGoodsIssueNoteDetailList:", res.data);
+        return res.data;
+    } catch (error) {
+        console.error("Error re-picking goods issue note detail list:", error);
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
+        throw error;
+    }
+};
+

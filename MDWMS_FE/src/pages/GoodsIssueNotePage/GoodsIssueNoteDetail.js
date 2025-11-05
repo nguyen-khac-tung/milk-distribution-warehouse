@@ -2,19 +2,18 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { ArrowLeft, Printer, CheckCircle, Clock, AlertCircle, ChevronDown, ChevronUp, RefreshCw, Barcode, Package, Send, ShieldCheck } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
-import { getDetailGoodsIssueNote, submitGoodsIssueNote, approveGoodsIssueNote, rePickGoodsIssueNoteDetail } from '../../services/GoodsIssueNoteService';
+import { getDetailGoodsIssueNote, submitGoodsIssueNote, approveGoodsIssueNote, rePickGoodsIssueNoteDetail, rePickGoodsIssueNoteDetailList } from '../../services/GoodsIssueNoteService';
 import { getPickAllocationDetail, confirmPickAllocation } from '../../services/PickAllocationService';
-import { getGoodsIssueNoteStatusMeta, getIssueItemStatusMeta, getPickAllocationStatusMeta, ISSUE_ITEM_STATUS, GOODS_ISSUE_NOTE_STATUS } from './goodsIssueNoteStatus';
+import { getGoodsIssueNoteStatusMeta, getIssueItemStatusMeta, ISSUE_ITEM_STATUS, GOODS_ISSUE_NOTE_STATUS } from './goodsIssueNoteStatus';
 import { extractErrorMessage } from '../../utils/Validation';
 import ScanPalletModal from '../../components/GoodsIssueNoteComponents/ScanPalletModal';
 import { usePermissions } from '../../hooks/usePermissions';
 import RePickModal from '../../components/GoodsIssueNoteComponents/RePickModal';
 import PickAllocationsTableStaff from '../../components/GoodsIssueNoteComponents/PickAllocationsTableStaff';
 import PickAllocationsTableManager from '../../components/GoodsIssueNoteComponents/PickAllocationsTableManager';
-import BackCircleIcon from '../../components/Common/BackCircleIcon';
+import { ComponentIcon } from '../../components/IconComponent/Icon';
 
 const GoodsIssueNoteDetail = () => {
     const { id } = useParams();
@@ -267,10 +266,22 @@ const GoodsIssueNoteDetail = () => {
 
         try {
             setRePickLoading(true);
-            const response = await rePickGoodsIssueNoteDetail({
-                goodsIssueNoteDetailId: selectedItemForRePick.goodsIssueNoteDetailId,
-                rejectionReason: rejectionReason || ''
-            });
+            let response;
+            if (isWarehouseManager) {
+                // Manager: use list endpoint (even for single item)
+                response = await rePickGoodsIssueNoteDetailList([
+                    {
+                        goodsIssueNoteDetailId: selectedItemForRePick.goodsIssueNoteDetailId,
+                        rejectionReason: rejectionReason || ''
+                    }
+                ]);
+            } else {
+                // Staff: single item endpoint
+                response = await rePickGoodsIssueNoteDetail({
+                    goodsIssueNoteDetailId: selectedItemForRePick.goodsIssueNoteDetailId,
+                    rejectionReason: rejectionReason || ''
+                });
+            }
 
             if (response && response.success) {
                 if (window.showToast) {
@@ -309,7 +320,7 @@ const GoodsIssueNoteDetail = () => {
         };
 
         return (
-            <Card key={statusCode} className="bg-white border border-gray-200 shadow-sm">
+            <Card key={statusCode} className="w-full bg-white border border-gray-200 shadow-sm">
                 <div className="p-6">
                     {/* Header group (clickable để thu gọn/mở rộng) */}
                     <div
@@ -473,8 +484,7 @@ const GoodsIssueNoteDetail = () => {
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">Lỗi</h3>
                         <p className="text-gray-600 mb-4">{error || 'Không tìm thấy phiếu xuất kho'}</p>
                         <Button onClick={() => navigate('/sales-orders')} variant="outline">
-                            <ArrowLeft className="h-4 w-4 mr-2" />
-                            Quay lại
+                            <ComponentIcon name="arrowBackCircleOutline" size={28} />
                         </Button>
                     </CardContent>
                 </Card>
@@ -488,11 +498,11 @@ const GoodsIssueNoteDetail = () => {
     return (
         <div className="min-h-screen">
             {/* Header */}
-            {/* <p className="text-gray-600 text-sm mt-1">
+            <p className="text-gray-600 text-sm mt-1">
                 Mã phiếu: {goodsIssueNote.goodsIssueNoteId}
-            </p> */}
-            <div className="bg-white border-b border-gray-200">
-                <div className="max-w-7xl mx-auto px-6 py-4">
+            </p>
+            <div>
+                <div className="max-w-7xl mx-auto px-6 py-4 bg-white border border-gray-200 rounded-lg shadow-sm">
                     <div className="flex items-center justify-between">
                         {/* Bên trái: Tiêu đề và nút quay lại */}
                         <div className="flex items-center gap-4">
@@ -502,14 +512,12 @@ const GoodsIssueNoteDetail = () => {
                                 onClick={() => navigate('/sales-orders')}
                                 className="text-slate-600 hover:bg-slate-50"
                             >
-                                <BackCircleIcon size={30} className="mr-2" />
+                                <ComponentIcon name="arrowBackCircleOutline" size={28} />
                                 {/* Quay lại */}
                             </Button>
 
                             <div className="flex items-center gap-3"> {/* Đã thay đổi items-baseline thành items-center */}
-                                <p className="text-2xl font-bold text-gray-900 !m-0">
-                                    PHIẾU XUẤT KHO
-                                </p>
+                                <h1 className="text-2xl font-bold text-gray-900 m-0">PHIẾU XUẤT KHO</h1>
                                 <span
                                     className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-sm font-medium ${statusInfo.color}`}
                                 >

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { Card } from "../../components/ui/card"
 import { Button } from "../../components/ui/button"
@@ -7,7 +7,7 @@ import { Label } from "../../components/ui/label"
 import { Textarea } from "../../components/ui/textarea"
 import FloatingDropdown from "../../components/Common/FloatingDropdown"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
-import { Plus, Trash2, ArrowLeft, Save, X, CheckCircle, BarChart3, ArrowRightLeft } from "lucide-react"
+import { Plus, Trash2, ArrowLeft, Save, X, CheckCircle, BarChart3, ArrowRightLeft, Calendar } from "lucide-react"
 import { createSaleOrder, getSalesOrderDetail } from "../../services/SalesOrderService"
 import { getRetailersDropdown } from "../../services/RetailerService"
 import { getSuppliersDropdown } from "../../services/SupplierService"
@@ -15,12 +15,14 @@ import { getGoodsPackingByGoodsId } from "../../services/PurchaseOrderService"
 import { getGoodsInventoryBySupplierId } from "../../services/GoodService"
 import { extractErrorMessage } from "../../utils/Validation"
 import CreateBackOrderModal from "../BackOrderPage/CreateBackOrderModal"
+import { ComponentIcon } from "../../components/IconComponent/Icon"
 
 function CreateSaleOrder({
     isEditMode = false,
     initialData = null
 }) {
     const navigate = useNavigate();
+    const dateInputRef = useRef(null);
     const [retailers, setRetailers] = useState([]);
     const [suppliers, setSuppliers] = useState([]);
     const [goodsBySupplier, setGoodsBySupplier] = useState({}); // Map supplierId -> goods
@@ -267,7 +269,7 @@ function CreateSaleOrder({
             const updatedItem = updatedItems.find(item => item.id === id);
             if (updatedItem) {
                 const tempItem = { ...updatedItem, [field]: value };
-                
+
                 // Nếu đã có đủ thông tin, validate
                 if (tempItem.supplierName && tempItem.goodsName && tempItem.goodsPackingId) {
                     const quantityError = validateQuantity(tempItem);
@@ -736,7 +738,7 @@ function CreateSaleOrder({
         if (insufficientItems.length > 0) {
             // Lưu thông tin các items vượt quá tồn kho để hiển thị viền đỏ
             setItemsExceedingStock(itemsExceedingStockMap);
-            
+
             const firstItem = insufficientItems[0];
             const message = insufficientItems.length === 1
                 ? `Sản phẩm "${firstItem.goodsName}" vượt quá tồn kho.`
@@ -805,11 +807,10 @@ function CreateSaleOrder({
                             onClick={() => navigate("/sales-orders")}
                             className="text-slate-600 hover:bg-slate-50 flex items-center"
                         >
-                            <ArrowLeft className="h-4 w-4 mr-2" />
-                            <span className="mt-[1px]">Quay Lại</span>
+                            <ComponentIcon name="arrowBackCircleOutline" size={28} />
                         </Button>
 
-                        <h1 className="text-2xl font-bold text-slate-700 leading-none flex items-center">
+                        <h1 className="text-2xl font-bold text-slate-700 leading-none flex items-center m-0">
                             {isEditMode ? "Cập Nhật Đơn Bán Hàng" : "Tạo Đơn Bán Hàng Mới"}
                         </h1>
                     </div>
@@ -839,15 +840,32 @@ function CreateSaleOrder({
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="estimatedTimeDeparture" className="text-slate-600 font-medium">
+                                        <Label htmlFor="estimatedTimeDeparture" className="text-sm font-medium text-slate-600">
                                             Ngày Dự Kiến Giao <span className="text-red-500">*</span>
                                         </Label>
-                                        <Input
-                                            type="date"
-                                            value={formData.estimatedTimeDeparture}
-                                            onChange={(e) => handleInputChange("estimatedTimeDeparture", e.target.value)}
-                                            className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                                        />
+                                        {/* Giới hạn chiều rộng container */}
+                                        <div className="relative w-[180px]">
+                                            <Input
+                                                id="estimatedTimeDeparture"
+                                                type="date"
+                                                value={formData.estimatedTimeDeparture}
+                                                onChange={(e) => handleInputChange("estimatedTimeDeparture", e.target.value)}
+                                                ref={dateInputRef}
+                                                className="date-picker-input h-[37px] pr-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg w-full"
+                                            />
+                                            <Calendar
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-600 cursor-pointer"
+                                                onClick={() => {
+                                                    const el = dateInputRef.current
+                                                    if (!el) return
+                                                    if (typeof el.showPicker === "function") el.showPicker()
+                                                    else {
+                                                        el.focus()
+                                                        el.click()
+                                                    }
+                                                }}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                                 {/* Thông tin nhà bán lẻ đã chọn */}
@@ -909,164 +927,163 @@ function CreateSaleOrder({
                                                 const isExceedingStock = itemsExceedingStock[item.id] !== undefined;
 
                                                 return (
-                                                <TableRow
-                                                    key={item.id}
-                                                    className={`border-b min-h-[70px] ${
-                                                        isExceedingStock 
-                                                            ? 'border-red-500 border-2 bg-red-50 hover:bg-red-100' 
+                                                    <TableRow
+                                                        key={item.id}
+                                                        className={`border-b min-h-[70px] ${isExceedingStock
+                                                            ? 'border-red-500 border-2 bg-red-50 hover:bg-red-100'
                                                             : 'border-gray-200 hover:bg-gray-50'
-                                                    }`}
-                                                >
-                                                    {/* STT */}
-                                                    <TableCell className="text-center text-slate-700 align-top pb-6">
-                                                        {index + 1}
-                                                    </TableCell>
-
-                                                    {/* Nhà cung cấp */}
-                                                    <TableCell className="relative align-top pb-6">
-                                                        <div className="relative min-w-[160px] max-w-[220px] w-full">
-                                                            <FloatingDropdown
-                                                                value={item.supplierName || undefined}
-                                                                onChange={(value) => updateItem(item.id, "supplierName", value)}
-                                                                options={supplierOptions}
-                                                                placeholder="Chọn nhà cung cấp"
-                                                                loading={suppliersLoading}
-                                                                className="truncate w-full"
-                                                                title={item.supplierName || ""}
-                                                            />
-                                                            {fieldErrors[`${item.id}-supplierName`] && (
-                                                                <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">
-                                                                    {fieldErrors[`${item.id}-supplierName`]}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
-
-                                                    {/* Tên hàng hóa */}
-                                                    <TableCell className="relative align-top pb-6">
-                                                        <div className="relative min-w-[180px] max-w-[260px] w-full">
-                                                            <FloatingDropdown
-                                                                value={item.goodsName || undefined}
-                                                                onChange={(value) => updateItem(item.id, "goodsName", value)}
-                                                                options={getAvailableGoodsOptions(item.id)}
-                                                                placeholder={
-                                                                    item.supplierName
-                                                                        ? "Chọn hàng hóa"
-                                                                        : "Chọn nhà cung cấp trước"
-                                                                }
-                                                                loading={(() => {
-                                                                    if (!item.supplierName) return false;
-                                                                    const selectedSupplier = suppliers.find(
-                                                                        (s) => s.companyName === item.supplierName
-                                                                    );
-                                                                    return selectedSupplier
-                                                                        ? goodsLoading[selectedSupplier.supplierId] || false
-                                                                        : false;
-                                                                })()}
-                                                                disabled={!item.supplierName}
-                                                                className="truncate w-full"
-                                                                title={item.goodsName || ""}
-                                                            />
-                                                            {fieldErrors[`${item.id}-goodsName`] && (
-                                                                <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">
-                                                                    {fieldErrors[`${item.id}-goodsName`]}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
-
-                                                    {/* Quy cách đóng gói */}
-                                                    <TableCell className="relative align-top pb-6">
-                                                        <div className="relative min-w-[130px] max-w-[140px] w-full">
-                                                            <FloatingDropdown
-                                                                value={item.goodsPackingId ? item.goodsPackingId.toString() : undefined}
-                                                                onChange={(value) => updateItem(item.id, "goodsPackingId", value)}
-                                                                options={getGoodsPackingOptions(item.id)}
-                                                                placeholder={
-                                                                    item.goodsName ? "Chọn đóng gói" : "Chọn hàng hóa trước"
-                                                                }
-                                                                loading={packingLoading}
-                                                                disabled={!item.goodsName}
-                                                                className="truncate w-full"
-                                                                title={item.goodsPackingId ? item.goodsPackingId.toString() : ""}
-                                                            />
-                                                            {fieldErrors[`${item.id}-goodsPackingId`] && (
-                                                                <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">
-                                                                    {fieldErrors[`${item.id}-goodsPackingId`]}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
-
-                                                    {/* Số lượng thùng */}
-                                                    <TableCell className="w-[150px] relative align-top pb-6">
-                                                        <div className="relative">
-                                                            <Input
-                                                                type="number"
-                                                                placeholder="0"
-                                                                min="0"
-                                                                value={item.quantity === "" ? "" : item.quantity}
-                                                                onChange={(e) =>
-                                                                    updateItem(item.id, "quantity", e.target.value)
-                                                                }
-                                                                className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${fieldErrors[`${item.id}-quantity`] ? "border-red-500" : ""
-                                                                    }`}
-                                                            />
-                                                            {fieldErrors[`${item.id}-quantity`] && (
-                                                                <p className="absolute left-0 top-full mt-1 text-red-500 text-xs whitespace-nowrap">
-                                                                    {fieldErrors[`${item.id}-quantity`]}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
-
-                                                    {/* Tổng số đơn vị */}
-                                                    <TableCell className="w-[130px] text-center align-top pb-6">
-                                                        <div className="h-[38px] flex items-center justify-center px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600 font-medium">
-                                                            {calculateTotalUnits(item) || "0"}
-                                                        </div>
-                                                    </TableCell>
-
-                                                    {/* Đơn vị */}
-                                                    <TableCell className="w-[100px] text-center align-top pb-6">
-                                                        <div className="h-[38px] flex items-center justify-center px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600 text-sm">
-                                                            {(() => {
-                                                                if (item.goodsName && item.supplierName) {
-                                                                    const selectedSupplier = suppliers.find(
-                                                                        (s) => s.companyName === item.supplierName
-                                                                    );
-                                                                    if (selectedSupplier) {
-                                                                        const goods =
-                                                                            goodsBySupplier[selectedSupplier.supplierId] || [];
-                                                                        const selectedGood = goods.find(
-                                                                            (good) => good.goodsName === item.goodsName
-                                                                        );
-                                                                        return selectedGood
-                                                                            ? selectedGood.unitMeasureName
-                                                                            : "Trống";
-                                                                    }
-                                                                }
-                                                                return "Trống";
-                                                            })()}
-                                                        </div>
-                                                    </TableCell>
-
-                                                    {/* Hành động */}
-                                                    {items.length > 1 && (
-                                                        <TableCell className="text-right align-top pb-6">
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => removeItem(item.id)}
-                                                                className="text-red-600 hover:bg-red-50"
-                                                            >
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </Button>
+                                                            }`}
+                                                    >
+                                                        {/* STT */}
+                                                        <TableCell className="text-center text-slate-700 align-top pb-6">
+                                                            {index + 1}
                                                         </TableCell>
-                                                    )}
-                                                </TableRow>
-                                            );
+
+                                                        {/* Nhà cung cấp */}
+                                                        <TableCell className="relative align-top pb-6">
+                                                            <div className="relative min-w-[160px] max-w-[220px] w-full">
+                                                                <FloatingDropdown
+                                                                    value={item.supplierName || undefined}
+                                                                    onChange={(value) => updateItem(item.id, "supplierName", value)}
+                                                                    options={supplierOptions}
+                                                                    placeholder="Chọn nhà cung cấp"
+                                                                    loading={suppliersLoading}
+                                                                    className="truncate w-full"
+                                                                    title={item.supplierName || ""}
+                                                                />
+                                                                {fieldErrors[`${item.id}-supplierName`] && (
+                                                                    <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">
+                                                                        {fieldErrors[`${item.id}-supplierName`]}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
+
+                                                        {/* Tên hàng hóa */}
+                                                        <TableCell className="relative align-top pb-6">
+                                                            <div className="relative min-w-[180px] max-w-[260px] w-full">
+                                                                <FloatingDropdown
+                                                                    value={item.goodsName || undefined}
+                                                                    onChange={(value) => updateItem(item.id, "goodsName", value)}
+                                                                    options={getAvailableGoodsOptions(item.id)}
+                                                                    placeholder={
+                                                                        item.supplierName
+                                                                            ? "Chọn hàng hóa"
+                                                                            : "Chọn nhà cung cấp trước"
+                                                                    }
+                                                                    loading={(() => {
+                                                                        if (!item.supplierName) return false;
+                                                                        const selectedSupplier = suppliers.find(
+                                                                            (s) => s.companyName === item.supplierName
+                                                                        );
+                                                                        return selectedSupplier
+                                                                            ? goodsLoading[selectedSupplier.supplierId] || false
+                                                                            : false;
+                                                                    })()}
+                                                                    disabled={!item.supplierName}
+                                                                    className="truncate w-full"
+                                                                    title={item.goodsName || ""}
+                                                                />
+                                                                {fieldErrors[`${item.id}-goodsName`] && (
+                                                                    <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">
+                                                                        {fieldErrors[`${item.id}-goodsName`]}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
+
+                                                        {/* Quy cách đóng gói */}
+                                                        <TableCell className="relative align-top pb-6">
+                                                            <div className="relative min-w-[130px] max-w-[140px] w-full">
+                                                                <FloatingDropdown
+                                                                    value={item.goodsPackingId ? item.goodsPackingId.toString() : undefined}
+                                                                    onChange={(value) => updateItem(item.id, "goodsPackingId", value)}
+                                                                    options={getGoodsPackingOptions(item.id)}
+                                                                    placeholder={
+                                                                        item.goodsName ? "Chọn đóng gói" : "Chọn hàng hóa trước"
+                                                                    }
+                                                                    loading={packingLoading}
+                                                                    disabled={!item.goodsName}
+                                                                    className="truncate w-full"
+                                                                    title={item.goodsPackingId ? item.goodsPackingId.toString() : ""}
+                                                                />
+                                                                {fieldErrors[`${item.id}-goodsPackingId`] && (
+                                                                    <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">
+                                                                        {fieldErrors[`${item.id}-goodsPackingId`]}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
+
+                                                        {/* Số lượng thùng */}
+                                                        <TableCell className="w-[150px] relative align-top pb-6">
+                                                            <div className="relative">
+                                                                <Input
+                                                                    type="number"
+                                                                    placeholder="0"
+                                                                    min="0"
+                                                                    value={item.quantity === "" ? "" : item.quantity}
+                                                                    onChange={(e) =>
+                                                                        updateItem(item.id, "quantity", e.target.value)
+                                                                    }
+                                                                    className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${fieldErrors[`${item.id}-quantity`] ? "border-red-500" : ""
+                                                                        }`}
+                                                                />
+                                                                {fieldErrors[`${item.id}-quantity`] && (
+                                                                    <p className="absolute left-0 top-full mt-1 text-red-500 text-xs whitespace-nowrap">
+                                                                        {fieldErrors[`${item.id}-quantity`]}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
+
+                                                        {/* Tổng số đơn vị */}
+                                                        <TableCell className="w-[130px] text-center align-top pb-6">
+                                                            <div className="h-[38px] flex items-center justify-center px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600 font-medium">
+                                                                {calculateTotalUnits(item) || "0"}
+                                                            </div>
+                                                        </TableCell>
+
+                                                        {/* Đơn vị */}
+                                                        <TableCell className="w-[100px] text-center align-top pb-6">
+                                                            <div className="h-[38px] flex items-center justify-center px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600 text-sm">
+                                                                {(() => {
+                                                                    if (item.goodsName && item.supplierName) {
+                                                                        const selectedSupplier = suppliers.find(
+                                                                            (s) => s.companyName === item.supplierName
+                                                                        );
+                                                                        if (selectedSupplier) {
+                                                                            const goods =
+                                                                                goodsBySupplier[selectedSupplier.supplierId] || [];
+                                                                            const selectedGood = goods.find(
+                                                                                (good) => good.goodsName === item.goodsName
+                                                                            );
+                                                                            return selectedGood
+                                                                                ? selectedGood.unitMeasureName
+                                                                                : "Trống";
+                                                                        }
+                                                                    }
+                                                                    return "Trống";
+                                                                })()}
+                                                            </div>
+                                                        </TableCell>
+
+                                                        {/* Hành động */}
+                                                        {items.length > 1 && (
+                                                            <TableCell className="text-right align-top pb-6">
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => removeItem(item.id)}
+                                                                    className="text-red-600 hover:bg-red-50"
+                                                                >
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
+                                                            </TableCell>
+                                                        )}
+                                                    </TableRow>
+                                                );
                                             })}
 
                                             {/* Hàng trống cuối cùng */}
