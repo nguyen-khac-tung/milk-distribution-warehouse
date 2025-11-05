@@ -193,12 +193,14 @@ const PurchaseOrderDetail = () => {
 
     const canConfirmGoodsReceived = () => {
         return hasPermission(PERMISSIONS.PURCHASE_ORDER_CONFIRM_GOODS_RECEIVED) &&
-            purchaseOrder?.status === PURCHASE_ORDER_STATUS.Approved;
+            (purchaseOrder?.status === PURCHASE_ORDER_STATUS.Approved ||
+             purchaseOrder?.status === PURCHASE_ORDER_STATUS.Ordered);
     };
 
     const canAssignReceiving = () => {
         return hasPermission(PERMISSIONS.PURCHASE_ORDER_ASSIGN_FOR_RECEIVING) &&
-            purchaseOrder?.status === PURCHASE_ORDER_STATUS.GoodsReceived;
+            (purchaseOrder?.status === PURCHASE_ORDER_STATUS.Ordered ||
+             purchaseOrder?.status === PURCHASE_ORDER_STATUS.GoodsReceived);
     };
 
     const canReAssignReceiving = () => {
