@@ -132,7 +132,7 @@ namespace MilkDistributionWarehouse.Services
                           PurchaseOrderStatus.Draft,
                           PurchaseOrderStatus.Rejected,
                           PurchaseOrderStatus.PendingApproval,
-                          PurchaseOrderStatus.Ordered
+                          PurchaseOrderStatus.Approved
                         };
             return await GetPurchaseOrdersAsync<PurchaseOrderDtoWarehouseManager>(request, null, RoleNames.WarehouseManager, excludedStatus);
         }
@@ -360,6 +360,9 @@ namespace MilkDistributionWarehouse.Services
                 {
                     if (currentStatus != PurchaseOrderStatus.Approved)
                         throw new Exception("Chỉ được chuyển trạng thái đã đặt đơn khi đơn mua hàng ở trạng thái đã duyệt");
+
+                    if(purchaseOrder.CreatedBy != userId)
+                        throw new Exception("Bạn không có quyền thực hiện chức năng này.");
 
                     var today = DateOnly.FromDateTime(DateTime.Now);
                     if (purchaseOrderOrderedDto.EstimatedTimeArrival <= today)
