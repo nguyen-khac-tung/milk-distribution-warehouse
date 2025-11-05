@@ -545,7 +545,7 @@ const GoodsIssueNoteDetail = () => {
             </div>
 
             {/* Main Content */}
-            <div className="max-w-7xl mx-auto px-6 py-6">
+            <div className="max-w-7xl mx-auto py-6">
                 <div className="space-y-6">
                     {/* Thông tin chung */}
                     <Card className="bg-white border border-gray-200 shadow-sm">
