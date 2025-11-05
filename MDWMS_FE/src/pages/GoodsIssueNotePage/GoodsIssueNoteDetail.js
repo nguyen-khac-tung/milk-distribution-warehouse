@@ -14,6 +14,7 @@ import { usePermissions } from '../../hooks/usePermissions';
 import RePickModal from '../../components/GoodsIssueNoteComponents/RePickModal';
 import PickAllocationsTableStaff from '../../components/GoodsIssueNoteComponents/PickAllocationsTableStaff';
 import PickAllocationsTableManager from '../../components/GoodsIssueNoteComponents/PickAllocationsTableManager';
+import BackCircleIcon from '../../components/Common/BackCircleIcon';
 
 const GoodsIssueNoteDetail = () => {
     const { id } = useParams();
@@ -485,8 +486,11 @@ const GoodsIssueNoteDetail = () => {
     const totalItems = goodsIssueNote.goodsIssueNoteDetails?.length || 0;
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen">
             {/* Header */}
+            {/* <p className="text-gray-600 text-sm mt-1">
+                Mã phiếu: {goodsIssueNote.goodsIssueNoteId}
+            </p> */}
             <div className="bg-white border-b border-gray-200">
                 <div className="max-w-7xl mx-auto px-6 py-4">
                     <div className="flex items-center justify-between">
@@ -498,28 +502,25 @@ const GoodsIssueNoteDetail = () => {
                                 onClick={() => navigate('/sales-orders')}
                                 className="text-slate-600 hover:bg-slate-50"
                             >
-                                <ArrowLeft className="h-4 w-4 mr-2" />
-                                Quay lại
+                                <BackCircleIcon size={30} className="mr-2" />
+                                {/* Quay lại */}
                             </Button>
 
-                            <div>
-                                <h1 className="text-2xl font-bold text-gray-900">PHIẾU XUẤT KHO</h1>
-                                {/* <p className="text-gray-600 text-sm mt-1">
-                                    Mã phiếu: {goodsIssueNote.goodsIssueNoteId}
-                                </p> */}
+                            <div className="flex items-center gap-3"> {/* Đã thay đổi items-baseline thành items-center */}
+                                <p className="text-2xl font-bold text-gray-900 !m-0">
+                                    PHIẾU XUẤT KHO
+                                </p>
+                                <span
+                                    className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-sm font-medium ${statusInfo.color}`}
+                                >
+                                    {statusInfo.icon}
+                                    {statusInfo.label}
+                                </span>
                             </div>
                         </div>
 
-                        {/* Bên phải: Trạng thái + các nút hành động */}
-                        <div className="flex items-center gap-3 py-1">
-                            {/* Trạng thái phiếu */}
-                            <span
-                                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${statusInfo.color}`}
-                            >
-                                {statusInfo.icon}
-                                {statusInfo.label}
-                            </span>
-
+                        {/* Bên phải: Các nút hành động */}
+                        <div className="flex items-center gap-3"> {/* Đã loại bỏ py-1 */}
                             {/* Nút làm mới */}
                             <Button
                                 variant="outline"
