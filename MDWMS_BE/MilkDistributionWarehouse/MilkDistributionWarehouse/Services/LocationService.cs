@@ -19,20 +19,22 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, LocationResponseDto)> UpdateStatus(int locationId, int status);
         Task<(string, List<LocationActiveDto>)> GetActiveLocations();
         Task<(string, List<LocationSuggestDto>)> GetSuggestLocation(string palletId);
-        Task<(string, LocationPalletDto)> GetLocationsPallet(string locationcode);
+        Task<(string, LocationPalletDto)> GetLocationsPallet(string locationcode, string palletId);
         Task<(string, LocationBulkResponse)> CreateLocationsBulk(LocationBulkCreate create);
     }
 
     public class LocationService : ILocationService
     {
         private readonly ILocationRepository _locationRepository;
+        private readonly IPalletRepository _palletRepository;
         private readonly IMapper _mapper;
         private readonly IAreaRepository _areaRepository;
         private readonly IUnitOfWork _unitOfWork;
 
-        public LocationService(ILocationRepository locationRepository, IMapper mapper, IAreaRepository areaRepository, IUnitOfWork unitOfWork)
+        public LocationService(ILocationRepository locationRepository, IPalletRepository palletRepository, IMapper mapper, IAreaRepository areaRepository, IUnitOfWork unitOfWork)
         {
             _locationRepository = locationRepository;
+            _palletRepository = palletRepository;
             _mapper = mapper;
             _areaRepository = areaRepository;
             _unitOfWork = unitOfWork;
@@ -192,15 +194,24 @@ namespace MilkDistributionWarehouse.Services
             return ("", dtoList);
         }
 
-        public async Task<(string, LocationPalletDto)> GetLocationsPallet(string locationcode)
+        public async Task<(string, LocationPalletDto)> GetLocationsPallet(string locationcode, string palletID)
         {
             var location = await _locationRepository.GetLocationPallet(locationcode);
+            var pallet = await _palletRepository.GetPalletById(palletID);
 
             if (location == null)
                 return ("Không có vị trí này trong hệ thống hoặc vị trí này đã bị dỡ bỏ!".ToMessageForUser(), new LocationPalletDto());
-
+            
             var dtoList = _mapper.Map<LocationPalletDto>(location);
-            return ("", dtoList);
+
+            if (location.Area.StorageConditionId != pallet.Batch.Goods.StorageConditionId)
+            {
+                return ("Cảnh báo: Điều kiện lưu trữ của vị trí không phù hợp với điều kiện lưu trữ của pallet!".ToMessageForUser(), dtoList);
+            }
+            else
+            {
+                return ("", dtoList);
+            }
         }
 
         public async Task<(string, LocationBulkResponse)> CreateLocationsBulk(LocationBulkCreate create)
