@@ -8,7 +8,7 @@ import { Label } from "../../components/ui/label"
 import FloatingDropdown from "../../components/Common/FloatingDropdown"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
 import { Plus, Trash2, ArrowLeft, Save, X } from "lucide-react"
-import { createPurchaseOrder, getGoodsDropDownBySupplierId, getGoodsPackingByGoodsId } from "../../services/PurchaseOrderService"
+import { createPurchaseOrder, getGoodsDropDownBySupplierId, getGoodsPackingByGoodsId, submitPurchaseOrder } from "../../services/PurchaseOrderService"
 import { extractErrorMessage } from '../../utils/Validation';
 import { getSuppliersDropdown } from "../../services/SupplierService"
 import { ComponentIcon } from '../../components/IconComponent/Icon';
@@ -24,6 +24,7 @@ export default function CreatePurchaseOrder({
     const [suppliersLoading, setSuppliersLoading] = useState(false);
     const [goodsLoading, setGoodsLoading] = useState(false);
     const [packingLoading, setPackingLoading] = useState(false);
+    const [submitLoading, setSubmitLoading] = useState(false);
     const [formData, setFormData] = useState({
         supplierName: initialData?.supplierName || "",
         note: initialData?.note || ""
@@ -409,7 +410,7 @@ export default function CreatePurchaseOrder({
                 purchaseOrderDetailCreate: itemsWithIds,
                 note: formData.note || ""
             };
-            await createPurchaseOrder(submitData);
+            const response = await createPurchaseOrder(submitData);
             window.showToast("Tạo đơn mua hàng thành công!", "success");
 
             navigate("/purchase-orders");
@@ -417,6 +418,114 @@ export default function CreatePurchaseOrder({
             console.error("Lỗi khi xử lý đơn mua hàng:", error);
             const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi xử lý đơn mua hàng!";
             window.showToast(errorMessage, "error");
+        }
+    }
+
+    const handleSubmitForApproval = async (e) => {
+        e.preventDefault();
+
+        // Reset validation errors
+        setFieldErrors({});
+        const newFieldErrors = {};
+
+        // Kiểm tra từng mặt hàng
+        items.forEach((item, index) => {
+            if (!item.goodsName) {
+                newFieldErrors[`${item.id}-goodsName`] = "Vui lòng chọn tên hàng hóa";
+            }
+            if (!item.goodsPackingId) {
+                newFieldErrors[`${item.id}-goodsPackingId`] = "Vui lòng chọn đóng gói";
+            }
+            if (!item.quantity || item.quantity <= 0) {
+                newFieldErrors[`${item.id}-quantity`] = "Vui lòng nhập số thùng lớn hơn 0";
+            }
+
+            // Kiểm tra validation số thùng
+            const quantityError = validateQuantity(item);
+            if (quantityError) {
+                newFieldErrors[`${item.id}-quantity`] = quantityError;
+            }
+        });
+
+        // Kiểm tra nhà cung cấp
+        if (!formData.supplierName) {
+            window.showToast("Vui lòng chọn nhà cung cấp", "error");
+            if (Object.keys(newFieldErrors).length > 0) {
+                setFieldErrors(newFieldErrors);
+            }
+            return;
+        }
+
+        if (Object.keys(newFieldErrors).length > 0) {
+            setFieldErrors(newFieldErrors);
+            return;
+        }
+
+        const selectedSupplier = suppliers.find(supplier => supplier.companyName === formData.supplierName);
+        if (!selectedSupplier) {
+            window.showToast("Không tìm thấy nhà cung cấp", "error");
+            return;
+        }
+
+        const validItems = items.filter(item => item.goodsName && item.quantity && item.goodsPackingId);
+        if (validItems.length === 0) {
+            window.showToast("Vui lòng thêm ít nhất một hàng hóa với đầy đủ thông tin", "error");
+            return;
+        }
+
+        setSubmitLoading(true);
+        try {
+            const itemsWithIds = validItems.map(item => {
+                const selectedGood = goods.find(good => good.goodsName === item.goodsName);
+
+                // packageQuantity là số thùng nhập vào (không nhân với unitPerPackage)
+                const packageQuantity = parseInt(item.quantity);
+
+                return {
+                    goodsId: selectedGood ? parseInt(selectedGood.goodsId) : null,
+                    packageQuantity: packageQuantity,
+                    goodsPackingId: parseInt(item.goodsPackingId)
+                };
+            }).filter(item => item.goodsId);
+
+            if (itemsWithIds.length === 0) {
+                window.showToast("Không tìm thấy hàng hóa hợp lệ!", "error");
+                return;
+            }
+
+            // Tạo đơn hàng mới trước
+            const submitData = {
+                supplierId: parseInt(selectedSupplier.supplierId),
+                purchaseOrderDetailCreate: itemsWithIds,
+                note: formData.note || ""
+            };
+            
+            const createResponse = await createPurchaseOrder(submitData);
+            
+            // Lấy purchaseOrderId từ response (có thể từ data hoặc response trực tiếp)
+            const purchaseOrderId = createResponse?.data?.purchaseOrderId || 
+                                   createResponse?.purchaseOrderId || 
+                                   createResponse?.data?.purchaseOderId || 
+                                   createResponse?.purchaseOderId;
+            
+            if (!purchaseOrderId) {
+                console.error("Không tìm thấy purchaseOrderId từ response:", createResponse);
+                window.showToast("Tạo đơn hàng thành công nhưng không thể gửi phê duyệt. Vui lòng thử lại.", "error");
+                navigate("/purchase-orders");
+                return;
+            }
+
+            // Sau đó gửi phê duyệt
+            await submitPurchaseOrder(purchaseOrderId);
+            
+            window.showToast("Tạo đơn và gửi phê duyệt thành công!", "success");
+            navigate("/purchase-orders");
+        } catch (error) {
+            console.error("Lỗi khi tạo và gửi phê duyệt đơn mua hàng:", error);
+            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi tạo và gửi phê duyệt đơn mua hàng!";
+            window.showToast(errorMessage, "error");
+        } finally {
+            setSubmitLoading(false);
         }
     }
     return (
@@ -652,7 +761,15 @@ export default function CreatePurchaseOrder({
                                     onClick={handleSubmit}
                                     className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
                                 >
-                                    {isEditMode ? "Cập Nhật Đơn Mua Hàng" : "Tạo Đơn Mua Hàng"}
+                                    Lưu bản nháp
+                                </Button>
+                                <Button
+                                    type="button"
+                                    onClick={handleSubmitForApproval}
+                                    disabled={submitLoading}
+                                    className="h-[38px] px-6 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {submitLoading ? "Đang xử lý..." : "Gửi Phê Duyệt"}
                                 </Button>
                             </div>
                         </div>
