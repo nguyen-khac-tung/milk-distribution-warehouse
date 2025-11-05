@@ -741,10 +741,10 @@ export default function GoodsReceiptDetail() {
                             <TableHead className="font-semibold text-gray-700">Tên hàng</TableHead>
                             <TableHead className="font-semibold text-gray-700 text-center">Đơn vị tính</TableHead>
                             <TableHead className="font-semibold text-gray-700 text-center">Quy cách đóng gói</TableHead>
-                            <TableHead className="font-semibold text-gray-700 text-center">Số lượng thùng dự kiến</TableHead>
-                            <TableHead className="font-semibold text-gray-700 text-center">Số lượng thùng giao đến</TableHead>
-                            <TableHead className="font-semibold text-gray-700 text-center">Số lượng thùng trả lại</TableHead>
-                            <TableHead className="font-semibold text-gray-700 text-center">Số lượng thùng thực nhận</TableHead>
+                            <TableHead className="font-semibold text-gray-700 text-center">SL thùng dự kiến</TableHead>
+                            <TableHead className="font-semibold text-gray-700 text-center">SL thùng giao đến</TableHead>
+                            <TableHead className="font-semibold text-gray-700 text-center">SL thùng trả lại</TableHead>
+                            <TableHead className="font-semibold text-gray-700 text-center">SL thùng thực nhận</TableHead>
                             <TableHead className="font-semibold text-gray-700">Ghi chú</TableHead>
                             <TableHead className="font-semibold text-gray-700 text-center">Trạng thái</TableHead>
                             <TableHead className="font-semibold text-gray-700 text-center">Hành động</TableHead>
@@ -1141,10 +1141,10 @@ export default function GoodsReceiptDetail() {
                             <TableHead className="font-semibold text-green-900">Tên hàng</TableHead>
                             <TableHead className="font-semibold text-green-900 text-center">Đơn vị tính</TableHead>
                             <TableHead className="font-semibold text-green-900 text-center">Quy cách đóng gói</TableHead>
-                            <TableHead className="font-semibold text-green-900 text-center">Số lượng thùng dự kiến</TableHead>
-                            <TableHead className="font-semibold text-green-900 text-center">Số lượng thùng giao đến</TableHead>
-                            <TableHead className="font-semibold text-green-900 text-center">Số lượng thùng trả lại</TableHead>
-                            <TableHead className="font-semibold text-green-900 text-center">Số lượng thùng thực nhận</TableHead>
+                            <TableHead className="font-semibold text-green-900 text-center">SL thùng dự kiến</TableHead>
+                            <TableHead className="font-semibold text-green-900 text-center">SL thùng giao đến</TableHead>
+                            <TableHead className="font-semibold text-green-900 text-center">SL thùng trả lại</TableHead>
+                            <TableHead className="font-semibold text-green-900 text-center">SL thùng thực nhận</TableHead>
                             <TableHead className="font-semibold text-green-900">Ghi chú</TableHead>
                             <TableHead className="font-semibold text-green-900 text-center">Trạng thái</TableHead>
                             {/* Cột Hành động: chỉ hiển thị cho nhân viên kho (không phải quản lý kho) */}
