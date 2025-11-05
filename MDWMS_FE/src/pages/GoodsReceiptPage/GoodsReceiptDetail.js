@@ -29,6 +29,7 @@ import CreateBatchModal from "./CreateBatchModal";
 import PalletManager from "./CreatePallet";
 import AddLocationToPalletModal from "./AddLocationToPalletModal";
 import LocationSuggestionModal from "./LocationSuggestionModal";
+import { ComponentIcon } from '../../components/IconComponent/Icon';
 
 // Status labels for Goods Receipt Note - sẽ được lấy từ API
 const getStatusLabel = (status) => {
@@ -594,23 +595,18 @@ export default function GoodsReceiptDetail() {
       <div className="border-b border-gray-200 py-4 px-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
+            <button
               onClick={() => navigate('/purchase-orders')}
-              className="text-slate-600 hover:bg-slate-50 h-[38px]"
+              className="flex items-center justify-center hover:opacity-80 transition-opacity p-0"
             >
-              <ChevronDown className="h-4 w-4 mr-2 rotate-90" />
-              Quay lại
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Chi tiết phiếu nhập kho</h1>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
+              <ComponentIcon name="arrowBackCircleOutline" size={28} />
+            </button>
+            <h1 className="text-2xl font-bold text-gray-900 m-0">Chi tiết phiếu nhập kho</h1>
             <span className={`px-3 py-1 rounded-full text-sm font-medium ${getGoodsReceiptNoteStatusMeta(goodsReceiptNote.status).color}`}>
               {getGoodsReceiptNoteStatusMeta(goodsReceiptNote.status).label}
             </span>
+          </div>
+          <div className="flex items-center gap-2">
             <Button onClick={handlePrintReceipt} className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 h-[38px] px-4 text-white">
               <Printer className="w-4 h-4" />
               In Phiếu
