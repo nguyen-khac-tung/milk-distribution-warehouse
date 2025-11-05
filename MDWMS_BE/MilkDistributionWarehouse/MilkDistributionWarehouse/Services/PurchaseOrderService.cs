@@ -132,6 +132,7 @@ namespace MilkDistributionWarehouse.Services
                           PurchaseOrderStatus.Draft,
                           PurchaseOrderStatus.Rejected,
                           PurchaseOrderStatus.PendingApproval,
+                          PurchaseOrderStatus.Ordered
                         };
             return await GetPurchaseOrdersAsync<PurchaseOrderDtoWarehouseManager>(request, null, RoleNames.WarehouseManager, excludedStatus);
         }
@@ -269,8 +270,8 @@ namespace MilkDistributionWarehouse.Services
                     throw new Exception("Delete PO Details is failed.");
 
                 var newDetails = _mapper.Map<List<PurchaseOderDetail>>(update.PurchaseOrderDetailUpdates);
-                
-                if(!string.IsNullOrEmpty(update.Note))
+
+                if (!string.IsNullOrEmpty(update.Note))
                     purchaseOrderExist.Note = update.Note;
 
                 newDetails.ForEach(pod =>
@@ -355,10 +356,24 @@ namespace MilkDistributionWarehouse.Services
                     purchaseOrder.ApprovedAt = DateTime.Now;
                 }
 
-                if (purchaseOrdersUpdateStatus is PurchaseOrderGoodsReceivedDto)
+                if (purchaseOrdersUpdateStatus is PurchaseOrderOrderedDto purchaseOrderOrderedDto)
                 {
                     if (currentStatus != PurchaseOrderStatus.Approved)
-                        throw new Exception("Chỉ được xác nhận đơn hàng đã đến khi đơn hàng ở trạng thái Đã duyệt.".ToMessageForUser());
+                        throw new Exception("Chỉ được chuyển trạng thái đã đặt đơn khi đơn mua hàng ở trạng thái đã duyệt");
+
+                    var today = DateOnly.FromDateTime(DateTime.Now);
+                    if (purchaseOrderOrderedDto.EstimatedTimeArrival <= today)
+                        throw new Exception("Ngày dự kiến giao hàng phải là ngày trong tương lai.");
+
+                    purchaseOrder.Status = PurchaseOrderStatus.Ordered;
+                    purchaseOrder.EstimatedTimeArrival = purchaseOrderOrderedDto.EstimatedTimeArrival;
+                    purchaseOrder.UpdatedAt = DateTime.Now;
+                }
+
+                if (purchaseOrdersUpdateStatus is PurchaseOrderGoodsReceivedDto)
+                {
+                    if (currentStatus != PurchaseOrderStatus.Ordered)
+                        throw new Exception("Chỉ được xác nhận đơn hàng đã đến khi đơn hàng ở trạng thái Đã đặt hàng.".ToMessageForUser());
 
                     purchaseOrder.Status = PurchaseOrderStatus.GoodsReceived;
                     purchaseOrder.ArrivalConfirmedBy = userId;
@@ -367,8 +382,8 @@ namespace MilkDistributionWarehouse.Services
 
                 if (purchaseOrdersUpdateStatus is PurchaseOrderAssignedForReceivingDto assignedForReceivingDto)
                 {
-                    if (currentStatus != PurchaseOrderStatus.GoodsReceived)
-                        throw new Exception("Chỉ được phân công đơn hàng khi đơn hàng ở trạng thái đơn hàng Đã xác nhận đến.".ToMessageForUser());
+                    if (currentStatus != PurchaseOrderStatus.GoodsReceived && currentStatus != PurchaseOrderStatus.Ordered)
+                        throw new Exception("Chỉ được phân công đơn hàng khi đơn hàng ở trạng thái đơn hàng Đã xác nhận đến hoặc Đã đặt hàng.".ToMessageForUser());
 
                     //var msg = await CheckAssignedForReceivingPO(assignedForReceivingDto.AssignTo, purchaseOrder);
                     //if (!string.IsNullOrEmpty(msg))
@@ -421,7 +436,7 @@ namespace MilkDistributionWarehouse.Services
 
                     purchaseOrder.Status = PurchaseOrderStatus.Completed;
                     purchaseOrder.UpdatedAt = DateTime.Now;
-                }    
+                }
 
                 purchaseOrder.UpdatedAt = DateTime.Now;
                 await _purchaseOrderRepository.UpdatePurchaseOrder(purchaseOrder);
@@ -536,8 +551,8 @@ namespace MilkDistributionWarehouse.Services
                 return "Vui lòng chọn nhân viên kho khác nhân viên kho hiện tại.";
 
             var isWarehouseStaff = await _userRepository.GetUsers()
-                .AnyAsync(u => u.UserId == assignTo 
-                && u.Status == CommonStatus.Active 
+                .AnyAsync(u => u.UserId == assignTo
+                && u.Status == CommonStatus.Active
                 && u.Roles.Any(r => r.RoleName.Equals("Warehouse Staff")));
 
             if (!isWarehouseStaff)
@@ -545,15 +560,15 @@ namespace MilkDistributionWarehouse.Services
 
             var isBusyPurchaseOrder = await _purchaseOrderRepository.GetPurchaseOrder()
                     .AnyAsync(po => po.AssignTo == assignTo
-                    && (po.Status == PurchaseOrderStatus.AssignedForReceiving 
-                    || po.Status == PurchaseOrderStatus.Receiving 
+                    && (po.Status == PurchaseOrderStatus.AssignedForReceiving
+                    || po.Status == PurchaseOrderStatus.Receiving
                     || po.Status == PurchaseOrderStatus.Inspected)
                     && po.PurchaseOderId != purchaseOrder.PurchaseOderId);
 
             var today = DateOnly.FromDateTime(DateTime.Now);
 
             var isBusySaleOrder = await _saleOrderRepository.GetAllSalesOrders()
-                .AnyAsync(so => so.AssignTo == assignTo 
+                .AnyAsync(so => so.AssignTo == assignTo
                 && so.EstimatedTimeDeparture == today
                 && (so.Status == SalesOrderStatus.AssignedForPicking
                 || so.Status == SalesOrderStatus.Picking));
