@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
-import { ArrowLeft, Package, User, Calendar, CheckCircle, XCircle, Clock, Truck, CheckSquare, Key, Building2, FileText, Hash, Shield, ShoppingCart, Users, UserCheck, UserX, TruckIcon, Store, UserCircle, UserCog, UserCheck2, UserX2, UserMinus, Mail, MapPin, Phone } from 'lucide-react';
+import { ArrowLeft, Package, User, Calendar, CheckCircle, XCircle, Clock, Truck, CheckSquare, FileText, Hash, Shield, ShoppingCart, Users, UserCheck, UserX, TruckIcon, Store, UserCircle, UserCog, UserCheck2, UserX2, UserMinus, Mail, MapPin, Phone } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { getSalesOrderDetail, updateSaleOrderStatusPendingApproval, approveSalesOrder, rejectSalesOrder, assignForPicking } from '../../services/SalesOrderService';
 import { SALES_ORDER_STATUS, canPerformSalesOrderDetailAction } from '../../utils/permissions';
@@ -15,7 +15,6 @@ import RejectionConfirmationModal from '../../components/SaleOrderCompoents/Reje
 import AssignPickingModal from '../../components/SaleOrderCompoents/AssignPickingModal';
 import CreateDeliverySlipModal from '../../components/SaleOrderCompoents/CreateDeliverySlipModal';
 import { usePermissions } from '../../hooks/usePermissions';
-import { PERMISSIONS } from '../../utils/permissions';
 import { extractErrorMessage } from '../../utils/Validation';
 import { createGoodsIssueNote } from '../../services/GoodsIssueNoteService';
 
@@ -109,7 +108,7 @@ const SalesOrderDetail = () => {
             });
 
             if (window.showToast) {
-                window.showToast("Nộp bản nháp thành công!", "success");
+                window.showToast("Gửi phê duyệt thành công!", "success");
             }
 
             setShowSubmitDraftModal(false);
@@ -394,10 +393,15 @@ const SalesOrderDetail = () => {
                                             <TableHead className="w-16 text-center font-semibold">STT</TableHead>
                                             <TableHead className="font-semibold">Tên hàng hóa</TableHead>
                                             <TableHead className="font-semibold">Mã hàng</TableHead>
-                                            <TableHead className="text-center font-semibold">Đơn vị/thùng</TableHead>
+                                            <TableHead className="text-center font-semibold leading-tight">
+                                                <div className="flex flex-col items-center">
+                                                    <span className="whitespace-nowrap">Đơn vị</span>
+                                                    <span className="whitespace-nowrap">/thùng</span>
+                                                </div>
+                                            </TableHead>
                                             <TableHead className="text-center font-semibold">Số thùng</TableHead>
                                             <TableHead className="text-center font-semibold">Tổng số đơn vị</TableHead>
-                                            <TableHead className="text-center font-semibold">Đơn vị</TableHead>
+                                            <TableHead className="text-center font-semibold whitespace-nowrap">Đơn vị</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody className="flex-1">
@@ -462,7 +466,7 @@ const SalesOrderDetail = () => {
                                         className="bg-orange-600 hover:bg-orange-700 text-white h-[38px] px-8"
                                     >
                                         <FileText className="h-4 w-4 mr-2" />
-                                        {salesOrder?.status === SALES_ORDER_STATUS.Rejected ? 'Nộp đơn lại' : 'Nộp bản nháp'}
+                                        {salesOrder?.status === SALES_ORDER_STATUS.Rejected ? 'Gửi phê duyệt lại' : 'Gửi phê duyệt'}
                                     </Button>
                                 )}
 
