@@ -468,12 +468,12 @@ const PurchaseOrderDetail = () => {
                                     <TableHeader>
                                         <TableRow className="bg-gray-100">
                                             <TableHead className="w-16 text-center font-semibold">STT</TableHead>
-                                            <TableHead className="font-semibold">Tên hàng hóa</TableHead>
                                             <TableHead className="font-semibold">Mã hàng</TableHead>
-                                            <TableHead className="text-center font-semibold">Đơn vị/thùng</TableHead>
+                                            <TableHead className="font-semibold">Tên hàng hóa</TableHead>
+                                            <TableHead className="text-center font-semibold" style={{ minWidth: '119px' }}>Đơn vị/thùng</TableHead>
                                             <TableHead className="text-center font-semibold">Số thùng</TableHead>
                                             <TableHead className="text-center font-semibold">Tổng số đơn vị</TableHead>
-                                            <TableHead className="text-center font-semibold">Đơn vị</TableHead>
+                                            <TableHead className="text-center font-semibold" style={{ minWidth: '110px' }}>Đơn vị</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody className="flex-1">
@@ -486,8 +486,8 @@ const PurchaseOrderDetail = () => {
                                                 return (
                                                     <TableRow key={item.purchaseOrderDetailId} className="border-b">
                                                         <TableCell className="text-center font-medium">{index + 1}</TableCell>
-                                                        <TableCell className="font-medium">{item.goodsName}</TableCell>
-                                                        <TableCell className="text-gray-600">{item.goodsCode || item.goodsId || '-'}</TableCell>
+                                                        <TableCell className="font-semibold">{item.goodsCode || item.goodsId || '-'}</TableCell>
+                                                        <TableCell className="text-gray-600">{item.goodsName}</TableCell>
                                                         <TableCell className="text-center text-gray-600">{item.unitPerPacking || '-'}</TableCell>
                                                         <TableCell className="text-center font-semibold">{item.packageQuantity || 0}</TableCell>
                                                         <TableCell className="text-center font-semibold">{totalUnits}</TableCell>
