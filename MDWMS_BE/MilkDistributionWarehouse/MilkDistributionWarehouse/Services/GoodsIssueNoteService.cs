@@ -165,6 +165,7 @@ namespace MilkDistributionWarehouse.Services
                     if (issueNoteDetail.Status == IssueItemStatus.Picked)
                     {
                         issueNoteDetail.Status = IssueItemStatus.PendingApproval;
+                        issueNoteDetail.RejectionReason = "";
                         issueNoteDetail.UpdatedAt = DateTime.Now;
                     }
                 }
@@ -221,8 +222,12 @@ namespace MilkDistributionWarehouse.Services
                         throw new Exception($"Thao tác thất bại: Kệ kê hàng '{pick.Pallet.PalletId}' không đủ số lượng để trừ kho (cần {pickPackageQuantity}, chỉ có {palletPackageQuantity}).".ToMessageForUser());
 
                     pick.Pallet.PackageQuantity = palletPackageQuantity - pickPackageQuantity;
-                    if (pick.Pallet.PackageQuantity == 0) pick.Pallet.Status = CommonStatus.Inactive;
                     pick.Pallet.UpdateAt = DateTime.Now;
+                    if (pick.Pallet.PackageQuantity == 0)
+                    {
+                        pick.Pallet.Status = CommonStatus.Deleted;
+                        pick.Pallet.Location.IsAvailable = true;
+                    }
                 });
 
                 await _goodsIssueNoteRepository.UpdateGoodsIssueNote(goodsIssueNote);
