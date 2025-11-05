@@ -16,6 +16,7 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
   const [goodsPackingByDetailId, setGoodsPackingByDetailId] = useState({});
   const refreshBatchOptionsRef = useRef(null);
   const [rowErrors, setRowErrors] = useState({}); // Lưu lỗi theo index của row
+  const [missingProducts, setMissingProducts] = useState([]); // Danh sách mặt hàng còn thiếu
 
   // Tạo danh sách sản phẩm từ goodsReceiptNoteDetails
   const productOptions = useMemo(() => {
@@ -229,6 +230,42 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
       }
     });
 
+    // Kiểm tra tất cả mặt hàng từ đơn kiểm nhập đều phải có trong pallet
+    const requiredProductIds = new Set();
+    goodsReceiptNoteDetails.forEach(detail => {
+      const detailId = detail.goodsReceiptNoteDetailId || detail.id;
+      const actualQuantity = Number(detail.actualPackageQuantity) || 0;
+      // Chỉ yêu cầu các mặt hàng có số lượng thực nhận > 0
+      if (detailId && actualQuantity > 0) {
+        requiredProductIds.add(detailId);
+      }
+    });
+
+    // Kiểm tra xem các mặt hàng bắt buộc đã có trong pallet chưa
+    const existingProductIds = new Set();
+    palletRows.forEach(r => {
+      if (r.productId && Number(r.numPackages) > 0) {
+        existingProductIds.add(r.productId);
+      }
+    });
+
+    // Tìm các mặt hàng còn thiếu
+    const missingProductIds = Array.from(requiredProductIds).filter(id => !existingProductIds.has(id));
+    const missingProductsList = missingProductIds.map(id => {
+      const detail = goodsReceiptNoteDetails.find(d => (d.goodsReceiptNoteDetailId || d.id) === id);
+      return {
+        id,
+        name: detail?.goodsName || detail?.productName || id
+      };
+    });
+    setMissingProducts(missingProductsList);
+    
+    if (missingProductIds.length > 0) {
+      hasErrors = true;
+    } else {
+      setMissingProducts([]);
+    }
+
     setRowErrors(newRowErrors);
     return !hasErrors;
   };
@@ -393,6 +430,17 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
 
       {showPalletTable && !hasExistingPallets && (
         <div className="space-y-3 mt-4">
+          {missingProducts.length > 0 && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 text-red-700">
+                <AlertCircle className="w-5 h-5" />
+                <span className="font-medium">Còn thiếu mặt hàng</span>
+              </div>
+              <p className="text-red-600 text-sm mt-1">
+                Vui lòng thêm tất cả mặt hàng từ đơn kiểm nhập vào pallet. Còn thiếu: {missingProducts.map(p => p.name).join(", ")}
+              </p>
+            </div>
+          )}
           <div className="flex justify-between items-center">
             <h3 className="text-base font-semibold text-gray-900">Pallet</h3>
             <Button
