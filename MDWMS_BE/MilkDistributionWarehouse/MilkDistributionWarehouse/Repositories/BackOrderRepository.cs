@@ -11,7 +11,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<BackOrder?> GetBackOrderById(Guid backOrderId);
         Task<int> GetAvailableQuantity(int? goodsId, int? goodsPackingId);
         Task<Dictionary<(int, int), int>> GetAvailableQuantitiesAsync(List<(int GoodsId, int GoodsPackingId)> pairs);
-        Task<BackOrder?> CreateBackOrder(BackOrder entity);
+        Task<(BackOrder? BackOrder, bool IsNew, int? PreviousPackageQuantity)> CreateBackOrder(BackOrder entity);
         Task<BackOrder?> UpdateBackOrder(BackOrder entity);
         Task<BackOrder?> DeleteBackOrder(Guid backOrderId);
         Task<bool> ExistsRetailer(int? retailerId);
@@ -171,11 +171,28 @@ namespace MilkDistributionWarehouse.Repositories
             return backOrder;
         }
 
-        public async Task<BackOrder?> CreateBackOrder(BackOrder entity)
+        public async Task<(BackOrder? BackOrder, bool IsNew, int? PreviousPackageQuantity)> CreateBackOrder(BackOrder entity)
         {
+            var existing = await _context.BackOrders
+                .FirstOrDefaultAsync(b => b.RetailerId == entity.RetailerId
+                                       && b.GoodsId == entity.GoodsId
+                                       && b.GoodsPackingId == entity.GoodsPackingId);
+
+            if (existing != null)
+            {
+                var previousQty = existing.PackageQuantity;
+                var addQty = entity.PackageQuantity ?? 0;
+                existing.PackageQuantity = (existing.PackageQuantity ?? 0) + addQty;
+                existing.UpdateAt = DateTime.Now;
+
+                _context.BackOrders.Update(existing);
+                await _context.SaveChangesAsync();
+                return (existing, false, previousQty);
+            }
+
             await _context.BackOrders.AddAsync(entity);
             await _context.SaveChangesAsync();
-            return entity;
+            return (entity, true, null);
         }
 
         public async Task<BackOrder?> UpdateBackOrder(BackOrder entity)

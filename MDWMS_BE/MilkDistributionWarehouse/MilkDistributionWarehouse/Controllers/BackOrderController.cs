@@ -45,7 +45,7 @@ namespace MilkDistributionWarehouse.Controllers
             var (msg, created) = await _backOrderService.CreateBackOrder(dto, userId);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<BackOrderResponseDto>.ToResultOk(created);
+            return ApiResponse<BackOrderResponseCreateDto>.ToResultOk(created);
         }
 
         [HttpPost("CreateBulk")]
