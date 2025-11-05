@@ -70,6 +70,12 @@ namespace MilkDistributionWarehouse.Services
             if (createDto.ExpiryDate <= createDto.ManufacturingDate)
                 return ("Ngày hết hạn phải sau ngày sản xuất.".ToMessageForUser(), null);
 
+            if (createDto.ManufacturingDate > DateOnly.FromDateTime(DateTime.Now))
+                return ("Ngày sản xuất phải là ngày trong quá khứ.".ToMessageForUser(), null);
+
+            if (createDto.ExpiryDate <= DateOnly.FromDateTime(DateTime.Now))
+                return ("Ngày hết hạn phải là ngày trong tương lai.".ToMessageForUser(), null);
+
             var goodsExist = await _goodsRepository.GetGoodsByGoodsId(createDto.GoodsId);
             if (goodsExist == null)
                 return ("Sản phẩm được chọn không tồn tại.".ToMessageForUser(), null);
