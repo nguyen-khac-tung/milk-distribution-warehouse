@@ -133,7 +133,7 @@ namespace MilkDistributionWarehouse.Services
                           PurchaseOrderStatus.Draft,
                           PurchaseOrderStatus.Rejected,
                           PurchaseOrderStatus.PendingApproval,
-                          PurchaseOrderStatus.Ordered
+                          PurchaseOrderStatus.Approved
                         };
             return await GetPurchaseOrdersAsync<PurchaseOrderDtoWarehouseManager>(request, null, RoleNames.WarehouseManager, excludedStatus);
         }

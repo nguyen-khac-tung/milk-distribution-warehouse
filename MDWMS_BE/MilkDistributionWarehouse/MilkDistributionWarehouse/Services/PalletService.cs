@@ -208,9 +208,6 @@ namespace MilkDistributionWarehouse.Services
                 var location = await _locationRepository.GetLocationById(dto.LocationId.Value);
                 if (location == null)
                     return ("Vị trí không tồn tại.".ToMessageForUser(), new());
-                if (location.Area.StorageConditionId != pallet.Batch.Goods.StorageConditionId) { 
-                    return ("Vị trí không phù hợp với điều kiện bảo quản của hàng hóa.".ToMessageForUser(), new());
-                }
             }
 
             if (dto.GoodsReceiptNoteId.HasValue && !await _palletRepository.ExistsGoodRecieveNote(dto.GoodsReceiptNoteId))

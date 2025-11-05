@@ -45,11 +45,10 @@ const PickAllocationsTableManager = ({
                     return (
                         <div
                             key={pick.pickAllocationId}
-                            className={`bg-white border rounded-lg p-4 transition-all hover:shadow-md ${
-                                isPicked 
-                                    ? 'border-green-300 bg-green-50' 
+                            className={`bg-white border rounded-lg p-4 transition-all hover:shadow-md ${isPicked
+                                    ? 'border-green-300 bg-green-50'
                                     : 'border-gray-200 hover:border-blue-300'
-                            }`}
+                                }`}
                         >
                             <div className="flex items-start justify-between mb-2">
                                 <div className="flex-1">
@@ -90,4 +89,5 @@ const PickAllocationsTableManager = ({
 };
 
 export default PickAllocationsTableManager;
+
 

@@ -10,7 +10,8 @@ import {
   Plus,
   CheckCircle,
   Printer,
-  Lightbulb
+  Lightbulb,
+  RotateCcw
 } from "lucide-react";
 import { useReactToPrint } from "react-to-print";
 import { PrintablePalletLabel, PrintableMultiplePalletLabels } from "../../components/PalletComponents/PrintPalletLabel";
@@ -632,7 +633,6 @@ export default function GoodsReceiptDetail() {
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">Chi tiết đơn hàng</h2>
-                  <p className="text-sm text-gray-500">Thông tin cơ bản về đơn hàng</p>
                 </div>
               </div>
               {expandedSections.orderDetails ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
@@ -769,6 +769,14 @@ export default function GoodsReceiptDetail() {
                             // Validation logic theo quy tắc
                             // a = expected (số lượng dự kiến), b = delivered (số lượng giao đến), c = reject (số lượng trả lại)
                             const validateRejectQuantity = (delivered, reject, expected) => {
+                              // Kiểm tra chỉ cho phép số nguyên
+                              if (delivered !== 0 && delivered % 1 !== 0) {
+                                return `Số lượng giao đến phải là số nguyên`;
+                              }
+                              if (reject !== 0 && reject % 1 !== 0) {
+                                return `Số lượng trả lại phải là số nguyên`;
+                              }
+
                               if (delivered === 0 && reject === 0) return null; // Cho phép cả 2 = 0
 
                               // Kiểm tra số lượng thực nhận không được âm (reject không được lớn hơn delivered)
@@ -805,8 +813,8 @@ export default function GoodsReceiptDetail() {
                             return (
                               <>
                                 <TableRow key={index} className="hover:bg-gray-50">
-                                  <TableCell className="font-medium text-gray-900 text-xs max-w-[70px] truncate" title={detail.goodsCode}>{detail.goodsCode}</TableCell>
-                                  <TableCell className="text-xs text-gray-700 max-w-[90px] truncate" title={detail.goodsName}>{detail.goodsName}</TableCell>
+                                  <TableCell className="font-medium text-gray-900 text-xs">{detail.goodsCode}</TableCell>
+                                  <TableCell className="text-xs text-gray-700">{detail.goodsName}</TableCell>
                                   <TableCell className="text-xs text-gray-700 text-center">{detail.unitMeasureName}</TableCell>
                                   <TableCell className="text-xs text-gray-700 text-center">{detail.unitPerPackage ? `${detail.unitPerPackage}${detail.unitMeasureName ? ' ' + detail.unitMeasureName : ''}/thùng` : '-'}</TableCell>
                                   {/* Số lượng thùng dự kiến */}
@@ -816,13 +824,15 @@ export default function GoodsReceiptDetail() {
                                     <div className="flex flex-col items-center">
                                       <input
                                         type="number"
+                                        step="1"
                                         className={`w-20 h-8 px-2 rounded border text-center text-xs focus:outline-none focus:border-blue-500 ${validationErrors[detailId] ? 'border-red-500' : 'border-gray-300'
                                           }`}
                                         value={detail.deliveredPackageQuantity === '' || detail.deliveredPackageQuantity === null || detail.deliveredPackageQuantity === undefined ? '' : detail.deliveredPackageQuantity}
                                         min={0}
                                         onChange={e => {
                                           const value = e.target.value;
-                                          const numValue = value === '' ? 0 : Math.max(0, Number(value));
+                                          // Làm tròn thành số nguyên nếu nhập số thập phân
+                                          const numValue = value === '' ? 0 : Math.max(0, Math.floor(Number(value)));
                                           const updatedDetail = {
                                             ...detail,
                                             deliveredPackageQuantity: value === '' ? '' : numValue
@@ -846,13 +856,22 @@ export default function GoodsReceiptDetail() {
                                         }}
                                         onBlur={e => {
                                           const value = e.target.value;
-                                          const numValue = value === '' ? 0 : Number(value) || 0;
+                                          // Làm tròn thành số nguyên
+                                          const numValue = value === '' ? 0 : Math.floor(Number(value) || 0);
 
                                           if (value === '') {
                                             setGoodsReceiptNote(prev => ({
                                               ...prev,
                                               goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
                                                 d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? { ...d, deliveredPackageQuantity: 0 } : d
+                                              )
+                                            }));
+                                          } else {
+                                            // Cập nhật giá trị đã làm tròn
+                                            setGoodsReceiptNote(prev => ({
+                                              ...prev,
+                                              goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
+                                                d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? { ...d, deliveredPackageQuantity: numValue } : d
                                               )
                                             }));
                                           }
@@ -874,13 +893,15 @@ export default function GoodsReceiptDetail() {
                                     <div className="flex flex-col items-center">
                                       <input
                                         type="number"
+                                        step="1"
                                         className={`w-20 h-8 px-2 rounded border text-center text-xs focus:outline-none focus:border-blue-500 ${validationErrors[detailId] ? 'border-red-500' : 'border-gray-300'
                                           }`}
                                         value={detail.rejectPackageQuantity === '' || detail.rejectPackageQuantity === null || detail.rejectPackageQuantity === undefined ? '' : detail.rejectPackageQuantity}
                                         min={0}
                                         onChange={e => {
                                           const value = e.target.value;
-                                          const numValue = value === '' ? 0 : Math.max(0, Number(value));
+                                          // Làm tròn thành số nguyên nếu nhập số thập phân
+                                          const numValue = value === '' ? 0 : Math.max(0, Math.floor(Number(value)));
 
                                           setGoodsReceiptNote(prev => ({
                                             ...prev,
@@ -900,13 +921,22 @@ export default function GoodsReceiptDetail() {
                                         }}
                                         onBlur={e => {
                                           const value = e.target.value;
-                                          const numValue = value === '' ? 0 : Number(value) || 0;
+                                          // Làm tròn thành số nguyên
+                                          const numValue = value === '' ? 0 : Math.floor(Number(value) || 0);
 
                                           if (value === '') {
                                             setGoodsReceiptNote(prev => ({
                                               ...prev,
                                               goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
                                                 d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? { ...d, rejectPackageQuantity: 0 } : d
+                                              )
+                                            }));
+                                          } else {
+                                            // Cập nhật giá trị đã làm tròn
+                                            setGoodsReceiptNote(prev => ({
+                                              ...prev,
+                                              goodsReceiptNoteDetails: prev.goodsReceiptNoteDetails.map((d) =>
+                                                d.goodsReceiptNoteDetailId === detail.goodsReceiptNoteDetailId ? { ...d, rejectPackageQuantity: numValue } : d
                                               )
                                             }));
                                           }
@@ -959,7 +989,7 @@ export default function GoodsReceiptDetail() {
                                     {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CHECK) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && (
                                       <Button
                                         size="sm"
-                                        className="bg-green-600 text-white hover:bg-green-700 h-[38px] px-4 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="bg-green-600 text-white hover:bg-green-700 h-[38px] w-[38px] p-0 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                                         disabled={!!validationErrors[detailId]}
                                         onClick={async () => {
                                           // Validate trước khi submit
@@ -1016,8 +1046,9 @@ export default function GoodsReceiptDetail() {
                                             window.showToast?.(msg, "error");
                                           }
                                         }}
+                                        title="Kiểm nhập"
                                       >
-                                        Kiểm nhập
+                                        <CheckCircle className="h-4 w-4" />
                                       </Button>
                                     )}
                                   </TableCell>
@@ -1200,7 +1231,7 @@ export default function GoodsReceiptDetail() {
                                       <TableCell className="text-center">
                                         <div className="inline-flex items-center gap-2">
                                           {detail.status === RECEIPT_ITEM_STATUS.Inspected && hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CANCEL) && (
-                                            <Button size="sm" className="bg-yellow-500 text-white hover:bg-yellow-600 h-[38px] px-4 flex items-center justify-center rounded" onClick={async () => {
+                                            <Button size="sm" className="bg-yellow-500 text-white hover:bg-yellow-600 h-[38px] w-[38px] p-0 flex items-center justify-center rounded" onClick={async () => {
                                               try {
                                                 await cancelGoodsReceiptNoteDetail(detail.goodsReceiptNoteDetailId);
                                                 fetchGoodsReceiptNoteDetail();
@@ -1209,7 +1240,9 @@ export default function GoodsReceiptDetail() {
                                                 const msg = extractErrorMessage(error, "Kiểm nhập lại thất bại, vui lòng thử lại!");
                                                 window.showToast?.(msg, "error");
                                               }
-                                            }}>Kiểm nhập lại</Button>
+                                            }} title="Kiểm nhập lại">
+                                              <RotateCcw className="h-4 w-4" />
+                                            </Button>
                                           )}
                                           {/* Chỉ hiển thị nút từ chối ở row nếu không phải quản lý kho (nhân viên kho) */}
                                           {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && (

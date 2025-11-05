@@ -32,6 +32,8 @@ namespace MilkDistributionWarehouse.Repositories
                 .Where(g => g.SalesOderId == salesOrderId)
                 .Include(gin => gin.SalesOder)
                     .ThenInclude(s => s.Retailer)
+                .Include(gin => gin.SalesOder)
+                    .ThenInclude(s => s.AssignToNavigation)
                 .Include(gin => gin.CreatedByNavigation)
                 .Include(gin => gin.ApprovalByNavigation)
                 .Include(gin => gin.GoodsIssueNoteDetails)
@@ -53,6 +55,7 @@ namespace MilkDistributionWarehouse.Repositories
                 .Include(gin => gin.GoodsIssueNoteDetails)
                     .ThenInclude(gd => gd.PickAllocations)
                         .ThenInclude(p => p.Pallet)
+                            .ThenInclude(l => l.Location)
                 .FirstOrDefaultAsync(gin => gin.GoodsIssueNoteId == goodsIssueNoteId);
         }
 

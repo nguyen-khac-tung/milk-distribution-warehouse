@@ -18,11 +18,21 @@ namespace MilkDistributionWarehouse.Controllers
             _goodsIssueNoteDetailService = goodsIssueNoteDetailService;
         }
 
-        [Authorize(Roles = "Warehouse Staff, Warehouse Manager")]
+        [Authorize(Roles = "Warehouse Staff")]
         [HttpPut("RePickGoodsIssueNoteDetail")]
         public async Task<IActionResult> RePickGoodsIssueNoteDetail(RePickGoodsIssueNoteDetailDto rePickGoodsIssue)
         {
             var msg = await _goodsIssueNoteDetailService.RePickGoodsIssueNoteDetail(rePickGoodsIssue, User.GetUserId());
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<string>.ToResultOkMessage();
+        }
+
+        [Authorize(Roles = "Warehouse Manager")]
+        [HttpPut("RePickGoodsIssueNoteDetailList")]
+        public async Task<IActionResult> RePickGoodsIssueNoteDetailList(List<RePickGoodsIssueNoteDetailDto> rePickGoodsIssues)
+        {
+            var msg = await _goodsIssueNoteDetailService.RePickGoodsIssueNoteDetailList(rePickGoodsIssues);
             if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
 
             return ApiResponse<string>.ToResultOkMessage();
