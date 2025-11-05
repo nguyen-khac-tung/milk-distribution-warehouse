@@ -50,8 +50,8 @@ namespace MilkDistributionWarehouse.Services
 
             if (salesOrder.AssignTo != userId) return "Người dùng hiện tại không được phân công cho đơn hàng này.".ToMessageForUser();
 
-            //if (salesOrder.EstimatedTimeDeparture > DateOnly.FromDateTime(DateTime.Now))
-            //    return "Không tạo được phiếu xuất kho trước ngày dự kiến xuất kho.".ToMessageForUser();
+            if (salesOrder.EstimatedTimeDeparture > DateOnly.FromDateTime(DateTime.Now))
+                return "Không tạo được phiếu xuất kho trước ngày dự kiến xuất kho.".ToMessageForUser();
 
             if (salesOrder.Status != SalesOrderStatus.AssignedForPicking)
                 return "Chỉ có thể tạo phiếu xuất kho cho đơn hàng ở trạng thái 'Đã phân công'.".ToMessageForUser();
