@@ -25,6 +25,10 @@ public partial class PurchaseOrder
 
     public string RejectionReason { get; set; }
 
+    public DateTime? EstimatedTimeArrival { get; set; }
+
+    public string DeliveryDateChangeReason { get; set; }
+
     public DateTime? CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
