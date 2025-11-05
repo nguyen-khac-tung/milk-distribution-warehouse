@@ -18,7 +18,7 @@ namespace MilkDistributionWarehouse.Services
     {
         Task<(string, PageResult<BackOrderDto.BackOrderResponseDto>)> GetBackOrders(PagedRequest request);
         Task<(string, BackOrderDto.BackOrderResponseDto)> GetBackOrderById(Guid backOrderId);
-        Task<(string, BackOrderDto.BackOrderResponseDto)> CreateBackOrder(BackOrderDto.BackOrderRequestDto dto, int? userId);
+        Task<(string, BackOrderDto.BackOrderResponseCreateDto)> CreateBackOrder(BackOrderDto.BackOrderRequestDto dto, int? userId);
         Task<(string, BackOrderDto.BackOrderResponseDto)> UpdateBackOrder(Guid backOrderId, BackOrderDto.BackOrderRequestDto dto);
         Task<(string, BackOrderDto.BackOrderResponseDto)> DeleteBackOrder(Guid backOrderId);
         Task<(string, BackOrderDto.BackOrderBulkResponse)> CreateBackOrderBulk(BackOrderDto.BackOrderBulkCreate create, int? userId);
@@ -90,27 +90,35 @@ namespace MilkDistributionWarehouse.Services
             return ("", response);
         }
 
-        public async Task<(string, BackOrderDto.BackOrderResponseDto)> CreateBackOrder(BackOrderDto.BackOrderRequestDto dto, int? userId)
+        public async Task<(string, BackOrderDto.BackOrderResponseCreateDto)> CreateBackOrder(BackOrderDto.BackOrderRequestDto dto, int? userId)
         {
             if (userId == null)
-                return ("The user is not logged into the system.".ToMessageForUser(), new BackOrderDto.BackOrderResponseDto());
+                return ("The user is not logged into the system.".ToMessageForUser(), new BackOrderDto.BackOrderResponseCreateDto());
 
             if (!await _backOrderRepository.ExistsRetailer(dto.RetailerId))
-                return ("Retailer do not exist.", new BackOrderDto.BackOrderResponseDto());
+                return ("Retailer do not exist.", new BackOrderDto.BackOrderResponseCreateDto());
 
             if (!await _backOrderRepository.ExistsGoods(dto.GoodsId))
-                return ("Goods do not exist.", new BackOrderDto.BackOrderResponseDto());
+                return ("Goods do not exist.", new BackOrderDto.BackOrderResponseCreateDto());
 
             var entity = _mapper.Map<BackOrder>(dto);
             entity.BackOrderId = Guid.NewGuid();
             entity.CreatedBy = userId;
             entity.CreatedAt = DateTime.Now;
-            var created = await _backOrderRepository.CreateBackOrder(entity);
-            var createdResponse = await _backOrderRepository.GetBackOrderById(created.BackOrderId);
-            var response = _mapper.Map<BackOrderDto.BackOrderResponseDto>(createdResponse);
 
-            var availableQuantity = await _backOrderRepository.GetAvailableQuantity(created.GoodsId, created.GoodsPackingId);
-            response.StatusDinamic = availableQuantity > created.PackageQuantity
+            var (createdBackOrder, isNew, previousQty) = await _backOrderRepository.CreateBackOrder(entity);
+            if (createdBackOrder == null)
+                return ("Tạo backorder thất bại.".ToMessageForUser(), new BackOrderDto.BackOrderResponseCreateDto());
+
+            var createdResponse = await _backOrderRepository.GetBackOrderById(createdBackOrder.BackOrderId);
+            var response = _mapper.Map<BackOrderDto.BackOrderResponseCreateDto>(createdResponse);
+
+            response.IsNew = isNew;
+            response.IsUpdated = !isNew;
+            response.PreviousPackageQuantity = previousQty;
+
+            var availableQuantity = await _backOrderRepository.GetAvailableQuantity(createdBackOrder.GoodsId, createdBackOrder.GoodsPackingId);
+            response.StatusDinamic = availableQuantity > createdBackOrder.PackageQuantity
                 ? BackOrderStatus.Available
                 : BackOrderStatus.Unavailable;
 
@@ -170,8 +178,6 @@ namespace MilkDistributionWarehouse.Services
             await _unitOfWork.BeginTransactionAsync();
             try
             {
-                var validEntities = new List<BackOrder>();
-
                 for (int i = 0; i < create.BackOrders.Count; i++)
                 {
                     var dto = create.BackOrders[i];
@@ -195,25 +201,29 @@ namespace MilkDistributionWarehouse.Services
                     entity.CreatedBy = userId;
                     entity.CreatedAt = DateTime.Now;
 
-                    validEntities.Add(entity);
-                }
-
-                // Insert valid entities
-                if (validEntities.Any())
-                {
-                    foreach (var entity in validEntities)
+                    var (createdBackOrder, isNew, previousQty) = await _backOrderRepository.CreateBackOrder(entity);
+                    if (createdBackOrder == null)
                     {
-                        var created = await _backOrderRepository.CreateBackOrder(entity);
-                        if (created == null)
+                        result.FailedItems.Add(new BackOrderDto.FailedItem { Index = i, Code = "", Error = "Create backorder failed.".ToMessageForUser() });
+                        result.TotalFailed++;
+                        continue;
+                    }
+
+                    if (isNew)
+                    {
+                        result.TotalInserted++;
+                        result.InsertedItems.Add(new BackOrderDto.InsertedItem { Index = i, BackOrderId = createdBackOrder.BackOrderId, Quantity = createdBackOrder.PackageQuantity });
+                    }
+                    else
+                    {
+                        result.TotalUpdated++;
+                        result.UpdatedItems.Add(new BackOrderDto.UpdatedItem
                         {
-                            // mark failure for this insert
-                            result.FailedItems.Add(new BackOrderDto.FailedItem { Index = -1, Code = "", Error = "Create backorder failed.".ToMessageForUser() });
-                            result.TotalFailed++;
-                        }
-                        else
-                        {
-                            result.TotalInserted++;
-                        }
+                            Index = i,
+                            BackOrderId = createdBackOrder.BackOrderId,
+                            PreviousPackageQuantity = previousQty,
+                            NewPackageQuantity = createdBackOrder.PackageQuantity
+                        });
                     }
                 }
 
