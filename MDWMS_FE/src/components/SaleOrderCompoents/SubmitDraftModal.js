@@ -30,7 +30,7 @@ const SubmitDraftModal = ({
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
-                Nộp bản nháp
+                Gửi phê duyệt
               </h3>
               <p className="text-sm text-gray-500">
                 Gửi đơn hàng để chờ phê duyệt
@@ -88,7 +88,7 @@ const SubmitDraftModal = ({
               <AlertCircle className="h-5 w-5 text-orange-600 mt-0.5 flex-shrink-0" />
               <div>
                 <h4 className="font-medium text-orange-800 mb-1">
-                  Xác nhận nộp bản nháp
+                  Xác nhận gửi phê duyệt
                 </h4>
                 <p className="text-sm text-orange-700">
                   Bạn có chắc chắn muốn nộp bản nháp này? Đơn hàng sẽ chuyển sang trạng thái "Chờ duyệt" và cần được phê duyệt trước khi có thể tiếp tục xử lý.
@@ -120,7 +120,7 @@ const SubmitDraftModal = ({
                   Đang nộp...
                 </div>
               ) : (
-                "Xác nhận nộp"
+                "Xác nhận gửi"
               )}
             </Button>
           </div>

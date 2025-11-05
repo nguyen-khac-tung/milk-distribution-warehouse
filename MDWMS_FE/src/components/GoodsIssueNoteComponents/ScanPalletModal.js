@@ -150,7 +150,7 @@ const ScanPalletModal = ({
                             )}
                         </div>
 
-                        {/* {pickDetailData && (
+                        {pickDetailData && (
                             <div className={`mt-2 flex items-center gap-2 text-sm leading-none ${validationStatus === 'valid' ? 'text-green-600' :
                                 validationStatus === 'invalid' ? 'text-red-600' :
                                     'text-gray-600'
@@ -167,7 +167,7 @@ const ScanPalletModal = ({
                                     <span className="font-semibold">{pickDetailData.palletId}</span>
                                 </p>
                             </div>
-                        )} */}
+                        )}
                     </div>
 
                     {/* Action Buttons */}
