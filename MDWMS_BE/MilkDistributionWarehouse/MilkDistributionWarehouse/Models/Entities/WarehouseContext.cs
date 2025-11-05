@@ -362,6 +362,7 @@ public partial class WarehouseContext : DbContext
             entity.HasKey(e => e.PurchaseOderId).HasName("PK_ImportOrders");
 
             entity.Property(e => e.PurchaseOderId).ValueGeneratedNever();
+            entity.Property(e => e.DeliveryDateChangeReason).HasMaxLength(255);
             entity.Property(e => e.Note).HasMaxLength(255);
             entity.Property(e => e.RejectionReason).HasMaxLength(255);
 

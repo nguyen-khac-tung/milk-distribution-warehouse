@@ -120,7 +120,12 @@ namespace MilkDistributionWarehouse.Models.DTOs
     public class PurchaseOrderOrderedDto : PurchaseOrderUpdateStatusDto
     {
         [Required(ErrorMessage = "Ngày dự kiến đến không được bỏ trống.")]
-        public DateOnly EstimatedTimeArrival { get; set; }
+        public DateTime EstimatedTimeArrival { get; set; }
+    }
+
+    public class PurchaseOrderOrderedUpdateDto : PurchaseOrderOrderedDto
+    {
+        public string DeliveryDateChangeReason { get; set; }
     }
 
     public class PurchaseOrderRejectDto : PurchaseOrderUpdateStatusDto
