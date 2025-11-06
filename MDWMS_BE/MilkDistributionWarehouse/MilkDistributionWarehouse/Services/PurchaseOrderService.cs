@@ -77,8 +77,7 @@ namespace MilkDistributionWarehouse.Services
                     case RoleNames.WarehouseStaff:
                         purchaseOrderQuery = purchaseOrderQuery
                             .Where(pod => pod.AssignTo == userId
-                            && (pod.Status != null && excludedStatuses.Contains((int)pod.Status))
-                            && (pod.EstimatedTimeArrival != null && pod.ArrivalConfirmedBy != null));
+                            && (pod.Status != null && excludedStatuses.Contains((int)pod.Status)));
                         break;
                     default:
                         break;
@@ -142,11 +141,11 @@ namespace MilkDistributionWarehouse.Services
         {
             var excludedStatus = new int[]
                         {
+                          PurchaseOrderStatus.AwaitingArrival,  
                           PurchaseOrderStatus.AssignedForReceiving,
                           PurchaseOrderStatus.Receiving,
                           PurchaseOrderStatus.Inspected,
                           PurchaseOrderStatus.Completed,
-
                         };
             return await GetPurchaseOrdersAsync<PurchaseOrderDtoWarehouseStaff>(request, userId, RoleNames.WarehouseStaff, excludedStatus);
         }
@@ -360,42 +359,45 @@ namespace MilkDistributionWarehouse.Services
                 if (purchaseOrdersUpdateStatus is PurchaseOrderOrderedDto purchaseOrderOrderedDto)
                 {
                     if (currentStatus != PurchaseOrderStatus.Approved)
-                        throw new Exception("Chỉ được chuyển trạng thái đã đặt đơn khi đơn mua hàng ở trạng thái Đã duyệt");
+                        throw new Exception("Chỉ được chuyển trạng thái đã đặt đơn khi đơn mua hàng ở trạng thái Đã duyệt".ToMessageForUser());
 
                     var today = DateTime.Now;
                     if (purchaseOrderOrderedDto.EstimatedTimeArrival < today)
-                        throw new Exception("Ngày dự kiến giao hàng phải là ngày trong tương lai.");
+                        throw new Exception("Ngày dự kiến giao hàng phải là ngày trong tương lai.".ToMessageForUser());
 
                     purchaseOrder.Status = PurchaseOrderStatus.Ordered;
                     purchaseOrder.EstimatedTimeArrival = purchaseOrderOrderedDto.EstimatedTimeArrival;
                     purchaseOrder.UpdatedAt = DateTime.Now;
                 }
 
-                if(purchaseOrdersUpdateStatus is PurchaseOrderOrderedUpdateDto orderOrderedUpdateDto)
+                if (purchaseOrdersUpdateStatus is PurchaseOrderOrderedUpdateDto orderOrderedUpdateDto)
                 {
-                    if(purchaseOrder.EstimatedTimeArrival == null) 
-                        throw new Exception("Đơn hàng chưa có ngày dự kiến giao hàng.");
+                    if(currentStatus != PurchaseOrderStatus.Ordered && currentStatus != PurchaseOrderStatus.AwaitingArrival)
+                        throw new Exception("Chỉ được cập nhật ngày dự kiến giao hàng khi đơn mua hàng ở trạng thái Đã đặt hàng hoặc Chờ đến.".ToMessageForUser());
 
-                    if(purchaseOrder.ArrivalConfirmedBy != null) 
-                        throw new Exception("Đơn hàng đã giao đến. Không thể thay đổi ngày dự kiến giao hàng.");
+                    if (purchaseOrder.ArrivalConfirmedBy != null)
+                        throw new Exception("Đơn hàng đã giao đến. Không thể thay đổi ngày dự kiến giao hàng.".ToMessageForUser());
 
-                     var today = DateTime.Now;
+                    var today = DateTime.Now;
                     if (orderOrderedUpdateDto.EstimatedTimeArrival < today)
-                        throw new Exception("Ngày dự kiến giao hàng phải là ngày trong tương lai.");
+                        throw new Exception("Ngày dự kiến giao hàng phải là ngày trong tương lai.".ToMessageForUser());
 
                     if (string.IsNullOrEmpty(orderOrderedUpdateDto.DeliveryDateChangeReason))
-                        throw new Exception("Thay đổi ngày dự kiến hàng cần phải có lý do.");
+                        throw new Exception("Thay đổi ngày dự kiến hàng cần phải có lý do.".ToMessageForUser());
 
                     purchaseOrder.EstimatedTimeArrival = orderOrderedUpdateDto.EstimatedTimeArrival;
                     purchaseOrder.DeliveryDateChangeReason = orderOrderedUpdateDto.DeliveryDateChangeReason;
                     purchaseOrder.UpdatedAt = DateTime.Now;
-                }    
+                }
 
                 if (purchaseOrdersUpdateStatus is PurchaseOrderGoodsReceivedDto)
                 {
                     var estimatedTimeArrival = purchaseOrder.EstimatedTimeArrival;
                     var today = DateTime.Now;
-                    
+
+                    if (currentStatus != PurchaseOrderStatus.Ordered && currentStatus != PurchaseOrderStatus.AwaitingArrival)
+                        throw new Exception("Chỉ được xác nhận đơn hàng đã đến khi đơn hàng ở trạng thái Đã đặt hàng hoặc Chờ đến.".ToMessageForUser());
+
                     //if(estimatedTimeArrival != null && estimatedTimeArrival > today)
                     //    throw new Exception("Không thể xác nhận đơn hàng đã đến trước ngày dự kiến giao hàng.");
 
@@ -410,23 +412,22 @@ namespace MilkDistributionWarehouse.Services
                     if (currentStatus != PurchaseOrderStatus.GoodsReceived && currentStatus != PurchaseOrderStatus.Ordered)
                         throw new Exception("Chỉ được phân công đơn hàng khi đơn hàng ở trạng thái đơn hàng Đã xác nhận đến hoặc Đã đặt hàng.".ToMessageForUser());
 
-                    //var msg = await CheckAssignedForReceivingPO(assignedForReceivingDto.AssignTo, purchaseOrder);
-                    //if (!string.IsNullOrEmpty(msg))
-                    //    throw new Exception(msg.ToMessageForUser());
+                    if (assignedForReceivingDto.AssignTo <= 0)
+                        throw new Exception("Vui lòng chọn nhân viên kho để phân công.".ToMessageForUser());
 
-                    purchaseOrder.Status = PurchaseOrderStatus.AssignedForReceiving;
+                    purchaseOrder.Status = purchaseOrder.ArrivalConfirmedBy == null ?  
+                        PurchaseOrderStatus.AwaitingArrival : PurchaseOrderStatus.AssignedForReceiving;
+
                     purchaseOrder.AssignTo = assignedForReceivingDto.AssignTo;
                     purchaseOrder.AssignedAt = DateTime.Now;
                 }
 
                 if (purchaseOrdersUpdateStatus is PurchaseOrderReAssignForReceivingDto reAssignForReceivingDto)
                 {
-                    //if (currentStatus != PurchaseOrderStatus.AssignedForReceiving)
-                    //    throw new Exception("Chỉ được phân công lại đơn hàng khi đơn hàng ở trạng thái đơn hàng Đã phân công.".ToMessageForUser());
-                    if(purchaseOrder.AssignTo == null) 
-                        throw new Exception("Đơn hàng chưa được phân công nhân viên kho.".ToMessageForUser());
+                    if (currentStatus != PurchaseOrderStatus.AssignedForReceiving && currentStatus != PurchaseOrderStatus.AwaitingArrival)
+                        throw new Exception("Chỉ được phân công lại đơn hàng khi đơn hàng ở trạng thái đơn hàng Đã phân công hoặc Chờ đến.".ToMessageForUser());
 
-                    if (purchaseOrder.AssignTo == reAssignForReceivingDto.ReAssignTo)
+                    if (purchaseOrder.AssignTo != null && purchaseOrder.AssignTo == reAssignForReceivingDto.ReAssignTo)
                         throw new Exception("Phải phân công cho người khác khi phân công lại.".ToMessageForUser());
 
                     //var msg = await CheckAssignedForReceivingPO(reAssignForReceivingDto.ReAssignTo, purchaseOrder);
