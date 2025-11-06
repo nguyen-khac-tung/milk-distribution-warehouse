@@ -383,7 +383,7 @@ namespace MilkDistributionWarehouse.Services
                     if (orderOrderedUpdateDto.EstimatedTimeArrival < today)
                         throw new Exception("Ngày dự kiến giao hàng phải là ngày trong tương lai.");
 
-                    if (!string.IsNullOrEmpty(orderOrderedUpdateDto.DeliveryDateChangeReason))
+                    if (string.IsNullOrEmpty(orderOrderedUpdateDto.DeliveryDateChangeReason))
                         throw new Exception("Thay đổi ngày dự kiến hàng cần phải có lý do.");
 
                     purchaseOrder.EstimatedTimeArrival = orderOrderedUpdateDto.EstimatedTimeArrival;

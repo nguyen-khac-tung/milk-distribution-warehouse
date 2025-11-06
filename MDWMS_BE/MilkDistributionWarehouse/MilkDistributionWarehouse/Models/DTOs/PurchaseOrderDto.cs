@@ -129,8 +129,10 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public DateTime EstimatedTimeArrival { get; set; }
     }
 
-    public class PurchaseOrderOrderedUpdateDto : PurchaseOrderOrderedDto
+    public class PurchaseOrderOrderedUpdateDto : PurchaseOrderUpdateStatusDto
     {
+        [Required(ErrorMessage = "Ngày dự kiến đến không được bỏ trống.")]
+        public DateTime EstimatedTimeArrival { get; set; }
         public string DeliveryDateChangeReason { get; set; }
     }
 
