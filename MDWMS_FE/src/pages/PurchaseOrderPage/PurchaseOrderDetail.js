@@ -206,12 +206,14 @@ const PurchaseOrderDetail = () => {
         // - Approved: đã duyệt (cho phép xác nhận giao đến)
         // - Ordered: đã đặt hàng (có thể xác nhận giao đến trước hoặc sau phân công)
         // - AssignedForReceiving: đã phân công (cho phép xác nhận giao đến sau khi phân công)
+        // - AwaitingArrival: Chờ đến (nhân viên/QL kho có thể xác nhận đến)
         // Không cho phép khi status là GoodsReceived (đã xác nhận)
         return hasPermission(PERMISSIONS.PURCHASE_ORDER_CONFIRM_GOODS_RECEIVED) &&
             purchaseOrder?.status !== PURCHASE_ORDER_STATUS.GoodsReceived &&
             (purchaseOrder?.status === PURCHASE_ORDER_STATUS.Approved ||
              purchaseOrder?.status === PURCHASE_ORDER_STATUS.Ordered ||
-             purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving);
+             purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving ||
+             purchaseOrder?.status === PURCHASE_ORDER_STATUS.AwaitingArrival);
     };
 
     const canAssignReceiving = () => {
@@ -260,6 +262,11 @@ const PurchaseOrderDetail = () => {
 
         // Cho phép khi status là Ordered (10)
         if (purchaseOrder?.status === PURCHASE_ORDER_STATUS.Ordered) {
+            return true;
+        }
+
+        // Cho phép khi status là AwaitingArrival (11)
+        if (purchaseOrder?.status === PURCHASE_ORDER_STATUS.AwaitingArrival) {
             return true;
         }
 
