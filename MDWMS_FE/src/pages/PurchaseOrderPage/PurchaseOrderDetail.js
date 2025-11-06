@@ -250,9 +250,27 @@ const PurchaseOrderDetail = () => {
     };
 
     const canChangeDeliveryDate = () => {
-        // Chỉ cho phép khi status là Ordered (10) hoặc AssignedForReceiving (6)
-        return purchaseOrder?.status === PURCHASE_ORDER_STATUS.Ordered ||
-               purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving;
+        // Chỉ nhân viên kinh doanh (Sales Representative) mới có quyền thay đổi ngày dự kiến nhập
+        if (!hasPermission(PERMISSIONS.PURCHASE_ORDER_CHANGE_DELIVERY_DATE)) {
+            return false;
+        }
+
+        // Cho phép khi status là Ordered (10)
+        if (purchaseOrder?.status === PURCHASE_ORDER_STATUS.Ordered) {
+            return true;
+        }
+
+        // Cho phép khi status là AssignedForReceiving (6) VÀ chưa xác nhận giao đến
+        if (purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving) {
+            // Không cho phép nếu đã xác nhận giao đến
+            if (purchaseOrder?.arrivalConfirmedBy || purchaseOrder?.arrivalConfirmedAt) {
+                return false;
+            }
+            // Cho phép nếu chưa xác nhận giao đến
+            return true;
+        }
+
+        return false;
     };
 
     const handleSubmitDraftConfirm = async () => {
