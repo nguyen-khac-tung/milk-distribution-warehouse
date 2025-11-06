@@ -13,6 +13,7 @@ namespace MilkDistributionWarehouse.Services
     {
         Task<(string, PageResult<AreaDto.AreaResponseDto>)> GetAreas(PagedRequest request);
         Task<(string, AreaDto.AreaDetailDto)> GetAreaById(int areaId);
+        Task<(string, List<AreaDto.AreaLocationAvailableDto>)> GetAvailableLocationQty();
         Task<(string, AreaDto.AreaResponseDto)> CreateArea(AreaDto.AreaRequestDto dto);
         Task<(string, AreaDto.AreaResponseDto)> UpdateArea(int areaId, AreaDto.AreaRequestDto dto);
         Task<(string, AreaDto.AreaResponseDto)> DeleteArea(int areaId);
@@ -56,6 +57,15 @@ namespace MilkDistributionWarehouse.Services
                 return ("Không tìm thấy khu vực.".ToMessageForUser(), new AreaDto.AreaDetailDto());
 
             return ("", _mapper.Map<AreaDto.AreaDetailDto>(area));
+        }
+
+        public async Task<(string, List<AreaDto.AreaLocationAvailableDto>)> GetAvailableLocationQty() {
+            var data = await _areaRepository.GetAvailableLocationCountByAreaAsync();
+
+            if (data == null || !data.Any())
+                return ("Không có dữ liệu khu vực khả dụng.".ToMessageForUser(), new List<AreaDto.AreaLocationAvailableDto>());
+
+            return ("", data);
         }
 
         public async Task<(string, AreaDto.AreaResponseDto)> CreateArea(AreaDto.AreaRequestDto dto)
