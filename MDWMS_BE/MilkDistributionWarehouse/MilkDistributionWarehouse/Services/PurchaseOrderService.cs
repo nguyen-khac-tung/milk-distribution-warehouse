@@ -141,7 +141,7 @@ namespace MilkDistributionWarehouse.Services
         {
             var excludedStatus = new int[]
                         {
-                          PurchaseOrderStatus.AwaitingArrival,  
+                          PurchaseOrderStatus.AwaitingArrival,
                           PurchaseOrderStatus.AssignedForReceiving,
                           PurchaseOrderStatus.Receiving,
                           PurchaseOrderStatus.Inspected,
@@ -372,7 +372,7 @@ namespace MilkDistributionWarehouse.Services
 
                 if (purchaseOrdersUpdateStatus is PurchaseOrderOrderedUpdateDto orderOrderedUpdateDto)
                 {
-                    if(currentStatus != PurchaseOrderStatus.Ordered && currentStatus != PurchaseOrderStatus.AwaitingArrival)
+                    if (currentStatus != PurchaseOrderStatus.Ordered && currentStatus != PurchaseOrderStatus.AwaitingArrival)
                         throw new Exception("Chỉ được cập nhật ngày dự kiến giao hàng khi đơn mua hàng ở trạng thái Đã đặt hàng hoặc Chờ đến.".ToMessageForUser());
 
                     if (purchaseOrder.ArrivalConfirmedBy != null)
@@ -401,7 +401,9 @@ namespace MilkDistributionWarehouse.Services
                     //if(estimatedTimeArrival != null && estimatedTimeArrival > today)
                     //    throw new Exception("Không thể xác nhận đơn hàng đã đến trước ngày dự kiến giao hàng.");
 
-                    purchaseOrder.Status = PurchaseOrderStatus.GoodsReceived;
+                    purchaseOrder.Status = currentStatus == PurchaseOrderStatus.AwaitingArrival ?
+                        PurchaseOrderStatus.AssignedForReceiving : PurchaseOrderStatus.GoodsReceived;
+
                     purchaseOrder.ArrivalConfirmedBy = userId;
                     purchaseOrder.DeliveryDateChangeReason = "";
                     purchaseOrder.ArrivalConfirmedAt = DateTime.Now;
@@ -415,7 +417,7 @@ namespace MilkDistributionWarehouse.Services
                     if (assignedForReceivingDto.AssignTo <= 0)
                         throw new Exception("Vui lòng chọn nhân viên kho để phân công.".ToMessageForUser());
 
-                    purchaseOrder.Status = purchaseOrder.ArrivalConfirmedBy == null ?  
+                    purchaseOrder.Status = purchaseOrder.ArrivalConfirmedBy == null ?
                         PurchaseOrderStatus.AwaitingArrival : PurchaseOrderStatus.AssignedForReceiving;
 
                     purchaseOrder.AssignTo = assignedForReceivingDto.AssignTo;
