@@ -9,7 +9,8 @@ const ConfirmOrderedModal = ({
     onClose,
     onConfirm,
     purchaseOrder,
-    loading = false
+    loading = false,
+    mode = 'confirm' // 'confirm' or 'change'
 }) => {
     const [estimatedTimeArrival, setEstimatedTimeArrival] = useState('');
     const [error, setError] = useState('');
@@ -21,17 +22,41 @@ const ConfirmOrderedModal = ({
             return;
         }
 
+        // Lấy ngày đã chọn và giờ hiện tại
         const selectedDate = new Date(estimatedTimeArrival);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const now = new Date();
+        
+        // So sánh chỉ theo ngày (không tính giờ)
+        const selectedDateOnly = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+        const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-        if (selectedDate < today) {
+        if (selectedDateOnly < todayOnly) {
             setError('Ngày dự kiến nhập không thể là ngày trong quá khứ');
             return;
         }
 
         setError('');
-        onConfirm(estimatedTimeArrival);
+        
+        // Lấy giờ hiện tại
+        const currentHours = now.getHours();
+        const currentMinutes = now.getMinutes();
+        const currentSeconds = now.getSeconds();
+        const currentMilliseconds = now.getMilliseconds();
+        
+        // Tạo Date object với ngày đã chọn và giờ hiện tại
+        const finalDateTime = new Date(
+            selectedDate.getFullYear(),
+            selectedDate.getMonth(),
+            selectedDate.getDate(),
+            currentHours,
+            currentMinutes,
+            currentSeconds,
+            currentMilliseconds
+        );
+        
+        // Convert to ISO string
+        const isoString = finalDateTime.toISOString();
+        onConfirm(isoString);
     };
 
     const handleClose = () => {
@@ -50,16 +75,22 @@ const ConfirmOrderedModal = ({
             <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                    <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-yellow-100 rounded-full">
-                            <ShoppingCart className="h-6 w-6 text-yellow-600" />
+                        <div className="flex items-center space-x-3">
+                        <div className={`p-2 rounded-full ${mode === 'change' ? 'bg-blue-100' : 'bg-yellow-100'}`}>
+                            {mode === 'change' ? (
+                                <Calendar className="h-6 w-6 text-blue-600" />
+                            ) : (
+                                <ShoppingCart className="h-6 w-6 text-yellow-600" />
+                            )}
                         </div>
                         <div>
                             <h3 className="text-lg font-semibold text-gray-900">
-                                Xác nhận Đã đặt hàng
+                                {mode === 'change' ? 'Thay đổi ngày dự kiến nhập' : 'Xác nhận Đã đặt hàng'}
                             </h3>
                             <p className="text-sm text-gray-500">
-                                Xác nhận đơn hàng đã được đặt và nhập ngày dự kiến nhập
+                                {mode === 'change' 
+                                    ? 'Thay đổi ngày dự kiến nhập cho đơn hàng'
+                                    : 'Xác nhận đơn hàng đã được đặt và nhập ngày dự kiến nhập'}
                             </p>
                         </div>
                     </div>
@@ -114,6 +145,9 @@ const ConfirmOrderedModal = ({
                             className={`w-full ${error ? 'border-red-500' : ''}`}
                             disabled={loading}
                         />
+                        <p className="text-xs text-gray-500 mt-1">
+                            Giờ sẽ tự động lấy từ giờ hiện tại
+                        </p>
                         {error && (
                             <p className="text-sm text-red-600 mt-1">{error}</p>
                         )}
@@ -125,10 +159,12 @@ const ConfirmOrderedModal = ({
                             <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
                             <div>
                                 <h4 className="font-medium text-yellow-800 mb-1">
-                                    Xác nhận đã đặt hàng
+                                    {mode === 'change' ? 'Thay đổi ngày dự kiến nhập' : 'Xác nhận đã đặt hàng'}
                                 </h4>
                                 <p className="text-sm text-yellow-700">
-                                    Bạn có chắc chắn muốn xác nhận đơn hàng này đã được đặt? Hành động này không thể hoàn tác.
+                                    {mode === 'change' 
+                                        ? 'Bạn có chắc chắn muốn thay đổi ngày dự kiến nhập cho đơn hàng này?'
+                                        : 'Bạn có chắc chắn muốn xác nhận đơn hàng này đã được đặt? Hành động này không thể hoàn tác.'}
                                 </p>
                             </div>
                         </div>
@@ -149,15 +185,19 @@ const ConfirmOrderedModal = ({
                             type="button"
                             onClick={handleConfirm}
                             disabled={loading}
-                            className="h-[38px] px-8 bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50"
+                            className={`h-[38px] px-8 font-medium rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 ${
+                                mode === 'change' 
+                                    ? 'bg-blue-500 hover:bg-blue-600 text-white' 
+                                    : 'bg-yellow-500 hover:bg-yellow-600 text-white'
+                            }`}
                         >
                             {loading ? (
                                 <div className="flex items-center gap-2">
                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                    Đang xác nhận...
+                                    {mode === 'change' ? 'Đang thay đổi...' : 'Đang xác nhận...'}
                                 </div>
                             ) : (
-                                "Xác nhận Đã đặt hàng"
+                                mode === 'change' ? 'Thay đổi ngày dự kiến nhập' : 'Xác nhận Đã đặt hàng'
                             )}
                         </Button>
                     </div>

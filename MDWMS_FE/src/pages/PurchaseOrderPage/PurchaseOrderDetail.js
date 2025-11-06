@@ -3,10 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
-import { ArrowLeft, Package, User, Calendar, CheckCircle, XCircle, Clock, Truck, CheckSquare, Trash2, Key, Building2, FileText, Hash, Shield, ShoppingCart, Users, UserCheck, UserX, TruckIcon, UserPlus, Store, UserCircle, UserCog, UserCheck2, UserX2, UserMinus, Mail, Phone, MapPin, Play } from 'lucide-react';
+import { ArrowLeft, Package, User, Calendar, CheckCircle, XCircle, Clock, Truck, CheckSquare, Trash2, Key, Building2, FileText, Hash, Shield, ShoppingCart, Users, UserCheck, UserX, TruckIcon, UserPlus, Store, UserCircle, UserCog, UserCheck2, UserX2, UserMinus, Mail, Phone, MapPin, Play, Edit } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
-import { getPurchaseOrderDetail, submitPurchaseOrder, approvePurchaseOrder, rejectPurchaseOrder, confirmGoodsReceived, assignForReceiving, startReceive, reAssignForReceiving, updatePurchaseOrderAsOrdered } from '../../services/PurchaseOrderService';
+import { getPurchaseOrderDetail, submitPurchaseOrder, approvePurchaseOrder, rejectPurchaseOrder, confirmGoodsReceived, assignForReceiving, startReceive, reAssignForReceiving, updatePurchaseOrderAsOrdered, changeDeliveryDate } from '../../services/PurchaseOrderService';
 import { extractErrorMessage } from '../../utils/Validation';
 import ApprovalConfirmationModal from '../../components/PurchaseOrderComponents/ApprovalConfirmationModal';
 import RejectionConfirmationModal from '../../components/PurchaseOrderComponents/RejectionConfirmationModal';
@@ -36,6 +36,7 @@ const PurchaseOrderDetail = () => {
     const [showAssignReceivingModal, setShowAssignReceivingModal] = useState(false);
     const [showStartReceiveModal, setShowStartReceiveModal] = useState(false);
     const [showConfirmOrderedModal, setShowConfirmOrderedModal] = useState(false);
+    const [showChangeDeliveryDateModal, setShowChangeDeliveryDateModal] = useState(false);
     const [approvalLoading, setApprovalLoading] = useState(false);
     const [rejectionLoading, setRejectionLoading] = useState(false);
     const [submitLoading, setSubmitLoading] = useState(false);
@@ -43,6 +44,7 @@ const PurchaseOrderDetail = () => {
     const [assignReceivingLoading, setAssignReceivingLoading] = useState(false);
     const [startReceiveLoading, setStartReceiveLoading] = useState(false);
     const [confirmOrderedLoading, setConfirmOrderedLoading] = useState(false);
+    const [changeDeliveryDateLoading, setChangeDeliveryDateLoading] = useState(false);
 
     useEffect(() => {
         const fetchPurchaseOrderDetail = async () => {
@@ -243,6 +245,16 @@ const PurchaseOrderDetail = () => {
             purchaseOrder?.isDisableButton === false;
     };
 
+    const canEdit = () => {
+        return purchaseOrder?.status === PURCHASE_ORDER_STATUS.Draft;
+    };
+
+    const canChangeDeliveryDate = () => {
+        // Chỉ cho phép khi status là Ordered (10) hoặc AssignedForReceiving (6)
+        return purchaseOrder?.status === PURCHASE_ORDER_STATUS.Ordered ||
+               purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving;
+    };
+
     const handleSubmitDraftConfirm = async () => {
         setSubmitLoading(true);
         try {
@@ -394,6 +406,33 @@ const PurchaseOrderDetail = () => {
             setConfirmOrderedLoading(false);
         }
     };
+
+    const handleChangeDeliveryDate = async (estimatedTimeArrival) => {
+        setChangeDeliveryDateLoading(true);
+        try {
+            await changeDeliveryDate(
+                purchaseOrder.purchaseOderId,
+                estimatedTimeArrival
+            );
+
+            if (window.showToast) {
+                window.showToast("Thay đổi ngày dự kiến nhập thành công!", "success");
+            }
+            setShowChangeDeliveryDateModal(false);
+            const response = await getPurchaseOrderDetail(id);
+            if (response && response.success) {
+                setPurchaseOrder(response.data);
+            }
+        } catch (error) {
+            console.error("Error changing delivery date:", error);
+            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi thay đổi ngày dự kiến nhập";
+            if (window.showToast) {
+                window.showToast(errorMessage, "error");
+            }
+        } finally {
+            setChangeDeliveryDateLoading(false);
+        }
+    };
     if (loading) {
         return <Loading />;
     }
@@ -509,6 +548,23 @@ const PurchaseOrderDetail = () => {
                                         </div>
                                     </div>
 
+                                    {/* Estimated Time Arrival */}
+                                    {purchaseOrder.estimatedTimeArrival && (
+                                        <div className="grid grid-cols-[1.2fr_1fr] gap-4">
+                                            <div className="flex items-center space-x-2 min-w-0">
+                                                <Calendar className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                                                <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0 w-[115px]">Ngày dự kiến nhập:</label>
+                                                <span className="text-sm font-semibold text-gray-900 bg-gray-200 px-3 py-1 rounded border whitespace-nowrap flex-1">
+                                                    {purchaseOrder.estimatedTimeArrival ? new Date(purchaseOrder.estimatedTimeArrival).toLocaleDateString('vi-VN', {
+                                                        year: 'numeric',
+                                                        month: '2-digit',
+                                                        day: '2-digit'
+                                                    }) : 'Chưa có thông tin'}
+                                                </span>
+                                            </div>
+                                            <div></div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             {/* Product List Table */}
@@ -588,6 +644,16 @@ const PurchaseOrderDetail = () => {
                             )}
                             {/* Action Buttons at bottom of card */}
                             <div className="mt-6 flex justify-center space-x-4">
+                                {canEdit() && (
+                                    <Button
+                                        onClick={() => navigate(`/purchase-orders/update/${purchaseOrder.purchaseOderId}`)}
+                                        className="bg-blue-600 hover:bg-blue-700 text-white h-[38px] px-8"
+                                    >
+                                        <Edit className="h-4 w-4 mr-2" />
+                                        Cập nhật
+                                    </Button>
+                                )}
+
                                 {canSubmitDraft() && (
                                     <Button
                                         onClick={() => setShowSubmitDraftModal(true)}
@@ -663,6 +729,16 @@ const PurchaseOrderDetail = () => {
                                     >
                                         <ShoppingCart className="h-4 w-4 mr-2" />
                                         Xác nhận đã đặt hàng
+                                    </Button>
+                                )}
+
+                                {canChangeDeliveryDate() && (
+                                    <Button
+                                        onClick={() => setShowChangeDeliveryDateModal(true)}
+                                        className="bg-blue-600 hover:bg-blue-700 text-white h-[38px] px-8"
+                                    >
+                                        <Calendar className="h-4 w-4 mr-2" />
+                                        Thay đổi ngày dự kiến nhập
                                     </Button>
                                 )}
                             </div>
@@ -759,6 +835,17 @@ const PurchaseOrderDetail = () => {
                 onConfirm={handleConfirmOrdered}
                 purchaseOrder={purchaseOrder}
                 loading={confirmOrderedLoading}
+                mode="confirm"
+            />
+
+            {/* Change Delivery Date Modal */}
+            <ConfirmOrderedModal
+                isOpen={showChangeDeliveryDateModal}
+                onClose={() => setShowChangeDeliveryDateModal(false)}
+                onConfirm={handleChangeDeliveryDate}
+                purchaseOrder={purchaseOrder}
+                loading={changeDeliveryDateLoading}
+                mode="change"
             />
         </div>
     );
