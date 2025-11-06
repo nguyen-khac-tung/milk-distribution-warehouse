@@ -25,8 +25,8 @@ const CreateDeliverySlipModal = ({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-purple-100 rounded-full">
-              <Package className="h-6 w-6 text-purple-600" />
+            <div className="p-2 bg-indigo-100 rounded-full">
+              <Package className="h-6 w-6 text-indigo-600" />
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
@@ -83,14 +83,14 @@ const CreateDeliverySlipModal = ({
           </div>
 
           {/* Warning Message */}
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
+          <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6">
             <div className="flex items-start space-x-3">
-              <Package className="h-5 w-5 text-purple-600 mt-0.5 flex-shrink-0" />
+              <Package className="h-5 w-5 text-indigo-600 mt-0.5 flex-shrink-0" />
               <div>
-                <h4 className="font-medium text-purple-800 mb-1">
+                <h4 className="font-medium text-indigo-800 mb-1">
                   Xác nhận tạo phiếu xuất kho
                 </h4>
-                <p className="text-sm text-purple-700">
+                <p className="text-sm text-indigo-700">
                   Bạn có chắc chắn muốn tạo phiếu xuất kho cho đơn hàng này? Phiếu xuất kho sẽ được tạo và đơn hàng sẽ chuyển sang trạng thái "Đang lấy hàng".
                 </p>
               </div>
@@ -112,7 +112,7 @@ const CreateDeliverySlipModal = ({
               type="button"
               onClick={handleConfirm}
               disabled={loading}
-              className="h-[38px] px-8 bg-purple-500 hover:bg-purple-600 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50"
+              className="h-[38px] px-8 bg-indigo-500 hover:bg-indigo-600 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50"
             >
               {loading ? (
                 <div className="flex items-center gap-2">

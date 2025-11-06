@@ -2,19 +2,19 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { ArrowLeft, Printer, CheckCircle, Clock, AlertCircle, ChevronDown, ChevronUp, RefreshCw, Barcode, Package, Send, ShieldCheck } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
-import { getDetailGoodsIssueNote, submitGoodsIssueNote, approveGoodsIssueNote, rePickGoodsIssueNoteDetail } from '../../services/GoodsIssueNoteService';
+import { getDetailGoodsIssueNote, submitGoodsIssueNote, approveGoodsIssueNote, rePickGoodsIssueNoteDetail, rePickGoodsIssueNoteDetailList } from '../../services/GoodsIssueNoteService';
 import { getPickAllocationDetail, confirmPickAllocation } from '../../services/PickAllocationService';
-import { getGoodsIssueNoteStatusMeta, getIssueItemStatusMeta, getPickAllocationStatusMeta, ISSUE_ITEM_STATUS, GOODS_ISSUE_NOTE_STATUS } from './goodsIssueNoteStatus';
+import { getGoodsIssueNoteStatusMeta, getIssueItemStatusMeta, ISSUE_ITEM_STATUS, GOODS_ISSUE_NOTE_STATUS } from './goodsIssueNoteStatus';
 import { extractErrorMessage } from '../../utils/Validation';
 import ScanPalletModal from '../../components/GoodsIssueNoteComponents/ScanPalletModal';
 import { usePermissions } from '../../hooks/usePermissions';
 import RePickModal from '../../components/GoodsIssueNoteComponents/RePickModal';
+import RePickMultipleModal from '../../components/GoodsIssueNoteComponents/RePickMultipleModal';
 import PickAllocationsTableStaff from '../../components/GoodsIssueNoteComponents/PickAllocationsTableStaff';
 import PickAllocationsTableManager from '../../components/GoodsIssueNoteComponents/PickAllocationsTableManager';
-import BackCircleIcon from '../../components/Common/BackCircleIcon';
+import { ComponentIcon } from '../../components/IconComponent/Icon';
 
 const GoodsIssueNoteDetail = () => {
     const { id } = useParams();
@@ -64,7 +64,10 @@ const GoodsIssueNoteDetail = () => {
 
     // Modals for actions
     const [showRePickModal, setShowRePickModal] = useState(false);
+    const [showRePickMultipleModal, setShowRePickMultipleModal] = useState(false);
     const [selectedItemForRePick, setSelectedItemForRePick] = useState(null);
+    const [selectedDetailsForRePick, setSelectedDetailsForRePick] = useState([]); // Danh sách details đã chọn để lấy lại
+    const [rejectReasons, setRejectReasons] = useState({}); // Object với key là detailId, value là lý do
     const [rePickLoading, setRePickLoading] = useState(false);
     const [submitLoading, setSubmitLoading] = useState(false);
     const [approveLoading, setApproveLoading] = useState(false);
@@ -267,10 +270,22 @@ const GoodsIssueNoteDetail = () => {
 
         try {
             setRePickLoading(true);
-            const response = await rePickGoodsIssueNoteDetail({
-                goodsIssueNoteDetailId: selectedItemForRePick.goodsIssueNoteDetailId,
-                rejectionReason: rejectionReason || ''
-            });
+            let response;
+            if (isWarehouseManager) {
+                // Manager: use list endpoint (even for single item)
+                response = await rePickGoodsIssueNoteDetailList([
+                    {
+                        goodsIssueNoteDetailId: selectedItemForRePick.goodsIssueNoteDetailId,
+                        rejectionReason: rejectionReason || ''
+                    }
+                ]);
+            } else {
+                // Staff: single item endpoint
+                response = await rePickGoodsIssueNoteDetail({
+                    goodsIssueNoteDetailId: selectedItemForRePick.goodsIssueNoteDetailId,
+                    rejectionReason: rejectionReason || ''
+                });
+            }
 
             if (response && response.success) {
                 if (window.showToast) {
@@ -296,6 +311,107 @@ const GoodsIssueNoteDetail = () => {
         setSelectedItemForRePick(null);
     };
 
+    // Xử lý chọn/bỏ chọn detail để lấy lại (cho Manager - nhiều items)
+    const handleSelectDetailForRePick = (detail, checked) => {
+        if (checked) {
+            setSelectedDetailsForRePick(prev => [...prev, detail]);
+        } else {
+            setSelectedDetailsForRePick(prev => prev.filter(d => d.goodsIssueNoteDetailId !== detail.goodsIssueNoteDetailId));
+            // Xóa lý do khi bỏ chọn
+            setRejectReasons(prev => {
+                const newReasons = { ...prev };
+                delete newReasons[detail.goodsIssueNoteDetailId];
+                return newReasons;
+            });
+        }
+    };
+
+    // Kiểm tra xem detail có được chọn không
+    const isDetailSelectedForRePick = (detailId) => {
+        return selectedDetailsForRePick.some(d => d.goodsIssueNoteDetailId === detailId);
+    };
+
+    // Xử lý chọn tất cả details để lấy lại (chỉ áp dụng cho quản lý kho)
+    const handleSelectAllForRePick = (checked, items) => {
+        if (checked) {
+            // Chỉ chọn các details có status PendingApproval
+            const rejectableDetails = items.filter(d => d.status === ISSUE_ITEM_STATUS.PendingApproval);
+            setSelectedDetailsForRePick(rejectableDetails);
+            const initialReasons = {};
+            rejectableDetails.forEach(detail => {
+                initialReasons[detail.goodsIssueNoteDetailId] = "";
+            });
+            setRejectReasons(initialReasons);
+        } else {
+            setSelectedDetailsForRePick([]);
+            setRejectReasons({});
+        }
+    };
+
+    // Mở modal lấy lại với danh sách details đã chọn
+    const openRePickMultipleModal = () => {
+        if (selectedDetailsForRePick.length === 0) {
+            if (window.showToast) {
+                window.showToast("Vui lòng chọn ít nhất một mặt hàng để lấy lại", "warning");
+            }
+            return;
+        }
+        // Khởi tạo rejectReasons cho các details đã chọn
+        const initialReasons = {};
+        selectedDetailsForRePick.forEach(detail => {
+            initialReasons[detail.goodsIssueNoteDetailId] = "";
+        });
+        setRejectReasons(initialReasons);
+        setShowRePickMultipleModal(true);
+    };
+
+    // Xử lý lấy lại nhiều items
+    const handleConfirmRePickMultiple = async () => {
+        if (selectedDetailsForRePick.length === 0) return;
+
+        // Validate: Manager phải có lý do cho tất cả items
+        const missingReasons = selectedDetailsForRePick.filter(detail =>
+            !rejectReasons[detail.goodsIssueNoteDetailId] ||
+            rejectReasons[detail.goodsIssueNoteDetailId].trim() === ""
+        );
+
+        if (missingReasons.length > 0) {
+            if (window.showToast) {
+                window.showToast("Quản lý kho phải cung cấp lý do cho tất cả mặt hàng lấy lại", "error");
+            }
+            return;
+        }
+
+        try {
+            setRePickLoading(true);
+            // Tạo danh sách re-pick từ selectedDetailsForRePick và rejectReasons
+            const rePickList = selectedDetailsForRePick.map(detail => ({
+                goodsIssueNoteDetailId: detail.goodsIssueNoteDetailId,
+                rejectionReason: rejectReasons[detail.goodsIssueNoteDetailId] || ""
+            }));
+
+            const response = await rePickGoodsIssueNoteDetailList(rePickList);
+
+            if (response && response.success) {
+                if (window.showToast) {
+                    window.showToast('Yêu cầu lấy lại thành công!', 'success');
+                }
+                setShowRePickMultipleModal(false);
+                setSelectedDetailsForRePick([]);
+                setRejectReasons({});
+                await fetchGoodsIssueNoteDetail();
+            }
+        } catch (error) {
+            console.error('Error re-picking multiple:', error);
+            const errorMessage = extractErrorMessage(error);
+            if (window.showToast) {
+                window.showToast(errorMessage || 'Có lỗi xảy ra khi lấy lại hàng', 'error');
+            }
+        } finally {
+            setRePickLoading(false);
+        }
+    };
+
     // Render status group card
     const renderStatusGroupCard = (statusCode, title, icon, iconBgColor, items) => {
         if (!items || items.length === 0) return null;
@@ -309,14 +425,14 @@ const GoodsIssueNoteDetail = () => {
         };
 
         return (
-            <Card key={statusCode} className="bg-white border border-gray-200 shadow-sm">
+            <Card key={statusCode} className="w-full bg-white border border-gray-200 shadow-sm">
                 <div className="p-6">
                     {/* Header group (clickable để thu gọn/mở rộng) */}
-                    <div
-                        className="flex items-center justify-between cursor-pointer select-none hover:bg-gray-50 rounded-lg px-3 py-2 transition"
-                        onClick={toggleGroupExpanded}
-                    >
-                        <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-between">
+                        <div
+                            className="flex items-center gap-3 cursor-pointer select-none hover:bg-gray-50 rounded-lg px-3 py-2 transition flex-1"
+                            onClick={toggleGroupExpanded}
+                        >
                             <div className={`p-2 ${iconBgColor} rounded-lg flex items-center justify-center`}>
                                 {icon}
                             </div>
@@ -324,24 +440,53 @@ const GoodsIssueNoteDetail = () => {
                                 <h2 className="text-lg font-semibold text-gray-900 leading-none">{title}</h2>
                                 <span className="text-sm text-gray-500 leading-none">({items.length} sản phẩm)</span>
                             </div>
+                            <div className="text-gray-500 ml-auto">
+                                {isGroupExpanded ? (
+                                    <ChevronUp className="w-5 h-5" />
+                                ) : (
+                                    <ChevronDown className="w-5 h-5" />
+                                )}
+                            </div>
                         </div>
-                        <div className="text-gray-500">
-                            {isGroupExpanded ? (
-                                <ChevronUp className="w-5 h-5" />
-                            ) : (
-                                <ChevronDown className="w-5 h-5" />
-                            )}
-                        </div>
+                        {/* Nút "Lấy lại" nhiều - chỉ hiển thị cho quản lý kho và nhóm "Chờ duyệt" */}
+                        {isWarehouseManager && statusCode === ISSUE_ITEM_STATUS.PendingApproval && (
+                            <div className="flex items-center gap-2 ml-4" onClick={(e) => e.stopPropagation()}>
+                                <Button
+                                    onClick={openRePickMultipleModal}
+                                    className="h-[38px] px-4 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={selectedDetailsForRePick.length === 0}
+                                >
+                                    <RefreshCw className="w-4 h-4 mr-2" />
+                                    Lấy lại ({selectedDetailsForRePick.length})
+                                </Button>
+                            </div>
+                        )}
                     </div>
 
                     {/* Nội dung nhóm (ẩn/hiện theo state) */}
                     {isGroupExpanded && (
                         <div className="mt-4 space-y-4">
+                            {/* Checkbox "Chọn tất cả" - chỉ cho Manager và nhóm "Chờ duyệt" */}
+                            {isWarehouseManager && statusCode === ISSUE_ITEM_STATUS.PendingApproval && items.length > 0 && (
+                                <div className="flex items-center gap-2 mb-2 px-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={items.filter(d => d.status === ISSUE_ITEM_STATUS.PendingApproval).length > 0 &&
+                                            selectedDetailsForRePick.length === items.filter(d => d.status === ISSUE_ITEM_STATUS.PendingApproval).length}
+                                        onChange={(e) => handleSelectAllForRePick(e.target.checked, items)}
+                                        className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                                    />
+                                    <label className="text-sm text-gray-700 cursor-pointer">
+                                        Chọn tất cả ({items.filter(d => d.status === ISSUE_ITEM_STATUS.PendingApproval).length} mặt hàng)
+                                    </label>
+                                </div>
+                            )}
                             {items.map((detail, index) => {
                                 const detailStatusInfo = getIssueItemStatusMeta(detail.status);
                                 const progress = calculateItemProgress(detail);
                                 const globalIndex = goodsIssueNote.goodsIssueNoteDetails.indexOf(detail);
                                 const isExpanded = expandedItems[globalIndex];
+                                const isSelected = isDetailSelectedForRePick(detail.goodsIssueNoteDetailId);
 
                                 return (
                                     <div key={detail.goodsIssueNoteDetailId} className="border border-gray-300 rounded-lg overflow-hidden bg-white">
@@ -352,6 +497,17 @@ const GoodsIssueNoteDetail = () => {
                                         >
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-4">
+                                                    {/* Checkbox - chỉ cho Manager và nhóm "Chờ duyệt" */}
+                                                    {isWarehouseManager && statusCode === ISSUE_ITEM_STATUS.PendingApproval && (
+                                                        <div onClick={(e) => e.stopPropagation()}>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={isSelected}
+                                                                onChange={(e) => handleSelectDetailForRePick(detail, e.target.checked)}
+                                                                className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                                                            />
+                                                        </div>
+                                                    )}
                                                     <div className="p-2 bg-white rounded-lg">
                                                         {isExpanded ? (
                                                             <ChevronUp className="h-5 w-5 text-blue-600" />
@@ -416,7 +572,7 @@ const GoodsIssueNoteDetail = () => {
                                         {isExpanded && (
                                             <div className="p-6 bg-gray-50 border-t border-gray-200">
                                                 {/* Lý do từ chối/yêu cầu lấy lại */}
-                                                {detail.rejectionReason && (
+                                                {/* {detail.rejectionReason && (
                                                     <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
                                                         <div className="flex items-start gap-3">
                                                             <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
@@ -429,6 +585,15 @@ const GoodsIssueNoteDetail = () => {
                                                                 </div>
                                                             </div>
                                                         </div>
+                                                    </div>
+                                                )} */}
+                                                {detail.rejectionReason && (
+                                                    <div className="flex items-center gap-2 text-red-600 pb-2">
+                                                        <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                                                        <span>
+                                                            <span className="font-semibold">Lý do lấy lại: </span>
+                                                            <span className="italic">{detail.rejectionReason}</span>
+                                                        </span>
                                                     </div>
                                                 )}
 
@@ -473,8 +638,7 @@ const GoodsIssueNoteDetail = () => {
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">Lỗi</h3>
                         <p className="text-gray-600 mb-4">{error || 'Không tìm thấy phiếu xuất kho'}</p>
                         <Button onClick={() => navigate('/sales-orders')} variant="outline">
-                            <ArrowLeft className="h-4 w-4 mr-2" />
-                            Quay lại
+                            <ComponentIcon name="arrowBackCircleOutline" size={28} />
                         </Button>
                     </CardContent>
                 </Card>
@@ -488,11 +652,11 @@ const GoodsIssueNoteDetail = () => {
     return (
         <div className="min-h-screen">
             {/* Header */}
-            {/* <p className="text-gray-600 text-sm mt-1">
+            <p className="text-gray-600 text-sm mt-1">
                 Mã phiếu: {goodsIssueNote.goodsIssueNoteId}
-            </p> */}
-            <div className="bg-white border-b border-gray-200">
-                <div className="max-w-7xl mx-auto px-6 py-4">
+            </p>
+            <div>
+                <div className="max-w-7xl mx-auto px-6 py-4 bg-white border border-gray-200 rounded-lg shadow-sm">
                     <div className="flex items-center justify-between">
                         {/* Bên trái: Tiêu đề và nút quay lại */}
                         <div className="flex items-center gap-4">
@@ -502,14 +666,12 @@ const GoodsIssueNoteDetail = () => {
                                 onClick={() => navigate('/sales-orders')}
                                 className="text-slate-600 hover:bg-slate-50"
                             >
-                                <BackCircleIcon size={30} className="mr-2" />
+                                <ComponentIcon name="arrowBackCircleOutline" size={28} />
                                 {/* Quay lại */}
                             </Button>
 
                             <div className="flex items-center gap-3"> {/* Đã thay đổi items-baseline thành items-center */}
-                                <p className="text-2xl font-bold text-gray-900 !m-0">
-                                    PHIẾU XUẤT KHO
-                                </p>
+                                <h1 className="text-2xl font-bold text-gray-900 m-0">PHIẾU XUẤT KHO</h1>
                                 <span
                                     className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-sm font-medium ${statusInfo.color}`}
                                 >
@@ -545,7 +707,7 @@ const GoodsIssueNoteDetail = () => {
             </div>
 
             {/* Main Content */}
-            <div className="max-w-7xl mx-auto px-6 py-6">
+            <div className="max-w-7xl mx-auto py-6">
                 <div className="space-y-6">
                     {/* Thông tin chung */}
                     <Card className="bg-white border border-gray-200 shadow-sm">
@@ -752,6 +914,21 @@ const GoodsIssueNoteDetail = () => {
                 onClose={handleCloseRePickModal}
                 onConfirm={handleConfirmRePick}
                 itemDetail={selectedItemForRePick}
+                loading={rePickLoading}
+            />
+
+            {/* RePick Multiple Modal */}
+            <RePickMultipleModal
+                isOpen={showRePickMultipleModal}
+                onCancel={() => {
+                    setShowRePickMultipleModal(false);
+                    setSelectedDetailsForRePick([]);
+                    setRejectReasons({});
+                }}
+                onConfirm={handleConfirmRePickMultiple}
+                selectedDetails={selectedDetailsForRePick}
+                rejectReasons={rejectReasons}
+                setRejectReasons={setRejectReasons}
                 loading={rePickLoading}
             />
         </div>

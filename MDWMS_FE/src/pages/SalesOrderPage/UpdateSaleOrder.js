@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { Card } from "../../components/ui/card"
 import { Button } from "../../components/ui/button"
@@ -7,8 +7,8 @@ import { Label } from "../../components/ui/label"
 import { Textarea } from "../../components/ui/textarea"
 import FloatingDropdown from "../../components/Common/FloatingDropdown"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
-import { Plus, Trash2, ArrowLeft, Save, X, CheckCircle, BarChart3, ArrowRightLeft } from "lucide-react"
-import { updateSaleOrder, getSalesOrderDetail } from "../../services/SalesOrderService"
+import { Plus, Trash2, ArrowLeft, Save, X, CheckCircle, BarChart3, ArrowRightLeft, Calendar } from "lucide-react"
+import { updateSaleOrder, getSalesOrderDetail, updateSaleOrderStatusPendingApproval } from "../../services/SalesOrderService"
 import { getRetailersDropdown } from "../../services/RetailerService"
 import { getSuppliersDropdown } from "../../services/SupplierService"
 import Loading from "../../components/Common/Loading"
@@ -17,6 +17,7 @@ import { getGoodsInventoryBySupplierId } from "../../services/GoodService"
 
 function UpdateSaleOrder() {
     const navigate = useNavigate();
+    const dateInputRef = useRef(null);
     const { id } = useParams();
     const [loading, setLoading] = useState(true);
     const [dataLoaded, setDataLoaded] = useState(false);
@@ -39,6 +40,7 @@ function UpdateSaleOrder() {
     ])
     const [fieldErrors, setFieldErrors] = useState({}) // Lỗi theo từng trường
     const [itemsExceedingStock, setItemsExceedingStock] = useState({}) // Map itemId -> { availableQuantity, requestedQuantity }
+    const [submitLoading, setSubmitLoading] = useState(false)
 
     // Load all data in parallel for faster loading
     useEffect(() => {
@@ -705,6 +707,98 @@ function UpdateSaleOrder() {
         }
     }
 
+    const handleSubmitForApproval = async (e) => {
+        e.preventDefault();
+
+        // Reuse the same validations as handleSubmit
+        setFieldErrors({});
+        const newFieldErrors = {};
+
+        items.forEach((item, index) => {
+            if (!item.supplierName) newFieldErrors[`${item.id}-supplierName`] = "Vui lòng chọn nhà cung cấp";
+            if (!item.goodsName) newFieldErrors[`${item.id}-goodsName`] = "Vui lòng chọn tên hàng hóa";
+            if (!item.goodsPackingId) newFieldErrors[`${item.id}-goodsPackingId`] = "Vui lòng chọn đóng gói";
+            if (!item.quantity || parseInt(item.quantity) <= 0) newFieldErrors[`${item.id}-quantity`] = "Vui lòng nhập số thùng lớn hơn 0";
+        });
+
+        if (!formData.retailerName) {
+            window.showToast("Vui lòng chọn nhà bán lẻ", "error");
+            if (Object.keys(newFieldErrors).length > 0) setFieldErrors(newFieldErrors);
+            return;
+        }
+
+        if (!formData.estimatedTimeDeparture) {
+            window.showToast("Vui lòng chọn ngày dự kiến giao hàng", "error");
+            if (Object.keys(newFieldErrors).length > 0) setFieldErrors(newFieldErrors);
+            return;
+        }
+
+        if (Object.keys(newFieldErrors).length > 0) {
+            setFieldErrors(newFieldErrors);
+            return;
+        }
+
+        const selectedRetailer = retailers.find(retailer => retailer.retailerName === formData.retailerName);
+        if (!selectedRetailer) {
+            window.showToast("Không tìm thấy nhà bán lẻ", "error");
+            return;
+        }
+
+        const validItems = items.filter(item => item.supplierName && item.goodsName && item.quantity && item.goodsPackingId);
+        if (validItems.length === 0) {
+            window.showToast("Vui lòng thêm ít nhất một hàng hóa với đầy đủ thông tin", "error");
+            return;
+        }
+
+        try {
+            setSubmitLoading(true);
+
+            const itemsWithIds = validItems.map(item => {
+                const selectedSupplier = suppliers.find(s => s.companyName === item.supplierName);
+                if (!selectedSupplier) return null;
+
+                const goods = goodsBySupplier[selectedSupplier.supplierId] || [];
+                const selectedGood = goods.find(g => g.goodsName === item.goodsName);
+                if (!selectedGood) return null;
+
+                return {
+                    supplierId: parseInt(selectedSupplier.supplierId),
+                    goodsId: parseInt(selectedGood.goodsId),
+                    goodsPackingId: parseInt(item.goodsPackingId),
+                    packageQuantity: parseInt(item.quantity),
+                    salesOrderDetailId: item.salesOrderDetailId || 0
+                };
+            }).filter(item => item !== null);
+
+            if (itemsWithIds.length === 0) {
+                window.showToast("Không tìm thấy hàng hóa hợp lệ!", "error");
+                setSubmitLoading(false);
+                return;
+            }
+
+            const submitData = {
+                salesOrderId: id,
+                retailerId: parseInt(selectedRetailer.retailerId),
+                estimatedTimeDeparture: formData.estimatedTimeDeparture,
+                note: formData.note || "",
+                salesOrderItemDetailUpdateDtos: itemsWithIds
+            };
+
+            // Cập nhật đơn hàng trước
+            await updateSaleOrder(submitData);
+            // Sau đó gửi phê duyệt
+            await updateSaleOrderStatusPendingApproval({ salesOrderId: id });
+
+            window.showToast("Cập nhật và gửi phê duyệt đơn bán hàng thành công!", "success");
+            navigate("/sales-orders");
+        } catch (error) {
+            const message = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật và gửi phê duyệt!");
+            if (window.showToast) window.showToast(message, "error");
+        } finally {
+            setSubmitLoading(false);
+        }
+    }
+
     if (loading || !dataLoaded) {
         return <Loading />;
     }
@@ -755,15 +849,29 @@ function UpdateSaleOrder() {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="estimatedTimeDeparture" className="text-slate-600 font-medium">
+                                        <Label htmlFor="estimatedTimeDeparture" className="text-sm font-medium text-slate-600">
                                             Ngày Dự Kiến Giao <span className="text-red-500">*</span>
                                         </Label>
-                                        <Input
-                                            type="date"
-                                            value={formData.estimatedTimeDeparture}
-                                            onChange={(e) => handleInputChange("estimatedTimeDeparture", e.target.value)}
-                                            className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                                        />
+                                        {/* Giới hạn chiều rộng container */}
+                                        <div className="relative w-[180px]">
+                                            <Input
+                                                id="estimatedTimeDeparture"
+                                                type="date"
+                                                value={formData.estimatedTimeDeparture}
+                                                onChange={(e) => handleInputChange("estimatedTimeDeparture", e.target.value)}
+                                                className="date-picker-input h-[37px] pr-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg w-full"
+                                                ref={dateInputRef}
+                                            />
+                                            <Calendar
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-600 cursor-pointer"
+                                                onClick={() => {
+                                                    const el = dateInputRef.current;
+                                                    if (!el) return;
+                                                    if (typeof el.showPicker === 'function') el.showPicker();
+                                                    else { el.focus(); el.click(); }
+                                                }}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
 
@@ -1049,6 +1157,14 @@ function UpdateSaleOrder() {
                                     className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
                                 >
                                     Cập Nhật Đơn Bán Hàng
+                                </Button>
+                                <Button
+                                    type="button"
+                                    onClick={handleSubmitForApproval}
+                                    disabled={submitLoading}
+                                    className="h-[38px] px-6 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {submitLoading ? "Đang xử lý..." : "Gửi Phê Duyệt"}
                                 </Button>
                             </div>
                         </div>
