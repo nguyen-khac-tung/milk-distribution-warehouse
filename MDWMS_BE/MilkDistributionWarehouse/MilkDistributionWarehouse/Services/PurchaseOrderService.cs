@@ -78,7 +78,7 @@ namespace MilkDistributionWarehouse.Services
                         purchaseOrderQuery = purchaseOrderQuery
                             .Where(pod => pod.AssignTo == userId
                             && (pod.Status != null && excludedStatuses.Contains((int)pod.Status))
-                            && (pod.Status == PurchaseOrderStatus.Ordered && pod.ArrivalConfirmedBy != null));
+                            && (pod.EstimatedTimeArrival != null && pod.ArrivalConfirmedBy != null));
                         break;
                     default:
                         break;
@@ -145,7 +145,8 @@ namespace MilkDistributionWarehouse.Services
                           PurchaseOrderStatus.AssignedForReceiving,
                           PurchaseOrderStatus.Receiving,
                           PurchaseOrderStatus.Inspected,
-                          PurchaseOrderStatus.Completed
+                          PurchaseOrderStatus.Completed,
+
                         };
             return await GetPurchaseOrdersAsync<PurchaseOrderDtoWarehouseStaff>(request, userId, RoleNames.WarehouseStaff, excludedStatus);
         }
@@ -362,7 +363,7 @@ namespace MilkDistributionWarehouse.Services
                         throw new Exception("Chỉ được chuyển trạng thái đã đặt đơn khi đơn mua hàng ở trạng thái Đã duyệt");
 
                     var today = DateTime.Now;
-                    if (purchaseOrderOrderedDto.EstimatedTimeArrival <= today)
+                    if (purchaseOrderOrderedDto.EstimatedTimeArrival < today)
                         throw new Exception("Ngày dự kiến giao hàng phải là ngày trong tương lai.");
 
                     purchaseOrder.Status = PurchaseOrderStatus.Ordered;
@@ -375,8 +376,11 @@ namespace MilkDistributionWarehouse.Services
                     if(purchaseOrder.EstimatedTimeArrival == null) 
                         throw new Exception("Đơn hàng chưa có ngày dự kiến giao hàng.");
 
+                    if(purchaseOrder.ArrivalConfirmedBy != null) 
+                        throw new Exception("Đơn hàng đã giao đến. Không thể thay đổi ngày dự kiến giao hàng.");
+
                      var today = DateTime.Now;
-                    if (orderOrderedUpdateDto.EstimatedTimeArrival <= today)
+                    if (orderOrderedUpdateDto.EstimatedTimeArrival < today)
                         throw new Exception("Ngày dự kiến giao hàng phải là ngày trong tương lai.");
 
                     if (!string.IsNullOrEmpty(orderOrderedUpdateDto.DeliveryDateChangeReason))
@@ -392,8 +396,8 @@ namespace MilkDistributionWarehouse.Services
                     var estimatedTimeArrival = purchaseOrder.EstimatedTimeArrival;
                     var today = DateTime.Now;
                     
-                    if(estimatedTimeArrival != null && estimatedTimeArrival > today)
-                        throw new Exception("Không thể xác nhận đơn hàng đã đến trước ngày dự kiến giao hàng.");
+                    //if(estimatedTimeArrival != null && estimatedTimeArrival > today)
+                    //    throw new Exception("Không thể xác nhận đơn hàng đã đến trước ngày dự kiến giao hàng.");
 
                     purchaseOrder.Status = PurchaseOrderStatus.GoodsReceived;
                     purchaseOrder.ArrivalConfirmedBy = userId;

@@ -133,12 +133,12 @@ namespace MilkDistributionWarehouse.Controllers
 
         [HttpPut("ChangeDeliveryDate")]
         [Authorize(Roles = "Sales Representative")]
-        public async Task<IActionResult> ChangeDeliveryDate([FromBody] PurchaseOrderOrderedDto update)
+        public async Task<IActionResult> ChangeDeliveryDate([FromBody] PurchaseOrderOrderedUpdateDto update)
         {
             var (msg, purchaseOrderUpdate) = await _purchaseOrderService.UpdateStatusPurchaseOrder(update, User.GetUserId());
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<PurchaseOrderOrderedDto>.ToResultOk(purchaseOrderUpdate);
+            return ApiResponse<PurchaseOrderOrderedUpdateDto>.ToResultOk(purchaseOrderUpdate);
         }
 
         [HttpPut("GoodsReceived")]
