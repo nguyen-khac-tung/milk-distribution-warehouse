@@ -91,7 +91,8 @@ const PurchaseOrderDetail = () => {
             7: 'bg-orange-100 text-orange-800', // Receiving
             8: 'bg-indigo-100 text-indigo-800', // Inspected
             9: 'bg-emerald-100 text-emerald-800', // Completed
-            10: 'bg-green-100 text-green-800' // Ordered
+            10: 'bg-green-100 text-green-800', // Ordered
+            11: 'bg-cyan-100 text-cyan-800' // AwaitingArrival
         };
         return statusColors[status] || 'bg-gray-100 text-gray-800';
     };
@@ -107,7 +108,8 @@ const PurchaseOrderDetail = () => {
             7: <Package className="h-3 w-3" />, // Receiving
             8: <CheckSquare className="h-3 w-3" />, // Inspected
             9: <CheckCircle className="h-3 w-3" />, // Completed
-            10: <ShoppingCart className="h-3 w-3" /> // Ordered
+            10: <ShoppingCart className="h-3 w-3" />, // Ordered
+            11: <Clock className="h-3 w-3" /> // AwaitingArrival
         };
         return statusIcons[status] || <Clock className="h-3 w-3" />;
     };
@@ -123,7 +125,8 @@ const PurchaseOrderDetail = () => {
             7: 'Đang tiếp nhận',
             8: 'Đã kiểm nhập',
             9: 'Đã nhập kho',
-            10: 'Đã đặt hàng'
+            10: 'Đã đặt hàng',
+            11: 'Chờ đến'
         };
         return statusTexts[status] || 'Không xác định';
     };

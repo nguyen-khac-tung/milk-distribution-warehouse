@@ -253,7 +253,8 @@ export const PURCHASE_ORDER_STATUS = {
     Receiving: 7,
     Inspected: 8,
     Completed: 9,
-    Ordered: 10
+    Ordered: 10,
+    AwaitingArrival: 11
 };
 
 /**
