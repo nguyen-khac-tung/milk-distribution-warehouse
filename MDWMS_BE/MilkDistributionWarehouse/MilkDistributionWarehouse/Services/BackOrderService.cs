@@ -43,17 +43,32 @@ namespace MilkDistributionWarehouse.Services
             if (backOrders == null)
                 return ("Không có back order nào.".ToMessageForUser(), new PageResult<BackOrderDto.BackOrderResponseDto>());
 
-            // Apply search filter before projection to reduce memory usage
+            // Apply search filter BEFORE projection to avoid StatusDinamic translation error
             if (!string.IsNullOrWhiteSpace(request.Search))
             {
+                var searchTerm = request.Search.Trim();
                 backOrders = backOrders.Where(bo =>
-                    bo.Retailer.RetailerName.Contains(request.Search) ||
-                    bo.Goods.GoodsName.Contains(request.Search));
+                    (bo.Retailer != null && bo.Retailer.RetailerName.Contains(searchTerm)) ||
+                    (bo.Goods != null && bo.Goods.GoodsName.Contains(searchTerm)) ||
+                    (bo.Goods != null && bo.Goods.UnitMeasure != null && bo.Goods.UnitMeasure.Name.Contains(searchTerm)) ||
+                    (bo.CreatedByNavigation != null && bo.CreatedByNavigation.FullName.Contains(searchTerm)));
             }
 
+            // Apply filters if any (excluding search since we handled it above)
+            var requestWithoutSearch = new PagedRequest
+            {
+                PageNumber = request.PageNumber,
+                PageSize = request.PageSize,
+                SortField = request.SortField,
+                SortAscending = request.SortAscending,
+                Filters = request.Filters,
+                Search = null // Set to null to prevent double search filtering
+            };
+
+            // Project to DTO and apply pagination
             var backOrderDtos = await backOrders
                 .ProjectTo<BackOrderDto.BackOrderResponseDto>(_mapper.ConfigurationProvider)
-                .ToPagedResultAsync(request);
+                .ToPagedResultAsync(requestWithoutSearch);
 
             // Optimize by getting only distinct pairs
             var pairs = backOrderDtos.Items
@@ -67,7 +82,7 @@ namespace MilkDistributionWarehouse.Services
             foreach (var item in backOrderDtos.Items)
             {
                 item.StatusDinamic = availableDict.TryGetValue((item.GoodsId, item.GoodsPackingId), out var qty)
-                    ? (qty > item.PackageQuantity ? BackOrderStatus.Available : BackOrderStatus.Unavailable)
+                    ? (qty >= item.PackageQuantity ? BackOrderStatus.Available : BackOrderStatus.Unavailable)
                     : BackOrderStatus.Unavailable;
             }
 
@@ -83,7 +98,7 @@ namespace MilkDistributionWarehouse.Services
             var response = _mapper.Map<BackOrderDto.BackOrderResponseDto>(backOrder);
 
             var availableQuantity = await _backOrderRepository.GetAvailableQuantity(backOrder.GoodsId, backOrder.GoodsPackingId);
-            response.StatusDinamic = availableQuantity > backOrder.PackageQuantity
+            response.StatusDinamic = availableQuantity >= backOrder.PackageQuantity
                 ? BackOrderStatus.Available
                 : BackOrderStatus.Unavailable;
 
@@ -118,7 +133,7 @@ namespace MilkDistributionWarehouse.Services
             response.PreviousPackageQuantity = previousQty;
 
             var availableQuantity = await _backOrderRepository.GetAvailableQuantity(createdBackOrder.GoodsId, createdBackOrder.GoodsPackingId);
-            response.StatusDinamic = availableQuantity > createdBackOrder.PackageQuantity
+            response.StatusDinamic = availableQuantity >= createdBackOrder.PackageQuantity
                 ? BackOrderStatus.Available
                 : BackOrderStatus.Unavailable;
 
@@ -148,7 +163,7 @@ namespace MilkDistributionWarehouse.Services
             var response = _mapper.Map<BackOrderDto.BackOrderResponseDto>(updateResponse);
 
             var availableQuantity = await _backOrderRepository.GetAvailableQuantity(backOrder.GoodsId, backOrder.GoodsPackingId);
-            response.StatusDinamic = availableQuantity > backOrder.PackageQuantity
+            response.StatusDinamic = availableQuantity >= backOrder.PackageQuantity
                 ? BackOrderStatus.Available
                 : BackOrderStatus.Unavailable;
 
