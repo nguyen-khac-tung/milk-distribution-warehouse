@@ -7,11 +7,13 @@ import { Textarea } from "../../components/ui/textarea"
 import { Label } from "../../components/ui/label"
 import FloatingDropdown from "../../components/Common/FloatingDropdown"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
-import { Plus, Trash2, ArrowLeft, Save, X } from "lucide-react"
+import { Plus, Trash2, Warehouse } from "lucide-react"
 import { createPurchaseOrder, getGoodsDropDownBySupplierId, getGoodsPackingByGoodsId, submitPurchaseOrder } from "../../services/PurchaseOrderService"
 import { extractErrorMessage } from '../../utils/Validation';
 import { getSuppliersDropdown } from "../../services/SupplierService"
+import { getAvailableLocationQuantity } from "../../services/AreaServices"
 import { ComponentIcon } from '../../components/IconComponent/Icon';
+import WarehouseLocationModal from "../../components/PurchaseOrderComponents/WarehouseLocationModal"
 
 export default function CreatePurchaseOrder({
     isEditMode = false,
@@ -25,6 +27,9 @@ export default function CreatePurchaseOrder({
     const [goodsLoading, setGoodsLoading] = useState(false);
     const [packingLoading, setPackingLoading] = useState(false);
     const [submitLoading, setSubmitLoading] = useState(false);
+    const [showLocationModal, setShowLocationModal] = useState(false);
+    const [locationData, setLocationData] = useState([]);
+    const [locationLoading, setLocationLoading] = useState(false);
     const [formData, setFormData] = useState({
         supplierName: initialData?.supplierName || "",
         note: initialData?.note || ""
@@ -245,6 +250,21 @@ export default function CreatePurchaseOrder({
             }));
         } finally {
             setPackingLoading(false);
+        }
+    };
+
+    const handleOpenLocationModal = async () => {
+        setShowLocationModal(true);
+        setLocationLoading(true);
+        try {
+            const data = await getAvailableLocationQuantity();
+            setLocationData(data || []);
+        } catch (error) {
+            console.error("Error loading location data:", error);
+            setLocationData([]);
+            window.showToast("Không thể tải thông tin vị trí kho", "error");
+        } finally {
+            setLocationLoading(false);
         }
     };
     // Create options for dropdowns
@@ -544,6 +564,14 @@ export default function CreatePurchaseOrder({
                             {isEditMode ? "Cập Nhật Đơn Mua Hàng" : "Tạo Đơn Mua Hàng Mới"}
                         </h1>
                     </div>
+                    <button
+                        type="button"
+                        onClick={handleOpenLocationModal}
+                        className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors font-medium text-sm shadow-md hover:shadow-lg"
+                    >
+                        <Warehouse className="h-4 w-4" />
+                        <span>Xem vị trí kho</span>
+                    </button>
                 </div>
             </div>
 
@@ -672,7 +700,7 @@ export default function CreatePurchaseOrder({
                                                             placeholder="0"
                                                             value={item.quantity}
                                                             onChange={(e) => updateItem(item.id, "quantity", e.target.value)}
-                                                            className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${fieldErrors[`${item.id}-quantity`] ? 'border-red-500' : ''}`}
+                                                            className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg w-full ${fieldErrors[`${item.id}-quantity`] ? 'border-red-500' : ''}`}
                                                         />
                                                         {fieldErrors[`${item.id}-quantity`] && (
                                                             <p className="text-red-500 text-xs mt-1">{fieldErrors[`${item.id}-quantity`]}</p>
@@ -776,6 +804,14 @@ export default function CreatePurchaseOrder({
                     </div>
                 </Card>
             </div>
+
+            {/* Location Modal */}
+            <WarehouseLocationModal
+                isOpen={showLocationModal}
+                onClose={() => setShowLocationModal(false)}
+                locationData={locationData}
+                loading={locationLoading}
+            />
         </div>
     )
 }
