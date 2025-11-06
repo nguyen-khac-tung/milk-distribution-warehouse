@@ -123,6 +123,11 @@ namespace MilkDistributionWarehouse.Models.DTOs
     {
     }
 
+    public class PurchaseOrderRejectDto : PurchaseOrderUpdateStatusDto
+    {
+        [Required(ErrorMessage = "Lý do từ chối không được bỏ trống.")]
+        public string? RejectionReason { get; set; }
+    }
     public class PurchaseOrderOrderedDto : PurchaseOrderUpdateStatusDto
     {
         [Required(ErrorMessage = "Ngày dự kiến đến không được bỏ trống.")]
@@ -134,12 +139,6 @@ namespace MilkDistributionWarehouse.Models.DTOs
         [Required(ErrorMessage = "Ngày dự kiến đến không được bỏ trống.")]
         public DateTime EstimatedTimeArrival { get; set; }
         public string DeliveryDateChangeReason { get; set; }
-    }
-
-    public class PurchaseOrderRejectDto : PurchaseOrderUpdateStatusDto
-    {
-        [Required(ErrorMessage = "Lý do từ chối không được bỏ trống.")]
-        public string? RejectionReason { get; set; }
     }
 
     public class PurchaseOrderGoodsReceivedDto : PurchaseOrderUpdateStatusDto
