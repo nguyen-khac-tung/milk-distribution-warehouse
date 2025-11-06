@@ -145,9 +145,6 @@ const ConfirmOrderedModal = ({
                             className={`w-full ${error ? 'border-red-500' : ''}`}
                             disabled={loading}
                         />
-                        <p className="text-xs text-gray-500 mt-1">
-                            Giờ sẽ tự động lấy từ giờ hiện tại
-                        </p>
                         {error && (
                             <p className="text-sm text-red-600 mt-1">{error}</p>
                         )}
