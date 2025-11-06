@@ -537,13 +537,13 @@ const SalesOrderDetail = () => {
                                 )}
                                 {(isWarehouseManager || isWarehouseStaff) && hasGoodsIssueNote && (
                                     <Button
-                                    onClick={() => navigate(`/goods-issue-note-detail/${salesOrder.salesOrderId}`)}
-                                    className="h-[38px] px-8 bg-purple-600 hover:bg-purple-700 text-white"
-                                  >
-                                    <Eye className="h-4 w-4 mr-2" />
-                                    Xem phiếu xuất kho
-                                  </Button>                                  
-                                 )}
+                                        onClick={() => navigate(`/goods-issue-note-detail/${salesOrder.salesOrderId}`)}
+                                        className="h-[38px] px-8 bg-green-700 hover:bg-green-900 text-white"
+                                    >
+                                        <Eye className="h-4 w-4 mr-2" />
+                                        Xem phiếu xuất kho
+                                    </Button>
+                                )}
 
                             </div>
 

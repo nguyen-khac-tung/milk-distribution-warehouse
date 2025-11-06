@@ -14,6 +14,8 @@ import { getSuppliersDropdown } from "../../services/SupplierService"
 import Loading from "../../components/Common/Loading"
 import { extractErrorMessage } from "../../utils/Validation"
 import { getGoodsInventoryBySupplierId } from "../../services/GoodService"
+// 1. IMPORT MODAL TẠO ĐƠN BỔ SUNG
+import CreateBackOrderModal from "../BackOrderPage/CreateBackOrderModal"
 
 function UpdateSaleOrder() {
     const navigate = useNavigate();
@@ -41,6 +43,12 @@ function UpdateSaleOrder() {
     const [fieldErrors, setFieldErrors] = useState({}) // Lỗi theo từng trường
     const [itemsExceedingStock, setItemsExceedingStock] = useState({}) // Map itemId -> { availableQuantity, requestedQuantity }
     const [submitLoading, setSubmitLoading] = useState(false)
+
+    // 2. THÊM STATE CHO MODAL BACKORDER
+    const [showBackOrderModal, setShowBackOrderModal] = useState(false)
+    const [insufficientItems, setInsufficientItems] = useState([])
+
+    // ... (Phần loadAllData useEffect và các hàm addItem, removeItem, updateItem, handleInputChange giữ nguyên)
 
     // Load all data in parallel for faster loading
     useEffect(() => {
@@ -81,7 +89,7 @@ function UpdateSaleOrder() {
                     if (orderData.salesOrderItemDetails && orderData.salesOrderItemDetails.length > 0) {
                         const mappedItems = orderData.salesOrderItemDetails.map((detail, index) => {
                             return {
-                                id: index + 1,
+                                id: Date.now() + index, // Sử dụng Date.now() + index để đảm bảo ID duy nhất
                                 supplierName: detail.goods?.companyName || detail.supplier?.companyName || "",
                                 goodsName: detail.goods?.goodsName || "",
                                 quantity: detail.packageQuantity ? detail.packageQuantity.toString() : "",
@@ -104,17 +112,17 @@ function UpdateSaleOrder() {
                             // Load all goods in parallel directly
                             await Promise.all(
                                 supplierIds.map(async (supplierId) => {
-                                    if (goodsBySupplier[supplierId]) return; // Already loaded
+                                    // Chắc chắn rằng chỉ load nếu chưa có trong state
+                                    if (goodsBySupplier[supplierId]) return;
 
+                                    // Lấy thông tin goods và tồn kho cho các supplier đã có trong đơn hàng
                                     setGoodsLoading(prev => ({ ...prev, [supplierId]: true }));
                                     try {
                                         const response = await getGoodsInventoryBySupplierId(supplierId);
                                         const goodsData = response?.data || response?.items || response || [];
 
-                                        setGoodsBySupplier(prev => ({
-                                            ...prev,
-                                            [supplierId]: goodsData
-                                        }));
+                                        // Lưu goods, packings và inventory
+                                        setGoodsBySupplier(prev => ({ ...prev, [supplierId]: goodsData }));
 
                                         setGoodsPackingsMap(prev => {
                                             const newPackingsMap = { ...prev };
@@ -136,10 +144,7 @@ function UpdateSaleOrder() {
                                             return newInventoryMap;
                                         });
                                     } catch (error) {
-                                        setGoodsBySupplier(prev => ({
-                                            ...prev,
-                                            [supplierId]: []
-                                        }));
+                                        setGoodsBySupplier(prev => ({ ...prev, [supplierId]: [] }));
                                     } finally {
                                         setGoodsLoading(prev => ({ ...prev, [supplierId]: false }));
                                     }
@@ -161,6 +166,7 @@ function UpdateSaleOrder() {
         loadAllData();
     }, [id, navigate]);
 
+    // Hàm loadGoodsBySupplier và các hàm xử lý input/item (addItem, removeItem, updateItem, handleInputChange) được giữ nguyên
 
     const addItem = (e) => {
         // Ngăn chặn mọi event propagation
@@ -214,8 +220,6 @@ function UpdateSaleOrder() {
                 return;
             }
 
-            // GoodsPackings đã được load sẵn khi load goods, không cần load riêng nữa
-
             // Reset quantity and packing when goods changes
             updatedItems = updatedItems.map((item) =>
                 item.id === id
@@ -252,7 +256,7 @@ function UpdateSaleOrder() {
             const updatedItem = updatedItems.find(item => item.id === id);
             if (updatedItem) {
                 const tempItem = { ...updatedItem, [field]: value };
-                
+
                 // Nếu đã có đủ thông tin, validate
                 if (tempItem.supplierName && tempItem.goodsName && tempItem.goodsPackingId) {
                     const quantityError = validateQuantity(tempItem);
@@ -437,28 +441,22 @@ function UpdateSaleOrder() {
         if (!selectedGood) return 0;
 
         const goodsPackings = goodsPackingsMap[selectedGood.goodsId] || [];
-        const selectedPacking = goodsPackings.find(packing => packing.goodsPackingId.toString() === item.goodsPackingId);
+        const selectedPacking = goodsPackings.find(packing =>
+            packing.goodsPackingId?.toString() === item.goodsPackingId?.toString() ||
+            packing.goodsPackingId === parseInt(item.goodsPackingId)
+        );
 
         if (!selectedPacking) return 0;
 
         return parseInt(item.quantity) * selectedPacking.unitPerPackage;
     };
 
-    // Kiểm tra validation cho số thùng
-    const validateQuantity = (item) => {
-        // Kiểm tra điều kiện cần thiết
-        if (!item.quantity || item.quantity === "" || !item.goodsPackingId || !item.supplierName || !item.goodsName) {
+    // Hàm lấy thông tin tồn kho cho một item (được sao chép từ file CreateSaleOrder)
+    const getItemStockInfo = (item) => {
+        if (!item.supplierName || !item.goodsName || !item.goodsPackingId) {
             return null;
         }
 
-        const quantity = parseInt(item.quantity);
-
-        // Kiểm tra số lượng hợp lệ
-        if (isNaN(quantity) || quantity <= 0) {
-            return "Vui lòng nhập số thùng lớn hơn 0";
-        }
-
-        // Kiểm tra tồn kho
         const selectedSupplier = suppliers.find(s => s.companyName === item.supplierName);
         if (!selectedSupplier) return null;
 
@@ -471,17 +469,39 @@ function UpdateSaleOrder() {
             inv.goodsPackingId?.toString() === item.goodsPackingId?.toString() ||
             inv.goodsPackingId === parseInt(item.goodsPackingId)
         );
-        const availableQuantity = inventory?.availablePackageQuantity || 0;
 
-        // Nếu vượt quá tồn kho, hiển thị thông báo tồn kho
-        if (quantity > availableQuantity) {
-            return `(Tồn: ${availableQuantity} thùng)`;
+        const availableQuantity = inventory?.availablePackageQuantity || 0;
+        const requestedQuantity = parseInt(item.quantity) || 0;
+
+        return {
+            availableQuantity,
+            requestedQuantity,
+            isExceeding: requestedQuantity > availableQuantity
+        };
+    };
+
+    // Kiểm tra validation cho số thùng (đã có sẵn)
+    const validateQuantity = (item) => {
+        // ... (Logic kiểm tra số thùng và tồn kho giữ nguyên)
+        if (!item.quantity || item.quantity === "" || !item.goodsPackingId || !item.supplierName || !item.goodsName) {
+            return null;
+        }
+
+        const quantity = parseInt(item.quantity);
+
+        if (isNaN(quantity) || quantity <= 0) {
+            return "Vui lòng nhập số thùng lớn hơn 0";
+        }
+
+        const stockInfo = getItemStockInfo(item);
+        if (stockInfo && stockInfo.isExceeding) {
+            return `(Có sẵn: ${stockInfo.availableQuantity} thùng)`;
         }
 
         return null;
     };
 
-    // Tính toán thông tin tồn kho để hiển thị
+    // Tính toán thông tin tồn kho để hiển thị (đã có sẵn)
     const getStockInformation = () => {
         const validItems = items.filter(item =>
             item.supplierName && item.goodsName && item.quantity && item.goodsPackingId && parseInt(item.quantity) > 0
@@ -498,25 +518,19 @@ function UpdateSaleOrder() {
         }
 
         const good = validItems.map(item => {
+            const stockInfo = getItemStockInfo(item);
+            if (!stockInfo) return null;
+
             const selectedSupplier = suppliers.find(s => s.companyName === item.supplierName);
-            if (!selectedSupplier) return null;
-
-            const goods = goodsBySupplier[selectedSupplier.supplierId] || [];
-            const selectedGood = goods.find(g => g.goodsName === item.goodsName);
-            if (!selectedGood) return null;
-
-            const inventoryData = inventoryMap[selectedGood.goodsId] || [];
-            const inventory = inventoryData.find(inv => inv.goodsPackingId.toString() === item.goodsPackingId);
-            const availableQuantity = inventory?.availablePackageQuantity || 0;
-            const requestedQuantity = parseInt(item.quantity) || 0;
-            const isSufficient = requestedQuantity <= availableQuantity;
+            const goodsList = selectedSupplier ? goodsBySupplier[selectedSupplier.supplierId] || [] : [];
+            const selectedGood = goodsList.find(g => g.goodsName === item.goodsName);
 
             return {
                 goodsName: item.goodsName,
-                goodsCode: selectedGood.goodsCode || "-",
-                requestedQuantity,
-                availableQuantity,
-                isSufficient
+                goodsCode: selectedGood?.goodsCode || "-",
+                requestedQuantity: stockInfo.requestedQuantity,
+                availableQuantity: stockInfo.availableQuantity,
+                isSufficient: !stockInfo.isExceeding
             };
         }).filter(item => item !== null);
 
@@ -533,6 +547,59 @@ function UpdateSaleOrder() {
         };
     };
 
+    // 3. LOGIC TÍNH TOÁN DANH SÁCH MẶT HÀNG THIẾU CHO BACKORDER (Được sao chép từ CreateSaleOrder)
+    const getInsufficientItemsForBackOrder = () => {
+        const validItems = items.filter(item =>
+            item.supplierName && item.goodsName && item.quantity && item.goodsPackingId && parseInt(item.quantity) > 0
+        );
+
+        if (validItems.length === 0) {
+            return [];
+        }
+
+        const insufficientItems = validItems.map(item => {
+            const stockInfo = getItemStockInfo(item);
+            if (!stockInfo || !stockInfo.isExceeding) {
+                return null;
+            }
+
+            const selectedSupplier = suppliers.find(s => s.companyName === item.supplierName);
+            if (!selectedSupplier) return null;
+
+            const goods = goodsBySupplier[selectedSupplier.supplierId] || [];
+            const selectedGood = goods.find(g => g.goodsName === item.goodsName);
+            if (!selectedGood) return null;
+
+            // Tính số lượng thiếu (requested - available)
+            const shortageQuantity = stockInfo.requestedQuantity - stockInfo.availableQuantity;
+
+            return {
+                goodsId: selectedGood.goodsId,
+                goodsPackingId: parseInt(item.goodsPackingId),
+                goodsName: selectedGood.goodsName,
+                goodsCode: selectedGood.goodsCode || "-",
+                requestedQuantity: stockInfo.requestedQuantity,
+                availableQuantity: stockInfo.availableQuantity,
+                packageQuantity: shortageQuantity, // Số lượng thiếu
+            };
+        }).filter(item => item !== null);
+
+        return insufficientItems;
+    };
+
+    // 4. HÀM MỞ MODAL BACKORDER
+    const handleOpenBackOrderModal = () => {
+        const insufficient = getInsufficientItemsForBackOrder();
+        if (insufficient.length === 0) {
+            window.showToast("Không có mặt hàng nào bị thiếu tồn kho", "info");
+            return;
+        }
+        setInsufficientItems(insufficient);
+        setShowBackOrderModal(true);
+    };
+
+    // ... (Các hàm handleSubmit và handleSubmitForApproval giữ nguyên, không thay đổi logic chặn submit khi thiếu tồn kho)
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -540,64 +607,43 @@ function UpdateSaleOrder() {
         setFieldErrors({});
         const newFieldErrors = {};
 
-        // Kiểm tra từng mặt hàng
+        // Kiểm tra validation
         items.forEach((item, index) => {
             const rowNumber = index + 1;
-            if (!item.supplierName) {
-                newFieldErrors[`${item.id}-supplierName`] = "Vui lòng chọn nhà cung cấp";
-            }
-            if (!item.goodsName) {
-                newFieldErrors[`${item.id}-goodsName`] = "Vui lòng chọn tên hàng hóa";
-            }
-            if (!item.goodsPackingId) {
-                newFieldErrors[`${item.id}-goodsPackingId`] = "Vui lòng chọn đóng gói";
-            }
+            if (!item.supplierName) newFieldErrors[`${item.id}-supplierName`] = "Vui lòng chọn nhà cung cấp";
+            if (!item.goodsName) newFieldErrors[`${item.id}-goodsName`] = "Vui lòng chọn tên hàng hóa";
+            if (!item.goodsPackingId) newFieldErrors[`${item.id}-goodsPackingId`] = "Vui lòng chọn đóng gói";
 
-            // Kiểm tra validation số thùng
-            // Chỉ validate nếu đã có đủ thông tin (supplierName, goodsName, goodsPackingId)
             if (item.supplierName && item.goodsName && item.goodsPackingId) {
                 if (!item.quantity || item.quantity === "" || parseInt(item.quantity) <= 0) {
                     newFieldErrors[`${item.id}-quantity`] = "Vui lòng nhập số thùng lớn hơn 0";
                 } else {
-                    // Kiểm tra tồn kho nếu đã nhập số lượng hợp lệ
                     const quantityError = validateQuantity(item);
-                    if (quantityError) {
-                        newFieldErrors[`${item.id}-quantity`] = quantityError;
-                    }
+                    if (quantityError) newFieldErrors[`${item.id}-quantity`] = quantityError;
                 }
             } else if (!item.quantity || item.quantity === "" || parseInt(item.quantity) <= 0) {
-                // Nếu chưa có đủ thông tin nhưng đã nhập số lượng, vẫn validate cơ bản
                 newFieldErrors[`${item.id}-quantity`] = "Vui lòng nhập số thùng lớn hơn 0";
             }
         });
 
-        // Kiểm tra nhà bán lẻ
         if (!formData.retailerName) {
             window.showToast("Vui lòng chọn nhà bán lẻ", "error");
-            if (Object.keys(newFieldErrors).length > 0) {
-                setFieldErrors(newFieldErrors);
-            }
+            if (Object.keys(newFieldErrors).length > 0) setFieldErrors(newFieldErrors);
             return;
         }
 
-        // Kiểm tra ngày giao hàng
         if (!formData.estimatedTimeDeparture) {
             window.showToast("Vui lòng chọn ngày dự kiến giao hàng", "error");
-            if (Object.keys(newFieldErrors).length > 0) {
-                setFieldErrors(newFieldErrors);
-            }
+            if (Object.keys(newFieldErrors).length > 0) setFieldErrors(newFieldErrors);
             return;
         }
 
-        // Kiểm tra ngày giao hàng phải trong tương lai
         const selectedDate = new Date(formData.estimatedTimeDeparture);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         if (selectedDate <= today) {
             window.showToast("Ngày giao hàng phải trong tương lai", "error");
-            if (Object.keys(newFieldErrors).length > 0) {
-                setFieldErrors(newFieldErrors);
-            }
+            if (Object.keys(newFieldErrors).length > 0) setFieldErrors(newFieldErrors);
             return;
         }
 
@@ -618,53 +664,28 @@ function UpdateSaleOrder() {
             return;
         }
 
-        // Kiểm tra inventory - chặn submit nếu có item vượt quá tồn kho
-        // Kiểm tra tồn kho và lưu thông tin các items vượt quá tồn kho
+        // Kiểm tra tồn kho - KHÔNG CHẶN submit, chỉ cảnh báo và đánh dấu đỏ
         const itemsExceedingStockMap = {};
-        const insufficientItems = validItems.filter(item => {
-            const selectedSupplier = suppliers.find(s => s.companyName === item.supplierName);
-            if (!selectedSupplier) return false;
-
-            const goods = goodsBySupplier[selectedSupplier.supplierId] || [];
-            const selectedGood = goods.find(g => g.goodsName === item.goodsName);
-            if (!selectedGood) return false;
-
-            const inventoryData = inventoryMap[selectedGood.goodsId] || [];
-            const inventory = inventoryData.find(inv =>
-                inv.goodsPackingId?.toString() === item.goodsPackingId?.toString() ||
-                inv.goodsPackingId === parseInt(item.goodsPackingId)
-            );
-            const availableQuantity = inventory?.availablePackageQuantity || 0;
-            const requestedQuantity = parseInt(item.quantity) || 0;
-
-            if (requestedQuantity > availableQuantity) {
+        validItems.forEach(item => {
+            const stockInfo = getItemStockInfo(item);
+            if (stockInfo && stockInfo.isExceeding) {
                 itemsExceedingStockMap[item.id] = {
-                    availableQuantity: availableQuantity,
-                    requestedQuantity: requestedQuantity
+                    availableQuantity: stockInfo.availableQuantity,
+                    requestedQuantity: stockInfo.requestedQuantity
                 };
-                return true;
             }
-            return false;
         });
 
-        if (insufficientItems.length > 0) {
-            // Lưu thông tin các items vượt quá tồn kho để hiển thị viền đỏ
+        if (Object.keys(itemsExceedingStockMap).length > 0) {
             setItemsExceedingStock(itemsExceedingStockMap);
-            
-            const firstItem = insufficientItems[0];
-            const message =
-                insufficientItems.length === 1
-                    ? `Sản phẩm "${firstItem.goodsName}" vượt quá tồn kho.`
-                    : `Có ${insufficientItems.length} sản phẩm vượt quá tồn kho.`;
-
-            window.showToast(message, "error");
-            return;
+            window.showToast(`Cảnh báo: Có ${Object.keys(itemsExceedingStockMap).length} sản phẩm vượt quá tồn kho. Đơn hàng sẽ được cập nhật ở trạng thái Nháp (Draft).`, "warning");
+        } else {
+            setItemsExceedingStock({});
         }
 
-        // Nếu không có items vượt quá tồn kho, reset state
-        setItemsExceedingStock({});
-
         try {
+            setSubmitLoading(true);
+
             const itemsWithIds = validItems.map(item => {
                 const selectedSupplier = suppliers.find(supplier => supplier.companyName === item.supplierName);
                 if (!selectedSupplier) return null;
@@ -684,6 +705,7 @@ function UpdateSaleOrder() {
 
             if (itemsWithIds.length === 0) {
                 window.showToast("Không tìm thấy hàng hóa hợp lệ!", "error");
+                setSubmitLoading(false);
                 return;
             }
 
@@ -700,17 +722,16 @@ function UpdateSaleOrder() {
             navigate("/sales-orders");
         } catch (error) {
             const message = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật đơn bán hàng!")
-
-            if (window.showToast) {
-                window.showToast(message, "error");
-            }
+            if (window.showToast) window.showToast(message, "error");
+        } finally {
+            setSubmitLoading(false);
         }
     }
 
     const handleSubmitForApproval = async (e) => {
         e.preventDefault();
 
-        // Reuse the same validations as handleSubmit
+        // **LOGIC CHẶN KHI VƯỢT QUÁ TỒN KHO VẪN ĐƯỢC GIỮ NGUYÊN (Không cho gửi phê duyệt)**
         setFieldErrors({});
         const newFieldErrors = {};
 
@@ -718,7 +739,14 @@ function UpdateSaleOrder() {
             if (!item.supplierName) newFieldErrors[`${item.id}-supplierName`] = "Vui lòng chọn nhà cung cấp";
             if (!item.goodsName) newFieldErrors[`${item.id}-goodsName`] = "Vui lòng chọn tên hàng hóa";
             if (!item.goodsPackingId) newFieldErrors[`${item.id}-goodsPackingId`] = "Vui lòng chọn đóng gói";
-            if (!item.quantity || parseInt(item.quantity) <= 0) newFieldErrors[`${item.id}-quantity`] = "Vui lòng nhập số thùng lớn hơn 0";
+            // Check quantity for validation
+            if (item.supplierName && item.goodsName && item.goodsPackingId) {
+                const quantityError = validateQuantity(item);
+                if (quantityError) newFieldErrors[`${item.id}-quantity`] = quantityError;
+                if (!item.quantity || parseInt(item.quantity) <= 0) newFieldErrors[`${item.id}-quantity`] = "Vui lòng nhập số thùng lớn hơn 0";
+            } else if (!item.quantity || parseInt(item.quantity) <= 0) {
+                newFieldErrors[`${item.id}-quantity`] = "Vui lòng nhập số thùng lớn hơn 0";
+            }
         });
 
         if (!formData.retailerName) {
@@ -729,6 +757,15 @@ function UpdateSaleOrder() {
 
         if (!formData.estimatedTimeDeparture) {
             window.showToast("Vui lòng chọn ngày dự kiến giao hàng", "error");
+            if (Object.keys(newFieldErrors).length > 0) setFieldErrors(newFieldErrors);
+            return;
+        }
+
+        const selectedDate = new Date(formData.estimatedTimeDeparture);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (selectedDate <= today) {
+            window.showToast("Ngày giao hàng phải trong tương lai", "error");
             if (Object.keys(newFieldErrors).length > 0) setFieldErrors(newFieldErrors);
             return;
         }
@@ -749,6 +786,31 @@ function UpdateSaleOrder() {
             window.showToast("Vui lòng thêm ít nhất một hàng hóa với đầy đủ thông tin", "error");
             return;
         }
+
+        // Kiểm tra tồn kho - CHẶN SUBMIT nếu vượt quá
+        const itemsExceedingStockMap = {};
+        const insufficientItemsForBlock = validItems.filter(item => {
+            const stockInfo = getItemStockInfo(item);
+            if (stockInfo && stockInfo.isExceeding) {
+                itemsExceedingStockMap[item.id] = {
+                    availableQuantity: stockInfo.availableQuantity,
+                    requestedQuantity: stockInfo.requestedQuantity
+                };
+                return true;
+            }
+            return false;
+        });
+
+        if (insufficientItemsForBlock.length > 0) {
+            setItemsExceedingStock(itemsExceedingStockMap);
+            const firstItem = insufficientItemsForBlock[0];
+            const message = insufficientItemsForBlock.length === 1
+                ? `Sản phẩm "${firstItem.goodsName}" vượt quá tồn kho.`
+                : `Có ${insufficientItemsForBlock.length} sản phẩm vượt quá tồn kho.`;
+            window.showToast(message, "error");
+            return;
+        }
+        setItemsExceedingStock({});
 
         try {
             setSubmitLoading(true);
@@ -832,6 +894,7 @@ function UpdateSaleOrder() {
                 <Card className="bg-white border border-gray-200 shadow-sm">
                     <div className="p-6 space-y-6">
                         {/* Header Information */}
+                        {/* ... (Phần thông tin đơn hàng và nhà bán lẻ giữ nguyên) */}
                         <div>
                             <h3 className="text-lg font-semibold text-slate-600 mb-4">Thông Tin Đơn Hàng</h3>
                             <div className="space-y-6">
@@ -852,7 +915,6 @@ function UpdateSaleOrder() {
                                         <Label htmlFor="estimatedTimeDeparture" className="text-sm font-medium text-slate-600">
                                             Ngày Dự Kiến Giao <span className="text-red-500">*</span>
                                         </Label>
-                                        {/* Giới hạn chiều rộng container */}
                                         <div className="relative w-[180px]">
                                             <Input
                                                 id="estimatedTimeDeparture"
@@ -874,7 +936,6 @@ function UpdateSaleOrder() {
                                         </div>
                                     </div>
                                 </div>
-
                                 {/* Thông tin nhà bán lẻ đã chọn */}
                                 {formData.retailerName && (() => {
                                     const selectedRetailer = retailers.find(retailer => retailer.retailerName === formData.retailerName);
@@ -898,7 +959,6 @@ function UpdateSaleOrder() {
                                         </div>
                                     ) : null;
                                 })()}
-
                             </div>
                         </div>
 
@@ -933,170 +993,172 @@ function UpdateSaleOrder() {
                                                 const isExceedingStock = itemsExceedingStock[item.id] !== undefined;
 
                                                 return (
-                                                <TableRow
-                                                    key={item.id}
-                                                    className={`border-b min-h-[70px] ${
-                                                        isExceedingStock 
-                                                            ? 'border-red-500 border-2 bg-red-50 hover:bg-red-100' 
+                                                    <TableRow
+                                                        key={item.id}
+                                                        className={`border-b min-h-[70px] ${isExceedingStock
+                                                            ? 'border-red-500 border-2 bg-red-50 hover:bg-red-100'
                                                             : 'border-gray-200 hover:bg-gray-50'
-                                                    }`}
-                                                >
-                                                    {/* STT */}
-                                                    <TableCell className="text-center text-slate-700 align-top pb-6">
-                                                        {index + 1}
-                                                    </TableCell>
-
-                                                    {/* Nhà cung cấp */}
-                                                    <TableCell className="relative align-top pb-6">
-                                                        <div className="relative min-w-[160px] max-w-[220px] w-full">
-                                                            <FloatingDropdown
-                                                                value={item.supplierName || undefined}
-                                                                onChange={(value) => updateItem(item.id, "supplierName", value)}
-                                                                options={supplierOptions}
-                                                                placeholder="Chọn nhà cung cấp"
-                                                                loading={suppliersLoading}
-                                                                className="truncate w-full"
-                                                                title={item.supplierName || ""}
-                                                            />
-                                                            {fieldErrors[`${item.id}-supplierName`] && (
-                                                                <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">
-                                                                    {fieldErrors[`${item.id}-supplierName`]}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
-
-                                                    {/* Tên hàng hóa */}
-                                                    <TableCell className="relative align-top pb-6">
-                                                        <div className="relative min-w-[180px] max-w-[260px] w-full">
-                                                            <FloatingDropdown
-                                                                value={item.goodsName || undefined}
-                                                                onChange={(value) => updateItem(item.id, "goodsName", value)}
-                                                                options={getAvailableGoodsOptions(item.id)}
-                                                                placeholder={
-                                                                    item.supplierName
-                                                                        ? "Chọn hàng hóa"
-                                                                        : "Chọn nhà cung cấp trước"
-                                                                }
-                                                                loading={(() => {
-                                                                    if (!item.supplierName) return false;
-                                                                    const selectedSupplier = suppliers.find(
-                                                                        (s) => s.companyName === item.supplierName
-                                                                    );
-                                                                    return selectedSupplier
-                                                                        ? goodsLoading[selectedSupplier.supplierId] || false
-                                                                        : false;
-                                                                })()}
-                                                                disabled={!item.supplierName}
-                                                                className="truncate w-full"
-                                                                title={item.goodsName || ""}
-                                                            />
-                                                            {fieldErrors[`${item.id}-goodsName`] && (
-                                                                <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">
-                                                                    {fieldErrors[`${item.id}-goodsName`]}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
-
-                                                    {/* Đóng gói */}
-                                                    <TableCell className="relative align-top pb-6">
-                                                        <div className="relative min-w-[130px] max-w-[140px] w-full">
-                                                            <FloatingDropdown
-                                                                value={item.goodsPackingId ? item.goodsPackingId.toString() : undefined}
-                                                                onChange={(value) =>
-                                                                    updateItem(item.id, "goodsPackingId", value)
-                                                                }
-                                                                options={getGoodsPackingOptions(item.id)}
-                                                                placeholder={
-                                                                    item.goodsName ? "Chọn đóng gói" : "Chọn hàng hóa trước"
-                                                                }
-                                                                loading={false}
-                                                                disabled={!item.goodsName}
-                                                                className="truncate w-full"
-                                                                title={item.goodsPackingId ? item.goodsPackingId.toString() : ""}
-                                                            />
-                                                            {fieldErrors[`${item.id}-goodsPackingId`] && (
-                                                                <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">
-                                                                    {fieldErrors[`${item.id}-goodsPackingId`]}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
-
-                                                    {/* Số thùng */}
-                                                    <TableCell className="w-[150px] relative align-top pb-6">
-                                                        <div className="relative">
-                                                            <Input
-                                                                type="number"
-                                                                placeholder="0"
-                                                                min={0}
-                                                                value={item.quantity === "" ? "" : item.quantity}
-                                                                onChange={(e) =>
-                                                                    updateItem(item.id, "quantity", e.target.value)
-                                                                }
-                                                                className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${fieldErrors[`${item.id}-quantity`] ? "border-red-500" : ""
-                                                                    }`}
-                                                            />
-                                                            {fieldErrors[`${item.id}-quantity`] && (
-                                                                <p className="absolute left-0 top-full mt-1 text-red-500 text-xs whitespace-nowrap">
-                                                                    {fieldErrors[`${item.id}-quantity`]}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
-
-                                                    {/* Tổng số đơn vị */}
-                                                    <TableCell className="w-[130px]">
-                                                        <div className="h-[38px] flex items-center justify-center px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600 font-medium">
-                                                            {calculateTotalUnits(item) || "0"}
-                                                        </div>
-                                                    </TableCell>
-
-                                                    {/* Đơn vị */}
-                                                    <TableCell className="w-[100px]">
-                                                        <div className="h-[38px] flex items-center justify-center px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600 text-sm">
-                                                            {(() => {
-                                                                if (item.goodsName && item.supplierName) {
-                                                                    const selectedSupplier = suppliers.find(
-                                                                        (s) => s.companyName === item.supplierName
-                                                                    );
-                                                                    if (selectedSupplier) {
-                                                                        const goods =
-                                                                            goodsBySupplier[selectedSupplier.supplierId] || [];
-                                                                        const selectedGood = goods.find(
-                                                                            (good) => good.goodsName === item.goodsName
-                                                                        );
-                                                                        return selectedGood
-                                                                            ? selectedGood.unitMeasureName
-                                                                            : "Trống";
-                                                                    }
-                                                                }
-                                                                return "Trống";
-                                                            })()}
-                                                        </div>
-                                                    </TableCell>
-
-                                                    {/* Hành động */}
-                                                    {items.length > 1 && (
-                                                        <TableCell className="text-right">
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => removeItem(item.id)}
-                                                                className="text-red-600 hover:bg-red-50"
-                                                            >
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </Button>
+                                                            }`}
+                                                    >
+                                                        {/* STT */}
+                                                        <TableCell className="text-center text-slate-700 align-top pb-6">
+                                                            {index + 1}
                                                         </TableCell>
-                                                    )}
-                                                </TableRow>
-                                            );
+
+                                                        {/* Nhà cung cấp */}
+                                                        <TableCell className="relative align-top pb-6">
+                                                            <div className="relative min-w-[160px] max-w-[220px] w-full">
+                                                                <FloatingDropdown
+                                                                    value={item.supplierName || undefined}
+                                                                    onChange={(value) => updateItem(item.id, "supplierName", value)}
+                                                                    options={supplierOptions}
+                                                                    placeholder="Chọn nhà cung cấp"
+                                                                    loading={suppliersLoading}
+                                                                    className="truncate w-full"
+                                                                    title={item.supplierName || ""}
+                                                                />
+                                                                {fieldErrors[`${item.id}-supplierName`] && (
+                                                                    <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">
+                                                                        {fieldErrors[`${item.id}-supplierName`]}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
+
+                                                        {/* Tên hàng hóa */}
+                                                        <TableCell className="relative align-top pb-6">
+                                                            <div className="relative min-w-[180px] max-w-[260px] w-full">
+                                                                <FloatingDropdown
+                                                                    value={item.goodsName || undefined}
+                                                                    onChange={(value) => updateItem(item.id, "goodsName", value)}
+                                                                    options={getAvailableGoodsOptions(item.id)}
+                                                                    placeholder={
+                                                                        item.supplierName
+                                                                            ? "Chọn hàng hóa"
+                                                                            : "Chọn nhà cung cấp trước"
+                                                                    }
+                                                                    loading={(() => {
+                                                                        if (!item.supplierName) return false;
+                                                                        const selectedSupplier = suppliers.find(
+                                                                            (s) => s.companyName === item.supplierName
+                                                                        );
+                                                                        return selectedSupplier
+                                                                            ? goodsLoading[selectedSupplier.supplierId] || false
+                                                                            : false;
+                                                                    })()}
+                                                                    disabled={!item.supplierName}
+                                                                    className="truncate w-full"
+                                                                    title={item.goodsName || ""}
+                                                                />
+                                                                {fieldErrors[`${item.id}-goodsName`] && (
+                                                                    <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">
+                                                                        {fieldErrors[`${item.id}-goodsName`]}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
+
+                                                        {/* Đóng gói */}
+                                                        <TableCell className="relative align-top pb-6">
+                                                            <div className="relative min-w-[130px] max-w-[140px] w-full">
+                                                                <FloatingDropdown
+                                                                    value={item.goodsPackingId ? item.goodsPackingId.toString() : undefined}
+                                                                    onChange={(value) =>
+                                                                        updateItem(item.id, "goodsPackingId", value)
+                                                                    }
+                                                                    options={getGoodsPackingOptions(item.id)}
+                                                                    placeholder={
+                                                                        item.goodsName ? "Chọn đóng gói" : "Chọn hàng hóa trước"
+                                                                    }
+                                                                    loading={false}
+                                                                    disabled={!item.goodsName}
+                                                                    className="truncate w-full"
+                                                                    title={item.goodsPackingId ? item.goodsPackingId.toString() : ""}
+                                                                />
+                                                                {fieldErrors[`${item.id}-goodsPackingId`] && (
+                                                                    <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">
+                                                                        {fieldErrors[`${item.id}-goodsPackingId`]}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
+
+                                                        {/* Số thùng */}
+                                                        <TableCell className="w-[150px] relative align-top pb-6">
+                                                            <div className="relative">
+                                                                <Input
+                                                                    type="number"
+                                                                    placeholder="0"
+                                                                    min={0}
+                                                                    value={item.quantity === "" ? "" : item.quantity}
+                                                                    onChange={(e) =>
+                                                                        updateItem(item.id, "quantity", e.target.value)
+                                                                    }
+                                                                    className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${fieldErrors[`${item.id}-quantity`] ? "border-red-500" : ""
+                                                                        }`}
+                                                                />
+                                                                {fieldErrors[`${item.id}-quantity`] && (
+                                                                    <p className="absolute left-0 top-full mt-1 text-red-500 text-xs whitespace-nowrap">
+                                                                        {fieldErrors[`${item.id}-quantity`]}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
+
+                                                        {/* Tổng số đơn vị */}
+                                                        <TableCell className="w-[130px]">
+                                                            <div className="h-[38px] flex items-center justify-center px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600 font-medium">
+                                                                {calculateTotalUnits(item) || "0"}
+                                                            </div>
+                                                        </TableCell>
+
+                                                        {/* Đơn vị */}
+                                                        <TableCell className="w-[100px]">
+                                                            <div className="h-[38px] flex items-center justify-center px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600 text-sm">
+                                                                {(() => {
+                                                                    if (item.goodsName && item.supplierName) {
+                                                                        const selectedSupplier = suppliers.find(
+                                                                            (s) => s.companyName === item.supplierName
+                                                                        );
+                                                                        if (selectedSupplier) {
+                                                                            const goods =
+                                                                                goodsBySupplier[selectedSupplier.supplierId] || [];
+                                                                            const selectedGood = goods.find(
+                                                                                (good) => good.goodsName === item.goodsName
+                                                                            );
+                                                                            return selectedGood
+                                                                                ? selectedGood.unitMeasureName
+                                                                                : "Trống";
+                                                                        }
+                                                                    }
+                                                                    return "Trống";
+                                                                })()}
+                                                            </div>
+                                                        </TableCell>
+
+                                                        {/* Hành động */}
+                                                        {items.length > 1 && (
+                                                            <TableCell className="text-right">
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => removeItem(item.id)}
+                                                                    className="text-red-600 hover:bg-red-50"
+                                                                >
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
+                                                            </TableCell>
+                                                        )}
+                                                    </TableRow>
+                                                );
                                             })}
 
                                             {/* Hàng trống cuối */}
                                             <TableRow className="border-b border-gray-200">
+                                                <TableCell
+                                                    className={items.length === 1 ? "py-12" : "py-6"}
+                                                ></TableCell>
                                                 <TableCell
                                                     className={items.length === 1 ? "py-12" : "py-6"}
                                                 ></TableCell>
@@ -1155,6 +1217,7 @@ function UpdateSaleOrder() {
                                     type="button"
                                     onClick={handleSubmit}
                                     className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
+                                    disabled={submitLoading}
                                 >
                                     Cập Nhật Đơn Bán Hàng
                                 </Button>
@@ -1171,7 +1234,7 @@ function UpdateSaleOrder() {
                     </div>
                 </Card>
 
-                {/* Stock Information Card */}
+                {/* Stock Information Card - Cập nhật để thêm nút Tạo đơn bổ sung */}
                 {(() => {
                     const stockInfo = getStockInformation();
                     if (stockInfo.totalGoods === 0) return null;
@@ -1190,20 +1253,34 @@ function UpdateSaleOrder() {
                                     ? 'bg-green-50 border border-green-200'
                                     : 'bg-red-50 border border-red-200'
                                     }`}>
-                                    <div className="flex items-center gap-2">
-                                        <CheckCircle className={`h-5 w-5 ${stockInfo.allSufficient ? 'text-green-600' : 'text-red-600'}`} />
-                                        <ArrowRightLeft className={`h-5 w-5 ${stockInfo.allSufficient ? 'text-green-600' : 'text-red-600'}`} />
-                                        <span className={`font-medium ${stockInfo.allSufficient ? 'text-green-700' : 'text-red-700'
-                                            }`}>
-                                            {stockInfo.allSufficient
-                                                ? 'Đủ tồn kho - Có thể tạo đơn bán hàng'
-                                                : 'Thiếu tồn kho - Vui lòng kiểm tra lại'
-                                            }
-                                        </span>
+                                    <div className="flex items-center justify-between gap-4">
+                                        <div className="flex items-center gap-2">
+                                            <CheckCircle className={`h-5 w-5 ${stockInfo.allSufficient ? 'text-green-600' : 'text-red-600'}`} />
+                                            <ArrowRightLeft className={`h-5 w-5 ${stockInfo.allSufficient ? 'text-green-600' : 'text-red-600'}`} />
+                                            <span className={`font-medium ${stockInfo.allSufficient ? 'text-green-700' : 'text-red-700'
+                                                }`}>
+                                                {stockInfo.allSufficient
+                                                    ? 'Đủ tồn kho - Có thể gửi phê duyệt'
+                                                    : 'Thiếu tồn kho - Vui lòng kiểm tra lại'
+                                                }
+                                            </span>
+                                        </div>
+                                        {/* 5. NÚT TẠO ĐƠN BỔ SUNG */}
+                                        {!stockInfo.allSufficient && stockInfo.insufficientCount > 0 && (
+                                            <Button
+                                                type="button"
+                                                onClick={handleOpenBackOrderModal}
+                                                className="h-[38px] px-4 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all whitespace-nowrap"
+                                            >
+                                                <Plus className="h-4 w-4 mr-2" />
+                                                Tạo đơn bổ sung cho {stockInfo.insufficientCount} mặt hàng thiếu
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
 
                                 {/* Goods Cards */}
+                                {/* ... (Phần hiển thị chi tiết tồn kho giữ nguyên) */}
                                 {stockInfo.good.length > 0 && (
                                     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                                         {stockInfo.good.map((goods, idx) => (
@@ -1263,6 +1340,31 @@ function UpdateSaleOrder() {
                     );
                 })()}
             </div>
+
+            {/* 6. BACKORDER MODAL */}
+            <CreateBackOrderModal
+                isOpen={showBackOrderModal}
+                onClose={() => setShowBackOrderModal(false)}
+                onSuccess={() => {
+                    setShowBackOrderModal(false);
+                    window.showToast("Tạo đơn đặt hàng thành công!", "success");
+                    // Sau khi tạo BackOrder thành công, bạn có thể cân nhắc reload data để cập nhật thông tin tồn kho mới (nếu BackOrder được xử lý ngay lập tức) hoặc giữ nguyên.
+                }}
+                selectedItems={insufficientItems.map(item => ({
+                    goodsId: item.goodsId,
+                    goodsPackingId: item.goodsPackingId,
+                    goodsName: item.goodsName,
+                    goodsCode: item.goodsCode,
+                    requestedQuantity: item.packageQuantity, // Số lượng thiếu
+                    availableQuantity: 0,
+                    packageQuantity: item.packageQuantity // Số lượng thiếu
+                }))}
+                retailerId={(() => {
+                    if (!formData.retailerName || retailers.length === 0) return null;
+                    const selectedRetailer = retailers.find(r => r.retailerName === formData.retailerName);
+                    return selectedRetailer ? (selectedRetailer.retailerId || selectedRetailer.RetailerId)?.toString() : null;
+                })()}
+            />
         </div>
     )
 }
