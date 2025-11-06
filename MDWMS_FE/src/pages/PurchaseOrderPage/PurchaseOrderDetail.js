@@ -407,12 +407,13 @@ const PurchaseOrderDetail = () => {
         }
     };
 
-    const handleChangeDeliveryDate = async (estimatedTimeArrival) => {
+    const handleChangeDeliveryDate = async (estimatedTimeArrival, reason = '') => {
         setChangeDeliveryDateLoading(true);
         try {
             await changeDeliveryDate(
                 purchaseOrder.purchaseOderId,
-                estimatedTimeArrival
+                estimatedTimeArrival,
+                reason
             );
 
             if (window.showToast) {

@@ -328,11 +328,12 @@ export const updatePurchaseOrderAsOrdered = async (purchaseOrderId, estimatedTim
 };
 
 // Change Delivery Date for Purchase Order
-export const changeDeliveryDate = async (purchaseOrderId, estimatedTimeArrival) => {
+export const changeDeliveryDate = async (purchaseOrderId, estimatedTimeArrival, deliveryDateChangeReason = '') => {
     try {
         const data = {
             purchaseOrderId: purchaseOrderId,
-            estimatedTimeArrival: estimatedTimeArrival
+            estimatedTimeArrival: estimatedTimeArrival,
+            ...(deliveryDateChangeReason && { deliveryDateChangeReason: deliveryDateChangeReason })
         };
 
         const res = await api.put('/PurchaseOrder/ChangeDeliveryDate', data);
