@@ -517,11 +517,11 @@ const PurchaseOrderDetail = () => {
                                     <TableHeader>
                                         <TableRow className="bg-gray-100">
                                             <TableHead className="w-16 text-center font-semibold">STT</TableHead>
-                                            <TableHead className="font-semibold">Mã hàng</TableHead>
-                                            <TableHead className="font-semibold">Tên hàng hóa</TableHead>
+                                            <TableHead className="font-semibold"style={{ minWidth: '120px' }}>Mã hàng hóa</TableHead>
+                                            <TableHead className="font-semibold" style={{ minWidth: '120px' }}>Tên hàng hóa</TableHead>
                                             <TableHead className="text-center font-semibold" style={{ minWidth: '119px' }}>Đơn vị/thùng</TableHead>
                                             <TableHead className="text-center font-semibold">Số thùng</TableHead>
-                                            <TableHead className="text-center font-semibold">Tổng số đơn vị</TableHead>
+                                            <TableHead className="text-center font-semibold" style={{ minWidth: '110px' }}>Tổng số đơn vị</TableHead>
                                             <TableHead className="text-center font-semibold" style={{ minWidth: '110px' }}>Đơn vị</TableHead>
                                         </TableRow>
                                     </TableHeader>
