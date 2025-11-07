@@ -18,21 +18,23 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, LocationResponseDto)> DeleteLocation(int locationId);
         Task<(string, LocationResponseDto)> UpdateStatus(int locationId, int status);
         Task<(string, List<LocationActiveDto>)> GetActiveLocations();
-        Task<(string, List<LocationActiveDto>)> GetSuggestLocation(string palletId);
-        Task<(string, LocationPalletDto)> GetLocationsPallet(string locationcode);
+        Task<(string, List<LocationSuggestDto>)> GetSuggestLocation(string palletId);
+        Task<(string, LocationPalletDto)> GetLocationsPallet(string locationcode, string palletId);
         Task<(string, LocationBulkResponse)> CreateLocationsBulk(LocationBulkCreate create);
     }
 
     public class LocationService : ILocationService
     {
         private readonly ILocationRepository _locationRepository;
+        private readonly IPalletRepository _palletRepository;
         private readonly IMapper _mapper;
         private readonly IAreaRepository _areaRepository;
         private readonly IUnitOfWork _unitOfWork;
 
-        public LocationService(ILocationRepository locationRepository, IMapper mapper, IAreaRepository areaRepository, IUnitOfWork unitOfWork)
+        public LocationService(ILocationRepository locationRepository, IPalletRepository palletRepository, IMapper mapper, IAreaRepository areaRepository, IUnitOfWork unitOfWork)
         {
             _locationRepository = locationRepository;
+            _palletRepository = palletRepository;
             _mapper = mapper;
             _areaRepository = areaRepository;
             _unitOfWork = unitOfWork;
@@ -134,9 +136,6 @@ namespace MilkDistributionWarehouse.Services
             if (await _locationRepository.HasDependentPalletsAsync(locationId))
                 return ("Không thể xoá vì vị trí này đang được sử dụng.".ToMessageForUser(), new LocationResponseDto());
 
-            if (await _locationRepository.InUsed(locationId))
-                return ("Không thể xóa vì vị trí này đang được sử dụng.".ToMessageForUser(), new LocationResponseDto());
-
             locationExists.Status = CommonStatus.Deleted;
             locationExists.UpdateAt = DateTime.Now;
 
@@ -164,9 +163,6 @@ namespace MilkDistributionWarehouse.Services
 
             if (await _locationRepository.HasDependentPalletsAsync(locationId))
                 return ("Không thể cập nhật trạng thái vì vị trí này đang được sử dụng cho pallet.".ToMessageForUser(), new LocationResponseDto());
-            
-            if (await _locationRepository.InUsed(locationId))
-                return ("Không thể cập nhật trạng thái vì vị trí này hiện đang được sử dụng.".ToMessageForUser(), new LocationResponseDto());
 
             location.Status = status;
             location.UpdateAt = DateTime.Now;
@@ -189,24 +185,33 @@ namespace MilkDistributionWarehouse.Services
             return ("", dtoList);
         }
 
-        public async Task<(string, List<LocationActiveDto>)> GetSuggestLocation(string palletId)
+        public async Task<(string, List<LocationSuggestDto>)> GetSuggestLocation(string palletId)
         {
             var locations = await _locationRepository.GetSuggestLocationsAsync(palletId);
             if (locations == null || !locations.Any())
-                return ("Không có vị trí gợi ý nào.".ToMessageForUser(), new List<LocationActiveDto>());
-            var dtoList = _mapper.Map<List<LocationActiveDto>>(locations);
+                return ("Không có vị trí gợi ý nào.".ToMessageForUser(), new List<LocationSuggestDto>());
+            var dtoList = _mapper.Map<List<LocationSuggestDto>>(locations);
             return ("", dtoList);
         }
 
-        public async Task<(string, LocationPalletDto)> GetLocationsPallet(string locationcode)
+        public async Task<(string, LocationPalletDto)> GetLocationsPallet(string locationcode, string palletID)
         {
             var location = await _locationRepository.GetLocationPallet(locationcode);
+            var pallet = await _palletRepository.GetPalletById(palletID);
 
             if (location == null)
                 return ("Không có vị trí này trong hệ thống hoặc vị trí này đã bị dỡ bỏ!".ToMessageForUser(), new LocationPalletDto());
-
+            
             var dtoList = _mapper.Map<LocationPalletDto>(location);
-            return ("", dtoList);
+
+            if (location.Area.StorageConditionId != pallet.Batch.Goods.StorageConditionId)
+            {
+                return ("Cảnh báo: Điều kiện lưu trữ của vị trí không phù hợp với điều kiện lưu trữ của pallet!".ToMessageForUser(), dtoList);
+            }
+            else
+            {
+                return ("", dtoList);
+            }
         }
 
         public async Task<(string, LocationBulkResponse)> CreateLocationsBulk(LocationBulkCreate create)

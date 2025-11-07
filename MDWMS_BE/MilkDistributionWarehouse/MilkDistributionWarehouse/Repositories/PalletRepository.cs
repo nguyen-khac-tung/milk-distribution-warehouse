@@ -89,6 +89,7 @@ namespace MilkDistributionWarehouse.Repositories
         {
             return await _context.Pallets
                 .Include(p => p.Batch)
+                    .ThenInclude(p => p.Goods)
                 .Include(p => p.Location)
                 .Include(p => p.GoodsPacking)
                 .Include(p => p.CreateByNavigation)
@@ -113,7 +114,7 @@ namespace MilkDistributionWarehouse.Repositories
 
             return _context.Batchs
                 .AsNoTracking()
-                .AnyAsync(b => b.BatchId == batchId.Value && b.Status != CommonStatus.Deleted);
+                .AnyAsync(b => b.BatchId == batchId.Value && b.Status == CommonStatus.Active);
         }
 
         public Task<bool> ExistsLocation(int? locationId)
@@ -122,7 +123,7 @@ namespace MilkDistributionWarehouse.Repositories
 
             return _context.Locations
                 .AsNoTracking()
-                .AnyAsync(l => l.LocationId == locationId.Value && l.Status != CommonStatus.Deleted);
+                .AnyAsync(l => l.LocationId == locationId.Value && l.Status == CommonStatus.Active);
         }
 
         public Task<bool> ExistsGoodRecieveNote(Guid? goodRcNoteId)

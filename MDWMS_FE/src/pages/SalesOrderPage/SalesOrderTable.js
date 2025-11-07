@@ -15,6 +15,7 @@ const SalesOrderTable = ({
     sortAscending,
     onSort,
     onView,
+    onGoodsIssueNoteDetail,
     onEdit,
     onDelete,
     onClearFilters,
@@ -57,6 +58,10 @@ const SalesOrderTable = ({
 
     const handleEditClick = (order) => {
         onEdit(order);
+    };
+
+    const handleGoodsIssueNoteDetailClick = (order) => {
+        onGoodsIssueNoteDetail(order);
     };
 
     return (
@@ -359,18 +364,15 @@ const SalesOrderTable = ({
                                                 )} */}
 
                                                 {/* View Delivery Slip Button - Warehouse Manager/Staff */}
-                                                {/* {canPerformSalesOrderAction('view_delivery_slip', order, hasPermission, userInfo) && (
+                                                {canPerformSalesOrderAction('view_delivery_slip', order, hasPermission, userInfo) && (
                                                     <button
                                                         className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                                                         title="Xem phiếu xuất kho"
-                                                        onClick={() => {
-                                                            // TODO: Implement view delivery slip functionality
-                                                            console.log('View delivery slip:', order.salesOrderId);
-                                                        }}
+                                                        onClick={() => handleGoodsIssueNoteDetailClick(order)}
                                                     >
-                                                        <FileText className="h-4 w-4 text-orange-500" />
+                                                        <FileText className="h-4 w-4 text-green-500" />
                                                     </button>
-                                                )} */}
+                                                )}
 
                                                 {/* Edit Button - Sales Representative */}
                                                 {canPerformSalesOrderAction('edit', order, hasPermission, userInfo) && (

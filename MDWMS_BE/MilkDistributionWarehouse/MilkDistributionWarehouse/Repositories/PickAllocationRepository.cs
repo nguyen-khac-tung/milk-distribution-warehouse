@@ -7,7 +7,7 @@ namespace MilkDistributionWarehouse.Repositories
     public interface IPickAllocationRepository
     {
         Task<PickAllocation?> GetPickAllocationDetailById(int? id);
-        Task<Dictionary<string, int>> GetCommittedQuantitiesByPallet();
+        Task<Dictionary<string, int>?> GetCommittedQuantitiesByPallet();
         Task UpdatePickAllocation(PickAllocation pickAllocation);
     }
 
@@ -21,7 +21,7 @@ namespace MilkDistributionWarehouse.Repositories
         }
 
         // Get the total allocated quantity on each pallet for uncompleted goods issue notes detail
-        public async Task<Dictionary<string, int>> GetCommittedQuantitiesByPallet()
+        public async Task<Dictionary<string, int>?> GetCommittedQuantitiesByPallet()
         {
             
             return await _context.PickAllocations
@@ -43,6 +43,7 @@ namespace MilkDistributionWarehouse.Repositories
                 .Include(p => p.Pallet)
                     .ThenInclude(p => p.Batch)
                         .ThenInclude(b => b.Goods)
+                            .ThenInclude(g => g.UnitMeasure)
                 .FirstOrDefaultAsync(p => p.PickAllocationId == id);
         }
 

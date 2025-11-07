@@ -13,12 +13,34 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public string RetailerName { get; set; }
             public int GoodsId { get; set; }
             public string GoodsName { get; set; }
+            public int UnitMeasureId { get; set; }
+            public string UnitMeasureName { get; set; }
             public int GoodsPackingId { get; set; }
-            public string UnitPerPackage { get; set; }
+            public int UnitPerPackage { get; set; }
             public int PackageQuantity { get; set; }
             public int CreatedBy { get; set; }
             public string CreatedByName { get; set; }
             public string StatusDinamic { get; set; }
+        }
+
+        public class BackOrderResponseCreateDto
+        {
+            public Guid BackOrderId { get; set; }
+            public int RetailerId { get; set; }
+            public string RetailerName { get; set; }
+            public int GoodsId { get; set; }
+            public string GoodsName { get; set; }
+            public int UnitMeasureId { get; set; }
+            public string UnitMeasureName { get; set; }
+            public int GoodsPackingId { get; set; }
+            public int UnitPerPackage { get; set; }
+            public int PackageQuantity { get; set; }
+            public int CreatedBy { get; set; }
+            public string CreatedByName { get; set; }
+            public string StatusDinamic { get; set; }
+            public bool IsNew { get; set; }
+            public bool IsUpdated { get; set; }
+            public int? PreviousPackageQuantity { get; set; }
         }
 
         public class BackOrderRequestDto
@@ -51,8 +73,27 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public class BackOrderBulkResponse
         {
             public int TotalInserted { get; set; }
+            public int TotalUpdated { get; set; }
             public int TotalFailed { get; set; }
+
+            public List<InsertedItem> InsertedItems { get; set; } = new();
+            public List<UpdatedItem> UpdatedItems { get; set; } = new();
             public List<FailedItem> FailedItems { get; set; } = new();
+        }
+
+        public class InsertedItem
+        {
+            public int Index { get; set; }
+            public Guid BackOrderId { get; set; }
+            public int? Quantity { get; set; }
+        }
+
+        public class UpdatedItem
+        {
+            public int Index { get; set; }
+            public Guid BackOrderId { get; set; }
+            public int? PreviousPackageQuantity { get; set; }
+            public int? NewPackageQuantity { get; set; }
         }
 
         public class FailedItem

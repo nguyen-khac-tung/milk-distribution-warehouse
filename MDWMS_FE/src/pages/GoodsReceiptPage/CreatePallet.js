@@ -7,13 +7,16 @@ import { getBatchDropdown } from "../../services/BatchService";
 import FloatingDropdown from "../../components/Common/FloatingDropdown";
 import { createPalletsBulk } from "../../services/PalletService";
 
-export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDetails = [], onRegisterSubmit, onPalletCreated, hasExistingPallets = false, onSubmittingChange }) {
+export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDetails = [], onRegisterSubmit, onPalletCreated, hasExistingPallets = false, onSubmittingChange, onBatchCreated }) {
   const [showPalletTable, setShowPalletTable] = useState(false);
   const [palletRows, setPalletRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const handleSubmitRef = useRef(null);
   const [goodsPackingByDetailId, setGoodsPackingByDetailId] = useState({});
+  const refreshBatchOptionsRef = useRef(null);
+  const [rowErrors, setRowErrors] = useState({}); // Lưu lỗi theo index của row
+  const [missingProducts, setMissingProducts] = useState([]); // Danh sách mặt hàng còn thiếu
 
   // Tạo danh sách sản phẩm từ goodsReceiptNoteDetails
   const productOptions = useMemo(() => {
@@ -164,6 +167,109 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
     }
   };
 
+  // Validate và trả về lỗi theo từng row
+  const validateRows = () => {
+    const newRowErrors = {};
+    let hasErrors = false;
+
+    // Validate từng row
+    palletRows.forEach((r, idx) => {
+      const rowErrors = [];
+      
+      if (!r.batchId) {
+        rowErrors.push("Chưa chọn số lô");
+      }
+      if (!(Number(r.numPackages) > 0)) {
+        rowErrors.push("Số thùng phải lớn hơn 0");
+      }
+
+      if (rowErrors.length > 0) {
+        newRowErrors[idx] = rowErrors;
+        hasErrors = true;
+      }
+    });
+
+    // Validate tổng số thùng phải BẰNG số lượng thùng thực nhận cho từng mặt hàng
+    const totalPackagesByProduct = {};
+    palletRows.forEach((r, idx) => {
+      if (r.productId && Number(r.numPackages) > 0) {
+        if (!totalPackagesByProduct[r.productId]) {
+          totalPackagesByProduct[r.productId] = { total: 0, rowIndices: [] };
+        }
+        totalPackagesByProduct[r.productId].total += Number(r.numPackages);
+        totalPackagesByProduct[r.productId].rowIndices.push(idx);
+      }
+    });
+
+    // Kiểm tra từng mặt hàng: tổng số thùng phải BẰNG số thùng thực nhận
+    Object.keys(totalPackagesByProduct).forEach(productId => {
+      const requiredQuantity = actualPackageQuantityByDetailId[productId] || 0;
+      const { total, rowIndices } = totalPackagesByProduct[productId];
+      const productName = productOptions.find(p => p.value === productId)?.label || productId;
+
+      if (requiredQuantity > 0) {
+        if (total > requiredQuantity) {
+          const errorMsg = `Tổng số thùng vượt quá số lượng thực nhận (${requiredQuantity} thùng). Hiện tại: ${total} thùng`;
+          rowIndices.forEach(idx => {
+            if (!newRowErrors[idx]) newRowErrors[idx] = [];
+            if (!newRowErrors[idx].includes(errorMsg)) {
+              newRowErrors[idx].push(errorMsg);
+            }
+          });
+          hasErrors = true;
+        } else if (total < requiredQuantity) {
+          const errorMsg = `Tổng số thùng chưa đủ (${requiredQuantity} thùng). Hiện tại: ${total} thùng`;
+          rowIndices.forEach(idx => {
+            if (!newRowErrors[idx]) newRowErrors[idx] = [];
+            if (!newRowErrors[idx].includes(errorMsg)) {
+              newRowErrors[idx].push(errorMsg);
+            }
+          });
+          hasErrors = true;
+        }
+      }
+    });
+
+    // Kiểm tra tất cả mặt hàng từ đơn kiểm nhập đều phải có trong pallet
+    const requiredProductIds = new Set();
+    goodsReceiptNoteDetails.forEach(detail => {
+      const detailId = detail.goodsReceiptNoteDetailId || detail.id;
+      const actualQuantity = Number(detail.actualPackageQuantity) || 0;
+      // Chỉ yêu cầu các mặt hàng có số lượng thực nhận > 0
+      if (detailId && actualQuantity > 0) {
+        requiredProductIds.add(detailId);
+      }
+    });
+
+    // Kiểm tra xem các mặt hàng bắt buộc đã có trong pallet chưa
+    const existingProductIds = new Set();
+    palletRows.forEach(r => {
+      if (r.productId && Number(r.numPackages) > 0) {
+        existingProductIds.add(r.productId);
+      }
+    });
+
+    // Tìm các mặt hàng còn thiếu
+    const missingProductIds = Array.from(requiredProductIds).filter(id => !existingProductIds.has(id));
+    const missingProductsList = missingProductIds.map(id => {
+      const detail = goodsReceiptNoteDetails.find(d => (d.goodsReceiptNoteDetailId || d.id) === id);
+      return {
+        id,
+        name: detail?.goodsName || detail?.productName || id
+      };
+    });
+    setMissingProducts(missingProductsList);
+    
+    if (missingProductIds.length > 0) {
+      hasErrors = true;
+    } else {
+      setMissingProducts([]);
+    }
+
+    setRowErrors(newRowErrors);
+    return !hasErrors;
+  };
+
   const handleSubmitCreatePallets = async () => {
     if (!goodsReceiptNoteId) {
       window.showToast?.("Thiếu mã phiếu nhập kho", "error");
@@ -176,53 +282,9 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
       return;
     }
 
-    // Validate và hiển thị toast nếu có lỗi
-    const errors = [];
-    palletRows.forEach(r => {
-      if (!r.batchId) {
-        if (!errors.includes("Không được bỏ trống số lô")) {
-          errors.push("Không được bỏ trống số lô");
-        }
-      }
-      if (!(Number(r.numPackages) > 0)) {
-        if (!errors.includes("Nhập số thùng phải lớn hơn 0")) {
-          errors.push("Nhập số thùng phải lớn hơn 0");
-        }
-      }
-    });
-
-    // Validate tổng số thùng phải BẰNG số lượng thùng thực nhận cho từng mặt hàng
-    const totalPackagesByProduct = {};
-    palletRows.forEach(r => {
-      if (r.productId && Number(r.numPackages) > 0) {
-        if (!totalPackagesByProduct[r.productId]) {
-          totalPackagesByProduct[r.productId] = 0;
-        }
-        totalPackagesByProduct[r.productId] += Number(r.numPackages);
-      }
-    });
-
-    // Kiểm tra từng mặt hàng: tổng số thùng phải BẰNG số thùng thực nhận (không được lớn hơn hoặc nhỏ hơn)
-    Object.keys(totalPackagesByProduct).forEach(productId => {
-      const requiredQuantity = actualPackageQuantityByDetailId[productId] || 0;
-      const total = totalPackagesByProduct[productId];
-      const productName = productOptions.find(p => p.value === productId)?.label || productId;
-      
-      if (requiredQuantity > 0) {
-        if (total > requiredQuantity) {
-          if (!errors.includes(`Tổng số thùng của "${productName}" vượt quá số lượng thực nhận (${requiredQuantity} thùng). Tổng hiện tại: ${total} thùng`)) {
-            errors.push(`Tổng số thùng của "${productName}" vượt quá số lượng thực nhận (${requiredQuantity} thùng). Tổng hiện tại: ${total} thùng`);
-          }
-        } else if (total < requiredQuantity) {
-          if (!errors.includes(`Tổng số thùng của "${productName}" chưa đủ số lượng thực nhận (${requiredQuantity} thùng). Tổng hiện tại: ${total} thùng`)) {
-            errors.push(`Tổng số thùng của "${productName}" chưa đủ số lượng thực nhận (${requiredQuantity} thùng). Tổng hiện tại: ${total} thùng`);
-          }
-        }
-      }
-    });
-
-    if (errors.length > 0) {
-      window.showToast?.(errors.join("; "), "warning");
+    // Validate và hiển thị lỗi theo từng dòng
+    if (!validateRows()) {
+      window.showToast?.("Vui lòng kiểm tra và sửa các lỗi trong bảng", "warning");
       return;
     }
 
@@ -266,16 +328,57 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
     }
   };
 
+  // Function để refresh batch options cho tất cả các dòng đã chọn sản phẩm
+  const refreshBatchOptionsForAllRows = async () => {
+    // Lấy tất cả rows hiện tại
+    const currentRows = [...palletRows];
+    
+    // Refresh batch options cho từng row đã có sản phẩm
+    const updatedRows = await Promise.all(
+      currentRows.map(async (row) => {
+        if (row.productId) {
+          const selectedProduct = productOptions.find(p => p.value === row.productId);
+          if (selectedProduct?.goodsId) {
+            const batchOptions = await fetchBatchOptionsByGoodsId(selectedProduct.goodsId);
+            return {
+              ...row,
+              batchOptions
+            };
+          }
+        }
+        return row;
+      })
+    );
+    
+    // Cập nhật state với batch options mới
+    setPalletRows(updatedRows);
+  };
+
   // Lưu function mới nhất vào ref để không trigger re-register
   handleSubmitRef.current = handleSubmitCreatePallets;
+  refreshBatchOptionsRef.current = refreshBatchOptionsForAllRows;
 
   // Đăng ký hàm submit ra parent chỉ một lần khi mount, dùng ref để luôn gọi function mới nhất
   useEffect(() => {
     if (typeof onRegisterSubmit === 'function') {
       onRegisterSubmit(() => handleSubmitRef.current?.());
     }
+    if (typeof onBatchCreated === 'function') {
+      onBatchCreated(() => refreshBatchOptionsRef.current?.());
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onRegisterSubmit]);
+  }, [onRegisterSubmit, onBatchCreated]);
+
+  // Validate khi palletRows thay đổi (debounce)
+  useEffect(() => {
+    if (palletRows.length > 0 && showPalletTable) {
+      const timer = setTimeout(() => {
+        validateRows();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [palletRows, showPalletTable]);
 
   return (
     <div>
@@ -299,7 +402,7 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
               disabled={hasExistingPallets}
             >
               <Plus className="w-4 h-4 mr-2" />
-              Thêm Pallet
+              Thêm kệ kê hàng
             </Button>
           </div>
 
@@ -327,36 +430,47 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
 
       {showPalletTable && !hasExistingPallets && (
         <div className="space-y-3 mt-4">
+          {missingProducts.length > 0 && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 text-red-700">
+                <AlertCircle className="w-5 h-5" />
+                <span className="font-medium">Còn thiếu mặt hàng</span>
+              </div>
+              <p className="text-red-600 text-sm mt-1">
+                Vui lòng thêm tất cả mặt hàng từ đơn kiểm nhập vào pallet. Còn thiếu: {missingProducts.map(p => p.name).join(", ")}
+              </p>
+            </div>
+          )}
           <div className="flex justify-between items-center">
             <h3 className="text-base font-semibold text-gray-900">Pallet</h3>
             <Button
               variant="outline"
               className="h-[38px] text-sm"
-                onClick={async () => {
-                  const first = productOptions[0];
-                  const options = await fetchBatchOptionsByGoodsId(first?.goodsId);
-                  setPalletRows(prev => ([...prev, { productId: first?.value || "", productName: first?.label || "", batchId: "", batchCode: "", unitName: first?.unitName || "", unitsPerPackage: first?.unitsPerPackage || "", numPackages: "", goodsPackingId: goodsPackingByDetailId[first?.value] || null, batchOptions: options }]));
-                }}
+              onClick={async () => {
+                const first = productOptions[0];
+                const options = await fetchBatchOptionsByGoodsId(first?.goodsId);
+                setPalletRows(prev => ([...prev, { productId: first?.value || "", productName: first?.label || "", batchId: "", batchCode: "", unitName: first?.unitName || "", unitsPerPackage: first?.unitsPerPackage || "", numPackages: "", goodsPackingId: goodsPackingByDetailId[first?.value] || null, batchOptions: options }]));
+              }}
             >
-              <Plus className="w-4 h-4 mr-1" /> Thêm dòng
             </Button>
           </div>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[22%]">Tên sản phẩm</TableHead>
+                <TableHead className="w-[4%] text-center"></TableHead>
+                <TableHead className="w-[20%]">Tên sản phẩm</TableHead>
                 <TableHead className="w-[14%]">Số Lô</TableHead>
-                <TableHead className="w-[14%] text-center">Đơn vị tính</TableHead>
-                <TableHead className="w-[10%] text-center">Số lượng một thùng</TableHead>
+                <TableHead className="w-[12%] text-center">Đơn vị</TableHead>
+                <TableHead className="w-[10%] text-center">Đơn vị/thùng</TableHead>
                 <TableHead className="w-[12%] text-center">Số thùng</TableHead>
-                <TableHead className="w-[14%]">Tổng số hộp</TableHead>
+                <TableHead className="w-[14%]">Tổng số đơn vị</TableHead>
                 <TableHead className="w-[8%] text-center">Hoạt động</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {palletRows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-gray-500">Chưa có pallet nào</TableCell>
+                  <TableCell colSpan={8} className="text-center text-gray-500">Chưa có pallet nào</TableCell>
                 </TableRow>
               ) : (
                 palletRows.map((row, idx) => {
@@ -364,13 +478,41 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
                   const numPackages = Number(row.numPackages) || 0;
                   const totalUnits = unitsPerPackage * numPackages;
                   const hasSelectedProduct = !!row.productId;
+                  const hasError = rowErrors[idx] && rowErrors[idx].length > 0;
 
                   return (
-                    <TableRow key={idx}>
+                    <React.Fragment key={idx}>
+                      <TableRow>
+                        <TableCell className="text-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`h-8 w-8 p-0 hover:bg-green-50 ${hasError ? 'border-2 border-red-500' : ''}`}
+                            onClick={() => {
+                              // Duplicate row với số thùng = 0
+                              const duplicatedRow = {
+                                ...row,
+                                numPackages: 0,
+                                batchId: row.batchId || "",
+                                batchCode: row.batchCode || ""
+                              };
+                              setPalletRows(prev => {
+                                const newRows = [...prev];
+                                newRows.splice(idx + 1, 0, duplicatedRow);
+                                return newRows;
+                              });
+                            }}
+                            title="Thêm dòng giống mặt hàng này"
+                          >
+                            <Plus className="w-4 h-4 text-green-600" />
+                          </Button>
+                        </TableCell>
                       <TableCell>
                         <FloatingDropdown
                           value={row.productId || undefined}
-                          onChange={(value) => handleProductSelect(idx, value || "")}
+                          onChange={(value) => {
+                            handleProductSelect(idx, value || "");
+                          }}
                           options={productOptions}
                           placeholder="Chọn sản phẩm..."
                         />
@@ -396,7 +538,7 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
                             readOnly
                           />
                         )}
-                        
+
                       </TableCell>
                       <TableCell className="text-center">
                         <input
@@ -426,19 +568,53 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
                           onChange={e => setPalletRows(prev => prev.map((r, i) => i === idx ? { ...r, numPackages: e.target.value } : r))}
                           placeholder="Nhập số thùng"
                         />
-                        
+
                       </TableCell>
                       <TableCell className="text-sm font-semibold">{totalUnits}</TableCell>
                       <TableCell className="text-center">
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setPalletRows(prev => prev.filter((_, i) => i !== idx))}
+                          className={hasError ? 'border-2 border-red-500' : ''}
+                          onClick={() => {
+                            setPalletRows(prev => prev.filter((_, i) => i !== idx));
+                            // Xóa lỗi của row này
+                            setRowErrors(prev => {
+                              const newErrors = { ...prev };
+                              delete newErrors[idx];
+                              // Cập nhật lại index của các lỗi sau row bị xóa
+                              const updatedErrors = {};
+                              Object.keys(newErrors).forEach(key => {
+                                const keyNum = parseInt(key);
+                                if (keyNum < idx) {
+                                  updatedErrors[keyNum] = newErrors[keyNum];
+                                } else if (keyNum > idx) {
+                                  updatedErrors[keyNum - 1] = newErrors[keyNum];
+                                }
+                              });
+                              return updatedErrors;
+                            });
+                          }}
                         >
                           <Trash2 className="w-4 h-4 text-red-600" />
                         </Button>
                       </TableCell>
                     </TableRow>
+                    {hasError && (
+                      <TableRow>
+                        <TableCell colSpan={8} className="bg-red-50 py-2">
+                          <div className="text-red-600 text-xs space-y-1">
+                            {rowErrors[idx].map((error, errorIdx) => (
+                              <div key={errorIdx} className="flex items-start gap-1">
+                                <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                                <span>{error}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </React.Fragment>
                   );
                 })
               )}

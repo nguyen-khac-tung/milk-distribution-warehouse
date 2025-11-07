@@ -1,211 +1,131 @@
 import api from "./api";
 
-export const getSalesOrderListSalesRepresentatives = async (searchParams = {}) => {
+export const getSalesOrderListSalesRepresentatives = async (params = {}) => {
     try {
-        const body = {
-            pageNumber: searchParams.pageNumber || 1,
-            pageSize: searchParams.pageSize || 10,
-            search: searchParams.search || "",
-            sortField: searchParams.sortField || "",
-            sortAscending:
-                searchParams.sortAscending !== undefined
-                    ? searchParams.sortAscending
-                    : true,
+        const payload = {
+            pageNumber: params.pageNumber || 1,
+            pageSize: params.pageSize || 10,
+            search: params.search || "",
+            sortField: params.sortField || "",
+            sortAscending: params.sortAscending ?? true,
             filters: {
-                ...(searchParams.status && { status: searchParams.status }),
-                ...(searchParams.customerId && { customerId: searchParams.customerId }),
-                ...(searchParams.salesRepId && { salesRepId: searchParams.salesRepId }),
-                ...(searchParams.createdBy && { createdBy: searchParams.createdBy }),
-                ...(searchParams.approvedBy && { approvedBy: searchParams.approvedBy }),
-                ...(searchParams.assignedTo && { assignedTo: searchParams.assignedTo }),
-                // Backend expects keys named fromDate / toDate (case-insensitive). Map frontend estimated date keys to those.
-                ...(searchParams.fromEstimatedDate && { fromDate: searchParams.fromEstimatedDate }),
-                ...(searchParams.toEstimatedDate && { toDate: searchParams.toEstimatedDate }),
+                ...(params.status && { status: params.status }),
+                ...(params.retailerId && { retailerId: params.retailerId }),
+                ...(params.createdBy && { createdBy: params.createdBy }),
+                ...(params.approvalBy && { approvalBy: params.approvalBy }),
+                ...(params.fromEstimatedDate && { fromDate: params.fromEstimatedDate }),
+                ...(params.toEstimatedDate && { toDate: params.toEstimatedDate }),
             },
         };
 
-        const res = await api.post(
-            "/SalesOrder/GetSalesOrderListSalesRepresentatives",
-            body
-        );
-        console.log("API GetSalesOrderList: ", res)
+        const res = await api.post("/SalesOrder/GetSalesOrderListSalesRepresentatives", payload);
+        console.log("getSalesOrderListSalesRepresentatives:", res.data);
         return res.data;
     } catch (error) {
-        console.error("Error fetching sales orders for representatives:", error);
+        console.error("Error fetching sales orders for sales representatives:", error);
 
-        //Trích xuất lỗi thực tế từ backend nếu có
-        if (error.response && error.response.data) {
-            const Error = error.response.data;
-            return {
-                success: false,
-                message: Error.message || "Lỗi từ máy chủ.",
-                errors: Error.errors || null,
-                statusCode: error.response.status,
-            };
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
         }
 
-        //Lỗi không có phản hồi từ server (ví dụ: network)
-        return {
-            success: false,
-            message: "Không thể kết nối tới máy chủ. Vui lòng thử lại sau.",
-            errors: null,
-        };
+        throw error;
     }
 };
 
-export const getSalesOrderListSaleManager = async (searchParams = {}) => {
+export const getSalesOrderListSaleManager = async (params = {}) => {
     try {
-        const body = {
-            pageNumber: searchParams.pageNumber || 1,
-            pageSize: searchParams.pageSize || 10,
-            search: searchParams.search || "",
-            sortField: searchParams.sortField || "",
-            sortAscending:
-                searchParams.sortAscending !== undefined
-                    ? searchParams.sortAscending
-                    : true,
+        const payload = {
+            pageNumber: params.pageNumber || 1,
+            pageSize: params.pageSize || 10,
+            search: params.search || "",
+            sortField: params.sortField || "",
+            sortAscending: params.sortAscending ?? true,
             filters: {
-                ...(searchParams.status && { status: searchParams.status }),
-                ...(searchParams.customerId && { customerId: searchParams.customerId }),
-                ...(searchParams.salesRepId && { salesRepId: searchParams.salesRepId }),
-                ...(searchParams.createdBy && { createdBy: searchParams.createdBy }),
-                ...(searchParams.approvedBy && { approvedBy: searchParams.approvedBy }),
-                ...(searchParams.assignedTo && { assignedTo: searchParams.assignedTo }),
-                ...(searchParams.fromEstimatedDate && { fromDate: searchParams.fromEstimatedDate }),
-                ...(searchParams.toEstimatedDate && { toDate: searchParams.toEstimatedDate }),
+                ...(params.status && { status: params.status }),
+                ...(params.retailerId && { retailerId: params.retailerId }),
+                ...(params.createdBy && { createdBy: params.createdBy }),
+                ...(params.approvalBy && { approvalBy: params.approvalBy }),
+                ...(params.acknowledgedBy && { acknowledgedBy: params.acknowledgedBy }),
+                ...(params.fromEstimatedDate && { fromDate: params.fromEstimatedDate }),
+                ...(params.toEstimatedDate && { toDate: params.toEstimatedDate }),
             },
         };
 
-        const res = await api.post(
-            "/SalesOrder/GetSalesOrderListSaleManager",
-            body
-        );
-        console.log("API GetSalesOrderList: ", res)
+        const res = await api.post("/SalesOrder/GetSalesOrderListSaleManager", payload);
+        console.log("getSalesOrderListSaleManager:", res.data);
         return res.data;
     } catch (error) {
-        console.error("Error fetching sales orders for representatives:", error);
+        console.error("Error fetching sales orders (Sale Manager):", error);
 
-        //Trích xuất lỗi thực tế từ backend nếu có
-        if (error.response && error.response.data) {
-            const Error = error.response.data;
-            return {
-                success: false,
-                message: Error.message || "Lỗi từ máy chủ.",
-                errors: Error.errors || null,
-                statusCode: error.response.status,
-            };
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
         }
 
-        //Lỗi không có phản hồi từ server (ví dụ: network)
-        return {
-            success: false,
-            message: "Không thể kết nối tới máy chủ. Vui lòng thử lại sau.",
-            errors: null,
-        };
+        throw error;
     }
 };
 
-export const getSalesOrderListWarehouseManager = async (searchParams = {}) => {
+export const getSalesOrderListWarehouseManager = async (params = {}) => {
     try {
         const body = {
-            pageNumber: searchParams.pageNumber || 1,
-            pageSize: searchParams.pageSize || 10,
-            search: searchParams.search || "",
-            sortField: searchParams.sortField || "",
-            sortAscending:
-                searchParams.sortAscending !== undefined
-                    ? searchParams.sortAscending
-                    : true,
+            pageNumber: params.pageNumber || 1,
+            pageSize: params.pageSize || 10,
+            search: params.search || "",
+            sortField: params.sortField || "",
+            sortAscending: params.sortAscending ?? true,
             filters: {
-                ...(searchParams.status && { status: searchParams.status }),
-                ...(searchParams.customerId && { customerId: searchParams.customerId }),
-                ...(searchParams.salesRepId && { salesRepId: searchParams.salesRepId }),
-                ...(searchParams.createdBy && { createdBy: searchParams.createdBy }),
-                ...(searchParams.approvedBy && { approvedBy: searchParams.approvedBy }),
-                ...(searchParams.assignedTo && { assignedTo: searchParams.assignedTo }),
-                ...(searchParams.fromEstimatedDate && { fromDate: searchParams.fromEstimatedDate }),
-                ...(searchParams.toEstimatedDate && { toDate: searchParams.toEstimatedDate }),
+                ...(params.status && { status: params.status }),
+                ...(params.retailerId && { retailerId: params.retailerId }),
+                ...(params.createdBy && { createdBy: params.createdBy }),
+                ...(params.approvalBy && { approvalBy: params.approvalBy }),
+                ...(params.acknowledgedBy && { acknowledgedBy: params.acknowledgedBy }),
+                ...(params.assignTo && { assignTo: params.assignTo }),
+                ...(params.fromEstimatedDate && { fromDate: params.fromEstimatedDate }),
+                ...(params.toEstimatedDate && { toDate: params.toEstimatedDate }),
             },
         };
 
-        const res = await api.post(
-            "/SalesOrder/GetSalesOrderListWarehouseManager",
-            body
-        );
-        console.log("API GetSalesOrderList: ", res)
+        const res = await api.post("/SalesOrder/GetSalesOrderListWarehouseManager", body);
         return res.data;
     } catch (error) {
-        console.error("Error fetching sales orders for representatives:", error);
+        console.error("Error fetching sales orders for warehouse manager:", error);
 
-        //Trích xuất lỗi thực tế từ backend nếu có
-        if (error.response && error.response.data) {
-            const Error = error.response.data;
-            return {
-                success: false,
-                message: Error.message || "Lỗi từ máy chủ.",
-                errors: Error.errors || null,
-                statusCode: error.response.status,
-            };
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
         }
 
-        //Lỗi không có phản hồi từ server (ví dụ: network)
-        return {
-            success: false,
-            message: "Không thể kết nối tới máy chủ. Vui lòng thử lại sau.",
-            errors: null,
-        };
+        throw error;
     }
 };
 
-export const getSalesOrderListWarehouseStaff = async (searchParams = {}) => {
+export const getSalesOrderListWarehouseStaff = async (params = {}) => {
     try {
         const body = {
-            pageNumber: searchParams.pageNumber || 1,
-            pageSize: searchParams.pageSize || 10,
-            search: searchParams.search || "",
-            sortField: searchParams.sortField || "",
-            sortAscending:
-                searchParams.sortAscending !== undefined
-                    ? searchParams.sortAscending
-                    : true,
+            pageNumber: params.pageNumber || 1,
+            pageSize: params.pageSize || 10,
+            search: params.search || "",
+            sortField: params.sortField || "",
+            sortAscending: params.sortAscending ?? true,
             filters: {
-                ...(searchParams.status && { status: searchParams.status }),
-                ...(searchParams.customerId && { customerId: searchParams.customerId }),
-                ...(searchParams.salesRepId && { salesRepId: searchParams.salesRepId }),
-                ...(searchParams.createdBy && { createdBy: searchParams.createdBy }),
-                ...(searchParams.approvedBy && { approvedBy: searchParams.approvedBy }),
-                ...(searchParams.assignedTo && { assignedTo: searchParams.assignedTo }),
-                ...(searchParams.fromEstimatedDate && { fromDate: searchParams.fromEstimatedDate }),
-                ...(searchParams.toEstimatedDate && { toDate: searchParams.toEstimatedDate }),
+                ...(params.status && { status: params.status }),
+                ...(params.retailerId && { retailerId: params.retailerId }),
+                ...(params.acknowledgedBy && { acknowledgedBy: params.acknowledgedBy }),
+                ...(params.assignTo && { assignTo: params.assignTo }),
+                ...(params.fromEstimatedDate && { fromDate: params.fromEstimatedDate }),
+                ...(params.toEstimatedDate && { toDate: params.toEstimatedDate }),
             },
         };
 
-        const res = await api.post(
-            "/SalesOrder/GetSalesOrderListWarehouseStaff",
-            body
-        );
-        console.log("API GetSalesOrderList: ", res)
+        const res = await api.post("/SalesOrder/GetSalesOrderListWarehouseStaff", body);
         return res.data;
     } catch (error) {
-        console.error("Error fetching sales orders for representatives:", error);
+        console.error("Error fetching sales orders for warehouse staff:", error);
 
-        //Trích xuất lỗi thực tế từ backend nếu có
-        if (error.response && error.response.data) {
-            const Error = error.response.data;
-            return {
-                success: false,
-                message: Error.message || "Lỗi từ máy chủ.",
-                errors: Error.errors || null,
-                statusCode: error.response.status,
-            };
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
         }
 
-        //Lỗi không có phản hồi từ server (ví dụ: network)
-        return {
-            success: false,
-            message: "Không thể kết nối tới máy chủ. Vui lòng thử lại sau.",
-            errors: null,
-        };
+        throw error;
     }
 };
 

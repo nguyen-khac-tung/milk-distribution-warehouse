@@ -59,18 +59,22 @@ namespace MilkDistributionWarehouse.Controllers
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
 
-            return ApiResponse<List<LocationActiveDto>>.ToResultOk(locations);
+            return ApiResponse<List<LocationSuggestDto>>.ToResultOk(locations);
         }
 
-        [HttpGet("LocationPallet/{locationcode}")]
-        public async Task<IActionResult> GetLocationPallet(string locationcode)
+        [HttpPost("LocationPallet")]
+        public async Task<IActionResult> GetLocationPallet([FromBody] LocationCheckPalletDto dto)
         {
-            var (msg, locations) = await _locationService.GetLocationsPallet(locationcode);
+            var (msg, locationPallet) = await _locationService.GetLocationsPallet(dto.LocationCode, dto.PalletId);
+            var warning = "[User] Cảnh báo: Điều kiện lưu trữ của vị trí không phù hợp với điều kiện lưu trữ của pallet!";
 
-            if (!string.IsNullOrEmpty(msg))
+            if (!string.IsNullOrEmpty(msg) && msg != warning)
                 return ApiResponse<string>.ToResultError(msg);
 
-            return ApiResponse<LocationPalletDto>.ToResultOk(locations);
+            if (msg == warning)
+                return ApiResponse<LocationPalletDto>.ToResultOk(locationPallet, msg);
+
+            return ApiResponse<LocationPalletDto>.ToResultOk(locationPallet);
         }
 
         [Authorize(Roles = "Business Owner, Administrator")]

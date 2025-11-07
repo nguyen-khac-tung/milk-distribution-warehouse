@@ -8,9 +8,10 @@ import { Label } from "../../components/ui/label"
 import FloatingDropdown from "../../components/Common/FloatingDropdown"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
 import { Plus, Trash2, ArrowLeft, Save, X } from "lucide-react"
-import { updatePurchaseOrder, getGoodsDropDownBySupplierId, getPurchaseOrderDetail, getGoodsPackingByGoodsId } from "../../services/PurchaseOrderService"
+import { updatePurchaseOrder, getGoodsDropDownBySupplierId, getPurchaseOrderDetail, getGoodsPackingByGoodsId, submitPurchaseOrder } from "../../services/PurchaseOrderService"
 import { extractErrorMessage } from '../../utils/Validation';
 import { getSuppliersDropdown } from "../../services/SupplierService"
+import { ComponentIcon } from '../../components/IconComponent/Icon';
 
 export default function UpdatePurchaseOrder() {
     const navigate = useNavigate();
@@ -21,6 +22,7 @@ export default function UpdatePurchaseOrder() {
     const [suppliersLoading, setSuppliersLoading] = useState(false);
     const [goodsLoading, setGoodsLoading] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [submitLoading, setSubmitLoading] = useState(false);
     const [formData, setFormData] = useState({
         supplierName: "",
         note: ""
@@ -337,7 +339,7 @@ export default function UpdatePurchaseOrder() {
             const itemsWithIds = validItems.map(item => {
                 // Ưu tiên dùng goodsId từ item (đã có từ dữ liệu load)
                 let finalGoodsId = null;
-                
+
                 if (item.goodsId && item.goodsId !== 0) {
                     // Dùng goodsId từ item trước
                     finalGoodsId = parseInt(item.goodsId);
@@ -378,12 +380,107 @@ export default function UpdatePurchaseOrder() {
             };
 
             await updatePurchaseOrder(submitData);
-            window.showToast("Cập nhật đơn nhập thành công!", "success");
+            window.showToast("Cập nhật đơn mua hàng thành công!", "success");
             navigate("/purchase-orders");
         } catch (error) {
-            console.error("Lỗi khi cập nhật đơn nhập:", error);
-            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi cập nhật đơn nhập!";
+            console.error("Lỗi khi cập nhật đơn mua", error);
+            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi cập nhật đơn mua hàng!";
             window.showToast(errorMessage, "error");
+        }
+    }
+
+    const handleSubmitForApproval = async (e) => {
+        e.preventDefault();
+
+        // Reset validation errors
+        setFieldErrors({});
+        const newFieldErrors = {};
+
+        // Kiểm tra từng mặt hàng
+        items.forEach((item, index) => {
+            if (!item.goodsName) {
+                newFieldErrors[`${item.id}-goodsName`] = "Vui lòng chọn tên hàng hóa";
+            }
+            if (!item.goodsPackingId) {
+                newFieldErrors[`${item.id}-goodsPackingId`] = "Vui lòng chọn đóng gói";
+            }
+            if (!item.quantity || item.quantity <= 0) {
+                newFieldErrors[`${item.id}-quantity`] = "Vui lòng nhập số thùng lớn hơn 0";
+            }
+
+            // Kiểm tra validation số thùng
+            const quantityError = validateQuantity(item);
+            if (quantityError) {
+                newFieldErrors[`${item.id}-quantity`] = quantityError;
+            }
+        });
+
+        if (Object.keys(newFieldErrors).length > 0) {
+            setFieldErrors(newFieldErrors);
+            return;
+        }
+
+        const validItems = items.filter(item => item.goodsName && item.quantity && item.goodsPackingId);
+        if (validItems.length === 0) {
+            window.showToast("Vui lòng thêm ít nhất một hàng hóa với đầy đủ thông tin", "error");
+            return;
+        }
+
+        setSubmitLoading(true);
+        try {
+            // Cập nhật đơn hàng trước
+            const itemsWithIds = validItems.map(item => {
+                let finalGoodsId = null;
+
+                if (item.goodsId && item.goodsId !== 0) {
+                    finalGoodsId = parseInt(item.goodsId);
+                } else {
+                    const selectedGood = goods.find(good => good.goodsName === item.goodsName);
+                    if (selectedGood) {
+                        finalGoodsId = parseInt(selectedGood.goodsId);
+                    }
+                }
+
+                if (!finalGoodsId) {
+                    console.error("Cannot find goodsId for item:", item.goodsName, "item.goodsId:", item.goodsId);
+                    return null;
+                }
+
+                const packageQuantity = parseInt(item.quantity);
+
+                return {
+                    goodsId: finalGoodsId,
+                    packageQuantity: packageQuantity,
+                    goodsPackingId: parseInt(item.goodsPackingId),
+                    purchaseOrderDetailId: item.purchaseOrderDetailId || 0
+                };
+            }).filter(item => item !== null && item.goodsId);
+
+            if (itemsWithIds.length === 0) {
+                window.showToast("Không tìm thấy hàng hóa hợp lệ!", "error");
+                return;
+            }
+
+            const submitData = {
+                purchaseOderId: id,
+                purchaseOrderDetailUpdates: itemsWithIds,
+                note: formData.note || ""
+            };
+
+            // Cập nhật đơn hàng
+            await updatePurchaseOrder(submitData);
+            
+            // Sau đó gửi phê duyệt
+            await submitPurchaseOrder(id);
+            
+            window.showToast("Cập nhật và gửi phê duyệt đơn mua hàng thành công!", "success");
+            navigate("/purchase-orders");
+        } catch (error) {
+            console.error("Lỗi khi cập nhật và gửi phê duyệt đơn mua", error);
+            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi cập nhật và gửi phê duyệt đơn mua hàng!";
+            window.showToast(errorMessage, "error");
+        } finally {
+            setSubmitLoading(false);
         }
     }
 
@@ -401,11 +498,13 @@ export default function UpdatePurchaseOrder() {
             <div className="bg-white border-b border-gray-200 px-6 py-4 rounded-lg shadow-sm">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <Button variant="ghost" size="sm" onClick={() => navigate("/purchase-orders")} className="text-slate-600 hover:bg-slate-50">
-                            <ArrowLeft className="h-4 w-4 mr-2" />
-                            Quay Lại
-                        </Button>
-                        <h1 className="text-2xl font-bold text-slate-600">
+                        <button
+                            onClick={() => navigate("/purchase-orders")}
+                            className="flex items-center justify-center hover:opacity-80 transition-opacity p-0"
+                        >
+                            <ComponentIcon name="arrowBackCircleOutline" size={28} />
+                        </button>
+                        <h1 className="text-2xl font-bold text-slate-600 m-0">
                             Cập Nhật Đơn Mua Hàng
                         </h1>
                     </div>
@@ -419,7 +518,7 @@ export default function UpdatePurchaseOrder() {
                     <div className="p-6 space-y-6">
                         {/* Header Information */}
                         <div>
-                            <h3 className="text-lg font-semibold text-slate-600 mb-4">Thông Tin Đơn Hàng</h3>
+                            <h3 className="text-lg font-semibold text-slate-600 mb-4">Thông Tin Đơn Mua Hàng</h3>
                             <div className="space-y-6">
                                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                                     <div className="space-y-2">
@@ -657,6 +756,14 @@ export default function UpdatePurchaseOrder() {
                                 className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
                             >
                                 Cập Nhật Đơn Mua Hàng
+                            </Button>
+                            <Button
+                                type="button"
+                                onClick={handleSubmitForApproval}
+                                disabled={submitLoading}
+                                className="h-[38px] px-6 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {submitLoading ? "Đang xử lý..." : "Gửi Phê Duyệt"}
                             </Button>
                         </div>
                     </div>

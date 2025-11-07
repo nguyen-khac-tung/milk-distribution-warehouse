@@ -77,7 +77,7 @@ export default function SaleOrderFilterToggle({
     clearConfirmerFilter,
     showConfirmer = true,
 
-    // Assignee (người giao hàng)
+    // Assignee (người phân công)
     assigneeFilter,
     setAssigneeFilter,
     showAssigneeFilter,
@@ -116,18 +116,65 @@ export default function SaleOrderFilterToggle({
 }) {
     const [showSearchFilter, setShowSearchFilter] = useState(defaultOpen);
 
+    // Search states for each dropdown
+    const [statusSearch, setStatusSearch] = useState('');
+    const [retailerSearch, setRetailerSearch] = useState('');
+    const [approverSearch, setApproverSearch] = useState('');
+    const [sellerSearch, setSellerSearch] = useState('');
+    const [confirmerSearch, setConfirmerSearch] = useState('');
+    const [assigneeSearch, setAssigneeSearch] = useState('');
+
     const handleToggle = () => setShowSearchFilter(!showSearchFilter);
+
+    // Helper function to filter options based on search query
+    const filterOptions = (options, searchQuery, searchField = 'retailerName') => {
+        if (!searchQuery.trim()) return options;
+        const query = searchQuery.toLowerCase().trim();
+        return options.filter(option => {
+            const fieldValue = (option[searchField] || '').toLowerCase();
+            return fieldValue.includes(query);
+        });
+    };
 
     // Function to close all dropdowns except the one being opened
     const closeAllDropdownsExcept = (dropdownToKeep) => {
-        if (dropdownToKeep !== 'status' && setShowStatusFilter) setShowStatusFilter(false);
-        if (dropdownToKeep !== 'retailer' && setShowRetailerFilter) setShowRetailerFilter(false);
-        if (dropdownToKeep !== 'approver' && setShowApproverFilter) setShowApproverFilter(false);
-        if (dropdownToKeep !== 'seller' && setShowSellerFilter) setShowSellerFilter(false);
-        if (dropdownToKeep !== 'confirmer' && setShowConfirmerFilter) setShowConfirmerFilter(false);
-        if (dropdownToKeep !== 'assignee' && setShowAssigneeFilter) setShowAssigneeFilter(false);
-        if (dropdownToKeep !== 'estimatedDateRange' && setShowEstimatedDateRangeFilter) setShowEstimatedDateRangeFilter(false);
-        if (dropdownToKeep !== 'pageSize' && setShowPageSizeFilter) setShowPageSizeFilter(false);
+        if (dropdownToKeep !== 'status' && setShowStatusFilter) {
+            setShowStatusFilter(false);
+            setStatusSearch('');
+        }
+
+        if (dropdownToKeep !== 'retailer' && setShowRetailerFilter) {
+            setShowRetailerFilter(false);
+            setRetailerSearch('');
+        }
+
+        if (dropdownToKeep !== 'approver' && setShowApproverFilter) {
+            setShowApproverFilter(false);
+            setApproverSearch('');
+        }
+
+        if (dropdownToKeep !== 'seller' && setShowSellerFilter) {
+            setShowSellerFilter(false);
+            setSellerSearch('');
+        }
+
+        if (dropdownToKeep !== 'confirmer' && setShowConfirmerFilter) {
+            setShowConfirmerFilter(false);
+            setConfirmerSearch('');
+        }
+
+        if (dropdownToKeep !== 'assignee' && setShowAssigneeFilter) {
+            setShowAssigneeFilter(false);
+            setAssigneeSearch('');
+        }
+
+        if (dropdownToKeep !== 'estimatedDateRange' && setShowEstimatedDateRangeFilter) {
+            setShowEstimatedDateRangeFilter(false);
+        }
+
+        if (dropdownToKeep !== 'pageSize' && setShowPageSizeFilter) {
+            setShowPageSizeFilter(false);
+        }
     };
 
     const handleClearAll = () => {
@@ -137,6 +184,14 @@ export default function SaleOrderFilterToggle({
         setShowConfirmerFilter(false);
         setShowAssigneeFilter(false);
         setShowEstimatedDateRangeFilter(false);
+
+        // Clear all search queries
+        setStatusSearch('');
+        setRetailerSearch('');
+        setApproverSearch('');
+        setSellerSearch('');
+        setConfirmerSearch('');
+        setAssigneeSearch('');
 
         if (onClearAll) onClearAll();
         else {
@@ -171,13 +226,31 @@ export default function SaleOrderFilterToggle({
             );
             if (isInsideAnyDropdown) return;
 
-            // Otherwise close all dropdowns
-            if (setShowStatusFilter) setShowStatusFilter(false);
-            if (setShowRetailerFilter) setShowRetailerFilter(false);
-            if (setShowApproverFilter) setShowApproverFilter(false);
-            if (setShowSellerFilter) setShowSellerFilter(false);
-            if (setShowConfirmerFilter) setShowConfirmerFilter(false);
-            if (setShowAssigneeFilter) setShowAssigneeFilter(false);
+            // Otherwise close all dropdowns and reset search queries
+            if (setShowStatusFilter) {
+                setShowStatusFilter(false);
+                setStatusSearch('');
+            }
+            if (setShowRetailerFilter) {
+                setShowRetailerFilter(false);
+                setRetailerSearch('');
+            }
+            if (setShowApproverFilter) {
+                setShowApproverFilter(false);
+                setApproverSearch('');
+            }
+            if (setShowSellerFilter) {
+                setShowSellerFilter(false);
+                setSellerSearch('');
+            }
+            if (setShowConfirmerFilter) {
+                setShowConfirmerFilter(false);
+                setConfirmerSearch('');
+            }
+            if (setShowAssigneeFilter) {
+                setShowAssigneeFilter(false);
+                setAssigneeSearch('');
+            }
             if (setShowEstimatedDateRangeFilter) setShowEstimatedDateRangeFilter(false);
             if (setShowPageSizeFilter) setShowPageSizeFilter(false);
         };
@@ -245,9 +318,14 @@ export default function SaleOrderFilterToggle({
                             {showPageSizeButton && (
                                 <div className="relative page-size-filter-dropdown">
                                     <button
-                                        onClick={() => {
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            const wasOpen = showPageSizeFilter;
                                             closeAllDropdownsExcept('pageSize');
-                                            setShowPageSizeFilter(!showPageSizeFilter);
+                                            // Use setTimeout to ensure state updates complete before toggling
+                                            setTimeout(() => {
+                                                setShowPageSizeFilter(!wasOpen);
+                                            }, 0);
                                         }}
                                         className="flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706] transition-colors bg-white text-slate-700"
                                     >
@@ -289,7 +367,7 @@ export default function SaleOrderFilterToggle({
             {showSearchFilter && (
                 <div className="bg-gray-50 border-b border-slate-200 px-8 py-4 relative overflow-visible">
                     <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                        <div className="flex-1 w-full lg:w-5/6">
+                        <div className="flex-1 w-full lg:w-11/12">
                             <div className="space-y-3">
                                 {/* First Row */}
                                 <div className="flex flex-wrap gap-2 sm:gap-3 relative overflow-visible">
@@ -307,9 +385,14 @@ export default function SaleOrderFilterToggle({
                                     {/* Status Filter */}
                                     <div className="relative status-filter-dropdown flex-1 min-w-[140px]">
                                         <button
-                                            onClick={() => {
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                const wasOpen = showStatusFilter;
                                                 closeAllDropdownsExcept('status');
-                                                setShowStatusFilter(!showStatusFilter);
+                                                // Use setTimeout to ensure state updates complete before toggling
+                                                setTimeout(() => {
+                                                    setShowStatusFilter(!wasOpen);
+                                                }, 0);
                                             }}
                                             className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors w-full
                                             focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
@@ -330,23 +413,43 @@ export default function SaleOrderFilterToggle({
                                         </button>
 
                                         {showStatusFilter && (
-                                            <div className="absolute top-full right-0 mt-1 w-48 bg-white rounded-md shadow-lg border z-50 max-h-48 overflow-y-auto dropdown-scroll">
-                                                <div className="py-1">
-                                                    {statusOptions.map((option) => (
-                                                        <button
-                                                            key={option.value}
-                                                            onClick={() => {
-                                                                onStatusFilter(option.value);
-                                                                setShowStatusFilter(false);
-                                                            }}
-                                                            className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center justify-between"
-                                                        >
-                                                            {option.label}
-                                                            {statusFilter === option.value && (
-                                                                <span className="text-[#d97706]">✓</span>
-                                                            )}
-                                                        </button>
-                                                    ))}
+                                            <div className="absolute top-full right-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-50 max-h-64 overflow-hidden flex flex-col">
+                                                <div className="p-2 border-b border-gray-200">
+                                                    <div className="relative">
+                                                        <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                                        <Input
+                                                            placeholder="Tìm kiếm trạng thái..."
+                                                            value={statusSearch}
+                                                            onChange={(e) => setStatusSearch(e.target.value)}
+                                                            className="pl-8 h-8 text-sm border-gray-300 focus:border-orange-500 focus:ring-orange-500"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="overflow-y-auto dropdown-scroll max-h-48">
+                                                    <div className="py-1">
+                                                        {filterOptions(statusOptions, statusSearch, 'label').map((option) => (
+                                                            <button
+                                                                key={option.value}
+                                                                onClick={() => {
+                                                                    onStatusFilter(option.value);
+                                                                    setShowStatusFilter(false);
+                                                                    setStatusSearch('');
+                                                                }}
+                                                                className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center justify-between"
+                                                            >
+                                                                {option.label}
+                                                                {statusFilter === option.value && (
+                                                                    <span className="text-[#d97706]">✓</span>
+                                                                )}
+                                                            </button>
+                                                        ))}
+                                                        {filterOptions(statusOptions, statusSearch, 'label').length === 0 && (
+                                                            <div className="px-3 py-2 text-sm text-gray-500 text-center">
+                                                                Không tìm thấy kết quả
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         )}
@@ -356,9 +459,16 @@ export default function SaleOrderFilterToggle({
                                     {showRetailer && retailers.length > 0 && (
                                         <div className="relative retailer-filter-dropdown flex-1 min-w-[160px]">
                                             <button
-                                                onClick={() => {
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const wasOpen = showRetailerFilter;
                                                     closeAllDropdownsExcept('retailer');
-                                                    setShowRetailerFilter(!showRetailerFilter);
+                                                    // Use setTimeout to ensure state updates complete before toggling
+                                                    setTimeout(() => {
+                                                        if (setShowRetailerFilter) {
+                                                            setShowRetailerFilter(!wasOpen);
+                                                        }
+                                                    }, 0);
                                                 }}
                                                 className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors w-full
                                                 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
@@ -380,35 +490,154 @@ export default function SaleOrderFilterToggle({
                                             </button>
 
                                             {showRetailerFilter && (
-                                                <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-50 max-h-48 overflow-y-auto dropdown-scroll">
-                                                    <div className="py-1">
-                                                        <button
-                                                            onClick={() => {
-                                                                clearRetailerFilter();
-                                                                setShowRetailerFilter(false);
-                                                            }}
-                                                            className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 text-slate-700"
-                                                        >
-                                                            Tất cả nhà bán lẻ
-                                                        </button>
-                                                        {retailers.map((retailer) => (
+                                                <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-50 max-h-64 overflow-hidden flex flex-col">
+                                                    <div className="p-2 border-b border-gray-200">
+                                                        <div className="relative">
+                                                            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                                            <Input
+                                                                placeholder="Tìm kiếm nhà bán lẻ..."
+                                                                value={retailerSearch}
+                                                                onChange={(e) => setRetailerSearch(e.target.value)}
+                                                                className="pl-8 h-8 text-sm border-gray-300 focus:border-orange-500 focus:ring-orange-500"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className="overflow-y-auto dropdown-scroll max-h-48">
+                                                        <div className="py-1">
                                                             <button
-                                                                key={retailer.retailerId}
-                                                                onClick={() => {
-                                                                    onRetailerFilter(
-                                                                        retailer.retailerId.toString()
-                                                                    );
-                                                                    setShowRetailerFilter(false);
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    if (clearRetailerFilter) {
+                                                                        clearRetailerFilter();
+                                                                    }
+                                                                    if (setShowRetailerFilter) {
+                                                                        setShowRetailerFilter(false);
+                                                                    }
+                                                                    setRetailerSearch('');
                                                                 }}
-                                                                className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${retailerFilter ===
-                                                                    retailer.retailerId.toString()
-                                                                    ? "bg-orange-500 text-white"
-                                                                    : "text-slate-700"
-                                                                    }`}
+                                                                className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 text-slate-700"
                                                             >
-                                                                {retailer.retailerName}
+                                                                Tất cả nhà bán lẻ
                                                             </button>
-                                                        ))}
+                                                            {filterOptions(retailers, retailerSearch, 'retailerName').map((retailer) => (
+                                                                <button
+                                                                    key={retailer.retailerId}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        e.preventDefault();
+
+                                                                        if (onRetailerFilter && retailer.retailerId) {
+                                                                            const retailerIdStr = retailer.retailerId.toString();
+                                                                            onRetailerFilter(retailerIdStr);
+                                                                        }
+
+                                                                        if (setShowRetailerFilter) {
+                                                                            setShowRetailerFilter(false);
+                                                                        }
+                                                                        setRetailerSearch('');
+                                                                    }}
+                                                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${retailerFilter ===
+                                                                        retailer.retailerId.toString()
+                                                                        ? "bg-orange-500 text-white"
+                                                                        : "text-slate-700"
+                                                                        }`}
+                                                                >
+                                                                    {retailer.retailerName}
+                                                                </button>
+                                                            ))}
+                                                            {filterOptions(retailers, retailerSearch, 'retailerName').length === 0 && (
+                                                                <div className="px-3 py-2 text-sm text-gray-500 text-center">
+                                                                    Không tìm thấy kết quả
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Assignee Filter */}
+                                    {showAssignee && assignees.length > 0 && (
+                                        <div className="relative assignee-filter-dropdown flex-1 min-w-[160px]">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const wasOpen = showAssigneeFilter;
+                                                    closeAllDropdownsExcept('assignee');
+                                                    // Use setTimeout to ensure state updates complete before toggling
+                                                    setTimeout(() => {
+                                                        setShowAssigneeFilter(!wasOpen);
+                                                    }, 0);
+                                                }}
+                                                className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors w-full
+                                                focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
+                                                ${assigneeFilter
+                                                        ? "bg-[#d97706] text-white hover:bg-[#d97706]"
+                                                        : "bg-white text-slate-700 hover:bg-slate-50"
+                                                    }`}
+                                            >
+                                                <Users className="h-4 w-4 flex-shrink-0" />
+                                                <span className="text-sm font-medium truncate">
+                                                    {assigneeFilter
+                                                        ? assignees.find(
+                                                            (a) => a.userId.toString() === assigneeFilter
+                                                        )?.fullName || "Chọn người phân công"
+                                                        : "Tất cả người phân công"}
+                                                </span>
+                                                <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                                            </button>
+
+                                            {showAssigneeFilter && (
+                                                <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-50 max-h-64 overflow-hidden flex flex-col">
+                                                    <div className="p-2 border-b border-gray-200">
+                                                        <div className="relative">
+                                                            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                                            <Input
+                                                                placeholder="Tìm kiếm người giao hàng..."
+                                                                value={assigneeSearch}
+                                                                onChange={(e) => setAssigneeSearch(e.target.value)}
+                                                                className="pl-8 h-8 text-sm border-gray-300 focus:border-orange-500 focus:ring-orange-500"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className="overflow-y-auto dropdown-scroll max-h-48">
+                                                        <div className="py-1">
+                                                            <button
+                                                                onClick={() => {
+                                                                    clearAssigneeFilter();
+                                                                    setShowAssigneeFilter(false);
+                                                                    setAssigneeSearch('');
+                                                                }}
+                                                                className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 text-slate-700"
+                                                            >
+                                                                Tất cả người phân công
+                                                            </button>
+                                                            {filterOptions(assignees, assigneeSearch, 'name').map((assignee) => (
+                                                                <button
+                                                                    key={assignee.userId}
+                                                                    onClick={() => {
+                                                                        onAssigneeFilter(assignee.userId.toString());
+                                                                        setShowAssigneeFilter(false);
+                                                                        setAssigneeSearch('');
+                                                                    }}
+                                                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${assigneeFilter ===
+                                                                        assignee.userId.toString()
+                                                                        ? "bg-orange-500 text-white"
+                                                                        : "text-slate-700"
+                                                                        }`}
+                                                                >
+                                                                    {assignee.fullName}
+                                                                </button>
+                                                            ))}
+                                                            {filterOptions(assignees, assigneeSearch, 'name').length === 0 && (
+                                                                <div className="px-3 py-2 text-sm text-gray-500 text-center">
+                                                                    Không tìm thấy kết quả
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
@@ -423,9 +652,14 @@ export default function SaleOrderFilterToggle({
                                     {showApprover && approvers.length > 0 && (
                                         <div className="relative approver-filter-dropdown flex-1 min-w-[150px]">
                                             <button
-                                                onClick={() => {
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const wasOpen = showApproverFilter;
                                                     closeAllDropdownsExcept('approver');
-                                                    setShowApproverFilter(!showApproverFilter);
+                                                    // Use setTimeout to ensure state updates complete before toggling
+                                                    setTimeout(() => {
+                                                        setShowApproverFilter(!wasOpen);
+                                                    }, 0);
                                                 }}
                                                 className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors w-full
                                                 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
@@ -446,32 +680,53 @@ export default function SaleOrderFilterToggle({
                                             </button>
 
                                             {showApproverFilter && (
-                                                <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-50 max-h-48 overflow-y-auto dropdown-scroll">
-                                                    <div className="py-1">
-                                                        <button
-                                                            onClick={() => {
-                                                                clearApproverFilter();
-                                                                setShowApproverFilter(false);
-                                                            }}
-                                                            className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 text-slate-700"
-                                                        >
-                                                            Tất cả người duyệt
-                                                        </button>
-                                                        {approvers.map((approver) => (
+                                                <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-50 max-h-64 overflow-hidden flex flex-col">
+                                                    <div className="p-2 border-b border-gray-200">
+                                                        <div className="relative">
+                                                            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                                            <Input
+                                                                placeholder="Tìm kiếm người duyệt..."
+                                                                value={approverSearch}
+                                                                onChange={(e) => setApproverSearch(e.target.value)}
+                                                                className="pl-8 h-8 text-sm border-gray-300 focus:border-orange-500 focus:ring-orange-500"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className="overflow-y-auto dropdown-scroll max-h-48">
+                                                        <div className="py-1">
                                                             <button
-                                                                key={approver.userId}
                                                                 onClick={() => {
-                                                                    onApproverFilter(approver.userId.toString());
+                                                                    clearApproverFilter();
                                                                     setShowApproverFilter(false);
+                                                                    setApproverSearch('');
                                                                 }}
-                                                                className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${approverFilter === approver.userId.toString()
-                                                                    ? "bg-orange-500 text-white"
-                                                                    : "text-slate-700"
-                                                                    }`}
+                                                                className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 text-slate-700"
                                                             >
-                                                                {approver.fullName}
+                                                                Tất cả người duyệt
                                                             </button>
-                                                        ))}
+                                                            {filterOptions(approvers, approverSearch, 'name').map((approver) => (
+                                                                <button
+                                                                    key={approver.userId}
+                                                                    onClick={() => {
+                                                                        onApproverFilter(approver.userId.toString());
+                                                                        setShowApproverFilter(false);
+                                                                        setApproverSearch('');
+                                                                    }}
+                                                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${approverFilter === approver.userId.toString()
+                                                                        ? "bg-orange-500 text-white"
+                                                                        : "text-slate-700"
+                                                                        }`}
+                                                                >
+                                                                    {approver.fullName}
+                                                                </button>
+                                                            ))}
+                                                            {filterOptions(approvers, approverSearch, 'name').length === 0 && (
+                                                                <div className="px-3 py-2 text-sm text-gray-500 text-center">
+                                                                    Không tìm thấy kết quả
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
@@ -482,9 +737,14 @@ export default function SaleOrderFilterToggle({
                                     {showSeller && sellers.length > 0 && (
                                         <div className="relative seller-filter-dropdown flex-1 min-w-[150px]">
                                             <button
-                                                onClick={() => {
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const wasOpen = showSellerFilter;
                                                     closeAllDropdownsExcept('seller');
-                                                    setShowSellerFilter(!showSellerFilter);
+                                                    // Use setTimeout to ensure state updates complete before toggling
+                                                    setTimeout(() => {
+                                                        setShowSellerFilter(!wasOpen);
+                                                    }, 0);
                                                 }}
                                                 className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors w-full
                                                 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
@@ -505,32 +765,53 @@ export default function SaleOrderFilterToggle({
                                             </button>
 
                                             {showSellerFilter && (
-                                                <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-50 max-h-48 overflow-y-auto dropdown-scroll">
-                                                    <div className="py-1">
-                                                        <button
-                                                            onClick={() => {
-                                                                clearSellerFilter();
-                                                                setShowSellerFilter(false);
-                                                            }}
-                                                            className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 text-slate-700"
-                                                        >
-                                                            Tất cả nhân viên bán hàng
-                                                        </button>
-                                                        {sellers.map((seller) => (
+                                                <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-50 max-h-64 overflow-hidden flex flex-col">
+                                                    <div className="p-2 border-b border-gray-200">
+                                                        <div className="relative">
+                                                            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                                            <Input
+                                                                placeholder="Tìm kiếm người tạo đơn..."
+                                                                value={sellerSearch}
+                                                                onChange={(e) => setSellerSearch(e.target.value)}
+                                                                className="pl-8 h-8 text-sm border-gray-300 focus:border-orange-500 focus:ring-orange-500"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className="overflow-y-auto dropdown-scroll max-h-48">
+                                                        <div className="py-1">
                                                             <button
-                                                                key={seller.userId}
                                                                 onClick={() => {
-                                                                    onSellerFilter(seller.userId.toString());
+                                                                    clearSellerFilter();
                                                                     setShowSellerFilter(false);
+                                                                    setSellerSearch('');
                                                                 }}
-                                                                className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${sellerFilter === seller.userId.toString()
-                                                                    ? "bg-orange-500 text-white"
-                                                                    : "text-slate-700"
-                                                                    }`}
+                                                                className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 text-slate-700"
                                                             >
-                                                                {seller.fullName}
+                                                                Tất cả nhân viên bán hàng
                                                             </button>
-                                                        ))}
+                                                            {filterOptions(sellers, sellerSearch, 'name').map((seller) => (
+                                                                <button
+                                                                    key={seller.userId}
+                                                                    onClick={() => {
+                                                                        onSellerFilter(seller.userId.toString());
+                                                                        setShowSellerFilter(false);
+                                                                        setSellerSearch('');
+                                                                    }}
+                                                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${sellerFilter === seller.userId.toString()
+                                                                        ? "bg-orange-500 text-white"
+                                                                        : "text-slate-700"
+                                                                        }`}
+                                                                >
+                                                                    {seller.fullName}
+                                                                </button>
+                                                            ))}
+                                                            {filterOptions(sellers, sellerSearch, 'name').length === 0 && (
+                                                                <div className="px-3 py-2 text-sm text-gray-500 text-center">
+                                                                    Không tìm thấy kết quả
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
@@ -541,9 +822,14 @@ export default function SaleOrderFilterToggle({
                                     {showConfirmer && confirmers.length > 0 && (
                                         <div className="relative confirmer-filter-dropdown flex-1 min-w-[150px]">
                                             <button
-                                                onClick={() => {
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const wasOpen = showConfirmerFilter;
                                                     closeAllDropdownsExcept('confirmer');
-                                                    setShowConfirmerFilter(!showConfirmerFilter);
+                                                    // Use setTimeout to ensure state updates complete before toggling
+                                                    setTimeout(() => {
+                                                        setShowConfirmerFilter(!wasOpen);
+                                                    }, 0);
                                                 }}
                                                 className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors w-full
                                                 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
@@ -564,95 +850,56 @@ export default function SaleOrderFilterToggle({
                                             </button>
 
                                             {showConfirmerFilter && (
-                                                <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-50 max-h-48 overflow-y-auto dropdown-scroll">
-                                                    <div className="py-1">
-                                                        <button
-                                                            onClick={() => {
-                                                                clearConfirmerFilter();
-                                                                setShowConfirmerFilter(false);
-                                                            }}
-                                                            className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 text-slate-700"
-                                                        >
-                                                            Tất cả người xác nhận
-                                                        </button>
-                                                        {confirmers.map((confirmer) => (
-                                                            <button
-                                                                key={confirmer.userId}
-                                                                onClick={() => {
-                                                                    onConfirmerFilter(
-                                                                        confirmer.userId.toString()
-                                                                    );
-                                                                    setShowConfirmerFilter(false);
-                                                                }}
-                                                                className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${confirmerFilter ===
-                                                                    confirmer.userId.toString()
-                                                                    ? "bg-orange-500 text-white"
-                                                                    : "text-slate-700"
-                                                                    }`}
-                                                            >
-                                                                {confirmer.fullName}
-                                                            </button>
-                                                        ))}
+                                                <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-50 max-h-64 overflow-hidden flex flex-col">
+                                                    <div className="p-2 border-b border-gray-200">
+                                                        <div className="relative">
+                                                            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                                            <Input
+                                                                placeholder="Tìm kiếm người xác nhận..."
+                                                                value={confirmerSearch}
+                                                                onChange={(e) => setConfirmerSearch(e.target.value)}
+                                                                className="pl-8 h-8 text-sm border-gray-300 focus:border-orange-500 focus:ring-orange-500"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            />
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {/* Assignee Filter */}
-                                    {showAssignee && assignees.length > 0 && (
-                                        <div className="relative assignee-filter-dropdown flex-1 min-w-[160px]">
-                                            <button
-                                                onClick={() => {
-                                                    closeAllDropdownsExcept('assignee');
-                                                    setShowAssigneeFilter(!showAssigneeFilter);
-                                                }}
-                                                className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors w-full
-                                                focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
-                                                ${assigneeFilter
-                                                        ? "bg-[#d97706] text-white hover:bg-[#d97706]"
-                                                        : "bg-white text-slate-700 hover:bg-slate-50"
-                                                    }`}
-                                            >
-                                                <Users className="h-4 w-4 flex-shrink-0" />
-                                                <span className="text-sm font-medium truncate">
-                                                    {assigneeFilter
-                                                        ? assignees.find(
-                                                            (a) => a.userId.toString() === assigneeFilter
-                                                        )?.fullName || "Chọn người giao hàng"
-                                                        : "Tất cả người giao hàng"}
-                                                </span>
-                                                <ChevronDown className="h-4 w-4 flex-shrink-0" />
-                                            </button>
-
-                                            {showAssigneeFilter && (
-                                                <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-50 max-h-48 overflow-y-auto dropdown-scroll">
-                                                    <div className="py-1">
-                                                        <button
-                                                            onClick={() => {
-                                                                clearAssigneeFilter();
-                                                                setShowAssigneeFilter(false);
-                                                            }}
-                                                            className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 text-slate-700"
-                                                        >
-                                                            Tất cả người giao hàng
-                                                        </button>
-                                                        {assignees.map((assignee) => (
+                                                    <div className="overflow-y-auto dropdown-scroll max-h-48">
+                                                        <div className="py-1">
                                                             <button
-                                                                key={assignee.userId}
                                                                 onClick={() => {
-                                                                    onAssigneeFilter(assignee.userId.toString());
-                                                                    setShowAssigneeFilter(false);
+                                                                    clearConfirmerFilter();
+                                                                    setShowConfirmerFilter(false);
+                                                                    setConfirmerSearch('');
                                                                 }}
-                                                                className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${assigneeFilter ===
-                                                                    assignee.userId.toString()
-                                                                    ? "bg-orange-500 text-white"
-                                                                    : "text-slate-700"
-                                                                    }`}
+                                                                className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 text-slate-700"
                                                             >
-                                                                {assignee.fullName}
+                                                                Tất cả người xác nhận
                                                             </button>
-                                                        ))}
+                                                            {filterOptions(confirmers, confirmerSearch, 'name').map((confirmer) => (
+                                                                <button
+                                                                    key={confirmer.userId}
+                                                                    onClick={() => {
+                                                                        onConfirmerFilter(
+                                                                            confirmer.userId.toString()
+                                                                        );
+                                                                        setShowConfirmerFilter(false);
+                                                                        setConfirmerSearch('');
+                                                                    }}
+                                                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${confirmerFilter ===
+                                                                        confirmer.userId.toString()
+                                                                        ? "bg-orange-500 text-white"
+                                                                        : "text-slate-700"
+                                                                        }`}
+                                                                >
+                                                                    {confirmer.fullName}
+                                                                </button>
+                                                            ))}
+                                                            {filterOptions(confirmers, confirmerSearch, 'name').length === 0 && (
+                                                                <div className="px-3 py-2 text-sm text-gray-500 text-center">
+                                                                    Không tìm thấy kết quả
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
@@ -662,9 +909,14 @@ export default function SaleOrderFilterToggle({
                                     {/* Estimated Date Range Filter */}
                                     <div className="relative estimated-date-range-filter-dropdown flex-1 min-w-[160px]">
                                         <button
-                                            onClick={() => {
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                const wasOpen = showEstimatedDateRangeFilter;
                                                 closeAllDropdownsExcept('estimatedDateRange');
-                                                setShowEstimatedDateRangeFilter(!showEstimatedDateRangeFilter);
+                                                // Use setTimeout to ensure state updates complete before toggling
+                                                setTimeout(() => {
+                                                    setShowEstimatedDateRangeFilter(!wasOpen);
+                                                }, 0);
                                             }}
                                             className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors w-full
                                             focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
@@ -734,7 +986,7 @@ export default function SaleOrderFilterToggle({
 
                         {/* Clear Filters Button */}
                         {showClearButton && (
-                            <div className="w-full lg:w-1/6 flex justify-end">
+                            <div className="w-full lg:w-1/12 flex justify-end">
                                 <ClearFiltersButton
                                     onClear={handleClearAll}
                                     hasActiveFilters={hasActiveFilters}

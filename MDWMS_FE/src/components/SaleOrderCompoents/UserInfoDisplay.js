@@ -62,11 +62,11 @@ const UserInfoDisplay = ({ order, formatDate, hasPermission, userInfo }) => {
     const getApprovedAt = () => order.approvalBy ? formatDate(order.approvalAt || order.updatedAt) : 'Chưa có thông tin';
 
     const getRejectedByName = () => order.approvalBy?.fullName || order.approvalByName || 'Chưa có thông tin';
-    
+
     const getRejectedAt = () => order.approvalBy ? formatDate(order.approvalAt || order.updatedAt) : 'Chưa có thông tin';
 
     const getAssignToName = () => order.assignTo?.fullName || order.assignToByName || 'Chưa có thông tin';
-    
+
     const getAssignedAt = () => order.assignTo ? formatDate(order.acknowledgeAt || order.updatedAt) : 'Chưa có thông tin';
 
     return (

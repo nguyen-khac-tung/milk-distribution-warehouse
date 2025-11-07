@@ -31,6 +31,8 @@
         public const int Receiving = 7;
         public const int Inspected = 8;
         public const int Completed = 9;
+        public const int Ordered = 10;
+        public const int AwaitingArrival = 11;
     }
 
     /// <summary>

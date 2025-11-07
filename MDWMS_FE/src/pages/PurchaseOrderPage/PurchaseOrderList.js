@@ -298,14 +298,14 @@ export default function PurchaseOrderList() {
 
       if (!orderId) {
         console.error("No valid ID found. Available fields:", Object.keys(selectedPurchaseOrder));
-        throw new Error("Không tìm thấy ID của đơn nhập");
+        throw new Error("Không tìm thấy ID của đơn mua hàng");
       }
 
       await deletePurchaseOrder(orderId);
 
       // Show success message
       if (window.showToast) {
-        window.showToast("Xóa đơn nhập thành công!", "success");
+        window.showToast("Xóa đơn mua hàng thành công!", "success");
       }
 
       // Close modal and refresh data
@@ -734,9 +734,9 @@ export default function PurchaseOrderList() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-600">Quản lý Đơn yêu cầu mua hàng</h1>
+            <h1 className="text-2xl font-bold text-slate-600">Quản lý đơn mua hàng</h1>
             <p className="text-slate-600 mt-1">
-              Quản lý các đơn yêu cầu mua hàng trong hệ thống
+              Quản lý các đơn mua hàng trong hệ thống
             </p>
           </div>
           <div className="flex space-x-3">
@@ -748,7 +748,7 @@ export default function PurchaseOrderList() {
                 }}
               >
                 <Plus className="mr-2 h-4 w-4 text-white" />
-                Tạo đơn hàng mới
+                Tạo đơn mua hàng mới
               </Button>
             </PermissionWrapper>
           </div>
@@ -882,7 +882,7 @@ export default function PurchaseOrderList() {
           isOpen={showDeleteModal}
           onClose={handleDeleteCancel}
           onConfirm={handleDeleteConfirm}
-          itemName="đơn nhập hàng này"
+          itemName="đơn mua hàng này"
         />
       </div>
     </div>
