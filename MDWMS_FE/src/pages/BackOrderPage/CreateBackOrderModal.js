@@ -272,7 +272,7 @@ export default function CreateBackOrderModal({ isOpen, onClose, onSuccess, selec
             {isBulkMode ? (
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
-                  <CheckCircle className="h-5 w-5 text-red-600" />
+                  <CheckCircle className="h-5 w-5 text-red-600 mb-1" />
                   <h3 className="text-lg font-semibold text-slate-700">
                     Danh sách mặt hàng thiếu tồn kho ({selectedItems.length})
                   </h3>
@@ -284,8 +284,8 @@ export default function CreateBackOrderModal({ isOpen, onClose, onSuccess, selec
                       <Card key={index} className={`border ${isInsufficient ? 'border-red-200 bg-red-50' : 'border-gray-200'}`}>
                         <CardContent className="p-4">
                           <div className="flex items-start gap-3">
-                            <CheckCircle className={`h-5 w-5 mt-0.5 ${isInsufficient ? 'text-red-600' : 'text-green-600'}`} />
-                            <div className="flex-1">
+                            <CheckCircle className={`h-5 w-5 mt-1.5 ${isInsufficient ? 'text-red-600' : 'text-green-600'}`} />
+                            <div className="flex-1 pt-1">
                               <h4 className="font-semibold text-slate-800 mb-2">{item.goodsName}</h4>
                               <div className="text-sm text-slate-600 mb-3">
                                 Mã sản phẩm: <span className="font-medium text-slate-700">{item.goodsCode || "-"}</span>
