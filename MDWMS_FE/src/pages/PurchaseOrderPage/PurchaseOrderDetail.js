@@ -201,7 +201,7 @@ const PurchaseOrderDetail = () => {
         if (purchaseOrder?.arrivalConfirmedBy || purchaseOrder?.arrivalConfirmedAt) {
             return false;
         }
-        
+
         // Cho phép xác nhận giao đến khi:
         // - Approved: đã duyệt (cho phép xác nhận giao đến)
         // - Ordered: đã đặt hàng (có thể xác nhận giao đến trước hoặc sau phân công)
@@ -211,16 +211,16 @@ const PurchaseOrderDetail = () => {
         return hasPermission(PERMISSIONS.PURCHASE_ORDER_CONFIRM_GOODS_RECEIVED) &&
             purchaseOrder?.status !== PURCHASE_ORDER_STATUS.GoodsReceived &&
             (purchaseOrder?.status === PURCHASE_ORDER_STATUS.Approved ||
-             purchaseOrder?.status === PURCHASE_ORDER_STATUS.Ordered ||
-             purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving ||
-             purchaseOrder?.status === PURCHASE_ORDER_STATUS.AwaitingArrival);
+                purchaseOrder?.status === PURCHASE_ORDER_STATUS.Ordered ||
+                purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving ||
+                purchaseOrder?.status === PURCHASE_ORDER_STATUS.AwaitingArrival);
     };
 
     const canAssignReceiving = () => {
         // Cho phép phân công khi status là Ordered hoặc GoodsReceived
         return hasPermission(PERMISSIONS.PURCHASE_ORDER_ASSIGN_FOR_RECEIVING) &&
             (purchaseOrder?.status === PURCHASE_ORDER_STATUS.Ordered ||
-             purchaseOrder?.status === PURCHASE_ORDER_STATUS.GoodsReceived);
+                purchaseOrder?.status === PURCHASE_ORDER_STATUS.GoodsReceived);
     };
 
     const canReAssignReceiving = () => {
@@ -540,7 +540,7 @@ const PurchaseOrderDetail = () => {
                                         {/* Left: Supplier */}
                                         <div className="flex items-center space-x-2 min-w-0">
                                             <Store className="h-4 w-4 text-green-600 flex-shrink-0" />
-                                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0 w-[85px]">Nhà cung cấp:</label>
+                                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0 w-[115px]">Nhà cung cấp:</label>
                                             <span className="text-sm font-semibold text-gray-900 bg-gray-200 px-3 py-1 rounded border whitespace-nowrap flex-1">
                                                 {purchaseOrder.supplierName || 'Chưa có thông tin'}
                                             </span>
@@ -561,7 +561,7 @@ const PurchaseOrderDetail = () => {
                                         {/* Left: Email */}
                                         <div className="flex items-center space-x-2 min-w-0">
                                             <Mail className="h-4 w-4 text-orange-600 flex-shrink-0" />
-                                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0 w-[85px]">Email:</label>
+                                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0 w-[115px]">Email:</label>
                                             <span className="text-sm text-gray-900 bg-gray-200 px-3 py-1 rounded border whitespace-nowrap flex-1">
                                                 {purchaseOrder.email || 'Chưa có thông tin'}
                                             </span>
@@ -602,7 +602,7 @@ const PurchaseOrderDetail = () => {
                                     <TableHeader>
                                         <TableRow className="bg-gray-100">
                                             <TableHead className="w-16 text-center font-semibold">STT</TableHead>
-                                            <TableHead className="font-semibold"style={{ minWidth: '120px' }}>Mã hàng hóa</TableHead>
+                                            <TableHead className="font-semibold" style={{ minWidth: '120px' }}>Mã hàng hóa</TableHead>
                                             <TableHead className="font-semibold" style={{ minWidth: '120px' }}>Tên hàng hóa</TableHead>
                                             <TableHead className="text-center font-semibold" style={{ minWidth: '119px' }}>Đơn vị/thùng</TableHead>
                                             <TableHead className="text-center font-semibold">Số thùng</TableHead>
