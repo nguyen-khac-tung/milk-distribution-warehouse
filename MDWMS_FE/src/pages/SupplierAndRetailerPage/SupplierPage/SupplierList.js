@@ -334,7 +334,7 @@ export default function SuppliersPage() {
     ]
     if (!statusSearchQuery) return statusOptions
     const query = statusSearchQuery.toLowerCase()
-    return statusOptions.filter(option => 
+    return statusOptions.filter(option =>
       option.label.toLowerCase().includes(query)
     )
   }, [statusSearchQuery])
@@ -421,7 +421,7 @@ export default function SuppliersPage() {
           <SearchFilterToggle
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            searchPlaceholder="Tìm kiếm theo tên công ty hoặc thương hiệu..."
+            searchPlaceholder="Tìm kiếm theo CT, SDT, người liên hệ, thương hiệu"
             statusFilter={statusFilter}
             setStatusFilter={setStatusFilter}
             showStatusFilter={showStatusFilter}
