@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "../../components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
 import { Card } from "../../components/ui/card"
@@ -91,6 +91,8 @@ export default function AdminPage() {
   const [showRoleFilter, setShowRoleFilter] = useState(false)
   const [availableRoles, setAvailableRoles] = useState([])
   const [showPageSizeFilter, setShowPageSizeFilter] = useState(false)
+  const [statusSearchQuery, setStatusSearchQuery] = useState("")
+  const [roleSearchQuery, setRoleSearchQuery] = useState("")
 
   const [sortColumn, setSortColumn] = useState(null)
   const [sortDirection, setSortDirection] = useState("asc")
@@ -108,17 +110,44 @@ export default function AdminPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [userToDelete, setUserToDelete] = useState(null)
 
+  // Filter roles and status options based on search query
+  const filteredRoles = useMemo(() => {
+    if (!roleSearchQuery) return availableRoles
+    const query = roleSearchQuery.toLowerCase()
+    return availableRoles.filter(role => {
+      const roleLabel = typeof role === 'object' ? (role.label || role.description || role.roleName || "").toLowerCase() : role.toString().toLowerCase()
+      return roleLabel.includes(query)
+    })
+  }, [availableRoles, roleSearchQuery])
+
+  const filteredStatusOptions = useMemo(() => {
+    const statusOptions = [
+      { value: "", label: "Tất cả trạng thái" },
+      { value: "1", label: "Hoạt động" },
+      { value: "2", label: "Ngừng hoạt động" }
+    ]
+    if (!statusSearchQuery) return statusOptions
+    const query = statusSearchQuery.toLowerCase()
+    return statusOptions.filter(option => 
+      option.label.toLowerCase().includes(query)
+    )
+  }, [statusSearchQuery])
+
   const handleStatusFilter = (value) => {
     setStatusFilter(value)
     setShowStatusFilter(false)
+    setStatusSearchQuery("")
   }
   const clearStatusFilter = () => {
     setStatusFilter("")
+    setStatusSearchQuery("")
   }
   const clearAllFilters = () => {
     setSearchQuery("")
     setStatusFilter("")
+    setStatusSearchQuery("")
     setRoleFilter("")
+    setRoleSearchQuery("")
   }
   const handlePageSizeChange = (newPageSize) => {
     setPagination(prev => ({ ...prev, pageSize: newPageSize, pageNumber: 1 }))
@@ -127,9 +156,11 @@ export default function AdminPage() {
   const handleRoleFilter = (value) => {
     setRoleFilter(value !== null && value !== undefined ? String(value) : value)
     setShowRoleFilter(false)
+    setRoleSearchQuery("")
   }
   const clearRoleFilter = () => {
     setRoleFilter("")
+    setRoleSearchQuery("")
   }
   const handleSort = (column) => {
     if (sortColumn === column) {
@@ -582,6 +613,10 @@ export default function AdminPage() {
             ]}
             onStatusFilter={handleStatusFilter}
             clearStatusFilter={clearStatusFilter}
+            enableStatusSearch={true}
+            statusSearchQuery={statusSearchQuery}
+            setStatusSearchQuery={setStatusSearchQuery}
+            filteredStatusOptions={filteredStatusOptions}
             roleFilter={roleFilter}
             setRoleFilter={setRoleFilter}
             showRoleFilter={showRoleFilter}
@@ -592,6 +627,13 @@ export default function AdminPage() {
             }))}
             onRoleFilter={handleRoleFilter}
             clearRoleFilter={clearRoleFilter}
+            enableRoleSearch={true}
+            roleSearchQuery={roleSearchQuery}
+            setRoleSearchQuery={setRoleSearchQuery}
+            filteredRoles={filteredRoles.map(role => ({
+              value: String(role.roleId),
+              label: role.description || role.roleName || String(role.roleId)
+            }))}
             onClearAll={clearAllFilters}
             pageSize={pagination.pageSize}
             setPageSize={setPagination}

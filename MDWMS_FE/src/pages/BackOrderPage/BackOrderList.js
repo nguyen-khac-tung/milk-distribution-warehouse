@@ -8,6 +8,7 @@ import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
 import { Checkbox } from "../../components/ui/checkbox";
+import { Input } from "../../components/ui/input";
 import { Edit, Trash2, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Eye, Building2, Plus } from "lucide-react";
 import { BackOrderDetail } from "./ViewBackOrderModal";
 import UpdateBackOrder from "./UpdateBackOrderModal";
@@ -72,6 +73,8 @@ export default function BackOrderList() {
     })
     const [showPageSizeFilter, setShowPageSizeFilter] = useState(false)
     const [isInitialized, setIsInitialized] = useState(false)
+    const [retailerSearchQuery, setRetailerSearchQuery] = useState("")
+    const [statusSearchQuery, setStatusSearchQuery] = useState("")
 
     // Thống kê tổng (không thay đổi khi search/filter)
     const [totalStats, setTotalStats] = useState({
@@ -225,6 +228,11 @@ export default function BackOrderList() {
         const handleClickOutside = (event) => {
             if (showStatusFilter && !event.target.closest('.status-filter-dropdown')) {
                 setShowStatusFilter(false)
+                setStatusSearchQuery("")
+            }
+            if (showRetailerFilter && !event.target.closest('.retailer-filter-dropdown')) {
+                setShowRetailerFilter(false)
+                setRetailerSearchQuery("")
             }
             if (showPageSizeFilter && !event.target.closest('.page-size-filter-dropdown')) {
                 setShowPageSizeFilter(false)
@@ -235,7 +243,7 @@ export default function BackOrderList() {
         return () => {
             document.removeEventListener('mousedown', handleClickOutside)
         }
-    }, [showStatusFilter, showPageSizeFilter])
+    }, [showStatusFilter, showRetailerFilter, showPageSizeFilter])
 
     // Combined effect for search, filters, and sort
     useEffect(() => {
@@ -378,29 +386,59 @@ export default function BackOrderList() {
     const handleStatusFilter = (status) => {
         setStatusFilter(status)
         setShowStatusFilter(false)
+        setStatusSearchQuery("") // Clear search when selecting
     }
 
     const clearStatusFilter = () => {
         setStatusFilter("")
         setShowStatusFilter(false)
+        setStatusSearchQuery("")
     }
 
     const handleRetailerFilter = (retailerId) => {
         setRetailerFilter(retailerId)
         setShowRetailerFilter(false)
+        setRetailerSearchQuery("") // Clear search when selecting
     }
 
     const clearRetailerFilter = () => {
         setRetailerFilter("")
         setShowRetailerFilter(false)
+        setRetailerSearchQuery("")
     }
+
+    // Filter retailers based on search query
+    const filteredRetailers = useMemo(() => {
+        if (!retailerSearchQuery) return retailers
+        const query = retailerSearchQuery.toLowerCase()
+        return retailers.filter(retailer => {
+            const retailerName = (retailer.companyName || retailer.retailerName || "").toLowerCase()
+            return retailerName.includes(query)
+        })
+    }, [retailers, retailerSearchQuery])
+
+    // Filter status options based on search query
+    const filteredStatusOptions = useMemo(() => {
+        const statusOptions = [
+            { value: "", label: "Tất cả trạng thái" },
+            { value: "1", label: "Đang xử lý" },
+            { value: "2", label: "Đã hoàn thành" }
+        ]
+        if (!statusSearchQuery) return statusOptions
+        const query = statusSearchQuery.toLowerCase()
+        return statusOptions.filter(option => 
+            option.label.toLowerCase().includes(query)
+        )
+    }, [statusSearchQuery])
 
     const handleClearAllFilters = () => {
         setSearchQuery("")
         setStatusFilter("")
         setShowStatusFilter(false)
+        setStatusSearchQuery("")
         setRetailerFilter("")
         setShowRetailerFilter(false)
+        setRetailerSearchQuery("")
     }
 
     const clearAllFilters = handleClearAllFilters
@@ -590,6 +628,14 @@ export default function BackOrderList() {
                         showToggle={true}
                         defaultOpen={true}
                         showClearButton={true}
+                        enableRetailerSearch={true}
+                        enableStatusSearch={true}
+                        retailerSearchQuery={retailerSearchQuery}
+                        setRetailerSearchQuery={setRetailerSearchQuery}
+                        statusSearchQuery={statusSearchQuery}
+                        setStatusSearchQuery={setStatusSearchQuery}
+                        filteredRetailers={filteredRetailers}
+                        filteredStatusOptions={filteredStatusOptions}
                     />
 
                     {/* Table */}
