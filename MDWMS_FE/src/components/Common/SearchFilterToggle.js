@@ -111,6 +111,7 @@ export default function SearchFilterToggle({
   enableRoleSearch = false,
   enableAreaSearch = false,
   enableCreatorSearch = false,
+  enableConditionSearch = false,
   retailerSearchQuery: externalRetailerSearchQuery = "",
   setRetailerSearchQuery: setExternalRetailerSearchQuery = null,
   statusSearchQuery: externalStatusSearchQuery = "",
@@ -127,6 +128,8 @@ export default function SearchFilterToggle({
   setAreaSearchQuery: setExternalAreaSearchQuery = null,
   creatorSearchQuery: externalCreatorSearchQuery = "",
   setCreatorSearchQuery: setExternalCreatorSearchQuery = null,
+  conditionSearchQuery: externalConditionSearchQuery = "",
+  setConditionSearchQuery: setExternalConditionSearchQuery = null,
   filteredRetailers: externalFilteredRetailers = null,
   filteredStatusOptions: externalFilteredStatusOptions = null,
   filteredCategories: externalFilteredCategories = null,
@@ -134,7 +137,8 @@ export default function SearchFilterToggle({
   filteredUnitMeasures: externalFilteredUnitMeasures = null,
   filteredRoles: externalFilteredRoles = null,
   filteredAreas: externalFilteredAreas = null,
-  filteredCreators: externalFilteredCreators = null
+  filteredCreators: externalFilteredCreators = null,
+  filteredConditionOptions: externalFilteredConditionOptions = null
 }) {
   const [showSearchFilter, setShowSearchFilter] = useState(defaultOpen);
   const [internalRetailerSearchQuery, setInternalRetailerSearchQuery] = useState("");
@@ -145,6 +149,7 @@ export default function SearchFilterToggle({
   const [internalRoleSearchQuery, setInternalRoleSearchQuery] = useState("");
   const [internalAreaSearchQuery, setInternalAreaSearchQuery] = useState("");
   const [internalCreatorSearchQuery, setInternalCreatorSearchQuery] = useState("");
+  const [internalConditionSearchQuery, setInternalConditionSearchQuery] = useState("");
 
   // Use external or internal search queries
   const retailerSearchQuery = enableRetailerSearch ? (externalRetailerSearchQuery !== undefined ? externalRetailerSearchQuery : internalRetailerSearchQuery) : "";
@@ -163,6 +168,8 @@ export default function SearchFilterToggle({
   const setAreaSearchQuery = enableAreaSearch ? (setExternalAreaSearchQuery || setInternalAreaSearchQuery) : null;
   const creatorSearchQuery = enableCreatorSearch ? (externalCreatorSearchQuery !== undefined ? externalCreatorSearchQuery : internalCreatorSearchQuery) : "";
   const setCreatorSearchQuery = enableCreatorSearch ? (setExternalCreatorSearchQuery || setInternalCreatorSearchQuery) : null;
+  const conditionSearchQuery = enableConditionSearch ? (externalConditionSearchQuery !== undefined ? externalConditionSearchQuery : internalConditionSearchQuery) : "";
+  const setConditionSearchQuery = enableConditionSearch ? (setExternalConditionSearchQuery || setInternalConditionSearchQuery) : null;
 
   // Filter retailers based on search query
   const filteredRetailers = useMemo(() => {
@@ -250,6 +257,16 @@ export default function SearchFilterToggle({
       return creatorName.includes(query);
     });
   }, [creators, creatorSearchQuery, enableCreatorSearch, externalFilteredCreators]);
+
+  // Filter condition options based on search query
+  const filteredConditionOptions = useMemo(() => {
+    if (externalFilteredConditionOptions) return externalFilteredConditionOptions;
+    if (!enableConditionSearch || !conditionSearchQuery) return conditionOptions;
+    const query = conditionSearchQuery.toLowerCase();
+    return conditionOptions.filter(option => 
+      option.label.toLowerCase().includes(query)
+    );
+  }, [conditionOptions, conditionSearchQuery, enableConditionSearch, externalFilteredConditionOptions]);
 
   const handleToggle = () => {
     setShowSearchFilter(!showSearchFilter);
@@ -468,27 +485,62 @@ export default function SearchFilterToggle({
                   >
                     <Filter className="h-4 w-4 flex-shrink-0" />
                     <span className="text-sm font-medium truncate">
-                      {conditionOptions.find(option => option.value === conditionFilter)?.label || conditionOptions[0].label}
+                      {(filteredConditionOptions || conditionOptions).find(option => option.value === conditionFilter)?.label || conditionOptions[0].label}
                     </span>
                     <ChevronDown className="h-4 w-4 flex-shrink-0" />
                   </button>
 
                   {showConditionFilter && (
-                    <div className="absolute top-full right-0 mt-1 w-48 bg-white rounded-md shadow-lg border z-50 max-h-60 overflow-y-auto">
-                      <div className="py-1">
-                        {conditionOptions.map((option) => (
-                          <button
-                            key={option.value}
-                            onClick={() => {
-                              onConditionFilter(option.value);
-                              setShowConditionFilter(false);
-                            }}
-                            className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center justify-between"
-                          >
-                            {option.label}
-                            {conditionFilter === option.value && <span className="text-[#d97706]">✓</span>}
-                          </button>
-                        ))}
+                    <div className="absolute top-full right-0 mt-1 w-48 bg-white rounded-md shadow-lg border z-50 max-h-64 overflow-hidden flex flex-col">
+                      {/* Search input for condition filter */}
+                      {enableConditionSearch && (
+                        <div className="p-2 border-b border-slate-200">
+                          <div className="relative">
+                            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                            <Input
+                              type="text"
+                              placeholder="Tìm kiếm tình trạng..."
+                              value={conditionSearchQuery}
+                              onChange={(e) => setConditionSearchQuery && setConditionSearchQuery(e.target.value)}
+                              className="pl-8 pr-8 h-8 text-sm border-slate-300 focus:border-orange-500 focus:ring-orange-500"
+                              onClick={(e) => e.stopPropagation()}
+                              onKeyDown={(e) => e.stopPropagation()}
+                            />
+                            {conditionSearchQuery && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setConditionSearchQuery && setConditionSearchQuery("");
+                                }}
+                                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      <div className="py-1 overflow-y-auto dropdown-scroll max-h-48" style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 #f1f5f9' }}>
+                        {(filteredConditionOptions || conditionOptions).length > 0 ? (
+                          (filteredConditionOptions || conditionOptions).map((option) => (
+                            <button
+                              key={option.value}
+                              onClick={() => {
+                                onConditionFilter(option.value);
+                                setShowConditionFilter(false);
+                                if (setConditionSearchQuery) setConditionSearchQuery("");
+                              }}
+                              className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center justify-between"
+                            >
+                              {option.label}
+                              {conditionFilter === option.value && <span className="text-[#d97706]">✓</span>}
+                            </button>
+                          ))
+                        ) : (
+                          <div className="px-4 py-2 text-sm text-slate-500 text-center">
+                            Không tìm thấy kết quả
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

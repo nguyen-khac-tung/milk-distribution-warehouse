@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { Button } from "../../../components/ui/button";
 import { getLocations, deleteLocation, updateLocationStatus } from "../../../services/LocationServices";
 import { Edit, Trash2, ChevronDown, Plus, Eye, ArrowUpDown, ArrowDown, ArrowUp, Printer, Folder } from "lucide-react";
@@ -57,6 +57,9 @@ const LocationList = () => {
     const [sortField, setSortField] = useState("");
     const [sortAscending, setSortAscending] = useState(true);
     const [showPageSizeFilter, setShowPageSizeFilter] = useState(false);
+    const [statusSearchQuery, setStatusSearchQuery] = useState("");
+    const [conditionSearchQuery, setConditionSearchQuery] = useState("");
+    const [areaSearchQuery, setAreaSearchQuery] = useState("");
     const printRef = useRef();
     const [selectedLocation, setSelectedLocation] = useState(null);
     const [selectedLocations, setSelectedLocations] = useState([]);
@@ -264,12 +267,18 @@ const LocationList = () => {
         const handleClickOutside = (event) => {
             if (showStatusFilter && !event.target.closest('.status-filter-dropdown')) {
                 setShowStatusFilter(false);
+                setStatusSearchQuery("");
             }
             if (showStatusTypeFilter && !event.target.closest('.status-type-filter-dropdown')) {
                 setShowStatusTypeFilter(false);
             }
+            if (showConditionFilter && !event.target.closest('.condition-filter-dropdown')) {
+                setShowConditionFilter(false);
+                setConditionSearchQuery("");
+            }
             if (showAreaFilter && !event.target.closest('.area-filter-dropdown')) {
                 setShowAreaFilter(false);
+                setAreaSearchQuery("");
             }
             if (showPageSizeFilter && !event.target.closest('.page-size-filter-dropdown')) {
                 setShowPageSizeFilter(false);
@@ -280,7 +289,7 @@ const LocationList = () => {
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         }
-    }, [showStatusFilter, showStatusTypeFilter, showAreaFilter, showPageSizeFilter]);
+    }, [showStatusFilter, showStatusTypeFilter, showConditionFilter, showAreaFilter, showPageSizeFilter]);
 
     // Callback khi filter thay đổi
     const handleFilterChange = useCallback((params) => {
@@ -308,8 +317,46 @@ const LocationList = () => {
         return () => clearTimeout(timeoutId);
     }, [searchQuery]);
 
+    // Filter status, condition, and area options based on search queries
+    const filteredStatusOptions = useMemo(() => {
+        const statusOptions = [
+            { value: "", label: "Tất cả trạng thái" },
+            { value: "1", label: "Hoạt động" },
+            { value: "2", label: "Ngừng hoạt động" }
+        ]
+        if (!statusSearchQuery) return statusOptions
+        const query = statusSearchQuery.toLowerCase()
+        return statusOptions.filter(option => 
+            option.label.toLowerCase().includes(query)
+        )
+    }, [statusSearchQuery])
+
+    const filteredConditionOptions = useMemo(() => {
+        const conditionOptions = [
+            { value: "", label: "Tất cả tình trạng" },
+            { value: "true", label: "Trống" },
+            { value: "false", label: "Đang sử dụng" }
+        ]
+        if (!conditionSearchQuery) return conditionOptions
+        const query = conditionSearchQuery.toLowerCase()
+        return conditionOptions.filter(option => 
+            option.label.toLowerCase().includes(query)
+        )
+    }, [conditionSearchQuery])
+
+    const filteredAreas = useMemo(() => {
+        if (!areaSearchQuery) return areas
+        const query = areaSearchQuery.toLowerCase()
+        return areas.filter(area => {
+            const areaName = (area.areaName || area.AreaName || area.name || "").toLowerCase()
+            return areaName.includes(query)
+        })
+    }, [areas, areaSearchQuery])
+
     const handleStatusFilter = (value) => {
         setStatusFilter(value);
+        setShowStatusFilter(false);
+        setStatusSearchQuery("");
 
         handleFilterChange({
             search: searchQuery,
@@ -324,6 +371,7 @@ const LocationList = () => {
 
     const clearStatusFilter = () => {
         setStatusFilter("");
+        setStatusSearchQuery("");
         handleFilterChange({
             search: searchQuery,
             filters: {
@@ -336,6 +384,8 @@ const LocationList = () => {
 
     const handleConditionFilter = (value) => {
         setConditionFilter(value);
+        setShowConditionFilter(false);
+        setConditionSearchQuery("");
 
         handleFilterChange({
             search: searchQuery,
@@ -349,6 +399,7 @@ const LocationList = () => {
 
     const clearConditionFilter = () => {
         setConditionFilter("");
+        setConditionSearchQuery("");
         handleFilterChange({
             search: searchQuery,
             filters: {
@@ -361,6 +412,8 @@ const LocationList = () => {
 
     const handleAreaFilter = (value) => {
         setAreaFilter(value);
+        setShowAreaFilter(false);
+        setAreaSearchQuery("");
         handleFilterChange({
             search: searchQuery,
             filters: {
@@ -374,8 +427,11 @@ const LocationList = () => {
     const handleClearAll = () => {
         setSearchQuery("");
         setStatusFilter("");
+        setStatusSearchQuery("");
         setConditionFilter("");
+        setConditionSearchQuery("");
         setAreaFilter("");
+        setAreaSearchQuery("");
         setShowStatusFilter(false);
         setShowConditionFilter(false);
         setShowAreaFilter(false);
@@ -388,6 +444,7 @@ const LocationList = () => {
 
     const clearAreaFilter = () => {
         setAreaFilter("");
+        setAreaSearchQuery("");
         handleFilterChange({
             search: searchQuery,
             filters: {
@@ -497,8 +554,11 @@ const LocationList = () => {
     const handleClearAllFilters = () => {
         setSearchQuery("");
         setStatusFilter("");
+        setStatusSearchQuery("");
         setConditionFilter("");
+        setConditionSearchQuery("");
         setAreaFilter("");
+        setAreaSearchQuery("");
         setShowStatusFilter(false);
         setShowConditionFilter(false);
         setShowAreaFilter(false);
@@ -724,6 +784,10 @@ const LocationList = () => {
                         ]}
                         onStatusFilter={handleStatusFilter}
                         clearStatusFilter={clearStatusFilter}
+                        enableStatusSearch={true}
+                        statusSearchQuery={statusSearchQuery}
+                        setStatusSearchQuery={setStatusSearchQuery}
+                        filteredStatusOptions={filteredStatusOptions}
 
                         // Filter TÌNH TRẠNG
                         enableConditionFilter={true}
@@ -738,8 +802,11 @@ const LocationList = () => {
                         ]}
                         onConditionFilter={handleConditionFilter}
                         clearConditionFilter={clearConditionFilter}
+                        enableConditionSearch={true}
+                        conditionSearchQuery={conditionSearchQuery}
+                        setConditionSearchQuery={setConditionSearchQuery}
+                        filteredConditionOptions={filteredConditionOptions}
 
-                        // Khác
                         // Filter KHU VỰC
                         areaFilter={areaFilter}
                         setAreaFilter={setAreaFilter}
@@ -748,6 +815,10 @@ const LocationList = () => {
                         areas={areas}
                         onAreaFilter={handleAreaFilter}
                         clearAreaFilter={clearAreaFilter}
+                        enableAreaSearch={true}
+                        areaSearchQuery={areaSearchQuery}
+                        setAreaSearchQuery={setAreaSearchQuery}
+                        filteredAreas={filteredAreas}
 
                         // Khác
                         onClearAll={handleClearAll}
