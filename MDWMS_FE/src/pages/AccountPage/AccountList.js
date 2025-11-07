@@ -373,6 +373,28 @@ export default function AdminPage() {
     fetchRoles()
   }, [])
 
+  // Close filters when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showStatusFilter && !event.target.closest('.status-filter-dropdown')) {
+        setShowStatusFilter(false);
+        setStatusSearchQuery("");
+      }
+      if (showRoleFilter && !event.target.closest('.role-filter-dropdown')) {
+        setShowRoleFilter(false);
+        setRoleSearchQuery("");
+      }
+      if (showPageSizeFilter && !event.target.closest('.page-size-filter-dropdown')) {
+        setShowPageSizeFilter(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showStatusFilter, showRoleFilter, showPageSizeFilter])
+
   useEffect(() => {
     fetchData({
       pageNumber: pagination.pageNumber,
@@ -621,19 +643,22 @@ export default function AdminPage() {
             setRoleFilter={setRoleFilter}
             showRoleFilter={showRoleFilter}
             setShowRoleFilter={setShowRoleFilter}
-            roles={availableRoles.map(role => ({
+            roles={Array.isArray(availableRoles) && availableRoles.length > 0 ? availableRoles.map(role => ({
               value: String(role.roleId),
               label: role.description || role.roleName || String(role.roleId)
-            }))}
+            })) : []}
             onRoleFilter={handleRoleFilter}
             clearRoleFilter={clearRoleFilter}
             enableRoleSearch={true}
             roleSearchQuery={roleSearchQuery}
             setRoleSearchQuery={setRoleSearchQuery}
-            filteredRoles={filteredRoles.map(role => ({
+            filteredRoles={Array.isArray(filteredRoles) && filteredRoles.length > 0 ? filteredRoles.map(role => ({
               value: String(role.roleId),
               label: role.description || role.roleName || String(role.roleId)
-            }))}
+            })) : (Array.isArray(availableRoles) && availableRoles.length > 0 ? availableRoles.map(role => ({
+              value: String(role.roleId),
+              label: role.description || role.roleName || String(role.roleId)
+            })) : [])}
             onClearAll={clearAllFilters}
             pageSize={pagination.pageSize}
             setPageSize={setPagination}

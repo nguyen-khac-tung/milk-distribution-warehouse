@@ -164,6 +164,7 @@ export default function SuppliersPage() {
     const handleClickOutside = (event) => {
       if (showStatusFilter && !event.target.closest('.status-filter-dropdown')) {
         setShowStatusFilter(false)
+        setStatusSearchQuery("")
       }
       if (showPageSizeFilter && !event.target.closest('.page-size-filter-dropdown')) {
         setShowPageSizeFilter(false)

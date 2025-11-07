@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Card, CardContent } from "../../components/ui/card";
 import Pagination from "../../components/Common/Pagination";
 import { Table as CustomTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
@@ -26,6 +26,7 @@ const BatchList = () => {
     const [sortField, setSortField] = useState("");
     const [sortAscending, setSortAscending] = useState(true);
     const [showPageSizeFilter, setShowPageSizeFilter] = useState(false);
+    const [statusSearchQuery, setStatusSearchQuery] = useState("");
 
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showUpdateModal, setShowUpdateModal] = useState(false);
@@ -91,6 +92,7 @@ const BatchList = () => {
         const handleClickOutside = (event) => {
             if (showStatusFilter && !event.target.closest('.status-filter-dropdown')) {
                 setShowStatusFilter(false);
+                setStatusSearchQuery("");
             }
             if (showPageSizeFilter && !event.target.closest('.page-size-filter-dropdown')) {
                 setShowPageSizeFilter(false);
@@ -110,14 +112,31 @@ const BatchList = () => {
         return () => clearTimeout(t);
     }, [searchQuery]);
 
+    // Filter status options based on search query
+    const filteredStatusOptions = useMemo(() => {
+        const statusOptions = [
+            { value: "", label: "Tất cả trạng thái" },
+            { value: "1", label: "Hoạt động" },
+            { value: "2", label: "Ngừng hoạt động" }
+        ]
+        if (!statusSearchQuery) return statusOptions
+        const query = statusSearchQuery.toLowerCase()
+        return statusOptions.filter(option => 
+            option.label.toLowerCase().includes(query)
+        )
+    }, [statusSearchQuery])
+
     const handleStatusFilter = (value) => {
         setStatusFilter(value);
+        setShowStatusFilter(false);
+        setStatusSearchQuery("");
         setSearchLoading(true);
         fetchBatches({ pageNumber: 1, status: value });
     };
 
     const clearStatusFilter = () => {
         setStatusFilter("");
+        setStatusSearchQuery("");
         setSearchLoading(true);
         fetchBatches({ pageNumber: 1, status: "" });
     };
@@ -135,6 +154,7 @@ const BatchList = () => {
     const handleClearAllFilters = () => {
         setSearchQuery("")
         setStatusFilter("")
+        setStatusSearchQuery("")
         setShowStatusFilter(false)
     }
 
@@ -143,6 +163,7 @@ const BatchList = () => {
     const handleClearAll = () => {
         setSearchQuery("");
         setStatusFilter("");
+        setStatusSearchQuery("");
         setShowStatusFilter(false);
         setSearchLoading(true);
         fetchBatches({ pageNumber: 1, search: "", status: "" });
@@ -260,6 +281,10 @@ const BatchList = () => {
                         ]}
                         onStatusFilter={handleStatusFilter}
                         clearStatusFilter={clearStatusFilter}
+                        enableStatusSearch={true}
+                        statusSearchQuery={statusSearchQuery}
+                        setStatusSearchQuery={setStatusSearchQuery}
+                        filteredStatusOptions={filteredStatusOptions}
                         onClearAll={handleClearAll}
                         searchWidth="w-80"
                         showToggle={true}
