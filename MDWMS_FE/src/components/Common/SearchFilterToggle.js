@@ -548,7 +548,7 @@ export default function SearchFilterToggle({
               )}
 
               {/* Role Filter */}
-              {(filteredRoles || roles).length > 0 && (
+              {roles && Array.isArray(roles) && roles.length > 0 && (
                 <div className="relative role-filter-dropdown">
                   <button
                     onClick={() => setShowRoleFilter(!showRoleFilter)}
@@ -557,12 +557,12 @@ export default function SearchFilterToggle({
                       ${roleFilter ? 'bg-[#d97706] text-white hover:bg-[#d97706]' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
                   >
                     <span className="text-sm font-medium truncate">
-                      {roleFilter ? ((filteredRoles || roles).find(r => {
+                      {roleFilter ? (roles.find(r => {
                         const rValue = typeof r === 'object' ? r.value || r.roleName || r.roleId : r
-                        return rValue === roleFilter
-                      })?.label || (filteredRoles || roles).find(r => {
+                        return String(rValue) === String(roleFilter)
+                      })?.label || roles.find(r => {
                         const rValue = typeof r === 'object' ? r.value || r.roleName || r.roleId : r
-                        return rValue === roleFilter
+                        return String(rValue) === String(roleFilter)
                       })?.description || roleFilter) : "Tất cả chức vụ"}
                     </span>
                     <ChevronDown className="h-4 w-4 flex-shrink-0" />
@@ -632,7 +632,7 @@ export default function SearchFilterToggle({
               )}
 
               {/* Category Filter */}
-              {(filteredCategories || categories).length > 0 && (
+              {categories && Array.isArray(categories) && categories.length > 0 && (
                 <div className="relative category-filter-dropdown">
                   <button
                     onClick={() => setShowCategoryFilter(!showCategoryFilter)}
@@ -641,7 +641,7 @@ export default function SearchFilterToggle({
                       ${categoryFilter ? 'bg-[#d97706] text-white hover:bg-[#d97706]' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
                   >
                     <span className="text-sm font-medium truncate">
-                      {categoryFilter ? (filteredCategories || categories).find(c => c.categoryId.toString() === categoryFilter)?.categoryName || "Chọn danh mục" : "Tất cả danh mục"}
+                      {categoryFilter ? categories.find(c => c.categoryId.toString() === categoryFilter)?.categoryName || "Chọn danh mục" : "Tất cả danh mục"}
                     </span>
                     <ChevronDown className="h-4 w-4 flex-shrink-0" />
                   </button>
@@ -705,7 +705,7 @@ export default function SearchFilterToggle({
               )}
 
               {/* Supplier Filter */}
-              {(filteredSuppliers || suppliers).length > 0 && (
+              {suppliers && Array.isArray(suppliers) && suppliers.length > 0 && (
                 <div className="relative supplier-filter-dropdown">
                   <button
                     onClick={() => setShowSupplierFilter(!showSupplierFilter)}
@@ -714,7 +714,7 @@ export default function SearchFilterToggle({
                       ${supplierFilter ? 'bg-[#d97706] text-white hover:bg-[#d97706]' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
                   >
                     <span className="text-sm font-medium truncate">
-                      {supplierFilter ? (filteredSuppliers || suppliers).find(s => s.supplierId.toString() === supplierFilter)?.companyName || "Chọn nhà cung cấp" : "Tất cả nhà cung cấp"}
+                      {supplierFilter ? suppliers.find(s => s.supplierId.toString() === supplierFilter)?.companyName || "Chọn nhà cung cấp" : "Tất cả nhà cung cấp"}
                     </span>
                     <ChevronDown className="h-4 w-4 flex-shrink-0" />
                   </button>
@@ -778,7 +778,7 @@ export default function SearchFilterToggle({
               )}
 
               {/* Retailer Filter */}
-              {(filteredRetailers || retailers).length > 0 && (
+              {retailers && Array.isArray(retailers) && retailers.length > 0 && (
                 <div className="relative retailer-filter-dropdown">
                   <button
                     onClick={() => setShowRetailerFilter(!showRetailerFilter)}
@@ -787,7 +787,7 @@ export default function SearchFilterToggle({
                       ${retailerFilter ? 'bg-[#d97706] text-white hover:bg-[#d97706]' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
                   >
                     <span className="text-sm font-medium truncate">
-                      {retailerFilter ? (filteredRetailers || retailers).find(r => r.retailerId?.toString() === retailerFilter || r.retailerId === retailerFilter)?.companyName || (filteredRetailers || retailers).find(r => r.retailerId?.toString() === retailerFilter || r.retailerId === retailerFilter)?.retailerName || "Chọn nhà bán lẻ" : "Tất cả nhà bán lẻ"}
+                      {retailerFilter ? retailers.find(r => r.retailerId?.toString() === retailerFilter || r.retailerId === retailerFilter)?.companyName || retailers.find(r => r.retailerId?.toString() === retailerFilter || r.retailerId === retailerFilter)?.retailerName || "Chọn nhà bán lẻ" : "Tất cả nhà bán lẻ"}
                     </span>
                     <ChevronDown className="h-4 w-4 flex-shrink-0" />
                   </button>
@@ -855,7 +855,7 @@ export default function SearchFilterToggle({
               )}
 
               {/* Area Filter */}
-              {(filteredAreas || areas).length > 0 && (
+              {areas && Array.isArray(areas) && areas.length > 0 && (
                 <div className="relative area-filter-dropdown">
                   <button
                     onClick={() => setShowAreaFilter(!showAreaFilter)}
@@ -867,7 +867,7 @@ export default function SearchFilterToggle({
                     `}
                   >
                     <span className="text-sm font-medium">
-                      {areaFilter ? ((filteredAreas || areas).find(a => (a.areaId?.toString?.() ?? a.AreaId?.toString?.()) === areaFilter)?.areaName || (filteredAreas || areas).find(a => (a.areaId?.toString?.() ?? a.AreaId?.toString?.()) === areaFilter)?.AreaName || "Chọn khu vực") : "Tất cả khu vực"}
+                      {areaFilter ? (areas.find(a => (a.areaId?.toString?.() ?? a.AreaId?.toString?.()) === areaFilter)?.areaName || areas.find(a => (a.areaId?.toString?.() ?? a.AreaId?.toString?.()) === areaFilter)?.AreaName || "Chọn khu vực") : "Tất cả khu vực"}
                     </span>
                     <ChevronDown className="h-4 w-4" />
                   </button>
@@ -937,7 +937,7 @@ export default function SearchFilterToggle({
               )}
 
               {/* Unit Measure Filter */}
-              {(filteredUnitMeasures || unitMeasures).length > 0 && (
+              {unitMeasures && Array.isArray(unitMeasures) && unitMeasures.length > 0 && (
                 <div className="relative unit-measure-filter-dropdown">
                   <button
                     onClick={() => setShowUnitMeasureFilter(!showUnitMeasureFilter)}
@@ -946,7 +946,7 @@ export default function SearchFilterToggle({
                       ${unitMeasureFilter ? 'bg-[#d97706] text-white hover:bg-[#d97706]' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
                   >
                     <span className="text-sm font-medium truncate">
-                      {unitMeasureFilter ? (filteredUnitMeasures || unitMeasures).find(u => u.unitMeasureId.toString() === unitMeasureFilter)?.name || "Chọn đơn vị" : "Tất cả đơn vị"}
+                      {unitMeasureFilter ? unitMeasures.find(u => u.unitMeasureId.toString() === unitMeasureFilter)?.name || "Chọn đơn vị" : "Tất cả đơn vị"}
                     </span>
                     <ChevronDown className="h-4 w-4 flex-shrink-0" />
                   </button>
@@ -1010,7 +1010,7 @@ export default function SearchFilterToggle({
               )}
 
               {/* Creator Filter */}
-              {(filteredCreators || creators).length > 0 && (
+              {creators && Array.isArray(creators) && creators.length > 0 && (
                 <div className="relative creator-filter-dropdown">
                   <button
                     onClick={() => setShowCreatorFilter(!showCreatorFilter)}
@@ -1019,7 +1019,7 @@ export default function SearchFilterToggle({
                       ${creatorFilter ? 'bg-[#d97706] text-white hover:bg-[#d97706]' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
                   >
                     <span className="text-sm font-medium truncate">
-                      {creatorFilter ? (filteredCreators || creators).find(c => c.userId.toString() === creatorFilter)?.fullName || "Chọn người tạo" : "Tất cả người tạo"}
+                      {creatorFilter ? creators.find(c => c.userId.toString() === creatorFilter)?.fullName || "Chọn người tạo" : "Tất cả người tạo"}
                     </span>
                     <ChevronDown className="h-4 w-4 flex-shrink-0" />
                   </button>

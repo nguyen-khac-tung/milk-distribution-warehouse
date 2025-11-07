@@ -166,6 +166,7 @@ export default function RetailersPage() {
     const handleClickOutside = (event) => {
       if (showStatusFilter && !event.target.closest('.status-filter-dropdown')) {
         setShowStatusFilter(false)
+        setStatusSearchQuery("")
       }
       if (showPageSizeFilter && !event.target.closest('.page-size-filter-dropdown')) {
         setShowPageSizeFilter(false)
