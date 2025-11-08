@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
-import { ArrowLeft, Package, User, Calendar, CheckCircle, XCircle, Clock, Truck, CheckSquare, Key, Building2, FileText, Hash, Shield, ShoppingCart, Users, UserCheck, UserX, TruckIcon, Store, UserCircle, UserCog, UserCheck2, UserX2, UserMinus, Mail, MapPin, Phone } from 'lucide-react';
+import { ArrowLeft, Package, User, Calendar, CheckCircle, XCircle, Clock, Truck, CheckSquare, FileText, Hash, Shield, ShoppingCart, Users, UserCheck, UserX, TruckIcon, Store, UserCircle, UserCog, UserCheck2, UserX2, UserMinus, Mail, MapPin, Phone } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { getSalesOrderDetail, updateSaleOrderStatusPendingApproval, approveSalesOrder, rejectSalesOrder, assignForPicking } from '../../services/SalesOrderService';
 import { SALES_ORDER_STATUS, canPerformSalesOrderDetailAction } from '../../utils/permissions';
@@ -14,11 +14,9 @@ import ApprovalConfirmationModal from '../../components/SaleOrderCompoents/Appro
 import RejectionConfirmationModal from '../../components/SaleOrderCompoents/RejectionConfirmationModal';
 import AssignPickingModal from '../../components/SaleOrderCompoents/AssignPickingModal';
 import CreateDeliverySlipModal from '../../components/SaleOrderCompoents/CreateDeliverySlipModal';
-import ViewDeliverySlipModal from '../../components/SaleOrderCompoents/ViewDeliverySlipModal';
 import { usePermissions } from '../../hooks/usePermissions';
-import { PERMISSIONS } from '../../utils/permissions';
 import { extractErrorMessage } from '../../utils/Validation';
-import { createGoodsIssueNote } from '../../services/GoodsIssueNote';
+import { createGoodsIssueNote } from '../../services/GoodsIssueNoteService';
 
 const SalesOrderDetail = () => {
     const { id } = useParams();
@@ -31,7 +29,6 @@ const SalesOrderDetail = () => {
     const [showRejectionModal, setShowRejectionModal] = useState(false);
     const [showAssignPickingModal, setShowAssignPickingModal] = useState(false);
     const [showCreateDeliverySlipModal, setShowCreateDeliverySlipModal] = useState(false);
-    const [showViewDeliverySlipModal, setShowViewDeliverySlipModal] = useState(false);
     const [submitLoading, setSubmitLoading] = useState(false);
     const [approvalLoading, setApprovalLoading] = useState(false);
     const [rejectionLoading, setRejectionLoading] = useState(false);
@@ -102,7 +99,6 @@ const SalesOrderDetail = () => {
     const canSubmitDraft = () => canPerformSalesOrderDetailAction('submit_pending_approval', salesOrder, hasPermission, userInfo);
     const canAssignForPicking = () => canPerformSalesOrderDetailAction('assign_for_picking', salesOrder, hasPermission, userInfo);
     const canCreateDeliverySlip = () => canPerformSalesOrderDetailAction('create_delivery_slip', salesOrder, hasPermission, userInfo);
-    const canViewDeliverySlip = () => canPerformSalesOrderDetailAction('view_delivery_slip', salesOrder, hasPermission, userInfo);
 
     const handleSubmitDraftConfirm = async () => {
         setSubmitLoading(true);
@@ -112,7 +108,7 @@ const SalesOrderDetail = () => {
             });
 
             if (window.showToast) {
-                window.showToast("Nộp bản nháp thành công!", "success");
+                window.showToast("Gửi phê duyệt thành công!", "success");
             }
 
             setShowSubmitDraftModal(false);
@@ -311,8 +307,10 @@ const SalesOrderDetail = () => {
                             <span>Quay lại</span>
                         </Button>
                         <div>
-                            <h1 className="text-2xl font-bold text-gray-900">ĐƠN XUẤT HÀNG</h1>
-                            <p className="text-gray-600">Mã xuất hàng: {salesOrder.salesOrderId}</p>
+                            <h1 className="text-2xl font-bold text-gray-900">ĐƠN BÁN HÀNG</h1>
+                            {/* <p className="text-gray-600 text-sm mt-1">
+                                Mã phiếu: {salesOrder.salesOrderId}
+                            </p> */}
                         </div>
                     </div>
                 </div>
@@ -323,7 +321,7 @@ const SalesOrderDetail = () => {
                         <div className="bg-white border-2 border-gray-400 rounded-lg p-6 h-full flex flex-col">
                             {/* Title */}
                             <div className="text-center mb-6">
-                                <h1 className="text-2xl font-bold text-gray-900 uppercase">ĐƠN XUẤT HÀNG</h1>
+                                <h1 className="text-2xl font-bold text-gray-900 uppercase">ĐƠN BÁN HÀNG</h1>
                             </div>
 
                             {/* General Information */}
@@ -395,10 +393,15 @@ const SalesOrderDetail = () => {
                                             <TableHead className="w-16 text-center font-semibold">STT</TableHead>
                                             <TableHead className="font-semibold">Tên hàng hóa</TableHead>
                                             <TableHead className="font-semibold">Mã hàng</TableHead>
-                                            <TableHead className="text-center font-semibold">Đơn vị tính</TableHead>
-                                            <TableHead className="text-center font-semibold">Đơn vị/thùng</TableHead>
-                                            <TableHead className="text-center font-semibold">Số lượng</TableHead>
+                                            <TableHead className="text-center font-semibold leading-tight">
+                                                <div className="flex flex-col items-center">
+                                                    <span className="whitespace-nowrap">Đơn vị</span>
+                                                    <span className="whitespace-nowrap">/thùng</span>
+                                                </div>
+                                            </TableHead>
                                             <TableHead className="text-center font-semibold">Số thùng</TableHead>
+                                            <TableHead className="text-center font-semibold">Tổng số đơn vị</TableHead>
+                                            <TableHead className="text-center font-semibold whitespace-nowrap">Đơn vị</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody className="flex-1">
@@ -408,13 +411,10 @@ const SalesOrderDetail = () => {
                                                     <TableCell className="text-center font-medium">{index + 1}</TableCell>
                                                     <TableCell className="font-medium">{item.goods.goodsName}</TableCell>
                                                     <TableCell className="text-gray-600">{item.goods.goodsCode}</TableCell>
-                                                    <TableCell className="text-center text-gray-600">{item.goods.unitMeasureName}</TableCell>
                                                     <TableCell className="text-center font-semibold">{item.goodsPacking.unitPerPackage}</TableCell>
+                                                    <TableCell className="text-center font-semibold">{item.packageQuantity}</TableCell>
                                                     <TableCell className="text-center font-semibold">{item.packageQuantity * item.goodsPacking.unitPerPackage}</TableCell>
-                                                    <TableCell className="text-center font-semibold">
-                                                        {item.packageQuantity}
-                                                        {/* {item.packageQuantity * (item.goodsPacking?.unitPerPackage || 1)} */}
-                                                    </TableCell>
+                                                    <TableCell className="text-center text-gray-600">{item.goods.unitMeasureName}</TableCell>
                                                 </TableRow>
                                             ))
                                         ) : (
@@ -427,23 +427,37 @@ const SalesOrderDetail = () => {
                                         {/* Total Row */}
                                         {salesOrder.salesOrderItemDetails && salesOrder.salesOrderItemDetails.length > 0 && (
                                             <TableRow className="bg-gray-100 font-bold border-t border-gray-300">
-                                                <TableCell colSpan={4} className="text-right pr-2">Tổng:</TableCell>
-                                                <TableCell className="text-center font-bold">
-                                                    {salesOrder.salesOrderItemDetails.reduce((sum, item) => sum + (item.goodsPacking?.unitPerPackage || 0), 0)}
+                                                <TableCell colSpan={4} className="text-right pr-2 bg-gray-100">Tổng:</TableCell>
+                                                <TableCell className="text-center font-bold bg-gray-100">
+                                                    {salesOrder.salesOrderItemDetails.reduce(
+                                                        (sum, item) => sum + item.packageQuantity,
+                                                        0
+                                                    )}
                                                 </TableCell>
-                                                <TableCell className="text-center font-bold">
-                                                    {salesOrder.salesOrderItemDetails.reduce((sum, item) =>
-                                                        sum + (item.packageQuantity * (item.goodsPacking?.unitPerPackage || 1)), 0)}
+                                                <TableCell className="text-center font-bold bg-gray-100">
+                                                    {salesOrder.salesOrderItemDetails.reduce(
+                                                        (sum, item) =>
+                                                            sum + item.packageQuantity * (item.goodsPacking?.unitPerPackage || 1),
+                                                        0
+                                                    )}
                                                 </TableCell>
-                                                <TableCell className="text-center font-bold">
-                                                    {salesOrder.salesOrderItemDetails.reduce((sum, item) =>
-                                                        sum + (item.packageQuantity), 0)}
-                                                </TableCell>
+                                                <TableCell className="bg-gray-100"></TableCell>
                                             </TableRow>
                                         )}
                                     </TableBody>
                                 </Table>
                             </div>
+
+                            {/* Note Section */}
+                            {salesOrder.note && (
+                                <div className="mt-4 bg-gray-50 border border-gray-300 rounded-lg p-3">
+                                    <div className="flex items-center space-x-2 mb-2">
+                                        <h4 className="font-semibold text-gray-800">Ghi chú:</h4>
+                                    </div>
+                                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{salesOrder.note}</p>
+                                </div>
+                            )}
+
                             {/* Action Buttons at bottom of card */}
                             <div className="mt-6 flex justify-center space-x-4">
                                 {canSubmitDraft() && (
@@ -452,7 +466,7 @@ const SalesOrderDetail = () => {
                                         className="bg-orange-600 hover:bg-orange-700 text-white h-[38px] px-8"
                                     >
                                         <FileText className="h-4 w-4 mr-2" />
-                                        {salesOrder?.status === SALES_ORDER_STATUS.Rejected ? 'Nộp đơn lại' : 'Nộp bản nháp'}
+                                        {salesOrder?.status === SALES_ORDER_STATUS.Rejected ? 'Gửi phê duyệt lại' : 'Gửi phê duyệt'}
                                     </Button>
                                 )}
 
@@ -493,16 +507,6 @@ const SalesOrderDetail = () => {
                                     >
                                         <Package className="h-4 w-4 mr-2" />
                                         Tạo phiếu xuất kho
-                                    </Button>
-                                )}
-
-                                {canViewDeliverySlip() && (
-                                    <Button
-                                        onClick={() => setShowViewDeliverySlipModal(true)}
-                                        className="bg-indigo-600 hover:bg-indigo-700 text-white h-[38px] px-8"
-                                    >
-                                        <FileText className="h-4 w-4 mr-2" />
-                                        Xem phiếu xuất kho
                                     </Button>
                                 )}
 
@@ -598,13 +602,6 @@ const SalesOrderDetail = () => {
                 loading={createDeliverySlipLoading}
             />
 
-            {/* View Delivery Slip Modal */}
-            <ViewDeliverySlipModal
-                isOpen={showViewDeliverySlipModal}
-                onClose={() => setShowViewDeliverySlipModal(false)}
-                saleOrder={salesOrder}
-                loading={false}
-            />
 
         </div>
     );

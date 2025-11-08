@@ -39,8 +39,6 @@ namespace MilkDistributionWarehouse.Controllers
         [HttpPost("Create")]
         public async Task<IActionResult> CreatePallet([FromBody] PalletRequestDto dto)
         {
-            if (!ModelState.IsValid)
-                return ApiResponse<string>.ToResultError("Dữ liệu không hợp lệ.");
             int? userId = User.GetUserId();
             var (msg, created) = await _palletService.CreatePallet(dto, userId);
             if (!string.IsNullOrEmpty(msg))
@@ -52,8 +50,6 @@ namespace MilkDistributionWarehouse.Controllers
         [HttpPost("CreateBulk")]
         public async Task<IActionResult> CreatePalletsBulk([FromBody] PalletBulkCreate create)
         {
-            if (!ModelState.IsValid)
-                return ApiResponse<string>.ToResultError("Dữ liệu không hợp lệ.");
             int? userId = User.GetUserId();
             var (msg, result) = await _palletService.CreatePalletBulk(create, userId);
             if (!string.IsNullOrEmpty(msg))
@@ -64,8 +60,6 @@ namespace MilkDistributionWarehouse.Controllers
         [HttpPut("Update/{id}")]
         public async Task<IActionResult> UpdatePallet(string id, [FromBody] PalletRequestDto dto)
         {
-            if (!ModelState.IsValid)
-                return ApiResponse<string>.ToResultError("Dữ liệu không hợp lệ.");
             var (msg, updated) = await _palletService.UpdatePallet(id, dto);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);

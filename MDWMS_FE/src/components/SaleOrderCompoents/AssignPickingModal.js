@@ -58,7 +58,7 @@ const AssignPickingModal = ({
                 Phân công lấy hàng
               </h3>
               <p className="text-sm text-gray-500">
-                Chọn nhân viên để giao nhiệm vụ lấy hàng
+                Chọn nhân viên để phân công lấy hàng
               </p>
             </div>
           </div>
@@ -94,12 +94,57 @@ const AssignPickingModal = ({
                     <span className="text-gray-600">Dự kiến xuất:</span>
                     <span className="font-medium">
                       {saleOrder?.estimatedTimeDeparture
-                        ? new Date(saleOrder.estimatedTimeDeparture).toLocaleDateString("vi-VN")
-                        : "-"}
+                        ? new Date(saleOrder.estimatedTimeDeparture).toLocaleDateString('vi-VN', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                        })
+                        : 'N/A'}
                     </span>
                   </div>
                 </div>
               </div>
+
+              {/* Previous Assignment Info */}
+              {saleOrder?.assignTo && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <h4 className="font-medium text-amber-800 mb-1">
+                        Thông tin người được phân công trước đó
+                      </h4>
+
+                      <div className="text-sm space-y-1">
+                        <div className="flex justify-between">
+                          <span className="text-gray-700">Nhân viên đã được phân công:</span>
+                          <span className="font-semibold text-gray-900">
+                            {saleOrder.assignTo.fullName}
+                          </span>
+                        </div>
+
+                        {saleOrder.acknowledgeAt && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-700">Thời gian phân công:</span>
+                            <span className="font-semibold text-gray-900">
+                              {saleOrder?.acknowledgeAt
+                                ? new Date(saleOrder.acknowledgeAt).toLocaleDateString("vi-VN", {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                                : "N/A"}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Warning Message */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
@@ -107,10 +152,10 @@ const AssignPickingModal = ({
                   <UserPlus className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
                   <div>
                     <h4 className="font-medium text-blue-800 mb-1">
-                      Giao nhiệm vụ lấy hàng
+                      Phân công lấy hàng
                     </h4>
                     <p className="text-sm text-blue-700">
-                      Nhân viên được chọn sẽ nhận thông báo về nhiệm vụ lấy hàng này.
+                      Nhân viên được chọn sẽ nhận thông báo về phân công lấy hàng này.
                     </p>
                   </div>
                 </div>
@@ -128,7 +173,7 @@ const AssignPickingModal = ({
               ) : warehouseStaff.length === 0 ? (
                 <div className="text-center py-4 text-gray-500">Không có nhân viên khả dụng.</div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[320px] overflow-y-auto pr-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[386px] overflow-y-auto pr-1">
                   {warehouseStaff.map((staff) => {
                     const isSelected = assignTo === staff.userId;
                     const pendingPO = staff.pendingPurchaseOrders ?? 0;
@@ -152,19 +197,19 @@ const AssignPickingModal = ({
 
                         <div className="grid grid-cols-2 gap-2 text-sm mt-2">
                           <div>
-                            <span className="text-gray-500">Đơn mua chờ:</span>
+                            <span className="text-gray-500">Đơn mua đang chờ:</span>
                             <span className="font-medium ml-1">{pendingPO}</span>
                           </div>
                           <div>
-                            <span className="text-gray-500">Đơn mua xử lý:</span>
+                            <span className="text-gray-500">Đơn mua đang xử lý:</span>
                             <span className="font-medium ml-1">{processingPO}</span>
                           </div>
                           <div>
-                            <span className="text-gray-500">Đơn bán chờ:</span>
+                            <span className="text-gray-500">Đơn bán đang chờ:</span>
                             <span className="font-medium ml-1">{pendingSO}</span>
                           </div>
                           <div>
-                            <span className="text-gray-500">Đơn bán xử lý:</span>
+                            <span className="text-gray-500">Đơn bán đang xử lý:</span>
                             <span className="font-medium ml-1">{processingSO}</span>
                           </div>
                         </div>
@@ -199,7 +244,7 @@ const AssignPickingModal = ({
                   Đang phân công...
                 </div>
               ) : (
-                "Giao nhiệm vụ"
+                "Phân công lấy hàng"
               )}
             </Button>
           </div>

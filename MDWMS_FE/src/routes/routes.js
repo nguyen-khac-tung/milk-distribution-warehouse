@@ -33,6 +33,7 @@ import SalesOrderDetail from "../pages/SalesOrderPage/SalesOrderDetail";
 import GoodsReceiptDetail from "../pages/GoodsReceiptPage/GoodsReceiptDetail";
 import BackOrderList from "../pages/BackOrderPage/BackOrderList";
 import UpdateSaleOrder from "../pages/SalesOrderPage/UpdateSaleOrder";
+import GoodsIssueNoteDetail from "../pages/GoodsIssueNotePage/GoodsIssueNoteDetail";
 
 export const routes = [
     {
@@ -275,6 +276,15 @@ export const routes = [
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.SALES_ORDER_UPDATE}>
                 <UpdateSaleOrder />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/goods-issue-note-detail/:id",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.SALES_ORDER_VIEW_DELIVERY_SLIP}>
+                <GoodsIssueNoteDetail />
             </ProtectedRoute>
         ),
         isShowHeader: true,

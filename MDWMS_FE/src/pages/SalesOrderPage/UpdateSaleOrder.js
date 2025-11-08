@@ -38,6 +38,7 @@ function UpdateSaleOrder() {
         { id: 1, supplierName: "", goodsName: "", quantity: "", goodsPackingId: "" },
     ])
     const [fieldErrors, setFieldErrors] = useState({}) // Lỗi theo từng trường
+    const [itemsExceedingStock, setItemsExceedingStock] = useState({}) // Map itemId -> { availableQuantity, requestedQuantity }
 
     // Load all data in parallel for faster loading
     useEffect(() => {
@@ -235,18 +236,54 @@ function UpdateSaleOrder() {
             setFieldErrors(newErrors);
         }
 
+        // Xóa viền đỏ khi người dùng sửa item (nếu item đó đã từng vượt quá tồn kho)
+        if (itemsExceedingStock[id]) {
+            setItemsExceedingStock(prev => {
+                const newMap = { ...prev };
+                delete newMap[id];
+                return newMap;
+            });
+        }
+
         // Validate real-time cho số lượng (use updatedItems to avoid stale state)
         if (field === "quantity" || field === "goodsPackingId") {
             const updatedItem = updatedItems.find(item => item.id === id);
             if (updatedItem) {
                 const tempItem = { ...updatedItem, [field]: value };
-                const quantityError = validateQuantity(tempItem);
-                if (quantityError) {
-                    setFieldErrors(prev => ({
-                        ...prev,
-                        [`${id}-quantity`]: quantityError
-                    }));
+                
+                // Nếu đã có đủ thông tin, validate
+                if (tempItem.supplierName && tempItem.goodsName && tempItem.goodsPackingId) {
+                    const quantityError = validateQuantity(tempItem);
+                    if (quantityError) {
+                        setFieldErrors(prev => ({
+                            ...prev,
+                            [`${id}-quantity`]: quantityError
+                        }));
+                    } else {
+                        setFieldErrors(prev => {
+                            const newErrors = { ...prev };
+                            delete newErrors[`${id}-quantity`];
+                            return newErrors;
+                        });
+                    }
+                } else if (tempItem.quantity) {
+                    // Nếu chưa có đủ thông tin nhưng đã nhập số lượng, validate cơ bản
+                    const quantity = parseInt(tempItem.quantity);
+                    if (isNaN(quantity) || quantity <= 0) {
+                        setFieldErrors(prev => ({
+                            ...prev,
+                            [`${id}-quantity`]: "Vui lòng nhập số thùng lớn hơn 0"
+                        }));
+                    } else {
+                        // Xóa lỗi nếu số lượng hợp lệ nhưng chưa có đủ thông tin để validate tồn kho
+                        setFieldErrors(prev => {
+                            const newErrors = { ...prev };
+                            delete newErrors[`${id}-quantity`];
+                            return newErrors;
+                        });
+                    }
                 } else {
+                    // Nếu không có số lượng, xóa lỗi
                     setFieldErrors(prev => {
                         const newErrors = { ...prev };
                         delete newErrors[`${id}-quantity`];
@@ -407,12 +444,16 @@ function UpdateSaleOrder() {
 
     // Kiểm tra validation cho số thùng
     const validateQuantity = (item) => {
-        if (!item.quantity || !item.goodsPackingId || !item.supplierName) return null;
+        // Kiểm tra điều kiện cần thiết
+        if (!item.quantity || item.quantity === "" || !item.goodsPackingId || !item.supplierName || !item.goodsName) {
+            return null;
+        }
 
         const quantity = parseInt(item.quantity);
 
-        if (quantity <= 0) {
-            return "Số thùng phải lớn hơn 0";
+        // Kiểm tra số lượng hợp lệ
+        if (isNaN(quantity) || quantity <= 0) {
+            return "Vui lòng nhập số thùng lớn hơn 0";
         }
 
         // Kiểm tra tồn kho
@@ -424,12 +465,16 @@ function UpdateSaleOrder() {
         if (!selectedGood) return null;
 
         const inventoryData = inventoryMap[selectedGood.goodsId] || [];
-        const inventory = inventoryData.find(inv => inv.goodsPackingId.toString() === item.goodsPackingId);
+        const inventory = inventoryData.find(inv =>
+            inv.goodsPackingId?.toString() === item.goodsPackingId?.toString() ||
+            inv.goodsPackingId === parseInt(item.goodsPackingId)
+        );
         const availableQuantity = inventory?.availablePackageQuantity || 0;
 
-        // if (quantity > availableQuantity) {
-        //     return `Số lượng vượt quá tồn kho (Tồn: ${availableQuantity} thùng)`;
-        // }
+        // Nếu vượt quá tồn kho, hiển thị thông báo tồn kho
+        if (quantity > availableQuantity) {
+            return `(Tồn: ${availableQuantity} thùng)`;
+        }
 
         return null;
     };
@@ -442,15 +487,15 @@ function UpdateSaleOrder() {
 
         if (validItems.length === 0) {
             return {
-                totalMedicines: 0,
+                totalGoods: 0,
                 sufficientCount: 0,
                 insufficientCount: 0,
-                medicines: [],
+                good: [],
                 allSufficient: false
             };
         }
 
-        const medicines = validItems.map(item => {
+        const good = validItems.map(item => {
             const selectedSupplier = suppliers.find(s => s.companyName === item.supplierName);
             if (!selectedSupplier) return null;
 
@@ -473,15 +518,15 @@ function UpdateSaleOrder() {
             };
         }).filter(item => item !== null);
 
-        const sufficientCount = medicines.filter(m => m.isSufficient).length;
-        const insufficientCount = medicines.filter(m => !m.isSufficient).length;
-        const allSufficient = sufficientCount === medicines.length && medicines.length > 0;
+        const sufficientCount = good.filter(m => m.isSufficient).length;
+        const insufficientCount = good.filter(m => !m.isSufficient).length;
+        const allSufficient = sufficientCount === good.length && good.length > 0;
 
         return {
-            totalMedicines: medicines.length,
+            totalGoods: good.length,
             sufficientCount,
             insufficientCount,
-            medicines,
+            good,
             allSufficient
         };
     };
@@ -502,17 +547,25 @@ function UpdateSaleOrder() {
             if (!item.goodsName) {
                 newFieldErrors[`${item.id}-goodsName`] = "Vui lòng chọn tên hàng hóa";
             }
-            if (!item.quantity || item.quantity <= 0) {
-                newFieldErrors[`${item.id}-quantity`] = "Vui lòng nhập số thùng lớn hơn 0";
-            }
             if (!item.goodsPackingId) {
                 newFieldErrors[`${item.id}-goodsPackingId`] = "Vui lòng chọn đóng gói";
             }
 
             // Kiểm tra validation số thùng
-            const quantityError = validateQuantity(item);
-            if (quantityError) {
-                newFieldErrors[`${item.id}-quantity`] = quantityError;
+            // Chỉ validate nếu đã có đủ thông tin (supplierName, goodsName, goodsPackingId)
+            if (item.supplierName && item.goodsName && item.goodsPackingId) {
+                if (!item.quantity || item.quantity === "" || parseInt(item.quantity) <= 0) {
+                    newFieldErrors[`${item.id}-quantity`] = "Vui lòng nhập số thùng lớn hơn 0";
+                } else {
+                    // Kiểm tra tồn kho nếu đã nhập số lượng hợp lệ
+                    const quantityError = validateQuantity(item);
+                    if (quantityError) {
+                        newFieldErrors[`${item.id}-quantity`] = quantityError;
+                    }
+                }
+            } else if (!item.quantity || item.quantity === "" || parseInt(item.quantity) <= 0) {
+                // Nếu chưa có đủ thông tin nhưng đã nhập số lượng, vẫn validate cơ bản
+                newFieldErrors[`${item.id}-quantity`] = "Vui lòng nhập số thùng lớn hơn 0";
             }
         });
 
@@ -562,6 +615,52 @@ function UpdateSaleOrder() {
             window.showToast("Vui lòng thêm ít nhất một hàng hóa với đầy đủ thông tin", "error");
             return;
         }
+
+        // Kiểm tra inventory - chặn submit nếu có item vượt quá tồn kho
+        // Kiểm tra tồn kho và lưu thông tin các items vượt quá tồn kho
+        const itemsExceedingStockMap = {};
+        const insufficientItems = validItems.filter(item => {
+            const selectedSupplier = suppliers.find(s => s.companyName === item.supplierName);
+            if (!selectedSupplier) return false;
+
+            const goods = goodsBySupplier[selectedSupplier.supplierId] || [];
+            const selectedGood = goods.find(g => g.goodsName === item.goodsName);
+            if (!selectedGood) return false;
+
+            const inventoryData = inventoryMap[selectedGood.goodsId] || [];
+            const inventory = inventoryData.find(inv =>
+                inv.goodsPackingId?.toString() === item.goodsPackingId?.toString() ||
+                inv.goodsPackingId === parseInt(item.goodsPackingId)
+            );
+            const availableQuantity = inventory?.availablePackageQuantity || 0;
+            const requestedQuantity = parseInt(item.quantity) || 0;
+
+            if (requestedQuantity > availableQuantity) {
+                itemsExceedingStockMap[item.id] = {
+                    availableQuantity: availableQuantity,
+                    requestedQuantity: requestedQuantity
+                };
+                return true;
+            }
+            return false;
+        });
+
+        if (insufficientItems.length > 0) {
+            // Lưu thông tin các items vượt quá tồn kho để hiển thị viền đỏ
+            setItemsExceedingStock(itemsExceedingStockMap);
+            
+            const firstItem = insufficientItems[0];
+            const message =
+                insufficientItems.length === 1
+                    ? `Sản phẩm "${firstItem.goodsName}" vượt quá tồn kho.`
+                    : `Có ${insufficientItems.length} sản phẩm vượt quá tồn kho.`;
+
+            window.showToast(message, "error");
+            return;
+        }
+
+        // Nếu không có items vượt quá tồn kho, reset state
+        setItemsExceedingStock({});
 
         try {
             const itemsWithIds = validItems.map(item => {
@@ -692,17 +791,6 @@ function UpdateSaleOrder() {
                                     ) : null;
                                 })()}
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="note" className="text-slate-600 font-medium">
-                                        Ghi Chú
-                                    </Label>
-                                    <Textarea
-                                        value={formData.note}
-                                        onChange={(e) => handleInputChange("note", e.target.value)}
-                                        placeholder="Nhập ghi chú (tùy chọn)"
-                                        className="min-h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                                    />
-                                </div>
                             </div>
                         </div>
 
@@ -713,215 +801,219 @@ function UpdateSaleOrder() {
                             </div>
 
                             <div className="rounded-lg border border-gray-200 bg-white" style={{ overflow: 'visible' }}>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow className="border-b border-gray-200 hover:bg-transparent">
-                                            <TableHead className="text-slate-600 font-semibold w-12">STT</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold w-48">Nhà Cung Cấp</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold w-56">Tên Hàng Hóa</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold w-40">Đóng Gói</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold w-32">Số Thùng</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold w-32">Tổng Số Đơn Vị</TableHead>
-                                            <TableHead className="text-slate-600 font-semibold w-24">Đơn Vị</TableHead>
-                                            {items.length > 1 && (
-                                                <TableHead className="text-right text-slate-600 font-semibold w-20">
-                                                    Hành Động
-                                                </TableHead>
-                                            )}
-                                        </TableRow>
-                                    </TableHeader>
-
-                                    <TableBody>
-                                        {items.map((item, index) => (
-                                            <TableRow
-                                                key={item.id}
-                                                className="border-b border-gray-200 hover:bg-gray-50 py-2"
-                                            >
-                                                {/* STT */}
-                                                <TableCell className="text-slate-700 w-12 text-center">
-                                                    {index + 1}
-                                                </TableCell>
-
-                                                {/* Nhà cung cấp */}
-                                                <TableCell
-                                                    className="relative w-48"
-                                                    style={{ overflow: "visible", zIndex: "auto" }}
-                                                >
-                                                    <div className="w-full relative">
-                                                        <FloatingDropdown
-                                                            value={item.supplierName || undefined}
-                                                            onChange={(value) => updateItem(item.id, "supplierName", value)}
-                                                            options={supplierOptions}
-                                                            placeholder="Chọn nhà cung cấp"
-                                                            loading={suppliersLoading}
-                                                        />
-                                                        {fieldErrors[`${item.id}-supplierName`] && (
-                                                            <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">
-                                                                {fieldErrors[`${item.id}-supplierName`]}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-
-                                                {/* Tên hàng hóa */}
-                                                <TableCell
-                                                    className="relative w-56"
-                                                    style={{ overflow: "visible", zIndex: "auto" }}
-                                                >
-                                                    <div className="w-full relative">
-                                                        <FloatingDropdown
-                                                            value={item.goodsName || undefined}
-                                                            onChange={(value) => updateItem(item.id, "goodsName", value)}
-                                                            options={getAvailableGoodsOptions(item.id)}
-                                                            placeholder={
-                                                                item.supplierName
-                                                                    ? "Chọn hàng hóa"
-                                                                    : "Chọn nhà cung cấp trước"
-                                                            }
-                                                            loading={(() => {
-                                                                if (!item.supplierName) return false;
-                                                                const selectedSupplier = suppliers.find(
-                                                                    (s) => s.companyName === item.supplierName
-                                                                );
-                                                                return selectedSupplier
-                                                                    ? goodsLoading[selectedSupplier.supplierId] || false
-                                                                    : false;
-                                                            })()}
-                                                            disabled={!item.supplierName}
-                                                        />
-                                                        {fieldErrors[`${item.id}-goodsName`] && (
-                                                            <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">
-                                                                {fieldErrors[`${item.id}-goodsName`]}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-
-                                                {/* Đóng gói */}
-                                                <TableCell
-                                                    className="relative w-40"
-                                                    style={{ overflow: "visible", zIndex: "auto" }}
-                                                >
-                                                    <div className="w-full relative">
-                                                        <FloatingDropdown
-                                                            value={item.goodsPackingId || undefined}
-                                                            onChange={(value) =>
-                                                                updateItem(item.id, "goodsPackingId", value)
-                                                            }
-                                                            options={getGoodsPackingOptions(item.id)}
-                                                            placeholder={
-                                                                item.goodsName ? "Chọn đóng gói" : "Chọn hàng hóa trước"
-                                                            }
-                                                            loading={false}
-                                                            disabled={!item.goodsName}
-                                                        />
-                                                        {fieldErrors[`${item.id}-goodsPackingId`] && (
-                                                            <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">
-                                                                {fieldErrors[`${item.id}-goodsPackingId`]}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-
-                                                {/* Số thùng */}
-                                                <TableCell className="w-32">
-                                                    <div className="w-full relative">
-                                                        <Input
-                                                            type="number"
-                                                            placeholder="0"
-                                                            value={item.quantity === "" ? "" : item.quantity}
-                                                            onChange={(e) =>
-                                                                updateItem(item.id, "quantity", e.target.value)
-                                                            }
-                                                            className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${fieldErrors[`${item.id}-quantity`] ? "border-red-500" : ""
-                                                                }`}
-                                                        />
-                                                        {fieldErrors[`${item.id}-quantity`] && (
-                                                            <p className="absolute left-0 top-[42px] text-red-500 text-xs whitespace-nowrap z-50 bg-white px-1">
-                                                                {fieldErrors[`${item.id}-quantity`]}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-
-                                                {/* Tổng số đơn vị */}
-                                                <TableCell className="w-32">
-                                                    <div className="h-[38px] flex items-center px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600 font-medium text-center">
-                                                        {(() => {
-                                                            const totalUnits = calculateTotalUnits(item);
-                                                            if (totalUnits === 0) return "0";
-                                                            return totalUnits.toString();
-                                                        })()}
-                                                    </div>
-                                                </TableCell>
-
-                                                {/* Đơn vị */}
-                                                <TableCell className="w-24">
-                                                    <div className="h-[38px] flex items-center px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600 text-center text-sm">
-                                                        {(() => {
-                                                            if (item.goodsName && item.supplierName) {
-                                                                const selectedSupplier = suppliers.find(
-                                                                    (s) => s.companyName === item.supplierName
-                                                                );
-                                                                if (selectedSupplier) {
-                                                                    const goods =
-                                                                        goodsBySupplier[selectedSupplier.supplierId] || [];
-                                                                    const selectedGood = goods.find(
-                                                                        (good) => good.goodsName === item.goodsName
-                                                                    );
-                                                                    return selectedGood
-                                                                        ? selectedGood.unitMeasureName
-                                                                        : "Chưa chọn";
-                                                                }
-                                                            }
-                                                            return "Chưa chọn";
-                                                        })()}
-                                                    </div>
-                                                </TableCell>
-
-                                                {/* Hành động */}
+                                <div className="overflow-x-auto w-full">
+                                    <Table className="min-w-[1000px]">
+                                        <TableHeader>
+                                            <TableRow className="border-b border-gray-200 hover:bg-transparent">
+                                                <TableHead className="text-slate-600 font-semibold w-[4%]">STT</TableHead>
+                                                <TableHead className="text-slate-600 font-semibold w-[18%]">Nhà Cung Cấp</TableHead>
+                                                <TableHead className="text-slate-600 font-semibold w-[22%]">Tên Hàng Hóa</TableHead>
+                                                <TableHead className="text-slate-600 font-semibold w-[15%]">Đóng Gói</TableHead>
+                                                <TableHead className="text-slate-600 font-semibold text-center w-[150px]">Số Thùng</TableHead>
+                                                <TableHead className="text-slate-600 font-semibold text-center w-[130px]">Tổng Số Đơn Vị</TableHead>
+                                                <TableHead className="text-slate-600 font-semibold text-center w-[130px]">Đơn Vị</TableHead>
                                                 {items.length > 1 && (
-                                                    <TableCell className="text-right w-20">
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => removeItem(item.id)}
-                                                            className="text-red-600 hover:bg-red-50"
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
-                                                    </TableCell>
+                                                    <TableHead className="text-right text-slate-600 font-semibold w-[6%]">
+                                                        Hành Động
+                                                    </TableHead>
                                                 )}
                                             </TableRow>
-                                        ))}
+                                        </TableHeader>
 
-                                        {/* Hàng trống cuối */}
-                                        <TableRow className="border-b border-gray-200">
-                                            <TableCell
-                                                className={items.length === 1 ? "py-12" : "py-6"}
-                                            ></TableCell>
-                                            <TableCell
-                                                className={items.length === 1 ? "py-12" : "py-6"}
-                                            ></TableCell>
-                                            <TableCell
-                                                className={items.length === 1 ? "py-12" : "py-6"}
-                                            ></TableCell>
-                                            <TableCell
-                                                className={items.length === 1 ? "py-12" : "py-6"}
-                                            ></TableCell>
-                                            <TableCell
-                                                className={items.length === 1 ? "py-12" : "py-6"}
-                                            ></TableCell>
-                                            <TableCell
-                                                className={items.length === 1 ? "py-12" : "py-6"}
-                                            ></TableCell>
-                                            <TableCell
-                                                className={items.length === 1 ? "py-12" : "py-6"}
-                                            ></TableCell>
-                                        </TableRow>
-                                    </TableBody>
-                                </Table>
+                                        <TableBody>
+                                            {items.map((item, index) => {
+                                                const isExceedingStock = itemsExceedingStock[item.id] !== undefined;
+
+                                                return (
+                                                <TableRow
+                                                    key={item.id}
+                                                    className={`border-b min-h-[70px] ${
+                                                        isExceedingStock 
+                                                            ? 'border-red-500 border-2 bg-red-50 hover:bg-red-100' 
+                                                            : 'border-gray-200 hover:bg-gray-50'
+                                                    }`}
+                                                >
+                                                    {/* STT */}
+                                                    <TableCell className="text-center text-slate-700 align-top pb-6">
+                                                        {index + 1}
+                                                    </TableCell>
+
+                                                    {/* Nhà cung cấp */}
+                                                    <TableCell className="relative align-top pb-6">
+                                                        <div className="relative min-w-[160px] max-w-[220px] w-full">
+                                                            <FloatingDropdown
+                                                                value={item.supplierName || undefined}
+                                                                onChange={(value) => updateItem(item.id, "supplierName", value)}
+                                                                options={supplierOptions}
+                                                                placeholder="Chọn nhà cung cấp"
+                                                                loading={suppliersLoading}
+                                                                className="truncate w-full"
+                                                                title={item.supplierName || ""}
+                                                            />
+                                                            {fieldErrors[`${item.id}-supplierName`] && (
+                                                                <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">
+                                                                    {fieldErrors[`${item.id}-supplierName`]}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+
+                                                    {/* Tên hàng hóa */}
+                                                    <TableCell className="relative align-top pb-6">
+                                                        <div className="relative min-w-[180px] max-w-[260px] w-full">
+                                                            <FloatingDropdown
+                                                                value={item.goodsName || undefined}
+                                                                onChange={(value) => updateItem(item.id, "goodsName", value)}
+                                                                options={getAvailableGoodsOptions(item.id)}
+                                                                placeholder={
+                                                                    item.supplierName
+                                                                        ? "Chọn hàng hóa"
+                                                                        : "Chọn nhà cung cấp trước"
+                                                                }
+                                                                loading={(() => {
+                                                                    if (!item.supplierName) return false;
+                                                                    const selectedSupplier = suppliers.find(
+                                                                        (s) => s.companyName === item.supplierName
+                                                                    );
+                                                                    return selectedSupplier
+                                                                        ? goodsLoading[selectedSupplier.supplierId] || false
+                                                                        : false;
+                                                                })()}
+                                                                disabled={!item.supplierName}
+                                                                className="truncate w-full"
+                                                                title={item.goodsName || ""}
+                                                            />
+                                                            {fieldErrors[`${item.id}-goodsName`] && (
+                                                                <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">
+                                                                    {fieldErrors[`${item.id}-goodsName`]}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+
+                                                    {/* Đóng gói */}
+                                                    <TableCell className="relative align-top pb-6">
+                                                        <div className="relative min-w-[130px] max-w-[140px] w-full">
+                                                            <FloatingDropdown
+                                                                value={item.goodsPackingId ? item.goodsPackingId.toString() : undefined}
+                                                                onChange={(value) =>
+                                                                    updateItem(item.id, "goodsPackingId", value)
+                                                                }
+                                                                options={getGoodsPackingOptions(item.id)}
+                                                                placeholder={
+                                                                    item.goodsName ? "Chọn đóng gói" : "Chọn hàng hóa trước"
+                                                                }
+                                                                loading={false}
+                                                                disabled={!item.goodsName}
+                                                                className="truncate w-full"
+                                                                title={item.goodsPackingId ? item.goodsPackingId.toString() : ""}
+                                                            />
+                                                            {fieldErrors[`${item.id}-goodsPackingId`] && (
+                                                                <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">
+                                                                    {fieldErrors[`${item.id}-goodsPackingId`]}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+
+                                                    {/* Số thùng */}
+                                                    <TableCell className="w-[150px] relative align-top pb-6">
+                                                        <div className="relative">
+                                                            <Input
+                                                                type="number"
+                                                                placeholder="0"
+                                                                min={0}
+                                                                value={item.quantity === "" ? "" : item.quantity}
+                                                                onChange={(e) =>
+                                                                    updateItem(item.id, "quantity", e.target.value)
+                                                                }
+                                                                className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${fieldErrors[`${item.id}-quantity`] ? "border-red-500" : ""
+                                                                    }`}
+                                                            />
+                                                            {fieldErrors[`${item.id}-quantity`] && (
+                                                                <p className="absolute left-0 top-full mt-1 text-red-500 text-xs whitespace-nowrap">
+                                                                    {fieldErrors[`${item.id}-quantity`]}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+
+                                                    {/* Tổng số đơn vị */}
+                                                    <TableCell className="w-[130px]">
+                                                        <div className="h-[38px] flex items-center justify-center px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600 font-medium">
+                                                            {calculateTotalUnits(item) || "0"}
+                                                        </div>
+                                                    </TableCell>
+
+                                                    {/* Đơn vị */}
+                                                    <TableCell className="w-[100px]">
+                                                        <div className="h-[38px] flex items-center justify-center px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600 text-sm">
+                                                            {(() => {
+                                                                if (item.goodsName && item.supplierName) {
+                                                                    const selectedSupplier = suppliers.find(
+                                                                        (s) => s.companyName === item.supplierName
+                                                                    );
+                                                                    if (selectedSupplier) {
+                                                                        const goods =
+                                                                            goodsBySupplier[selectedSupplier.supplierId] || [];
+                                                                        const selectedGood = goods.find(
+                                                                            (good) => good.goodsName === item.goodsName
+                                                                        );
+                                                                        return selectedGood
+                                                                            ? selectedGood.unitMeasureName
+                                                                            : "Trống";
+                                                                    }
+                                                                }
+                                                                return "Trống";
+                                                            })()}
+                                                        </div>
+                                                    </TableCell>
+
+                                                    {/* Hành động */}
+                                                    {items.length > 1 && (
+                                                        <TableCell className="text-right">
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => removeItem(item.id)}
+                                                                className="text-red-600 hover:bg-red-50"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </TableCell>
+                                                    )}
+                                                </TableRow>
+                                            );
+                                            })}
+
+                                            {/* Hàng trống cuối */}
+                                            <TableRow className="border-b border-gray-200">
+                                                <TableCell
+                                                    className={items.length === 1 ? "py-12" : "py-6"}
+                                                ></TableCell>
+                                                <TableCell
+                                                    className={items.length === 1 ? "py-12" : "py-6"}
+                                                ></TableCell>
+                                                <TableCell
+                                                    className={items.length === 1 ? "py-12" : "py-6"}
+                                                ></TableCell>
+                                                <TableCell
+                                                    className={items.length === 1 ? "py-12" : "py-6"}
+                                                ></TableCell>
+                                                <TableCell
+                                                    className={items.length === 1 ? "py-12" : "py-6"}
+                                                ></TableCell>
+                                                <TableCell
+                                                    className={items.length === 1 ? "py-12" : "py-6"}
+                                                ></TableCell>
+                                                <TableCell
+                                                    className={items.length === 1 ? "py-12" : "py-6"}
+                                                ></TableCell>
+                                            </TableRow>
+                                        </TableBody>
+                                    </Table>
+                                </div>
                             </div>
                             {/* Add Item Text - Centered below table */}
                             <div className="flex justify-center">
@@ -935,95 +1027,19 @@ function UpdateSaleOrder() {
                                 </button>
                             </div>
 
-                            {/* Stock Information Card */}
-                            {(() => {
-                                const stockInfo = getStockInformation();
-                                if (stockInfo.totalMedicines === 0) return null;
 
-                                return (
-                                    <div className="mt-6 space-y-4">
-                                        {/* Header */}
-                                        <div className="flex items-center gap-2">
-                                            <BarChart3 className="h-5 w-5 text-blue-600" />
-                                            <h3 className="text-lg font-semibold text-blue-600">Thông Tin Tồn Kho</h3>
-                                        </div>
-
-                                        {/* Status Banner */}
-                                        <div className={`rounded-lg p-4 ${stockInfo.allSufficient
-                                            ? 'bg-green-50 border border-green-200'
-                                            : 'bg-red-50 border border-red-200'
-                                            }`}>
-                                            <div className="flex items-center gap-2">
-                                                <CheckCircle className={`h-5 w-5 ${stockInfo.allSufficient ? 'text-green-600' : 'text-red-600'}`} />
-                                                <ArrowRightLeft className={`h-5 w-5 ${stockInfo.allSufficient ? 'text-green-600' : 'text-red-600'}`} />
-                                                <span className={`font-medium ${stockInfo.allSufficient ? 'text-green-700' : 'text-red-700'
-                                                    }`}>
-                                                    {stockInfo.allSufficient
-                                                        ? 'Đủ tồn kho - Có thể tạo đơn xuất'
-                                                        : 'Thiếu tồn kho - Vui lòng kiểm tra lại'
-                                                    }
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        {/* Medicine Cards */}
-                                        {stockInfo.medicines.length > 0 && (
-                                            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                                                {stockInfo.medicines.map((medicine, idx) => (
-                                                    <div
-                                                        key={idx}
-                                                        className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-                                                    >
-                                                        <div className="flex items-center gap-2 mb-3">
-                                                            <CheckCircle className={`h-5 w-5 ${medicine.isSufficient ? 'text-green-600' : 'text-red-600'}`} />
-                                                            <h4 className="font-semibold text-slate-700">{medicine.goodsName}</h4>
-                                                        </div>
-
-                                                        <div className="text-sm text-slate-600 mb-2">
-                                                            Mã sản phẩm: <span className="font-medium">{medicine.goodsCode}</span>
-                                                        </div>
-
-                                                        <div className="space-y-1">
-                                                            <div className="text-sm">
-                                                                <span className="text-slate-600">Yêu cầu: </span>
-                                                                <span className="font-semibold text-slate-800">{medicine.requestedQuantity}</span>
-                                                            </div>
-                                                            <div className="text-sm">
-                                                                <span className="text-slate-600">Có sẵn: </span>
-                                                                <span className={`font-semibold ${medicine.isSufficient ? 'text-green-600' : 'text-red-600'}`}>
-                                                                    {medicine.availableQuantity}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-
-                                        {/* Stock Summary */}
-                                        <div className="space-y-2">
-                                            <h4 className="text-sm font-semibold text-slate-600">Tóm Tắt Tồn Kho:</h4>
-                                            <div className="flex flex-wrap gap-2">
-                                                <div className="px-3 py-1.5 bg-gray-100 rounded-full">
-                                                    <span className="text-sm font-medium text-blue-600">
-                                                        Tổng: {stockInfo.totalMedicines} mặt hàng
-                                                    </span>
-                                                </div>
-                                                <div className="px-3 py-1.5 bg-green-100 rounded-full">
-                                                    <span className="text-sm font-medium text-green-600">
-                                                        Đủ: {stockInfo.sufficientCount} mặt hàng
-                                                    </span>
-                                                </div>
-                                                <div className="px-3 py-1.5 bg-red-100 rounded-full">
-                                                    <span className="text-sm font-medium text-red-600">
-                                                        Thiếu: {stockInfo.insufficientCount} mặt hàng
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })()}
+                            <div className="space-y-2 mt-2">
+                                <Label htmlFor="note" className="text-slate-600 font-medium">
+                                    Ghi Chú
+                                </Label>
+                                <Textarea
+                                    value={formData.note}
+                                    rows={4}
+                                    onChange={(e) => handleInputChange("note", e.target.value)}
+                                    placeholder="Nhập ghi chú (tùy chọn)"
+                                    className="min-h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                                />
+                            </div>
 
                             {/* Actions */}
                             <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-4">
@@ -1038,6 +1054,98 @@ function UpdateSaleOrder() {
                         </div>
                     </div>
                 </Card>
+
+                {/* Stock Information Card */}
+                {(() => {
+                    const stockInfo = getStockInformation();
+                    if (stockInfo.totalGoods === 0) return null;
+
+                    return (
+                        <Card className="bg-white border border-gray-200 shadow-sm">
+                            <div className="p-6 space-y-4">
+                                {/* Header */}
+                                <div className="flex items-center gap-2">
+                                    <BarChart3 className="h-5 w-5 text-blue-600" />
+                                    <h3 className="text-lg font-semibold text-blue-600">Thông Tin Tồn Kho</h3>
+                                </div>
+
+                                {/* Status Banner */}
+                                <div className={`rounded-lg p-4 ${stockInfo.allSufficient
+                                    ? 'bg-green-50 border border-green-200'
+                                    : 'bg-red-50 border border-red-200'
+                                    }`}>
+                                    <div className="flex items-center gap-2">
+                                        <CheckCircle className={`h-5 w-5 ${stockInfo.allSufficient ? 'text-green-600' : 'text-red-600'}`} />
+                                        <ArrowRightLeft className={`h-5 w-5 ${stockInfo.allSufficient ? 'text-green-600' : 'text-red-600'}`} />
+                                        <span className={`font-medium ${stockInfo.allSufficient ? 'text-green-700' : 'text-red-700'
+                                            }`}>
+                                            {stockInfo.allSufficient
+                                                ? 'Đủ tồn kho - Có thể tạo đơn bán hàng'
+                                                : 'Thiếu tồn kho - Vui lòng kiểm tra lại'
+                                            }
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Goods Cards */}
+                                {stockInfo.good.length > 0 && (
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                                        {stockInfo.good.map((goods, idx) => (
+                                            <div
+                                                key={idx}
+                                                className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                                            >
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <CheckCircle className={`h-5 w-5 ${goods.isSufficient ? 'text-green-600' : 'text-red-600'}`} />
+                                                    <h4 className="font-semibold text-slate-700">{goods.goodsName}</h4>
+                                                </div>
+
+                                                <div className="text-sm text-slate-600 mb-2">
+                                                    Mã sản phẩm: <span className="font-medium">{goods.goodsCode}</span>
+                                                </div>
+
+                                                <div className="space-y-1">
+                                                    <div className="text-sm">
+                                                        <span className="text-slate-600">Yêu cầu: </span>
+                                                        <span className="font-semibold text-slate-800">{goods.requestedQuantity}</span>
+                                                    </div>
+                                                    <div className="text-sm">
+                                                        <span className="text-slate-600">Có sẵn: </span>
+                                                        <span className={`font-semibold ${goods.isSufficient ? 'text-green-600' : 'text-red-600'}`}>
+                                                            {goods.availableQuantity}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Stock Summary */}
+                                <div className="space-y-2">
+                                    <h4 className="text-sm font-semibold text-slate-600">Tóm Tắt Tồn Kho:</h4>
+                                    <div className="flex flex-wrap gap-2">
+                                        <div className="px-3 py-1.5 bg-gray-100 rounded-full">
+                                            <span className="text-sm font-medium text-blue-600">
+                                                Tổng: {stockInfo.totalGoods} mặt hàng
+                                            </span>
+                                        </div>
+                                        <div className="px-3 py-1.5 bg-green-100 rounded-full">
+                                            <span className="text-sm font-medium text-green-600">
+                                                Đủ: {stockInfo.sufficientCount} mặt hàng
+                                            </span>
+                                        </div>
+                                        <div className="px-3 py-1.5 bg-red-100 rounded-full">
+                                            <span className="text-sm font-medium text-red-600">
+                                                Thiếu: {stockInfo.insufficientCount} mặt hàng
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </Card>
+                    );
+                })()}
             </div>
         </div>
     )

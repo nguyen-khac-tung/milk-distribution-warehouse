@@ -60,6 +60,18 @@ export const rejectGoodsReceiptNoteDetail = async ({ goodsReceiptNoteDetailId, r
     }
 };
 
+// Từ chối danh sách bản ghi (nhiều records cùng lúc)
+export const rejectGoodsReceiptNoteDetailList = async (rejectList) => {
+    try {
+        // rejectList là mảng các object có format: [{ goodsReceiptNoteDetailId: string, rejectionReason: string }, ...]
+        const res = await api.put('/GoodsReceiptNoteDetail/RejectRecordList', rejectList);
+        return res.data;
+    } catch (error) {
+        console.error('Error rejecting goods receipt note detail list:', error);
+        throw error;
+    }
+};
+
 export const approveGoodsReceiptNote = async (goodsReceiptNoteId) => {
     try {
         const body = { goodsReceiptNoteId };

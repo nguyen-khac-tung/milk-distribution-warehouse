@@ -5,6 +5,8 @@ using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
 using MilkDistributionWarehouse.Utilities;
+using System.Threading.Tasks;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using static MilkDistributionWarehouse.Models.DTOs.GoodsReceiptNoteDetailDto;
 using static MilkDistributionWarehouse.Repositories.GoodsReceiptNoteDetailRepository;
 
@@ -14,17 +16,20 @@ namespace MilkDistributionWarehouse.Services
     {
         Task<(string, List<GoodsReceiptNoteDetailPalletDto>)> GetListGRNDByGRNId(Guid grnId);
         Task<(string, T?)> UpdateGRNDetail<T>(T update, int? userId) where T : GoodsReceiptNoteDetailUpdateStatus;
+        Task<(string, List<GoodsReceiptNoteDetailRejectDto>?)> UpdateGRNReject(List<GoodsReceiptNoteDetailRejectDto> updateRejects);
     }
     
     public class GoodsReceiptNoteDetailService : IGoodsReceiptNoteDetailService
     {
         private readonly IGoodsReceiptNoteDetailRepository _grndRepository;
         private readonly IMapper _mapper;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public GoodsReceiptNoteDetailService(IGoodsReceiptNoteDetailRepository grndRepository, IMapper mapper)
+        public GoodsReceiptNoteDetailService(IGoodsReceiptNoteDetailRepository grndRepository, IMapper mapper, IUnitOfWork unitOfWork)
         {
             _grndRepository = grndRepository;
             _mapper = mapper;
+            _unitOfWork = unitOfWork;
         }
 
         public async Task<(string, List<GoodsReceiptNoteDetailPalletDto>)> GetListGRNDByGRNId(Guid grnId)
@@ -124,6 +129,46 @@ namespace MilkDistributionWarehouse.Services
                 return ($"{ex.Message}", default);
             }
         }
+
+        public async Task<(string, List<GoodsReceiptNoteDetailRejectDto>?)> UpdateGRNReject(List<GoodsReceiptNoteDetailRejectDto> updateRejects)
+        {
+            if (updateRejects.Count == 0)
+                return ("Data list input is invalid.", default);
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                foreach (var rejectDto in updateRejects)
+                {
+                    var grnDetail = await _grndRepository.GetGRNDetailById(rejectDto.GoodsReceiptNoteDetailId);
+
+                    if (grnDetail == null) throw new Exception("GRN detail is not exist.");
+
+                    var currentStatus = grnDetail.Status;
+
+                    if (currentStatus != ReceiptItemStatus.PendingApproval)
+                        throw new Exception("Chỉ được chuyển sang trạng thái Từ chối khi mục nhập kho chi tiết ở trạng thái Chờ duyệt.");
+
+                    if (string.IsNullOrEmpty(rejectDto.RejectionReason))
+                        throw new Exception("Từ chối phải có lý do.");
+
+                    grnDetail = _mapper.Map(rejectDto, grnDetail);
+                    grnDetail.GoodsReceiptNote.Status = GoodsReceiptNoteStatus.Receiving;
+
+                    var resultUpdate = await _grndRepository.UpdateGRNDetail(grnDetail);
+                    if (resultUpdate == null)
+                        throw new Exception("Cập nhật mục nhập kho chi tiết thất bại.");
+                }
+
+                await _unitOfWork.CommitTransactionAsync();
+                return ("", updateRejects);
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ($"{ex.Message}".ToMessageForUser(), default);
+            }
+        } 
 
         private string CheckGRNDetailUpdateValidation(GoodsReceiptNoteDetailInspectedDto inspectedDto, GoodsReceiptNoteDetail grnDetail)
         {

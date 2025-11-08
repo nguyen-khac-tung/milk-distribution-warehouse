@@ -1,16 +1,13 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent } from "../../components/ui/card";
+import { Card } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
-import { Search, Plus, Edit, Trash2, Eye, ArrowUp, ArrowDown, ArrowUpDown, Package } from "lucide-react";
-import Loading from "../../components/Common/Loading";
-import EmptyState from "../../components/Common/EmptyState";
+import { Plus } from "lucide-react";
 import Pagination from "../../components/Common/Pagination";
-import StatusDisplaySaleOrder, { STATUS_LABELS, SALE_ORDER_STATUS } from "../../components/SaleOrderCompoents/StatusDisplaySaleOrder";
+import { STATUS_LABELS, SALE_ORDER_STATUS } from "../../components/SaleOrderCompoents/StatusDisplaySaleOrder";
 import DeleteModal from "../../components/Common/DeleteModal";
 import { extractErrorMessage } from "../../utils/Validation";
-import { deleteSaleOrder, getSalesOrderListSaleManager, getSalesOrderListSalesRepresentatives, getSalesOrderListWarehouseManager, getSalesOrderListWarehouseStaff } from "../../services/SalesOrderService";
+import { deleteSaleOrder, getSalesOrderListSaleManager, getSalesOrderListSalesRepresentatives, getSalesOrderListWarehouseManager, getSalesOrderListWarehouseStaff, getSalesOrderDetail } from "../../services/SalesOrderService";
 import { getAllRetailersDropdown } from "../../services/RetailerService";
 import { getUserDropDownByRoleName } from "../../services/AccountService";
 import { PERMISSIONS } from "../../utils/permissions";
@@ -71,12 +68,11 @@ const SalesOrderList = () => {
     const fetchRetailers = async () => {
         try {
             const response = await getAllRetailersDropdown();
-            console.log("retailer:", response)
             if (response && response.data && Array.isArray(response.data)) {
                 setRetailers(response.data);
             }
         } catch (error) {
-            console.error("Error fetching retailers:", error);
+            // Error handled silently
         }
     };
 
@@ -84,12 +80,10 @@ const SalesOrderList = () => {
     const fetchUsersByRole = async (roleName, setter) => {
         try {
             const response = await getUserDropDownByRoleName(roleName);
-            // console.log("fetchUsersByRole", response)
             if (response && response.data && Array.isArray(response.data)) {
                 setter(response.data);
             }
         } catch (error) {
-            console.error(`Error fetching users for role ${roleName}:`, error);
             setter([]);
         }
     };
@@ -113,15 +107,6 @@ const SalesOrderList = () => {
         try {
             setLoading(true);
 
-            // Đếm số lần gọi API
-            setApiCallCount(prev => {
-                const newCount = prev + 1;
-                console.log(`=== API CALL #${newCount} ===`);
-                console.log("API Call Count:", newCount);
-                console.log("Params:", params);
-                return newCount;
-            });
-
             // Chọn API dựa trên permissions của user
             let response;
 
@@ -143,11 +128,6 @@ const SalesOrderList = () => {
             }
 
             if (response && response.data && response.data.items && Array.isArray(response.data.items)) {
-                // console.log("=== PAGINATION UPDATE ===");
-                // console.log("Total count:", response.data.totalCount);
-                // console.log("Page number:", response.data.pageNumber);
-                // console.log("Total pages:", response.data.totalPages);
-
                 setsaleOrders(response.data.items);
                 setPagination(prev => ({
                     ...prev,
@@ -155,12 +135,10 @@ const SalesOrderList = () => {
                     current: response.data.pageNumber || 1
                 }));
             } else {
-                console.log("No valid data found");
                 setsaleOrders([]);
                 setPagination(prev => ({ ...prev, total: 0, current: 1 }));
             }
         } catch (error) {
-            console.error("Error fetching purchase orders:", error);
             setsaleOrders([]);
             setPagination(prev => ({ ...prev, total: 0 }));
         } finally {
@@ -177,11 +155,12 @@ const SalesOrderList = () => {
             sortField: sortField,
             sortAscending: sortAscending,
             status: statusFilter,
-            customerId: retailerFilter,
+            retailerId: retailerFilter,
             salesRepId: sellerFilter,
             createdBy: sellerFilter,
-            approvedBy: approverFilter,
-            assignedTo: assigneeFilter,
+            approvalBy: approverFilter,
+            acknowledgedBy: confirmerFilter,
+            assignTo: assigneeFilter,
             fromEstimatedDate: estimatedDateRangeFilter.fromEstimatedDate,
             toEstimatedDate: estimatedDateRangeFilter.toEstimatedDate,
             ...overrides
@@ -211,8 +190,6 @@ const SalesOrderList = () => {
 
         // Chỉ gọi fetchData() khi có search query thực sự active
         if (searchQuery.trim()) {
-            console.log("=== SEARCH CHANGE DETECTED ===");
-            console.log("API Call Count before search:", apiCallCount);
             fetchData();
         }
     }, [hasInitialLoad, searchQuery]);
@@ -258,25 +235,30 @@ const SalesOrderList = () => {
         setShowDeleteModal(true);
     };
 
+    const handleGoodsIssueNoteDetailClick = async (order) => {
+        try {
+            navigate(`/goods-issue-note-detail/${order.salesOrderId}`);
+        } catch (error) {
+            if (window.showToast) {
+                window.showToast("Không thể mở phiếu xuất kho", "error");
+            }
+        }
+    };
+
     const handleDeleteConfirm = async () => {
         if (!selectedPurchaseOrder) return;
-
-        // console.log("=== DELETE CONFIRM ===");
-        // console.log("Selected purchase order:", selectedPurchaseOrder);
-        // console.log("All keys:", Object.keys(selectedPurchaseOrder));
 
         setDeleteLoading(true);
         try {
             const orderId = selectedPurchaseOrder.salesOrderId;
 
             if (!orderId) {
-                console.error("No valid ID found. Available fields:", Object.keys(selectedPurchaseOrder));
-                throw new Error("Không tìm thấy ID của đơn xuất");
+                throw new Error("Không tìm thấy ID của đơn bán hàng");
             }
 
             await deleteSaleOrder(orderId);
             if (window.showToast) {
-                window.showToast("Xóa đơn xuất thành công!", "success");
+                window.showToast("Xóa đơn bán hàng thành công!", "success");
             }
 
             // Close modal and refresh data
@@ -287,8 +269,6 @@ const SalesOrderList = () => {
             fetchData();
 
         } catch (error) {
-            console.error("Error deleting purchase order:", error);
-
             // Extract error message from backend using utility function
             const errorMessage = extractErrorMessage(error);
 
@@ -392,7 +372,7 @@ const SalesOrderList = () => {
             sortField: sortField,
             sortAscending: sortAscending,
             status: "",
-            customerId: "",
+            retailerId: "",
             salesRepId: "",
             createdBy: "",
             approvedBy: "",
@@ -425,8 +405,9 @@ const SalesOrderList = () => {
 
         const requestParams = createRequestParams({
             pageNumber: 1,
-            customerId: value
+            retailerId: value
         });
+
         fetchDataWithParams(requestParams);
     };
 
@@ -436,7 +417,7 @@ const SalesOrderList = () => {
 
         const requestParams = createRequestParams({
             pageNumber: 1,
-            customerId: ""
+            retailerId: ""
         });
         fetchDataWithParams(requestParams);
     };
@@ -447,7 +428,7 @@ const SalesOrderList = () => {
 
         const requestParams = createRequestParams({
             pageNumber: 1,
-            approvedBy: value
+            approvalBy: value
         });
         fetchDataWithParams(requestParams);
     };
@@ -458,7 +439,7 @@ const SalesOrderList = () => {
 
         const requestParams = createRequestParams({
             pageNumber: 1,
-            approvedBy: ""
+            approvalBy: ""
         });
         fetchDataWithParams(requestParams);
     };
@@ -493,6 +474,7 @@ const SalesOrderList = () => {
 
         const requestParams = createRequestParams({
             pageNumber: 1,
+            acknowledgedBy: value
         });
         fetchDataWithParams(requestParams);
     };
@@ -503,6 +485,7 @@ const SalesOrderList = () => {
 
         const requestParams = createRequestParams({
             pageNumber: 1,
+            acknowledgedBy: ""
         });
         fetchDataWithParams(requestParams);
     };
@@ -513,7 +496,7 @@ const SalesOrderList = () => {
 
         const requestParams = createRequestParams({
             pageNumber: 1,
-            assignedTo: value
+            assignTo: value
         });
         fetchDataWithParams(requestParams);
     };
@@ -524,7 +507,7 @@ const SalesOrderList = () => {
 
         const requestParams = createRequestParams({
             pageNumber: 1,
-            assignedTo: ""
+            assignTo: ""
         });
         fetchDataWithParams(requestParams);
     };
@@ -633,9 +616,9 @@ const SalesOrderList = () => {
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-600">Quản lý đơn yêu cầu bán hàng</h1>
+                        <h1 className="text-2xl font-bold text-slate-600">Quản lý đơn bán hàng</h1>
                         <p className="text-slate-600 mt-1">
-                            Quản lý các đơn yêu cầu bán hàng trong hệ thống
+                            Quản lý các đơn bán hàng trong hệ thống
                         </p>
                     </div>
                     <div className="flex space-x-3">
@@ -647,7 +630,7 @@ const SalesOrderList = () => {
                                 }}
                             >
                                 <Plus className="mr-2 h-4 w-4 text-white" />
-                                Tạo yêu cầu xuất đơn
+                                Tạo đơn bán hàng
                             </Button>
                         </PermissionWrapper>
                     </div>
@@ -753,6 +736,7 @@ const SalesOrderList = () => {
                         sortAscending={sortAscending}
                         onSort={handleSort}
                         onView={handleViewClick}
+                        onGoodsIssueNoteDetail={handleGoodsIssueNoteDetailClick}
                         onEdit={handleEditClick}
                         onDelete={handleDeleteClick}
                         onClearFilters={clearAllFilters}
@@ -779,7 +763,7 @@ const SalesOrderList = () => {
                     isOpen={showDeleteModal}
                     onClose={handleDeleteCancel}
                     onConfirm={handleDeleteConfirm}
-                    itemName="đơn xuất hàng này"
+                    itemName="đơn bán hàng này"
                 />
             </div>
         </div>

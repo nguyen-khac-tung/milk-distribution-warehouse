@@ -5,6 +5,7 @@ import { Button } from '../../components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { ArrowLeft, Package, User, Calendar, CheckCircle, XCircle, Clock, Truck, CheckSquare, Trash2, Key, Building2, FileText, Hash, Shield, ShoppingCart, Users, UserCheck, UserX, TruckIcon, UserPlus, Store, UserCircle, UserCog, UserCheck2, UserX2, UserMinus, Mail, Phone, MapPin, Play } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
+import { ComponentIcon } from '../../components/IconComponent/Icon';
 import { getPurchaseOrderDetail, submitPurchaseOrder, approvePurchaseOrder, rejectPurchaseOrder, confirmGoodsReceived, assignForReceiving, startReceive, reAssignForReceiving } from '../../services/PurchaseOrderService';
 import { extractErrorMessage } from '../../utils/Validation';
 import ApprovalConfirmationModal from '../../components/PurchaseOrderComponents/ApprovalConfirmationModal';
@@ -112,7 +113,7 @@ const PurchaseOrderDetail = () => {
             4: 'Đã duyệt',
             5: 'Đã giao đến',
             6: 'Đã phân công',
-            7: 'Đã nhận hàng',
+            7: 'Đang tiếp nhận',
             8: 'Đã kiểm nhập',
             9: 'Đã nhập kho'
         };
@@ -225,8 +226,8 @@ const PurchaseOrderDetail = () => {
 
             if (window.showToast) {
                 const message = purchaseOrder.status === PURCHASE_ORDER_STATUS.Rejected
-                    ? "Nộp lại đơn hàng thành công!"
-                    : "Nộp bản nháp thành công!";
+                    ? "Gửi lại phê duyệt đơn hàng thành công!"
+                    : "Gửi phê duyệt thành công!";
                 window.showToast(message, "success");
             }
 
@@ -256,7 +257,7 @@ const PurchaseOrderDetail = () => {
             );
 
             if (window.showToast) {
-                window.showToast("Xác nhận hàng đã nhận thành công!", "success");
+                window.showToast("Xác nhận đã tiếp nhận thành công!", "success");
             }
             setShowConfirmGoodsReceivedModal(false);
             const response = await getPurchaseOrderDetail(id);
@@ -265,7 +266,7 @@ const PurchaseOrderDetail = () => {
             }
         } catch (error) {
             console.error("Error confirming goods received:", error);
-            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi xác nhận hàng đã nhận";
+            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi xác nhận đã tiếp nhận";
             if (window.showToast) {
                 window.showToast(errorMessage, "error");
             }
@@ -323,7 +324,7 @@ const PurchaseOrderDetail = () => {
             );
 
             if (window.showToast) {
-                window.showToast("Bắt đầu nhận hàng thành công!", "success");
+                window.showToast("Bắt đầu tiếp nhận thành công!", "success");
             }
             setShowStartReceiveModal(false);
             const response = await getPurchaseOrderDetail(id);
@@ -332,7 +333,7 @@ const PurchaseOrderDetail = () => {
             }
         } catch (error) {
             console.error("Error starting receive:", error);
-            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi bắt đầu nhận hàng";
+            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi bắt đầu tiếp nhận";
             if (window.showToast) {
                 window.showToast(errorMessage, "error");
             }
@@ -357,8 +358,8 @@ const PurchaseOrderDetail = () => {
                             <p>URL: /PurchaseOrder/GetPurchaseOrder/{id}</p>
                         </div>
                         <Button onClick={() => navigate('/purchase-orders')} variant="outline">
-                            <ArrowLeft className="h-4 w-4 mr-2" />
-                            Quay lại
+                            <ComponentIcon name="arrowBackCircleOutline" size={18} />
+                            <span className="ml-2">Quay lại</span>
                         </Button>
                     </CardContent>
                 </Card>
@@ -374,8 +375,8 @@ const PurchaseOrderDetail = () => {
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">Không tìm thấy</h3>
                         <p className="text-gray-600 mb-4">Đơn hàng không tồn tại hoặc đã bị xóa</p>
                         <Button onClick={() => navigate('/purchase-orders')} variant="outline">
-                            <ArrowLeft className="h-4 w-4 mr-2" />
-                            Quay lại
+                            <ComponentIcon name="arrowBackCircleOutline" size={18} />
+                            <span className="ml-2">Quay lại</span>
                         </Button>
                     </CardContent>
                 </Card>
@@ -387,20 +388,15 @@ const PurchaseOrderDetail = () => {
         <div className="min-h-screen bg-gray-100">
             <div className="max-w-7xl mx-auto p-6">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center space-x-4">
-                        <Button
-                            variant="outline"
-                            size="sm"
+                <div className="bg-white border-b border-gray-200 px-6 py-4 rounded-lg shadow-sm mb-6">
+                    <div className="flex items-center gap-4">
+                        <button
                             onClick={() => navigate('/purchase-orders')}
-                            className="flex items-center space-x-2"
+                            className="flex items-center justify-center hover:opacity-80 transition-opacity p-0"
                         >
-                            <ArrowLeft className="h-4 w-4" />
-                            <span>Quay lại</span>
-                        </Button>
-                        <div>
-                            <h1 className="text-2xl font-bold text-gray-900">ĐƠN MUA HÀNG</h1>
-                        </div>
+                            <ComponentIcon name="arrowBackCircleOutline" size={28} />
+                        </button>
+                        <h1 className="text-2xl font-bold text-slate-600 m-0">ĐƠN MUA HÀNG</h1>
                     </div>
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -419,24 +415,20 @@ const PurchaseOrderDetail = () => {
                                 </div>
                                 <div className="space-y-3">
                                     {/* Supplier and Address on same line */}
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-[1.2fr_1fr] gap-4">
                                         {/* Left: Supplier */}
-                                        <div className="flex items-center space-x-2">
-                                            <div className="flex items-center space-x-2">
-                                                <Store className="h-4 w-4 text-green-600" />
-                                                <label className="text-sm font-medium text-gray-700">Nhà cung cấp:</label>
-                                            </div>
-                                            <span className="text-sm font-semibold text-gray-900 bg-gray-200 px-3 py-1 rounded border">
+                                        <div className="flex items-center space-x-2 min-w-0">
+                                            <Store className="h-4 w-4 text-green-600 flex-shrink-0" />
+                                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0 w-[85px]">Nhà cung cấp:</label>
+                                            <span className="text-sm font-semibold text-gray-900 bg-gray-200 px-3 py-1 rounded border whitespace-nowrap flex-1">
                                                 {purchaseOrder.supplierName || 'Chưa có thông tin'}
                                             </span>
                                         </div>
 
                                         {/* Right: Address */}
-                                        <div className="flex items-center space-x-2">
-                                            <div className="flex items-center space-x-2">
-                                                <MapPin className="h-4 w-4 text-red-600" />
-                                                <label className="text-sm font-medium text-gray-700">Địa chỉ:</label>
-                                            </div>
+                                        <div className="flex items-center space-x-2 min-w-0">
+                                            <MapPin className="h-4 w-4 text-red-600 flex-shrink-0" />
+                                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0 w-[40px]">Địa chỉ:</label>
                                             <span className="text-sm text-gray-900 bg-gray-200 px-3 py-1 rounded border">
                                                 {purchaseOrder.address || 'Chưa có thông tin'}
                                             </span>
@@ -444,24 +436,20 @@ const PurchaseOrderDetail = () => {
                                     </div>
 
                                     {/* Email and Phone on same line */}
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-[1.2fr_1fr] gap-4">
                                         {/* Left: Email */}
-                                        <div className="flex items-center space-x-2">
-                                            <div className="flex items-center space-x-2">
-                                                <Mail className="h-4 w-4 text-orange-600" />
-                                                <label className="text-sm font-medium text-gray-700">Email:</label>
-                                            </div>
-                                            <span className="text-sm text-gray-900 bg-gray-200 px-3 py-1 rounded border">
+                                        <div className="flex items-center space-x-2 min-w-0">
+                                            <Mail className="h-4 w-4 text-orange-600 flex-shrink-0" />
+                                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0 w-[85px]">Email:</label>
+                                            <span className="text-sm text-gray-900 bg-gray-200 px-3 py-1 rounded border whitespace-nowrap flex-1">
                                                 {purchaseOrder.email || 'Chưa có thông tin'}
                                             </span>
                                         </div>
 
                                         {/* Right: Phone */}
-                                        <div className="flex items-center space-x-2">
-                                            <div className="flex items-center space-x-2">
-                                                <Phone className="h-4 w-4 text-blue-600" />
-                                                <label className="text-sm font-medium text-gray-700">SĐT:</label>
-                                            </div>
+                                        <div className="flex items-center space-x-2 min-w-0">
+                                            <Phone className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0 w-[40px]">SĐT:</label>
                                             <span className="text-sm text-gray-900 bg-gray-200 px-3 py-1 rounded border">
                                                 {purchaseOrder.phone || 'Chưa có thông tin'}
                                             </span>
@@ -476,12 +464,12 @@ const PurchaseOrderDetail = () => {
                                     <TableHeader>
                                         <TableRow className="bg-gray-100">
                                             <TableHead className="w-16 text-center font-semibold">STT</TableHead>
-                                            <TableHead className="font-semibold">Tên hàng hóa</TableHead>
                                             <TableHead className="font-semibold">Mã hàng</TableHead>
-                                            <TableHead className="text-center font-semibold">Đơn vị/thùng</TableHead>
+                                            <TableHead className="font-semibold">Tên hàng hóa</TableHead>
+                                            <TableHead className="text-center font-semibold" style={{ minWidth: '119px' }}>Đơn vị/thùng</TableHead>
                                             <TableHead className="text-center font-semibold">Số thùng</TableHead>
                                             <TableHead className="text-center font-semibold">Tổng số đơn vị</TableHead>
-                                            <TableHead className="text-center font-semibold">Đơn vị</TableHead>
+                                            <TableHead className="text-center font-semibold" style={{ minWidth: '110px' }}>Đơn vị</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody className="flex-1">
@@ -494,8 +482,8 @@ const PurchaseOrderDetail = () => {
                                                 return (
                                                     <TableRow key={item.purchaseOrderDetailId} className="border-b">
                                                         <TableCell className="text-center font-medium">{index + 1}</TableCell>
-                                                        <TableCell className="font-medium">{item.goodsName}</TableCell>
-                                                        <TableCell className="text-gray-600">{item.goodsCode || item.goodsId || '-'}</TableCell>
+                                                        <TableCell className="font-semibold">{item.goodsCode || item.goodsId || '-'}</TableCell>
+                                                        <TableCell className="text-gray-600">{item.goodsName}</TableCell>
                                                         <TableCell className="text-center text-gray-600">{item.unitPerPacking || '-'}</TableCell>
                                                         <TableCell className="text-center font-semibold">{item.packageQuantity || 0}</TableCell>
                                                         <TableCell className="text-center font-semibold">{totalUnits}</TableCell>
@@ -525,7 +513,7 @@ const PurchaseOrderDetail = () => {
                                                         return sum + totalUnits;
                                                     }, 0)}
                                                 </TableCell>
-                                                <TableCell className="text-center">-</TableCell>
+                                                <TableCell className="text-center"></TableCell>
                                             </TableRow>
                                         )}
                                     </TableBody>
@@ -553,7 +541,7 @@ const PurchaseOrderDetail = () => {
                                         className="bg-orange-600 hover:bg-orange-700 text-white h-[38px] px-8"
                                     >
                                         <FileText className="h-4 w-4 mr-2" />
-                                        Nộp bản nháp
+                                        Gửi phê duyệt
                                     </Button>
                                 )}
 
@@ -563,7 +551,7 @@ const PurchaseOrderDetail = () => {
                                         className="bg-orange-600 hover:bg-orange-700 text-white h-[38px] px-8"
                                     >
                                         <FileText className="h-4 w-4 mr-2" />
-                                        Nộp lại
+                                        Gửi phê duyệt
                                     </Button>
                                 )}
 
@@ -593,7 +581,7 @@ const PurchaseOrderDetail = () => {
                                         className="bg-blue-600 hover:bg-blue-700 text-white h-[38px] px-8"
                                     >
                                         <Package className="h-4 w-4 mr-2" />
-                                        Xác nhận hàng đã nhận
+                                        Xác nhận hàng đã đến
                                     </Button>
                                 )}
                                 {(canAssignReceiving() || canReAssignReceiving()) && (
@@ -611,7 +599,7 @@ const PurchaseOrderDetail = () => {
                                         className="bg-green-600 hover:bg-green-700 text-white h-[38px] px-8"
                                     >
                                         <Play className="h-4 w-4 mr-2" />
-                                        Bắt đầu nhận hàng
+                                        Bắt đầu tiếp nhận
                                     </Button>
                                 )}
                             </div>

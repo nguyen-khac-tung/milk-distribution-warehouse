@@ -1,4 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using MilkDistributionWarehouse.Utilities;
+using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace MilkDistributionWarehouse.Models.DTOs
 {
@@ -37,11 +39,13 @@ namespace MilkDistributionWarehouse.Models.DTOs
         [Required(ErrorMessage = "Sản phẩm không được để trống")]
         public int GoodsId { get; set; }
 
+        [JsonConverter(typeof(NullableDateOnlyConverter))]
         [Required(ErrorMessage = "Ngày sản xuất không được để trống")]
-        public DateOnly ManufacturingDate { get; set; }
+        public DateOnly? ManufacturingDate { get; set; }
 
+        [JsonConverter(typeof(NullableDateOnlyConverter))]
         [Required(ErrorMessage = "Ngày hết hạn không được để trống")]
-        public DateOnly ExpiryDate { get; set; }
+        public DateOnly? ExpiryDate { get; set; }
 
         [MaxLength(250, ErrorMessage = "Mô tả không được vượt quá 250 ký tự")]
         public string? Description { get; set; }

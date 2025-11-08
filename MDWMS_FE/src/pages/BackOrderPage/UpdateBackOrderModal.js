@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/ca
 import { X, Package, ShoppingCart, Box, Calculator } from "lucide-react"
 import { updateBackOrder, getBackOrderDetail } from "../../services/BackOrderService"
 import { getRetailersDropdown } from "../../services/RetailerService"
-import { getGoodsDropdown } from "../../services/GoodService"
+import { getGoodsDropdown, getGoodDetail } from "../../services/GoodService"
 import { getGoodsPackingByGoodsId } from "../../services/PurchaseOrderService"
 import { extractErrorMessage } from "../../utils/Validation"
 import FloatingDropdown from "../../components/Common/FloatingDropdown"
@@ -26,6 +26,7 @@ export default function UpdateBackOrderModal({ isOpen, onClose, onSuccess, backO
   console.log('retailers: ', retailers)
   const [goods, setGoods] = useState([])
   const [goodsPackings, setGoodsPackings] = useState([])
+  const [unitMeasureName, setUnitMeasureName] = useState("đơn vị") // Lưu unitMeasureName từ backOrder hoặc goods
   const [loadingRetailers, setLoadingRetailers] = useState(false)
   const [loadingGoods, setLoadingGoods] = useState(false)
   const [loadingPackings, setLoadingPackings] = useState(false)
@@ -42,15 +43,36 @@ export default function UpdateBackOrderModal({ isOpen, onClose, onSuccess, backO
     }
   }, [isOpen, backOrderId])
 
-  // Load goods packings when goods is selected
+  // Load goods packings and unitMeasureName when goods is selected
   useEffect(() => {
     if (formData.goodsId) {
       loadGoodsPackings(formData.goodsId)
+      // Fetch goods detail để lấy unitMeasureName
+      const loadGoodsUnitMeasure = async () => {
+        try {
+          const goodsDetailResponse = await getGoodDetail(parseInt(formData.goodsId))
+          const goodsDetail = goodsDetailResponse?.data || goodsDetailResponse
+          if (goodsDetail?.unitMeasureName) {
+            setUnitMeasureName(goodsDetail.unitMeasureName)
+          }
+        } catch (error) {
+          console.error("Error loading goods detail for unitMeasureName:", error)
+          // Nếu không fetch được, thử lấy từ goods list (mặc dù không có nhưng vẫn thử)
+          const selectedGood = goods.find(g => g.goodsId?.toString() === formData.goodsId)
+          if (selectedGood?.unitMeasureName) {
+            setUnitMeasureName(selectedGood.unitMeasureName)
+          } else if (selectedGood?.name) {
+            setUnitMeasureName(selectedGood.name)
+          }
+        }
+      }
+      loadGoodsUnitMeasure()
     } else {
       setGoodsPackings([])
       setFormData(prev => ({ ...prev, goodsPackingId: "" }))
+      setUnitMeasureName("đơn vị") // Reset về mặc định
     }
-  }, [formData.goodsId])
+  }, [formData.goodsId, goods])
 
   const loadBackOrderData = async () => {
     try {
@@ -70,6 +92,10 @@ export default function UpdateBackOrderModal({ isOpen, onClose, onSuccess, backO
           goodsPackingId: backOrderInfo.goodsPackingId?.toString() || "",
           packageQuantity: backOrderInfo.packageQuantity?.toString() || "",
         })
+        // Lưu unitMeasureName từ backOrder nếu có
+        if (backOrderInfo.unitMeasureName) {
+          setUnitMeasureName(backOrderInfo.unitMeasureName)
+        }
       }
     } catch (error) {
       console.error("Error loading backOrder data:", error)
@@ -163,12 +189,12 @@ export default function UpdateBackOrderModal({ isOpen, onClose, onSuccess, backO
         packageQuantity: packageQuantity
       })
       console.log("BackOrder updated:", response)
-      window.showToast("Cập nhật đơn đặt hàng thành công!", "success")
+      window.showToast("Cập nhật đơn bổ sung thành công!", "success")
       onSuccess && onSuccess()
       onClose && onClose()
     } catch (error) {
       console.error("Error updating backOrder:", error)
-      const cleanMsg = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật đơn đặt hàng")
+      const cleanMsg = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật đơn bổ sung")
       window.showToast(cleanMsg, "error")
     } finally {
       setLoading(false)
@@ -205,7 +231,7 @@ export default function UpdateBackOrderModal({ isOpen, onClose, onSuccess, backO
               <Package className="h-6 w-6 text-orange-600" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-slate-800">Cập nhật đơn đặt hàng</h1>
+              <h1 className="text-xl font-bold text-slate-800">Cập nhật đơn bổ sung</h1>
               <p className="text-sm text-gray-500">Chỉnh sửa thông tin đơn hàng chờ</p>
             </div>
           </div>
@@ -299,7 +325,7 @@ export default function UpdateBackOrderModal({ isOpen, onClose, onSuccess, backO
                                 goodsPackings.length > 0
                                   ? goodsPackings.map((packing) => ({
                                     value: packing.goodsPackingId.toString(),
-                                    label: `${packing.unitPerPackage}/thùng`,
+                                    label: `${packing.unitPerPackage} ${unitMeasureName}/thùng`,
                                   }))
                                   : [{ value: "", label: "Không có đóng gói", disabled: true }]
                               }
