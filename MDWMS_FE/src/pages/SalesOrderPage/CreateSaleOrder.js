@@ -488,7 +488,7 @@ function CreateSaleOrder({
 
         // Nếu vượt quá tồn kho, hiển thị thông báo tồn kho
         if (quantity > availableQuantity) {
-            return `(Có sắn: ${availableQuantity} thùng)`;
+            return `(Có sẵn: ${availableQuantity} thùng)`;
         }
 
         return null;

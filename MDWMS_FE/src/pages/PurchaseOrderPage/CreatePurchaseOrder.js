@@ -789,7 +789,7 @@ export default function CreatePurchaseOrder({
                                     onClick={handleSubmit}
                                     className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
                                 >
-                                    Lưu bản nháp
+                                    Lưu nháp
                                 </Button>
                                 <Button
                                     type="button"

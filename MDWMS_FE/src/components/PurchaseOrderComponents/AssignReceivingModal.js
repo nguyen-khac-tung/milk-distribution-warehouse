@@ -21,9 +21,27 @@ const AssignReceivingModal = ({
     const dropdownRef = useRef(null);
     const { hasPermission } = usePermissions();
 
-    // Xác định đây là giao mới hay giao lại dựa trên trạng thái
+    // Xác định đây là giao mới hay giao lại dựa trên trạng thái và việc đã có người được giao
     const purchaseOrderId = purchaseOrder?.purchaseOrderId || purchaseOrder?.purchaseOderId || purchaseOrder?.id;
-    const isReassign = purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving || purchaseOrder?.status === 6 || purchaseOrder?.status === '6';
+    
+    // Kiểm tra xem đã có người được giao chưa
+    const hasBeenAssigned = purchaseOrder?.assignToByName || 
+                            purchaseOrder?.assignedAt || 
+                            purchaseOrder?.assignTo || 
+                            purchaseOrder?.assignToById;
+    
+    // Backend cho phép reAssign khi status là AssignedForReceiving hoặc AwaitingArrival
+    // Giao lại khi:
+    // 1. Status là AssignedForReceiving (đã giao, chưa xác nhận đến)
+    // 2. Status là AwaitingArrival (Chờ đến) VÀ đã có người được giao trước đó
+    // 3. Status là GoodsReceived (đã xác nhận đến) VÀ đã có người được giao trước đó
+    //    -> Khi quản lý kho giao trước rồi mới xác nhận đến, vẫn coi là "giao lại"
+    const isReassign = (purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving || 
+                        purchaseOrder?.status === 6 || 
+                        purchaseOrder?.status === '6') ||
+                       (purchaseOrder?.status === PURCHASE_ORDER_STATUS.AwaitingArrival && hasBeenAssigned) ||
+                       (purchaseOrder?.status === PURCHASE_ORDER_STATUS.GoodsReceived && hasBeenAssigned);
+    
     const canReassign = hasPermission(PERMISSIONS.PURCHASE_ORDER_REASSIGN_FOR_RECEIVING);
 
     useEffect(() => {
@@ -187,16 +205,16 @@ const AssignReceivingModal = ({
                                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                                     <div className="flex items-center space-x-2 mb-2">
                                         <AlertCircle className="h-4 w-4 text-yellow-600" />
-                                        <span className="font-medium text-yellow-800 text-sm">Thông tin người được phân công trước đó</span>
+                                        <span className="font-medium text-yellow-800 text-sm">Thông tin người đã được phân công</span>
                                     </div>
                                     <div className="space-y-1 text-sm">
                                         <div className="flex justify-between">
-                                            <span className="text-yellow-700">Nhân viên đã được phân công:</span>
+                                            <span className="text-yellow-700">Tên nhân viên:</span>
                                             <span className="font-medium text-yellow-900">{purchaseOrder.assignToByName}</span>
                                         </div>
                                         {purchaseOrder.assignedAt && (
                                             <div className="flex justify-between">
-                                                <span className="text-yellow-700">Thời gian phân công:</span>
+                                                <span className="text-yellow-700">Thời gian:</span>
                                                 <span className="font-medium text-yellow-900">
                                                     {new Date(purchaseOrder.assignedAt).toLocaleDateString('vi-VN', {
                                                         year: 'numeric',
