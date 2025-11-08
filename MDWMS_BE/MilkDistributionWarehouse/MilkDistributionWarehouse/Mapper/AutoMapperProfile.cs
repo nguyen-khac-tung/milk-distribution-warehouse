@@ -249,7 +249,6 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.Phone, opt => opt.MapFrom(src => src.Supplier.Phone.Trim()))
                 .ForMember(dest => dest.Address, opt => opt.MapFrom(src => src.Supplier.Address.Trim()));
             CreateMap<PurchaseOrderCreate, PurchaseOrder>()
-                .ForMember(dest => dest.PurchaseOderId, opt => opt.MapFrom(_ => Guid.NewGuid()))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => PurchaseOrderStatus.Draft))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now))
                 .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(_ => (DateTime?)null));
@@ -420,7 +419,7 @@ namespace MilkDistributionWarehouse.Mapper
 
             //Map GoodsReceiptNote
             CreateMap<GoodsReceiptNoteCreate, GoodsReceiptNote>()
-                .ForMember(dest => dest.GoodsReceiptNoteId, opt => opt.MapFrom(_ => Guid.NewGuid()))
+                .ForMember(dest => dest.ApprovalBy, opt => opt.Ignore())
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => GoodsReceiptNoteStatus.Receiving))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now))
                 .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(_ => (DateTime?)null));

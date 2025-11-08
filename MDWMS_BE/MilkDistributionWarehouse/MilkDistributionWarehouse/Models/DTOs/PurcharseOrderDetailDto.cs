@@ -5,7 +5,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
     public class PurchaseOrderDetailDto
     {
         public int PurchaseOrderDetailId { get; set; }
-        public Guid PurchaseOderId { get; set; }
+        public string PurchaseOderId { get; set; }
         public int GoodsId { get; set; }
         public string GoodsCode { get; set; }
         public string GoodsName { get; set; }
