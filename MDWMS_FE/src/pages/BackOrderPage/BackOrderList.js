@@ -128,7 +128,7 @@ export default function BackOrderList() {
                 sortField: searchParams.sortField || "",
                 sortAscending: searchParams.sortAscending !== undefined ? searchParams.sortAscending : true,
                 filters: {
-                    statusDinamic: searchParams.status || "",
+                    StatusDinamic: searchParams.status || "",
                     retailerId: searchParams.retailerId || ""
                 }
             })
