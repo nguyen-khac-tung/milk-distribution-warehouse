@@ -531,7 +531,7 @@ const GoodsIssueNoteDetail = () => {
                                                                 />
                                                             </div>
                                                         )}
-                                                    
+
                                                     {/* Expand/Collapse icon */}
                                                     <div className="flex-shrink-0 p-1.5 bg-gray-100 rounded">
                                                         {isExpanded ? (
@@ -555,7 +555,7 @@ const GoodsIssueNoteDetail = () => {
                                                                 {detailStatusInfo.label}
                                                             </span>
                                                         </div>
-                                                        
+
                                                         {/* Thông tin pick allocations - tích hợp vào header cho Manager */}
                                                         {isWarehouseManager && hasPickAllocations && pickProgress && (
                                                             <div className="flex items-center gap-3 mt-1.5 flex-wrap">
@@ -575,9 +575,8 @@ const GoodsIssueNoteDetail = () => {
                                                                 {pickProgress.total > 0 && (
                                                                     <div className="flex-1 max-w-[120px] bg-gray-200 rounded-full h-1.5">
                                                                         <div
-                                                                            className={`h-1.5 rounded-full transition-all ${
-                                                                                pickProgress.picked === pickProgress.total ? 'bg-green-600' : 'bg-blue-600'
-                                                                            }`}
+                                                                            className={`h-1.5 rounded-full transition-all ${pickProgress.picked === pickProgress.total ? 'bg-green-600' : 'bg-blue-600'
+                                                                                }`}
                                                                             style={{ width: `${Math.round((pickProgress.picked / pickProgress.total) * 100)}%` }}
                                                                         />
                                                                     </div>

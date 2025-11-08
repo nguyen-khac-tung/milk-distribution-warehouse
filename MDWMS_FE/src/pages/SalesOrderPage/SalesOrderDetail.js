@@ -369,6 +369,15 @@ const SalesOrderDetail = () => {
                                             <span className="font-semibold text-gray-900">{salesOrder.retailerAddress || '—'}</span>
                                         </div>
 
+                                        <div className="grid grid-cols-[auto_1fr] gap-x-2">
+                                            <div className="flex items-center space-x-1">
+                                                <Calendar className="h-4 w-4 text-blue-600" />
+                                                <label className="font-medium text-gray-700">Thời gian dự kiến xuất:</label>
+                                            </div>
+                                            <span className="font-semibold text-gray-900">
+                                                {formatDate(salesOrder.estimatedTimeDeparture)}
+                                            </span>
+                                        </div>
                                     </div>
 
                                     {/* Cột phải */}
@@ -389,15 +398,6 @@ const SalesOrderDetail = () => {
                                             <span className="font-semibold text-gray-900">{salesOrder.retailerEmail || '—'}</span>
                                         </div>
 
-                                        <div className="grid grid-cols-[auto_1fr] gap-x-2">
-                                            <div className="flex items-center space-x-1">
-                                                <Calendar className="h-4 w-4 text-blue-600" />
-                                                <label className="font-medium text-gray-700">Thời gian dự kiến xuất:</label>
-                                            </div>
-                                            <span className="font-semibold text-gray-900">
-                                                {formatDate(salesOrder.estimatedTimeDeparture)}
-                                            </span>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
