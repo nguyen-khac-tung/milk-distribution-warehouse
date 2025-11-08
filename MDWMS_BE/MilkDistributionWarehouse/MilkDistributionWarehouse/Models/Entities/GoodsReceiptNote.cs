@@ -19,7 +19,7 @@ public partial class GoodsReceiptNote
 
     public DateTime? UpdatedAt { get; set; }
 
-    public Guid PurchaseOderId { get; set; }
+    public string PurchaseOderId { get; set; }
 
     public virtual User ApprovalByNavigation { get; set; }
 

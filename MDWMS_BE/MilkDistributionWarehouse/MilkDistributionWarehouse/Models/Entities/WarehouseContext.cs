@@ -217,6 +217,10 @@ public partial class WarehouseContext : DbContext
             entity.Property(e => e.GoodsReceiptNoteId)
                 .HasMaxLength(100)
                 .IsUnicode(false);
+            entity.Property(e => e.PurchaseOderId)
+                .IsRequired()
+                .HasMaxLength(100)
+                .IsUnicode(false);
 
             entity.HasOne(d => d.ApprovalByNavigation).WithMany(p => p.GoodsReceiptNoteApprovalByNavigations)
                 .HasForeignKey(d => d.ApprovalBy)
@@ -351,6 +355,11 @@ public partial class WarehouseContext : DbContext
         {
             entity.HasKey(e => e.PurchaseOrderDetailId).HasName("PK_ImportOderDetails");
 
+            entity.Property(e => e.PurchaseOderId)
+                .IsRequired()
+                .HasMaxLength(100)
+                .IsUnicode(false);
+
             entity.HasOne(d => d.Goods).WithMany(p => p.PurchaseOderDetails)
                 .HasForeignKey(d => d.GoodsId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
@@ -370,7 +379,9 @@ public partial class WarehouseContext : DbContext
         {
             entity.HasKey(e => e.PurchaseOderId).HasName("PK_ImportOrders");
 
-            entity.Property(e => e.PurchaseOderId).ValueGeneratedNever();
+            entity.Property(e => e.PurchaseOderId)
+                .HasMaxLength(100)
+                .IsUnicode(false);
             entity.Property(e => e.DeliveryDateChangeReason).HasMaxLength(255);
             entity.Property(e => e.Note).HasMaxLength(255);
             entity.Property(e => e.RejectionReason).HasMaxLength(255);

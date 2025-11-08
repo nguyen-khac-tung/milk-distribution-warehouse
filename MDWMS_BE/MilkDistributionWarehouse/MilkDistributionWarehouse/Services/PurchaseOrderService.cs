@@ -18,10 +18,10 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, PageResult<PurchaseOrderDtoWarehouseManager>?)> GetPurchaseOrderWarehouseManager(PagedRequest request);
         Task<(string, PageResult<PurchaseOrderDtoWarehouseStaff>?)> GetPurchaseOrderWarehouseStaff(PagedRequest request, int? userId);
         Task<(string, PurchaseOrderCreateResponse?)> CreatePurchaseOrder(PurchaseOrderCreate create, int? userId, string? userName);
-        Task<(string, PurchaseOrdersDetail?)> GetPurchaseOrderDetailById(Guid purchaseOrderId, int? userId, List<string>? roles);
+        Task<(string, PurchaseOrdersDetail?)> GetPurchaseOrderDetailById(string purchaseOrderId, int? userId, List<string>? roles);
         Task<(string, PurchaseOrderUpdate?)> UpdatePurchaseOrder(PurchaseOrderUpdate update, int? userId);
         Task<(string, T?)> UpdateStatusPurchaseOrder<T>(T purchaseOrdersUpdateStatus, int? userId) where T : PurchaseOrderUpdateStatusDto;
-        Task<(string, PurchaseOrder?)> DeletePurchaseOrder(Guid purchaseOrderId, int? userId);
+        Task<(string, PurchaseOrder?)> DeletePurchaseOrder(string purchaseOrderId, int? userId);
     }
 
     public class PurchaseOrderService : IPurchaseOrderService
@@ -35,10 +35,11 @@ namespace MilkDistributionWarehouse.Services
         private readonly IUserRepository _userRepository;
         private readonly IPalletRepository _palletRepository;
         private readonly ISalesOrderRepository _saleOrderRepository;
+        private readonly ISupplierRepository _supplierRepository;
         public PurchaseOrderService(IPurchaseOrderRepositoy purchaseOrderRepository, IMapper mapper, IPurchaseOrderDetailService purchaseOrderDetailService,
             IPurchaseOrderDetailRepository purchaseOrderDetailRepository, IUnitOfWork unitOfWork, IGoodsReceiptNoteService goodsReceiptNoteService,
             IUserRepository userRepository, IPalletRepository palletRepository,
-            ISalesOrderRepository salesOrderRepository)
+            ISalesOrderRepository salesOrderRepository, ISupplierRepository supplierRepository)
         {
             _purchaseOrderRepository = purchaseOrderRepository;
             _mapper = mapper;
@@ -49,6 +50,7 @@ namespace MilkDistributionWarehouse.Services
             _userRepository = userRepository;
             _palletRepository = palletRepository;
             _saleOrderRepository = salesOrderRepository;
+            _supplierRepository = supplierRepository;
         }
 
         private async Task<(string, PageResult<TDto>?)> GetPurchaseOrdersAsync<TDto>(PagedRequest request, int? userId, string? userRole, params int[] excludedStatuses)
@@ -150,11 +152,11 @@ namespace MilkDistributionWarehouse.Services
             return await GetPurchaseOrdersAsync<PurchaseOrderDtoWarehouseStaff>(request, userId, RoleNames.WarehouseStaff, excludedStatus);
         }
 
-        public async Task<(string, PurchaseOrdersDetail?)> GetPurchaseOrderDetailById(Guid purchaseOrderId, int? userId, List<string>? roles)
+        public async Task<(string, PurchaseOrdersDetail?)> GetPurchaseOrderDetailById(string purchaseOrderId, int? userId, List<string>? roles)
         {
             var role = roles?.FirstOrDefault();
 
-            var purchaseOrderQuery = _purchaseOrderRepository.GetPurchaseOrderByPurchaseOrderId().Where(pod => pod.PurchaseOderId == purchaseOrderId);
+            var purchaseOrderQuery = _purchaseOrderRepository.GetPurchaseOrderByPurchaseOrderId().Where(pod => pod.PurchaseOderId.Equals(purchaseOrderId));
 
             var purchaseOrderMap = purchaseOrderQuery.ProjectTo<PurchaseOrdersDetail>(_mapper.ConfigurationProvider);
 
@@ -202,7 +204,6 @@ namespace MilkDistributionWarehouse.Services
             if (create == null)
                 return ("PurchaseOrder data create is null.", default);
 
-
             try
             {
                 await _unitOfWork.BeginTransactionAsync();
@@ -212,6 +213,12 @@ namespace MilkDistributionWarehouse.Services
                 if (!string.IsNullOrEmpty(create.Note))
                     create.Note = create.Note;
 
+                var supplier = await _supplierRepository.GetSupplierBySupplierId(create.SupplierId);
+
+                if(supplier == null)
+                    throw new Exception("Nhà cung cấp không tồn tại.".ToMessageForUser());
+
+                purchaseOrderCreate.PurchaseOderId = PrimaryKeyUtility.GenerateKey(supplier.BrandName ?? "SUP", "PO");
                 purchaseOrderCreate.CreatedBy = userId;
 
                 var resultPOCreate = await _purchaseOrderRepository.CreatePurchaseOrder(purchaseOrderCreate);
@@ -462,7 +469,7 @@ namespace MilkDistributionWarehouse.Services
                     if (currentStatus != PurchaseOrderStatus.Inspected)
                         throw new Exception("Chỉ được Hoàn thành đơn hàng khi đơn hàng ở trạng thái Đã kiểm tra.".ToMessageForUser());
 
-                    string msg = await CheckCompletedPO(purchaseOrder.GoodsReceiptNotes.FirstOrDefault(g => g.PurchaseOderId == purchaseOrder.PurchaseOderId));
+                    string msg = await CheckCompletedPO(purchaseOrder.GoodsReceiptNotes.FirstOrDefault(g => g.PurchaseOderId.Equals(purchaseOrder.PurchaseOderId)));
                     if (!string.IsNullOrEmpty(msg))
                         throw new Exception(msg.ToMessageForUser());
 
@@ -483,13 +490,13 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
-        public async Task<(string, PurchaseOrder?)> DeletePurchaseOrder(Guid purchaseOrderId, int? userId)
+        public async Task<(string, PurchaseOrder?)> DeletePurchaseOrder(string purchaseOrderId, int? userId)
         {
             try
             {
                 await _unitOfWork.BeginTransactionAsync();
 
-                if (Guid.Empty == purchaseOrderId)
+                if (string.IsNullOrEmpty(purchaseOrderId))
                     throw new Exception("PurchaseOrderId is invalid.");
 
                 var purchaseOrderExist = await _purchaseOrderRepository.GetPurchaseOrderByPurchaseOrderId(purchaseOrderId);

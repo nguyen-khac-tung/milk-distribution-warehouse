@@ -12,12 +12,12 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public string CreatedByName { get; set; }
         public DateTime? CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
-        public Guid PurchaseOderId { get; set; }
+        public string PurchaseOderId { get; set; }
         public List<GoodsReceiptNoteDetailListDto> GoodsReceiptNoteDetails { get; set; }
     }
     public class GoodsReceiptNoteCreate
     {
-        public Guid PurchaseOderId { get; set; }
+        public string PurchaseOderId { get; set; }
     }
 
     public class GoodsReceiptNoteUpdateStatus

@@ -12,7 +12,7 @@ namespace MilkDistributionWarehouse.Services
 {
     public interface IGoodsReceiptNoteService
     {
-        Task<(string, GoodsReceiptNoteDto?)> GetGRNByPurchaseOrderId(Guid purchaseOrderId);
+        Task<(string, GoodsReceiptNoteDto?)> GetGRNByPurchaseOrderId(string purchaseOrderId);
         Task<(string, GoodsReceiptNoteDto?)> CreateGoodsReceiptNote(GoodsReceiptNoteCreate create, int? userId);
         Task<(string, T?)> UpdateGRNStatus<T>(T update, int? userId) where T : GoodsReceiptNoteUpdateStatus;
     }
@@ -46,7 +46,7 @@ namespace MilkDistributionWarehouse.Services
             try
             {
                 var purchaseOrderDetails = await _purchaseOrderDetailRepository.GetPurchaseOrderDetail()
-                .Where(pod => pod.PurchaseOderId == create.PurchaseOderId).ToListAsync();
+                .Where(pod => pod.PurchaseOderId.Equals(create.PurchaseOderId)).ToListAsync();
 
                 if (!purchaseOrderDetails.Any())
                     throw new Exception("Danh sách đơn đặt hàng chi tiết trống.".ToMessageForUser());
@@ -60,7 +60,7 @@ namespace MilkDistributionWarehouse.Services
 
                 var grn = _mapper.Map<GoodsReceiptNote>(create);
 
-                grn.GoodsReceiptNoteId = CreateKeyGoodsReceiptNote(purchaseOrder!.Supplier.BrandName);
+                grn.GoodsReceiptNoteId = PrimaryKeyUtility.GenerateKey(purchaseOrder!.Supplier.BrandName, "GRN");
 
                 foreach (var detail in grnDetails)
                 {
@@ -85,15 +85,15 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
-        public async Task<(string, GoodsReceiptNoteDto?)> GetGRNByPurchaseOrderId(Guid purchaseOrderId)
+        public async Task<(string, GoodsReceiptNoteDto?)> GetGRNByPurchaseOrderId(string purchaseOrderId)
         {
-            if (purchaseOrderId == Guid.Empty)
+            if (string.IsNullOrEmpty(purchaseOrderId))
                 return ("PurchaseOrderId is invalid.", default);
 
             var grnQuery = _goodsReceiptNoteRepository.GetGRN();
 
             var grn = await (grnQuery.ProjectTo<GoodsReceiptNoteDto>(_mapper.ConfigurationProvider))
-                .FirstOrDefaultAsync(grn => grn.PurchaseOderId == purchaseOrderId);
+                .FirstOrDefaultAsync(grn => grn.PurchaseOderId.Equals(purchaseOrderId));
 
             if (grn == null)
                 return ("Phiếu nhập kho không tồn tại.".ToMessageForUser(), default);
@@ -219,13 +219,5 @@ namespace MilkDistributionWarehouse.Services
             return "";
         }
 
-        private string CreateKeyGoodsReceiptNote(string brandName)
-        {
-            long timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-
-            var customBrandName = brandName.ToUpper().Trim().Replace(" ", "_");
-
-            return $"{customBrandName}_GRN_{timestamp}";
-        }
     }
 }
