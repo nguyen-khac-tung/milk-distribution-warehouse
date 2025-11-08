@@ -199,23 +199,25 @@ namespace MilkDistributionWarehouse.Services
 
         public async Task<(string, PurchaseOrderCreateResponse?)> CreatePurchaseOrder(PurchaseOrderCreate create, int? userId, string? userName)
         {
+            if (create == null)
+                return ("PurchaseOrder data create is null.", default);
+
+
             try
             {
                 await _unitOfWork.BeginTransactionAsync();
-                if (create == null)
-                    return ("PurchaseOrder data create is null.", default);
+
+                var purchaseOrderCreate = _mapper.Map<PurchaseOrder>(create);
 
                 if (!string.IsNullOrEmpty(create.Note))
                     create.Note = create.Note;
-
-                var purchaseOrderCreate = _mapper.Map<PurchaseOrder>(create);
 
                 purchaseOrderCreate.CreatedBy = userId;
 
                 var resultPOCreate = await _purchaseOrderRepository.CreatePurchaseOrder(purchaseOrderCreate);
 
                 if (resultPOCreate == null)
-                    return ("Lưu đơn đặt hàng thất bại.".ToMessageForUser(), default);
+                    throw new Exception("Lưu đơn đặt hàng thất bại.");
 
                 var purchaseOrderDetailCreate = _mapper.Map<List<PurchaseOderDetail>>(create.PurchaseOrderDetailCreate);
 
@@ -227,16 +229,16 @@ namespace MilkDistributionWarehouse.Services
                 var resultPODetailCreate = await _purchaseOrderDetailRepository.CreatePODetailBulk(purchaseOrderDetailCreate);
 
                 if (resultPODetailCreate == 0)
-                    return ("Lưu đơn đặt hàng thất bại.".ToMessageForUser(), default);
+                    throw new Exception("Lưu đơn đặt hàng thất bại.");
 
                 await _unitOfWork.CommitTransactionAsync();
 
                 return ("", new PurchaseOrderCreateResponse { PurchaseOderId = resultPOCreate.PurchaseOderId });
             }
-            catch
+            catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                return ("Lưu đơn hàng thất bại.".ToMessageForUser(), default);
+                return ($"{ex.Message}".ToMessageForUser(), default);
             }
         }
 
@@ -324,7 +326,7 @@ namespace MilkDistributionWarehouse.Services
 
                     var msg = await CheckPendingPurchaseOrderValidation(purchaseOrder, userId);
 
-                    if (!string.IsNullOrEmpty(msg)) return (msg, default);
+                    if (!string.IsNullOrEmpty(msg)) throw new Exception(msg);
 
                     purchaseOrder.Status = PurchaseOrderStatus.PendingApproval;
                 }
