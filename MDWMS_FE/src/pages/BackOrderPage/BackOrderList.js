@@ -101,8 +101,8 @@ export default function BackOrderList() {
                 const dataArray = Array.isArray(payload.items) ? payload.items : []
                 const totalCount = payload.totalCount || dataArray.length
 
-                const activeCount = dataArray.filter((s) => s.status === 1).length
-                const inactiveCount = dataArray.filter((s) => s.status === 2).length
+                const activeCount = dataArray.filter((s) => s.statusDinamic === 'Available').length
+                const inactiveCount = dataArray.filter((s) => s.statusDinamic === 'Unavailable').length
 
                 setTotalStats({
                     totalCount: totalCount,
@@ -128,7 +128,7 @@ export default function BackOrderList() {
                 sortField: searchParams.sortField || "",
                 sortAscending: searchParams.sortAscending !== undefined ? searchParams.sortAscending : true,
                 filters: {
-                    status: searchParams.status || "",
+                    StatusDinamic: searchParams.status || "",
                     retailerId: searchParams.retailerId || ""
                 }
             })
@@ -267,14 +267,20 @@ export default function BackOrderList() {
         return () => clearTimeout(timeoutId)
     }, [searchQuery, statusFilter, retailerFilter, sortField, sortAscending, isInitialized])
 
-    // Remove client-side filtering since backend already handles search and filter
+    // Filter backOrders by statusDinamic if statusFilter is set
     const filteredBackOrders = useMemo(() => {
-        // Just return the backOrders from API as they are already filtered
-        return Array.isArray(backOrders) ? backOrders : []
-    }, [backOrders])
+        if (!Array.isArray(backOrders)) return []
+        
+        // If statusFilter is set, filter by statusDinamic
+        if (statusFilter && statusFilter !== "") {
+            return backOrders.filter(bo => bo.statusDinamic === statusFilter)
+        }
+        
+        return backOrders
+    }, [backOrders, statusFilter])
 
-    const activeCount = Array.isArray(backOrders) ? backOrders.filter((s) => s.status === 1).length : 0
-    const inactiveCount = Array.isArray(backOrders) ? backOrders.filter((s) => s.status === 2).length : 0
+    const activeCount = Array.isArray(backOrders) ? backOrders.filter((s) => s.statusDinamic === 'Available').length : 0
+    const inactiveCount = Array.isArray(backOrders) ? backOrders.filter((s) => s.statusDinamic === 'Unavailable').length : 0
 
     const handleViewClick = (backOrder) => {
         setItemToView(backOrder)
@@ -421,8 +427,8 @@ export default function BackOrderList() {
     const filteredStatusOptions = useMemo(() => {
         const statusOptions = [
             { value: "", label: "Tất cả trạng thái" },
-            { value: "1", label: "Đang xử lý" },
-            { value: "2", label: "Đã hoàn thành" }
+            { value: "Available", label: "Có sẵn" },
+            { value: "Unavailable", label: "Không có sẵn" }
         ]
         if (!statusSearchQuery) return statusOptions
         const query = statusSearchQuery.toLowerCase()
@@ -595,8 +601,8 @@ export default function BackOrderList() {
                     activeCount={totalStats.activeCount}
                     inactiveCount={totalStats.inactiveCount}
                     totalLabel="Tổng đơn bổ sung"
-                    activeLabel="Đang xử lý"
-                    inactiveLabel="Đã hoàn thành"
+                    activeLabel="Có sẵn"
+                    inactiveLabel="Không có sẵn"
                 />
 
                 {/* Search and Table Combined */}
@@ -611,8 +617,8 @@ export default function BackOrderList() {
                         setShowStatusFilter={setShowStatusFilter}
                         statusOptions={[
                             { value: "", label: "Tất cả trạng thái" },
-                            { value: "1", label: "Đang xử lý" },
-                            { value: "2", label: "Đã hoàn thành" }
+                            { value: "Available", label: "Có sẵn" },
+                            { value: "Unavailable", label: "Không có sẵn" }
                         ]}
                         onStatusFilter={handleStatusFilter}
                         clearStatusFilter={clearStatusFilter}

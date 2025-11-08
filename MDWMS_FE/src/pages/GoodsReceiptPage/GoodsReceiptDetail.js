@@ -628,7 +628,7 @@ export default function GoodsReceiptDetail() {
                   <CheckCircle className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Chi tiết đơn hàng</h2>
+                  <h2 className="text-lg font-semibold text-gray-900">Chi tiết đơn mua hàng</h2>
                 </div>
               </div>
               {expandedSections.orderDetails ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}

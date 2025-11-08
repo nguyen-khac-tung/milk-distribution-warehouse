@@ -51,7 +51,7 @@ namespace MilkDistributionWarehouse.Repositories
                 {
                     AreaId = a.AreaId,
                     AreaName = a.AreaName,
-                    TotalLocations = a.Locations.Count(),
+                    TotalLocations = a.Locations.Count(l => l.Status == CommonStatus.Active),
                     AvailableLocationCount = a.Locations.Count(l => l.IsAvailable == true && l.Status == CommonStatus.Active)
                 })
                 .AsNoTracking()

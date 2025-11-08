@@ -26,6 +26,7 @@ const UserInfoDisplay = ({
     console.log('UserInfoDisplay - approvalByName:', order.approvalByName);
     console.log('UserInfoDisplay - updatedAt:', order.updatedAt);
     console.log('UserInfoDisplay - note:', order.note);
+    console.log('UserInfoDisplay - rejectionReason:', order.rejectionReason);
 
     // Logic hiển thị theo role và trạng thái
     const canViewApprovalInfo = () => {
@@ -44,10 +45,17 @@ const UserInfoDisplay = ({
     };
 
     const canViewRejectionInfo = () => {
-        // Nhân viên kinh doanh: không bao giờ thấy "Từ chối bởi" ở tất cả các trạng thái
-        if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS)) {
+        // Chỉ hiển thị "Từ chối bởi" khi status là Rejected
+        if (status !== PURCHASE_ORDER_STATUS.Rejected) {
             return false;
         }
+        
+        // Nhân viên kinh doanh: được phép xem thông tin từ chối (bao gồm lý do) khi status là Rejected
+        // để họ có thể biết lý do và chỉnh sửa đơn hàng
+        if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS)) {
+            return true;
+        }
+        
         // Quản lý kinh doanh: nếu đã duyệt, đã nhận hàng, hoặc đã giao hàng thì ẩn "Từ chối bởi"
         if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_SM) &&
             (status === PURCHASE_ORDER_STATUS.Approved ||
@@ -76,12 +84,16 @@ const UserInfoDisplay = ({
         if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WS) && status === PURCHASE_ORDER_STATUS.Receiving) {
             return false; // Ẩn "Từ chối bởi" khi đang tiếp nhận
         }
-        // Chỉ hiển thị "Từ chối bởi" khi status là Rejected
-        if (status === PURCHASE_ORDER_STATUS.Rejected) {
-            return true;
-        }
-        return false;
+        
+        // Các trường hợp khác khi status là Rejected thì hiển thị
+        return true;
     };
+    
+    // Debug: Log để kiểm tra logic hiển thị
+    if (status === PURCHASE_ORDER_STATUS.Rejected) {
+        console.log('UserInfoDisplay - canViewRejectionInfo result:', canViewRejectionInfo());
+        console.log('UserInfoDisplay - hasPermission PURCHASE_ORDER_VIEW_RS:', hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS));
+    }
 
     const canViewOtherInfo = () => {
         // Nhân viên kinh doanh: không bao giờ thấy "Xác nhận hàng giao đến" và "Giao cho" ở tất cả các trạng thái

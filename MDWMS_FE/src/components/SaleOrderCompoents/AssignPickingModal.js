@@ -112,12 +112,12 @@ const AssignPickingModal = ({
                     <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
                     <div className="flex-1">
                       <h4 className="font-medium text-amber-800 mb-1">
-                        Phiếu này đã được phân công cho:
+                        Thông tin người đã được phân công:
                       </h4>
 
                       <div className="text-sm space-y-1">
                         <div className="flex justify-between">
-                          <span className="text-gray-700">Nhân viên chịu trách nhiệm:</span>
+                          <span className="text-gray-700">Tên nhân viên:</span>
                           <span className="font-semibold text-gray-900">
                             {saleOrder.assignTo.fullName}
                           </span>
@@ -125,7 +125,7 @@ const AssignPickingModal = ({
 
                         {saleOrder.acknowledgeAt && (
                           <div className="flex justify-between">
-                            <span className="text-gray-700">Thời gian phân công:</span>
+                            <span className="text-gray-700">Thời gian:</span>
                             <span className="font-semibold text-gray-900">
                               {saleOrder?.acknowledgeAt
                                 ? new Date(saleOrder.acknowledgeAt).toLocaleDateString("vi-VN", {

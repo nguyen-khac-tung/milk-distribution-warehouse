@@ -198,35 +198,36 @@ namespace MilkDistributionWarehouse.Services
             if (pallet == null)
                 return ("Pallet do not exist.", new PalletDto.PalletResponseDto());
 
-            if (dto.LocationId.HasValue)
-            {
-                if (dto.LocationId != pallet.LocationId)
-                {
-                    if (!await _palletRepository.IsLocationAvailable(dto.LocationId))
-                        return ("Vị trí mới đã có pallet khác.".ToMessageForUser(), new PalletDto.PalletResponseDto());
-                }
-                var location = await _locationRepository.GetLocationById(dto.LocationId.Value);
-                if (location == null)
-                    return ("Vị trí không tồn tại.".ToMessageForUser(), new());
-            }
-
             if (dto.GoodsReceiptNoteId.HasValue && !await _palletRepository.ExistsGoodRecieveNote(dto.GoodsReceiptNoteId))
                 return ("GoodsReceiptNoteId do not exist.", new PalletDto.PalletResponseDto());
 
             if (!await _palletRepository.ExistsBatch(dto.BatchId))
                 return ("Batch do not exist.", new PalletDto.PalletResponseDto());
 
+            var location = await _locationRepository.GetLocationById(dto.LocationId.Value);
+            if (location == null)
+                return ("Vị trí không tồn tại.".ToMessageForUser(), new());
+
+            if (!await _palletRepository.IsLocationAvailable(dto.LocationId))
+                return ("Vị trí mới đã có pallet khác hoặc đang ngừng hoạt động.".ToMessageForUser(), new PalletDto.PalletResponseDto());
+
             var oldLocationId = pallet.LocationId;
-
-            _mapper.Map(dto, pallet);
-
-            // Free old location if it existed and location changed
-            if (oldLocationId.HasValue && oldLocationId != dto.LocationId)
+            if( oldLocationId == null && dto.LocationId.HasValue)
+            {
+                var updateIsAvailNew = await _locationRepository.UpdateIsAvailableAsync(dto.LocationId, false);
+                if (!updateIsAvailNew)
+                    return ("Cập nhật trạng thái vị trí mới thất bại.".ToMessageForUser(), new PalletDto.PalletResponseDto());
+            }
+            if (dto.LocationId.HasValue && oldLocationId != null && dto.LocationId != oldLocationId)
             {
                 var updateIsAvailOld = await _locationRepository.UpdateIsAvailableAsync(oldLocationId, true);
                 if (!updateIsAvailOld)
                     return ("Cập nhật trạng thái vị trí cũ thất bại.".ToMessageForUser(), new PalletDto.PalletResponseDto());
+                var updateIsAvailNew = await _locationRepository.UpdateIsAvailableAsync(dto.LocationId, false);
+                if (!updateIsAvailNew)
+                    return ("Cập nhật trạng thái vị trí mới thất bại.".ToMessageForUser(), new PalletDto.PalletResponseDto());
             }
+            _mapper.Map(dto, pallet);
 
             pallet.UpdateAt = DateTime.Now;
 
@@ -234,14 +235,6 @@ namespace MilkDistributionWarehouse.Services
                 pallet.Status = CommonStatus.Active;
             else
                 pallet.Status = CommonStatus.Inactive;
-
-            // Occupy new location if provided and changed
-            if (dto.LocationId.HasValue && oldLocationId != dto.LocationId)
-            {
-                var updateIsAvailNew = await _locationRepository.UpdateIsAvailableAsync(dto.LocationId, false);
-                if (!updateIsAvailNew)
-                    return ("Cập nhật trạng thái vị trí mới thất bại.".ToMessageForUser(), new PalletDto.PalletResponseDto());
-            }
 
             var updated = await _palletRepository.UpdatePallet(pallet);
             if (updated == null)
@@ -291,7 +284,7 @@ namespace MilkDistributionWarehouse.Services
             var dto = _mapper.Map<List<PalletDto.PalletActiveDto>>(pallets);
             return ("", dto);
         }
-        
+
         public async Task<(string, List<PalletDto.PalletResponseDto>)> GetPalletByGRNID(Guid grnId)
         {
             var pallets = await _palletRepository.GetPalletsByGRNID(grnId);
