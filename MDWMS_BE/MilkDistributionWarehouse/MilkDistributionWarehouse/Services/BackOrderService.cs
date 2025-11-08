@@ -43,35 +43,130 @@ namespace MilkDistributionWarehouse.Services
             if (backOrders == null)
                 return ("Không có back order nào.".ToMessageForUser(), new PageResult<BackOrderDto.BackOrderResponseDto>());
 
-            // Apply search filter before projection to reduce memory usage
-            if (!string.IsNullOrWhiteSpace(request.Search))
+            // Extract and remove StatusDinamic filter before database query
+            string? statusFilter = null;
+            if (request.Filters != null && request.Filters.ContainsKey("StatusDinamic"))
             {
-                backOrders = backOrders.Where(bo =>
-                    bo.Retailer.RetailerName.Contains(request.Search) ||
-                    bo.Goods.GoodsName.Contains(request.Search));
+                statusFilter = request.Filters["StatusDinamic"]?.ToString();
+                request.Filters.Remove("StatusDinamic");
             }
 
-            var backOrderDtos = await backOrders
-                .ProjectTo<BackOrderDto.BackOrderResponseDto>(_mapper.ConfigurationProvider)
-                .ToPagedResultAsync(request);
+            // Apply search filter BEFORE projection
+            if (!string.IsNullOrWhiteSpace(request.Search))
+            {
+                var searchTerm = request.Search.Trim();
+                backOrders = backOrders.Where(bo =>
+                    (bo.Retailer != null && bo.Retailer.RetailerName.Contains(searchTerm)) ||
+                    (bo.Goods != null && bo.Goods.GoodsName.Contains(searchTerm)) ||
+                    (bo.Goods != null && bo.Goods.UnitMeasure != null && bo.Goods.UnitMeasure.Name.Contains(searchTerm)) ||
+                    (bo.CreatedByNavigation != null && bo.CreatedByNavigation.FullName.Contains(searchTerm)));
+            }
 
-            // Optimize by getting only distinct pairs
-            var pairs = backOrderDtos.Items
+            // Apply other filters (excluding StatusDinamic and search)
+            if (request.Filters != null && request.Filters.Any())
+            {
+                foreach (var filter in request.Filters)
+                {
+                    // Apply database-level filters here if needed
+                    // For now, we'll let ToPagedResultAsync handle them
+                }
+            }
+
+            // Fetch ALL data (without pagination) if StatusDinamic filter is present
+            List<BackOrderDto.BackOrderResponseDto> allItems;
+
+            if (!string.IsNullOrWhiteSpace(statusFilter))
+            {
+                // Fetch all items for status calculation
+                allItems = await backOrders
+                    .ProjectTo<BackOrderDto.BackOrderResponseDto>(_mapper.ConfigurationProvider)
+                    .ToListAsync();
+            }
+            else
+            {
+                // Normal pagination without StatusDinamic filter
+                var requestWithoutSearch = new PagedRequest
+                {
+                    PageNumber = request.PageNumber,
+                    PageSize = request.PageSize,
+                    SortField = request.SortField,
+                    SortAscending = request.SortAscending,
+                    Filters = request.Filters,
+                    Search = null
+                };
+
+                var pagedResult = await backOrders
+                    .ProjectTo<BackOrderDto.BackOrderResponseDto>(_mapper.ConfigurationProvider)
+                    .ToPagedResultAsync(requestWithoutSearch);
+
+                allItems = pagedResult.Items.ToList();
+
+                // Calculate status for paginated items
+                var pairs = allItems
+                    .Select(x => (x.GoodsId, x.GoodsPackingId))
+                    .Distinct()
+                    .ToList();
+
+                var availableDict = await _backOrderRepository.GetAvailableQuantitiesAsync(pairs);
+
+                foreach (var item in allItems)
+                {
+                    item.StatusDinamic = availableDict.TryGetValue((item.GoodsId, item.GoodsPackingId), out var qty)
+                        ? (qty >= item.PackageQuantity ? BackOrderStatus.Available : BackOrderStatus.Unavailable)
+                        : BackOrderStatus.Unavailable;
+                }
+
+                return ("", pagedResult);
+            }
+
+            // Calculate status for all items
+            var allPairs = allItems
                 .Select(x => (x.GoodsId, x.GoodsPackingId))
                 .Distinct()
                 .ToList();
 
-            var availableDict = await _backOrderRepository.GetAvailableQuantitiesAsync(pairs);
+            var allAvailableDict = await _backOrderRepository.GetAvailableQuantitiesAsync(allPairs);
 
-            // Update status in memory
-            foreach (var item in backOrderDtos.Items)
+            foreach (var item in allItems)
             {
-                item.StatusDinamic = availableDict.TryGetValue((item.GoodsId, item.GoodsPackingId), out var qty)
-                    ? (qty > item.PackageQuantity ? BackOrderStatus.Available : BackOrderStatus.Unavailable)
+                item.StatusDinamic = allAvailableDict.TryGetValue((item.GoodsId, item.GoodsPackingId), out var qty)
+                    ? (qty >= item.PackageQuantity ? BackOrderStatus.Available : BackOrderStatus.Unavailable)
                     : BackOrderStatus.Unavailable;
             }
 
-            return ("", backOrderDtos);
+            // Filter by StatusDinamic in memory
+            var filteredItems = allItems
+                .Where(x => x.StatusDinamic.Equals(statusFilter, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            // Apply sorting in memory
+            if (!string.IsNullOrWhiteSpace(request.SortField))
+            {
+                var property = typeof(BackOrderDto.BackOrderResponseDto).GetProperty(request.SortField,
+                    System.Reflection.BindingFlags.IgnoreCase | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+
+                if (property != null)
+                {
+                    filteredItems = request.SortAscending
+                        ? filteredItems.OrderBy(x => property.GetValue(x)).ToList()
+                        : filteredItems.OrderByDescending(x => property.GetValue(x)).ToList();
+                }
+            }
+
+            // Apply pagination in memory
+            var totalCount = filteredItems.Count;
+            var pagedItems = filteredItems
+                .Skip((request.PageNumber - 1) * request.PageSize)
+                .Take(request.PageSize)
+                .ToList();
+
+            return ("", new PageResult<BackOrderDto.BackOrderResponseDto>
+            {
+                Items = pagedItems,
+                TotalCount = totalCount,
+                PageNumber = request.PageNumber,
+                PageSize = request.PageSize
+            });
         }
 
         public async Task<(string, BackOrderDto.BackOrderResponseDto)> GetBackOrderById(Guid backOrderId)
@@ -83,7 +178,7 @@ namespace MilkDistributionWarehouse.Services
             var response = _mapper.Map<BackOrderDto.BackOrderResponseDto>(backOrder);
 
             var availableQuantity = await _backOrderRepository.GetAvailableQuantity(backOrder.GoodsId, backOrder.GoodsPackingId);
-            response.StatusDinamic = availableQuantity > backOrder.PackageQuantity
+            response.StatusDinamic = availableQuantity >= backOrder.PackageQuantity
                 ? BackOrderStatus.Available
                 : BackOrderStatus.Unavailable;
 
@@ -118,7 +213,7 @@ namespace MilkDistributionWarehouse.Services
             response.PreviousPackageQuantity = previousQty;
 
             var availableQuantity = await _backOrderRepository.GetAvailableQuantity(createdBackOrder.GoodsId, createdBackOrder.GoodsPackingId);
-            response.StatusDinamic = availableQuantity > createdBackOrder.PackageQuantity
+            response.StatusDinamic = availableQuantity >= createdBackOrder.PackageQuantity
                 ? BackOrderStatus.Available
                 : BackOrderStatus.Unavailable;
 
@@ -148,7 +243,7 @@ namespace MilkDistributionWarehouse.Services
             var response = _mapper.Map<BackOrderDto.BackOrderResponseDto>(updateResponse);
 
             var availableQuantity = await _backOrderRepository.GetAvailableQuantity(backOrder.GoodsId, backOrder.GoodsPackingId);
-            response.StatusDinamic = availableQuantity > backOrder.PackageQuantity
+            response.StatusDinamic = availableQuantity >= backOrder.PackageQuantity
                 ? BackOrderStatus.Available
                 : BackOrderStatus.Unavailable;
 

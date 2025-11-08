@@ -11,6 +11,7 @@ import { Plus, Trash2, ArrowLeft, Save, X } from "lucide-react"
 import { updatePurchaseOrder, getGoodsDropDownBySupplierId, getPurchaseOrderDetail, getGoodsPackingByGoodsId, submitPurchaseOrder } from "../../services/PurchaseOrderService"
 import { extractErrorMessage } from '../../utils/Validation';
 import { getSuppliersDropdown } from "../../services/SupplierService"
+import { ComponentIcon } from '../../components/IconComponent/Icon';
 
 export default function UpdatePurchaseOrder() {
     const navigate = useNavigate();
@@ -497,11 +498,13 @@ export default function UpdatePurchaseOrder() {
             <div className="bg-white border-b border-gray-200 px-6 py-4 rounded-lg shadow-sm">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <Button variant="ghost" size="sm" onClick={() => navigate("/purchase-orders")} className="text-slate-600 hover:bg-slate-50">
-                            <ArrowLeft className="h-4 w-4 mr-2" />
-                            Quay Lại
-                        </Button>
-                        <h1 className="text-2xl font-bold text-slate-600">
+                        <button
+                            onClick={() => navigate("/purchase-orders")}
+                            className="flex items-center justify-center hover:opacity-80 transition-opacity p-0"
+                        >
+                            <ComponentIcon name="arrowBackCircleOutline" size={28} />
+                        </button>
+                        <h1 className="text-2xl font-bold text-slate-600 m-0">
                             Cập Nhật Đơn Mua Hàng
                         </h1>
                     </div>

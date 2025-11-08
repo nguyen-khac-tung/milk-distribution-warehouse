@@ -68,7 +68,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public string Address { get; set; }
         public string? Note { get; set; }
         public string RejectionReason { get; set; }
-        public DateOnly? EstimatedTimeArrival { get; set; }
+        public DateTime? EstimatedTimeArrival { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public DateTime? ApprovedAt { get; set; }
         public DateTime? ArrivalConfirmedAt { get; set; }
@@ -97,6 +97,11 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public List<PurchaseOrderDetailCreate> PurchaseOrderDetailCreate { get; set; } = new();
     }
 
+    public class PurchaseOrderCreateResponse
+    {
+        public Guid PurchaseOderId { get; set; }
+    }
+
     public class PurchaseOrderUpdate
     {
         public Guid PurchaseOderId { get; set; }
@@ -118,21 +123,22 @@ namespace MilkDistributionWarehouse.Models.DTOs
     {
     }
 
+    public class PurchaseOrderRejectDto : PurchaseOrderUpdateStatusDto
+    {
+        [Required(ErrorMessage = "Lý do từ chối không được bỏ trống.")]
+        public string? RejectionReason { get; set; }
+    }
     public class PurchaseOrderOrderedDto : PurchaseOrderUpdateStatusDto
     {
         [Required(ErrorMessage = "Ngày dự kiến đến không được bỏ trống.")]
         public DateTime EstimatedTimeArrival { get; set; }
     }
 
-    public class PurchaseOrderOrderedUpdateDto : PurchaseOrderOrderedDto
+    public class PurchaseOrderOrderedUpdateDto : PurchaseOrderUpdateStatusDto
     {
+        [Required(ErrorMessage = "Ngày dự kiến đến không được bỏ trống.")]
+        public DateTime EstimatedTimeArrival { get; set; }
         public string DeliveryDateChangeReason { get; set; }
-    }
-
-    public class PurchaseOrderRejectDto : PurchaseOrderUpdateStatusDto
-    {
-        [Required(ErrorMessage = "Lý do từ chối không được bỏ trống.")]
-        public string? RejectionReason { get; set; }
     }
 
     public class PurchaseOrderGoodsReceivedDto : PurchaseOrderUpdateStatusDto

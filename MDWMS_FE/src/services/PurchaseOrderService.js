@@ -311,4 +311,37 @@ export const completePurchaseOrder = async (purchaseOrderId) => {
     }
 };
 
+// Update Purchase Order as Ordered
+export const updatePurchaseOrderAsOrdered = async (purchaseOrderId, estimatedTimeArrival) => {
+    try {
+        const data = {
+            purchaseOrderId: purchaseOrderId,
+            estimatedTimeArrival: estimatedTimeArrival
+        };
+
+        const res = await api.put('/PurchaseOrder/Ordered', data);
+        return res.data;
+    } catch (error) {
+        console.error("Error updating purchase order as ordered:", error);
+        throw error;
+    }
+};
+
+// Change Delivery Date for Purchase Order
+export const changeDeliveryDate = async (purchaseOrderId, estimatedTimeArrival, deliveryDateChangeReason = '') => {
+    try {
+        const data = {
+            purchaseOrderId: purchaseOrderId,
+            estimatedTimeArrival: estimatedTimeArrival,
+            ...(deliveryDateChangeReason && { deliveryDateChangeReason: deliveryDateChangeReason })
+        };
+
+        const res = await api.put('/PurchaseOrder/ChangeDeliveryDate', data);
+        return res.data;
+    } catch (error) {
+        console.error("Error changing delivery date:", error);
+        throw error;
+    }
+};
+
 

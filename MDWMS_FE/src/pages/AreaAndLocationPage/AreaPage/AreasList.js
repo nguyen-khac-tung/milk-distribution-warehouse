@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { Button } from "../../../components/ui/button";
 import { getAreas, deleteArea, getAreaDetail, updateAreaStatus } from "../../../services/AreaServices";
 import { Edit, Trash2, Plus, Eye, ArrowUpDown, ArrowDown, ArrowUp, Folder } from "lucide-react";
@@ -51,6 +51,7 @@ const AreaLists = () => {
     const [itemToView, setItemToView] = useState(null);
     const [loadingDetail, setLoadingDetail] = useState(false);
     const [showPageSizeFilter, setShowPageSizeFilter] = useState(false);
+    const [statusSearchQuery, setStatusSearchQuery] = useState("");
 
 
 
@@ -133,6 +134,7 @@ const AreaLists = () => {
         const handleClickOutside = (event) => {
             if (showStatusFilter && !event.target.closest('.status-filter-dropdown')) {
                 setShowStatusFilter(false);
+                setStatusSearchQuery("");
             }
             if (showPageSizeFilter && !event.target.closest('.page-size-filter-dropdown')) {
                 setShowPageSizeFilter(false);
@@ -166,9 +168,25 @@ const AreaLists = () => {
         return () => clearTimeout(timeoutId);
     }, [searchQuery]);
 
+    // Filter status options based on search query
+    const filteredStatusOptions = useMemo(() => {
+        const statusOptions = [
+            { value: "", label: "Tất cả trạng thái" },
+            { value: "1", label: "Hoạt động" },
+            { value: "2", label: "Ngừng hoạt động" }
+        ]
+        if (!statusSearchQuery) return statusOptions
+        const query = statusSearchQuery.toLowerCase()
+        return statusOptions.filter(option => 
+            option.label.toLowerCase().includes(query)
+        )
+    }, [statusSearchQuery])
+
     // Filter handlers
     const handleStatusFilter = (status) => {
         setStatusFilter(status);
+        setShowStatusFilter(false);
+        setStatusSearchQuery("");
         setSearchLoading(true);
         fetchAreas(1, pagination.pageSize, {
             search: searchQuery,
@@ -183,6 +201,8 @@ const AreaLists = () => {
 
     const clearStatusFilter = () => {
         setStatusFilter("");
+        setShowStatusFilter(false);
+        setStatusSearchQuery("");
         setSearchLoading(true);
         fetchAreas(1, pagination.pageSize, {
             search: searchQuery,
@@ -198,6 +218,7 @@ const AreaLists = () => {
     const handleClearAllFilters = () => {
         setSearchQuery("")
         setStatusFilter("")
+        setStatusSearchQuery("")
         setShowStatusFilter(false)
     }
 
@@ -309,6 +330,7 @@ const AreaLists = () => {
     const handleClearAll = () => {
         setSearchQuery("");
         setStatusFilter("");
+        setStatusSearchQuery("");
         setShowStatusFilter(false);
         setSearchLoading(true);
 
@@ -464,6 +486,10 @@ const AreaLists = () => {
                         ]}
                         onStatusFilter={handleStatusFilter}
                         clearStatusFilter={clearStatusFilter}
+                        enableStatusSearch={true}
+                        statusSearchQuery={statusSearchQuery}
+                        setStatusSearchQuery={setStatusSearchQuery}
+                        filteredStatusOptions={filteredStatusOptions}
                         onClearAll={handleClearAll}
                         searchWidth="w-80"
                         showToggle={true}

@@ -7,10 +7,13 @@ import { Textarea } from "../../components/ui/textarea"
 import { Label } from "../../components/ui/label"
 import FloatingDropdown from "../../components/Common/FloatingDropdown"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
-import { Plus, Trash2, ArrowLeft, Save, X } from "lucide-react"
-import { createPurchaseOrder, getGoodsDropDownBySupplierId, getGoodsPackingByGoodsId } from "../../services/PurchaseOrderService"
+import { Plus, Trash2, Warehouse } from "lucide-react"
+import { createPurchaseOrder, getGoodsDropDownBySupplierId, getGoodsPackingByGoodsId, submitPurchaseOrder } from "../../services/PurchaseOrderService"
 import { extractErrorMessage } from '../../utils/Validation';
 import { getSuppliersDropdown } from "../../services/SupplierService"
+import { getAvailableLocationQuantity } from "../../services/AreaServices"
+import { ComponentIcon } from '../../components/IconComponent/Icon';
+import WarehouseLocationModal from "../../components/PurchaseOrderComponents/WarehouseLocationModal"
 
 export default function CreatePurchaseOrder({
     isEditMode = false,
@@ -23,6 +26,10 @@ export default function CreatePurchaseOrder({
     const [suppliersLoading, setSuppliersLoading] = useState(false);
     const [goodsLoading, setGoodsLoading] = useState(false);
     const [packingLoading, setPackingLoading] = useState(false);
+    const [submitLoading, setSubmitLoading] = useState(false);
+    const [showLocationModal, setShowLocationModal] = useState(false);
+    const [locationData, setLocationData] = useState([]);
+    const [locationLoading, setLocationLoading] = useState(false);
     const [formData, setFormData] = useState({
         supplierName: initialData?.supplierName || "",
         note: initialData?.note || ""
@@ -182,9 +189,9 @@ export default function CreatePurchaseOrder({
     const handleInputChange = (field, value) => {
         // Lấy nhà cung cấp cũ để so sánh
         const oldSupplierName = formData.supplierName;
-        
+
         setFormData(prev => ({ ...prev, [field]: value }));
-        
+
         if (field === "supplierName") {
             if (value) {
                 const selectedSupplier = suppliers.find(supplier => supplier.companyName === value);
@@ -243,6 +250,21 @@ export default function CreatePurchaseOrder({
             }));
         } finally {
             setPackingLoading(false);
+        }
+    };
+
+    const handleOpenLocationModal = async () => {
+        setShowLocationModal(true);
+        setLocationLoading(true);
+        try {
+            const data = await getAvailableLocationQuantity();
+            setLocationData(data || []);
+        } catch (error) {
+            console.error("Error loading location data:", error);
+            setLocationData([]);
+            window.showToast("Không thể tải thông tin vị trí kho", "error");
+        } finally {
+            setLocationLoading(false);
         }
     };
     // Create options for dropdowns
@@ -408,7 +430,7 @@ export default function CreatePurchaseOrder({
                 purchaseOrderDetailCreate: itemsWithIds,
                 note: formData.note || ""
             };
-            await createPurchaseOrder(submitData);
+            const response = await createPurchaseOrder(submitData);
             window.showToast("Tạo đơn mua hàng thành công!", "success");
 
             navigate("/purchase-orders");
@@ -418,20 +440,138 @@ export default function CreatePurchaseOrder({
             window.showToast(errorMessage, "error");
         }
     }
+
+    const handleSubmitForApproval = async (e) => {
+        e.preventDefault();
+
+        // Reset validation errors
+        setFieldErrors({});
+        const newFieldErrors = {};
+
+        // Kiểm tra từng mặt hàng
+        items.forEach((item, index) => {
+            if (!item.goodsName) {
+                newFieldErrors[`${item.id}-goodsName`] = "Vui lòng chọn tên hàng hóa";
+            }
+            if (!item.goodsPackingId) {
+                newFieldErrors[`${item.id}-goodsPackingId`] = "Vui lòng chọn đóng gói";
+            }
+            if (!item.quantity || item.quantity <= 0) {
+                newFieldErrors[`${item.id}-quantity`] = "Vui lòng nhập số thùng lớn hơn 0";
+            }
+
+            // Kiểm tra validation số thùng
+            const quantityError = validateQuantity(item);
+            if (quantityError) {
+                newFieldErrors[`${item.id}-quantity`] = quantityError;
+            }
+        });
+
+        // Kiểm tra nhà cung cấp
+        if (!formData.supplierName) {
+            window.showToast("Vui lòng chọn nhà cung cấp", "error");
+            if (Object.keys(newFieldErrors).length > 0) {
+                setFieldErrors(newFieldErrors);
+            }
+            return;
+        }
+
+        if (Object.keys(newFieldErrors).length > 0) {
+            setFieldErrors(newFieldErrors);
+            return;
+        }
+
+        const selectedSupplier = suppliers.find(supplier => supplier.companyName === formData.supplierName);
+        if (!selectedSupplier) {
+            window.showToast("Không tìm thấy nhà cung cấp", "error");
+            return;
+        }
+
+        const validItems = items.filter(item => item.goodsName && item.quantity && item.goodsPackingId);
+        if (validItems.length === 0) {
+            window.showToast("Vui lòng thêm ít nhất một hàng hóa với đầy đủ thông tin", "error");
+            return;
+        }
+
+        setSubmitLoading(true);
+        try {
+            const itemsWithIds = validItems.map(item => {
+                const selectedGood = goods.find(good => good.goodsName === item.goodsName);
+
+                // packageQuantity là số thùng nhập vào (không nhân với unitPerPackage)
+                const packageQuantity = parseInt(item.quantity);
+
+                return {
+                    goodsId: selectedGood ? parseInt(selectedGood.goodsId) : null,
+                    packageQuantity: packageQuantity,
+                    goodsPackingId: parseInt(item.goodsPackingId)
+                };
+            }).filter(item => item.goodsId);
+
+            if (itemsWithIds.length === 0) {
+                window.showToast("Không tìm thấy hàng hóa hợp lệ!", "error");
+                return;
+            }
+
+            // Tạo đơn hàng mới trước
+            const submitData = {
+                supplierId: parseInt(selectedSupplier.supplierId),
+                purchaseOrderDetailCreate: itemsWithIds,
+                note: formData.note || ""
+            };
+            
+            const createResponse = await createPurchaseOrder(submitData);
+            
+            // Lấy purchaseOrderId từ response (có thể từ data hoặc response trực tiếp)
+            const purchaseOrderId = createResponse?.data?.purchaseOrderId || 
+                                   createResponse?.purchaseOrderId || 
+                                   createResponse?.data?.purchaseOderId || 
+                                   createResponse?.purchaseOderId;
+            
+            if (!purchaseOrderId) {
+                console.error("Không tìm thấy purchaseOrderId từ response:", createResponse);
+                window.showToast("Tạo đơn hàng thành công nhưng không thể gửi phê duyệt. Vui lòng thử lại.", "error");
+                navigate("/purchase-orders");
+                return;
+            }
+
+            // Sau đó gửi phê duyệt
+            await submitPurchaseOrder(purchaseOrderId);
+            
+            window.showToast("Tạo đơn và gửi phê duyệt thành công!", "success");
+            navigate("/purchase-orders");
+        } catch (error) {
+            console.error("Lỗi khi tạo và gửi phê duyệt đơn mua hàng:", error);
+            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi tạo và gửi phê duyệt đơn mua hàng!";
+            window.showToast(errorMessage, "error");
+        } finally {
+            setSubmitLoading(false);
+        }
+    }
     return (
         <div className="space-y-6">
             {/* Header */}
             <div className="bg-white border-b border-gray-200 px-6 py-4 rounded-lg shadow-sm">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <Button variant="ghost" size="sm" onClick={() => navigate("/purchase-orders")} className="text-slate-600 hover:bg-slate-50">
-                            <ArrowLeft className="h-4 w-4 mr-2" />
-                            Quay Lại
-                        </Button>
-                        <h1 className="text-2xl font-bold text-slate-600">
+                        <button
+                            onClick={() => navigate("/purchase-orders")}
+                            className="flex items-center justify-center hover:opacity-80 transition-opacity p-0"
+                        >
+                            <ComponentIcon name="arrowBackCircleOutline" size={28} />
+                        </button>
+                        <h1 className="text-2xl font-bold text-slate-600 m-0">
                             {isEditMode ? "Cập Nhật Đơn Mua Hàng" : "Tạo Đơn Mua Hàng Mới"}
                         </h1>
                     </div>
+                    <button
+                        type="button"
+                        onClick={handleOpenLocationModal}
+                        className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors font-medium text-sm shadow-md hover:shadow-lg"
+                    >
+                        <Warehouse className="h-4 w-4" />
+                        <span>Xem vị trí kho</span>
+                    </button>
                 </div>
             </div>
 
@@ -560,7 +700,7 @@ export default function CreatePurchaseOrder({
                                                             placeholder="0"
                                                             value={item.quantity}
                                                             onChange={(e) => updateItem(item.id, "quantity", e.target.value)}
-                                                            className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${fieldErrors[`${item.id}-quantity`] ? 'border-red-500' : ''}`}
+                                                            className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg w-full ${fieldErrors[`${item.id}-quantity`] ? 'border-red-500' : ''}`}
                                                         />
                                                         {fieldErrors[`${item.id}-quantity`] && (
                                                             <p className="text-red-500 text-xs mt-1">{fieldErrors[`${item.id}-quantity`]}</p>
@@ -649,13 +789,29 @@ export default function CreatePurchaseOrder({
                                     onClick={handleSubmit}
                                     className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
                                 >
-                                    {isEditMode ? "Cập Nhật Đơn Mua Hàng" : "Tạo Đơn Mua Hàng"}
+                                    Lưu bản nháp
+                                </Button>
+                                <Button
+                                    type="button"
+                                    onClick={handleSubmitForApproval}
+                                    disabled={submitLoading}
+                                    className="h-[38px] px-6 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {submitLoading ? "Đang xử lý..." : "Gửi Phê Duyệt"}
                                 </Button>
                             </div>
                         </div>
                     </div>
                 </Card>
             </div>
+
+            {/* Location Modal */}
+            <WarehouseLocationModal
+                isOpen={showLocationModal}
+                onClose={() => setShowLocationModal(false)}
+                locationData={locationData}
+                loading={locationLoading}
+            />
         </div>
     )
 }

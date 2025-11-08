@@ -3,10 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
-import { ArrowLeft, Package, User, Calendar, CheckCircle, XCircle, Clock, Truck, CheckSquare, Trash2, Key, Building2, FileText, Hash, Shield, ShoppingCart, Users, UserCheck, UserX, TruckIcon, UserPlus, Store, UserCircle, UserCog, UserCheck2, UserX2, UserMinus, Mail, Phone, MapPin, Play } from 'lucide-react';
+import { ArrowLeft, Package, User, Calendar, CheckCircle, XCircle, Clock, Truck, CheckSquare, Trash2, Key, Building2, FileText, Hash, Shield, ShoppingCart, Users, UserCheck, UserX, TruckIcon, UserPlus, Store, UserCircle, UserCog, UserCheck2, UserX2, UserMinus, Mail, Phone, MapPin, Play, Edit } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
-import { getPurchaseOrderDetail, submitPurchaseOrder, approvePurchaseOrder, rejectPurchaseOrder, confirmGoodsReceived, assignForReceiving, startReceive, reAssignForReceiving } from '../../services/PurchaseOrderService';
+import { getPurchaseOrderDetail, submitPurchaseOrder, approvePurchaseOrder, rejectPurchaseOrder, confirmGoodsReceived, assignForReceiving, startReceive, reAssignForReceiving, updatePurchaseOrderAsOrdered, changeDeliveryDate } from '../../services/PurchaseOrderService';
 import { extractErrorMessage } from '../../utils/Validation';
 import ApprovalConfirmationModal from '../../components/PurchaseOrderComponents/ApprovalConfirmationModal';
 import RejectionConfirmationModal from '../../components/PurchaseOrderComponents/RejectionConfirmationModal';
@@ -14,6 +14,7 @@ import SubmitDraftConfirmationModal from '../../components/PurchaseOrderComponen
 import ConfirmGoodsReceivedModal from '../../components/PurchaseOrderComponents/ConfirmGoodsReceivedModal';
 import AssignReceivingModal from '../../components/PurchaseOrderComponents/AssignReceivingModal';
 import StartReceiveModal from '../../components/PurchaseOrderComponents/StartReceiveModal';
+import ConfirmOrderedModal from '../../components/PurchaseOrderComponents/ConfirmOrderedModal';
 import UserInfoDisplay from '../../components/PurchaseOrderComponents/UserInfoDisplay';
 import { PURCHASE_ORDER_STATUS } from '../../utils/permissions';
 import { usePermissions } from '../../hooks/usePermissions';
@@ -34,12 +35,16 @@ const PurchaseOrderDetail = () => {
     const [showConfirmGoodsReceivedModal, setShowConfirmGoodsReceivedModal] = useState(false);
     const [showAssignReceivingModal, setShowAssignReceivingModal] = useState(false);
     const [showStartReceiveModal, setShowStartReceiveModal] = useState(false);
+    const [showConfirmOrderedModal, setShowConfirmOrderedModal] = useState(false);
+    const [showChangeDeliveryDateModal, setShowChangeDeliveryDateModal] = useState(false);
     const [approvalLoading, setApprovalLoading] = useState(false);
     const [rejectionLoading, setRejectionLoading] = useState(false);
     const [submitLoading, setSubmitLoading] = useState(false);
     const [confirmGoodsReceivedLoading, setConfirmGoodsReceivedLoading] = useState(false);
     const [assignReceivingLoading, setAssignReceivingLoading] = useState(false);
     const [startReceiveLoading, setStartReceiveLoading] = useState(false);
+    const [confirmOrderedLoading, setConfirmOrderedLoading] = useState(false);
+    const [changeDeliveryDateLoading, setChangeDeliveryDateLoading] = useState(false);
 
     useEffect(() => {
         const fetchPurchaseOrderDetail = async () => {
@@ -85,7 +90,9 @@ const PurchaseOrderDetail = () => {
             6: 'bg-purple-100 text-purple-800', // Assigned for Receiving
             7: 'bg-orange-100 text-orange-800', // Receiving
             8: 'bg-indigo-100 text-indigo-800', // Inspected
-            9: 'bg-emerald-100 text-emerald-800' // Completed
+            9: 'bg-emerald-100 text-emerald-800', // Completed
+            10: 'bg-green-100 text-green-800', // Ordered
+            11: 'bg-cyan-100 text-cyan-800' // AwaitingArrival
         };
         return statusColors[status] || 'bg-gray-100 text-gray-800';
     };
@@ -100,7 +107,9 @@ const PurchaseOrderDetail = () => {
             6: <User className="h-3 w-3" />, // Assigned for Receiving
             7: <Package className="h-3 w-3" />, // Receiving
             8: <CheckSquare className="h-3 w-3" />, // Inspected
-            9: <CheckCircle className="h-3 w-3" /> // Completed
+            9: <CheckCircle className="h-3 w-3" />, // Completed
+            10: <ShoppingCart className="h-3 w-3" />, // Ordered
+            11: <Clock className="h-3 w-3" /> // AwaitingArrival
         };
         return statusIcons[status] || <Clock className="h-3 w-3" />;
     };
@@ -115,7 +124,9 @@ const PurchaseOrderDetail = () => {
             6: 'Đã phân công',
             7: 'Đang tiếp nhận',
             8: 'Đã kiểm nhập',
-            9: 'Đã nhập kho'
+            9: 'Đã nhập kho',
+            10: 'Đã đặt hàng',
+            11: 'Chờ đến'
         };
         return statusTexts[status] || 'Không xác định';
     };
@@ -186,13 +197,30 @@ const PurchaseOrderDetail = () => {
     };
 
     const canConfirmGoodsReceived = () => {
+        // Không cho phép nếu đã xác nhận giao đến rồi
+        if (purchaseOrder?.arrivalConfirmedBy || purchaseOrder?.arrivalConfirmedAt) {
+            return false;
+        }
+
+        // Cho phép xác nhận giao đến khi:
+        // - Approved: đã duyệt (cho phép xác nhận giao đến)
+        // - Ordered: đã đặt hàng (có thể xác nhận giao đến trước hoặc sau phân công)
+        // - AssignedForReceiving: đã phân công (cho phép xác nhận giao đến sau khi phân công)
+        // - AwaitingArrival: Chờ đến (nhân viên/QL kho có thể xác nhận đến)
+        // Không cho phép khi status là GoodsReceived (đã xác nhận)
         return hasPermission(PERMISSIONS.PURCHASE_ORDER_CONFIRM_GOODS_RECEIVED) &&
-            purchaseOrder?.status === PURCHASE_ORDER_STATUS.Approved;
+            purchaseOrder?.status !== PURCHASE_ORDER_STATUS.GoodsReceived &&
+            (purchaseOrder?.status === PURCHASE_ORDER_STATUS.Approved ||
+                purchaseOrder?.status === PURCHASE_ORDER_STATUS.Ordered ||
+                purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving ||
+                purchaseOrder?.status === PURCHASE_ORDER_STATUS.AwaitingArrival);
     };
 
     const canAssignReceiving = () => {
+        // Cho phép phân công khi status là Ordered hoặc GoodsReceived
         return hasPermission(PERMISSIONS.PURCHASE_ORDER_ASSIGN_FOR_RECEIVING) &&
-            purchaseOrder?.status === PURCHASE_ORDER_STATUS.GoodsReceived;
+            (purchaseOrder?.status === PURCHASE_ORDER_STATUS.Ordered ||
+                purchaseOrder?.status === PURCHASE_ORDER_STATUS.GoodsReceived);
     };
 
     const canReAssignReceiving = () => {
@@ -205,6 +233,11 @@ const PurchaseOrderDetail = () => {
             purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving;
     };
 
+    const canConfirmOrdered = () => {
+        return hasPermission(PERMISSIONS.PURCHASE_ORDER_CONFIRM_ORDERED) &&
+            purchaseOrder?.status === PURCHASE_ORDER_STATUS.Approved;
+    };
+
     const canSubmitDraft = () => {
         return hasPermission(PERMISSIONS.PURCHASE_ORDER_SUBMIT_DRAFT) &&
             purchaseOrder?.status === PURCHASE_ORDER_STATUS.Draft &&
@@ -215,6 +248,39 @@ const PurchaseOrderDetail = () => {
         return hasPermission(PERMISSIONS.PURCHASE_ORDER_SUBMIT_DRAFT) &&
             purchaseOrder?.status === PURCHASE_ORDER_STATUS.Rejected &&
             purchaseOrder?.isDisableButton === false;
+    };
+
+    const canEdit = () => {
+        return purchaseOrder?.status === PURCHASE_ORDER_STATUS.Draft;
+    };
+
+    const canChangeDeliveryDate = () => {
+        // Chỉ nhân viên kinh doanh (Sales Representative) mới có quyền thay đổi ngày dự kiến nhập
+        if (!hasPermission(PERMISSIONS.PURCHASE_ORDER_CHANGE_DELIVERY_DATE)) {
+            return false;
+        }
+
+        // Cho phép khi status là Ordered (10)
+        if (purchaseOrder?.status === PURCHASE_ORDER_STATUS.Ordered) {
+            return true;
+        }
+
+        // Cho phép khi status là AwaitingArrival (11)
+        if (purchaseOrder?.status === PURCHASE_ORDER_STATUS.AwaitingArrival) {
+            return true;
+        }
+
+        // Cho phép khi status là AssignedForReceiving (6) VÀ chưa xác nhận giao đến
+        if (purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving) {
+            // Không cho phép nếu đã xác nhận giao đến
+            if (purchaseOrder?.arrivalConfirmedBy || purchaseOrder?.arrivalConfirmedAt) {
+                return false;
+            }
+            // Cho phép nếu chưa xác nhận giao đến
+            return true;
+        }
+
+        return false;
     };
 
     const handleSubmitDraftConfirm = async () => {
@@ -341,6 +407,61 @@ const PurchaseOrderDetail = () => {
             setStartReceiveLoading(false);
         }
     };
+
+    const handleConfirmOrdered = async (estimatedTimeArrival) => {
+        setConfirmOrderedLoading(true);
+        try {
+            await updatePurchaseOrderAsOrdered(
+                purchaseOrder.purchaseOderId,
+                estimatedTimeArrival
+            );
+
+            if (window.showToast) {
+                window.showToast("Xác nhận đã đặt hàng thành công!", "success");
+            }
+            setShowConfirmOrderedModal(false);
+            const response = await getPurchaseOrderDetail(id);
+            if (response && response.success) {
+                setPurchaseOrder(response.data);
+            }
+        } catch (error) {
+            console.error("Error confirming ordered:", error);
+            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi xác nhận đã đặt hàng";
+            if (window.showToast) {
+                window.showToast(errorMessage, "error");
+            }
+        } finally {
+            setConfirmOrderedLoading(false);
+        }
+    };
+
+    const handleChangeDeliveryDate = async (estimatedTimeArrival, reason = '') => {
+        setChangeDeliveryDateLoading(true);
+        try {
+            await changeDeliveryDate(
+                purchaseOrder.purchaseOderId,
+                estimatedTimeArrival,
+                reason
+            );
+
+            if (window.showToast) {
+                window.showToast("Thay đổi ngày dự kiến nhập thành công!", "success");
+            }
+            setShowChangeDeliveryDateModal(false);
+            const response = await getPurchaseOrderDetail(id);
+            if (response && response.success) {
+                setPurchaseOrder(response.data);
+            }
+        } catch (error) {
+            console.error("Error changing delivery date:", error);
+            const errorMessage = extractErrorMessage(error) || "Có lỗi xảy ra khi thay đổi ngày dự kiến nhập";
+            if (window.showToast) {
+                window.showToast(errorMessage, "error");
+            }
+        } finally {
+            setChangeDeliveryDateLoading(false);
+        }
+    };
     if (loading) {
         return <Loading />;
     }
@@ -419,7 +540,7 @@ const PurchaseOrderDetail = () => {
                                         {/* Left: Supplier */}
                                         <div className="flex items-center space-x-2 min-w-0">
                                             <Store className="h-4 w-4 text-green-600 flex-shrink-0" />
-                                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0 w-[85px]">Nhà cung cấp:</label>
+                                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0 w-[115px]">Nhà cung cấp:</label>
                                             <span className="text-sm font-semibold text-gray-900 bg-gray-200 px-3 py-1 rounded border whitespace-nowrap flex-1">
                                                 {purchaseOrder.supplierName || 'Chưa có thông tin'}
                                             </span>
@@ -440,7 +561,7 @@ const PurchaseOrderDetail = () => {
                                         {/* Left: Email */}
                                         <div className="flex items-center space-x-2 min-w-0">
                                             <Mail className="h-4 w-4 text-orange-600 flex-shrink-0" />
-                                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0 w-[85px]">Email:</label>
+                                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0 w-[115px]">Email:</label>
                                             <span className="text-sm text-gray-900 bg-gray-200 px-3 py-1 rounded border whitespace-nowrap flex-1">
                                                 {purchaseOrder.email || 'Chưa có thông tin'}
                                             </span>
@@ -456,6 +577,23 @@ const PurchaseOrderDetail = () => {
                                         </div>
                                     </div>
 
+                                    {/* Estimated Time Arrival */}
+                                    {purchaseOrder.estimatedTimeArrival && (
+                                        <div className="grid grid-cols-[1.2fr_1fr] gap-4">
+                                            <div className="flex items-center space-x-2 min-w-0">
+                                                <Calendar className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                                                <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0 w-[115px]">Ngày dự kiến nhập:</label>
+                                                <span className="text-sm font-semibold text-gray-900 bg-gray-200 px-3 py-1 rounded border whitespace-nowrap flex-1">
+                                                    {purchaseOrder.estimatedTimeArrival ? new Date(purchaseOrder.estimatedTimeArrival).toLocaleDateString('vi-VN', {
+                                                        year: 'numeric',
+                                                        month: '2-digit',
+                                                        day: '2-digit'
+                                                    }) : 'Chưa có thông tin'}
+                                                </span>
+                                            </div>
+                                            <div></div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             {/* Product List Table */}
@@ -464,11 +602,11 @@ const PurchaseOrderDetail = () => {
                                     <TableHeader>
                                         <TableRow className="bg-gray-100">
                                             <TableHead className="w-16 text-center font-semibold">STT</TableHead>
-                                            <TableHead className="font-semibold">Mã hàng</TableHead>
-                                            <TableHead className="font-semibold">Tên hàng hóa</TableHead>
+                                            <TableHead className="font-semibold" style={{ minWidth: '120px' }}>Mã hàng hóa</TableHead>
+                                            <TableHead className="font-semibold" style={{ minWidth: '120px' }}>Tên hàng hóa</TableHead>
                                             <TableHead className="text-center font-semibold" style={{ minWidth: '119px' }}>Đơn vị/thùng</TableHead>
                                             <TableHead className="text-center font-semibold">Số thùng</TableHead>
-                                            <TableHead className="text-center font-semibold">Tổng số đơn vị</TableHead>
+                                            <TableHead className="text-center font-semibold" style={{ minWidth: '110px' }}>Tổng số đơn vị</TableHead>
                                             <TableHead className="text-center font-semibold" style={{ minWidth: '110px' }}>Đơn vị</TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -535,6 +673,16 @@ const PurchaseOrderDetail = () => {
                             )}
                             {/* Action Buttons at bottom of card */}
                             <div className="mt-6 flex justify-center space-x-4">
+                                {canEdit() && (
+                                    <Button
+                                        onClick={() => navigate(`/purchase-orders/update/${purchaseOrder.purchaseOderId}`)}
+                                        className="bg-blue-600 hover:bg-blue-700 text-white h-[38px] px-8"
+                                    >
+                                        <Edit className="h-4 w-4 mr-2" />
+                                        Cập nhật
+                                    </Button>
+                                )}
+
                                 {canSubmitDraft() && (
                                     <Button
                                         onClick={() => setShowSubmitDraftModal(true)}
@@ -600,6 +748,26 @@ const PurchaseOrderDetail = () => {
                                     >
                                         <Play className="h-4 w-4 mr-2" />
                                         Bắt đầu tiếp nhận
+                                    </Button>
+                                )}
+
+                                {canConfirmOrdered() && (
+                                    <Button
+                                        onClick={() => setShowConfirmOrderedModal(true)}
+                                        className="bg-yellow-600 hover:bg-yellow-700 text-white h-[38px] px-8"
+                                    >
+                                        <ShoppingCart className="h-4 w-4 mr-2" />
+                                        Xác nhận đã đặt hàng
+                                    </Button>
+                                )}
+
+                                {canChangeDeliveryDate() && (
+                                    <Button
+                                        onClick={() => setShowChangeDeliveryDateModal(true)}
+                                        className="bg-blue-600 hover:bg-blue-700 text-white h-[38px] px-8"
+                                    >
+                                        <Calendar className="h-4 w-4 mr-2" />
+                                        Thay đổi ngày dự kiến nhập
                                     </Button>
                                 )}
                             </div>
@@ -687,6 +855,26 @@ const PurchaseOrderDetail = () => {
                 onConfirm={handleSubmitDraftConfirm}
                 purchaseOrder={purchaseOrder}
                 loading={submitLoading}
+            />
+
+            {/* Confirm Ordered Modal */}
+            <ConfirmOrderedModal
+                isOpen={showConfirmOrderedModal}
+                onClose={() => setShowConfirmOrderedModal(false)}
+                onConfirm={handleConfirmOrdered}
+                purchaseOrder={purchaseOrder}
+                loading={confirmOrderedLoading}
+                mode="confirm"
+            />
+
+            {/* Change Delivery Date Modal */}
+            <ConfirmOrderedModal
+                isOpen={showChangeDeliveryDateModal}
+                onClose={() => setShowChangeDeliveryDateModal(false)}
+                onConfirm={handleChangeDeliveryDate}
+                purchaseOrder={purchaseOrder}
+                loading={changeDeliveryDateLoading}
+                mode="change"
             />
         </div>
     );

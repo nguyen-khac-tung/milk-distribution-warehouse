@@ -64,6 +64,8 @@ export default function PalletList() {
     const [showPageSizeFilter, setShowPageSizeFilter] = useState(false)
     const [isInitialized, setIsInitialized] = useState(false)
     const [hasUserInteracted, setHasUserInteracted] = useState(false)
+    const [statusSearchQuery, setStatusSearchQuery] = useState("")
+    const [creatorSearchQuery, setCreatorSearchQuery] = useState("")
     const [totalStats, setTotalStats] = useState({
         totalCount: 0,
         activeCount: 0,
@@ -220,9 +222,11 @@ export default function PalletList() {
         const handleClickOutside = (event) => {
             if (showStatusFilter && !event.target.closest('.status-filter-dropdown')) {
                 setShowStatusFilter(false)
+                setStatusSearchQuery("")
             }
             if (showCreatorFilter && !event.target.closest('.creator-filter-dropdown')) {
                 setShowCreatorFilter(false)
+                setCreatorSearchQuery("")
             }
             if (showPageSizeFilter && !event.target.closest('.page-size-filter-dropdown')) {
                 setShowPageSizeFilter(false)
@@ -427,36 +431,65 @@ export default function PalletList() {
             window.showToast(errorMessage, "error")
         }
     }
+    // Filter status and creator options based on search queries
+    const filteredStatusOptions = useMemo(() => {
+        const statusOptions = [
+            { value: "", label: "Tất cả trạng thái" },
+            { value: "1", label: "Còn sử dụng" },
+            { value: "2", label: "Không còn sử dụng" }
+        ]
+        if (!statusSearchQuery) return statusOptions
+        const query = statusSearchQuery.toLowerCase()
+        return statusOptions.filter(option => 
+            option.label.toLowerCase().includes(query)
+        )
+    }, [statusSearchQuery])
+
+    const filteredCreators = useMemo(() => {
+        if (!creatorSearchQuery) return creators
+        const query = creatorSearchQuery.toLowerCase()
+        return creators.filter(creator => {
+            const creatorName = (creator.fullName || "").toLowerCase()
+            return creatorName.includes(query)
+        })
+    }, [creators, creatorSearchQuery])
+
     const handleStatusFilter = (status) => {
         console.log("User selected status filter:", status)
         setHasUserInteracted(true)
         setStatusFilter(status)
         setShowStatusFilter(false)
+        setStatusSearchQuery("")
     }
     const clearStatusFilter = () => {
         console.log("User cleared status filter")
         setHasUserInteracted(true)
         setStatusFilter("")
         setShowStatusFilter(false)
+        setStatusSearchQuery("")
     }
     const handleCreatorFilter = (creatorId) => {
         console.log("User selected creator filter:", creatorId)
         setHasUserInteracted(true)
         setCreatorFilter(creatorId)
         setShowCreatorFilter(false)
+        setCreatorSearchQuery("")
     }
     const clearCreatorFilter = () => {
         console.log("User cleared creator filter")
         setHasUserInteracted(true)
         setCreatorFilter("")
         setShowCreatorFilter(false)
+        setCreatorSearchQuery("")
     }
     const handleClearAllFilters = () => {
         console.log("User cleared all filters")
         setHasUserInteracted(true)
         setSearchQuery("")
         setStatusFilter("")
+        setStatusSearchQuery("")
         setCreatorFilter("")
+        setCreatorSearchQuery("")
         setShowStatusFilter(false)
         setShowCreatorFilter(false)
     }
@@ -548,6 +581,10 @@ export default function PalletList() {
                         ]}
                         onStatusFilter={handleStatusFilter}
                         clearStatusFilter={clearStatusFilter}
+                        enableStatusSearch={true}
+                        statusSearchQuery={statusSearchQuery}
+                        setStatusSearchQuery={setStatusSearchQuery}
+                        filteredStatusOptions={filteredStatusOptions}
                         creatorFilter={creatorFilter}
                         setCreatorFilter={setCreatorFilter}
                         showCreatorFilter={showCreatorFilter}
@@ -555,6 +592,10 @@ export default function PalletList() {
                         creators={creators}
                         onCreatorFilter={handleCreatorFilter}
                         clearCreatorFilter={clearCreatorFilter}
+                        enableCreatorSearch={true}
+                        creatorSearchQuery={creatorSearchQuery}
+                        setCreatorSearchQuery={setCreatorSearchQuery}
+                        filteredCreators={filteredCreators}
                         onClearAll={handleClearAllFilters}
                         searchWidth="w-80"
                         showToggle={true}

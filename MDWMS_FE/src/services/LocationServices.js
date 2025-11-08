@@ -167,30 +167,48 @@ export const createMultipleLocations = async (locations) => {
 };
 
 // Validate location code
-export const validateLocationCode = async (locationCode) => {
+export const validateLocationCode = async (locationCode, palletId) => {
     try {
-        const response = await api.get(`/Location/LocationPallet/${locationCode}`);
+        // Convert palletId to string if provided
+        const palletIdString = palletId != null ? String(palletId) : "";
+        
+        const response = await api.post(`/Location/LocationPallet`, {
+            locationCode: locationCode,
+            palletId: palletIdString
+        });
 
         if (response.status === 200 && response.data) {
+            // Lấy message từ response nếu có
+            const responseMessage = response.data.message || response.data.Message || "";
+            
             if (response.data.success === true && response.data.data && response.data.data.locationId) {
                 return {
                     success: true,
                     data: response.data.data,
-                    message: "Mã vị trí hợp lệ"
+                    message: responseMessage || "Mã vị trí hợp lệ"
                 };
             }
             else if (response.data.data && response.data.data.locationId) {
                 return {
                     success: true,
                     data: response.data.data,
-                    message: "Mã vị trí hợp lệ"
+                    message: responseMessage || "Mã vị trí hợp lệ"
                 };
             }
             else if (response.data.locationId) {
                 return {
                     success: true,
                     data: response.data,
-                    message: "Mã vị trí hợp lệ"
+                    message: responseMessage || "Mã vị trí hợp lệ"
+                };
+            }
+            
+            // Nếu response có message nhưng không thành công
+            if (responseMessage) {
+                return {
+                    success: false,
+                    data: null,
+                    message: responseMessage
                 };
             }
         }

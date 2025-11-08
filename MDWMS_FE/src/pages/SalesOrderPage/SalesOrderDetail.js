@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
-import { ArrowLeft, Package, User, Calendar, CheckCircle, XCircle, Clock, Truck, CheckSquare, FileText, Hash, Shield, ShoppingCart, Users, UserCheck, UserX, TruckIcon, Store, UserCircle, UserCog, UserCheck2, UserX2, UserMinus, Mail, MapPin, Phone } from 'lucide-react';
+import { ArrowLeft, Package, User, Calendar, CheckCircle, XCircle, Clock, Truck, CheckSquare, FileText, Hash, Shield, ShoppingCart, Users, UserCheck, UserX, TruckIcon, Store, UserCircle, UserCog, UserCheck2, UserX2, UserMinus, Mail, MapPin, Phone, Pencil, Eye } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { getSalesOrderDetail, updateSaleOrderStatusPendingApproval, approveSalesOrder, rejectSalesOrder, assignForPicking } from '../../services/SalesOrderService';
 import { SALES_ORDER_STATUS, canPerformSalesOrderDetailAction } from '../../utils/permissions';
@@ -16,7 +16,8 @@ import AssignPickingModal from '../../components/SaleOrderCompoents/AssignPickin
 import CreateDeliverySlipModal from '../../components/SaleOrderCompoents/CreateDeliverySlipModal';
 import { usePermissions } from '../../hooks/usePermissions';
 import { extractErrorMessage } from '../../utils/Validation';
-import { createGoodsIssueNote } from '../../services/GoodsIssueNoteService';
+import { createGoodsIssueNote, getDetailGoodsIssueNote } from '../../services/GoodsIssueNoteService';
+import { ComponentIcon } from '../../components/IconComponent/Icon';
 
 const SalesOrderDetail = () => {
     const { id } = useParams();
@@ -24,6 +25,7 @@ const SalesOrderDetail = () => {
     const [loading, setLoading] = useState(true);
     const [salesOrder, setSalesOrder] = useState(null);
     const [error, setError] = useState(null);
+    const [hasGoodsIssueNote, setHasGoodsIssueNote] = useState(false);
     const [showSubmitDraftModal, setShowSubmitDraftModal] = useState(false);
     const [showApprovalModal, setShowApprovalModal] = useState(false);
     const [showRejectionModal, setShowRejectionModal] = useState(false);
@@ -34,7 +36,7 @@ const SalesOrderDetail = () => {
     const [rejectionLoading, setRejectionLoading] = useState(false);
     const [assignPickingLoading, setAssignPickingLoading] = useState(false);
     const [createDeliverySlipLoading, setCreateDeliverySlipLoading] = useState(false);
-    const { hasPermission } = usePermissions();
+    const { hasPermission, isWarehouseManager, isWarehouseStaff } = usePermissions();
     const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
 
     useEffect(() => {
@@ -44,6 +46,18 @@ const SalesOrderDetail = () => {
                 const response = await getSalesOrderDetail(id);
                 if (response && response.success) {
                     setSalesOrder(response.data);
+                    // Check if goods issue note exists
+                    try {
+                        const goodsIssueNoteResponse = await getDetailGoodsIssueNote(id);
+                        if (goodsIssueNoteResponse && goodsIssueNoteResponse.success && goodsIssueNoteResponse.data) {
+                            setHasGoodsIssueNote(true);
+                        } else {
+                            setHasGoodsIssueNote(false);
+                        }
+                    } catch (err) {
+                        // If error, means goods issue note doesn't exist yet
+                        setHasGoodsIssueNote(false);
+                    }
                 } else {
                     setError('Không thể tải thông tin đơn hàng');
                 }
@@ -228,6 +242,8 @@ const SalesOrderDetail = () => {
                 window.showToast("Tạo phiếu xuất kho thành công!", "success");
             }
             setShowCreateDeliverySlipModal(false);
+            // Set hasGoodsIssueNote to true after successful creation
+            setHasGoodsIssueNote(true);
             const response = await getSalesOrderDetail(id);
             if (response && response.success) {
                 setSalesOrder(response.data);
@@ -264,8 +280,7 @@ const SalesOrderDetail = () => {
                             <p>URL: /SalesOrder/GetSalesOrderDetail/{id}</p>
                         </div>
                         <Button onClick={() => navigate('/sales-orders')} variant="outline">
-                            <ArrowLeft className="h-4 w-4 mr-2" />
-                            Quay lại
+                            <ComponentIcon name="arrowBackCircleOutline" size={28} />
                         </Button>
                     </CardContent>
                 </Card>
@@ -282,8 +297,7 @@ const SalesOrderDetail = () => {
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">Không tìm thấy</h3>
                         <p className="text-gray-600 mb-4">Đơn hàng không tồn tại hoặc đã bị xóa</p>
                         <Button onClick={() => navigate('/sales-orders')} variant="outline">
-                            <ArrowLeft className="h-4 w-4 mr-2" />
-                            Quay lại
+                            <ComponentIcon name="arrowBackCircleOutline" size={28} />
                         </Button>
                     </CardContent>
                 </Card>
@@ -295,27 +309,30 @@ const SalesOrderDetail = () => {
         <div className="min-h-screen bg-gray-100">
             <div className="max-w-7xl mx-auto p-6">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center space-x-4">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => navigate('/sales-orders')}
-                            className="flex items-center space-x-2"
-                        >
-                            <ArrowLeft className="h-4 w-4" />
-                            <span>Quay lại</span>
-                        </Button>
-                        <div>
-                            <h1 className="text-2xl font-bold text-gray-900">ĐƠN BÁN HÀNG</h1>
-                            {/* <p className="text-gray-600 text-sm mt-1">
-                                Mã phiếu: {salesOrder.salesOrderId}
-                            </p> */}
+                <div>
+                    <div className="max-w-7xl mx-auto px-6 py-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+                        <div className="flex items-center justify-between">
+                            {/* Bên trái: Tiêu đề và nút quay lại */}
+                            <div className="flex items-center gap-4">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => navigate('/sales-orders')}
+                                    className="text-slate-600 hover:bg-slate-50"
+                                >
+                                    <ComponentIcon name="arrowBackCircleOutline" size={28} />
+                                    {/* Quay lại */}
+                                </Button>
+
+                                <div className="flex items-center gap-3">
+                                    <h1 className="text-2xl font-bold text-slate-600 m-0">ĐƠN BÁN HÀNG</h1>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
                     {/* Main Content - Left Side */}
                     <div className="lg:col-span-2">
                         <div className="bg-white border-2 border-gray-400 rounded-lg p-6 h-full flex flex-col">
@@ -461,13 +478,22 @@ const SalesOrderDetail = () => {
                             {/* Action Buttons at bottom of card */}
                             <div className="mt-6 flex justify-center space-x-4">
                                 {canSubmitDraft() && (
-                                    <Button
-                                        onClick={() => setShowSubmitDraftModal(true)}
-                                        className="bg-orange-600 hover:bg-orange-700 text-white h-[38px] px-8"
-                                    >
-                                        <FileText className="h-4 w-4 mr-2" />
-                                        {salesOrder?.status === SALES_ORDER_STATUS.Rejected ? 'Gửi phê duyệt lại' : 'Gửi phê duyệt'}
-                                    </Button>
+                                    <>
+                                        <Button
+                                            onClick={() => navigate(`/sales-orders/update/${salesOrder.salesOrderId}`)}
+                                            className="bg-amber-500 hover:bg-amber-600 text-white h-[38px] px-8"
+                                        >
+                                            <Pencil className="h-4 w-4 mr-2" />
+                                            Cập nhật
+                                        </Button>
+                                        <Button
+                                            onClick={() => setShowSubmitDraftModal(true)}
+                                            className="bg-orange-600 hover:bg-orange-700 text-white h-[38px] px-8"
+                                        >
+                                            <FileText className="h-4 w-4 mr-2" />
+                                            {salesOrder?.status === SALES_ORDER_STATUS.Rejected ? 'Gửi phê duyệt lại' : 'Gửi phê duyệt'}
+                                        </Button>
+                                    </>
                                 )}
 
                                 {canApprove() && (
@@ -503,10 +529,19 @@ const SalesOrderDetail = () => {
                                 {canCreateDeliverySlip() && (
                                     <Button
                                         onClick={() => setShowCreateDeliverySlipModal(true)}
-                                        className="bg-purple-600 hover:bg-purple-700 text-white h-[38px] px-8"
+                                        className="bg-indigo-600 hover:bg-indigo-700 text-white h-[38px] px-8"
                                     >
                                         <Package className="h-4 w-4 mr-2" />
                                         Tạo phiếu xuất kho
+                                    </Button>
+                                )}
+                                {(isWarehouseManager || isWarehouseStaff) && hasGoodsIssueNote && (
+                                    <Button
+                                        onClick={() => navigate(`/goods-issue-note-detail/${salesOrder.salesOrderId}`)}
+                                        className="h-[38px] px-8 bg-green-700 hover:bg-green-900 text-white"
+                                    >
+                                        <Eye className="h-4 w-4 mr-2" />
+                                        Xem phiếu xuất kho
                                     </Button>
                                 )}
 
