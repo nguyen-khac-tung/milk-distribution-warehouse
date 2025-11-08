@@ -7,7 +7,7 @@ namespace MilkDistributionWarehouse.Models.Entities;
 
 public partial class GoodsReceiptNote
 {
-    public Guid GoodsReceiptNoteId { get; set; }
+    public string GoodsReceiptNoteId { get; set; }
 
     public int? Status { get; set; }
 

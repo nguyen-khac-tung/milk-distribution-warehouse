@@ -42,7 +42,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public int GoodsPackingId { get; set; }
 
             [Required(ErrorMessage = "Mã đơn kiểm nhập không được để trống")]
-            public Guid? GoodsReceiptNoteId { get; set; }
+            public string? GoodsReceiptNoteId { get; set; }
         }
 
         public class PalletActiveDto

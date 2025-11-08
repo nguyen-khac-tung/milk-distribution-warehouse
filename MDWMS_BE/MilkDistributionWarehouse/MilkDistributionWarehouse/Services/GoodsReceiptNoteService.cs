@@ -25,10 +25,12 @@ namespace MilkDistributionWarehouse.Services
         private readonly IGoodsReceiptNoteDetailRepository _goodsReceiptNoteDetailRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IGoodsReceiptNoteDetailService _goodsReceiptNoteDetailService;
+        private readonly IPurchaseOrderRepositoy _purchaseOrderRepository;
         public GoodsReceiptNoteService(IGoodsReceiptNoteRepository goodsReceiptNoteRepository,
             IMapper mapper, IPurchaseOrderDetailRepository purchaseOrderDetailRepository,
             IGoodsReceiptNoteDetailRepository goodsReceiptNoteDetailRepository, IUnitOfWork unitOfWork,
-            IGoodsReceiptNoteDetailService goodsReceiptNoteDetailService)
+            IGoodsReceiptNoteDetailService goodsReceiptNoteDetailService,
+            IPurchaseOrderRepositoy purchaseOrderRepository)
         {
             _goodsReceiptNoteRepository = goodsReceiptNoteRepository;
             _mapper = mapper;
@@ -36,6 +38,7 @@ namespace MilkDistributionWarehouse.Services
             _goodsReceiptNoteDetailRepository = goodsReceiptNoteDetailRepository;
             _unitOfWork = unitOfWork;
             _goodsReceiptNoteDetailService = goodsReceiptNoteDetailService;
+            _purchaseOrderRepository = purchaseOrderRepository;
         }
 
         public async Task<(string, GoodsReceiptNoteDto?)> CreateGoodsReceiptNote(GoodsReceiptNoteCreate create, int? userId)
@@ -50,7 +53,14 @@ namespace MilkDistributionWarehouse.Services
 
                 var grnDetails = _mapper.Map<List<GoodsReceiptNoteDetail>>(purchaseOrderDetails);
 
+                var purchaseOrder = await _purchaseOrderRepository.GetPurchaseOrderByPurchaseOrderId(create.PurchaseOderId);
+
+                if (purchaseOrder == null)
+                    throw new Exception("Đơn đặt hàng không tồn tại.".ToMessageForUser());
+
                 var grn = _mapper.Map<GoodsReceiptNote>(create);
+
+                grn.GoodsReceiptNoteId = CreateKeyGoodsReceiptNote(purchaseOrder!.Supplier.BrandName);
 
                 foreach (var detail in grnDetails)
                 {
@@ -116,7 +126,6 @@ namespace MilkDistributionWarehouse.Services
                         throw new Exception(message.ToMessageForUser());
 
                     grn.Status = GoodsReceiptNoteStatus.PendingApproval;
-                    grn.ApprovalBy = userId;
                     grn.UpdatedAt = DateTime.Now;
                 }
 
@@ -208,6 +217,15 @@ namespace MilkDistributionWarehouse.Services
                 return "Chỉ có thể nộp đơn khi mà tất cả các mục nhập kho chi tiết ở trạng thái Đã kiểm tra";
 
             return "";
+        }
+
+        private string CreateKeyGoodsReceiptNote(string brandName)
+        {
+            long timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+            var customBrandName = brandName.ToUpper().Trim().Replace(" ", "_");
+
+            return $"{customBrandName}_GRN_{timestamp}";
         }
     }
 }

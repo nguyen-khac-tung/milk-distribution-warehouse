@@ -4,7 +4,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
 {
     public class GoodsReceiptNoteDto
     {
-        public Guid GoodsReceiptNoteId { get; set; }
+        public string GoodsReceiptNoteId { get; set; }
         public int? Status { get; set; }
         public int? ApprovalBy { get; set; }
         public string ApprovalByName { get; set; }
@@ -22,7 +22,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
     public class GoodsReceiptNoteUpdateStatus
     {
-        public Guid GoodsReceiptNoteId { get; set; }
+        public string GoodsReceiptNoteId { get; set; }
     }
 
     public class GoodsReceiptNoteSubmitDto : GoodsReceiptNoteUpdateStatus {}

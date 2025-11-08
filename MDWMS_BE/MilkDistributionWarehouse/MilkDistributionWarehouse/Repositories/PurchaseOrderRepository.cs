@@ -40,6 +40,7 @@ namespace MilkDistributionWarehouse.Repositories
             return await _context.PurchaseOrders
                 .Include(po => po.PurchaseOderDetails)
                 .Include(po => po.GoodsReceiptNotes)
+                .Include(po => po.Supplier)
                 .FirstOrDefaultAsync(po => po.PurchaseOderId == purchaseOrderId);
         }
 

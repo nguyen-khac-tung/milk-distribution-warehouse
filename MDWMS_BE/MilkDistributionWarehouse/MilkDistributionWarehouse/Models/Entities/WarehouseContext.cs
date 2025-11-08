@@ -214,7 +214,9 @@ public partial class WarehouseContext : DbContext
         {
             entity.HasKey(e => e.GoodsReceiptNoteId).HasName("PK_ImportInspections_1");
 
-            entity.Property(e => e.GoodsReceiptNoteId).ValueGeneratedNever();
+            entity.Property(e => e.GoodsReceiptNoteId)
+                .HasMaxLength(100)
+                .IsUnicode(false);
 
             entity.HasOne(d => d.ApprovalByNavigation).WithMany(p => p.GoodsReceiptNoteApprovalByNavigations)
                 .HasForeignKey(d => d.ApprovalBy)
@@ -227,7 +229,7 @@ public partial class WarehouseContext : DbContext
             entity.HasOne(d => d.PurchaseOder).WithMany(p => p.GoodsReceiptNotes)
                 .HasForeignKey(d => d.PurchaseOderId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_ImportInspections_ImportOrders");
+                .HasConstraintName("FK_GoodsReceiptNotes_PurchaseOrders");
         });
 
         modelBuilder.Entity<GoodsReceiptNoteDetail>(entity =>
@@ -235,13 +237,17 @@ public partial class WarehouseContext : DbContext
             entity.HasKey(e => e.GoodsReceiptNoteDetailId).HasName("PK_ImportInspections");
 
             entity.Property(e => e.GoodsReceiptNoteDetailId).ValueGeneratedNever();
+            entity.Property(e => e.GoodsReceiptNoteId)
+                .IsRequired()
+                .HasMaxLength(100)
+                .IsUnicode(false);
             entity.Property(e => e.Note).HasMaxLength(255);
             entity.Property(e => e.RejectionReason).HasMaxLength(255);
 
             entity.HasOne(d => d.Goods).WithMany(p => p.GoodsReceiptNoteDetails)
                 .HasForeignKey(d => d.GoodsId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_ImportInspections_Products");
+                .HasConstraintName("FK_GoodsReceiptNoteDetails_Goods");
 
             entity.HasOne(d => d.GoodsPacking).WithMany(p => p.GoodsReceiptNoteDetails)
                 .HasForeignKey(d => d.GoodsPackingId)
@@ -250,7 +256,7 @@ public partial class WarehouseContext : DbContext
             entity.HasOne(d => d.GoodsReceiptNote).WithMany(p => p.GoodsReceiptNoteDetails)
                 .HasForeignKey(d => d.GoodsReceiptNoteId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_ImportInspectionDetails_ImportInspections");
+                .HasConstraintName("FK_GoodsReceiptNoteDetails_GoodsReceiptNotes");
         });
 
         modelBuilder.Entity<Location>(entity =>
@@ -297,6 +303,9 @@ public partial class WarehouseContext : DbContext
                 .HasMaxLength(26)
                 .IsUnicode(false)
                 .IsFixedLength();
+            entity.Property(e => e.GoodsReceiptNoteId)
+                .HasMaxLength(100)
+                .IsUnicode(false);
 
             entity.HasOne(d => d.Batch).WithMany(p => p.Pallets)
                 .HasForeignKey(d => d.BatchId)

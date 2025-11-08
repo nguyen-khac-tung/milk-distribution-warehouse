@@ -7,7 +7,7 @@ namespace MilkDistributionWarehouse.Repositories
     public interface IGoodsReceiptNoteRepository
     {
         IQueryable<GoodsReceiptNote?> GetGRN();
-        Task<GoodsReceiptNote?> GetGoodsReceiptNoteById(Guid grnId);
+        Task<GoodsReceiptNote?> GetGoodsReceiptNoteById(string grnId);
         Task<GoodsReceiptNote?> CreateGoodsReceiptNote(GoodsReceiptNote create);
         Task<GoodsReceiptNote?> UpdateGoodsReceiptNote(GoodsReceiptNote update);
     }
@@ -25,11 +25,11 @@ namespace MilkDistributionWarehouse.Repositories
             return _context.GoodsReceiptNotes.AsNoTracking();
         }
 
-        public async Task<GoodsReceiptNote?> GetGoodsReceiptNoteById(Guid grnId)
+        public async Task<GoodsReceiptNote?> GetGoodsReceiptNoteById(string grnId)
         {
             return await _context.GoodsReceiptNotes.Include(grn => grn.GoodsReceiptNoteDetails)
                 .Include(grn => grn.PurchaseOder)
-                .FirstOrDefaultAsync(grn => grn.GoodsReceiptNoteId == grnId);
+                .FirstOrDefaultAsync(grn => grn.GoodsReceiptNoteId.Equals(grnId));
         }
 
         public async Task<GoodsReceiptNote?> CreateGoodsReceiptNote(GoodsReceiptNote create)

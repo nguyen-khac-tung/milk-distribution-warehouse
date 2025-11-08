@@ -9,7 +9,7 @@ public partial class Pallet
 {
     public string PalletId { get; set; }
 
-    public Guid? GoodsReceiptNoteId { get; set; }
+    public string GoodsReceiptNoteId { get; set; }
 
     public Guid? BatchId { get; set; }
 

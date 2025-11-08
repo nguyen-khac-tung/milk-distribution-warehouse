@@ -6,8 +6,7 @@ namespace MilkDistributionWarehouse.Repositories
 {
     public interface IGoodsReceiptNoteDetailRepository
     {
-        Task<List<GoodsReceiptNoteDetail>> GetListByGRNId(Guid grnId);
-
+        Task<List<GoodsReceiptNoteDetail>> GetListByGRNId(string grnId);
         Task<GoodsReceiptNoteDetail?> GetGRNDetailById(Guid grnId);
         Task<GoodsReceiptNoteDetail?> UpdateGRNDetail(GoodsReceiptNoteDetail update);
     }
@@ -26,13 +25,13 @@ namespace MilkDistributionWarehouse.Repositories
                 .FirstOrDefaultAsync(grnd => grnd.GoodsReceiptNoteDetailId == grnId);
         }
 
-        public async Task<List<GoodsReceiptNoteDetail>> GetListByGRNId(Guid grnId)
+        public async Task<List<GoodsReceiptNoteDetail>> GetListByGRNId(string grnId)
         {
             return await _context.GoodsReceiptNoteDetails
                 .Include(x => x.Goods)
                     .ThenInclude(x => x.UnitMeasure)
                 .Include(x => x.GoodsPacking)
-                .Where(x => x.GoodsReceiptNoteId == grnId)
+                .Where(x => x.GoodsReceiptNoteId.Equals(grnId))
                 .ToListAsync();
         }
 

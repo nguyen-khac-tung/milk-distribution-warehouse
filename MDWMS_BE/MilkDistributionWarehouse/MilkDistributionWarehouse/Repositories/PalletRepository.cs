@@ -13,13 +13,13 @@ namespace MilkDistributionWarehouse.Repositories
         Task<Pallet?> UpdatePallet(Pallet entity);
         Task<bool> HasDependencies(string palletId);
         Task<List<Pallet>> GetActivePalletsAsync();
-        Task<List<Pallet>> GetPalletsByGRNID(Guid grnId);
+        Task<List<Pallet>> GetPalletsByGRNID(string grnId);
         Task<bool> IsLocationAvailable(int? locationId);
         Task<bool> ExistsBatch(Guid? batchId);
         Task<bool> ExistsLocation(int? locationId);
-        Task<bool> ExistsGoodRecieveNote(Guid? goodRcNoteId);
+        Task<bool> ExistsGoodRecieveNote(string? goodRcNoteId);
         Task<List<Pallet>> GetPotentiallyPalletsForPicking(int? goodsId, int? goodsPackingId);
-        Task<bool> IsAnyDiffActivePalletByGRNId(Guid grndId);
+        Task<bool> IsAnyDiffActivePalletByGRNId(string grndId);
     }
 
     public class PalletRepository : IPalletRepository
@@ -85,7 +85,7 @@ namespace MilkDistributionWarehouse.Repositories
                 .ToListAsync();
         }
 
-        public async Task<List<Pallet>> GetPalletsByGRNID(Guid grnId)
+        public async Task<List<Pallet>> GetPalletsByGRNID(string grnId)
         {
             return await _context.Pallets
                 .Include(p => p.Batch)
@@ -93,7 +93,7 @@ namespace MilkDistributionWarehouse.Repositories
                 .Include(p => p.Location)
                 .Include(p => p.GoodsPacking)
                 .Include(p => p.CreateByNavigation)
-                .Where(p => p.GoodsReceiptNoteId == grnId)
+                .Where(p => p.GoodsReceiptNoteId.Equals(grnId))
                 .OrderBy(p => p.CreateAt)
                 .AsNoTracking()
                 .ToListAsync();
@@ -126,13 +126,13 @@ namespace MilkDistributionWarehouse.Repositories
                 .AnyAsync(l => l.LocationId == locationId.Value && l.Status == CommonStatus.Active);
         }
 
-        public Task<bool> ExistsGoodRecieveNote(Guid? goodRcNoteId)
+        public Task<bool> ExistsGoodRecieveNote(string? goodRcNoteId)
         {
-            if (!goodRcNoteId.HasValue) return Task.FromResult(false);
+            if (string.IsNullOrEmpty(goodRcNoteId)) return Task.FromResult(false);
 
             return _context.GoodsReceiptNotes
                 .AsNoTracking()
-                .AnyAsync(po => po.GoodsReceiptNoteId == goodRcNoteId.Value);
+                .AnyAsync(po => po.GoodsReceiptNoteId.Equals(goodRcNoteId));
         }
 
         public Task<bool> ExistsGoodPackage(int? gpId)
@@ -156,10 +156,10 @@ namespace MilkDistributionWarehouse.Repositories
                 .ToListAsync();
         }
 
-        public async Task<bool> IsAnyDiffActivePalletByGRNId(Guid grndId)
+        public async Task<bool> IsAnyDiffActivePalletByGRNId(string grndId)
         {
             return await _context.Pallets
-                .AnyAsync(p => p.GoodsReceiptNoteId == grndId
+                .AnyAsync(p => p.GoodsReceiptNoteId.Equals(grndId)
                 && (p.Status != CommonStatus.Active
                 || p.LocationId == null));
         }
