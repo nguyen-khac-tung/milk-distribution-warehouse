@@ -105,7 +105,7 @@ namespace MilkDistributionWarehouse.Repositories
 
             return _context.Locations
                 .AsNoTracking()
-                .AnyAsync(l => l.LocationId == locationId.Value && l.IsAvailable == true && l.Status != CommonStatus.Deleted);
+                .AnyAsync(l => l.LocationId == locationId.Value && l.IsAvailable == true && l.Status == CommonStatus.Active);
         }
 
         public Task<bool> ExistsBatch(Guid? batchId)
