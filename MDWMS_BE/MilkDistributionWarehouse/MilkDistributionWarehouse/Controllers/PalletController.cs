@@ -85,7 +85,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpGet("GetPalletByGRNID")]
-        public async Task<IActionResult> GetPalletByGRNID(Guid grnid)
+        public async Task<IActionResult> GetPalletByGRNID(string grnid)
         {
             var (msg, pallets) = await _palletService.GetPalletByGRNID(grnid);
             if (!string.IsNullOrEmpty(msg))

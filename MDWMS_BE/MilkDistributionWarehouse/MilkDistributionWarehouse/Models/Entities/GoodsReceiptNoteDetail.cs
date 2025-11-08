@@ -9,7 +9,7 @@ public partial class GoodsReceiptNoteDetail
 {
     public Guid GoodsReceiptNoteDetailId { get; set; }
 
-    public Guid GoodsReceiptNoteId { get; set; }
+    public string GoodsReceiptNoteId { get; set; }
 
     public int GoodsId { get; set; }
 

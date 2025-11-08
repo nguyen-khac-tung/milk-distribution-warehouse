@@ -47,7 +47,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpGet("GetAvailableReceiversDropDown/{purchaseOrderId}")]
-        public async Task<IActionResult> GetAvailableReceiversDropDown(Guid? purchaseOrderId)
+        public async Task<IActionResult> GetAvailableReceiversDropDown(string? purchaseOrderId)
         {
             var (msg, userDropDown) = await _userService.GetAvailableReceiversOrPickersDropDown(purchaseOrderId, null);
             if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);

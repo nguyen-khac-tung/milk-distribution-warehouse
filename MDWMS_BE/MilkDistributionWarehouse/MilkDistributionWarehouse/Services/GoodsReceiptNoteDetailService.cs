@@ -14,7 +14,7 @@ namespace MilkDistributionWarehouse.Services
 {
     public interface IGoodsReceiptNoteDetailService
     {
-        Task<(string, List<GoodsReceiptNoteDetailPalletDto>)> GetListGRNDByGRNId(Guid grnId);
+        Task<(string, List<GoodsReceiptNoteDetailPalletDto>)> GetListGRNDByGRNId(string grnId);
         Task<(string, T?)> UpdateGRNDetail<T>(T update, int? userId) where T : GoodsReceiptNoteDetailUpdateStatus;
         Task<(string, List<GoodsReceiptNoteDetailRejectDto>?)> UpdateGRNReject(List<GoodsReceiptNoteDetailRejectDto> updateRejects);
     }
@@ -32,7 +32,7 @@ namespace MilkDistributionWarehouse.Services
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<(string, List<GoodsReceiptNoteDetailPalletDto>)> GetListGRNDByGRNId(Guid grnId)
+        public async Task<(string, List<GoodsReceiptNoteDetailPalletDto>)> GetListGRNDByGRNId(string grnId)
         {
             try
             {

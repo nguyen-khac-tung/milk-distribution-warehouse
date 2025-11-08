@@ -17,7 +17,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, PalletDto.PalletResponseDto)> UpdatePallet(string palletId, PalletDto.PalletRequestDto dto);
         Task<(string, PalletDto.PalletResponseDto)> DeletePallet(string palletId);
         Task<(string, List<PalletDto.PalletActiveDto>)> GetPalletDropdown();
-        Task<(string, List<PalletDto.PalletResponseDto>)> GetPalletByGRNID(Guid grnId);
+        Task<(string, List<PalletDto.PalletResponseDto>)> GetPalletByGRNID(string grnId);
         Task<(string, PalletDto.PalletUpdateStatusDto)> UpdatePalletStatus(PalletDto.PalletUpdateStatusDto update);
         Task<(string, PalletDto.PalletUpdateStatusDto)> UpdatePalletQuantity(string palletId, int takeOutQuantity);
         Task<(string, PalletDto.PalletBulkResponse)> CreatePalletBulk(PalletDto.PalletBulkCreate create, int? userId);
@@ -71,7 +71,7 @@ namespace MilkDistributionWarehouse.Services
                     return ("Vị trí này đã có pallet khác.".ToMessageForUser(), new());
             }
 
-            if (dto.GoodsReceiptNoteId.HasValue && !await _palletRepository.ExistsGoodRecieveNote(dto.GoodsReceiptNoteId))
+            if (!string.IsNullOrEmpty(dto.GoodsReceiptNoteId) && !await _palletRepository.ExistsGoodRecieveNote(dto.GoodsReceiptNoteId))
                 return ("GoodsReceiptNoteId do not exist.", new PalletDto.PalletResponseDto());
 
             if (!await _palletRepository.ExistsBatch(dto.BatchId))
@@ -128,7 +128,7 @@ namespace MilkDistributionWarehouse.Services
                 }
 
                 // Validate goods receipt note
-                if (dto.GoodsReceiptNoteId.HasValue && !await _palletRepository.ExistsGoodRecieveNote(dto.GoodsReceiptNoteId))
+                if (!string.IsNullOrEmpty(dto.GoodsReceiptNoteId) && !await _palletRepository.ExistsGoodRecieveNote(dto.GoodsReceiptNoteId))
                 {
                     result.FailedItems.Add(new PalletDto.FailedItem { Index = i, Code = dto.GoodsReceiptNoteId.ToString(), Error = "GoodsReceiptNoteId do not exist.".ToMessageForUser() });
                     result.TotalFailed++;
@@ -198,7 +198,7 @@ namespace MilkDistributionWarehouse.Services
             if (pallet == null)
                 return ("Pallet do not exist.", new PalletDto.PalletResponseDto());
 
-            if (dto.GoodsReceiptNoteId.HasValue && !await _palletRepository.ExistsGoodRecieveNote(dto.GoodsReceiptNoteId))
+            if (!string.IsNullOrEmpty(dto.GoodsReceiptNoteId) && !await _palletRepository.ExistsGoodRecieveNote(dto.GoodsReceiptNoteId))
                 return ("GoodsReceiptNoteId do not exist.", new PalletDto.PalletResponseDto());
 
             if (!await _palletRepository.ExistsBatch(dto.BatchId))
@@ -285,7 +285,7 @@ namespace MilkDistributionWarehouse.Services
             return ("", dto);
         }
 
-        public async Task<(string, List<PalletDto.PalletResponseDto>)> GetPalletByGRNID(Guid grnId)
+        public async Task<(string, List<PalletDto.PalletResponseDto>)> GetPalletByGRNID(string grnId)
         {
             var pallets = await _palletRepository.GetPalletsByGRNID(grnId);
             if (!pallets.Any())

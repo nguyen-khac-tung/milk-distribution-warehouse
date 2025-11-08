@@ -25,7 +25,7 @@ namespace MilkDistributionWarehouse.Services
         Task<string> UpdateUserStatus(UserStatusUpdateDto userUpdate);
         Task<string> DeleteUser(int? userId);
         Task<(string, List<UserDropDown>?)> GetUserDropDownByRoleName(string roleName);
-        Task<(string, List<UserAssignedDropDown>?)> GetAvailableReceiversOrPickersDropDown(Guid? purchaseOrderId, Guid? salesOrderId);
+        Task<(string, List<UserAssignedDropDown>?)> GetAvailableReceiversOrPickersDropDown(string? purchaseOrderId, Guid? salesOrderId);
     }
 
     public class UserService : IUserService
@@ -205,13 +205,13 @@ namespace MilkDistributionWarehouse.Services
             return ("", userDropDowns);
         }
 
-        public async Task<(string, List<UserAssignedDropDown>?)> GetAvailableReceiversOrPickersDropDown(Guid? purchaseOrderId, Guid? salesOrderId)
+        public async Task<(string, List<UserAssignedDropDown>?)> GetAvailableReceiversOrPickersDropDown(string? purchaseOrderId, Guid? salesOrderId)
         {
             int? assignedUser = null;
 
-            if (purchaseOrderId != null)
+            if (!string.IsNullOrEmpty(purchaseOrderId))
             {
-                var purchaseOrder = await _purchaseOrderRepositoy.GetPurchaseOrderByPurchaseOrderId((Guid)purchaseOrderId);
+                var purchaseOrder = await _purchaseOrderRepositoy.GetPurchaseOrderByPurchaseOrderId(purchaseOrderId);
                 if (purchaseOrder == null) return ("PurchaseOrder is invalid", null);
                 assignedUser = purchaseOrder.AssignTo;
             }
