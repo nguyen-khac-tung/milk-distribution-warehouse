@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
-import { Separator } from "../../components/ui/separator"
-import { Button } from "../../components/ui/button"
 import { ComponentIcon } from "../../components/IconComponent/Icon";
 import { X } from "lucide-react";
 import { getBackOrderDetail } from "../../services/BackOrderService";
@@ -83,8 +81,7 @@ export function BackOrderDetail({ backOrder, onClose }) {
               <ComponentIcon name="shopping-cart" size={24} color="#3b82f6" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-slate-800">Chi tiết đơn đặt hàng</h1>
-              <p className="text-sm text-gray-500">Thông tin chi tiết về back order</p>
+              <h1 className="text-xl font-bold text-slate-800 m-0">Chi tiết đơn bổ sung</h1>
             </div>
           </div>
           {onClose && (
@@ -106,7 +103,7 @@ export function BackOrderDetail({ backOrder, onClose }) {
               <div className="space-y-3">
                 <div className="flex items-center gap-3 flex-wrap">
                   <div className="px-4 py-2 bg-white rounded-lg shadow-sm">
-                    <span className="text-sm text-gray-600 font-medium">Mã hàng chờ</span>
+                    <span className="text-sm text-gray-600 font-medium">Mã đơn bổ sung</span>
                     <div className="text-lg font-bold text-blue-600">#{backOrderData?.backOrderId || 'N/A'}</div>
                   </div>
                   {getStatusBadge(backOrderData?.statusDinamic)}
