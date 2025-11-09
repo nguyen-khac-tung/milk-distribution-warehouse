@@ -232,7 +232,7 @@ export default function UpdateBackOrderModal({ isOpen, onClose, onSuccess, backO
             </div>
             <div>
               <h1 className="text-xl font-bold text-slate-800">Cập nhật đơn bổ sung</h1>
-              <p className="text-sm text-gray-500">Chỉnh sửa thông tin đơn hàng chờ</p>
+              <p className="text-sm text-gray-500">Chỉnh sửa thông tin đơn hàng bổ sung</p>
             </div>
           </div>
           <button
@@ -373,7 +373,7 @@ export default function UpdateBackOrderModal({ isOpen, onClose, onSuccess, backO
                             </Label>
                             <div className="h-[38px] px-3 flex items-center border border-slate-200 bg-slate-50 rounded-lg">
                               <span className="text-slate-700">
-                                {unitPerPackage ? `${unitPerPackage} ${unitMeasureName}` : 'N/A'}
+                                {unitPerPackage ? `${unitPerPackage} ${unitMeasureName}/thùng` : 'N/A'}
                               </span>
                             </div>
                           </div>
