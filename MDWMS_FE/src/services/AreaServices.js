@@ -136,3 +136,19 @@ export const updateAreaStatus = async (areaId, status) => {
         throw error;
     }
 };
+
+// Lấy số lượng vị trí khả dụng của các khu vực
+export const getAvailableLocationQuantity = async () => {
+    try {
+        const res = await api.get("/Area/AvailableLocationQuantity");
+        console.log("Available Location Quantity API response:", res.data);
+        return res?.data?.data ?? res?.data ?? [];
+    } catch (error) {
+        console.error("Error fetching available location quantity:", error);
+        if (error.response) {
+            console.error("Error response data:", error.response.data);
+            console.error("Error response status:", error.response.status);
+        }
+        return [];
+    }
+};

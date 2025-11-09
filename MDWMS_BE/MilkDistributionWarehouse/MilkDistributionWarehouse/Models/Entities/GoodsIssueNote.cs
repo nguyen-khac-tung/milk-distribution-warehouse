@@ -21,6 +21,8 @@ public partial class GoodsIssueNote
 
     public Guid SalesOderId { get; set; }
 
+    public virtual User ApprovalByNavigation { get; set; }
+
     public virtual User CreatedByNavigation { get; set; }
 
     public virtual ICollection<GoodsIssueNoteDetail> GoodsIssueNoteDetails { get; set; } = new List<GoodsIssueNoteDetail>();

@@ -4,6 +4,7 @@
    "ContextNamespace": null,
    "FilterSchemas": false,
    "IncludeConnectionString": false,
+   "MinimumProductVersion": "2.6.1186",
    "ModelNamespace": null,
    "OutputContextPath": null,
    "OutputPath": "Models\/Entities",
@@ -43,6 +44,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[GoodsPacking]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[GoodsReceiptNoteDetails]",
          "ObjectType": 0
       },
@@ -64,6 +69,10 @@
       },
       {
          "Name": "[dbo].[Pallets]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[PickAllocation]",
          "ObjectType": 0
       },
       {

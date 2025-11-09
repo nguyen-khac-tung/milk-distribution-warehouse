@@ -10,7 +10,9 @@ export const PURCHASE_ORDER_STATUS = {
   AssignedForReceiving: 6,
   Receiving: 7,
   Inspected: 8,
-  Completed: 9
+  Completed: 9,
+  Ordered: 10,
+  AwaitingArrival: 11
 };
 
 // Chuyển đổi trạng thái sang tiếng Việt
@@ -21,9 +23,11 @@ export const STATUS_LABELS = {
   [PURCHASE_ORDER_STATUS.Approved]: 'Đã duyệt',
   [PURCHASE_ORDER_STATUS.GoodsReceived]: 'Đã giao đến',
   [PURCHASE_ORDER_STATUS.AssignedForReceiving]: 'Đã phân công',
-  [PURCHASE_ORDER_STATUS.Receiving]: 'Đang nhận hàng',
+  [PURCHASE_ORDER_STATUS.Receiving]: 'Đang tiếp nhận',
   [PURCHASE_ORDER_STATUS.Inspected]: 'Đã kiểm nhập',
-  [PURCHASE_ORDER_STATUS.Completed]: 'Đã nhập kho'
+  [PURCHASE_ORDER_STATUS.Completed]: 'Đã nhập kho',
+  [PURCHASE_ORDER_STATUS.Ordered]: 'Đã đặt hàng',
+  [PURCHASE_ORDER_STATUS.AwaitingArrival]: 'Chờ đến'
 };
 
 // Màu sắc cho từng trạng thái
@@ -36,7 +40,9 @@ export const STATUS_COLORS = {
   [PURCHASE_ORDER_STATUS.AssignedForReceiving]: 'bg-purple-100 text-purple-800',
   [PURCHASE_ORDER_STATUS.Receiving]: 'bg-orange-100 text-orange-800',
   [PURCHASE_ORDER_STATUS.Inspected]: 'bg-indigo-100 text-indigo-800',
-  [PURCHASE_ORDER_STATUS.Completed]: 'bg-emerald-100 text-emerald-800'
+  [PURCHASE_ORDER_STATUS.Completed]: 'bg-emerald-100 text-emerald-800',
+  [PURCHASE_ORDER_STATUS.Ordered]: 'bg-green-100 text-green-800',
+  [PURCHASE_ORDER_STATUS.AwaitingArrival]: 'bg-cyan-100 text-cyan-800'
 };
 
 // Component hiển thị trạng thái
@@ -45,7 +51,7 @@ const StatusDisplay = ({ status, className = '' }) => {
   const statusColor = STATUS_COLORS[status] || 'bg-gray-100 text-gray-800';
 
   return (
-    <span 
+    <span
       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor} ${className}`}
     >
       {statusLabel}

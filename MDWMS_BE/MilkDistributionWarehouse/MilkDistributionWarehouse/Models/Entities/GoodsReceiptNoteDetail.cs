@@ -9,35 +9,33 @@ public partial class GoodsReceiptNoteDetail
 {
     public Guid GoodsReceiptNoteDetailId { get; set; }
 
-    public Guid GoodsReceiptNoteId { get; set; }
+    public string GoodsReceiptNoteId { get; set; }
 
     public int GoodsId { get; set; }
 
-    public int? ExpectedQuantity { get; set; }
+    public int? GoodsPackingId { get; set; }
 
-    public int? UnitsPerPackage { get; set; }
+    public int? ExpectedPackageQuantity { get; set; }
 
     public int? DeliveredPackageQuantity { get; set; }
 
-    public int? DeliveredQuantity { get; set; }
-
     public int? RejectPackageQuantity { get; set; }
 
-    public int? RejectQuantity { get; set; }
-
     public int? ActualPackageQuantity { get; set; }
-
-    public int? ActualQuantity { get; set; }
 
     public int? Status { get; set; }
 
     public string Note { get; set; }
+
+    public string RejectionReason { get; set; }
 
     public DateTime? CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
 
     public virtual Good Goods { get; set; }
+
+    public virtual GoodsPacking GoodsPacking { get; set; }
 
     public virtual GoodsReceiptNote GoodsReceiptNote { get; set; }
 }

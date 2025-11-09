@@ -52,6 +52,7 @@ export default function SuppliersPage() {
   })
   const [showPageSizeFilter, setShowPageSizeFilter] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
+  const [statusSearchQuery, setStatusSearchQuery] = useState("")
 
   // Thống kê tổng (không thay đổi khi search/filter)
   const [totalStats, setTotalStats] = useState({
@@ -163,6 +164,7 @@ export default function SuppliersPage() {
     const handleClickOutside = (event) => {
       if (showStatusFilter && !event.target.closest('.status-filter-dropdown')) {
         setShowStatusFilter(false)
+        setStatusSearchQuery("")
       }
       if (showPageSizeFilter && !event.target.closest('.page-size-filter-dropdown')) {
         setShowPageSizeFilter(false)
@@ -325,19 +327,35 @@ export default function SuppliersPage() {
   }
 
 
+  const filteredStatusOptions = useMemo(() => {
+    const statusOptions = [
+      { value: "", label: "Tất cả trạng thái" },
+      { value: "1", label: "Hoạt động" },
+      { value: "2", label: "Ngừng hoạt động" }
+    ]
+    if (!statusSearchQuery) return statusOptions
+    const query = statusSearchQuery.toLowerCase()
+    return statusOptions.filter(option =>
+      option.label.toLowerCase().includes(query)
+    )
+  }, [statusSearchQuery])
+
   const handleStatusFilter = (status) => {
     setStatusFilter(status)
     setShowStatusFilter(false)
+    setStatusSearchQuery("")
   }
 
   const clearStatusFilter = () => {
     setStatusFilter("")
     setShowStatusFilter(false)
+    setStatusSearchQuery("")
   }
 
   const handleClearAllFilters = () => {
     setSearchQuery("")
     setStatusFilter("")
+    setStatusSearchQuery("")
     setShowStatusFilter(false)
   }
 
@@ -404,7 +422,7 @@ export default function SuppliersPage() {
           <SearchFilterToggle
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            searchPlaceholder="Tìm kiếm theo tên công ty hoặc thương hiệu..."
+            searchPlaceholder="Tìm kiếm theo CT, SDT, người liên hệ, thương hiệu"
             statusFilter={statusFilter}
             setStatusFilter={setStatusFilter}
             showStatusFilter={showStatusFilter}
@@ -416,6 +434,10 @@ export default function SuppliersPage() {
             ]}
             onStatusFilter={handleStatusFilter}
             clearStatusFilter={clearStatusFilter}
+            enableStatusSearch={true}
+            statusSearchQuery={statusSearchQuery}
+            setStatusSearchQuery={setStatusSearchQuery}
+            filteredStatusOptions={filteredStatusOptions}
             onClearAll={handleClearAllFilters}
             searchWidth="w-80"
             showToggle={true}

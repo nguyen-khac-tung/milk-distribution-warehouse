@@ -208,3 +208,71 @@ export const getUserProfile = async () => {
         };
     }
 };
+
+// Get user dropdown by role name
+export const getUserDropDownByRoleName = async (roleName) => {
+    try {
+        const res = await api.get(`/User/GetUserDropDownByRoleName/${roleName}`);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching user dropdown by role name:", error);
+        return {
+            success: false,
+            status: 500,
+            message: error?.response?.data?.message || "Failed to fetch user dropdown by role name",
+            data: null
+        };
+    }
+};
+
+export const getUserDropDown = async () => {
+    try {
+        const res = await api.get(`User/GetAvailableReceiversDropDown`);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching user dropdown by role name:", error);
+        return {
+            success: false,
+            status: 500,
+            message: error?.response?.data?.message || "Failed to fetch user dropdown by role name",
+            data: null
+        };
+    }
+};
+
+// Lấy danh sách Picker khả dụng theo SalesOrderId
+export const getAvailablePickersDropdown = async (salesOrderId) => {
+    try {
+        if (!salesOrderId) {
+            throw new Error("Thiếu salesOrderId");
+        }
+
+        const res = await api.get(`/User/GetAvailablePickersDropDown/${salesOrderId}`);
+        console.log("getAvailablePickersDropdown:", res.data);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching available pickers:", error);
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
+        throw error;
+    }
+};
+
+
+// Get available receivers dropdown by purchase order ID
+export const getAvailableReceiversDropDown = async (purchaseOrderId) => {
+    try {
+        const res = await api.get(`/User/GetAvailableReceiversDropDown/${purchaseOrderId}`);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching available receivers dropdown:", error);
+        return {
+            success: false,
+            status: 500,
+            message: error?.response?.data?.message || "Failed to fetch available receivers dropdown",
+            data: null
+        };
+    }
+};
+

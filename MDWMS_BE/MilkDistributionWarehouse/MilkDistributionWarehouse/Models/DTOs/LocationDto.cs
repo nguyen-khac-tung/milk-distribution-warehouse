@@ -33,7 +33,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public DateTime? UpdateAt { get; set; }
         }
 
-        public class LocationPalletDto
+        public class LocationSuggestDto
         {
             public int LocationId { get; set; }
 
@@ -44,6 +44,16 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public string AreaCode { get; set; }
 
             public string LocationCode { get; set; }
+
+            public string Rack { get; set; }
+
+            public int Row { get; set; }
+
+            public int Column { get; set; }
+
+            public bool IsAvailable { get; set; }
+
+            public int Status { get; set; }
         }
 
         public class LocationActiveDto
@@ -51,6 +61,23 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public int LocationId { get; set; }
 
             public string LocationCode { get; set; }
+        }
+
+        public class LocationPalletDto
+        {
+            public int LocationId { get; set; }
+
+            public string LocationCode { get; set; }
+
+            public string Rack { get; set; }
+
+            public int Row { get; set; }
+
+            public int Column { get; set; }
+
+            public string AreaName { get; set; }
+
+            public bool IsAvailable { get; set; }
         }
 
         public class LocationRequestDto
@@ -72,6 +99,13 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public int Column { get; set; }
 
             public bool? IsAvailable { get; set; } = true;
+        }
+
+        public class LocationCheckPalletDto
+        {
+            public string LocationCode { get; set; }
+
+            public string PalletId { get; set; }
         }
 
         public class LocationBulkCreate

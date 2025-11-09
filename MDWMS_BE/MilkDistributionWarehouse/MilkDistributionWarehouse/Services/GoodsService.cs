@@ -14,15 +14,16 @@ namespace MilkDistributionWarehouse.Services
 {
     public interface IGoodsService
     {
-        Task<(string, PageResult<GoodsDto>)> GetGoods(PagedRequest request);
-        Task<(string, GoodsDetail)> GetGoodsByGoodsId(int goodsId);
-        Task<(string, GoodsDto)> CreateGoods(GoodsCreate goodsCreate);
-        Task<(string, GoodsDto)> DeleteGoods(int goodsId);
-        Task<(string, GoodsDto)> UpdateGoods_1(GoodsUpdate update);
-        Task<(string, List<GoodsDropDown>)> GetGoodsDropDown();
-        Task<(string, GoodsUpdateStatus)> UpdateGoodsStatus(GoodsUpdateStatus update);
-        Task<(string, GoodsBulkdResponse)> CreateGoodsBulk(GoodsBulkCreate create);
+        Task<(string, PageResult<GoodsDto>?)> GetGoods(PagedRequest request);
+        Task<(string, List<GoodsDropDown>?)> GetGoodsDropDown();
         Task<(string, List<GoodsDropDownAndUnitMeasure>?)> GetGoodsDropDownBySupplierId(int supplierId);
+        Task<(string, List<GoodsInventoryDto>?)> GetGoodsInventoryBySupplierId(int supplierId);
+        Task<(string, GoodsDetail?)> GetGoodsByGoodsId(int goodsId);
+        Task<(string, GoodsDto?)> CreateGoods(GoodsCreate goodsCreate);
+        Task<(string, GoodsBulkdResponse)> CreateGoodsBulk(GoodsBulkCreate create);
+        Task<(string, GoodsDto?)> UpdateGoods(GoodsUpdate update);
+        Task<(string, GoodsUpdateStatus?)> UpdateGoodsStatus(GoodsUpdateStatus update);
+        Task<(string, GoodsDto?)> DeleteGoods(int goodsId);
     }
     public class GoodsService : IGoodsService
     {
@@ -30,23 +31,27 @@ namespace MilkDistributionWarehouse.Services
         private readonly ICategoryRepository _categoryRepository;
         private readonly IUnitMeasureRepository _unitMeasureRepository;
         private readonly IStorageConditionRepository _storageConditionRepository;
+        private readonly ISalesOrderRepository _salesOrderRepository;
         private readonly IMapper _mapper;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICacheService _cacheService;
-        public GoodsService(IGoodsRepository goodRepository, IMapper mapper, ICategoryRepository categoryRepository,
+        private readonly IGoodsPackingService _goodsPackingService;
+        public GoodsService(IGoodsRepository goodRepository, IMapper mapper, ICategoryRepository categoryRepository, ISalesOrderRepository salesOrderRepository,
             IUnitMeasureRepository unitMeasureRepository, IStorageConditionRepository storageConditionRepository,
-            IUnitOfWork unitOfWork, ICacheService cacheService)
+            IUnitOfWork unitOfWork, ICacheService cacheService, IGoodsPackingService goodsPackingService)
         {
             _goodRepository = goodRepository;
             _mapper = mapper;
             _categoryRepository = categoryRepository;
             _unitMeasureRepository = unitMeasureRepository;
             _storageConditionRepository = storageConditionRepository;
+            _salesOrderRepository = salesOrderRepository;
             _unitOfWork = unitOfWork;
             _cacheService = cacheService;
+            _goodsPackingService = goodsPackingService;
         }
 
-        public async Task<(string, PageResult<GoodsDto>)> GetGoods(PagedRequest request)
+        public async Task<(string, PageResult<GoodsDto>?)> GetGoods(PagedRequest request)
         {
             var goodsQuery = _goodRepository.GetGoods();
 
@@ -55,12 +60,12 @@ namespace MilkDistributionWarehouse.Services
             var goodsDtos = await goodsItems.ToPagedResultAsync<GoodsDto>(request);
 
             if (!goodsDtos.Items.Any())
-                return ("Danh sách sản phẩm trống.".ToMessageForUser(), new PageResult<GoodsDto> { });
+                return ("Danh sách sản phẩm trống.".ToMessageForUser(), default);
 
             return ("", goodsDtos);
         }
 
-        public async Task<(string, List<GoodsDropDown>)> GetGoodsDropDown()
+        public async Task<(string, List<GoodsDropDown>?)> GetGoodsDropDown()
         {
             var goodsQuery = await _goodRepository.GetGoods()
                 .Where(g => g.Status == CommonStatus.Active).ToListAsync();
@@ -68,15 +73,59 @@ namespace MilkDistributionWarehouse.Services
             var goodsDropDown = _mapper.Map<List<GoodsDropDown>>(goodsQuery);
 
             if (!goodsDropDown.Any())
-                return ("Danh sách sản phẩm trống.".ToMessageForUser(), new List<GoodsDropDown>());
+                return ("Danh sách sản phẩm trống.".ToMessageForUser(), default);
 
             return ("", goodsDropDown);
         }
 
-        public async Task<(string, GoodsDetail)> GetGoodsByGoodsId(int goodsId)
+        public async Task<(string, List<GoodsInventoryDto>?)> GetGoodsInventoryBySupplierId(int supplierId)
+        {
+            var goodsList = await _goodRepository.GetActiveGoodsBySupplierId(supplierId);
+            if (goodsList == null || !goodsList.Any())
+                return ("Danh sách sản phẩm trống.".ToMessageForUser(), default);
+            var goodsIds = goodsList.Select(g => g.GoodsId).ToList();
+
+            var goodsCommittedList = await _salesOrderRepository.GetAllSalesOrders()
+                .Where(s => s.Status == SalesOrderStatus.Approved
+                       || s.Status == SalesOrderStatus.AssignedForPicking
+                       || s.Status == SalesOrderStatus.Picking)
+                .SelectMany(s => s.SalesOrderDetails)
+                .Where(sd => goodsIds.Contains(sd.GoodsId ?? 0))
+                .ToListAsync();
+
+            var goodsInventoryDtos = _mapper.Map<List<GoodsInventoryDto>>(goodsList);
+
+            goodsInventoryDtos.ForEach(goodsDto =>
+            {
+                var goods = goodsList.First(g => g.GoodsId == goodsDto.GoodsId);
+                goodsDto.GoodsPackings.ForEach(packing =>
+                {
+                    var packageQuantityOnHand = goods?.Batches.SelectMany(b => b.Pallets)
+                                                      .Where(p => p.GoodsPackingId == packing.GoodsPackingId 
+                                                                && p.Status == CommonStatus.Active
+                                                                && p.Batch.ExpiryDate >= DateOnly.FromDateTime(DateTime.Now))
+                                                      .Sum(p => p.PackageQuantity) ?? 0;
+                    var packageQuantityCommitted = goodsCommittedList.Where(g => g.GoodsId == goodsDto.GoodsId
+                                                        && g.GoodsPackingId == packing.GoodsPackingId)
+                                                        .Sum(g => g.PackageQuantity) ?? 0;
+                    var availablePackageQuantity = packageQuantityOnHand - packageQuantityCommitted;
+
+                    goodsDto.InventoryPackingDtos.Add(new InventoryPackagingDto()
+                    {
+                        GoodsPackingId = packing.GoodsPackingId,
+                        UnitPerPackage = packing.UnitPerPackage,
+                        AvailablePackageQuantity = availablePackageQuantity >= 0 ? availablePackageQuantity : 0
+                    });
+                });
+            });
+
+            return ("", goodsInventoryDtos);
+        }
+
+        public async Task<(string, GoodsDetail?)> GetGoodsByGoodsId(int goodsId)
         {
             if (goodsId <= 0)
-                return ("GoodsId is invalid", new GoodsDetail());
+                return ("GoodsId is invalid", default);
 
             var goodsQuery = _goodRepository.GetGoodsById(goodsId);
 
@@ -85,128 +134,274 @@ namespace MilkDistributionWarehouse.Services
             var goodsDetail = await goodsDetails.FirstOrDefaultAsync(g => g.GoodsId == goodsId);
 
             if (goodsDetail == null)
-                return ("Danh sách sản phấm không tồn tại trong hệ thống".ToMessageForUser(), new GoodsDetail());
+                return ("Danh sách sản phấm không tồn tại trong hệ thống".ToMessageForUser(), default);
 
             goodsDetail.IsDisable = (await IsGoodInUseAnyTransactionToUpdate(goodsId));
 
             return ("", goodsDetail);
         }
 
-        public async Task<(string, GoodsDto)> CreateGoods(GoodsCreate goodsCreate)
+        public async Task<(string, List<GoodsDropDownAndUnitMeasure>?)> GetGoodsDropDownBySupplierId(int supplierId)
+        {
+            var cacheKey = _cacheService.GenerateDropdownCacheKey("Goods", "Supplier", supplierId);
+
+            var result = await _cacheService.GetOrCreatedAsync(cacheKey, async () =>
+            {
+                var goodsQuery = _goodRepository.GetGoods()
+                    .Where(g => g.Status == CommonStatus.Active && g.SupplierId == supplierId);
+
+                var goodsDropDowns = goodsQuery.ProjectTo<GoodsDropDownAndUnitMeasure>(_mapper.ConfigurationProvider);
+
+                return await goodsDropDowns.ToListAsync();
+            }, 30, 10);
+
+            if (!result.Any())
+                return ("Danh sách thả xuống hàng hoá trống.".ToMessageForUser(), default);
+
+            return ("", result);
+        }
+
+        public async Task<(string, GoodsDto?)> CreateGoods(GoodsCreate goodsCreate)
         {
             if (goodsCreate == null)
-                return ("Goods create data is invalid", new GoodsDto());
+                return ("Goods create data is invalid", default);
 
             if (await _goodRepository.IsDuplicationCode(null, goodsCreate.GoodsCode))
-                return ("Mã sản phẩm đã tồn tại trong hệ thống".ToMessageForUser(), new GoodsDto());
+                return ("Mã sản phẩm đã tồn tại trong hệ thống".ToMessageForUser(), default);
+
+            if (await _goodRepository.IsDuplicationNameAndSupplier(goodsCreate.GoodsName, goodsCreate.SupplierId))
+                return ("Nhà cung cấp đã tồn tại tên hàng hoá".ToMessageForUser(), default);
 
             var goods = _mapper.Map<Good>(goodsCreate);
+
+            if (goodsCreate.GoodsPackingCreates.Any())
+            {
+                if (IsCheckDuplicationGoodsPacking(goodsCreate.GoodsPackingCreates))
+                    return ("Số lượng đóng gói hàng hoá bị trùng lặp.", default);
+
+                goods.GoodsPackings = _mapper.Map<List<GoodsPacking>>(goodsCreate.GoodsPackingCreates);
+            }
 
             var createResult = await _goodRepository.CreateGoods(goods);
 
             if (createResult == null)
-                return ("Tạo mới sản phẩm thất bại.".ToMessageForUser(), new GoodsDto());
+                return ("Tạo mới sản phẩm thất bại.".ToMessageForUser(), default);
 
-            _cacheService.InvalidateDropdownCache("goods", "supplier", createResult.SupplierId);
+            _cacheService.InvalidateDropdownCache("Goods", "Supplier", createResult.SupplierId);
 
             return ("", _mapper.Map<GoodsDto>(createResult));
         }
 
-        public async Task<(string, GoodsDto)> UpdateGoods_1(GoodsUpdate update)
+        public async Task<(string, GoodsBulkdResponse)> CreateGoodsBulk(GoodsBulkCreate create)
         {
-            if (update == null)
-                return ("Goods update data is invalid", new GoodsDto());
+            var result = new GoodsBulkdResponse();
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
 
-            var goodsExist = await _goodRepository.GetGoodsByGoodsId(update.GoodsId);
+                var goodsCodeCreate = create.Goods.Select(g => g.GoodsCode).ToList();
 
-            if (goodsExist == null)
-                return ("Goods is not exist", new GoodsDto());
+                var existingGoodsCode = await _goodRepository.GetExistingGoodsCode(goodsCodeCreate);
 
-            if (await IsGoodInUseAnyTransactionToUpdate(update.GoodsId))
-                return ("Không thể cập nhật thông tin hàng hoá vì hàng hoá đang được sử dụng.".ToMessageForUser(), new GoodsDto());
+                var existingCodesSet = new HashSet<string>(existingGoodsCode);
 
-            _mapper.Map(update, goodsExist);
+                var validGoods = new List<Good>();
 
-            _cacheService.InvalidateDropdownCache("goods", "supplier", goodsExist.SupplierId);
+                for (int i = 0; i < create.Goods.Count; i++)
+                {
+                    var goodDto = create.Goods[i];
 
-            var updateResult = await _goodRepository.UpdateGoods(goodsExist);
+                    var validation = ValidationGoods(goodDto, existingCodesSet);
 
-            if (updateResult == null)
-                return ("Cập nhật hàng hoá thất bại.".ToMessageForUser(), new GoodsDto());
-            
-            _cacheService.InvalidateDropdownCache("goods", "supplier", updateResult.SupplierId);
+                    if (validation != null)
+                    {
+                        result.FailedItems.Add(new FailedItem
+                        {
+                            Index = i,
+                            Code = goodDto.GoodsCode,
+                            Error = validation.ToMessageForUser()
+                        });
+                        result.TotalFailed++;
+                        continue;
+                    }
 
-            return ("", _mapper.Map<GoodsDto>(goodsExist));
+                    var goods = _mapper.Map<Good>(goodDto);
+
+                    if (goodDto.GoodsPackingCreates.Any())
+                        goods.GoodsPackings = _mapper.Map<List<GoodsPacking>>(goodDto.GoodsPackingCreates);
+
+                    validGoods.Add(goods);
+
+                    existingCodesSet.Add(goodDto.GoodsCode);
+                }
+
+                if (validGoods.Any())
+                {
+                    await _unitOfWork.Goods.CreateGoodsBulk(validGoods);
+                    result.TotalInserted = validGoods.Count;
+                }
+                await _unitOfWork.CommitTransactionAsync();
+
+                return ("", result);
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
         }
 
-        public async Task<(string, GoodsUpdateStatus)> UpdateGoodsStatus(GoodsUpdateStatus update)
+        public async Task<(string, GoodsDto?)> UpdateGoods(GoodsUpdate update)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                if (update == null)
+                    return ("Goods update data is invalid", default);
+
+                var goodsExist = await _goodRepository.GetGoodsByGoodsId(update.GoodsId);
+
+                if (goodsExist == null)
+                    return ("Goods is not exist", default);
+
+                if (await IsGoodInUseAnyTransactionToUpdate(update.GoodsId))
+                    return ("Không thể cập nhật thông tin hàng hoá vì hàng hoá đang được sử dụng.".ToMessageForUser(), default);
+
+                _mapper.Map(update, goodsExist);
+
+                _cacheService.InvalidateDropdownCache("Goods", "Supplier", goodsExist.SupplierId);
+
+                var updateResult = await _goodRepository.UpdateGoods(goodsExist);
+
+                if (updateResult == null)
+                    return ("Cập nhật hàng hoá thất bại.".ToMessageForUser(), default);
+
+                _cacheService.InvalidateDropdownCache("Goods", "Supplier", updateResult.SupplierId);
+
+                var (msg, goodsPackingUpdates) = await _goodsPackingService.UpdateGoodsPacking(update.GoodsId, update.GoodsPackingUpdates);
+
+                if (!string.IsNullOrEmpty(msg))
+                    throw new Exception(msg);
+
+                await _unitOfWork.CommitTransactionAsync();
+
+                return ("", _mapper.Map<GoodsDto>(goodsExist));
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ($"{ex.Message}".ToMessageForUser(), default);
+            }
+        }
+
+        public async Task<(string, GoodsUpdateStatus?)> UpdateGoodsStatus(GoodsUpdateStatus update)
         {
             if (update.GoodsId <= 0)
-                return ("GoodsId is invalid.", new GoodsUpdateStatus());
+                return ("GoodsId is invalid.", default);
 
             var goodsExist = await _goodRepository.GetGoodsByGoodsId(update.GoodsId);
 
             if (goodsExist == null)
-                return ("Goods is not exist", new GoodsUpdateStatus());
+                return ("Goods is not exist", default);
 
             if (goodsExist.Status == CommonStatus.Deleted || update.Status == CommonStatus.Deleted)
-                return ("Hàng hoá đã bị xoá trước đó".ToMessageForUser(), new GoodsUpdateStatus());
+                return ("Hàng hoá đã bị xoá trước đó".ToMessageForUser(), default);
 
             bool isChangeStatus = goodsExist.Status != update.Status;
             if (!isChangeStatus)
-                return ("Hàng hoá không bị thay đổi trạng thái.".ToMessageForUser(), new GoodsUpdateStatus());
+                return ("Hàng hoá không bị thay đổi trạng thái.".ToMessageForUser(), default);
 
             if (goodsExist.Status == CommonStatus.Active && update.Status == CommonStatus.Inactive)
             {
                 if (await IsGoodInUseAnyTransaction(update.GoodsId))
-                    return ("Không thể vô hiệu hoá hàng hoá vì đang được sử dụng.".ToMessageForUser(), new GoodsUpdateStatus());
+                    return ("Không thể vô hiệu hoá hàng hoá vì đang được sử dụng.".ToMessageForUser(), default);
             }
 
             if (goodsExist.Status == CommonStatus.Inactive && update.Status == CommonStatus.Active)
             {
                 var activateError = await ActivateLinkedEntitiesAsync(update.GoodsId);
                 if (!string.IsNullOrEmpty(activateError))
-                    return (activateError, new GoodsUpdateStatus());
+                    return (activateError, default);
             }
 
-            _cacheService.InvalidateDropdownCache("goods", "supplier", goodsExist.SupplierId);
+            _cacheService.InvalidateDropdownCache("Goods", "Supplier", goodsExist.SupplierId);
 
             goodsExist.Status = update.Status;
             goodsExist.UpdateAt = DateTime.Now;
 
             var updateResult = await _goodRepository.UpdateGoods(goodsExist);
             if (updateResult == null)
-                return ("Cập nhật hàng hoá thất bại.".ToMessageForUser(), new GoodsUpdateStatus());
+                return ("Cập nhật hàng hoá thất bại.".ToMessageForUser(), default);
 
-            _cacheService.InvalidateDropdownCache("goods", "supplier", updateResult.SupplierId);
+            _cacheService.InvalidateDropdownCache("Goods", "Supplier", updateResult.SupplierId);
 
             return ("", update);
         }
 
-        public async Task<(string, GoodsDto)> DeleteGoods(int goodsId)
+        public async Task<(string, GoodsDto?)> DeleteGoods(int goodsId)
         {
             if (goodsId <= 0)
-                return ("GoodsId is invalid.", new GoodsDto());
+                return ("GoodsId is invalid.", default);
 
             var goodsExist = await _goodRepository.GetGoodsByGoodsId(goodsId);
 
             if (goodsExist == null)
-                return ("Goods is not found", new GoodsDto());
+                return ("Goods is not found", default);
 
             if (await CheckValidationDeleteGoods(goodsId))
-                return ("Không thể xoá hàng hoá vì đang được sử dụng trong lô hàng, đơn nhập hoặc đơn mua hàng đang hoạt động.".ToMessageForUser(), new GoodsDto());
+                return ("Không thể xoá hàng hoá vì đang được sử dụng trong lô hàng, đơn nhập hoặc đơn mua hàng đang hoạt động.".ToMessageForUser(), default);
 
             goodsExist.Status = CommonStatus.Deleted;
             goodsExist.UpdateAt = DateTime.Now;
 
             var resultDelete = await _goodRepository.UpdateGoods(goodsExist);
-            
-            if (resultDelete == null)
-                return ("Xoá hàng hoá thất bại.".ToMessageForUser(), new GoodsDto());
 
-            _cacheService.InvalidateDropdownCache("goods", "supplier", goodsExist.SupplierId);
+            if (resultDelete == null)
+                return ("Xoá hàng hoá thất bại.".ToMessageForUser(), default);
+
+            _cacheService.InvalidateDropdownCache("Goods", "Supplier", goodsExist.SupplierId);
 
             return ("", _mapper.Map<GoodsDto>(goodsExist));
+        }
+
+        private string? ValidationGoods(GoodsCreateBulkDto create, HashSet<string> existingGoodsCode)
+        {
+            if (existingGoodsCode.Contains(create.GoodsCode))
+                return "Mã sản phẩm đã tồn tại trong hệ thống";
+
+            if (string.IsNullOrWhiteSpace(create.GoodsName))
+                return "Tên sản phẩm không được để trống";
+
+            if (create.GoodsName.Length > 255)
+                return "Độ dài tên sản phẩm không được vượt quá 255 ký tự";
+
+            if (!Regex.IsMatch(create.GoodsName, @"^[\p{L}0-9\s_\-.,]+$"))
+                return "Tên sản phẩm không được chứa các ký tự đặc biệt";
+
+            if (create.CategoryId <= 0)
+                return "Loại sản phẩm không được để trống";
+
+            if (create.SupplierId <= 0)
+                return "Nhà cung cấp không được để trống";
+
+            if (create.StorageConditionId <= 0)
+                return "Điều kiện lưu trữ không được để trống";
+
+            if (create.UnitMeasureId <= 0)
+                return "Đơn vị sản phẩm không được để trống";
+
+            if (create.GoodsPackingCreates.Count() >= 1)
+            {
+                if (IsCheckDuplicationGoodsPacking(create.GoodsPackingCreates))
+                    return "Số lượng đóng gói hàng hoá bị trùng lặp.";
+            }
+            else
+            {
+                return "Danh sách đóng gói hàng hoá trống.";
+            }
+
+            return null;
         }
 
         private async Task<bool> CheckValidationDeleteGoods(int goodsId)
@@ -271,110 +466,14 @@ namespace MilkDistributionWarehouse.Services
             return string.Empty;
         }
 
-        public async Task<(string, GoodsBulkdResponse)> CreateGoodsBulk(GoodsBulkCreate create)
+        private bool IsCheckDuplicationGoodsPacking(List<GoodsPackingCreate> goodsPackingCreate)
         {
-            var result = new GoodsBulkdResponse();
-            try
-            {
-                await _unitOfWork.BeginTransactionAsync();
+            if (goodsPackingCreate == null || goodsPackingCreate.Count == 0)
+                return false;
 
-                var goodsCodeCreate = create.Goods.Select(g => g.GoodsCode).ToList();
-
-                var existingGoodsCode = await _goodRepository.GetExistingGoodsCode(goodsCodeCreate);
-
-                var existingCodesSet = new HashSet<string>(existingGoodsCode);
-
-                var validGoods = new List<Good>();
-
-                for (int i = 0; i < create.Goods.Count; i++)
-                {
-                    var goodDto = create.Goods[i];
-
-                    var validation = ValidationGoods(goodDto, existingCodesSet);
-
-                    if (validation != null)
-                    {
-                        result.FailedItems.Add(new FailedItem
-                        {
-                            Index = i,
-                            Code = goodDto.GoodsCode,
-                            Error = validation.ToMessageForUser()
-                        });
-                        result.TotalFailed++;
-                        continue;
-                    }
-
-                    var goods = _mapper.Map<Good>(goodDto);
-                    validGoods.Add(goods);
-
-                    existingCodesSet.Add(goodDto.GoodsCode);
-                }
-
-                if (validGoods.Any())
-                {
-                    await _unitOfWork.Goods.CreateGoodsBulk(validGoods);
-                    result.TotalInserted = validGoods.Count;
-                }
-                await _unitOfWork.CommitTransactionAsync();
-
-                return ("", result);
-            }
-            catch
-            {
-                await _unitOfWork.RollbackTransactionAsync();
-                throw;
-            }
+            return goodsPackingCreate
+                .GroupBy(x => x.UnitPerPackage)
+                .Any(g => g.Count() > 1);
         }
-
-        public async Task<(string, List<GoodsDropDownAndUnitMeasure>?)> GetGoodsDropDownBySupplierId(int supplierId)
-        {
-            var cacheKey = _cacheService.GenerateDropdownCacheKey("goods", "supplier", supplierId);
-
-            var result = await _cacheService.GetOrCreatedAsync(cacheKey, async () =>
-            {
-                var goodsQuery = _goodRepository.GetGoods()
-                    .Where(g => g.Status == CommonStatus.Active && g.SupplierId == supplierId);
-
-                var goodsDropDowns = goodsQuery.ProjectTo<GoodsDropDownAndUnitMeasure>(_mapper.ConfigurationProvider);
-
-                return await goodsDropDowns.ToListAsync();
-            }, 30, 10);
-
-            if (!result.Any())
-                return ("Danh sách thả xuống hàng hoá trống.".ToMessageForUser(), default);
-
-            return ("", result);
-        }
-        private string? ValidationGoods(GoodsCreateBulkDto create, HashSet<string> existingGoodsCode)
-        {
-            if (existingGoodsCode.Contains(create.GoodsCode))
-                return "Mã sản phẩm đã tồn tại trong hệ thống";
-
-            if (string.IsNullOrWhiteSpace(create.GoodsName))
-                return "Tên sản phẩm không được để trống";
-
-            if (create.GoodsName.Length > 255)
-                return "Độ dài tên sản phẩm không được vượt quá 255 ký tự";
-
-            if (!Regex.IsMatch(create.GoodsName, @"^[\p{L}0-9\s_\-.,]+$"))
-                return "Tên sản phẩm không được chứa các ký tự đặc biệt";
-
-            if (create.CategoryId <= 0)
-                return "Loại sản phẩm không được để trống";
-
-            if (create.SupplierId <= 0)
-                return "Nhà cung cấp không được để trống";
-
-            if (create.StorageConditionId <= 0)
-                return "Điều kiện lưu trữ không được để trống";
-
-            if (create.UnitMeasureId <= 0)
-                return "Đơn vị sản phẩm không được để trống";
-
-            return null;
-        }
-
-
-
     }
 }

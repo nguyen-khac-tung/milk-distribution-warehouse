@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Card, CardContent } from "../../components/ui/card";
 import Pagination from "../../components/Common/Pagination";
 import { Table as CustomTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
@@ -26,6 +26,7 @@ const BatchList = () => {
     const [sortField, setSortField] = useState("");
     const [sortAscending, setSortAscending] = useState(true);
     const [showPageSizeFilter, setShowPageSizeFilter] = useState(false);
+    const [statusSearchQuery, setStatusSearchQuery] = useState("");
 
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showUpdateModal, setShowUpdateModal] = useState(false);
@@ -91,6 +92,7 @@ const BatchList = () => {
         const handleClickOutside = (event) => {
             if (showStatusFilter && !event.target.closest('.status-filter-dropdown')) {
                 setShowStatusFilter(false);
+                setStatusSearchQuery("");
             }
             if (showPageSizeFilter && !event.target.closest('.page-size-filter-dropdown')) {
                 setShowPageSizeFilter(false);
@@ -110,14 +112,31 @@ const BatchList = () => {
         return () => clearTimeout(t);
     }, [searchQuery]);
 
+    // Filter status options based on search query
+    const filteredStatusOptions = useMemo(() => {
+        const statusOptions = [
+            { value: "", label: "Tất cả trạng thái" },
+            { value: "1", label: "Hoạt động" },
+            { value: "2", label: "Ngừng hoạt động" }
+        ]
+        if (!statusSearchQuery) return statusOptions
+        const query = statusSearchQuery.toLowerCase()
+        return statusOptions.filter(option => 
+            option.label.toLowerCase().includes(query)
+        )
+    }, [statusSearchQuery])
+
     const handleStatusFilter = (value) => {
         setStatusFilter(value);
+        setShowStatusFilter(false);
+        setStatusSearchQuery("");
         setSearchLoading(true);
         fetchBatches({ pageNumber: 1, status: value });
     };
 
     const clearStatusFilter = () => {
         setStatusFilter("");
+        setStatusSearchQuery("");
         setSearchLoading(true);
         fetchBatches({ pageNumber: 1, status: "" });
     };
@@ -135,10 +154,20 @@ const BatchList = () => {
     const handleClearAllFilters = () => {
         setSearchQuery("")
         setStatusFilter("")
+        setStatusSearchQuery("")
         setShowStatusFilter(false)
     }
 
     const clearAllFilters = handleClearAllFilters
+
+    const handleClearAll = () => {
+        setSearchQuery("");
+        setStatusFilter("");
+        setStatusSearchQuery("");
+        setShowStatusFilter(false);
+        setSearchLoading(true);
+        fetchBatches({ pageNumber: 1, search: "", status: "" });
+    };
 
     const handleSort = (field) => {
         if (sortField === field) {
@@ -252,11 +281,11 @@ const BatchList = () => {
                         ]}
                         onStatusFilter={handleStatusFilter}
                         clearStatusFilter={clearStatusFilter}
-                        onClearAll={() => {
-                            setSearchQuery("");
-                            setStatusFilter("");
-                            setShowStatusFilter(false);
-                        }}
+                        enableStatusSearch={true}
+                        statusSearchQuery={statusSearchQuery}
+                        setStatusSearchQuery={setStatusSearchQuery}
+                        filteredStatusOptions={filteredStatusOptions}
+                        onClearAll={handleClearAll}
                         searchWidth="w-80"
                         showToggle={true}
                         defaultOpen={true}
@@ -305,7 +334,7 @@ const BatchList = () => {
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                                                 Ngày hết hạn
                                             </TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-48">
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-22">
                                                 Trạng thái
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
@@ -334,9 +363,17 @@ const BatchList = () => {
                                                                 : batch.description
                                                             : ""}
                                                     </TableCell>
-                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">{batch?.manufacturingDate || ''}</TableCell>
-                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">{batch?.expiryDate || ''}</TableCell>
-                                                    <TableCell className="px-6 py-4 text-center">
+                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">
+                                                        {batch?.manufacturingDate
+                                                            ? new Date(batch.manufacturingDate).toLocaleDateString('vi-VN')
+                                                            : ''}
+                                                    </TableCell>
+                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">
+                                                        {batch?.expiryDate
+                                                            ? new Date(batch.expiryDate).toLocaleDateString('vi-VN')
+                                                            : ''}
+                                                    </TableCell>
+                                                    <TableCell className="px-6 py-4 text-center w-22">
                                                         <div className="flex justify-center">
                                                             <StatusToggle
                                                                 status={batch?.status}

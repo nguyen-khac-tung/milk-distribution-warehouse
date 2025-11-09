@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MilkDistributionWarehouse.Constants;
+using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 
 namespace MilkDistributionWarehouse.Repositories
@@ -8,6 +9,7 @@ namespace MilkDistributionWarehouse.Repositories
     {
         IQueryable<Area>? GetAreas();
         Task<Area?> GetAreaById(int areaId);
+        Task<List<AreaDto.AreaLocationAvailableDto>> GetAvailableLocationCountByAreaAsync();
         Task<Area?> CreateArea(Area entity);
         Task<Area?> UpdateArea(Area entity);
         Task<bool> IsDuplicateAreaCode(string areaCode);
@@ -40,6 +42,20 @@ namespace MilkDistributionWarehouse.Repositories
                 .Where(a => a.AreaId == areaId && a.Status != CommonStatus.Deleted)
                 .AsNoTracking()
                 .FirstOrDefaultAsync();
+        }
+        public async Task<List<AreaDto.AreaLocationAvailableDto>> GetAvailableLocationCountByAreaAsync()
+        {
+            return await _context.Areas
+                .Where(a => a.Status == CommonStatus.Active)
+                .Select(a => new AreaDto.AreaLocationAvailableDto
+                {
+                    AreaId = a.AreaId,
+                    AreaName = a.AreaName,
+                    TotalLocations = a.Locations.Count(l => l.Status == CommonStatus.Active),
+                    AvailableLocationCount = a.Locations.Count(l => l.IsAvailable == true && l.Status == CommonStatus.Active)
+                })
+                .AsNoTracking()
+                .ToListAsync();
         }
 
         public async Task<Area?> CreateArea(Area entity)

@@ -83,6 +83,35 @@ export function ProductDetail({ product, onClose }) {
             </Card>
           </div>
 
+          {/* Packing Information Card - Full Width */}
+          {product.goodsPackings && product.goodsPackings.length > 0 && (
+            <Card className="mt-6 bg-gray-50 shadow-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
+                  <ComponentIcon name="package" size={20} color="#374151" />
+                  Thông tin đóng gói
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {product.goodsPackings.map((packing, index) => (
+                    <div key={packing.goodsPackingId || index} className="rounded-lg bg-white p-4 border border-gray-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <ComponentIcon name="box" size={20} color="#6b7280" />
+                        <span className="text-sm font-medium text-slate-600">Đóng gói</span>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-bold text-slate-800">{packing.unitPerPackage}</span>
+                        <span className="text-slate-500 text-sm">{product.unitMeasureName || 'đơn vị'}</span>
+                      </div>
+                      <p className="mt-1 text-xs text-slate-500">Số {product.unitMeasureName || 'đơn vị'} trên 1 thùng</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Storage Conditions Card - Full Width */}
           <Card className="mt-6 bg-gray-50 shadow-sm">
             <CardHeader>

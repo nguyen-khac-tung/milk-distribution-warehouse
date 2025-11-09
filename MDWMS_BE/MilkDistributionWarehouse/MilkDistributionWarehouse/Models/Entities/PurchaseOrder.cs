@@ -7,7 +7,7 @@ namespace MilkDistributionWarehouse.Models.Entities;
 
 public partial class PurchaseOrder
 {
-    public Guid PurchaseOderId { get; set; }
+    public string PurchaseOderId { get; set; }
 
     public int? Status { get; set; }
 
@@ -21,9 +21,23 @@ public partial class PurchaseOrder
 
     public int? AssignTo { get; set; }
 
+    public string Note { get; set; }
+
+    public string RejectionReason { get; set; }
+
+    public DateTime? EstimatedTimeArrival { get; set; }
+
+    public string DeliveryDateChangeReason { get; set; }
+
     public DateTime? CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
+
+    public DateTime? ApprovedAt { get; set; }
+
+    public DateTime? ArrivalConfirmedAt { get; set; }
+
+    public DateTime? AssignedAt { get; set; }
 
     public virtual User ApprovalByNavigation { get; set; }
 
@@ -34,8 +48,6 @@ public partial class PurchaseOrder
     public virtual User CreatedByNavigation { get; set; }
 
     public virtual ICollection<GoodsReceiptNote> GoodsReceiptNotes { get; set; } = new List<GoodsReceiptNote>();
-
-    public virtual ICollection<Pallet> Pallets { get; set; } = new List<Pallet>();
 
     public virtual ICollection<PurchaseOderDetail> PurchaseOderDetails { get; set; } = new List<PurchaseOderDetail>();
 

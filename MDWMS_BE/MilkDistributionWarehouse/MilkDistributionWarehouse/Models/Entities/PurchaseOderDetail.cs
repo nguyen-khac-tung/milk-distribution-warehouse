@@ -9,13 +9,17 @@ public partial class PurchaseOderDetail
 {
     public int PurchaseOrderDetailId { get; set; }
 
-    public Guid PurchaseOderId { get; set; }
+    public string PurchaseOderId { get; set; }
 
     public int GoodsId { get; set; }
 
-    public int? Quantity { get; set; }
+    public int? GoodsPackingId { get; set; }
+
+    public int? PackageQuantity { get; set; }
 
     public virtual Good Goods { get; set; }
+
+    public virtual GoodsPacking GoodsPacking { get; set; }
 
     public virtual PurchaseOrder PurchaseOder { get; set; }
 }

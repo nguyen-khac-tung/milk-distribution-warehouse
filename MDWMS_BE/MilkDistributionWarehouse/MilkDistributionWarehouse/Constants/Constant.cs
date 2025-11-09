@@ -31,6 +31,8 @@
         public const int Receiving = 7;
         public const int Inspected = 8;
         public const int Completed = 9;
+        public const int Ordered = 10;
+        public const int AwaitingArrival = 11;
     }
 
     /// <summary>
@@ -38,7 +40,7 @@
     /// </summary>
     public static class GoodsReceiptNoteStatus
     {
-        public const int Draft = 1;
+        public const int Receiving = 1;
         public const int PendingApproval = 2;
         public const int Completed = 3;
     }
@@ -73,7 +75,7 @@
     /// </summary>
     public static class GoodsIssueNoteStatus
     {
-        public const int Draft = 1;
+        public const int Picking = 1;
         public const int PendingApproval = 2;
         public const int Completed = 3;
     }
@@ -87,6 +89,15 @@
         public const int Picked = 2;
         public const int PendingApproval = 3;
         public const int Completed = 4;
+    }
+
+    /// <summary>
+    /// Các trạng thái của PickAllocation
+    /// </summary>
+    public static class PickAllocationStatus
+    {
+        public const int UnScanned = 1;
+        public const int Scanned = 2;
     }
 
     /// <summary>
@@ -104,7 +115,19 @@
     /// </summary>
     public static class BackOrderStatus
     {
-        public const int Available = 1;
-        public const int Unavailable = 2;
+        public const string Available = "Available";
+        public const string Unavailable = "Unavailable";
     }
+
+    public static class RoleNames
+    {
+        public const string SalesRepresentative = "Sales Representative";
+        public const string SalesManager = "Sale Manager";
+        public const string WarehouseManager = "Warehouse Manager";
+        public const string WarehouseStaff = "Warehouse Staff";
+        public const string Administrator = "Administrator";
+        public const string BusinessOwner = "Business Owner";
+    }
+
+    
 }

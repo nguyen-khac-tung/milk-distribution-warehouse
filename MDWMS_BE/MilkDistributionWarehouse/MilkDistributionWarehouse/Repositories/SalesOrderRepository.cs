@@ -9,8 +9,14 @@ namespace MilkDistributionWarehouse.Repositories
 
     public interface ISalesOrderRepository
     {
+        IQueryable<SalesOrder> GetAllSalesOrders();
+        IQueryable<SalesOrder> GetListSalesOrdersByStatus(int status);
+        Task<SalesOrder?> GetSalesOrderById(Guid? id);
         Task<bool> HasActiveSalesOrder(int retailerId);
         Task<bool> IsAllSalesOrderDraffOrEmpty(int retailerId);
+        Task CreateSalesOrder(SalesOrder salesOrder);
+        Task UpdateSalesOrder(SalesOrder salesOrder);
+        Task DeleteSalesOrder(SalesOrder salesOrder);
     }
     public class SalesOrderRepository : ISalesOrderRepository
     {
@@ -20,11 +26,51 @@ namespace MilkDistributionWarehouse.Repositories
             _context = context;
         }
 
+        public IQueryable<SalesOrder> GetAllSalesOrders()
+        {
+            return _context.SalesOrders
+                .Include(s => s.Retailer)
+                .Include(s => s.CreatedByNavigation)
+                .Include(s => s.ApprovalByNavigation)
+                .Include(s => s.AcknowledgedByNavigation)
+                .Include(s => s.AssignToNavigation)
+                .Include(s => s.SalesOrderDetails)
+                .OrderByDescending(s => s.CreatedAt)
+                .AsNoTracking();
+        }
+
+        public IQueryable<SalesOrder> GetListSalesOrdersByStatus(int status)
+        {
+            return _context.SalesOrders
+                    .Include(s => s.Retailer)
+                    .Include(s => s.SalesOrderDetails)
+                    .Where(s => s.Status == status);
+        }
+
+        public async Task<SalesOrder?> GetSalesOrderById(Guid? id)
+        {
+            return await _context.SalesOrders
+                .Include(s => s.Retailer)
+                .Include(s => s.CreatedByNavigation)
+                .Include(s => s.ApprovalByNavigation)
+                .Include(s => s.AcknowledgedByNavigation)
+                .Include(s => s.AssignToNavigation)
+                .Include(s => s.SalesOrderDetails)
+                    .ThenInclude(d => d.Goods)
+                        .ThenInclude(g => g.Supplier)
+                .Include(s => s.SalesOrderDetails)
+                    .ThenInclude(d => d.Goods)
+                        .ThenInclude(g => g.UnitMeasure)
+                .Include(s => s.SalesOrderDetails)
+                    .ThenInclude(d => d.GoodsPacking)
+                .Where(s => s.SalesOrderId == id).FirstOrDefaultAsync();
+        }
+
         public async Task<bool> HasActiveSalesOrder(int retailerId)
         {
             return await _context.SalesOrders
                 .AnyAsync(so => so.RetailerId == retailerId
-                && so.Status != SalesOrderStatus.Draft 
+                && so.Status != SalesOrderStatus.Draft
                 && so.Status != SalesOrderStatus.Completed);
         }
 
@@ -32,6 +78,23 @@ namespace MilkDistributionWarehouse.Repositories
         {
             var salesOrder = _context.SalesOrders.Where(so => so.RetailerId == retailerId);
             return !await salesOrder.AnyAsync(so => so.Status != SalesOrderStatus.Draft);
+        }
+
+        public async Task CreateSalesOrder(SalesOrder salesOrder)
+        {
+            await _context.SalesOrders.AddAsync(salesOrder);
+        }
+
+        public async Task UpdateSalesOrder(SalesOrder salesOrder)
+        {
+            _context.SalesOrders.Update(salesOrder);
+            await Task.CompletedTask;
+        }
+
+        public async Task DeleteSalesOrder(SalesOrder salesOrder)
+        {
+            _context.SalesOrders.Remove(salesOrder);
+            await Task.CompletedTask;
         }
     }
 }

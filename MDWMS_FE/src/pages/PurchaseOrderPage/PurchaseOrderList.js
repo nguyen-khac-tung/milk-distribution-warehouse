@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "../../components/ui/card";
-import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
 import { Search, Plus, Edit, Trash2, Eye, ArrowUp, ArrowDown, ArrowUpDown, Package } from "lucide-react";
@@ -10,25 +9,18 @@ import EmptyState from "../../components/Common/EmptyState";
 import Pagination from "../../components/Common/Pagination";
 import PurchaseOrderFilterToggle from "../../components/PurchaseOrderComponents/PurchaseOrderFilterToggle";
 import PurchaseOrderStatsChart from "../../components/PurchaseOrderComponents/PurchaseOrderStatsChart";
-import StatusDisplay, { PURCHASE_ORDER_STATUS, STATUS_LABELS } from "../../components/PurchaseOrderComponents/StatusDisplay";
+import StatusDisplay, { STATUS_LABELS } from "../../components/PurchaseOrderComponents/StatusDisplay";
+import { PURCHASE_ORDER_STATUS } from "../../utils/permissions";
 import PurchaseOrderTable from "./PurchaseOrderTable";
-import { useFilterDisplayLogic } from "./FilterDisplayLogic";
-import { getPurchaseOrderSaleRepresentatives, getPurchaseOrderSaleManagers, getPurchaseOrderWarehouseManagers, getPurchaseOrderWarehouseStaff } from "../../services/PurchaseOrderService";
+import DeleteModal from "../../components/Common/DeleteModal";
+import { extractErrorMessage } from "../../utils/Validation";
+import { getPurchaseOrderSaleRepresentatives, getPurchaseOrderSaleManagers, getPurchaseOrderWarehouseManagers, getPurchaseOrderWarehouseStaff, deletePurchaseOrder } from "../../services/PurchaseOrderService";
 import { getSuppliersDropdown } from "../../services/SupplierService";
+import { getUserDropDownByRoleName } from "../../services/AccountService";
 import { PERMISSIONS } from "../../utils/permissions";
 import { usePermissions } from "../../hooks/usePermissions";
 import PermissionWrapper from "../../components/Common/PermissionWrapper";
 
-
-
-const sampleUsers = [
-  { userId: 1, fullName: "Nguyen Van A" },
-  { userId: 2, fullName: "Tran Thi B" },
-  { userId: 3, fullName: "Le Van C" },
-  { userId: 4, fullName: "Pham Thi D" },
-  { userId: 5, fullName: "Hoang Van E" },
-  { userId: 6, fullName: "representative 6" }
-];
 
 export default function PurchaseOrderList() {
   const navigate = useNavigate();
@@ -39,6 +31,10 @@ export default function PurchaseOrderList() {
   const [loading, setLoading] = useState(true);
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
+  const [approvers, setApprovers] = useState([]);
+  const [creators, setCreators] = useState([]);
+  const [confirmers, setConfirmers] = useState([]);
+  const [assignees, setAssignees] = useState([]);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -67,6 +63,11 @@ export default function PurchaseOrderList() {
   const [hasInitialLoad, setHasInitialLoad] = useState(false);
   const [apiCallCount, setApiCallCount] = useState(0);
 
+  // Delete modal states
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedPurchaseOrder, setSelectedPurchaseOrder] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   // Fetch data from API
   const fetchSuppliers = async () => {
     try {
@@ -77,6 +78,34 @@ export default function PurchaseOrderList() {
     } catch (error) {
       console.error("Error fetching suppliers:", error);
     }
+  };
+
+  // Fetch users by role name
+  const fetchUsersByRole = async (roleName, setter) => {
+    try {
+      const response = await getUserDropDownByRoleName(roleName);
+      if (response && response.data && Array.isArray(response.data)) {
+        setter(response.data);
+      }
+    } catch (error) {
+      console.error(`Error fetching users for role ${roleName}:`, error);
+      setter([]);
+    }
+  };
+
+  // Fetch all users for filters
+  const fetchAllUsers = async () => {
+    // Fetch approvers (Sales Manager role)
+    await fetchUsersByRole("Sale Manager", setApprovers);
+
+    // Fetch creators (Sales Representative role)
+    await fetchUsersByRole("Sales Representative", setCreators);
+
+    // Fetch confirmers (Warehouse Manager role)
+    await fetchUsersByRole("Warehouse Manager", setConfirmers);
+
+    // Fetch assignees (Warehouse Staff role)
+    await fetchUsersByRole("Warehouse Staff", setAssignees);
   };
 
   const fetchDataWithParams = async (params) => {
@@ -113,16 +142,24 @@ export default function PurchaseOrderList() {
       }
 
       if (response && response.data && response.data.items && Array.isArray(response.data.items)) {
+        console.log("=== PAGINATION UPDATE ===");
+        console.log("Total count:", response.data.totalCount);
+        console.log("Page number:", response.data.pageNumber);
+        console.log("Total pages:", response.data.totalPages);
+
         setPurchaseOrders(response.data.items);
         setPagination(prev => ({
           ...prev,
-          total: response.data.totalCount || 0
+          total: response.data.totalCount || 0,
+          current: response.data.pageNumber || 1
         }));
       } else {
+        console.log("No valid data found");
         setPurchaseOrders([]);
-        setPagination(prev => ({ ...prev, total: 0 }));
+        setPagination(prev => ({ ...prev, total: 0, current: 1 }));
       }
     } catch (error) {
+      console.error("Error fetching purchase orders:", error);
       setPurchaseOrders([]);
       setPagination(prev => ({ ...prev, total: 0 }));
     } finally {
@@ -130,8 +167,19 @@ export default function PurchaseOrderList() {
     }
   };
 
-  const fetchData = async () => {
-    const requestParams = {
+  // Helper function để tạo request params
+  const createRequestParams = (overrides = {}) => {
+    // Format createdAt từ dateRangeFilter
+    let createdAtFilter = "";
+    if (dateRangeFilter.fromDate && dateRangeFilter.toDate) {
+      createdAtFilter = `${dateRangeFilter.fromDate}~${dateRangeFilter.toDate}`;
+    } else if (dateRangeFilter.fromDate) {
+      createdAtFilter = `${dateRangeFilter.fromDate}~`;
+    } else if (dateRangeFilter.toDate) {
+      createdAtFilter = `~${dateRangeFilter.toDate}`;
+    }
+
+    return {
       pageNumber: pagination.current,
       pageSize: pagination.pageSize,
       search: searchQuery,
@@ -143,9 +191,29 @@ export default function PurchaseOrderList() {
       createdBy: creatorFilter,
       arrivalConfirmedBy: confirmerFilter,
       assignTo: assigneeFilter,
-      fromDate: dateRangeFilter.fromDate,
-      toDate: dateRangeFilter.toDate
+      createdAt: createdAtFilter,
+      ...overrides // Override với giá trị mới
     };
+  };
+
+  const fetchData = async () => {
+    const requestParams = createRequestParams();
+
+    // Log dữ liệu search được gửi từ frontend
+    console.log("=== FRONTEND SEARCH PARAMS ===");
+    console.log("Request Params:", requestParams);
+    console.log("Search Query:", searchQuery);
+    console.log("Status Filter:", statusFilter);
+    console.log("Supplier Filter:", supplierFilter);
+    console.log("Approver Filter:", approverFilter);
+    console.log("Creator Filter:", creatorFilter);
+    console.log("Confirmer Filter:", confirmerFilter);
+    console.log("Assignee Filter:", assigneeFilter);
+    console.log("Date Range Filter:", dateRangeFilter);
+    console.log("Created At Filter:", requestParams.createdAt);
+    console.log("Sort Field:", sortField);
+    console.log("Sort Ascending:", sortAscending);
+    console.log("===============================");
 
     return await fetchDataWithParams(requestParams);
   };
@@ -153,6 +221,7 @@ export default function PurchaseOrderList() {
   // Initial load
   useEffect(() => {
     fetchSuppliers();
+    fetchAllUsers();
     if (!hasInitialLoad) {
       console.log("=== INITIAL LOAD START ===");
       console.log("API Call Count before initial load:", apiCallCount);
@@ -161,107 +230,45 @@ export default function PurchaseOrderList() {
     }
   }, [hasInitialLoad]);
 
-  // Trigger search/filter when filters change (skip initial load)
+  // Trigger search when search query changes (skip initial load)
   useEffect(() => {
     // Chỉ gọi API sau khi đã load dữ liệu ban đầu
     if (!hasInitialLoad) return;
 
-    // Chỉ gọi fetchData() khi có filter thực sự active (không phải empty string)
-    const hasActiveFilters = searchQuery.trim() ||
-      (statusFilter && statusFilter !== "") ||
-      (supplierFilter && supplierFilter !== "") ||
-      (approverFilter && approverFilter !== "") ||
-      (creatorFilter && creatorFilter !== "") ||
-      (confirmerFilter && confirmerFilter !== "") ||
-      (assigneeFilter && assigneeFilter !== "") ||
-      (dateRangeFilter.fromDate && dateRangeFilter.fromDate !== "") ||
-      (dateRangeFilter.toDate && dateRangeFilter.toDate !== "");
-
-    // Chỉ gọi API khi có filter thực sự active
-    if (hasActiveFilters) {
-      console.log("=== FILTER CHANGE DETECTED ===");
-      console.log("API Call Count before filter:", apiCallCount);
+    // Chỉ gọi fetchData() khi có search query thực sự active
+    if (searchQuery.trim()) {
+      console.log("=== SEARCH CHANGE DETECTED ===");
+      console.log("API Call Count before search:", apiCallCount);
       fetchData();
     }
-  }, [hasInitialLoad, searchQuery, statusFilter, supplierFilter, approverFilter, creatorFilter, confirmerFilter, assigneeFilter, dateRangeFilter]);
+  }, [hasInitialLoad, searchQuery]);
 
-  // Filter and sort data
-  const filteredPurchaseOrders = useMemo(() => {
-    if (!Array.isArray(purchaseOrders)) {
-      return [];
-    }
-    return purchaseOrders.filter(order => {
-      const searchLower = searchQuery.toLowerCase();
-      const matchesSearch = (
-        (order.purchaseOrderId || '').toLowerCase().includes(searchLower) ||
-        (order.supplierName || '').toLowerCase().includes(searchLower) ||
-        (order.creatorName || '').toLowerCase().includes(searchLower) ||
-        (STATUS_LABELS[order.status] || '').toLowerCase().includes(searchLower)
-      );
+  // Filter được xử lý ở backend, không cần filter ở frontend nữa
+  const filteredPurchaseOrders = purchaseOrders;
 
-      const matchesStatus = !statusFilter || (order.status || '').toString() === statusFilter;
-      const matchesSupplier = !supplierFilter || (order.supplierId || '').toString() === supplierFilter;
-      const matchesApprover = !approverFilter || (order.approvalBy || '').toString() === approverFilter;
-      const matchesCreator = !creatorFilter || (order.createdBy || '').toString() === creatorFilter;
-      const matchesConfirmer = !confirmerFilter || (order.arrivalConfirmedBy || '').toString() === confirmerFilter;
-      const matchesAssignee = !assigneeFilter || (order.assignTo || '').toString() === assigneeFilter;
-
-      // Date range filter
-      let matchesDateRange = true;
-      if (dateRangeFilter.fromDate || dateRangeFilter.toDate) {
-        const orderDate = new Date(order.createdAt);
-        if (dateRangeFilter.fromDate) {
-          const fromDate = new Date(dateRangeFilter.fromDate);
-          matchesDateRange = matchesDateRange && orderDate >= fromDate;
-        }
-        if (dateRangeFilter.toDate) {
-          const toDate = new Date(dateRangeFilter.toDate);
-          toDate.setHours(23, 59, 59, 999); // Include the entire day
-          matchesDateRange = matchesDateRange && orderDate <= toDate;
-        }
-      }
-
-      return matchesSearch && matchesStatus && matchesSupplier && matchesApprover &&
-        matchesCreator && matchesConfirmer && matchesAssignee && matchesDateRange;
-    });
-  }, [purchaseOrders, searchQuery, statusFilter, supplierFilter, approverFilter, creatorFilter, confirmerFilter, assigneeFilter, dateRangeFilter]);
-
-  // Sort data
-  const sortedPurchaseOrders = useMemo(() => {
-    return [...filteredPurchaseOrders].sort((a, b) => {
-      if (!sortField) return 0;
-
-      let aValue = a[sortField];
-      let bValue = b[sortField];
-
-      if (sortField === 'createdAt' || sortField === 'updatedAt') {
-        aValue = new Date(aValue);
-        bValue = new Date(bValue);
-      }
-
-      if (aValue < bValue) return sortAscending ? -1 : 1;
-      if (aValue > bValue) return sortAscending ? 1 : -1;
-      return 0;
-    });
-  }, [filteredPurchaseOrders, sortField, sortAscending]);
+  // Sort được xử lý ở backend, không cần sort ở frontend nữa
+  const sortedPurchaseOrders = filteredPurchaseOrders;
 
 
-  // Update total count when filtered data changes
-  React.useEffect(() => {
-    setPagination(prev => ({
-      ...prev,
-      total: (filteredPurchaseOrders || []).length,
-      current: 1 // Reset to first page when filter changes
-    }));
-  }, [(filteredPurchaseOrders || []).length]);
 
   const handleSort = (field) => {
+    let newSortAscending = true;
+
     if (sortField === field) {
-      setSortAscending(!sortAscending);
-    } else {
-      setSortField(field);
-      setSortAscending(true);
+      newSortAscending = !sortAscending;
     }
+
+    setSortField(field);
+    setSortAscending(newSortAscending);
+
+    // Gọi API với sort mới
+    const requestParams = createRequestParams({
+      pageNumber: 1, // Reset về trang 1 khi sort
+      sortField: field,
+      sortAscending: newSortAscending
+    });
+
+    fetchDataWithParams(requestParams);
   };
 
   const handleViewClick = (order) => {
@@ -269,30 +276,156 @@ export default function PurchaseOrderList() {
   };
 
   const handleEditClick = (order) => {
+    // Navigate to update page with order ID
+    navigate(`/purchase-orders/update/${order.purchaseOderId}`);
   };
 
   const handleDeleteClick = (order) => {
+    setSelectedPurchaseOrder(order);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedPurchaseOrder) return;
+
+    console.log("=== DELETE CONFIRM ===");
+    console.log("Selected purchase order:", selectedPurchaseOrder);
+    console.log("All keys:", Object.keys(selectedPurchaseOrder));
+
+    setDeleteLoading(true);
+    try {
+      const orderId = selectedPurchaseOrder.purchaseOderId;
+
+      if (!orderId) {
+        console.error("No valid ID found. Available fields:", Object.keys(selectedPurchaseOrder));
+        throw new Error("Không tìm thấy ID của đơn mua hàng");
+      }
+
+      await deletePurchaseOrder(orderId);
+
+      // Show success message
+      if (window.showToast) {
+        window.showToast("Xóa đơn mua hàng thành công!", "success");
+      }
+
+      // Close modal and refresh data
+      setShowDeleteModal(false);
+      setSelectedPurchaseOrder(null);
+
+      // Refresh the list
+      fetchData();
+
+    } catch (error) {
+      console.error("Error deleting purchase order:", error);
+
+      // Extract error message from backend using utility function
+      const errorMessage = extractErrorMessage(error);
+
+      // Show specific error message
+      if (window.showToast) {
+        window.showToast(errorMessage, "error");
+      }
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
+    setSelectedPurchaseOrder(null);
   };
 
   const handlePageChange = (newPage) => {
+    // Update pagination state first
     setPagination(prev => ({ ...prev, current: newPage }));
-    fetchData();
+
+    // Format createdAt từ dateRangeFilter
+    let createdAtFilter = "";
+    if (dateRangeFilter.fromDate && dateRangeFilter.toDate) {
+      createdAtFilter = `${dateRangeFilter.fromDate}~${dateRangeFilter.toDate}`;
+    } else if (dateRangeFilter.fromDate) {
+      createdAtFilter = `${dateRangeFilter.fromDate}~`;
+    } else if (dateRangeFilter.toDate) {
+      createdAtFilter = `~${dateRangeFilter.toDate}`;
+    }
+
+    // Call fetchData with the new page number directly
+    const requestParams = {
+      pageNumber: newPage, // Use the new page directly
+      pageSize: pagination.pageSize,
+      search: searchQuery,
+      sortField: sortField,
+      sortAscending: sortAscending,
+      status: statusFilter,
+      supplierId: supplierFilter,
+      approvalBy: approverFilter,
+      createdBy: creatorFilter,
+      arrivalConfirmedBy: confirmerFilter,
+      assignTo: assigneeFilter,
+      createdAt: createdAtFilter
+    };
+
+    fetchDataWithParams(requestParams);
   };
 
   const handlePageSizeChange = (newPageSize) => {
+    // Update pagination state first
     setPagination(prev => ({ ...prev, pageSize: newPageSize, current: 1 }));
-    fetchData();
+
+    // Format createdAt từ dateRangeFilter
+    let createdAtFilter = "";
+    if (dateRangeFilter.fromDate && dateRangeFilter.toDate) {
+      createdAtFilter = `${dateRangeFilter.fromDate}~${dateRangeFilter.toDate}`;
+    } else if (dateRangeFilter.fromDate) {
+      createdAtFilter = `${dateRangeFilter.fromDate}~`;
+    } else if (dateRangeFilter.toDate) {
+      createdAtFilter = `~${dateRangeFilter.toDate}`;
+    }
+
+    // Call fetchData with the new page size directly
+    const requestParams = {
+      pageNumber: 1, // Reset to page 1 when changing page size
+      pageSize: newPageSize,
+      search: searchQuery,
+      sortField: sortField,
+      sortAscending: sortAscending,
+      status: statusFilter,
+      supplierId: supplierFilter,
+      approvalBy: approverFilter,
+      createdBy: creatorFilter,
+      arrivalConfirmedBy: confirmerFilter,
+      assignTo: assigneeFilter,
+      createdAt: createdAtFilter
+    };
+
+    fetchDataWithParams(requestParams);
   };
 
   // Filter handlers
   const handleStatusFilter = (value) => {
     setStatusFilter(value);
     setShowStatusFilter(false);
+
+    // Gọi API với giá trị mới ngay lập tức
+    const requestParams = createRequestParams({
+      pageNumber: 1, // Reset về trang 1
+      status: value // Sử dụng giá trị mới
+    });
+
+    fetchDataWithParams(requestParams);
   };
 
   const clearStatusFilter = () => {
     setStatusFilter("");
     setPagination(prev => ({ ...prev, current: 1 }));
+
+    // Gọi API khi clear filter
+    const requestParams = createRequestParams({
+      pageNumber: 1,
+      status: "" // Clear status filter
+    });
+
+    fetchDataWithParams(requestParams);
   };
 
   const clearAllFilters = () => {
@@ -337,8 +470,7 @@ export default function PurchaseOrderList() {
       createdBy: "",
       arrivalConfirmedBy: "",
       assignTo: "",
-      fromDate: "",
-      toDate: ""
+      createdAt: ""
     };
 
     // Gọi API trực tiếp với params rỗng
@@ -362,60 +494,155 @@ export default function PurchaseOrderList() {
   const handleSupplierFilter = (value) => {
     setSupplierFilter(value);
     setShowSupplierFilter(false);
+
+    const requestParams = createRequestParams({
+      pageNumber: 1,
+      supplierId: value
+    });
+    fetchDataWithParams(requestParams);
   };
 
   const clearSupplierFilter = () => {
     setSupplierFilter("");
     setPagination(prev => ({ ...prev, current: 1 }));
+
+    const requestParams = createRequestParams({
+      pageNumber: 1,
+      supplierId: ""
+    });
+    fetchDataWithParams(requestParams);
   };
 
   const handleApproverFilter = (value) => {
     setApproverFilter(value);
     setShowApproverFilter(false);
+
+    const requestParams = createRequestParams({
+      pageNumber: 1,
+      approvalBy: value
+    });
+    fetchDataWithParams(requestParams);
   };
 
   const clearApproverFilter = () => {
     setApproverFilter("");
     setPagination(prev => ({ ...prev, current: 1 }));
+
+    const requestParams = createRequestParams({
+      pageNumber: 1,
+      approvalBy: ""
+    });
+    fetchDataWithParams(requestParams);
   };
 
   const handleCreatorFilter = (value) => {
     setCreatorFilter(value);
     setShowCreatorFilter(false);
+
+    const requestParams = createRequestParams({
+      pageNumber: 1,
+      createdBy: value
+    });
+    fetchDataWithParams(requestParams);
   };
 
   const clearCreatorFilter = () => {
     setCreatorFilter("");
     setPagination(prev => ({ ...prev, current: 1 }));
+
+    const requestParams = createRequestParams({
+      pageNumber: 1,
+      createdBy: ""
+    });
+    fetchDataWithParams(requestParams);
   };
 
   const handleConfirmerFilter = (value) => {
     setConfirmerFilter(value);
     setShowConfirmerFilter(false);
+
+    const requestParams = createRequestParams({
+      pageNumber: 1,
+      arrivalConfirmedBy: value
+    });
+    fetchDataWithParams(requestParams);
   };
 
   const clearConfirmerFilter = () => {
     setConfirmerFilter("");
     setPagination(prev => ({ ...prev, current: 1 }));
+
+    const requestParams = createRequestParams({
+      pageNumber: 1,
+      arrivalConfirmedBy: ""
+    });
+    fetchDataWithParams(requestParams);
   };
 
   const handleAssigneeFilter = (value) => {
     setAssigneeFilter(value);
     setShowAssigneeFilter(false);
+
+    const requestParams = createRequestParams({
+      pageNumber: 1,
+      assignTo: value
+    });
+    fetchDataWithParams(requestParams);
   };
 
   const clearAssigneeFilter = () => {
     setAssigneeFilter("");
     setPagination(prev => ({ ...prev, current: 1 }));
+
+    const requestParams = createRequestParams({
+      pageNumber: 1,
+      assignTo: ""
+    });
+    fetchDataWithParams(requestParams);
   };
 
   const handleDateRangeFilter = (value) => {
     setDateRangeFilter(value);
+    // Chỉ cập nhật state, không gọi API ngay
+  };
+
+  const applyDateRangeFilter = () => {
+    // Format createdAt từ dateRangeFilter hiện tại
+    let createdAtFilter = "";
+    if (dateRangeFilter.fromDate && dateRangeFilter.toDate) {
+      createdAtFilter = `${dateRangeFilter.fromDate}~${dateRangeFilter.toDate}`;
+    } else if (dateRangeFilter.fromDate) {
+      createdAtFilter = `${dateRangeFilter.fromDate}~`;
+    } else if (dateRangeFilter.toDate) {
+      createdAtFilter = `~${dateRangeFilter.toDate}`;
+    }
+
+    console.log("=== DATE RANGE FILTER DEBUG ===");
+    console.log("Original fromDate:", dateRangeFilter.fromDate);
+    console.log("Original toDate:", dateRangeFilter.toDate);
+    console.log("Formatted createdAtFilter:", createdAtFilter);
+    console.log("Full requestParams:", {
+      pageNumber: 1,
+      createdAt: createdAtFilter
+    });
+    console.log("=================================");
+
+    const requestParams = createRequestParams({
+      pageNumber: 1,
+      createdAt: createdAtFilter
+    });
+    fetchDataWithParams(requestParams);
   };
 
   const clearDateRangeFilter = () => {
     setDateRangeFilter({ fromDate: '', toDate: '' });
     setPagination(prev => ({ ...prev, current: 1 }));
+
+    const requestParams = createRequestParams({
+      pageNumber: 1,
+      createdAt: ""
+    });
+    fetchDataWithParams(requestParams);
   };
 
 
@@ -507,9 +734,9 @@ export default function PurchaseOrderList() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-600">Quản lý Đơn hàng nhập</h1>
+            <h1 className="text-2xl font-bold text-slate-600">Quản lý đơn mua hàng</h1>
             <p className="text-slate-600 mt-1">
-              Quản lý các đơn hàng nhập trong hệ thống
+              Quản lý các đơn mua hàng trong hệ thống
             </p>
           </div>
           <div className="flex space-x-3">
@@ -521,7 +748,7 @@ export default function PurchaseOrderList() {
                 }}
               >
                 <Plus className="mr-2 h-4 w-4 text-white" />
-                Tạo đơn hàng mới
+                Tạo đơn mua hàng mới
               </Button>
             </PermissionWrapper>
           </div>
@@ -537,7 +764,7 @@ export default function PurchaseOrderList() {
           <PurchaseOrderFilterToggle
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            searchPlaceholder="Tìm kiếm theo mã đơn hàng, nhà cung cấp..."
+            searchPlaceholder="Tìm kiếm theo nhà cung cấp..."
             statusFilter={statusFilter}
             setStatusFilter={setStatusFilter}
             showStatusFilter={showStatusFilter}
@@ -570,7 +797,7 @@ export default function PurchaseOrderList() {
             setApproverFilter={filterConfig.showApprover ? setApproverFilter : () => { }}
             showApproverFilter={filterConfig.showApprover ? showApproverFilter : false}
             setShowApproverFilter={filterConfig.showApprover ? setShowApproverFilter : () => { }}
-            approvers={filterConfig.showApprover ? sampleUsers : []}
+            approvers={filterConfig.showApprover ? approvers : []}
             onApproverFilter={filterConfig.showApprover ? handleApproverFilter : () => { }}
             clearApproverFilter={filterConfig.showApprover ? clearApproverFilter : () => { }}
             showApprover={filterConfig.showApprover}
@@ -579,7 +806,7 @@ export default function PurchaseOrderList() {
             setCreatorFilter={filterConfig.showCreator ? setCreatorFilter : () => { }}
             showCreatorFilter={filterConfig.showCreator ? showCreatorFilter : false}
             setShowCreatorFilter={filterConfig.showCreator ? setShowCreatorFilter : () => { }}
-            creators={filterConfig.showCreator ? sampleUsers : []}
+            creators={filterConfig.showCreator ? creators : []}
             onCreatorFilter={filterConfig.showCreator ? handleCreatorFilter : () => { }}
             clearCreatorFilter={filterConfig.showCreator ? clearCreatorFilter : () => { }}
             showCreator={filterConfig.showCreator}
@@ -588,7 +815,7 @@ export default function PurchaseOrderList() {
             setConfirmerFilter={filterConfig.showConfirmer ? setConfirmerFilter : () => { }}
             showConfirmerFilter={filterConfig.showConfirmer ? showConfirmerFilter : false}
             setShowConfirmerFilter={filterConfig.showConfirmer ? setShowConfirmerFilter : () => { }}
-            confirmers={filterConfig.showConfirmer ? sampleUsers : []}
+            confirmers={filterConfig.showConfirmer ? confirmers : []}
             onConfirmerFilter={filterConfig.showConfirmer ? handleConfirmerFilter : () => { }}
             clearConfirmerFilter={filterConfig.showConfirmer ? clearConfirmerFilter : () => { }}
             showConfirmer={filterConfig.showConfirmer}
@@ -597,7 +824,7 @@ export default function PurchaseOrderList() {
             setAssigneeFilter={filterConfig.showAssignee ? setAssigneeFilter : () => { }}
             showAssigneeFilter={filterConfig.showAssignee ? showAssigneeFilter : false}
             setShowAssigneeFilter={filterConfig.showAssignee ? setShowAssigneeFilter : () => { }}
-            assignees={filterConfig.showAssignee ? sampleUsers : []}
+            assignees={filterConfig.showAssignee ? assignees : []}
             onAssigneeFilter={filterConfig.showAssignee ? handleAssigneeFilter : () => { }}
             clearAssigneeFilter={filterConfig.showAssignee ? clearAssigneeFilter : () => { }}
             showAssignee={filterConfig.showAssignee}
@@ -607,6 +834,7 @@ export default function PurchaseOrderList() {
             showDateRangeFilter={showDateRangeFilter}
             setShowDateRangeFilter={setShowDateRangeFilter}
             onDateRangeFilter={handleDateRangeFilter}
+            applyDateRangeFilter={applyDateRangeFilter}
             clearDateRangeFilter={clearDateRangeFilter}
             onClearAll={clearAllFilters}
             showClearButton={true}
@@ -622,7 +850,7 @@ export default function PurchaseOrderList() {
 
           {/* Table */}
           <PurchaseOrderTable
-            purchaseOrders={purchaseOrders}
+            purchaseOrders={sortedPurchaseOrders}
             pagination={pagination}
             sortField={sortField}
             sortAscending={sortAscending}
@@ -648,6 +876,14 @@ export default function PurchaseOrderList() {
             className="bg-gray-50"
           />
         )}
+
+        {/* Delete Confirmation Modal */}
+        <DeleteModal
+          isOpen={showDeleteModal}
+          onClose={handleDeleteCancel}
+          onConfirm={handleDeleteConfirm}
+          itemName="đơn mua hàng này"
+        />
       </div>
     </div>
   );

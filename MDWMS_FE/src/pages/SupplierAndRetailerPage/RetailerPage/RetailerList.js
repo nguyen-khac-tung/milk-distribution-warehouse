@@ -54,7 +54,8 @@ export default function RetailersPage() {
   })
   const [showPageSizeFilter, setShowPageSizeFilter] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
-  
+  const [statusSearchQuery, setStatusSearchQuery] = useState("")
+
   // Thống kê tổng (không thay đổi khi search/filter)
   const [totalStats, setTotalStats] = useState({
     totalCount: 0,
@@ -81,7 +82,7 @@ export default function RetailersPage() {
 
         const activeCount = dataArray.filter((r) => r.status === 1).length
         const inactiveCount = dataArray.filter((r) => r.status === 2).length
-        
+
         setTotalStats({
           totalCount: totalCount,
           activeCount: activeCount,
@@ -134,7 +135,7 @@ export default function RetailersPage() {
   useEffect(() => {
     // Fetch tổng thống kê khi component mount
     fetchTotalStats()
-    
+
     // Reset tất cả filter và sort về mặc định
     setSearchQuery("")
     setStatusFilter("")
@@ -145,7 +146,7 @@ export default function RetailersPage() {
       pageSize: 10,
       totalCount: 0
     })
-    
+
     // Fetch dữ liệu hiển thị với không có sort/filter
     fetchData({
       pageNumber: 1,
@@ -165,6 +166,7 @@ export default function RetailersPage() {
     const handleClickOutside = (event) => {
       if (showStatusFilter && !event.target.closest('.status-filter-dropdown')) {
         setShowStatusFilter(false)
+        setStatusSearchQuery("")
       }
       if (showPageSizeFilter && !event.target.closest('.page-size-filter-dropdown')) {
         setShowPageSizeFilter(false)
@@ -210,14 +212,14 @@ export default function RetailersPage() {
   const handleCreateSuccess = () => {
     // Refresh tổng thống kê
     fetchTotalStats()
-    
+
     // Reset về trang đầu và không có sort/filter để item mới hiển thị ở đầu
     setSearchQuery("")
     setStatusFilter("")
     setSortField("")
     setSortAscending(true)
     setPagination(prev => ({ ...prev, pageNumber: 1 }))
-    
+
     // Refresh data after successful creation
     fetchData({
       pageNumber: 1,
@@ -289,7 +291,7 @@ export default function RetailersPage() {
 
       // Refresh tổng thống kê
       fetchTotalStats()
-      
+
       // Refresh data after deletion, keeping current page or going to previous page if needed
       fetchData({
         pageNumber: targetPage,
@@ -333,19 +335,35 @@ export default function RetailersPage() {
     setItemToDelete(null)
   }
 
+  const filteredStatusOptions = useMemo(() => {
+    const statusOptions = [
+      { value: "", label: "Tất cả trạng thái" },
+      { value: "1", label: "Hoạt động" },
+      { value: "2", label: "Ngừng hoạt động" }
+    ]
+    if (!statusSearchQuery) return statusOptions
+    const query = statusSearchQuery.toLowerCase()
+    return statusOptions.filter(option =>
+      option.label.toLowerCase().includes(query)
+    )
+  }, [statusSearchQuery])
+
   const handleStatusFilter = (status) => {
     setStatusFilter(status)
     setShowStatusFilter(false)
+    setStatusSearchQuery("")
   }
 
   const clearStatusFilter = () => {
     setStatusFilter("")
     setShowStatusFilter(false)
+    setStatusSearchQuery("")
   }
 
   const handleClearAllFilters = () => {
     setSearchQuery("")
     setStatusFilter("")
+    setStatusSearchQuery("")
     setShowStatusFilter(false)
   }
 
@@ -388,10 +406,10 @@ export default function RetailersPage() {
         retailerId: parseInt(retailerId),
         status: newStatus
       })
-      
+
       // Show success message
       window.showToast(`Đã ${newStatus === 1 ? 'kích hoạt' : 'vô hiệu hóa'} nhà bán lẻ: ${retailerName}`, "success")
-      
+
       // Refresh data
       fetchData({
         pageNumber: pagination.pageNumber,
@@ -401,7 +419,7 @@ export default function RetailersPage() {
         sortAscending: sortAscending,
         status: statusFilter
       })
-      
+
       // Refresh total stats
       fetchTotalStats()
     } catch (error) {
@@ -446,7 +464,7 @@ export default function RetailersPage() {
           <SearchFilterToggle
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            searchPlaceholder="Tìm kiếm theo tên nhà bán lẻ..."
+            searchPlaceholder="Tìm kiếm theo nhà bán lẻ, địa chỉ, SDT"
             statusFilter={statusFilter}
             setStatusFilter={setStatusFilter}
             showStatusFilter={showStatusFilter}
@@ -458,6 +476,10 @@ export default function RetailersPage() {
             ]}
             onStatusFilter={handleStatusFilter}
             clearStatusFilter={clearStatusFilter}
+            enableStatusSearch={true}
+            statusSearchQuery={statusSearchQuery}
+            setStatusSearchQuery={setStatusSearchQuery}
+            filteredStatusOptions={filteredStatusOptions}
           />
 
           {/* Table */}
@@ -517,18 +539,16 @@ export default function RetailersPage() {
                           <TableCell className="px-6 py-4 text-slate-700">{retailer?.address || ''}</TableCell>
                           <TableCell className="px-6 py-4 text-center">
                             <div className="flex justify-center">
-                              <PermissionWrapper 
+                              <PermissionWrapper
                                 requiredPermission={PERMISSIONS.RETAILER_UPDATE}
                                 hide={false}
                                 fallback={
-                                  <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center justify-center gap-1 ${
-                                    retailer?.status === 1 
-                                      ? 'bg-green-100 text-green-800' 
-                                      : 'bg-red-100 text-red-800'
-                                  }`}>
-                                    <span className={`w-2 h-2 rounded-full ${
-                                      retailer?.status === 1 ? 'bg-green-500' : 'bg-red-500'
-                                    }`}></span>
+                                  <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center justify-center gap-1 ${retailer?.status === 1
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-red-100 text-red-800'
+                                    }`}>
+                                    <span className={`w-2 h-2 rounded-full ${retailer?.status === 1 ? 'bg-green-500' : 'bg-red-500'
+                                      }`}></span>
                                     {retailer?.status === 1 ? 'Hoạt động' : 'Ngừng hoạt động'}
                                   </span>
                                 }
@@ -554,7 +574,7 @@ export default function RetailersPage() {
                                   <Eye className="h-4 w-4 text-orange-500" />
                                 </button>
                               </PermissionWrapper>
-                              
+
                               <PermissionWrapper requiredPermission={PERMISSIONS.RETAILER_UPDATE}>
                                 <button
                                   className="p-1.5 hover:bg-slate-100 rounded transition-colors"
@@ -564,7 +584,7 @@ export default function RetailersPage() {
                                   <Edit className="h-4 w-4 text-orange-500" />
                                 </button>
                               </PermissionWrapper>
-                              
+
                               <PermissionWrapper requiredPermission={PERMISSIONS.RETAILER_DELETE}>
                                 <button
                                   className="p-1.5 hover:bg-slate-100 rounded transition-colors"
@@ -722,7 +742,7 @@ export default function RetailersPage() {
 
       {/* View Retailer Detail Modal */}
       {showViewModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[99999] p-4" style={{zIndex: 99999}}>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[99999] p-4" style={{ zIndex: 99999 }}>
           <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             {loadingDetail ? (
               <Loading size="large" text="Đang tải chi tiết nhà bán lẻ..." />

@@ -39,6 +39,15 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<List<RetailerDropDown>>.ToResultOk(retailers);
         }
 
+        [HttpGet("GetAllRetailerDropDown")]
+        public async Task<IActionResult> GetAllRetailerDropDown()
+        {
+            var (msg, retailers) = await _retailerSevice.GetAllRetailerDropDown();
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<List<RetailerDropDown>>.ToResultOk(retailers);
+        }
+
         [HttpGet("GetRetailerByRetailerId/{retailerId}")]
         [Authorize(Roles = "Sale Manager, Sales Representative")]
         public async Task<IActionResult> GetRetailerByRetailerId(int retailerId)

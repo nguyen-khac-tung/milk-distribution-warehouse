@@ -1,9 +1,9 @@
 
 import NotFoundPage from "../pages/NotFoundPage";
 import Dashboard from "../pages/AccountPage/Dashboard/Dashboard";
-import Products from "../pages/GoodPage/GoodsList";
+import CreateSaleOrder from "../pages/SalesOrderPage/CreateSaleOrder";
 import Reports from "../pages/Reports";
-import Settings from "../pages/Settings";
+// import Settings from "../pages/Settings";
 import Areas from "../pages/AreaAndLocationPage/AreaPage/AreasList";
 import Locations from "../pages/AreaAndLocationPage/LocationPage/LocationList";
 import LoginPage from "../pages/AuthenticationPage/LoginPage/LoginPage";
@@ -23,9 +23,17 @@ import ProtectedRoute from "../components/Common/ProtectedRoute";
 import RoleBasedRedirect from "../components/Common/RoleBasedRedirect";
 import PurchaseOrderList from "../pages/PurchaseOrderPage/PurchaseOrderList";
 import CreatePurchaseOrder from "../pages/PurchaseOrderPage/CreatePurchaseOrder";
+import UpdatePurchaseOrder from "../pages/PurchaseOrderPage/UpdatePurchaseOrder";
 import PurchaseOrderDetail from "../pages/PurchaseOrderPage/PurchaseOrderDetail";
+import PalletList from "../pages/PalletPage/PalletList";
 import ChangePasswordPage from "../pages/AuthenticationPage/ChangePasswordPage"
 import { PERMISSIONS } from "../utils/permissions";
+import SalesOrderList from "../pages/SalesOrderPage/SalesOrderList";
+import SalesOrderDetail from "../pages/SalesOrderPage/SalesOrderDetail";
+import GoodsReceiptDetail from "../pages/GoodsReceiptPage/GoodsReceiptDetail";
+import BackOrderList from "../pages/BackOrderPage/BackOrderList";
+import UpdateSaleOrder from "../pages/SalesOrderPage/UpdateSaleOrder";
+import GoodsIssueNoteDetail from "../pages/GoodsIssueNotePage/GoodsIssueNoteDetail";
 
 export const routes = [
     {
@@ -101,10 +109,27 @@ export const routes = [
         ),
     },
     {
+        path: "/backorder",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.BACKORDER_VIEW}>
+                <BackOrderList />
+            </ProtectedRoute>
+        ),
+    },
+    {
         path: "/batches",
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.BATCH_VIEW}>
                 <BatchList />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/pallets",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.PALLET_VIEW}>
+                <PalletList />
             </ProtectedRoute>
         ),
         isShowHeader: true,
@@ -163,15 +188,15 @@ export const routes = [
         ),
         isShowHeader: true,
     },
-    {
-        path: "/settings",
-        page: () => (
-            <ProtectedRoute requiredPermission={PERMISSIONS.SETTINGS_VIEW}>
-                <Settings />
-            </ProtectedRoute>
-        ),
-        isShowHeader: true,
-    },
+    // {
+    //     path: "/settings",
+    //     page: () => (
+    //         <ProtectedRoute requiredPermission={PERMISSIONS.SETTINGS_VIEW}>
+    //             <Settings />
+    //         </ProtectedRoute>
+    //     ),
+    //     isShowHeader: true,
+    // },
     {
         path: "/purchase-orders",
         page: () => (
@@ -191,6 +216,15 @@ export const routes = [
         isShowHeader: true,
     },
     {
+        path: "/purchase-orders/update/:id",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.PURCHASE_ORDER_UPDATE}>
+                <UpdatePurchaseOrder />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
         path: "/purchase-orders/:id",
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.PURCHASE_ORDER_VIEW_DETAILS}>
@@ -199,12 +233,31 @@ export const routes = [
         ),
         isShowHeader: true,
     },
-    //đơn xuất
+    // Phiếu nhập kho
     {
-        path: "/sale-orders",
+        path: "/goods-receipt-notes/:id",
         page: () => (
-            <ProtectedRoute requiredPermission={[PERMISSIONS.PURCHASE_ORDER_VIEW]} requireAll={false}>
-                <PurchaseOrderList />
+            <ProtectedRoute requiredPermission={PERMISSIONS.GOODS_RECEIPT_NOTE_VIEW_DETAILS}>
+                <GoodsReceiptDetail />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    // đơn xuất
+    {
+        path: "/sales-orders",
+        page: () => (
+            <ProtectedRoute requiredPermission={[PERMISSIONS.SALES_ORDER_VIEW]} requireAll={false}>
+                <SalesOrderList />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/sales-orders/:id",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.SALES_ORDER_VIEW_DETAILS}>
+                <SalesOrderDetail />
             </ProtectedRoute>
         ),
         isShowHeader: true,
@@ -212,8 +265,26 @@ export const routes = [
     {
         path: "/sales-orders/create",
         page: () => (
-            <ProtectedRoute requiredPermission={PERMISSIONS.PURCHASE_ORDER_CREATE}>
-                <CreatePurchaseOrder />
+            <ProtectedRoute requiredPermission={PERMISSIONS.SALES_ORDER_CREATE}>
+                <CreateSaleOrder />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/sales-orders/update/:id",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.SALES_ORDER_UPDATE}>
+                <UpdateSaleOrder />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/goods-issue-note-detail/:id",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.SALES_ORDER_VIEW_DELIVERY_SLIP}>
+                <GoodsIssueNoteDetail />
             </ProtectedRoute>
         ),
         isShowHeader: true,

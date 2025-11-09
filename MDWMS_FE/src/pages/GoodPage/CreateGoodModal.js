@@ -4,7 +4,7 @@ import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
 import { Label } from "../../components/ui/label"
 import { Card } from "../../components/ui/card"
-import { X } from "lucide-react"
+import { X, Plus, Trash2 } from "lucide-react"
 import CustomDropdown from "../../components/Common/CustomDropdown"
 import { createGood } from "../../services/GoodService"
 import { getCategoriesDropdown } from "../../services/CategoryService/CategoryServices"
@@ -22,6 +22,9 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
     storageConditionId: "",
     unitMeasureId: "",
   })
+  const [goodsPackingCreates, setGoodsPackingCreates] = useState([
+    { unitPerPackage: "" }
+  ])
   const [loading, setLoading] = useState(false)
   const [categories, setCategories] = useState([])
   const [suppliers, setSuppliers] = useState([])
@@ -60,6 +63,24 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
     }
   }
 
+  // Functions to manage goodsPackingCreates
+  const addPackingItem = () => {
+    setGoodsPackingCreates([...goodsPackingCreates, { unitPerPackage: "" }])
+  }
+
+  const removePackingItem = (index) => {
+    if (goodsPackingCreates.length > 1) {
+      setGoodsPackingCreates(goodsPackingCreates.filter((_, i) => i !== index))
+    }
+  }
+
+  const updatePackingItem = (index, value) => {
+    const updatedPackings = goodsPackingCreates.map((item, i) => 
+      i === index ? { ...item, unitPerPackage: value } : item
+    )
+    setGoodsPackingCreates(updatedPackings)
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
 
@@ -70,9 +91,36 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
       return
     }
 
+    // Validate goodsPackingCreates
+    const validPackings = goodsPackingCreates.filter(packing => 
+      packing.unitPerPackage && !isNaN(packing.unitPerPackage) && parseInt(packing.unitPerPackage) > 0
+    )
+
+    if (validPackings.length === 0) {
+      window.showToast("Vui lòng nhập ít nhất một thông tin đóng gói hợp lệ", "error")
+      return
+    }
+
+    // Check if all packing items have valid unitPerPackage
+    const hasEmptyPacking = goodsPackingCreates.some(packing => 
+      !packing.unitPerPackage || packing.unitPerPackage === "" || isNaN(packing.unitPerPackage) || parseInt(packing.unitPerPackage) <= 0
+    )
+
+    if (hasEmptyPacking) {
+      window.showToast("Vui lòng nhập đầy đủ số lượng cho tất cả các thông tin đóng gói", "error")
+      return
+    }
+
     try {
       setLoading(true)
-      const response = await createGood(formData)
+      const submitData = {
+        ...formData,
+        goodsPackingCreates: validPackings.map(packing => ({
+          unitPerPackage: parseInt(packing.unitPerPackage)
+        }))
+      }
+      
+      const response = await createGood(submitData)
       console.log("Good created:", response)
       window.showToast("Thêm mặt hàng thành công!", "success")
       onSuccess && onSuccess()
@@ -97,6 +145,7 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
       storageConditionId: "",
       unitMeasureId: "",
     })
+    setGoodsPackingCreates([{ unitPerPackage: "" }])
     onClose && onClose()
   }
 
@@ -231,6 +280,58 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
                   loading={loadingData}
                 />
               </div>
+            </div>
+
+            {/* Goods Packing Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium text-slate-700">
+                  Thông tin đóng gói <span className="text-red-500">*</span>
+                </Label>
+                <Button
+                  type="button"
+                  onClick={addPackingItem}
+                  className="h-8 px-3 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg flex items-center gap-1"
+                >
+                  <Plus className="h-4 w-4" />
+                  Thêm đóng gói
+                </Button>
+              </div>
+              
+              <Card className="p-4 border border-gray-200">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {goodsPackingCreates.map((packing, index) => (
+                    <div key={index} className="flex items-end gap-2">
+                      <div className="flex-1">
+                        <Label className="text-sm font-medium text-slate-600">
+                          Số {unitMeasures.find(unit => unit.unitMeasureId.toString() === formData.unitMeasureId)?.name || 'đơn vị'} trên 1 thùng
+                        </Label>
+                        <Input
+                          type="number"
+                          placeholder="Nhập số lượng..."
+                          value={packing.unitPerPackage}
+                          onChange={(e) => updatePackingItem(index, e.target.value)}
+                          className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg mt-1"
+                          min="1"
+                        />
+                      </div>
+                      {goodsPackingCreates.length > 1 && (
+                        <Button
+                          type="button"
+                          onClick={() => removePackingItem(index)}
+                          className="h-[38px] w-[38px] p-0 bg-red-500 hover:bg-red-600 text-white rounded-lg flex items-center justify-center"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                
+                <p className="text-xs text-slate-500 mt-3">
+                  * Nhập số lượng {unitMeasures.find(unit => unit.unitMeasureId.toString() === formData.unitMeasureId)?.name || 'đơn vị'} có trong mỗi thùng đóng gói
+                </p>
+              </Card>
             </div>
 
             {/* Action Buttons */}

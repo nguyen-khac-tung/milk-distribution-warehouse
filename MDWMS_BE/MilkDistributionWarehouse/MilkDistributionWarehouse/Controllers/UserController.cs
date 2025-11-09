@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Services;
 using MilkDistributionWarehouse.Utilities;
+using System.Threading.Tasks;
 
 namespace MilkDistributionWarehouse.Controllers
 {
@@ -34,6 +35,33 @@ namespace MilkDistributionWarehouse.Controllers
             if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
 
             return ApiResponse<UserDetailDto>.ToResultOk(userDetail);
+        }
+
+        [HttpGet("GetUserDropDownByRoleName/{roleName}")]
+        public async Task<IActionResult> GetUserDropDownByRoleName(string? roleName)
+        {
+            var (msg, userDropDown) = await _userService.GetUserDropDownByRoleName(roleName);
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<List<UserDropDown>>.ToResultOk(userDropDown);
+        }
+
+        [HttpGet("GetAvailableReceiversDropDown/{purchaseOrderId}")]
+        public async Task<IActionResult> GetAvailableReceiversDropDown(string? purchaseOrderId)
+        {
+            var (msg, userDropDown) = await _userService.GetAvailableReceiversOrPickersDropDown(purchaseOrderId, null);
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<List<UserAssignedDropDown>>.ToResultOk(userDropDown);
+        }
+
+        [HttpGet("GetAvailablePickersDropDown/{salesOrderId}")]
+        public async Task<IActionResult> GetAvailablePickersDropDown(Guid? salesOrderId)
+        {
+            var (msg, userDropDown) = await _userService.GetAvailableReceiversOrPickersDropDown(null, salesOrderId);
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<List<UserAssignedDropDown>>.ToResultOk(userDropDown);
         }
 
         [Authorize(Roles = "Administrator, Business Owner")]

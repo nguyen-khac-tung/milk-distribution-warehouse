@@ -61,6 +61,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
         [JsonPropertyOrder(18)]
         public string? LightLevel { get; set; }
+        public List<GoodsPackingDto> GoodsPackings { get;set; }
         [JsonPropertyOrder(19)]
         public bool IsDisable { get; set; }
     }
@@ -87,12 +88,16 @@ namespace MilkDistributionWarehouse.Models.DTOs
         [MaxLength(255, ErrorMessage = "Độ dài mã sản phẩm không được vượt quá 255 ký tự")]
         [RegularExpression(@"^[a-zA-Z0-9\s_-]+$", ErrorMessage = "Mã sản phẩm không được chứa các ký tự đặc biệt")]
         public string GoodsCode { get; set; }
+        [Required]
+        [MinLength(1, ErrorMessage = "Danh sách đóng gói hàng hoá không được rỗng")]
+        public List<GoodsPackingCreate> GoodsPackingCreates { get; set; }
     }
 
     public class GoodsUpdate : GoodsCommonChange
     {
         [Required(ErrorMessage = "Cần phải chọn sản phẩm để cập nhật")]
         public int GoodsId { get; set; }
+        public List<GoodsPackingUpdate> GoodsPackingUpdates { get; set; }
     }
 
     public class GoodsDropDown
@@ -121,6 +126,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int SupplierId { get; set; }
         public int StorageConditionId { get; set; }
         public int UnitMeasureId { get; set; }
+        public List<GoodsPackingCreate> GoodsPackingCreates { get; set; }
     }
 
     public class GoodsBulkCreate
@@ -137,10 +143,28 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int TotalFailed { get; set; }
         public List<FailedItem> FailedItems { get; set; } = new();
     }
+
     public class FailedItem
     {
         public int Index { get; set; }
         public string Code { get; set; } = string.Empty;
         public string Error { get; set; } = string.Empty;
+    }
+
+    public class GoodsInventoryDto
+    {
+        public int GoodsId { get; set; }
+        public string GoodsCode { get; set; }
+        public string GoodsName { get; set; }
+        public string UnitMeasureName { get; set; }
+        public List<GoodsPackingDto> GoodsPackings { get; set; }
+        public List<InventoryPackagingDto> InventoryPackingDtos { get; set; } = new();
+    }
+
+    public class InventoryPackagingDto
+    {
+        public int GoodsPackingId { get; set; }
+        public int UnitPerPackage { get; set; }
+        public int AvailablePackageQuantity { get; set; }
     }
 }

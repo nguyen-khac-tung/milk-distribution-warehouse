@@ -7,19 +7,19 @@ namespace MilkDistributionWarehouse.Models.Entities;
 
 public partial class Pallet
 {
-    public Guid PalletId { get; set; }
+    public string PalletId { get; set; }
 
-    public Guid? PurchaseOrderId { get; set; }
-
-    public int? PackageQuantity { get; set; }
-
-    public int? UnitsPerPackage { get; set; }
-
-    public int? CreateBy { get; set; }
+    public string GoodsReceiptNoteId { get; set; }
 
     public Guid? BatchId { get; set; }
 
+    public int? GoodsPackingId { get; set; }
+
+    public int? PackageQuantity { get; set; }
+
     public int? LocationId { get; set; }
+
+    public int? CreateBy { get; set; }
 
     public int? Status { get; set; }
 
@@ -31,9 +31,13 @@ public partial class Pallet
 
     public virtual User CreateByNavigation { get; set; }
 
+    public virtual GoodsPacking GoodsPacking { get; set; }
+
+    public virtual GoodsReceiptNote GoodsReceiptNote { get; set; }
+
     public virtual Location Location { get; set; }
 
-    public virtual PurchaseOrder PurchaseOrder { get; set; }
+    public virtual ICollection<PickAllocation> PickAllocations { get; set; } = new List<PickAllocation>();
 
     public virtual ICollection<StocktakingPallet> StocktakingPallets { get; set; } = new List<StocktakingPallet>();
 }

@@ -25,7 +25,7 @@ namespace MilkDistributionWarehouse.Controllers
             var (msg, locations) = await _locationService.GetLocations(request);
             if (msg.Length > 0)
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<PageResult<LocationDto.LocationResponseDto>>.ToResultOk(locations);
+            return ApiResponse<PageResult<LocationResponseDto>>.ToResultOk(locations);
         }
 
         [Authorize(Roles = "Warehouse Manager, Warehouse Staff, Business Owner, Administrator")]
@@ -37,7 +37,7 @@ namespace MilkDistributionWarehouse.Controllers
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
 
-            return ApiResponse<LocationDto.LocationResponseDto>.ToResultOk(location);
+            return ApiResponse<LocationResponseDto>.ToResultOk(location);
         }
 
         [HttpGet("LocationDropdown")]
@@ -48,16 +48,43 @@ namespace MilkDistributionWarehouse.Controllers
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
 
-            return ApiResponse<List<LocationDto.LocationActiveDto>>.ToResultOk(locations);
+            return ApiResponse<List<LocationActiveDto>>.ToResultOk(locations);
         }
+
+        [HttpGet("LocationSuggest")]
+        public async Task<IActionResult> GetLocationSuggest(string palletId)
+        {
+            var (msg, locations) = await _locationService.GetSuggestLocation(palletId);
+
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<List<LocationSuggestDto>>.ToResultOk(locations);
+        }
+
+        [HttpPost("LocationPallet")]
+        public async Task<IActionResult> GetLocationPallet([FromBody] LocationCheckPalletDto dto)
+        {
+            var (msg, locationPallet) = await _locationService.GetLocationsPallet(dto.LocationCode, dto.PalletId);
+            var warning = "[User] Cảnh báo: Điều kiện lưu trữ của vị trí không phù hợp với điều kiện lưu trữ của pallet!";
+
+            if (!string.IsNullOrEmpty(msg) && msg != warning)
+                return ApiResponse<string>.ToResultError(msg);
+
+            if (msg == warning)
+                return ApiResponse<LocationPalletDto>.ToResultOk(locationPallet, msg);
+
+            return ApiResponse<LocationPalletDto>.ToResultOk(locationPallet);
+        }
+
         [Authorize(Roles = "Business Owner, Administrator")]
         [HttpPost("Create")]
-        public async Task<IActionResult> CreateLocation([FromBody] LocationDto.LocationRequestDto dto)
+        public async Task<IActionResult> CreateLocation([FromBody] LocationRequestDto dto)
         {
             var (msg, location) = await _locationService.CreateLocation(dto);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<LocationDto.LocationResponseDto>.ToResultOk(location);
+            return ApiResponse<LocationResponseDto>.ToResultOk(location);
         }
         [Authorize(Roles = "Business Owner, Administrator")]
         [HttpPost("CreateMultiple")]
@@ -71,12 +98,12 @@ namespace MilkDistributionWarehouse.Controllers
 
         [Authorize(Roles = "Business Owner, Administrator")]
         [HttpPut("Update/{locationId}")]
-        public async Task<IActionResult> UpdateLocation(int locationId, [FromBody] LocationDto.LocationRequestDto dto)
+        public async Task<IActionResult> UpdateLocation(int locationId, [FromBody] LocationRequestDto dto)
         {
             var (msg, location) = await _locationService.UpdateLocation(locationId, dto);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<LocationDto.LocationResponseDto>.ToResultOk(location);
+            return ApiResponse<LocationResponseDto>.ToResultOk(location);
         }
 
         [Authorize(Roles = "Business Owner, Administrator")]
@@ -88,7 +115,7 @@ namespace MilkDistributionWarehouse.Controllers
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
 
-            return ApiResponse<LocationDto.LocationResponseDto>.ToResultOk(location);
+            return ApiResponse<LocationResponseDto>.ToResultOk(location);
         }
 
         [Authorize(Roles = "Business Owner, Administrator")]
@@ -98,7 +125,7 @@ namespace MilkDistributionWarehouse.Controllers
             var (msg, location) = await _locationService.DeleteLocation(locationId);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<LocationDto.LocationResponseDto>.ToResultOk(location);
+            return ApiResponse<LocationResponseDto>.ToResultOk(location);
         }
     }
 }

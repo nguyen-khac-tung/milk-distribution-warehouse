@@ -13,10 +13,11 @@ namespace MilkDistributionWarehouse.Repositories
         Task<Location?> UpdateLocation(Location entity);
         Task<bool> HasDependentPalletsAsync(int locationId);
         Task<List<Location>> GetActiveLocationsAsync();
+        Task<List<Location>> GetSuggestLocationsAsync(string palletId);
+        Task<Location> GetLocationPallet(string locationcode);
         Task<List<string>> GetExistingLocationKeys(List<int> areaIds);
         Task<int> CreateLocationsBulk(List<Location> locations);
         Task<bool> IsDuplicateLocationCodeInAreaAsync(string locationCode, int areaId, int? excludeId = null);
-        Task<bool> InUsed(int locationId);
         Task<bool> UpdateIsAvailableAsync(int? locationId, bool isAvailable);
     }
 
@@ -75,7 +76,7 @@ namespace MilkDistributionWarehouse.Repositories
 
         public async Task<bool> HasDependentPalletsAsync(int locationId)
         {
-            return await _context.Pallets.AnyAsync(p => p.LocationId == locationId && p.Status != CommonStatus.Deleted);
+            return await _context.Pallets.AnyAsync(p => p.LocationId == locationId && p.Status == CommonStatus.Active);
         }
 
         public async Task<List<Location>> GetActiveLocationsAsync()
@@ -86,6 +87,31 @@ namespace MilkDistributionWarehouse.Repositories
                 .AsNoTracking()
                 .ToListAsync();
         }
+
+        public async Task<Location> GetLocationPallet(string locationcode)
+        {
+            return await _context.Locations
+                .Include(l => l.Area)
+                .FirstOrDefaultAsync(l => l.LocationCode.ToLower().Trim() == locationcode.ToLower().Trim() && l.Status != CommonStatus.Deleted);
+        }
+
+        public async Task<List<Location>> GetSuggestLocationsAsync(string palletId)
+        {
+            var pallet = await _context.Pallets
+                .Include(p => p.Batch)
+                    .ThenInclude(p => p.Goods)
+                .FirstOrDefaultAsync(p => p.PalletId == palletId && p.Status != CommonStatus.Deleted);
+            if (pallet == null || pallet.Batch == null)
+                return new List<Location>();
+            var storageConditionPallet = pallet.Batch.Goods.StorageConditionId;
+            return await _context.Locations
+                .Include(l => l.Area)
+                .Where(l => l.Status == CommonStatus.Active && l.IsAvailable == true &&
+                            l.Area.StorageConditionId == storageConditionPallet )
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
         public async Task<bool> IsDuplicateLocationCodeInAreaAsync(string locationCode, int areaId, int? excludeId = null)
         {
             var query = _context.Locations
@@ -117,11 +143,6 @@ namespace MilkDistributionWarehouse.Repositories
                 return 0;
             }
         }
-        public async Task<bool> InUsed(int locationId)
-        {
-            return await _context.Locations
-                .AnyAsync(l => l.LocationId == locationId && l.IsAvailable == false);
-        }
         public async Task<bool> UpdateIsAvailableAsync(int? locationId, bool isAvailable)
         {
             if (locationId == null)
@@ -134,13 +155,12 @@ namespace MilkDistributionWarehouse.Repositories
                 return false;
 
             location.IsAvailable = isAvailable;
-            location.UpdateAt = DateTime.UtcNow;
+            location.UpdateAt = DateTime.Now;
 
             _context.Locations.Update(location);
             await _context.SaveChangesAsync();
 
             return true;
         }
-
     }
 }

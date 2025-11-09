@@ -11,7 +11,7 @@ public partial class SalesOrder
 
     public int? RetailerId { get; set; }
 
-    public DateTime? EstimatedTimeDeparture { get; set; }
+    public DateOnly? EstimatedTimeDeparture { get; set; }
 
     public int? Status { get; set; }
 
@@ -23,9 +23,19 @@ public partial class SalesOrder
 
     public int? AssignTo { get; set; }
 
+    public DateTime? CreatedAt { get; set; }
+
     public DateTime? UpdateAt { get; set; }
 
-    public DateTime? CreatedAt { get; set; }
+    public DateTime? ApprovalAt { get; set; }
+
+    public DateTime? AcknowledgeAt { get; set; }
+
+    public DateTime? PickingAt { get; set; }
+
+    public string Note { get; set; }
+
+    public string RejectionReason { get; set; }
 
     public virtual User AcknowledgedByNavigation { get; set; }
 

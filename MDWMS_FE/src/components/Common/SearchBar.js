@@ -80,6 +80,22 @@ const SearchBar = () => {
       path: "/goods",
       category: "QUẢN LÝ HÀNG HÓA"
     },
+    { 
+      id: "batches", 
+      title: "Quản lý lô hàng", 
+      description: "Quản lý các lô hàng",
+      icon: Package, 
+      path: "/batches",
+      category: "QUẢN LÝ HÀNG HÓA"
+    },
+    { 
+      id: "pallets", 
+      title: "Quản lý kệ kê hàng", 
+      description: "Quản lý các kệ kê hàng trong kho",
+      icon: Package, 
+      path: "/pallets",
+      category: "QUẢN LÝ HÀNG HÓA"
+    },
 
     // Business Partners
     { 

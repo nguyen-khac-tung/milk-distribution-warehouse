@@ -9,6 +9,8 @@ export function StatusToggle({
   supplierName,
   unitMeasureId,
   unitMeasureName,
+  palletId,
+  palletName,
   entityType = "nhà cung cấp",
   disabled = false 
 }) {
@@ -28,8 +30,8 @@ export function StatusToggle({
   const handleConfirm = () => {
     // Convert boolean back to status (true = 1, false = 2)
     const newStatus = pendingValue ? 1 : 2
-    const id = supplierId || unitMeasureId
-    onStatusChange(id, newStatus, supplierName || unitMeasureName)
+    const id = supplierId || unitMeasureId || palletId
+    onStatusChange(id, newStatus, supplierName || unitMeasureName || palletName)
     setShowModal(false)
   }
 
@@ -52,8 +54,8 @@ export function StatusToggle({
         onCancel={handleCancel}
         message={
           pendingValue 
-            ? `Bạn có chắc muốn kích hoạt ${entityType} "${supplierName || unitMeasureName || 'này'}"?` 
-            : `Bạn có chắc muốn ngừng hoạt động ${entityType} "${supplierName || unitMeasureName || 'này'}"?`
+            ? `Bạn có chắc muốn kích hoạt ${entityType} "${supplierName || unitMeasureName || palletName || 'này'}"?` 
+            : `Bạn có chắc muốn ngừng hoạt động ${entityType} "${supplierName || unitMeasureName || palletName || 'này'}"?`
         }
       />
     </>

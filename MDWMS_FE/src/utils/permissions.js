@@ -87,6 +87,27 @@ export const PERMISSIONS = {
     DASHBOARD_VIEW: 'Dashboard.View',
     ADMIN_DASHBOARD_VIEW: 'AdminDashboard.View',
 
+    // Sales Order permissions
+    SALES_ORDER_VIEW: 'SalesOrder.View',
+    SALES_ORDER_VIEW_SR: 'SalesOrder.ViewListSR',
+    SALES_ORDER_VIEW_SM: 'SalesOrder.ViewListSM',
+    SALES_ORDER_VIEW_WM: 'SalesOrder.ViewListWM',
+    SALES_ORDER_VIEW_WS: 'SalesOrder.ViewListWS',
+    SALES_ORDER_CREATE: 'SalesOrder.Create',
+    SALES_ORDER_UPDATE: 'SalesOrder.Update',
+    SALES_ORDER_DELETE: 'SalesOrder.Delete',
+    SALES_ORDER_VIEW_DETAILS: 'SalesOrder.ViewDetails',
+    SALES_ORDER_SUBMIT: 'SalesOrder.Submit',
+    SALES_ORDER_APPROVAL: 'SalesOrder.Approval',
+    SALES_ORDER_REJECT: 'SalesOrder.Reject',
+    SALES_ORDER_ASSIGN_PICKING: 'SalesOrder.AssignPicking',
+    SALES_ORDER_CREATE_DELIVERY_SLIP: 'SalesOrder.CreateDeliverySlip',
+    SALES_ORDER_VIEW_DELIVERY_SLIP: 'SalesOrder.ViewDeliverySlip',
+    SALES_ORDER_SUBMIT_PENDING_APPROVAL: 'SalesOrder.SubmitPendingApproval', // Sales Representative
+    SALES_ORDER_APPROVE: 'SalesOrder.Approve', // Sale Manager
+    SALES_ORDER_REJECT_ORDER: 'SalesOrder.RejectOrder', // Sale Manager
+    SALES_ORDER_ASSIGN_FOR_PICKING: 'SalesOrder.AssignForPicking', // Warehouse Manager
+
     // Purchase Order permissions
     PURCHASE_ORDER_VIEW: 'PurchaseOrder.View',
     PURCHASE_ORDER_VIEW_RS: 'PurchaseOrder.ViewListRS',
@@ -97,10 +118,48 @@ export const PERMISSIONS = {
     PURCHASE_ORDER_UPDATE: 'PurchaseOrder.Update',
     PURCHASE_ORDER_DELETE: 'PurchaseOrder.Delete',
     PURCHASE_ORDER_VIEW_DETAILS: 'PurchaseOrder.ViewDetails',
-    PURCHASE_ORDER_SUBMIT_REQUEST: 'PurchaseOrder.SubmitRequest',
-    PURCHASE_ORDER_APPROVAL_REQUEST: 'PurchaseOrder.ApprovalRequest',
-    PURCHASE_ORDER_CONFIRM_DELIVERY: 'PurchaseOrder.ConfirmDelivery',
-    PURCHASE_ORDER_ASSIGN_RECEIVING: 'PurchaseOrder.AssignReceiving'
+    PURCHASE_ORDER_SUBMIT_DRAFT: 'PurchaseOrder.SubmitDraft',
+    PURCHASE_ORDER_APPROVE: 'PurchaseOrder.Approve',
+    PURCHASE_ORDER_REJECT: 'PurchaseOrder.Reject',
+    PURCHASE_ORDER_CONFIRM_GOODS_RECEIVED: 'PurchaseOrder.ConfirmGoodsReceived',
+    PURCHASE_ORDER_ASSIGN_FOR_RECEIVING: 'PurchaseOrder.AssignForReceiving',
+    PURCHASE_ORDER_REASSIGN_FOR_RECEIVING: 'PurchaseOrder.ReAssignForReceiving',
+    PURCHASE_ORDER_START_RECEIVE: 'PurchaseOrder.StartReceive',
+    PURCHASE_ORDER_CONFIRM_ORDERED: 'PurchaseOrder.ConfirmOrdered',
+    PURCHASE_ORDER_CHANGE_DELIVERY_DATE: 'PurchaseOrder.ChangeDeliveryDate',
+    PURCHASE_ORDER_AWAITINGRRIVAL: 'PurchaseOrder.AwaitingArrival',
+
+
+    // BackOrder permissions
+    BACKORDER_VIEW: 'BackOrder.View',
+    BACKORDER_VIEW_DETAILS: 'BackOrder.ViewDetails',
+    BACKORDER_CREATE: 'BackOrder.Create',
+    BACKORDER_UPDATE: 'BackOrder.Update',
+    BACKORDER_DELETE: 'BackOrder.Delete',
+    BACKORDER_CREATE_SALES_ORDER: 'BackOrder.CreateSalesOrderFromSelected',
+
+    // Kệ Kê Hàng permissions
+    PALLET_VIEW: 'Pallet.View',
+    PALLET_CREATE: 'Pallet.Create',
+    PALLET_UPDATE: 'Pallet.Update',
+    PALLET_DELETE: 'Pallet.Delete',
+    PALLET_VIEW_DETAILS: 'Pallet.ViewDetails',
+    PALLET_UPDATE_STATUS: 'Pallet.UpdateStatus',
+    PALLET_PRINT_BARCODE: 'Pallet.PrintBarcode',
+    PALLET_SCAN_BARCODE: 'Pallet.ScanBarcode',
+    PALLET_VIEW_SUGGESTED_LOCATIONS: 'Pallet.ViewSuggestedLocations',
+    PALLET_CONFIRM_INBOUND_PUTAWAY: 'Pallet.ConfirmInboundPutaway',
+
+    // Goods Receipt Note permissions
+    GOODS_RECEIPT_NOTE_VIEW_DETAILS: 'GoodsReceiptNote.ViewDetails',
+    GOODS_RECEIPT_NOTE_COMPLETE_RECEIVING: 'GoodsReceiptNote.CompleteReceiving',
+    GOODS_RECEIPT_NOTE_COMPLETE_ARRANGING: 'GoodsReceiptNote.CompleteArranging',
+    GOODS_RECEIPT_NOTE_DETAIL_APPROVE: 'GoodsReceiptNoteDetail.Approve',
+    GOODS_RECEIPT_NOTE_DETAIL_REJECT: 'GoodsReceiptNoteDetail.Reject',
+    GOODS_RECEIPT_NOTE_DETAIL_CANCEL: 'GoodsReceiptNoteDetail.Cancel',
+    GOODS_RECEIPT_NOTE_DETAIL_CHECK: 'GoodsReceiptNoteDetail.Check',
+
+
 };
 
 export const ROLE_PERMISSIONS = {
@@ -129,7 +188,9 @@ export const ROLE_PERMISSIONS = {
         PERMISSIONS.UNIT_MEASURE_VIEW, PERMISSIONS.UNIT_MEASURE_CREATE, PERMISSIONS.UNIT_MEASURE_UPDATE, PERMISSIONS.UNIT_MEASURE_DELETE,
         PERMISSIONS.SUPPLIER_VIEW, PERMISSIONS.SUPPLIER_CREATE, PERMISSIONS.SUPPLIER_UPDATE, PERMISSIONS.SUPPLIER_DELETE,
         PERMISSIONS.RETAILER_VIEW, PERMISSIONS.RETAILER_CREATE, PERMISSIONS.RETAILER_UPDATE, PERMISSIONS.RETAILER_DELETE,
-        PERMISSIONS.PURCHASE_ORDER_VIEW, PERMISSIONS.PURCHASE_ORDER_VIEW_SM, PERMISSIONS.PURCHASE_ORDER_VIEW_DETAILS, PERMISSIONS.PURCHASE_ORDER_APPROVAL_REQUEST,
+        PERMISSIONS.PURCHASE_ORDER_VIEW, PERMISSIONS.PURCHASE_ORDER_VIEW_SM, PERMISSIONS.PURCHASE_ORDER_VIEW_DETAILS, PERMISSIONS.PURCHASE_ORDER_APPROVE, PERMISSIONS.PURCHASE_ORDER_REJECT,
+        PERMISSIONS.SALES_ORDER_VIEW, PERMISSIONS.SALES_ORDER_VIEW_SM, PERMISSIONS.SALES_ORDER_VIEW_DETAILS,
+        PERMISSIONS.SALES_ORDER_APPROVE, PERMISSIONS.SALES_ORDER_REJECT_ORDER,
         PERMISSIONS.REPORT_VIEW, PERMISSIONS.REPORT_EXPORT
     ],
 
@@ -138,8 +199,13 @@ export const ROLE_PERMISSIONS = {
         PERMISSIONS.SUPPLIER_VIEW,
         PERMISSIONS.RETAILER_VIEW,
         PERMISSIONS.PURCHASE_ORDER_VIEW, PERMISSIONS.PURCHASE_ORDER_VIEW_RS, PERMISSIONS.PURCHASE_ORDER_CREATE, PERMISSIONS.PURCHASE_ORDER_UPDATE, PERMISSIONS.PURCHASE_ORDER_DELETE, PERMISSIONS.PURCHASE_ORDER_VIEW_DETAILS,
-        PERMISSIONS.PURCHASE_ORDER_SUBMIT_REQUEST,
-        PERMISSIONS.REPORT_VIEW
+        PERMISSIONS.PURCHASE_ORDER_SUBMIT_DRAFT,
+        PERMISSIONS.PURCHASE_ORDER_CONFIRM_ORDERED,
+        PERMISSIONS.PURCHASE_ORDER_CHANGE_DELIVERY_DATE,
+        PERMISSIONS.SALES_ORDER_VIEW, PERMISSIONS.SALES_ORDER_VIEW_SR, PERMISSIONS.SALES_ORDER_CREATE, PERMISSIONS.SALES_ORDER_UPDATE, PERMISSIONS.SALES_ORDER_DELETE, PERMISSIONS.SALES_ORDER_VIEW_DETAILS,
+        PERMISSIONS.SALES_ORDER_SUBMIT_PENDING_APPROVAL,
+        PERMISSIONS.REPORT_VIEW,
+        PERMISSIONS.BACKORDER_CREATE, PERMISSIONS.BACKORDER_UPDATE, PERMISSIONS.BACKORDER_CREATE_SALES_ORDER, PERMISSIONS.BACKORDER_VIEW, PERMISSIONS.BACKORDER_VIEW_DETAILS, PERMISSIONS.BACKORDER_DELETE
     ],
 
     [ROLES.WAREHOUSE_MANAGER]: [
@@ -148,7 +214,16 @@ export const ROLE_PERMISSIONS = {
         PERMISSIONS.LOCATION_VIEW,
         PERMISSIONS.BATCH_VIEW, PERMISSIONS.BATCH_CREATE, PERMISSIONS.BATCH_UPDATE, PERMISSIONS.BATCH_DELETE,
         PERMISSIONS.PURCHASE_ORDER_VIEW, PERMISSIONS.PURCHASE_ORDER_VIEW_WM, PERMISSIONS.PURCHASE_ORDER_VIEW_DETAILS,
-        PERMISSIONS.PURCHASE_ORDER_CONFIRM_DELIVERY, PERMISSIONS.PURCHASE_ORDER_ASSIGN_RECEIVING,
+        PERMISSIONS.PURCHASE_ORDER_CONFIRM_GOODS_RECEIVED, PERMISSIONS.PURCHASE_ORDER_ASSIGN_FOR_RECEIVING, PERMISSIONS.PURCHASE_ORDER_REASSIGN_FOR_RECEIVING,
+        PERMISSIONS.PURCHASE_ORDER_AWAITINGRRIVAL,
+        PERMISSIONS.GOODS_RECEIPT_NOTE_VIEW_DETAILS,
+        PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE, PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT,
+        PERMISSIONS.SALES_ORDER_VIEW, PERMISSIONS.SALES_ORDER_VIEW_WM, PERMISSIONS.SALES_ORDER_VIEW_DETAILS, PERMISSIONS.SALES_ORDER_ASSIGN_PICKING,
+        PERMISSIONS.SALES_ORDER_VIEW, PERMISSIONS.SALES_ORDER_VIEW_WM, PERMISSIONS.SALES_ORDER_VIEW_DETAILS,
+        PERMISSIONS.SALES_ORDER_ASSIGN_FOR_PICKING,
+        PERMISSIONS.SALES_ORDER_VIEW_DELIVERY_SLIP,
+        PERMISSIONS.PALLET_VIEW, PERMISSIONS.PALLET_VIEW_DETAILS,
+        PERMISSIONS.PALLET_PRINT_BARCODE, PERMISSIONS.PALLET_SCAN_BARCODE, PERMISSIONS.PALLET_VIEW_SUGGESTED_LOCATIONS,
         PERMISSIONS.REPORT_VIEW, PERMISSIONS.REPORT_EXPORT
     ],
 
@@ -157,6 +232,289 @@ export const ROLE_PERMISSIONS = {
         PERMISSIONS.LOCATION_VIEW, PERMISSIONS.LOCATION_PRINT,
         PERMISSIONS.BATCH_VIEW,
         PERMISSIONS.PURCHASE_ORDER_VIEW, PERMISSIONS.PURCHASE_ORDER_VIEW_WS, PERMISSIONS.PURCHASE_ORDER_VIEW_DETAILS,
+        PERMISSIONS.PURCHASE_ORDER_START_RECEIVE,
+        PERMISSIONS.GOODS_RECEIPT_NOTE_VIEW_DETAILS,
+        PERMISSIONS.GOODS_RECEIPT_NOTE_COMPLETE_RECEIVING, PERMISSIONS.GOODS_RECEIPT_NOTE_COMPLETE_ARRANGING,
+        PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CANCEL, PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CHECK,
+        PERMISSIONS.SALES_ORDER_VIEW, PERMISSIONS.SALES_ORDER_VIEW_WS, PERMISSIONS.SALES_ORDER_VIEW_DETAILS,
+        PERMISSIONS.SALES_ORDER_CREATE_DELIVERY_SLIP, PERMISSIONS.SALES_ORDER_VIEW_DELIVERY_SLIP,
+        PERMISSIONS.PALLET_VIEW, PERMISSIONS.PALLET_CREATE, PERMISSIONS.PALLET_UPDATE, PERMISSIONS.PALLET_DELETE,
+        PERMISSIONS.PALLET_VIEW_DETAILS, PERMISSIONS.PALLET_UPDATE_STATUS, PERMISSIONS.PALLET_PRINT_BARCODE,
+        PERMISSIONS.PALLET_SCAN_BARCODE, PERMISSIONS.PALLET_VIEW_SUGGESTED_LOCATIONS, PERMISSIONS.PALLET_CONFIRM_INBOUND_PUTAWAY,
         PERMISSIONS.REPORT_VIEW
     ]
+};
+
+// Purchase Order Status Constants
+export const PURCHASE_ORDER_STATUS = {
+    Draft: 1,
+    PendingApproval: 2,
+    Rejected: 3,
+    Approved: 4,
+    GoodsReceived: 5,
+    AssignedForReceiving: 6,
+    Receiving: 7,
+    Inspected: 8,
+    Completed: 9,
+    Ordered: 10,
+    AwaitingArrival: 11
+};
+
+/**
+ * Check if user can perform action on purchase order based on API response flags and role
+ * @param {string} action - 'view', 'edit', 'delete'
+ * @param {Object} order - Purchase order object with isDisableUpdate, isDisableDelete properties
+ * @param {Function} hasPermission - Function to check user permissions
+ * @returns {boolean} - Whether user can perform the action
+ */
+export const canPerformPurchaseOrderAction = (action, order, hasPermission) => {
+    // For Sales Representative, check API response flags
+    if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS)) {
+        switch (action) {
+            case 'view':
+                return true; // Always can view
+            case 'edit':
+                // Can edit if not disabled by API
+                return !order.isDisableUpdate;
+            case 'delete':
+                // Can delete if not disabled by API
+                return !order.isDisableDelete;
+            default:
+                return false;
+        }
+    }
+
+    // For Sale Manager, only can view
+    if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_SM)) {
+        switch (action) {
+            case 'view':
+                return true; // Can view
+            case 'edit':
+                return false; // Cannot edit
+            case 'delete':
+                return false; // Cannot delete
+            default:
+                return false;
+        }
+    }
+
+    // For Warehouse Manager, only can view
+    if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WM)) {
+        switch (action) {
+            case 'view':
+                return true; // Can view
+            case 'edit':
+                return false; // Cannot edit
+            case 'delete':
+                return false; // Cannot delete
+            default:
+                return false;
+        }
+    }
+
+    // For Warehouse Staff, only can view
+    if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WS)) {
+        switch (action) {
+            case 'view':
+                return true; // Can view
+            case 'edit':
+                return false; // Cannot edit
+            case 'delete':
+                return false; // Cannot delete
+            default:
+                return false;
+        }
+    }
+
+    // For other roles, use existing permission system
+    return true;
+};
+
+// Sales Order Status Constants
+export const SALES_ORDER_STATUS = {
+    Draft: 1,               // Nháp
+    PendingApproval: 2,     // Chờ duyệt
+    Rejected: 3,            // Từ chối
+    Approved: 4,            // Đã duyệt
+    AssignedForPicking: 5,  // Đã phân công lấy hàng
+    Picking: 6,             // Đang lấy hàng
+    Completed: 7            // Hoàn thành
+};
+
+export const canPerformSalesOrderAction = (action, order, hasPermission, userInfo = null) => {
+    // Nếu có userInfo, sử dụng logic chi tiết
+    if (userInfo) {
+        return canPerformSalesOrderDetailAction(action, order, hasPermission, userInfo);
+    }
+
+    // Logic cũ cho backward compatibility
+    if (hasPermission(PERMISSIONS.SALES_ORDER_VIEW_SR)) {
+        switch (action) {
+            case 'view':
+                return true;
+            case 'edit':
+                return !order.isDisableUpdate;
+            case 'delete':
+                return !order.isDisableDelete;
+            default:
+                return false;
+        }
+    }
+
+    if (hasPermission(PERMISSIONS.SALES_ORDER_VIEW_SM)) {
+        return action === 'view';
+    }
+
+    if (hasPermission(PERMISSIONS.SALES_ORDER_VIEW_WM)) {
+        return action === 'view';
+    }
+
+    if (hasPermission(PERMISSIONS.SALES_ORDER_VIEW_WS)) {
+        return action === 'view';
+    }
+
+    return true;
+};
+
+/**
+ * Kiểm tra quyền chi tiết cho Sales Order dựa trên role và trạng thái
+ * @param {string} action - Hành động cần kiểm tra
+ * @param {Object} order - Đối tượng sales order
+ * @param {Function} hasPermission - Function kiểm tra permission
+ * @param {Object} userInfo - Thông tin user hiện tại
+ * @returns {boolean} - Có thể thực hiện hành động không
+ */
+export const canPerformSalesOrderDetailAction = (action, order, hasPermission, userInfo) => {
+    const currentUserId = userInfo?.userId;
+
+    // Flexible ownership check - handle different possible field structures
+    const isOwnOrder =
+        order?.createdBy?.userId === currentUserId ||
+        order?.createdBy?.id === currentUserId ||
+        order?.createdBy === currentUserId ||
+        order?.createdById === currentUserId ||
+        order?.createdByUserId === currentUserId;
+
+    // For warehouse staff, actions are based on being the assigned user, not the creator
+    const isAssignedToSelf =
+        order?.assignTo?.userId === currentUserId ||
+        order?.assignTo?.id === currentUserId ||
+        order?.assignTo === currentUserId ||
+        order?.assignToId === currentUserId ||
+        order?.assignToUserId === currentUserId;
+
+    const status = order?.status;
+
+
+    // Sales Representative (Nhân viên kinh doanh)
+    if (hasPermission(PERMISSIONS.SALES_ORDER_VIEW_SR)) {
+        switch (action) {
+            case 'view':
+                return true;
+            case 'edit':
+                // Chỉ có thể edit Draft/Rejected của mình
+                // Handle both string and number status
+                const canEditDraft = status === SALES_ORDER_STATUS.Draft || status === 1 || status === "1";
+                const canEditRejected = status === SALES_ORDER_STATUS.Rejected || status === 3 || status === "3";
+                return isOwnOrder && (canEditDraft || canEditRejected);
+            case 'delete':
+                // Chỉ có thể delete Draft của mình
+                const canDeleteDraft = status === SALES_ORDER_STATUS.Draft || status === 1 || status === "1";
+                return isOwnOrder && canDeleteDraft;
+            case 'submit_pending_approval':
+                // Chỉ có thể submit Draft/Rejected của mình
+                const canSubmitDraft = status === SALES_ORDER_STATUS.Draft || status === 1 || status === "1";
+                const canSubmitRejected = status === SALES_ORDER_STATUS.Rejected || status === 3 || status === "3";
+                return isOwnOrder && (canSubmitDraft || canSubmitRejected);
+            case 'approve':
+            case 'reject':
+            case 'assign':
+            case 'create_delivery_slip':
+            case 'view_delivery_slip':
+                return false; // Sales Rep không có quyền này
+            default:
+                return false;
+        }
+    }
+
+    // Sale Manager (Quản lý kinh doanh)
+    if (hasPermission(PERMISSIONS.SALES_ORDER_VIEW_SM)) {
+        switch (action) {
+            case 'view':
+                return true;
+            case 'approve':
+                // Chỉ có thể approve PendingApproval
+                return status === SALES_ORDER_STATUS.PendingApproval || status === 2 || status === "2";
+            case 'reject':
+                // Chỉ có thể reject PendingApproval
+                return status === SALES_ORDER_STATUS.PendingApproval || status === 2 || status === "2";
+            case 'edit':
+            case 'delete':
+            case 'submit_pending_approval':
+            case 'assign':
+            case 'create_delivery_slip':
+            case 'view_delivery_slip':
+                return false; // Sale Manager không có quyền này
+            default:
+                return false;
+        }
+    }
+
+    // Warehouse Manager (Quản lý kho)
+    if (hasPermission(PERMISSIONS.SALES_ORDER_VIEW_WM)) {
+        switch (action) {
+            case 'view':
+                return true;
+            case 'assign_for_picking':
+                // Chỉ cho phép phân công/lại nếu trạng thái là Approved hoặc AssignedForPicking (Đã phân công)
+                return (
+                    status === SALES_ORDER_STATUS.Approved ||
+                    status === SALES_ORDER_STATUS.AssignedForPicking ||
+                    status === 4 ||
+                    status === '4' ||
+                    status === 5 ||
+                    status === '5'
+                );
+            case 'view_delivery_slip':
+                // Có thể xem delivery slip khi Picking hoặc Completed
+                return status === SALES_ORDER_STATUS.Picking || status === SALES_ORDER_STATUS.Completed ||
+                    status === 6 || status === "6" || status === 7 || status === "7";
+            case 'edit':
+            case 'delete':
+            case 'approve':
+            case 'reject':
+            case 'submit_pending_approval':
+            case 'create_delivery_slip':
+                return false; // Warehouse Manager không có quyền này
+            default:
+                return false;
+        }
+    }
+
+    // Warehouse Staff (Nhân viên kho)
+    if (hasPermission(PERMISSIONS.SALES_ORDER_VIEW_WS)) {
+        switch (action) {
+            case 'view':
+                return true;
+            case 'create_delivery_slip':
+                // Chỉ có thể tạo delivery slip cho AssignedForPicking của chính mình (được phân công)
+                return isAssignedToSelf && (status === SALES_ORDER_STATUS.AssignedForPicking || status === 5 || status === "5");
+            case 'view_delivery_slip':
+                // Có thể xem delivery slip khi Picking hoặc Completed của chính mình (được phân công)
+                return isAssignedToSelf && (status === SALES_ORDER_STATUS.Picking || status === SALES_ORDER_STATUS.Completed ||
+                    status === 6 || status === "6" || status === 7 || status === "7");
+            case 'edit':
+            case 'delete':
+            case 'approve':
+            case 'reject':
+            case 'submit_pending_approval':
+            case 'assign':
+            case 'assign_for_picking':
+                return false; // Warehouse Staff không có quyền này
+            default:
+                return false;
+        }
+    }
+
+    return false;
 };

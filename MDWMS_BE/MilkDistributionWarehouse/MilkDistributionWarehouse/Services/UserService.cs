@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
@@ -7,6 +8,7 @@ using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
 using MilkDistributionWarehouse.Utilities;
 using Online_Learning.Services.Ultilities;
+using System.Data;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using static System.Net.WebRequestMethods;
@@ -22,23 +24,30 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, UserDto?)> UpdateUser(UserUpdateDto userUpdate);
         Task<string> UpdateUserStatus(UserStatusUpdateDto userUpdate);
         Task<string> DeleteUser(int? userId);
-
+        Task<(string, List<UserDropDown>?)> GetUserDropDownByRoleName(string roleName);
+        Task<(string, List<UserAssignedDropDown>?)> GetAvailableReceiversOrPickersDropDown(string? purchaseOrderId, Guid? salesOrderId);
     }
 
     public class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
         private readonly IRoleRepository _roleRepository;
+        private readonly IPurchaseOrderRepositoy _purchaseOrderRepositoy;
+        private readonly ISalesOrderRepository _salesOrderRepository;
         private readonly EmailUtility _emailUtility;
         private readonly IMapper _mapper;
 
         public UserService(IUserRepository userRepository,
                            IRoleRepository roleRepository,
+                           IPurchaseOrderRepositoy purchaseOrderRepositoy,
+                           ISalesOrderRepository salesOrderRepository,
                            EmailUtility emailUtility,
                            IMapper mapper)
         {
             _userRepository = userRepository;
             _roleRepository = roleRepository;
+            _purchaseOrderRepositoy = purchaseOrderRepositoy;
+            _salesOrderRepository = salesOrderRepository;
             _emailUtility = emailUtility;
             _mapper = mapper;
         }
@@ -89,11 +98,13 @@ namespace MilkDistributionWarehouse.Services
             var userRole = await _roleRepository.GetRoleById(userCreate.RoleId);
             if (userRole == null) return ("Selected role is null.", null);
 
+            msg = await ValidateUniqueActiveRole(null, userRole);
+            if (msg.Length > 0) return (msg, null);
+
             var newUser = _mapper.Map<User>(userCreate);
-            await AddRoleToUser(newUser, userRole);
+            await AssignRoleToUser(newUser, userRole);
             var password = GenerateRandomPassword();
             newUser.Password = BCrypt.Net.BCrypt.HashPassword(password);
-
             msg = await _userRepository.CreateUser(newUser);
             if (msg.Length > 0) return ("Thêm mới người dùng thất bại.", null);
 
@@ -109,15 +120,17 @@ namespace MilkDistributionWarehouse.Services
             if (userDuplicatedEmail != null && userUpdate.UserId != userDuplicatedEmail.UserId)
                 return ("Email này đã có người dùng khác sử dụng.".ToMessageForUser(), null);
 
-            var userExist = await _userRepository.GetUserById(userUpdate.UserId);
-            if (userExist == null) return ("Updated user is null.", null);
-
             var userRole = await _roleRepository.GetRoleById(userUpdate.RoleId);
             if (userRole == null) return ("Selected role is null.", null);
 
-            _mapper.Map(userUpdate, userExist);
-            await AddRoleToUser(userExist, userRole);
+            msg = await ValidateUniqueActiveRole(userUpdate.UserId, userRole);
+            if (msg.Length > 0) return (msg, null);
 
+            var userExist = await _userRepository.GetUserById(userUpdate.UserId);
+            if (userExist == null) return ("Updated user is null.", null);
+
+            _mapper.Map(userUpdate, userExist);
+            await AssignRoleToUser(userExist, userRole);
             msg = await _userRepository.UpdateUser(userExist);
             if (msg.Length > 0) return ("Cập nhật người dùng thất bại.", null);
 
@@ -130,8 +143,14 @@ namespace MilkDistributionWarehouse.Services
             var userExist = await _userRepository.GetUserById(userUpdate.UserId);
             if (userExist == null) return "Updated user is null.";
 
-            if (userUpdate.Status != CommonStatus.Active && userUpdate.Status != CommonStatus.Inactive)
-                return "Updated status is not found.";
+            if (userUpdate.Status == CommonStatus.Active)
+            {
+                foreach (var role in userExist.Roles)
+                {
+                    msg = await ValidateUniqueActiveRole(userExist.UserId, role);
+                    if (msg.Length > 0) return msg;
+                }
+            }
 
             userExist.Status = userUpdate.Status;
             msg = await _userRepository.UpdateUser(userExist);
@@ -146,8 +165,12 @@ namespace MilkDistributionWarehouse.Services
             var user = await _userRepository.GetUserByIdWithAssociations(userId);
             if (user == null) return "Không tìm thấy người dùng!".ToMessageForUser();
 
-            if (user.GoodsIssueNotes.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử phiếu xuất hàng.".ToMessageForUser();
-            if (user.GoodsReceiptNotes.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử phiếu nhập hàng.".ToMessageForUser();
+            if (user.GoodsIssueNoteCreatedByNavigations.Any()
+                || user.GoodsIssueNoteApprovalByNavigations.Any()) 
+                return "Không thể xóa do người dùng này có liên quan đến lịch sử phiếu xuất hàng.".ToMessageForUser();
+            if (user.GoodsIssueNoteCreatedByNavigations.Any() 
+                ||user.GoodsReceiptNoteApprovalByNavigations.Any()) 
+                return "Không thể xóa do người dùng này có liên quan đến lịch sử phiếu nhập hàng.".ToMessageForUser();
             if (user.PurchaseOrderCreatedByNavigations.Any() || user.PurchaseOrderApprovalByNavigations.Any()
                 || user.PurchaseOrderArrivalConfirmedByNavigations.Any() || user.PurchaseOrderAssignToNavigations.Any())
                 return "Không thể xóa do người dùng này có liên quan đến lịch sử đơn đặt hàng mua.".ToMessageForUser();
@@ -166,6 +189,65 @@ namespace MilkDistributionWarehouse.Services
             return "";
         }
 
+        public async Task<(string, List<UserDropDown>?)> GetUserDropDownByRoleName(string? roleName)
+        {
+            if (string.IsNullOrEmpty(roleName))
+                return ("RoleName is invalid.", default);
+
+            var users = await _userRepository.GetUsers()
+                       .Where(u => u.Status == CommonStatus.Active && u.Roles.Any(r => r.RoleName.Equals(roleName))).ToListAsync();
+
+            var userDropDowns = _mapper.Map<List<UserDropDown>>(users);
+
+            if (!userDropDowns.Any())
+                return ("Danh sách người dùng trống.".ToMessageForUser(), default);
+
+            return ("", userDropDowns);
+        }
+
+        public async Task<(string, List<UserAssignedDropDown>?)> GetAvailableReceiversOrPickersDropDown(string? purchaseOrderId, Guid? salesOrderId)
+        {
+            int? assignedUser = null;
+
+            if (!string.IsNullOrEmpty(purchaseOrderId))
+            {
+                var purchaseOrder = await _purchaseOrderRepositoy.GetPurchaseOrderByPurchaseOrderId(purchaseOrderId);
+                if (purchaseOrder == null) return ("PurchaseOrder is invalid", null);
+                assignedUser = purchaseOrder.AssignTo;
+            }
+
+            if (salesOrderId != null)
+            {
+                var salesOrder = await _salesOrderRepository.GetSalesOrderById(salesOrderId);
+                if (salesOrder == null) return ("SalesOrderId is invalid", null);
+                assignedUser = salesOrder.AssignTo;
+            }
+
+            var users = await _userRepository.GetUsers()
+                 .Include(u => u.PurchaseOrderAssignToNavigations)
+                 .Include(u => u.SalesOrderAssignToNavigations)
+                 .Where(u => u.Status == CommonStatus.Active
+                             && u.Roles.Any(r => r.RoleName == RoleNames.WarehouseStaff)
+                             && (assignedUser == null || u.UserId != assignedUser))
+                 .OrderBy(u => u.UserId)
+                 .ToListAsync();
+            if (!users.Any())
+                return ("Danh sách nhân viên kho khả dụng trống.".ToMessageForUser(), default);
+
+            var userDropDowns = users.Select(u => new UserAssignedDropDown
+            {
+                UserId = u.UserId,
+                FullName = u.FullName,
+                Phone = u.Phone,
+                PendingPurchaseOrders = u.PurchaseOrderAssignToNavigations.Where(p => p.Status == PurchaseOrderStatus.AssignedForReceiving).Count(),
+                ProcessingPurchaseOrders = u.PurchaseOrderAssignToNavigations.Where(p => p.Status == PurchaseOrderStatus.Receiving).Count(),
+                PendingSalesOrders = u.SalesOrderAssignToNavigations.Where(p => p.Status == SalesOrderStatus.AssignedForPicking).Count(),
+                ProcessingSalesOrders = u.SalesOrderAssignToNavigations.Where(p => p.Status == SalesOrderStatus.Picking).Count()
+            }).ToList();
+
+            return ("", userDropDowns);
+        }
+
         private async Task<IQueryable<UserDto>> FilterByRole(PagedRequest request, IQueryable<UserDto> userDtos)
         {
             if (request.Filters != null && request.Filters.Any())
@@ -180,7 +262,19 @@ namespace MilkDistributionWarehouse.Services
             return userDtos;
         }
 
-        private async Task AddRoleToUser(User? user, Role? role)
+        private async Task<string> ValidateUniqueActiveRole(int? userId, Role? role)
+        {
+            var roleRestricted = new List<int?>() { RoleType.WarehouseManager, RoleType.SaleManager, RoleType.BusinessOwner, RoleType.Administrator };
+            if (roleRestricted.All(roleReStricted => roleReStricted != role?.RoleId)) return "";
+
+            var users = await _userRepository.GetUsersByRoleId(role.RoleId);
+            var otherActiveUserExists = users.Any(u => u.UserId != userId && u.Status == CommonStatus.Active);
+            if (otherActiveUserExists)
+                return $"Vai trò {role.Description} đã được gán cho một tài khoản khác đang hoạt động.".ToMessageForUser();
+            return "";
+        }
+
+        private async Task AssignRoleToUser(User? user, Role? role)
         {
             user.Roles.Clear();
             user.Roles.Add(role);
@@ -191,7 +285,6 @@ namespace MilkDistributionWarehouse.Services
                 user.Roles.Add(roleAdministrator);
             }
         }
-
 
         private string GenerateRandomPassword()
         {

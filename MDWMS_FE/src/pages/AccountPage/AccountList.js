@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "../../components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
 import { Card } from "../../components/ui/card"
@@ -91,6 +91,8 @@ export default function AdminPage() {
   const [showRoleFilter, setShowRoleFilter] = useState(false)
   const [availableRoles, setAvailableRoles] = useState([])
   const [showPageSizeFilter, setShowPageSizeFilter] = useState(false)
+  const [statusSearchQuery, setStatusSearchQuery] = useState("")
+  const [roleSearchQuery, setRoleSearchQuery] = useState("")
 
   const [sortColumn, setSortColumn] = useState(null)
   const [sortDirection, setSortDirection] = useState("asc")
@@ -108,17 +110,44 @@ export default function AdminPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [userToDelete, setUserToDelete] = useState(null)
 
+  // Filter roles and status options based on search query
+  const filteredRoles = useMemo(() => {
+    if (!roleSearchQuery) return availableRoles
+    const query = roleSearchQuery.toLowerCase()
+    return availableRoles.filter(role => {
+      const roleLabel = typeof role === 'object' ? (role.label || role.description || role.roleName || "").toLowerCase() : role.toString().toLowerCase()
+      return roleLabel.includes(query)
+    })
+  }, [availableRoles, roleSearchQuery])
+
+  const filteredStatusOptions = useMemo(() => {
+    const statusOptions = [
+      { value: "", label: "Tất cả trạng thái" },
+      { value: "1", label: "Hoạt động" },
+      { value: "2", label: "Ngừng hoạt động" }
+    ]
+    if (!statusSearchQuery) return statusOptions
+    const query = statusSearchQuery.toLowerCase()
+    return statusOptions.filter(option =>
+      option.label.toLowerCase().includes(query)
+    )
+  }, [statusSearchQuery])
+
   const handleStatusFilter = (value) => {
     setStatusFilter(value)
     setShowStatusFilter(false)
+    setStatusSearchQuery("")
   }
   const clearStatusFilter = () => {
     setStatusFilter("")
+    setStatusSearchQuery("")
   }
   const clearAllFilters = () => {
     setSearchQuery("")
     setStatusFilter("")
+    setStatusSearchQuery("")
     setRoleFilter("")
+    setRoleSearchQuery("")
   }
   const handlePageSizeChange = (newPageSize) => {
     setPagination(prev => ({ ...prev, pageSize: newPageSize, pageNumber: 1 }))
@@ -127,9 +156,11 @@ export default function AdminPage() {
   const handleRoleFilter = (value) => {
     setRoleFilter(value !== null && value !== undefined ? String(value) : value)
     setShowRoleFilter(false)
+    setRoleSearchQuery("")
   }
   const clearRoleFilter = () => {
     setRoleFilter("")
+    setRoleSearchQuery("")
   }
   const handleSort = (column) => {
     if (sortColumn === column) {
@@ -143,7 +174,9 @@ export default function AdminPage() {
     try {
       // console.log(`Updating user ${id} (${name}) status to ${newStatus}`)
       const response = await updateUserStatus(id, newStatus)
-      if (response && response.success !== false) {
+
+      // Kiểm tra response từ backend
+      if (response && response.success === true) {
         const statusText = newStatus === 1 ? "kích hoạt" : "ngừng hoạt động"
         window.showToast(`Đã ${statusText} người dùng "${name}" thành công`, "success")
         // console.log(`Successfully updated user ${name} status to ${newStatus}`)
@@ -162,9 +195,20 @@ export default function AdminPage() {
           sortAscending: sortDirection === "asc"
         })
       } else {
-        // console.error(`Failed to update user ${name} status:`, response?.message)
-        const errorMessage = extractErrorMessage({ response: { data: response } }, "Có lỗi xảy ra khi cập nhật trạng thái người dùng")
+        // Hiển thị thông báo lỗi từ backend
+        let errorMessage = response?.message || response?.data?.message || "Có lỗi xảy ra khi cập nhật trạng thái người dùng"
+
+        // Kiểm tra nếu lỗi liên quan đến việc không thể vô hiệu hóa người dùng quan trọng
+        if (errorMessage.includes("Failed to update user status") ||
+          errorMessage.includes("không thể") ||
+          errorMessage.includes("quản lý") ||
+          errorMessage.includes("admin") ||
+          errorMessage.includes("business owner")) {
+          errorMessage = "Không thể cập nhật trạng thái người dùng khi đã có đủ các vai trò quan trọng (quản lý kho, quản lý kinh doanh, admin, business owner)"
+        }
+
         window.showToast(errorMessage, "error")
+        // console.error(`Failed to update user ${name} status:`, response?.message)
       }
     } catch (error) {
       // console.error("Error updating user status:", error)
@@ -328,6 +372,28 @@ export default function AdminPage() {
     fetchAllUsersForStats()
     fetchRoles()
   }, [])
+
+  // Close filters when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showStatusFilter && !event.target.closest('.status-filter-dropdown')) {
+        setShowStatusFilter(false);
+        setStatusSearchQuery("");
+      }
+      if (showRoleFilter && !event.target.closest('.role-filter-dropdown')) {
+        setShowRoleFilter(false);
+        setRoleSearchQuery("");
+      }
+      if (showPageSizeFilter && !event.target.closest('.page-size-filter-dropdown')) {
+        setShowPageSizeFilter(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showStatusFilter, showRoleFilter, showPageSizeFilter])
 
   useEffect(() => {
     fetchData({
@@ -557,7 +623,7 @@ export default function AdminPage() {
           <SearchFilterToggle
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            searchPlaceholder="Tìm kiếm theo tên, email hoặc chức vụ..."
+            searchPlaceholder="Tìm kiếm theo tên, email"
             statusFilter={statusFilter}
             setStatusFilter={setStatusFilter}
             showStatusFilter={showStatusFilter}
@@ -569,16 +635,30 @@ export default function AdminPage() {
             ]}
             onStatusFilter={handleStatusFilter}
             clearStatusFilter={clearStatusFilter}
+            enableStatusSearch={true}
+            statusSearchQuery={statusSearchQuery}
+            setStatusSearchQuery={setStatusSearchQuery}
+            filteredStatusOptions={filteredStatusOptions}
             roleFilter={roleFilter}
             setRoleFilter={setRoleFilter}
             showRoleFilter={showRoleFilter}
             setShowRoleFilter={setShowRoleFilter}
-            roles={availableRoles.map(role => ({
+            roles={Array.isArray(availableRoles) && availableRoles.length > 0 ? availableRoles.map(role => ({
               value: String(role.roleId),
               label: role.description || role.roleName || String(role.roleId)
-            }))}
+            })) : []}
             onRoleFilter={handleRoleFilter}
             clearRoleFilter={clearRoleFilter}
+            enableRoleSearch={true}
+            roleSearchQuery={roleSearchQuery}
+            setRoleSearchQuery={setRoleSearchQuery}
+            filteredRoles={Array.isArray(filteredRoles) && filteredRoles.length > 0 ? filteredRoles.map(role => ({
+              value: String(role.roleId),
+              label: role.description || role.roleName || String(role.roleId)
+            })) : (Array.isArray(availableRoles) && availableRoles.length > 0 ? availableRoles.map(role => ({
+              value: String(role.roleId),
+              label: role.description || role.roleName || String(role.roleId)
+            })) : [])}
             onClearAll={clearAllFilters}
             pageSize={pagination.pageSize}
             setPageSize={setPagination}
