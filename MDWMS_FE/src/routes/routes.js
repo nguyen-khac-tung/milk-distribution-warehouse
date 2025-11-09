@@ -34,6 +34,8 @@ import GoodsReceiptDetail from "../pages/GoodsReceiptPage/GoodsReceiptDetail";
 import BackOrderList from "../pages/BackOrderPage/BackOrderList";
 import UpdateSaleOrder from "../pages/SalesOrderPage/UpdateSaleOrder";
 import GoodsIssueNoteDetail from "../pages/GoodsIssueNotePage/GoodsIssueNoteDetail";
+import StocktakingList from "../pages/StocktakingPage/StocktakingList";
+import CreateStocktaking from "../pages/StocktakingPage/CreateStocktaking";
 
 export const routes = [
     {
@@ -285,6 +287,24 @@ export const routes = [
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.SALES_ORDER_VIEW_DELIVERY_SLIP}>
                 <GoodsIssueNoteDetail />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/stocktakings",
+        page: () => (
+            <ProtectedRoute requiredPermission={[PERMISSIONS.STOCKTAKING_VIEW, PERMISSIONS.STOCKTAKING_VIEW_WM, PERMISSIONS.STOCKTAKING_VIEW_WS]} requireAll={false}>
+                <StocktakingList />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/stocktaking/create",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.STOCKTAKING_CREATE}>
+                <CreateStocktaking />
             </ProtectedRoute>
         ),
         isShowHeader: true,

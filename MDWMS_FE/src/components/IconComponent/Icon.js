@@ -57,7 +57,9 @@ export const IconMap = [
   { keywords: ['goodsReceiptNote'], icon: 'material-symbols:order-play-outline' },
   { keywords: ['backorder', 'backOrder', 'pendingorder'], icon: 'mdi:clipboard-clock-outline' },
   { keywords: ['arrowBackCircleOutline'], icon: 'famicons:arrow-back-circle-outline' },
-
+  { keywords: ['clipboard'], icon: 'emojione-monotone:clipboard' },
+  { keywords: ['taskListEdit'], icon: 'streamline-plump:task-list-edit' },
+  { keywords: ['createTaskListEdit'], icon: 'gridicons:create' },
 
   // có thể thêm nhiều icon khác ở đây
 ];
@@ -110,7 +112,9 @@ export const ComponentIcon = ({ name, color = "#000000", size = 20, collapsed = 
   const isGoodsReceiptNoteIcon = name === 'goodsReceiptNote';
   const isBackOrderIcon = name === 'backorder' || name === 'backOrder';
   const isArrowBackCircleOutlineIcon = name === 'arrowBackCircleOutline';
-
+  const isClipboardIcon = name === 'clipboard';
+  const isTaskListEditIcon = name === 'taskListEdit';
+  const isCreateTaskListEditIcon = name === 'createTaskListEdit';
   const needsSpecialAlignment = isMilkIcon || isUnitMeasureIcon || isCategoryIcon || isStorageCondition ||
     isPartnerIcon || isRetailerIcon || isSupplierIcon || isThermometerIcon ||
     isPackageIcon || isBuildingIcon || isDropletsIcon || isSunIcon || isTagIcon ||
@@ -119,7 +123,8 @@ export const ComponentIcon = ({ name, color = "#000000", size = 20, collapsed = 
     || isCalendarzxIcon || isCrownIcon || isServerNetworkIcon || isPeopleIcon || isEuropeanNameBadgeIcon
     || isSchoolboyRunawayIcon || isBatchIcon || isPalletIcon || isUserIcon || isShoppingCartIcon || isTrashIcon || isCartIcon || isPurchaseOrder
     || isCPOrder || isGoodsReceiptNoteIcon
-    || isCPOrder || isBackOrderIcon || isArrowBackCircleOutlineIcon;
+    || isCPOrder || isBackOrderIcon || isArrowBackCircleOutlineIcon || isClipboardIcon||
+    isTaskListEditIcon || isCreateTaskListEditIcon;
 
   return (
     <Icon
