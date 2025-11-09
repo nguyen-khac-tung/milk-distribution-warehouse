@@ -373,7 +373,7 @@ export default function UpdateBackOrderModal({ isOpen, onClose, onSuccess, backO
                             </Label>
                             <div className="h-[38px] px-3 flex items-center border border-slate-200 bg-slate-50 rounded-lg">
                               <span className="text-slate-700">
-                                {unitPerPackage ? `${unitPerPackage} ${unitMeasureName}/thùng` : 'N/A'}
+                                {unitPerPackage ? `${unitPerPackage} ${unitMeasureName}` : 'N/A'}
                               </span>
                             </div>
                           </div>
