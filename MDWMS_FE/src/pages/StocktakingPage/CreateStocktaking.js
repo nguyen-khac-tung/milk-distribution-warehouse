@@ -12,14 +12,14 @@ import dayjs from 'dayjs';
 
 const CreateStocktaking = () => {
     const navigate = useNavigate();
-    
+
     // Get current user info from localStorage
     const currentUserInfo = useMemo(() => {
         try {
             const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
             return {
                 userId: userInfo?.userId || userInfo?.id || null,
-                fullName: userInfo?.fullName ||'Người dùng',
+                fullName: userInfo?.fullName || 'Người dùng',
             };
         } catch {
             return { userId: null, fullName: 'Người dùng', userName: null };
@@ -42,14 +42,14 @@ const CreateStocktaking = () => {
     const handleInputChange = (field, value) => {
         setFormData(prev => {
             const newFormData = { ...prev, [field]: value };
-            
+
             // Clear error when user starts typing
             setFieldErrors(prevErrors => {
                 const newErrors = { ...prevErrors };
                 if (newErrors[field]) {
                     delete newErrors[field];
                 }
-                
+
                 // Validate end time is after start time với giá trị mới
                 if (field === 'startTime' && newFormData.endTime && value) {
                     const startTime = dayjs(value);
@@ -69,10 +69,10 @@ const CreateStocktaking = () => {
                         delete newErrors.endTime;
                     }
                 }
-                
+
                 return newErrors;
             });
-            
+
             return newFormData;
         });
     };
@@ -135,10 +135,10 @@ const CreateStocktaking = () => {
             };
 
             console.log('Saving stocktaking draft:', submitData);
-            
+
             // Simulate API call
             await new Promise(resolve => setTimeout(resolve, 1000));
-            
+
             window.showToast('Lưu nháp thành công!', 'success');
             navigate('/stocktakings');
         } catch (error) {
@@ -169,10 +169,10 @@ const CreateStocktaking = () => {
             };
 
             console.log('Submitting stocktaking for approval:', submitData);
-            
+
             // Simulate API call
             await new Promise(resolve => setTimeout(resolve, 1000));
-            
+
             window.showToast('Tạo đơn và gửi phê duyệt thành công!', 'success');
             navigate('/stocktakings');
         } catch (error) {
@@ -225,9 +225,8 @@ const CreateStocktaking = () => {
                                             value={formData.createdBy}
                                             onChange={(e) => handleInputChange('createdBy', e.target.value)}
                                             placeholder="Nhập tên người tạo"
-                                            className={`h-[42px] pl-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${
-                                                fieldErrors.createdBy ? 'border-red-500' : ''
-                                            }`}
+                                            className={`h-[42px] pl-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${fieldErrors.createdBy ? 'border-red-500' : ''
+                                                }`}
                                         />
                                         <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                                     </div>
@@ -348,9 +347,8 @@ const CreateStocktaking = () => {
                                         value={formData.reason}
                                         onChange={(e) => handleInputChange('reason', e.target.value)}
                                         placeholder="Nhập lý do kiểm kê (ví dụ: Kiểm kê định kỳ, Kiểm kê sau sự cố, Kiểm kê theo yêu cầu quản lý...)"
-                                        className={`min-h-[120px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg resize-none ${
-                                            fieldErrors.reason ? 'border-red-500' : ''
-                                        }`}
+                                        className={`min-h-[120px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg resize-none ${fieldErrors.reason ? 'border-red-500' : ''
+                                            }`}
                                         rows={5}
                                     />
                                     {fieldErrors.reason && (
