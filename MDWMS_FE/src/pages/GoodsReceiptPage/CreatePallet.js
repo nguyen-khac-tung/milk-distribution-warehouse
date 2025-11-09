@@ -55,6 +55,11 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
     return map;
   }, [goodsReceiptNoteDetails]);
 
+  // Kiểm tra xem có ít nhất một mặt hàng có số lượng thực nhận > 0 không
+  const hasAnyActualQuantity = useMemo(() => {
+    return Object.values(actualPackageQuantityByDetailId).some(quantity => quantity > 0);
+  }, [actualPackageQuantityByDetailId]);
+
   const fetchBatchOptionsByGoodsId = async (goodsId) => {
     if (!goodsId) return [];
     try {
@@ -282,6 +287,12 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
       return;
     }
 
+    // Kiểm tra xem có ít nhất một mặt hàng có số lượng thực nhận > 0 không
+    if (!hasAnyActualQuantity) {
+      window.showToast?.("Không thể tạo pallet! Tất cả mặt hàng đều có số lượng thực nhận bằng 0. Vui lòng kiểm nhập lại.", "error");
+      return;
+    }
+
     // Validate và hiển thị lỗi theo từng dòng
     if (!validateRows()) {
       window.showToast?.("Vui lòng kiểm tra và sửa các lỗi trong bảng", "warning");
@@ -394,12 +405,25 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
 
       {!hasExistingPallets && (
         <>
+          {/* Cảnh báo nếu không có mặt hàng nào có số lượng thực nhận > 0 */}
+          {!hasAnyActualQuantity && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mt-3">
+              <div className="flex items-center gap-2 text-red-700">
+                <AlertCircle className="w-5 h-5" />
+                <span className="font-medium">Không thể tạo pallet</span>
+              </div>
+              <p className="text-red-600 text-sm mt-1">
+                Tất cả mặt hàng đều có số lượng thực nhận bằng 0. Vui lòng kiểm nhập lại để có số lượng thực nhận lớn hơn 0 trước khi tạo pallet.
+              </p>
+            </div>
+          )}
+
           <div className="mt-3">
             <Button
               variant="outline"
               className="border-orange-300 text-orange-600 hover:bg-orange-50 h-[38px]"
               onClick={ensureTableVisibleWithDefaultRow}
-              disabled={hasExistingPallets}
+              disabled={hasExistingPallets || !hasAnyActualQuantity}
             >
               <Plus className="w-4 h-4 mr-2" />
               Thêm kệ kê hàng
