@@ -23,14 +23,23 @@ function CreateSaleOrder({
 }) {
     const navigate = useNavigate();
     const dateInputRef = useRef(null);
+    // Minimum selectable date: tomorrow (force future date)
+    const minDate = (() => {
+        const d = new Date();
+        d.setDate(d.getDate() + 1);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    })();
     const [retailers, setRetailers] = useState([]);
     const [suppliers, setSuppliers] = useState([]);
-    const [goodsBySupplier, setGoodsBySupplier] = useState({}); 
-    const [goodsPackingsMap, setGoodsPackingsMap] = useState({}); 
-    const [inventoryMap, setInventoryMap] = useState({}); 
+    const [goodsBySupplier, setGoodsBySupplier] = useState({});
+    const [goodsPackingsMap, setGoodsPackingsMap] = useState({});
+    const [inventoryMap, setInventoryMap] = useState({});
     const [retailersLoading, setRetailersLoading] = useState(false);
     const [suppliersLoading, setSuppliersLoading] = useState(false);
-    const [goodsLoading, setGoodsLoading] = useState({}); 
+    const [goodsLoading, setGoodsLoading] = useState({});
     const [packingLoading, setPackingLoading] = useState(false);
 
     // Lấy dữ liệu từ localStorage nếu có (từ BackOrderList)
@@ -67,7 +76,7 @@ function CreateSaleOrder({
     const [fieldErrors, setFieldErrors] = useState({})
     const [showBackOrderModal, setShowBackOrderModal] = useState(false)
     const [insufficientItems, setInsufficientItems] = useState([])
-    const [itemsExceedingStock, setItemsExceedingStock] = useState({}) 
+    const [itemsExceedingStock, setItemsExceedingStock] = useState({})
     const [saveDraftLoading, setSaveDraftLoading] = useState(false)
     const [submitApprovalLoading, setSubmitApprovalLoading] = useState(false)
 
@@ -776,13 +785,13 @@ function CreateSaleOrder({
             if (Object.keys(blockingErrors).length > 0) return;
         }
 
-        const selectedDate = new Date(formData.estimatedTimeDeparture);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (selectedDate <= today) {
-            window.showToast("Ngày giao hàng phải trong tương lai", "error");
-            if (Object.keys(blockingErrors).length > 0) return;
-        }
+        // const selectedDate = new Date(formData.estimatedTimeDeparture);
+        // const today = new Date();
+        // today.setHours(0, 0, 0, 0);
+        // if (selectedDate <= today) {
+        //     window.showToast("Ngày giao hàng phải trong tương lai", "error");
+        //     if (Object.keys(blockingErrors).length > 0) return;
+        // }
 
         // Chỉ block validation nếu có blocking errors
         if (Object.keys(blockingErrors).length > 0) {
@@ -951,13 +960,13 @@ function CreateSaleOrder({
             if (Object.keys(blockingErrors).length > 0) return;
         }
 
-        const selectedDate = new Date(formData.estimatedTimeDeparture);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (selectedDate <= today) {
-            window.showToast("Ngày giao hàng phải trong tương lai", "error");
-            if (Object.keys(blockingErrors).length > 0) return;
-        }
+        // const selectedDate = new Date(formData.estimatedTimeDeparture);
+        // const today = new Date();
+        // today.setHours(0, 0, 0, 0);
+        // if (selectedDate <= today) {
+        //     window.showToast("Ngày giao hàng phải trong tương lai", "error");
+        //     if (Object.keys(blockingErrors).length > 0) return;
+        // }
 
         // Chỉ block validation nếu có blocking errors
         if (Object.keys(blockingErrors).length > 0) {
@@ -1145,6 +1154,7 @@ function CreateSaleOrder({
                                                 value={formData.estimatedTimeDeparture}
                                                 onChange={(e) => handleInputChange("estimatedTimeDeparture", e.target.value)}
                                                 ref={dateInputRef}
+                                                // min={minDate}
                                                 className="date-picker-input h-[37px] pr-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg w-full"
                                             />
                                             <Calendar

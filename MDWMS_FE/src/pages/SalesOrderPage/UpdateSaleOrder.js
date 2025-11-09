@@ -20,6 +20,14 @@ import { ComponentIcon } from "../../components/IconComponent/Icon"
 
 function UpdateSaleOrder() {
     const navigate = useNavigate();
+    const minDate = (() => {
+        const d = new Date();
+        d.setDate(d.getDate() + 1);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    })();
     const dateInputRef = useRef(null);
     const { id } = useParams();
     const [loading, setLoading] = useState(true);
@@ -704,13 +712,13 @@ function UpdateSaleOrder() {
             if (Object.keys(blockingErrors).length > 0) return;
         }
 
-        const selectedDate = new Date(formData.estimatedTimeDeparture);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (selectedDate <= today) {
-            window.showToast("Ngày giao hàng phải trong tương lai", "error");
-            if (Object.keys(blockingErrors).length > 0) return;
-        }
+        // const selectedDate = new Date(formData.estimatedTimeDeparture);
+        // const today = new Date();
+        // today.setHours(0, 0, 0, 0);
+        // if (selectedDate <= today) {
+        //     window.showToast("Ngày giao hàng phải trong tương lai", "error");
+        //     if (Object.keys(blockingErrors).length > 0) return;
+        // }
 
         // Chỉ block validation nếu có blocking errors
         if (Object.keys(blockingErrors).length > 0) {
@@ -878,13 +886,13 @@ function UpdateSaleOrder() {
             if (Object.keys(blockingErrors).length > 0) return;
         }
 
-        const selectedDate = new Date(formData.estimatedTimeDeparture);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (selectedDate <= today) {
-            window.showToast("Ngày giao hàng phải trong tương lai", "error");
-            if (Object.keys(blockingErrors).length > 0) return;
-        }
+        // const selectedDate = new Date(formData.estimatedTimeDeparture);
+        // const today = new Date();
+        // today.setHours(0, 0, 0, 0);
+        // if (selectedDate <= today) {
+        //     window.showToast("Ngày giao hàng phải trong tương lai", "error");
+        //     if (Object.keys(blockingErrors).length > 0) return;
+        // }
 
         // Chỉ block validation nếu có blocking errors
         if (Object.keys(blockingErrors).length > 0) {
