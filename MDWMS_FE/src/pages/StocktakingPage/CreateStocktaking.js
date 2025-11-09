@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -7,6 +7,8 @@ import { Textarea } from '../../components/ui/textarea';
 import { Label } from '../../components/ui/label';
 import { Calendar, Clock, User, FileText, ArrowLeft } from 'lucide-react';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
+import { DatePicker } from 'antd';
+import dayjs from 'dayjs';
 
 const CreateStocktaking = () => {
     const navigate = useNavigate();
@@ -26,8 +28,8 @@ const CreateStocktaking = () => {
 
     const [formData, setFormData] = useState({
         createdBy: currentUserInfo.fullName || '',
-        startTime: '',
-        endTime: '',
+        startTime: null,
+        endTime: null,
         reason: ''
     });
 
@@ -35,77 +37,44 @@ const CreateStocktaking = () => {
     const [submitLoading, setSubmitLoading] = useState(false);
     const [saveDraftLoading, setSaveDraftLoading] = useState(false);
 
-    // Format datetime for input (YYYY-MM-DDTHH:mm)
-    const formatDateTimeForInput = (date) => {
-        if (!date) return '';
-        const d = new Date(date);
-        if (isNaN(d.getTime())) return '';
-        
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        const hours = String(d.getHours()).padStart(2, '0');
-        const minutes = String(d.getMinutes()).padStart(2, '0');
-        
-        return `${year}-${month}-${day}T${hours}:${minutes}`;
-    };
-
-    // Get current datetime for default values
-    useEffect(() => {
-        const now = new Date();
-        const defaultEndTime = new Date(now);
-        defaultEndTime.setHours(now.getHours() + 2); // Default end time is 2 hours from now
-        
-        setFormData(prev => ({
-            ...prev,
-            startTime: formatDateTimeForInput(now),
-            endTime: formatDateTimeForInput(defaultEndTime)
-        }));
-    }, []);
+    // Không set default values - người dùng phải tự chọn
 
     const handleInputChange = (field, value) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-        
-        // Clear error when user starts typing
-        if (fieldErrors[field]) {
-            setFieldErrors(prev => {
-                const newErrors = { ...prev };
-                delete newErrors[field];
+        setFormData(prev => {
+            const newFormData = { ...prev, [field]: value };
+            
+            // Clear error when user starts typing
+            setFieldErrors(prevErrors => {
+                const newErrors = { ...prevErrors };
+                if (newErrors[field]) {
+                    delete newErrors[field];
+                }
+                
+                // Validate end time is after start time với giá trị mới
+                if (field === 'startTime' && newFormData.endTime && value) {
+                    const startTime = dayjs(value);
+                    const endTime = dayjs(newFormData.endTime);
+                    if (startTime.isAfter(endTime) || startTime.isSame(endTime)) {
+                        newErrors.endTime = 'Thời gian kết thúc phải sau thời gian bắt đầu';
+                    } else {
+                        delete newErrors.endTime;
+                    }
+                }
+                if (field === 'endTime' && newFormData.startTime && value) {
+                    const endTime = dayjs(value);
+                    const startTime = dayjs(newFormData.startTime);
+                    if (endTime.isBefore(startTime) || endTime.isSame(startTime)) {
+                        newErrors.endTime = 'Thời gian kết thúc phải sau thời gian bắt đầu';
+                    } else {
+                        delete newErrors.endTime;
+                    }
+                }
+                
                 return newErrors;
             });
-        }
-
-        // Validate end time is after start time
-        if (field === 'startTime' || field === 'endTime') {
-            if (field === 'startTime' && formData.endTime) {
-                if (new Date(value) >= new Date(formData.endTime)) {
-                    setFieldErrors(prev => ({
-                        ...prev,
-                        endTime: 'Thời gian kết thúc phải sau thời gian bắt đầu'
-                    }));
-                } else {
-                    setFieldErrors(prev => {
-                        const newErrors = { ...prev };
-                        delete newErrors.endTime;
-                        return newErrors;
-                    });
-                }
-            }
-            if (field === 'endTime' && formData.startTime) {
-                if (new Date(value) <= new Date(formData.startTime)) {
-                    setFieldErrors(prev => ({
-                        ...prev,
-                        endTime: 'Thời gian kết thúc phải sau thời gian bắt đầu'
-                    }));
-                } else {
-                    setFieldErrors(prev => {
-                        const newErrors = { ...prev };
-                        delete newErrors.endTime;
-                        return newErrors;
-                    });
-                }
-            }
-        }
+            
+            return newFormData;
+        });
     };
 
     const validateForm = () => {
@@ -128,7 +97,9 @@ const CreateStocktaking = () => {
         }
 
         if (formData.startTime && formData.endTime) {
-            if (new Date(formData.startTime) >= new Date(formData.endTime)) {
+            const startTime = dayjs(formData.startTime);
+            const endTime = dayjs(formData.endTime);
+            if (startTime.isAfter(endTime) || startTime.isSame(endTime)) {
                 errors.endTime = 'Thời gian kết thúc phải sau thời gian bắt đầu';
                 isValid = false;
             }
@@ -156,8 +127,8 @@ const CreateStocktaking = () => {
             // TODO: Call API to create stocktaking as draft
             const submitData = {
                 createdBy: formData.createdBy,
-                startTime: formData.startTime,
-                endTime: formData.endTime,
+                startTime: formData.startTime ? dayjs(formData.startTime).toISOString() : null,
+                endTime: formData.endTime ? dayjs(formData.endTime).toISOString() : null,
                 reason: formData.reason.trim(),
                 createdById: currentUserInfo.userId,
                 status: 'Draft' // Save as draft
@@ -191,8 +162,8 @@ const CreateStocktaking = () => {
             // TODO: Call API to create stocktaking and submit for approval
             const submitData = {
                 createdBy: formData.createdBy,
-                startTime: formData.startTime,
-                endTime: formData.endTime,
+                startTime: formData.startTime ? dayjs(formData.startTime).toISOString() : null,
+                endTime: formData.endTime ? dayjs(formData.endTime).toISOString() : null,
                 reason: formData.reason.trim(),
                 createdById: currentUserInfo.userId
             };
@@ -273,18 +244,25 @@ const CreateStocktaking = () => {
                                             <Calendar className="h-4 w-4 text-orange-500" />
                                             Thời Gian Bắt Đầu <span className="text-red-500">*</span>
                                         </Label>
-                                        <div className="relative">
-                                            <Input
-                                                id="startTime"
-                                                type="datetime-local"
-                                                value={formData.startTime}
-                                                onChange={(e) => handleInputChange('startTime', e.target.value)}
-                                                className={`h-[42px] pl-10 pr-3 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${
-                                                    fieldErrors.startTime ? 'border-red-500' : ''
-                                                }`}
-                                            />
-                                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                                        </div>
+                                        <DatePicker
+                                            id="startTime"
+                                            showTime
+                                            format="DD/MM/YYYY HH:mm"
+                                            placeholder="Chọn ngày và giờ bắt đầu"
+                                            value={formData.startTime}
+                                            onChange={(date) => handleInputChange('startTime', date)}
+                                            size="large"
+                                            allowClear
+                                            style={{
+                                                width: '100%',
+                                                borderColor: fieldErrors.startTime ? '#ef4444' : undefined
+                                            }}
+                                            className={fieldErrors.startTime ? 'border-red-500' : ''}
+                                            disabledDate={(current) => {
+                                                // Có thể thêm logic disable dates nếu cần
+                                                return false;
+                                            }}
+                                        />
                                         {fieldErrors.startTime && (
                                             <p className="text-red-500 text-xs mt-1">{fieldErrors.startTime}</p>
                                         )}
@@ -296,25 +274,64 @@ const CreateStocktaking = () => {
                                             <Clock className="h-4 w-4 text-orange-500" />
                                             Thời Gian Kết Thúc <span className="text-red-500">*</span>
                                         </Label>
-                                        <div className="relative">
-                                            <Input
-                                                id="endTime"
-                                                type="datetime-local"
-                                                value={formData.endTime}
-                                                onChange={(e) => handleInputChange('endTime', e.target.value)}
-                                                min={formData.startTime || ''}
-                                                className={`h-[42px] pl-10 pr-3 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${
-                                                    fieldErrors.endTime ? 'border-red-500' : ''
-                                                }`}
-                                            />
-                                            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                                        </div>
+                                        <DatePicker
+                                            id="endTime"
+                                            showTime
+                                            format="DD/MM/YYYY HH:mm"
+                                            placeholder="Chọn ngày và giờ kết thúc"
+                                            value={formData.endTime}
+                                            onChange={(date) => handleInputChange('endTime', date)}
+                                            size="large"
+                                            allowClear
+                                            style={{
+                                                width: '100%',
+                                                borderColor: fieldErrors.endTime ? '#ef4444' : undefined
+                                            }}
+                                            className={fieldErrors.endTime ? 'border-red-500' : ''}
+                                            disabledDate={(current) => {
+                                                // Disable dates before start time
+                                                if (formData.startTime) {
+                                                    return current && current.isBefore(dayjs(formData.startTime).startOf('day'));
+                                                }
+                                                return false;
+                                            }}
+                                            disabledTime={(current) => {
+                                                // Disable time if same day and time should be after start time
+                                                if (formData.startTime && current) {
+                                                    const startTime = dayjs(formData.startTime);
+                                                    if (current.isSame(startTime, 'day')) {
+                                                        const startHour = startTime.hour();
+                                                        const startMinute = startTime.minute();
+                                                        return {
+                                                            disabledHours: () => {
+                                                                const hours = [];
+                                                                for (let i = 0; i < startHour; i++) {
+                                                                    hours.push(i);
+                                                                }
+                                                                return hours;
+                                                            },
+                                                            disabledMinutes: (selectedHour) => {
+                                                                if (selectedHour === startHour) {
+                                                                    const minutes = [];
+                                                                    for (let i = 0; i <= startMinute; i++) {
+                                                                        minutes.push(i);
+                                                                    }
+                                                                    return minutes;
+                                                                }
+                                                                return [];
+                                                            }
+                                                        };
+                                                    }
+                                                }
+                                                return {};
+                                            }}
+                                        />
                                         {fieldErrors.endTime && (
                                             <p className="text-red-500 text-xs mt-1">{fieldErrors.endTime}</p>
                                         )}
                                         {!fieldErrors.endTime && formData.startTime && formData.endTime && (
                                             <p className="text-slate-500 text-xs mt-1">
-                                                Thời gian kiểm kê: {Math.round((new Date(formData.endTime) - new Date(formData.startTime)) / (1000 * 60 * 60) * 10) / 10} giờ
+                                                Thời gian kiểm kê: {dayjs(formData.endTime).diff(dayjs(formData.startTime), 'hour', true).toFixed(1)} giờ
                                             </p>
                                         )}
                                     </div>
