@@ -66,6 +66,23 @@ export const getStocktakingListForSaleManager = async (searchParams = {}) => {
     }
 };
 
+// Tạo phiếu kiểm kê
+export const createStocktaking = async (data) => {
+    try {
+        const body = {
+            startTime: data.startTime, // ISO string format
+            note: data.note || "",
+            stocktakingAreaCreates: data.stocktakingAreaCreates || [] // Array of { areaId: number, assignTo: number }
+        };
+
+        const res = await api.post("/StocktakingSheet/Create", body);
+        return res.data;
+    } catch (error) {
+        console.error("Error creating stocktaking:", error);
+        throw error;
+    }
+};
+
 // Hủy phiếu kiểm kê
 export const cancelStocktaking = async (stocktakingSheetId) => {
     try {
@@ -76,3 +93,4 @@ export const cancelStocktaking = async (stocktakingSheetId) => {
         throw error;
     }
 };
+

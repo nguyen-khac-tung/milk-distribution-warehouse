@@ -9,6 +9,8 @@ import { Calendar, User, FileText } from 'lucide-react';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
 import { DatePicker } from 'antd';
 import dayjs from 'dayjs';
+import { createStocktaking } from '../../services/StocktakingService';
+import { extractErrorMessage } from '../../utils/Validation';
 
 const CreateStocktaking = () => {
     const navigate = useNavigate();
@@ -59,11 +61,6 @@ const CreateStocktaking = () => {
         const errors = {};
         let isValid = true;
 
-        if (!formData.createdBy || formData.createdBy.trim() === '') {
-            errors.createdBy = 'Vui lòng nhập tên người tạo';
-            isValid = false;
-        }
-
         if (!formData.startTime) {
             errors.startTime = 'Vui lòng chọn thời gian bắt đầu';
             isValid = false;
@@ -88,25 +85,24 @@ const CreateStocktaking = () => {
 
         setSaveDraftLoading(true);
         try {
-            // TODO: Call API to create stocktaking as draft
             const submitData = {
-                createdBy: formData.createdBy,
                 startTime: formData.startTime ? dayjs(formData.startTime).toISOString() : null,
-                reason: formData.reason.trim(),
-                createdById: currentUserInfo.userId,
-                status: 'Draft' // Save as draft
+                note: formData.reason.trim(),
+                stocktakingAreaCreates: [] // Mảng rỗng, sẽ được thêm sau
             };
 
-            console.log('Saving stocktaking draft:', submitData);
+            await createStocktaking(submitData);
 
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            window.showToast('Lưu nháp thành công!', 'success');
+            if (window.showToast) {
+                window.showToast('Lưu nháp thành công!', 'success');
+            }
             navigate('/stocktakings');
         } catch (error) {
             console.error('Error saving draft:', error);
-            window.showToast('Có lỗi xảy ra khi lưu nháp', 'error');
+            const errorMessage = extractErrorMessage(error);
+            if (window.showToast) {
+                window.showToast(errorMessage || 'Có lỗi xảy ra khi lưu nháp', 'error');
+            }
         } finally {
             setSaveDraftLoading(false);
         }
