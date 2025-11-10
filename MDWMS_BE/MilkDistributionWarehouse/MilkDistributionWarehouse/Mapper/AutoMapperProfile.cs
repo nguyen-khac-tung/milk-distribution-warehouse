@@ -140,6 +140,14 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.HumidityMin, opt => opt.MapFrom(src => src.StorageCondition.HumidityMin))
                 .ForMember(dest => dest.HumidityMax, opt => opt.MapFrom(src => src.StorageCondition.HumidityMax))
                 .ForMember(dest => dest.LightLevel, opt => opt.MapFrom(src => src.StorageCondition.LightLevel));
+            CreateMap<Area, AreaDto.StocktakingAreaDto>()
+                .ForMember(dest => dest.AvailableLocationCount, opt => opt.MapFrom(src => src.Locations.Count(l => l.IsAvailable == true && l.Status != CommonStatus.Inactive)))
+                .ForMember(dest => dest.UnAvailableLocationCount, opt => opt.MapFrom(src => src.Locations.Count(l => l.IsAvailable == false && l.Status != CommonStatus.Inactive)))
+                .ForMember(dest => dest.TemperatureMin, opt => opt.MapFrom(src => src.StorageCondition.TemperatureMin))
+                .ForMember(dest => dest.TemperatureMax, opt => opt.MapFrom(src => src.StorageCondition.TemperatureMax))
+                .ForMember(dest => dest.HumidityMin, opt => opt.MapFrom(src => src.StorageCondition.HumidityMin))
+                .ForMember(dest => dest.HumidityMax, opt => opt.MapFrom(src => src.StorageCondition.HumidityMax))
+                .ForMember(dest => dest.LightLevel, opt => opt.MapFrom(src => src.StorageCondition.LightLevel));
 
             // Map Goods
             CreateMap<Good, GoodsDto>()
@@ -473,6 +481,20 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.UnitMeasure, opt => opt.MapFrom(src => src.Pallet.Batch.Goods.UnitMeasure.Name))
                 .ForMember(dest => dest.PalletPackageQuantity, opt => opt.MapFrom(src => src.Pallet.PackageQuantity))
                 .ForMember(dest => dest.PickPackageQuantity, opt => opt.MapFrom(src => src.PackageQuantity));
+
+            //Map StocktakingSheet
+            CreateMap<StocktakingSheet, StocktakingSheetDto>()
+                .ForMember(dest => dest.CreateByName, opt => opt.MapFrom(src => src.CreatedByNavigation.FullName));
+            CreateMap<StocktakingSheetCreate, StocktakingSheet>()
+                .ForMember(dest => dest.StocktakingSheetId, opt => opt.MapFrom(_ => Guid.NewGuid()))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => StocktakingStatus.Draft))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now));
+
+            //Map StocktakingArea
+            CreateMap<StocktakingAreaCreate, StocktakingArea>()
+                .ForMember(dest => dest.StocktakingAreaId, opt => opt.MapFrom(_ => Guid.NewGuid()))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now));
+
         }
     }
 }

@@ -647,81 +647,6 @@ function CreateSaleOrder({
         setShowBackOrderModal(true);
     };
 
-    // Validate form data
-    const validateFormData = () => {
-        // Reset validation errors
-        setFieldErrors({});
-        const newFieldErrors = {};
-
-        // Kiểm tra từng mặt hàng
-        items.forEach((item, index) => {
-            const rowNumber = index + 1;
-            if (!item.supplierName) {
-                newFieldErrors[`${item.id}-supplierName`] = "Vui lòng chọn nhà cung cấp";
-            }
-            if (!item.goodsName) {
-                newFieldErrors[`${item.id}-goodsName`] = "Vui lòng chọn tên hàng hóa";
-            }
-            if (!item.goodsPackingId) {
-                newFieldErrors[`${item.id}-goodsPackingId`] = "Vui lòng chọn đóng gói";
-            }
-
-            // Kiểm tra validation số thùng
-            // Chỉ validate nếu đã có đủ thông tin (supplierName, goodsName, goodsPackingId)
-            if (item.supplierName && item.goodsName && item.goodsPackingId) {
-                if (!item.quantity || item.quantity === "" || parseInt(item.quantity) <= 0) {
-                    newFieldErrors[`${item.id}-quantity`] = "Vui lòng nhập số thùng lớn hơn 0";
-                } else {
-                    // Kiểm tra tồn kho nếu đã nhập số lượng hợp lệ
-                    const quantityError = validateQuantity(item);
-                    if (quantityError) {
-                        newFieldErrors[`${item.id}-quantity`] = quantityError;
-                    }
-                }
-            } else if (!item.quantity || item.quantity === "" || parseInt(item.quantity) <= 0) {
-                // Nếu chưa có đủ thông tin nhưng đã nhập số lượng, vẫn validate cơ bản
-                newFieldErrors[`${item.id}-quantity`] = "Vui lòng nhập số thùng lớn hơn 0";
-            }
-        });
-
-        // Kiểm tra nhà bán lẻ
-        if (!formData.retailerName) {
-            window.showToast("Vui lòng chọn nhà bán lẻ", "error");
-            if (Object.keys(newFieldErrors).length > 0) {
-                setFieldErrors(newFieldErrors);
-            }
-            return { isValid: false, errors: newFieldErrors };
-        }
-
-        // Kiểm tra ngày giao hàng
-        if (!formData.estimatedTimeDeparture) {
-            window.showToast("Vui lòng chọn ngày dự kiến giao hàng", "error");
-            if (Object.keys(newFieldErrors).length > 0) {
-                setFieldErrors(newFieldErrors);
-            }
-            return { isValid: false, errors: newFieldErrors };
-        }
-
-        if (Object.keys(newFieldErrors).length > 0) {
-            setFieldErrors(newFieldErrors);
-            return { isValid: false, errors: newFieldErrors };
-        }
-
-        const selectedRetailer = retailers.find(retailer => retailer.retailerName === formData.retailerName);
-        if (!selectedRetailer) {
-            window.showToast("Không tìm thấy nhà bán lẻ", "error");
-            return { isValid: false, errors: newFieldErrors };
-        }
-
-        const validItems = items.filter(item => item.supplierName && item.goodsName && item.quantity && item.goodsPackingId);
-        if (validItems.length === 0) {
-            window.showToast("Vui lòng thêm ít nhất một hàng hóa với đầy đủ thông tin", "error");
-            return { isValid: false, errors: newFieldErrors };
-        }
-
-        return { isValid: true, errors: newFieldErrors, selectedRetailer, validItems };
-    };
-
     // Lưu lại thành bản nháp
     const handleSaveAsDraft = async (e) => {
         e.preventDefault();
@@ -785,13 +710,14 @@ function CreateSaleOrder({
             if (Object.keys(blockingErrors).length > 0) return;
         }
 
-        // const selectedDate = new Date(formData.estimatedTimeDeparture);
-        // const today = new Date();
-        // today.setHours(0, 0, 0, 0);
-        // if (selectedDate <= today) {
-        //     window.showToast("Ngày giao hàng phải trong tương lai", "error");
-        //     if (Object.keys(blockingErrors).length > 0) return;
-        // }
+        const selectedDate = new Date(formData.estimatedTimeDeparture);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        selectedDate.setHours(0, 0, 0, 0);
+        if (selectedDate <= today) {
+            window.showToast("Ngày giao hàng phải trong tương lai", "error");
+            if (Object.keys(blockingErrors).length > 0) return;
+        }
 
         // Chỉ block validation nếu có blocking errors
         if (Object.keys(blockingErrors).length > 0) {
@@ -960,13 +886,14 @@ function CreateSaleOrder({
             if (Object.keys(blockingErrors).length > 0) return;
         }
 
-        // const selectedDate = new Date(formData.estimatedTimeDeparture);
-        // const today = new Date();
-        // today.setHours(0, 0, 0, 0);
-        // if (selectedDate <= today) {
-        //     window.showToast("Ngày giao hàng phải trong tương lai", "error");
-        //     if (Object.keys(blockingErrors).length > 0) return;
-        // }
+        const selectedDate = new Date(formData.estimatedTimeDeparture);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        selectedDate.setHours(0, 0, 0, 0);
+        if (selectedDate <= today) {
+            window.showToast("Ngày giao hàng phải trong tương lai", "error");
+            if (Object.keys(blockingErrors).length > 0) return;
+        }
 
         // Chỉ block validation nếu có blocking errors
         if (Object.keys(blockingErrors).length > 0) {
