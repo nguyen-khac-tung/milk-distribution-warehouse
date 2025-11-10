@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import {
   BarChart,
   ChevronLeft,
@@ -31,7 +32,6 @@ import {
   ShoppingCart,
 } from "lucide-react"
 import InventoryReport from "./InventoryReport"
-import RecentOrders from "./RecentOrders"
 import { Button } from "../../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "../../components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs"
@@ -76,9 +76,12 @@ import {
   Cell,
 } from "recharts"
 
+import OrdersPage from "./OrdersPage"
+
 export default function Dashboard({ activeSection = "dashboard", onSectionChange }) {
+  const navigate = useNavigate()
   const [showInventoryReport, setShowInventoryReport] = useState(false)
-  const [showRecentOrders, setShowRecentOrders] = useState(false)
+  const [showOrders, setShowOrders] = useState(false)
   // const { toast } = useToast()
 
   // Mock toast function
@@ -546,23 +549,23 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
       <Card className="mb-6">
         <CardHeader className="p-4 pb-2">
           <CardTitle className="text-base font-medium">
-            Đơn hàng gần đây <span className="text-xs font-normal text-gray-500">(8 đơn hôm nay)</span>
+            Đơn hàng <span className="text-xs font-normal text-gray-500">(Quản lý đơn mua hàng và đơn bán hàng)</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="p-4">
-          {!showRecentOrders ? (
+          {!showOrders ? (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="bg-blue-50 p-3 rounded-full">
                   <ShoppingCart className="h-6 w-6 text-blue-500" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold">Đơn hàng gần đây</h3>
-                  <p className="text-sm text-gray-500">Xem danh sách đơn hàng và trạng thái xử lý</p>
+                  <h3 className="text-lg font-semibold">Đơn hàng</h3>
+                  <p className="text-sm text-gray-500">Xem danh sách đơn mua hàng và đơn bán hàng</p>
                 </div>
               </div>
-              <Button
-                onClick={() => setShowRecentOrders(true)}
+              <Button 
+                onClick={() => setShowOrders(true)}
                 className="bg-blue-500 hover:bg-blue-600 text-white"
               >
                 Xem đơn hàng
@@ -570,16 +573,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
             </div>
           ) : (
             <div>
-              <div className="flex justify-end mb-4">
-                <Button
-                  variant="ghost"
-                  onClick={() => setShowRecentOrders(false)}
-                  className="text-gray-600"
-                >
-                  Đóng
-                </Button>
-              </div>
-              <RecentOrders />
+              <OrdersPage onClose={() => setShowOrders(false)} />
             </div>
           )}
         </CardContent>
