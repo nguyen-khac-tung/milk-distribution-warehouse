@@ -8,7 +8,6 @@ import {
   ChevronRight,
   Search,
   Plus,
-  Edit,
   Trash,
   ChevronDown,
   Bell,
@@ -35,7 +34,6 @@ import InventoryReport from "./InventoryReport"
 import { Button } from "../../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "../../components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs"
-import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -82,6 +80,8 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
   const navigate = useNavigate()
   const [showInventoryReport, setShowInventoryReport] = useState(false)
   const [showOrders, setShowOrders] = useState(false)
+  const [showInvoiceDialog, setShowInvoiceDialog] = useState(false)
+  const [showOrderDialog, setShowOrderDialog] = useState(false)
   // const { toast } = useToast()
 
   // Mock toast function
@@ -523,7 +523,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
               </div>
               <Button
                 onClick={() => setShowInventoryReport(true)}
-                className="bg-orange-500 hover:bg-orange-600 text-white"
+                className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
               >
                 Xem báo cáo tồn kho
               </Button>
@@ -532,9 +532,9 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
             <div>
               <div className="flex justify-end mb-4">
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   onClick={() => setShowInventoryReport(false)}
-                  className="text-gray-600"
+                  className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white"
                 >
                   Đóng
                 </Button>
@@ -564,9 +564,9 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                   <p className="text-sm text-gray-500">Xem danh sách đơn mua hàng và đơn bán hàng</p>
                 </div>
               </div>
-              <Button 
+              <Button
                 onClick={() => setShowOrders(true)}
-                className="bg-blue-500 hover:bg-blue-600 text-white"
+                className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
               >
                 Xem đơn hàng
               </Button>
@@ -661,15 +661,6 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
               <div className="space-y-3">
                 {calendarEvents.map((event, index) => (
                   <div key={index} className="flex items-center">
-                    <Avatar className="h-8 w-8 mr-3">
-                      <AvatarImage src="/placeholder.svg?height=32&width=32" alt={event.guest} />
-                      <AvatarFallback>
-                        {event.guest
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
-                      </AvatarFallback>
-                    </Avatar>
                     <div>
                       <p className="text-sm font-medium">{event.guest}</p>
                       <p className="text-xs text-gray-500">
@@ -775,15 +766,18 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold">Billing System</h2>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="flex items-center gap-1">
+          <Button variant="outline" className="h-[38px] px-4 flex items-center gap-1">
             <Filter className="h-4 w-4" />
             Filter
           </Button>
-          <Button variant="outline" size="sm" className="flex items-center gap-1">
+          <Button variant="outline" className="h-[38px] px-4 flex items-center gap-1">
             <Download className="h-4 w-4" />
             Export
           </Button>
-          <Button size="sm" className="flex items-center gap-1">
+          <Button
+            className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white flex items-center gap-1"
+            onClick={() => setShowInvoiceDialog(true)}
+          >
             <Plus className="h-4 w-4" />
             New Invoice
           </Button>
@@ -918,10 +912,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
         </CardContent>
       </Card>
 
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button className="mb-6">Create New Invoice</Button>
-        </DialogTrigger>
+      <Dialog open={showInvoiceDialog} onOpenChange={setShowInvoiceDialog}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Create New Invoice</DialogTitle>
@@ -981,13 +972,23 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
           </div>
           <DialogFooter>
             <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowInvoiceDialog(false)}
+              className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white"
+            >
+              Hủy
+            </Button>
+            <Button
               type="submit"
               onClick={() => {
                 toast({
                   title: "Invoice created",
                   description: "New invoice has been created successfully",
                 })
+                setShowInvoiceDialog(false)
               }}
+              className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
             >
               Create Invoice
             </Button>
@@ -1002,11 +1003,14 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold">Food Delivery System</h2>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="flex items-center gap-1">
+          <Button variant="outline" className="h-[38px] px-4 flex items-center gap-1">
             <Filter className="h-4 w-4" />
             Filter
           </Button>
-          <Button size="sm" className="flex items-center gap-1">
+          <Button
+            className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white flex items-center gap-1"
+            onClick={() => setShowOrderDialog(true)}
+          >
             <Plus className="h-4 w-4" />
             New Order
           </Button>
@@ -1197,10 +1201,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
         </div>
       </div>
 
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button className="mb-6">Place New Order</Button>
-        </DialogTrigger>
+      <Dialog open={showOrderDialog} onOpenChange={setShowOrderDialog}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Place New Food Order</DialogTitle>
@@ -1272,13 +1273,23 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
           </div>
           <DialogFooter>
             <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowOrderDialog(false)}
+              className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white"
+            >
+              Hủy
+            </Button>
+            <Button
               type="submit"
               onClick={() => {
                 toast({
                   title: "Order placed",
                   description: "Food order has been placed successfully",
                 })
+                setShowOrderDialog(false)
               }}
+              className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
             >
               Place Order
             </Button>
@@ -1317,7 +1328,12 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                 </p>
               </CardContent>
               <CardFooter>
-                <Button onClick={() => onSectionChange?.("dashboard")}>Return to Dashboard</Button>
+                <Button
+                  onClick={() => onSectionChange?.("dashboard")}
+                  className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
+                >
+                  Return to Dashboard
+                </Button>
               </CardFooter>
             </Card>
           </div>
