@@ -11,6 +11,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public string BatchCode { get; set; }
             public DateOnly? ManufacturingDate { get; set; }
             public DateOnly? ExpiryDate { get; set; }
+            public string GoodsCode { get; set; }
             public string GoodName { get; set; }
             public List<string> PalletIds { get; set; } = new();
             public int TotalPackageQuantity { get; set; }
