@@ -17,5 +17,20 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public int TotalPackageQuantity { get; set; }
             public List<string> LocationCodes { get; set; } = new();
         }
+
+        public class LocationReportDto
+        {
+            public int AreaId { get; set; }
+            public string AreaName { get; set; }
+            public int TotalLocations { get; set; }
+            public int AvailableLocationCount { get; set; }
+        }
+
+        public class LocationReportSummaryDto
+        {
+            public int TotalLocations { get; set; }
+            public int AvailableLocationCount { get; set; }
+            public List<LocationReportDto> AreaDetails { get; set; } = new();
+        }
     }
 }

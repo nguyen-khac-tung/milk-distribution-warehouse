@@ -25,5 +25,15 @@ namespace MilkDistributionWarehouse.Controllers
                 return ApiResponse<string>.ToResultError(message);
             return ApiResponse<PageResult<ReportDto.InventoryReportDto>>.ToResultOk(data);
         }
+
+        [HttpPost("LocationReport")]
+        public async Task<IActionResult> GetLocationReport([FromBody] PagedRequest request, [FromQuery] int? areaId)
+        {
+            // Note: request body is not used for location counts, kept for compatibility with front-end callers
+            var (message, data) = await _reportService.GetLocationReportAsync(areaId);
+            if (!string.IsNullOrEmpty(message))
+                return ApiResponse<string>.ToResultError(message);
+            return ApiResponse<ReportDto.LocationReportSummaryDto>.ToResultOk(data);
+        }
     }
 }

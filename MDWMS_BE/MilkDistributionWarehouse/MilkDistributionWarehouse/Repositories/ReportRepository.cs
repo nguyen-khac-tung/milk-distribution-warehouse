@@ -12,6 +12,7 @@ namespace MilkDistributionWarehouse.Repositories
     public interface IReportRepository
     {
         Task<PageResult<ReportDto.InventoryReportDto>> GetInventoryReportAsync(PagedRequest request, int? areaId = null, CancellationToken cancellationToken = default);
+        Task<ReportDto.LocationReportSummaryDto> GetLocationReportAsync(int? areaId = null, CancellationToken cancellationToken = default);
     }
 
     public class ReportRepository : IReportRepository
@@ -137,6 +138,57 @@ namespace MilkDistributionWarehouse.Repositories
                 PageNumber = request.PageNumber,
                 PageSize = request.PageSize
             };
+        }
+
+        public async Task<ReportDto.LocationReportSummaryDto> GetLocationReportAsync(int? areaId = null, CancellationToken cancellationToken = default)
+        {
+            // If areaId provided, compute only for that area
+            if (areaId.HasValue)
+            {
+                var area = await _context.Areas
+                    .Where(a => a.AreaId == areaId.Value && a.Status == CommonStatus.Active)
+                    .Select(a => new ReportDto.LocationReportSummaryDto
+                    {
+                        TotalLocations = a.Locations.Count(l => l.Status == CommonStatus.Active),
+                        AvailableLocationCount = a.Locations.Count(l => l.Status == CommonStatus.Active && l.IsAvailable == true),
+                        AreaDetails = new List<ReportDto.LocationReportDto>
+                        {
+                            new ReportDto.LocationReportDto
+                            {
+                                AreaId = a.AreaId,
+                                AreaName = a.AreaName,
+                                TotalLocations = a.Locations.Count(l => l.Status == CommonStatus.Active),
+                                AvailableLocationCount = a.Locations.Count(l => l.Status == CommonStatus.Active && l.IsAvailable == true)
+                            }
+                        }
+                    })
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                return area ?? new ReportDto.LocationReportSummaryDto();
+            }
+
+            // Otherwise compute summary across all active areas
+            var areas = await _context.Areas
+                .Where(a => a.Status == CommonStatus.Active)
+                .Select(a => new ReportDto.LocationReportDto
+                {
+                    AreaId = a.AreaId,
+                    AreaName = a.AreaName,
+                    TotalLocations = a.Locations.Count(l => l.Status == CommonStatus.Active),
+                    AvailableLocationCount = a.Locations.Count(l => l.Status == CommonStatus.Active && l.IsAvailable == true)
+                })
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+
+            var summary = new ReportDto.LocationReportSummaryDto
+            {
+                AreaDetails = areas,
+                TotalLocations = areas.Sum(x => x.TotalLocations),
+                AvailableLocationCount = areas.Sum(x => x.AvailableLocationCount)
+            };
+
+            return summary;
         }
     }
 }
