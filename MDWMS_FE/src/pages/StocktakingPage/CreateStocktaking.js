@@ -5,7 +5,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
 import { Label } from '../../components/ui/label';
-import { Calendar, Clock, User, FileText, ArrowLeft } from 'lucide-react';
+import { Calendar, User, FileText } from 'lucide-react';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
 import { DatePicker } from 'antd';
 import dayjs from 'dayjs';
@@ -29,12 +29,10 @@ const CreateStocktaking = () => {
     const [formData, setFormData] = useState({
         createdBy: currentUserInfo.fullName || '',
         startTime: null,
-        endTime: null,
         reason: ''
     });
 
     const [fieldErrors, setFieldErrors] = useState({});
-    const [submitLoading, setSubmitLoading] = useState(false);
     const [saveDraftLoading, setSaveDraftLoading] = useState(false);
 
     // Không set default values - người dùng phải tự chọn
@@ -48,26 +46,6 @@ const CreateStocktaking = () => {
                 const newErrors = { ...prevErrors };
                 if (newErrors[field]) {
                     delete newErrors[field];
-                }
-
-                // Validate end time is after start time với giá trị mới
-                if (field === 'startTime' && newFormData.endTime && value) {
-                    const startTime = dayjs(value);
-                    const endTime = dayjs(newFormData.endTime);
-                    if (startTime.isAfter(endTime) || startTime.isSame(endTime)) {
-                        newErrors.endTime = 'Thời gian kết thúc phải sau thời gian bắt đầu';
-                    } else {
-                        delete newErrors.endTime;
-                    }
-                }
-                if (field === 'endTime' && newFormData.startTime && value) {
-                    const endTime = dayjs(value);
-                    const startTime = dayjs(newFormData.startTime);
-                    if (endTime.isBefore(startTime) || endTime.isSame(startTime)) {
-                        newErrors.endTime = 'Thời gian kết thúc phải sau thời gian bắt đầu';
-                    } else {
-                        delete newErrors.endTime;
-                    }
                 }
 
                 return newErrors;
@@ -89,20 +67,6 @@ const CreateStocktaking = () => {
         if (!formData.startTime) {
             errors.startTime = 'Vui lòng chọn thời gian bắt đầu';
             isValid = false;
-        }
-
-        if (!formData.endTime) {
-            errors.endTime = 'Vui lòng chọn thời gian kết thúc';
-            isValid = false;
-        }
-
-        if (formData.startTime && formData.endTime) {
-            const startTime = dayjs(formData.startTime);
-            const endTime = dayjs(formData.endTime);
-            if (startTime.isAfter(endTime) || startTime.isSame(endTime)) {
-                errors.endTime = 'Thời gian kết thúc phải sau thời gian bắt đầu';
-                isValid = false;
-            }
         }
 
         if (!formData.reason || formData.reason.trim() === '') {
@@ -128,7 +92,6 @@ const CreateStocktaking = () => {
             const submitData = {
                 createdBy: formData.createdBy,
                 startTime: formData.startTime ? dayjs(formData.startTime).toISOString() : null,
-                endTime: formData.endTime ? dayjs(formData.endTime).toISOString() : null,
                 reason: formData.reason.trim(),
                 createdById: currentUserInfo.userId,
                 status: 'Draft' // Save as draft
@@ -149,39 +112,6 @@ const CreateStocktaking = () => {
         }
     };
 
-    const handleSubmitForApproval = async (e) => {
-        e.preventDefault();
-
-        if (!validateForm()) {
-            window.showToast('Vui lòng điền đầy đủ thông tin bắt buộc', 'error');
-            return;
-        }
-
-        setSubmitLoading(true);
-        try {
-            // TODO: Call API to create stocktaking and submit for approval
-            const submitData = {
-                createdBy: formData.createdBy,
-                startTime: formData.startTime ? dayjs(formData.startTime).toISOString() : null,
-                endTime: formData.endTime ? dayjs(formData.endTime).toISOString() : null,
-                reason: formData.reason.trim(),
-                createdById: currentUserInfo.userId
-            };
-
-            console.log('Submitting stocktaking for approval:', submitData);
-
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            window.showToast('Tạo đơn và gửi phê duyệt thành công!', 'success');
-            navigate('/stocktakings');
-        } catch (error) {
-            console.error('Error submitting for approval:', error);
-            window.showToast('Có lỗi xảy ra khi gửi phê duyệt', 'error');
-        } finally {
-            setSubmitLoading(false);
-        }
-    };
 
     return (
         <div className="space-y-6">
@@ -212,31 +142,31 @@ const CreateStocktaking = () => {
                                 Thông Tin Đơn Kiểm Kê
                             </h3>
                             <div className="space-y-6">
-                                {/* Người tạo */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="createdBy" className="text-slate-600 font-medium flex items-center gap-2">
-                                        <User className="h-4 w-4 text-orange-500" />
-                                        Người Tạo <span className="text-red-500">*</span>
-                                    </Label>
-                                    <div className="relative">
-                                        <Input
-                                            id="createdBy"
-                                            type="text"
-                                            value={formData.createdBy}
-                                            onChange={(e) => handleInputChange('createdBy', e.target.value)}
-                                            placeholder="Nhập tên người tạo"
-                                            className={`h-[42px] pl-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${fieldErrors.createdBy ? 'border-red-500' : ''
-                                                }`}
-                                        />
-                                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                                    </div>
-                                    {fieldErrors.createdBy && (
-                                        <p className="text-red-500 text-xs mt-1">{fieldErrors.createdBy}</p>
-                                    )}
-                                </div>
-
-                                {/* Thời gian bắt đầu và kết thúc */}
+                                {/* Người tạo và Thời gian bắt đầu */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* Người tạo */}
+                                    <div className="space-y-2">
+                                        <Label htmlFor="createdBy" className="text-slate-600 font-medium flex items-center gap-2">
+                                            <User className="h-4 w-4 text-orange-500" />
+                                            Người Tạo <span className="text-red-500">*</span>
+                                        </Label>
+                                        <div className="relative">
+                                            <Input
+                                                id="createdBy"
+                                                type="text"
+                                                value={formData.createdBy}
+                                                readOnly
+                                                placeholder="Nhập tên người tạo"
+                                                className={`h-[38px] pl-10 border-slate-300 rounded-lg bg-gray-50 cursor-not-allowed ${fieldErrors.createdBy ? 'border-red-500' : ''
+                                                    }`}
+                                            />
+                                            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                                        </div>
+                                        {fieldErrors.createdBy && (
+                                            <p className="text-red-500 text-xs mt-1">{fieldErrors.createdBy}</p>
+                                        )}
+                                    </div>
+
                                     {/* Thời gian bắt đầu */}
                                     <div className="space-y-2">
                                         <Label htmlFor="startTime" className="text-slate-600 font-medium flex items-center gap-2">
@@ -253,6 +183,7 @@ const CreateStocktaking = () => {
                                             size="large"
                                             allowClear
                                             style={{
+                                                height: '38px',
                                                 width: '100%',
                                                 borderColor: fieldErrors.startTime ? '#ef4444' : undefined
                                             }}
@@ -264,74 +195,6 @@ const CreateStocktaking = () => {
                                         />
                                         {fieldErrors.startTime && (
                                             <p className="text-red-500 text-xs mt-1">{fieldErrors.startTime}</p>
-                                        )}
-                                    </div>
-
-                                    {/* Thời gian kết thúc */}
-                                    <div className="space-y-2">
-                                        <Label htmlFor="endTime" className="text-slate-600 font-medium flex items-center gap-2">
-                                            <Clock className="h-4 w-4 text-orange-500" />
-                                            Thời Gian Kết Thúc <span className="text-red-500">*</span>
-                                        </Label>
-                                        <DatePicker
-                                            id="endTime"
-                                            showTime
-                                            format="DD/MM/YYYY HH:mm"
-                                            placeholder="Chọn ngày và giờ kết thúc"
-                                            value={formData.endTime}
-                                            onChange={(date) => handleInputChange('endTime', date)}
-                                            size="large"
-                                            allowClear
-                                            style={{
-                                                width: '100%',
-                                                borderColor: fieldErrors.endTime ? '#ef4444' : undefined
-                                            }}
-                                            className={fieldErrors.endTime ? 'border-red-500' : ''}
-                                            disabledDate={(current) => {
-                                                // Disable dates before start time
-                                                if (formData.startTime) {
-                                                    return current && current.isBefore(dayjs(formData.startTime).startOf('day'));
-                                                }
-                                                return false;
-                                            }}
-                                            disabledTime={(current) => {
-                                                // Disable time if same day and time should be after start time
-                                                if (formData.startTime && current) {
-                                                    const startTime = dayjs(formData.startTime);
-                                                    if (current.isSame(startTime, 'day')) {
-                                                        const startHour = startTime.hour();
-                                                        const startMinute = startTime.minute();
-                                                        return {
-                                                            disabledHours: () => {
-                                                                const hours = [];
-                                                                for (let i = 0; i < startHour; i++) {
-                                                                    hours.push(i);
-                                                                }
-                                                                return hours;
-                                                            },
-                                                            disabledMinutes: (selectedHour) => {
-                                                                if (selectedHour === startHour) {
-                                                                    const minutes = [];
-                                                                    for (let i = 0; i <= startMinute; i++) {
-                                                                        minutes.push(i);
-                                                                    }
-                                                                    return minutes;
-                                                                }
-                                                                return [];
-                                                            }
-                                                        };
-                                                    }
-                                                }
-                                                return {};
-                                            }}
-                                        />
-                                        {fieldErrors.endTime && (
-                                            <p className="text-red-500 text-xs mt-1">{fieldErrors.endTime}</p>
-                                        )}
-                                        {!fieldErrors.endTime && formData.startTime && formData.endTime && (
-                                            <p className="text-slate-500 text-xs mt-1">
-                                                Thời gian kiểm kê: {dayjs(formData.endTime).diff(dayjs(formData.startTime), 'hour', true).toFixed(1)} giờ
-                                            </p>
                                         )}
                                     </div>
                                 </div>
@@ -367,17 +230,9 @@ const CreateStocktaking = () => {
                                 type="button"
                                 onClick={handleSaveDraft}
                                 disabled={saveDraftLoading}
-                                className="h-[42px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {saveDraftLoading ? 'Đang lưu...' : 'Lưu nháp'}
-                            </Button>
-                            <Button
-                                type="button"
-                                onClick={handleSubmitForApproval}
-                                disabled={submitLoading}
-                                className="h-[42px] px-6 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {submitLoading ? 'Đang xử lý...' : 'Gửi Phê Duyệt'}
                             </Button>
                         </div>
                     </div>
