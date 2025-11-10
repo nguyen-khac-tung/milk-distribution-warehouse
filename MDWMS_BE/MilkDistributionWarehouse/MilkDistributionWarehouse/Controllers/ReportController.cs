@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Services;
+using MilkDistributionWarehouse.Utilities;
 using System.Threading.Tasks;
 
 namespace MilkDistributionWarehouse.Controllers
@@ -20,9 +22,9 @@ namespace MilkDistributionWarehouse.Controllers
         {
             var (message, data) = await _reportService.GetInventoryReportAsync();
             if (!string.IsNullOrEmpty(message))
-                return NotFound(new { message });
+                return ApiResponse<string>.ToResultError(message);
 
-            return Ok(data);
+            return ApiResponse<List<ReportDto.InventoryReportDto>>.ToResultOk(data);
         }
     }
 }
