@@ -27,23 +27,27 @@ import {
   Printer,
   MoreHorizontal,
   Menu,
+  Package,
+  ShoppingCart,
 } from "lucide-react"
-import { Button } from "../../../components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "../../../components/ui/card"
-import { Tabs, TabsList, TabsTrigger } from "../../../components/ui/tabs"
-import { Avatar, AvatarFallback, AvatarImage } from "../../../components/ui/avatar"
+import InventoryReport from "./InventoryReport"
+import RecentOrders from "./RecentOrders"
+import { Button } from "../../components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "../../components/ui/card"
+import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs"
+import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from "../../../components/ui/dropdown-menu"
-import { Progress } from "../../../components/ui/progress"
-import { Badge } from "../../../components/ui/badge"
-import { Input } from "../../../components/ui/input"
-import { Label } from "../../../components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select"
+} from "../../components/ui/dropdown-menu"
+import { Progress } from "../../components/ui/progress"
+import { Badge } from "../../components/ui/badge"
+import { Input } from "../../components/ui/input"
+import { Label } from "../../components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
 import {
   Dialog,
   DialogContent,
@@ -52,10 +56,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "../../../components/ui/dialog"
-import { Checkbox } from "../../../components/ui/checkbox"
-import { Textarea } from "../../../components/ui/textarea"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table"
+} from "../../components/ui/dialog"
+import { Checkbox } from "../../components/ui/checkbox"
+import { Textarea } from "../../components/ui/textarea"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
 // import { useToast } from "@/components/ui/use-toast"
 import {
   Bar,
@@ -73,16 +77,17 @@ import {
 } from "recharts"
 
 export default function Dashboard({ activeSection = "dashboard", onSectionChange }) {
-  const [activeTab, setActiveTab] = useState("stays")
+  const [showInventoryReport, setShowInventoryReport] = useState(false)
+  const [showRecentOrders, setShowRecentOrders] = useState(false)
   // const { toast } = useToast()
-  
+
   // Mock toast function
   const toast = ({ title, description, variant }) => {
     console.log(`${title}: ${description}`)
   }
 
   // Sample data for charts
-  const inventoryData = [
+  const purchaseOrdersData = [
     { name: "Sun", value: 8 },
     { name: "Mon", value: 10 },
     { name: "Tue", value: 12 },
@@ -92,7 +97,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
     { name: "Sat", value: 12 },
   ]
 
-  const ordersData = [
+  const salesOrdersData = [
     { name: "Sun", value: 8000 },
     { name: "Mon", value: 10000 },
     { name: "Tue", value: 12000 },
@@ -119,57 +124,6 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
   ]
 
   const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"]
-
-  const recentOrdersData = [
-    {
-      id: 1,
-      customerName: "Công ty ABC",
-      phone: "0901234567",
-      orderId: "ORD001",
-      quantity: 50,
-      productType: "Sữa tươi Vinamilk",
-      area: "Khu vực A",
-      status: "Đang xử lý",
-      total: "2,500,000",
-      avatar: "/placeholder.svg?height=32&width=32",
-    },
-    {
-      id: 2,
-      customerName: "Siêu thị XYZ",
-      phone: "0907654321",
-      orderId: "ORD002",
-      quantity: 100,
-      productType: ["Sữa chua", "Phô mai"],
-      area: "Khu vực B",
-      status: "Hoàn thành",
-      total: "5,000,000",
-      avatar: "/placeholder.svg?height=32&width=32",
-    },
-    {
-      id: 3,
-      customerName: "Nhà hàng DEF",
-      phone: "0909876543",
-      orderId: "ORD003",
-      quantity: 30,
-      productType: ["Bơ", "Sữa tươi"],
-      area: "Khu vực C",
-      status: "Đang giao",
-      total: "1,800,000",
-      avatar: "/placeholder.svg?height=32&width=32",
-    },
-    {
-      id: 4,
-      customerName: "Cửa hàng GHI",
-      phone: "0904567890",
-      orderId: "ORD004",
-      quantity: 75,
-      productType: "Sữa tươi TH True Milk",
-      area: "Khu vực A",
-      status: "Chờ xử lý",
-      total: "3,750,000",
-      avatar: "/placeholder.svg?height=32&width=32",
-    },
-  ]
 
   const foodOrders = [
     {
@@ -272,7 +226,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
             </div>
             <div>
               <p className="text-sm text-gray-500">
-                Nhập kho <span className="text-xs">(Tuần này)</span>
+                Đơn mua hàng <span className="text-xs">(Tuần này)</span>
               </p>
               <div className="flex items-center">
                 <h3 className="text-2xl font-bold mr-2">73</h3>
@@ -304,7 +258,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
             </div>
             <div>
               <p className="text-sm text-gray-500">
-                Xuất kho <span className="text-xs">(Tuần này)</span>
+                Đơn bán hàng <span className="text-xs">(Tuần này)</span>
               </p>
               <div className="flex items-center">
                 <h3 className="text-2xl font-bold mr-2">35</h3>
@@ -338,7 +292,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
             </div>
             <div>
               <p className="text-sm text-gray-500">
-                Đơn hàng <span className="text-xs">(Tuần này)</span>
+                Tồn kho <span className="text-xs">(Tuần này)</span>
               </p>
               <div className="flex items-center">
                 <h3 className="text-2xl font-bold mr-2">237</h3>
@@ -380,10 +334,6 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                 <p className="text-xs">Sản phẩm</p>
               </div>
             </div>
-            <div className="mt-4">
-              <p className="text-xs text-gray-500">Tổng doanh thu</p>
-              <p className="text-lg font-bold">35M VNĐ</p>
-            </div>
           </CardContent>
         </Card>
       </div>
@@ -392,7 +342,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
-            <CardTitle className="text-base font-medium">Tồn kho</CardTitle>
+            <CardTitle className="text-base font-medium">Đơn mua hàng</CardTitle>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8 text-xs">
@@ -408,7 +358,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
           <CardContent className="p-4 pt-0">
             <div className="h-[200px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <RechartsBarChart data={inventoryData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <RechartsBarChart data={purchaseOrdersData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} />
                   <YAxis hide={true} />
@@ -417,7 +367,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                       if (active && payload && payload.length) {
                         return (
                           <div className="bg-white p-2 border rounded shadow-sm">
-                            <p className="text-xs">{`${payload[0].value}K sản phẩm`}</p>
+                            <p className="text-xs">{`${payload[0].value} đơn`}</p>
                           </div>
                         )
                       }
@@ -433,7 +383,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
-            <CardTitle className="text-base font-medium">Đơn hàng</CardTitle>
+            <CardTitle className="text-base font-medium">Đơn bán hàng</CardTitle>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8 text-xs">
@@ -449,7 +399,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
           <CardContent className="p-4 pt-0">
             <div className="h-[200px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <RechartsLineChart data={ordersData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <RechartsLineChart data={salesOrdersData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} />
                   <YAxis hide={true} />
@@ -551,150 +501,87 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
         </Card>
       </div>
 
-      {/* Recent Orders Table */}
+      {/* Inventory Report Section */}
       <Card className="mb-6">
-        <CardHeader className="p-4 pb-0">
+        <CardHeader className="p-4 pb-2">
+          <CardTitle className="text-base font-medium">Thống kê tồn kho</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4">
+          {!showInventoryReport ? (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="bg-orange-50 p-3 rounded-full">
+                  <Package className="h-6 w-6 text-orange-500" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">Báo cáo tồn kho</h3>
+                  <p className="text-sm text-gray-500">Xem chi tiết báo cáo tồn kho và thống kê</p>
+                </div>
+              </div>
+              <Button
+                onClick={() => setShowInventoryReport(true)}
+                className="bg-orange-500 hover:bg-orange-600 text-white"
+              >
+                Xem báo cáo tồn kho
+              </Button>
+            </div>
+          ) : (
+            <div>
+              <div className="flex justify-end mb-4">
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowInventoryReport(false)}
+                  className="text-gray-600"
+                >
+                  Đóng
+                </Button>
+              </div>
+              <InventoryReport />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Recent Orders Section */}
+      <Card className="mb-6">
+        <CardHeader className="p-4 pb-2">
           <CardTitle className="text-base font-medium">
             Đơn hàng gần đây <span className="text-xs font-normal text-gray-500">(8 đơn hôm nay)</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="p-4">
-          <Tabs defaultValue="processing" className="w-full">
-            <TabsList className="mb-4 border-b w-full justify-start rounded-none bg-transparent p-0">
-              <TabsTrigger
-                value="processing"
-                className="rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-                onClick={() => setActiveTab("processing")}
-              >
-                Đang xử lý
-              </TabsTrigger>
-              <TabsTrigger
-                value="completed"
-                className="rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-                onClick={() => setActiveTab("completed")}
-              >
-                Hoàn thành
-              </TabsTrigger>
-              <TabsTrigger
-                value="shipping"
-                className="rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-                onClick={() => setActiveTab("shipping")}
-              >
-                Đang giao
-              </TabsTrigger>
-              <TabsTrigger
-                value="pending"
-                className="rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-                onClick={() => setActiveTab("pending")}
-              >
-                Chờ xử lý
-              </TabsTrigger>
-            </TabsList>
-
-            <div className="flex flex-col md:flex-row justify-between mb-4 gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm theo tên khách hàng, số điện thoại hoặc mã đơn hàng"
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-full md:w-[400px] text-sm"
-                />
+          {!showRecentOrders ? (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="bg-blue-50 p-3 rounded-full">
+                  <ShoppingCart className="h-6 w-6 text-blue-500" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">Đơn hàng gần đây</h3>
+                  <p className="text-sm text-gray-500">Xem danh sách đơn hàng và trạng thái xử lý</p>
+                </div>
               </div>
-              <Button className="bg-blue-500 hover:bg-blue-600 text-white">
-                <Plus className="h-4 w-4 mr-2" />
-                Tạo đơn hàng
+              <Button
+                onClick={() => setShowRecentOrders(true)}
+                className="bg-blue-500 hover:bg-blue-600 text-white"
+              >
+                Xem đơn hàng
               </Button>
             </div>
-
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="whitespace-nowrap">
-                      <div className="flex items-center">
-                        KHÁCH HÀNG <ChevronDown className="h-4 w-4 ml-1" />
-                      </div>
-                    </TableHead>
-                    <TableHead className="whitespace-nowrap">MÃ ĐƠN HÀNG</TableHead>
-                    <TableHead className="whitespace-nowrap">SỐ LƯỢNG</TableHead>
-                    <TableHead className="whitespace-nowrap">LOẠI SẢN PHẨM</TableHead>
-                    <TableHead className="whitespace-nowrap">KHU VỰC</TableHead>
-                    <TableHead className="whitespace-nowrap">TRẠNG THÁI</TableHead>
-                    <TableHead className="whitespace-nowrap">TỔNG TIỀN</TableHead>
-                    <TableHead className="whitespace-nowrap">THAO TÁC</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentOrdersData.map((order) => (
-                    <TableRow key={order.id}>
-                      <TableCell>
-                        <div className="flex items-center">
-                          <Avatar className="h-8 w-8 mr-3">
-                            <AvatarImage src={order.avatar} alt={order.customerName} />
-                            <AvatarFallback>
-                              {order.customerName
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">{order.customerName}</p>
-                            <p className="text-xs text-gray-500">{order.phone}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{order.orderId}</TableCell>
-                      <TableCell>{order.quantity}</TableCell>
-                      <TableCell>
-                        {Array.isArray(order.productType) ? (
-                          <div>
-                            {order.productType.map((type, index) => (
-                              <p key={index}>{type}</p>
-                            ))}
-                          </div>
-                        ) : (
-                          order.productType
-                        )}
-                      </TableCell>
-                      <TableCell>{order.area}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            order.status === "Hoàn thành"
-                              ? "success"
-                              : order.status === "Đang xử lý"
-                                ? "warning"
-                                : order.status === "Đang giao"
-                                  ? "default"
-                                  : "outline"
-                          }
-                        >
-                          {order.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{order.total} VNĐ</TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+          ) : (
+            <div>
+              <div className="flex justify-end mb-4">
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowRecentOrders(false)}
+                  className="text-gray-600"
+                >
+                  Đóng
+                </Button>
+              </div>
+              <RecentOrders />
             </div>
-            <div className="flex justify-end mt-4">
-              <Button variant="link" className="text-blue-500 hover:text-blue-600">
-                Xem tất cả đơn hàng
-              </Button>
-            </div>
-          </Tabs>
+          )}
         </CardContent>
       </Card>
 

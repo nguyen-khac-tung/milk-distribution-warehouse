@@ -1,6 +1,6 @@
 
 import NotFoundPage from "../pages/NotFoundPage";
-import Dashboard from "../pages/AccountPage/Dashboard/Dashboard";
+import Dashboard from "../pages/Dashboard/Dashboard";
 import CreateSaleOrder from "../pages/SalesOrderPage/CreateSaleOrder";
 import Reports from "../pages/Reports";
 // import Settings from "../pages/Settings";
