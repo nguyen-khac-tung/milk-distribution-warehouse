@@ -18,6 +18,7 @@ namespace MilkDistributionWarehouse.Controllers
             _backOrderService = backOrderService;
         }
 
+        [Authorize(Roles = "Sales Representative")]
         [HttpPost("BackOrders")]
         public async Task<IActionResult> GetBackOrders([FromBody] PagedRequest request)
         {
@@ -27,6 +28,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<PageResult<BackOrderResponseDto>>.ToResultOk(result);
         }
 
+        [Authorize(Roles = "Sales Representative")]
         [HttpGet("BackOrderDetail/{id}")]
         public async Task<IActionResult> GetBackOrder(Guid id)
         {
@@ -36,6 +38,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<BackOrderResponseDto>.ToResultOk(backOrder);
         }
 
+        [Authorize(Roles = "Sales Representative")]
         [HttpPost("Create")]
         public async Task<IActionResult> CreateBackOrder([FromBody] BackOrderRequestDto dto)
         {
@@ -48,6 +51,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<BackOrderResponseCreateDto>.ToResultOk(created);
         }
 
+        [Authorize(Roles = "Sales Representative")]
         [HttpPost("CreateBulk")]
         public async Task<IActionResult> CreateBackOrdersBulk([FromBody] BackOrderBulkCreate create)
         {
@@ -60,6 +64,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<BackOrderBulkResponse>.ToResultOk(result);
         }
 
+        [Authorize(Roles = "Sales Representative")]
         [HttpPut("Update/{id}")]
         public async Task<IActionResult> UpdateBackOrder(Guid id, [FromBody] BackOrderRequestDto dto)
         {
@@ -71,6 +76,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<BackOrderResponseDto>.ToResultOk(updated);
         }
 
+        [Authorize(Roles = "Sales Representative")]
         [HttpDelete("Delete/{id}")]
         public async Task<IActionResult> DeleteBackOrder(Guid id)
         {
