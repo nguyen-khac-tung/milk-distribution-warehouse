@@ -18,6 +18,7 @@ namespace MilkDistributionWarehouse.Controllers
             _palletService = palletService;
         }
 
+        [Authorize(Roles = "Warehouse Manager, Warehouse Staff")]
         [HttpPost("Pallets")]
         public async Task<IActionResult> GetPallets([FromBody] PagedRequest request)
         {
@@ -27,6 +28,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<PageResult<PalletResponseDto>>.ToResultOk(result);
         }
 
+        [Authorize(Roles = "Warehouse Manager, Warehouse Staff")]
         [HttpGet("PalletDetail/{id}")]
         public async Task<IActionResult> GetPallet(string id)
         {
@@ -36,6 +38,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<PalletDetailDto>.ToResultOk(pallet);
         }
 
+        [Authorize(Roles = "Warehouse Staff")]
         [HttpPost("Create")]
         public async Task<IActionResult> CreatePallet([FromBody] PalletRequestDto dto)
         {
@@ -46,7 +49,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<PalletResponseDto>.ToResultOk(created);
         }
 
-        // New endpoint: create one or many pallets depending on list provided
+        [Authorize(Roles = "Warehouse Manager, Warehouse Staff")]
         [HttpPost("CreateBulk")]
         public async Task<IActionResult> CreatePalletsBulk([FromBody] PalletBulkCreate create)
         {
@@ -57,6 +60,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<PalletBulkResponse>.ToResultOk(result);
         }
 
+        [Authorize(Roles = "Warehouse Staff")]
         [HttpPut("Update/{id}")]
         public async Task<IActionResult> UpdatePallet(string id, [FromBody] PalletRequestDto dto)
         {
@@ -66,6 +70,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<PalletResponseDto>.ToResultOk(updated);
         }
 
+        [Authorize(Roles = "Warehouse Manager, Warehouse Staff")]
         [HttpDelete("Delete/{id}")]
         public async Task<IActionResult> DeletePallet(string id)
         {
@@ -93,6 +98,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<List<PalletResponseDto>>.ToResultOk(pallets);
         }
 
+        [Authorize(Roles = "Warehouse Manager, Warehouse Staff")]
         [HttpPut("UpdateStatus")]
         public async Task<IActionResult> UpdateStatus(PalletUpdateStatusDto update)
         {
@@ -102,6 +108,7 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<PalletUpdateStatusDto>.ToResultOk(pallets);
         }
 
+        [Authorize(Roles = "Warehouse Manager, Warehouse Staff")]
         [HttpPut("UpdatePackageQuantity")]
         public async Task<IActionResult> UpdatePackageQuantity(PalletUpdatePQuantityDto update)
         {

@@ -28,7 +28,8 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
       unitName: detail.unitMeasureName || detail.unitName || "",
       unitsPerPackage: detail.unitPerPackage || detail.unitsPerPackage || 0,
       goodsId: detail.goodsId || detail.goodsID || detail.id,
-      goodsPackingId: detail.goodsPackingId || null
+      goodsPackingId: detail.goodsPackingId || null,
+      actualPackageQuantity: Number(detail.actualPackageQuantity) || 0
     }));
   }, [goodsReceiptNoteDetails]);
 
@@ -55,6 +56,20 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
     return map;
   }, [goodsReceiptNoteDetails]);
 
+  // Lọc chỉ các sản phẩm có số lượng thực nhận > 0
+  const filteredProductOptions = useMemo(() => {
+    return productOptions.filter(product => {
+      const detailId = product.value;
+      const actualQuantity = actualPackageQuantityByDetailId[detailId] || 0;
+      return actualQuantity > 0;
+    });
+  }, [productOptions, actualPackageQuantityByDetailId]);
+
+  // Kiểm tra xem có ít nhất một mặt hàng có số lượng thực nhận > 0 không
+  const hasAnyActualQuantity = useMemo(() => {
+    return Object.values(actualPackageQuantityByDetailId).some(quantity => quantity > 0);
+  }, [actualPackageQuantityByDetailId]);
+
   const fetchBatchOptionsByGoodsId = async (goodsId) => {
     if (!goodsId) return [];
     try {
@@ -69,7 +84,7 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
   };
 
   const handleProductSelect = async (idx, goodsReceiptNoteDetailId) => {
-    const selectedProduct = productOptions.find(p => p.value === goodsReceiptNoteDetailId);
+    const selectedProduct = filteredProductOptions.find(p => p.value === goodsReceiptNoteDetailId);
 
     // Lấy batch dropdown theo goodsId (ở đây goodsReceiptNoteDetailId đại diện cho dòng hàng)
     let batchOptions = [];
@@ -90,7 +105,7 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
         productName: selectedProduct?.label || "",
         unitName: selectedProduct?.unitName || "",
         unitsPerPackage: selectedProduct?.unitsPerPackage || "",
-        goodsPackingId: goodsPackingByDetailId[goodsReceiptNoteDetailId] || selectedProduct?.goodsPackingId || null,
+        goodsPackingId: selectedProduct?.goodsPackingId || goodsPackingByDetailId[goodsReceiptNoteDetailId] || null,
         batchId: "",
         batchCode: "",
         batchOptions
@@ -106,61 +121,91 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
         const response = await getGoodRNDPallet(goodsReceiptNoteId);
         if (response && response.data && response.data.length > 0) {
           // Nếu có dữ liệu từ API, sử dụng dữ liệu đó
-          const fetchedPallets = await Promise.all(
-            response.data.map(async (pallet) => {
-              return {
-                productId: pallet.goodsReceiptNoteDetailId || pallet.productId || "",
-                productName: pallet.goodsName || pallet.productName || "",
-                batchId: pallet.batchId || pallet.id || "",
-                batchCode: pallet.batchCode || "",
-                unitName: pallet.unitMeasureName || pallet.unitName || "",
-                unitsPerPackage: pallet.unitPerPackage || pallet.unitsPerPackage || "",
-                numPackages: pallet.numPackages || "",
-                goodsPackingId: pallet.goodsPackingId || null,
-                batchOptions: await fetchBatchOptionsByGoodsId(
-                  detailIdToGoodsId.get(pallet.goodsReceiptNoteDetailId) || null
-                )
+          // Lọc chỉ lấy các pallet có sản phẩm với số lượng thực nhận > 0
+          const validPalletsFromAPI = response.data.filter(pallet => {
+            const detailId = pallet.goodsReceiptNoteDetailId || pallet.productId || "";
+            const actualQuantity = actualPackageQuantityByDetailId[detailId] || 0;
+            return actualQuantity > 0;
+          });
+
+          if (validPalletsFromAPI.length > 0) {
+            const fetchedPallets = await Promise.all(
+              validPalletsFromAPI.map(async (pallet) => {
+                return {
+                  productId: pallet.goodsReceiptNoteDetailId || pallet.productId || "",
+                  productName: pallet.goodsName || pallet.productName || "",
+                  batchId: pallet.batchId || pallet.id || "",
+                  batchCode: pallet.batchCode || "",
+                  unitName: pallet.unitMeasureName || pallet.unitName || "",
+                  unitsPerPackage: pallet.unitPerPackage || pallet.unitsPerPackage || "",
+                  numPackages: pallet.numPackages || "",
+                  goodsPackingId: pallet.goodsPackingId || null,
+                  batchOptions: await fetchBatchOptionsByGoodsId(
+                    detailIdToGoodsId.get(pallet.goodsReceiptNoteDetailId) || null
+                  )
+                };
+              })
+            );
+            // Lưu map goodsPackingId theo detailId để dùng khi user chọn sản phẩm
+            const map = {};
+            validPalletsFromAPI.forEach(p => { map[p.goodsReceiptNoteDetailId] = p.goodsPackingId; });
+            setGoodsPackingByDetailId(map);
+            setPalletRows(fetchedPallets);
+          } else {
+            // Nếu không có pallet hợp lệ từ API, tạo dòng mới
+            const first = filteredProductOptions[0];
+            if (first) {
+              const defaultRow = {
+                productId: first.value || "",
+                productName: first.label || "",
+                batchId: "",
+                batchCode: "",
+                unitName: first.unitName || "",
+                unitsPerPackage: first.unitsPerPackage || "",
+                numPackages: "",
+                goodsPackingId: first.goodsPackingId || goodsPackingByDetailId[first.value] || null,
+                batchOptions: await fetchBatchOptionsByGoodsId(first.goodsId)
               };
-            })
-          );
-          // Lưu map goodsPackingId theo detailId để dùng khi user chọn sản phẩm
-          const map = {};
-          response.data.forEach(p => { map[p.goodsReceiptNoteDetailId] = p.goodsPackingId; });
-          setGoodsPackingByDetailId(map);
-          setPalletRows(fetchedPallets);
+              setPalletRows([defaultRow]);
+            }
+          }
         } else {
           // Nếu không có dữ liệu, tạo dòng mới
-          // Chọn mặc định sản phẩm đầu tiên nếu có, và load batch
-          const first = productOptions[0];
-          const defaultRow = {
-            productId: first?.value || "",
-            productName: first?.label || "",
-            batchId: "",
-            batchCode: "",
-            unitName: first?.unitName || "",
-            unitsPerPackage: first?.unitsPerPackage || "",
-            numPackages: "",
-            goodsPackingId: goodsPackingByDetailId[first?.value] || null,
-            batchOptions: await fetchBatchOptionsByGoodsId(first?.goodsId)
-          };
-          setPalletRows([defaultRow]);
+          // Chọn mặc định sản phẩm đầu tiên có số lượng thực nhận > 0, và load batch
+          const first = filteredProductOptions[0];
+          if (first) {
+            const defaultRow = {
+              productId: first.value || "",
+              productName: first.label || "",
+              batchId: "",
+              batchCode: "",
+              unitName: first.unitName || "",
+              unitsPerPackage: first.unitsPerPackage || "",
+              numPackages: "",
+              goodsPackingId: first.goodsPackingId || goodsPackingByDetailId[first.value] || null,
+              batchOptions: await fetchBatchOptionsByGoodsId(first.goodsId)
+            };
+            setPalletRows([defaultRow]);
+          }
         }
       } catch (error) {
         console.error("Error fetching pallet data:", error);
-        // Nếu có lỗi, vẫn tạo dòng mới
-        const first = productOptions[0];
-        const defaultRow = {
-          productId: first?.value || "",
-          productName: first?.label || "",
-          batchId: "",
-          batchCode: "",
-          unitName: first?.unitName || "",
-          unitsPerPackage: first?.unitsPerPackage || "",
-          numPackages: "",
-          goodsPackingId: goodsPackingByDetailId[first?.value] || null,
-          batchOptions: await fetchBatchOptionsByGoodsId(first?.goodsId)
-        };
-        setPalletRows([defaultRow]);
+        // Nếu có lỗi, vẫn tạo dòng mới với sản phẩm có số lượng thực nhận > 0
+        const first = filteredProductOptions[0];
+        if (first) {
+          const defaultRow = {
+            productId: first.value || "",
+            productName: first.label || "",
+            batchId: "",
+            batchCode: "",
+            unitName: first.unitName || "",
+            unitsPerPackage: first.unitsPerPackage || "",
+            numPackages: "",
+            goodsPackingId: first.goodsPackingId || goodsPackingByDetailId[first.value] || null,
+            batchOptions: await fetchBatchOptionsByGoodsId(first.goodsId)
+          };
+          setPalletRows([defaultRow]);
+        }
       } finally {
         setLoading(false);
       }
@@ -176,6 +221,29 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
     palletRows.forEach((r, idx) => {
       const rowErrors = [];
       
+      // Kiểm tra sản phẩm có được chọn không
+      if (!r.productId) {
+        rowErrors.push("Chưa chọn sản phẩm");
+      } else {
+        // Kiểm tra sản phẩm có số lượng thực nhận > 0 không
+        const actualQuantity = actualPackageQuantityByDetailId[r.productId] || 0;
+        if (actualQuantity === 0) {
+          const productName = filteredProductOptions.find(p => p.value === r.productId)?.label 
+            || productOptions.find(p => p.value === r.productId)?.label 
+            || r.productName 
+            || "sản phẩm này";
+          rowErrors.push(`${productName} có số lượng thực nhận bằng 0, không thể tạo pallet`);
+        }
+        // Kiểm tra goodsPackingId không được null
+        if (!r.goodsPackingId) {
+          const productName = filteredProductOptions.find(p => p.value === r.productId)?.label 
+            || productOptions.find(p => p.value === r.productId)?.label 
+            || r.productName 
+            || "sản phẩm này";
+          rowErrors.push(`${productName} thiếu thông tin quy cách đóng gói (goodsPackingId)`);
+        }
+      }
+      
       if (!r.batchId) {
         rowErrors.push("Chưa chọn số lô");
       }
@@ -190,14 +258,19 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
     });
 
     // Validate tổng số thùng phải BẰNG số lượng thùng thực nhận cho từng mặt hàng
+    // Chỉ validate các sản phẩm có số lượng thực nhận > 0
     const totalPackagesByProduct = {};
     palletRows.forEach((r, idx) => {
       if (r.productId && Number(r.numPackages) > 0) {
-        if (!totalPackagesByProduct[r.productId]) {
-          totalPackagesByProduct[r.productId] = { total: 0, rowIndices: [] };
+        const actualQuantity = actualPackageQuantityByDetailId[r.productId] || 0;
+        // Chỉ tính các sản phẩm có số lượng thực nhận > 0
+        if (actualQuantity > 0) {
+          if (!totalPackagesByProduct[r.productId]) {
+            totalPackagesByProduct[r.productId] = { total: 0, rowIndices: [] };
+          }
+          totalPackagesByProduct[r.productId].total += Number(r.numPackages);
+          totalPackagesByProduct[r.productId].rowIndices.push(idx);
         }
-        totalPackagesByProduct[r.productId].total += Number(r.numPackages);
-        totalPackagesByProduct[r.productId].rowIndices.push(idx);
       }
     });
 
@@ -205,7 +278,9 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
     Object.keys(totalPackagesByProduct).forEach(productId => {
       const requiredQuantity = actualPackageQuantityByDetailId[productId] || 0;
       const { total, rowIndices } = totalPackagesByProduct[productId];
-      const productName = productOptions.find(p => p.value === productId)?.label || productId;
+      const productName = filteredProductOptions.find(p => p.value === productId)?.label 
+        || productOptions.find(p => p.value === productId)?.label 
+        || productId;
 
       if (requiredQuantity > 0) {
         if (total > requiredQuantity) {
@@ -282,23 +357,47 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
       return;
     }
 
+    // Kiểm tra xem có ít nhất một mặt hàng có số lượng thực nhận > 0 không
+    if (!hasAnyActualQuantity) {
+      window.showToast?.("Không thể tạo pallet! Tất cả mặt hàng đều có số lượng thực nhận bằng 0. Vui lòng kiểm nhập lại.", "error");
+      return;
+    }
+
     // Validate và hiển thị lỗi theo từng dòng
     if (!validateRows()) {
       window.showToast?.("Vui lòng kiểm tra và sửa các lỗi trong bảng", "warning");
       return;
     }
 
-    const pallets = palletRows
-      .filter(r => (Number(r.numPackages) || 0) > 0)
-      .map(r => ({
+    // Lọc và chỉ lấy các row hợp lệ (có sản phẩm với số lượng thực nhận > 0 và có goodsPackingId)
+    const validPallets = palletRows.filter(r => {
+      if (!r.productId || !(Number(r.numPackages) || 0) > 0) {
+        return false;
+      }
+      const actualQuantity = actualPackageQuantityByDetailId[r.productId] || 0;
+      // Phải có số lượng thực nhận > 0 và có goodsPackingId
+      return actualQuantity > 0 && r.goodsPackingId != null;
+    });
+
+    if (validPallets.length === 0) {
+      window.showToast?.("Không có pallet hợp lệ để tạo! Vui lòng kiểm tra lại các sản phẩm có số lượng thực nhận > 0.", "error");
+      return;
+    }
+
+    const pallets = validPallets.map(r => {
+      // Đảm bảo goodsPackingId luôn có giá trị (không được null)
+      const goodsPackingId = r.goodsPackingId != null ? parseInt(r.goodsPackingId) : null;
+      if (goodsPackingId === null) {
+        throw new Error(`Sản phẩm "${r.productName || r.productId}" thiếu goodsPackingId`);
+      }
+      return {
         batchId: r.batchId,
         locationId: null,
         packageQuantity: Number(r.numPackages) || 0,
-        goodsPackingId: r.goodsPackingId != null ? parseInt(r.goodsPackingId) : null,
+        goodsPackingId: goodsPackingId,
         goodsReceiptNoteId: goodsReceiptNoteId
-      }));
-
-    if (pallets.length === 0) return;
+      };
+    });
 
     setSubmitting(true);
     // Thông báo cho parent component biết đang submitting
@@ -337,7 +436,7 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
     const updatedRows = await Promise.all(
       currentRows.map(async (row) => {
         if (row.productId) {
-          const selectedProduct = productOptions.find(p => p.value === row.productId);
+          const selectedProduct = filteredProductOptions.find(p => p.value === row.productId);
           if (selectedProduct?.goodsId) {
             const batchOptions = await fetchBatchOptionsByGoodsId(selectedProduct.goodsId);
             return {
@@ -394,12 +493,25 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
 
       {!hasExistingPallets && (
         <>
+          {/* Cảnh báo nếu không có mặt hàng nào có số lượng thực nhận > 0 */}
+          {!hasAnyActualQuantity && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mt-3">
+              <div className="flex items-center gap-2 text-red-700">
+                <AlertCircle className="w-5 h-5" />
+                <span className="font-medium">Không thể tạo pallet</span>
+              </div>
+              <p className="text-red-600 text-sm mt-1">
+                Tất cả mặt hàng đều có số lượng thực nhận bằng 0. Vui lòng kiểm nhập lại để có số lượng thực nhận lớn hơn 0 trước khi tạo pallet.
+              </p>
+            </div>
+          )}
+
           <div className="mt-3">
             <Button
               variant="outline"
               className="border-orange-300 text-orange-600 hover:bg-orange-50 h-[38px]"
               onClick={ensureTableVisibleWithDefaultRow}
-              disabled={hasExistingPallets}
+              disabled={hasExistingPallets || !hasAnyActualQuantity}
             >
               <Plus className="w-4 h-4 mr-2" />
               Thêm kệ kê hàng
@@ -447,9 +559,11 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
               variant="outline"
               className="h-[38px] text-sm"
               onClick={async () => {
-                const first = productOptions[0];
-                const options = await fetchBatchOptionsByGoodsId(first?.goodsId);
-                setPalletRows(prev => ([...prev, { productId: first?.value || "", productName: first?.label || "", batchId: "", batchCode: "", unitName: first?.unitName || "", unitsPerPackage: first?.unitsPerPackage || "", numPackages: "", goodsPackingId: goodsPackingByDetailId[first?.value] || null, batchOptions: options }]));
+                const first = filteredProductOptions[0];
+                if (first) {
+                  const options = await fetchBatchOptionsByGoodsId(first.goodsId);
+                  setPalletRows(prev => ([...prev, { productId: first.value || "", productName: first.label || "", batchId: "", batchCode: "", unitName: first.unitName || "", unitsPerPackage: first.unitsPerPackage || "", numPackages: "", goodsPackingId: first.goodsPackingId || goodsPackingByDetailId[first.value] || null, batchOptions: options }]));
+                }
               }}
             >
             </Button>
@@ -513,7 +627,7 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
                           onChange={(value) => {
                             handleProductSelect(idx, value || "");
                           }}
-                          options={productOptions}
+                          options={filteredProductOptions}
                           placeholder="Chọn sản phẩm..."
                         />
                       </TableCell>

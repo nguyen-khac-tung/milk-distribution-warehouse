@@ -129,5 +129,39 @@
         public const string BusinessOwner = "Business Owner";
     }
 
-    
+    /// <summary>
+    /// Các trạng thái của phiểu kiểm kê
+    /// </summary>
+    public static class StocktakingStatus
+    {
+        public const int Draft = 1;             //Nháp
+        public const int Assigned = 2;          //Đã phân công
+        public const int Cancelled = 3;         //Đã huỷ
+        public const int InProgress = 4;        //Đang kiểm kê
+        public const int PendingApproval = 5;   //Chờ duyệt
+        public const int Approved = 6;          //Đã duyệt
+        public const int Completed = 7;         //Đã hoàn thành
+    }
+
+    /// <summary>
+    /// Trạng thái của những vị trí (trong phiếu kiểm kê tổng)
+    /// </summary>
+    public static class StockLocationStatus
+    {
+        public const int Pending = 1;             //Đang chờ
+        public const int Counted = 2;             //Đã kiểm
+        public const int PendingApproval = 3;     //Chờ duyệt
+        public const int Completed = 4;           //Đã hoàn thành
+    }
+
+    /// <summary>
+    /// Trạng thái của pallet trong một vị trí
+    /// </summary>
+    public static class StockPalletStatus
+    {
+        public const int Unscanned = 1;     //Chưa quét
+        public const int Matched = 2;       //Đúng pallet
+        public const int Missing = 3;       //Thiếu pallet
+        public const int Surplus = 4;       //Thừa pallet
+    }
 }
