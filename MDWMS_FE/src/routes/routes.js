@@ -294,7 +294,7 @@ export const routes = [
     {
         path: "/stocktakings",
         page: () => (
-            <ProtectedRoute requiredPermission={[PERMISSIONS.STOCKTAKING_VIEW, PERMISSIONS.STOCKTAKING_VIEW_WM, PERMISSIONS.STOCKTAKING_VIEW_WS]} requireAll={false}>
+            <ProtectedRoute requiredPermission={[PERMISSIONS.STOCKTAKING_VIEW, PERMISSIONS.STOCKTAKING_VIEW_WM, PERMISSIONS.STOCKTAKING_VIEW_WS, PERMISSIONS.STOCKTAKING_VIEW_SM]} requireAll={false}>
                 <StocktakingList />
             </ProtectedRoute>
         ),
