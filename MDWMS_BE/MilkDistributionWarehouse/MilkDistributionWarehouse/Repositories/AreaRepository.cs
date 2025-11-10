@@ -2,6 +2,7 @@
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
+using System.Threading.Tasks;
 
 namespace MilkDistributionWarehouse.Repositories
 {
@@ -118,6 +119,8 @@ namespace MilkDistributionWarehouse.Repositories
         public async Task<List<Area>> GetActiveAreasAsync()
         {
             return await _context.Areas
+                .Include(a => a.Locations)
+                .Include(a => a.StorageCondition)
                 .Where(a => a.Status == CommonStatus.Active)
                 .OrderBy(a => a.AreaName)
                 .AsNoTracking()
