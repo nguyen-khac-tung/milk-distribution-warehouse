@@ -8,7 +8,10 @@ namespace MilkDistributionWarehouse.Repositories
     public interface IStocktakingSheetRepository
     {
         IQueryable<StocktakingSheet> GetStocktakingSheet();
+        Task<StocktakingSheet?> GetStocktakingSheetById(Guid stocktakingSheetId);
         Task<int> CreateStocktakingSheet(StocktakingSheet create);
+        Task<int> UpdateStockingtakingSheet(StocktakingSheet update);
+        Task<int> DeleteStocktakingSheet(StocktakingSheet delete);
         Task<bool> IsDuplicationStartTimeStocktakingSheet(Guid? stocktakingSheetId, DateTime startTime);
     }
     public class StocktakingSheetRepository : IStocktakingSheetRepository
@@ -22,6 +25,20 @@ namespace MilkDistributionWarehouse.Repositories
         public IQueryable<StocktakingSheet> GetStocktakingSheet()
         {
             return _context.StocktakingSheets.OrderByDescending(ss => ss.CreatedAt).AsNoTracking();
+        }
+
+        public async Task<StocktakingSheet?> GetStocktakingSheetById(Guid stocktakingSheetId)
+        {
+            return await _context.StocktakingSheets
+                .Include(ss => ss.CreatedByNavigation)
+                .Include(ss => ss.StocktakingAreas)
+                    .ThenInclude(sa => sa.AssignToNavigation)
+                .Include(ss => ss.StocktakingAreas)
+                    .ThenInclude(sa => sa.Area)
+                        .ThenInclude(a => a.StorageCondition)
+                    .ThenInclude(sa => sa.Areas)
+                        .ThenInclude(a => a.Locations)
+                .FirstOrDefaultAsync(ss => ss.StocktakingSheetId == stocktakingSheetId);
         }
 
         public async Task<int> CreateStocktakingSheet(StocktakingSheet create)
@@ -52,12 +69,28 @@ namespace MilkDistributionWarehouse.Repositories
             }
         }
 
+        public async Task<int> DeleteStocktakingSheet(StocktakingSheet delete)
+        {
+            try
+            {
+                _context.StocktakingSheets.Remove(delete);
+                await _context.SaveChangesAsync();
+                return 1;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
         public async Task<bool> IsDuplicationStartTimeStocktakingSheet(Guid? stocktakingSheetId, DateTime startTime)
         {
             return await _context.StocktakingSheets
                 .AnyAsync(ss => (stocktakingSheetId == null || stocktakingSheetId != ss.StocktakingSheetId)
-                && ss.StartTime.HasValue 
+                && ss.StartTime.HasValue
                 && ss.StartTime.Value.Date == startTime.Date);
         }
+
+        
     }
 }

@@ -10,6 +10,7 @@ namespace MilkDistributionWarehouse.Repositories
     {
         Task<int?> CreateStocktakingAreaBulk(List<StocktakingArea> creates);
         Task<bool> IsStocktakingAreaAssignTo(int? areaId, Guid stocktakingSheetId, int assignTo);
+        Task<bool> IsCheckStocktakingAreaExist(Guid stocktakingSheetId);
     }
     public class StocktakingAreaRepository : IStocktakingAreaRepository
     {
@@ -39,6 +40,11 @@ namespace MilkDistributionWarehouse.Repositories
                 .AnyAsync(sa => sa.StocktakingSheetId == stocktakingSheetId 
                             && (areaId == null || areaId != sa.AreaId)
                             && sa.AssignTo == assignTo);
+        }
+
+        public async Task<bool> IsCheckStocktakingAreaExist(Guid stocktakingSheetId)
+        {
+            return await _context.StocktakingAreas.AnyAsync(sa => sa.StocktakingSheetId == stocktakingSheetId);
         }
     }
 }
