@@ -71,8 +71,7 @@ export const createStocktaking = async (data) => {
     try {
         const body = {
             startTime: data.startTime, // ISO string format
-            note: data.note || "",
-            stocktakingAreaCreates: data.stocktakingAreaCreates || [] // Array of { areaId: number, assignTo: number }
+            note: data.note || ""
         };
 
         const res = await api.post("/StocktakingSheet/Create", body);
@@ -86,10 +85,68 @@ export const createStocktaking = async (data) => {
 // Hủy phiếu kiểm kê
 export const cancelStocktaking = async (stocktakingSheetId) => {
     try {
-        const res = await api.put(`/StocktakingSheet/Cancel/${stocktakingSheetId}`);
+        const body = {
+            stocktakingSheetId: stocktakingSheetId
+        };
+        const res = await api.put("/StocktakingSheet/Cancel", body);
         return res.data;
     } catch (error) {
         console.error("Error cancelling stocktaking:", error);
+        throw error;
+    }
+};
+
+// Xóa phiếu kiểm kê
+export const deleteStocktaking = async (stocktakingSheetId) => {
+    try {
+        const res = await api.delete(`/StocktakingSheet/Delete/${stocktakingSheetId}`);
+        return res.data;
+    } catch (error) {
+        console.error("Error deleting stocktaking:", error);
+        throw error;
+    }
+};
+
+// Lấy chi tiết phiếu kiểm kê
+export const getStocktakingDetail = async (stocktakingSheetId) => {
+    try {
+        const res = await api.get(`/StocktakingSheet/GetDetail/${stocktakingSheetId}`);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching stocktaking detail:", error);
+        throw error;
+    }
+};
+
+// Cập nhật phiếu kiểm kê
+export const updateStocktaking = async (data) => {
+    try {
+        const body = {
+            stocktakingSheetId: data.stocktakingSheetId,
+            startTime: data.startTime, // ISO string format
+            note: data.note || ""
+        };
+
+        const res = await api.put("/StocktakingSheet/Update", body);
+        return res.data;
+    } catch (error) {
+        console.error("Error updating stocktaking:", error);
+        throw error;
+    }
+};
+
+// Phân công nhân viên theo khu vực
+export const assignStocktakingAreas = async (data) => {
+    try {
+        const body = {
+            stocktakingSheetId: data.stocktakingSheetId,
+            stocktakingAreaCreates: data.stocktakingAreaCreates || [] // Array of { areaId: number, assignTo: number }
+        };
+
+        const res = await api.put("/StocktakingSheet/AssignAreaConfirm", body);
+        return res.data;
+    } catch (error) {
+        console.error("Error assigning stocktaking areas:", error);
         throw error;
     }
 };

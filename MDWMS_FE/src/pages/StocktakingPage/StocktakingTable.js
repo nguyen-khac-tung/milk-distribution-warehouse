@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
-import { ArrowUp, ArrowDown, ArrowUpDown, Eye, Edit, X } from 'lucide-react';
+import { ArrowUp, ArrowDown, ArrowUpDown, Eye, Edit, X, Trash2 } from 'lucide-react';
 import EmptyState from '../../components/Common/EmptyState';
 import PermissionWrapper from '../../components/Common/PermissionWrapper';
 import { PERMISSIONS } from '../../utils/permissions';
@@ -17,6 +17,7 @@ const StocktakingTable = ({
     onView,
     onEdit,
     onCancel,
+    onDelete,
     onClearFilters,
     loading
 }) => {
@@ -54,6 +55,10 @@ const StocktakingTable = ({
 
     const handleCancelClick = (stocktaking) => {
         onCancel(stocktaking);
+    };
+
+    const handleDeleteClick = (stocktaking) => {
+        onDelete(stocktaking);
     };
 
     // Use all data from backend (pagination is handled by backend)
@@ -193,7 +198,9 @@ const StocktakingTable = ({
                                                         </button>
                                                     </PermissionWrapper>
                                                 )}
-                                                {isWarehouseManager && (stocktaking.status === STOCKTAKING_STATUS.Draft || stocktaking.status === 1 || stocktaking.status === '1') && (
+                                                {isWarehouseManager && (
+                                                    (stocktaking.status === STOCKTAKING_STATUS.Assigned || stocktaking.status === 2 || stocktaking.status === '2')
+                                                ) && (
                                                     <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_DELETE}>
                                                         <button
                                                             className="p-1.5 hover:bg-slate-100 rounded transition-colors"
@@ -201,6 +208,17 @@ const StocktakingTable = ({
                                                             onClick={() => handleCancelClick(stocktaking)}
                                                         >
                                                             <X className="h-4 w-4 text-red-500" />
+                                                        </button>
+                                                    </PermissionWrapper>
+                                                )}
+                                                {isWarehouseManager && (stocktaking.status === STOCKTAKING_STATUS.Draft || stocktaking.status === 1 || stocktaking.status === '1') && (
+                                                    <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_DELETE}>
+                                                        <button
+                                                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                            title="Xóa phiếu kiểm kê"
+                                                            onClick={() => handleDeleteClick(stocktaking)}
+                                                        >
+                                                            <Trash2 className="h-4 w-4 text-red-500" />
                                                         </button>
                                                     </PermissionWrapper>
                                                 )}

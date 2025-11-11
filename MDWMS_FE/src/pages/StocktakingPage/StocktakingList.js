@@ -6,9 +6,10 @@ import { Plus } from "lucide-react";
 import Pagination from "../../components/Common/Pagination";
 import StocktakingFilterToggle from "../../components/StocktakingComponents/StocktakingFilterToggle";
 import CancelStocktakingModal from "../../components/StocktakingComponents/CancelStocktakingModal";
+import DeleteModal from "../../components/Common/DeleteModal";
 import StocktakingTable from "./StocktakingTable";
 import { extractErrorMessage } from "../../utils/Validation";
-import { getStocktakingListForWarehouseManager, getStocktakingListForWarehouseStaff, getStocktakingListForSaleManager, cancelStocktaking } from "../../services/StocktakingService";
+import { getStocktakingListForWarehouseManager, getStocktakingListForWarehouseStaff, getStocktakingListForSaleManager, cancelStocktaking, deleteStocktaking } from "../../services/StocktakingService";
 import { PERMISSIONS, STOCKTAKING_STATUS } from "../../utils/permissions";
 import { usePermissions } from "../../hooks/usePermissions";
 import PermissionWrapper from "../../components/Common/PermissionWrapper";
@@ -37,6 +38,10 @@ export default function StocktakingList() {
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [selectedStocktaking, setSelectedStocktaking] = useState(null);
     const [cancelLoading, setCancelLoading] = useState(false);
+
+    // Delete modal states
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleteLoading, setDeleteLoading] = useState(false);
 
     // Fetch data from API
     const fetchDataWithParams = async (params) => {
@@ -210,6 +215,41 @@ export default function StocktakingList() {
         setSelectedStocktaking(null);
     };
 
+    const handleDeleteClick = (stocktaking) => {
+        setSelectedStocktaking(stocktaking);
+        setShowDeleteModal(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!selectedStocktaking) return;
+
+        setDeleteLoading(true);
+        try {
+            await deleteStocktaking(selectedStocktaking.stocktakingSheetId);
+
+            if (window.showToast) {
+                window.showToast("Xóa phiếu kiểm kê thành công!", "success");
+            }
+
+            setShowDeleteModal(false);
+            setSelectedStocktaking(null);
+            fetchData();
+        } catch (error) {
+            console.error("Error deleting stocktaking:", error);
+            const errorMessage = extractErrorMessage(error);
+            if (window.showToast) {
+                window.showToast(errorMessage || "Có lỗi xảy ra khi xóa phiếu kiểm kê", "error");
+            }
+        } finally {
+            setDeleteLoading(false);
+        }
+    };
+
+    const handleDeleteModalClose = () => {
+        setShowDeleteModal(false);
+        setSelectedStocktaking(null);
+    };
+
     const handlePageChange = (newPage) => {
         setPagination(prev => ({ ...prev, current: newPage }));
 
@@ -360,6 +400,7 @@ export default function StocktakingList() {
                         onView={handleViewClick}
                         onEdit={handleEditClick}
                         onCancel={handleCancelClick}
+                        onDelete={handleDeleteClick}
                         onClearFilters={clearAllFilters}
                         loading={loading}
                     />
@@ -385,6 +426,14 @@ export default function StocktakingList() {
                     onClose={handleCancelModalClose}
                     onConfirm={handleCancelConfirm}
                     stocktakingSheetId={selectedStocktaking?.stocktakingSheetId || ''}
+                />
+
+                {/* Delete Confirmation Modal */}
+                <DeleteModal
+                    isOpen={showDeleteModal}
+                    onClose={handleDeleteModalClose}
+                    onConfirm={handleDeleteConfirm}
+                    itemName={"phiếu kiểm kê này"}
                 />
             </div>
         </div>
