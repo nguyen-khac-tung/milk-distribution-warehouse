@@ -51,4 +51,5 @@ namespace MilkDistributionWarehouse.Models.DTOs
     }
 
     public class StocktakingSheetCancelStatus : StocktakingSheetStatusUpdate { }
+    public class StocktakingSheetInProgressStatus : StocktakingSheetStatusUpdate { }
 }

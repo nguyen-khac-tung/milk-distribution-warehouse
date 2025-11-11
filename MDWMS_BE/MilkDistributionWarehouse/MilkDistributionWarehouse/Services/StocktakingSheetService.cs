@@ -29,10 +29,11 @@ namespace MilkDistributionWarehouse.Services
         private readonly IAreaRepository _areaRepository;
         private readonly IStocktakingAreaService _stocktakingAreaService;
         private readonly int hoursBeforeStartTime = StocktakingSettings.HoursBeforeStartToAllowEdit;
+        private readonly IStocktakingLocationService _stocktakingLocationService;
         public StocktakingSheetService(IMapper mapper, IStocktakingSheetRepository stocktakingSheetRepository,
             IStocktakingAreaRepository stocktakingAreaRepository,
             IUnitOfWork unitOfWork, IAreaRepository areaRepository,
-            IStocktakingAreaService stocktakingAreaService)
+            IStocktakingAreaService stocktakingAreaService, IStocktakingLocationService stocktakingLocationService)
         {
             _mapper = mapper;
             _stocktakingSheetRepository = stocktakingSheetRepository;
@@ -40,6 +41,7 @@ namespace MilkDistributionWarehouse.Services
             _unitOfWork = unitOfWork;
             _areaRepository = areaRepository;
             _stocktakingAreaService = stocktakingAreaService;
+            _stocktakingLocationService = stocktakingLocationService;
         }
 
         public async Task<(string, PageResult<StocktakingSheetDto>?)> GetStocktakingSheets(PagedRequest request, string roleName, int? userId)
@@ -177,10 +179,13 @@ namespace MilkDistributionWarehouse.Services
                 return ("Phiếu kiểm kê không tồn tại.".ToMessageForUser(), default);
 
             var currentStatus = stocktakingSheetExist.Status;
-            var isPermission = userId != null && stocktakingSheetExist.CreatedBy == userId;
+            var isPermissionWarehouseManager = userId != null && stocktakingSheetExist.CreatedBy == userId;
+            var isPermissionWarehouseStaff = userId != null && stocktakingSheetExist.StocktakingAreas.Any(sa => sa.AssignTo == userId);
 
-            if (!isPermission)
-                return ("Bạn không có quyền thực hiện chức năng cập nhật trạng thái trong phiếu kiểm kê.".ToMessageForUser(), default);
+            var messagePermission = "Bạn không có quyền thực hiện chức năng cập nhật trạng thái trong phiếu kiểm kê.".ToMessageForUser();
+
+            var timeNow = DateTime.Now;
+            var startTime = stocktakingSheetExist.StartTime;
 
             try
             {
@@ -188,6 +193,9 @@ namespace MilkDistributionWarehouse.Services
 
                 if (update is StocktakingSheetAssignStatus sheetAssignStatus)
                 {
+                    if (!isPermissionWarehouseManager)
+                        throw new Exception(messagePermission);
+
                     if (currentStatus != StocktakingStatus.Draft)
                         throw new Exception("Chỉ đươc chuyển sang trạng thái Đã phân công khi phiếu kiểm kê ở trạng thái Nháp.".ToMessageForUser());
 
@@ -198,13 +206,13 @@ namespace MilkDistributionWarehouse.Services
                     stocktakingSheetExist.Status = StocktakingStatus.Assigned;
                 }
 
-                if(update is StocktakingSheetCancelStatus)
+                if (update is StocktakingSheetCancelStatus)
                 {
+                    if (!isPermissionWarehouseManager)
+                        throw new Exception(messagePermission);
+
                     if (currentStatus != StocktakingStatus.Assigned)
                         throw new Exception("Chỉ được chuyển sang trạng thái Huỷ khi phiếu kiểm kê ở trạng thái Đã phân công.".ToMessageForUser());
-
-                    var timeNow = DateTime.Now;
-                    var startTime = stocktakingSheetExist.StartTime;
 
                     var isBefore6Hours = startTime.HasValue && timeNow < startTime.Value.AddMilliseconds(-hoursBeforeStartTime);
 
@@ -212,7 +220,37 @@ namespace MilkDistributionWarehouse.Services
                         throw new Exception($"Chỉ được chuyển sang trạng thái Huỷ khi phiếu kiểm kê trước thời gian bắt đầu {hoursBeforeStartTime} giờ".ToMessageForUser());
 
                     stocktakingSheetExist.Status = StocktakingStatus.Cancelled;
-                }    
+                }
+
+                if (update is StocktakingSheetInProgressStatus)
+                {
+                    if (!isPermissionWarehouseStaff)
+                        throw new Exception(messagePermission);
+
+                    if (currentStatus != StocktakingStatus.Assigned)
+                        throw new Exception("Chỉ được chuyển sang trạng thái Đang kiểm kê khi phiếu kiểm kê ở trạng thái Đã phân công.".ToMessageForUser());
+
+
+                    if (startTime.HasValue && timeNow < startTime.Value)
+                    {
+                        TimeSpan remaining = startTime.Value - timeNow;
+
+                        double totalHours = remaining.TotalHours;
+                        double totalMinutes = remaining.TotalMinutes;
+                        
+                        throw new Exception($"Còn {remaining.Hours} giờ {remaining.Minutes} phút nữa đến thời gian bắt đầu kiểm kê.".ToMessageForUser());
+                    }
+
+                    var stockLocationCreate = _mapper.Map<List<StocktakingLocationCreate>>(stocktakingSheetExist.StocktakingAreas);
+
+                    foreach (var stockLocation in stockLocationCreate) {
+                        var (msg, stockLocationResult) = await _stocktakingLocationService.CreateStocktakingLocationBulk(stockLocation);
+                        if(!string.IsNullOrEmpty(msg)) 
+                            throw new Exception(msg);
+                    }
+                    
+                    stocktakingSheetExist.Status = StocktakingStatus.InProgress;
+                }
 
                 var updateResult = await _stocktakingSheetRepository.UpdateStockingtakingSheet(stocktakingSheetExist);
                 if (updateResult == 0)
