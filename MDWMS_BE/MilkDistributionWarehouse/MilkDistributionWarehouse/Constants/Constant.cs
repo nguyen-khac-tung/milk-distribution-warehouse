@@ -9,12 +9,12 @@
 
     public class RoleType
     {
-        public const int WarehouseManager = 1;         
+        public const int WarehouseManager = 1;
         public const int WarehouseStaff = 2;
         public const int Administrator = 3;
         public const int BusinessOwner = 4;
         public const int SalesRepresentative = 5;
-        public const int SaleManager = 6;        
+        public const int SaleManager = 6;
     }
 
     /// <summary>
@@ -163,5 +163,10 @@
         public const int Matched = 2;       //Đúng pallet
         public const int Missing = 3;       //Thiếu pallet
         public const int Surplus = 4;       //Thừa pallet
+    }
+
+    public static class StocktakingSettings
+    {
+        public const int HoursBeforeStartToAllowEdit = 6;
     }
 }

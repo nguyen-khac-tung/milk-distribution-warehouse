@@ -489,11 +489,16 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.StocktakingSheetId, opt => opt.MapFrom(_ => Guid.NewGuid()))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => StocktakingStatus.Draft))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now));
+            CreateMap<StocktakingSheet, StocktakingSheetDetail>()
+                .IncludeBase<StocktakingSheet, StocktakingSheetDto>();
 
             //Map StocktakingArea
             CreateMap<StocktakingAreaCreate, StocktakingArea>()
                 .ForMember(dest => dest.StocktakingAreaId, opt => opt.MapFrom(_ => Guid.NewGuid()))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now));
+            CreateMap<StocktakingArea, StocktakingAreaDetail>()
+                .ForMember(dest => dest.AssignToName, opt => opt.MapFrom(src => src.AssignToNavigation.FullName))
+                .ForMember(dest => dest.AreaDetail, opt => opt.MapFrom(src => src.Area));
 
         }
     }
