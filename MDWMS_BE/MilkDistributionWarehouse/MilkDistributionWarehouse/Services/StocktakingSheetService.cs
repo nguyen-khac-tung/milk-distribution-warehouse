@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Microsoft.AspNetCore.Http.HttpResults;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
@@ -13,7 +14,11 @@ namespace MilkDistributionWarehouse.Services
     public interface IStocktakingSheetService
     {
         Task<(string, PageResult<StocktakingSheetDto>?)> GetStocktakingSheets(PagedRequest request, string roleName, int? userId);
-        Task<(string, StocktakingSheetCreateResponse?)> CreateStocktakingSheet(StocktakingSheetCreate create, int? userId);
+        Task<(string, StocktakingSheetDetail?)> GetStocktakingSheetDetail(Guid stocktakingSheetId);
+        Task<(string, StocktakingSheeteResponse?)> CreateStocktakingSheet(StocktakingSheetCreate create, int? userId);
+        Task<(string, StocktakingSheeteResponse?)> DeleteStocktakingSheet(Guid stocktakingSheetId, int? userId);
+        Task<(string, StocktakingSheeteResponse?)> UpdateStocktakingSheet(StocktakingSheetUpdate update, int? userId);
+        Task<(string, StocktakingSheeteResponse?)> UpdateStocktakingSheetStatus<T>(T update, int? userId) where T : StocktakingSheetStatusUpdate;
     }
     public class StocktakingSheetService : IStocktakingSheetService
     {
@@ -22,15 +27,19 @@ namespace MilkDistributionWarehouse.Services
         private readonly IStocktakingAreaRepository _stocktakingAreaRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IAreaRepository _areaRepository;
+        private readonly IStocktakingAreaService _stocktakingAreaService;
+        private readonly int hoursBeforeStartTime = StocktakingSettings.HoursBeforeStartToAllowEdit;
         public StocktakingSheetService(IMapper mapper, IStocktakingSheetRepository stocktakingSheetRepository,
             IStocktakingAreaRepository stocktakingAreaRepository,
-            IUnitOfWork unitOfWork, IAreaRepository areaRepository)
+            IUnitOfWork unitOfWork, IAreaRepository areaRepository,
+            IStocktakingAreaService stocktakingAreaService)
         {
             _mapper = mapper;
             _stocktakingSheetRepository = stocktakingSheetRepository;
             _stocktakingAreaRepository = stocktakingAreaRepository;
             _unitOfWork = unitOfWork;
             _areaRepository = areaRepository;
+            _stocktakingAreaService = stocktakingAreaService;
         }
 
         public async Task<(string, PageResult<StocktakingSheetDto>?)> GetStocktakingSheets(PagedRequest request, string roleName, int? userId)
@@ -75,7 +84,21 @@ namespace MilkDistributionWarehouse.Services
             return ("", items);
         }
 
-        public async Task<(string, StocktakingSheetCreateResponse?)> CreateStocktakingSheet(StocktakingSheetCreate create, int? userId)
+        public async Task<(string, StocktakingSheetDetail?)> GetStocktakingSheetDetail(Guid stocktakingSheetId)
+        {
+            if (stocktakingSheetId == Guid.Empty)
+                return ("Mã phiếu kiểm kê không hợp lệ.", default);
+
+            var stocktakingSheetDetail = await _stocktakingSheetRepository.GetStocktakingSheetById(stocktakingSheetId);
+            if (stocktakingSheetDetail == null)
+                return ("Phiếu kiểm kê không tồn tại.".ToMessageForUser(), default);
+
+            var stocktakingSheetMap = _mapper.Map<StocktakingSheetDetail>(stocktakingSheetDetail);
+
+            return ("", stocktakingSheetMap);
+        }
+
+        public async Task<(string, StocktakingSheeteResponse?)> CreateStocktakingSheet(StocktakingSheetCreate create, int? userId)
         {
             if (create == null) return ("Dữ liệu tạo phiếu kiểm kê trống.", default);
 
@@ -94,14 +117,6 @@ namespace MilkDistributionWarehouse.Services
 
                 var stocktakingSheetMap = _mapper.Map<StocktakingSheet>(create);
 
-                var validationStocktakingAreas = await ValidationListStocktakingAreas(create.StocktakingAreaCreates);
-
-                if (!string.IsNullOrEmpty(validationStocktakingAreas))
-                    throw new Exception(validationStocktakingAreas);
-
-                var stocktakingAreaMaps = _mapper.Map<List<StocktakingArea>>(create.StocktakingAreaCreates);
-
-                stocktakingSheetMap.StocktakingAreas = stocktakingAreaMaps;
                 stocktakingSheetMap.CreatedBy = userId;
 
                 var resultCreate = await _stocktakingSheetRepository.CreateStocktakingSheet(stocktakingSheetMap);
@@ -109,7 +124,7 @@ namespace MilkDistributionWarehouse.Services
                     throw new Exception("Tạo phiếu nhập kho thất bại.");
 
                 await _unitOfWork.CommitTransactionAsync();
-                return ("", new StocktakingSheetCreateResponse { StocktakingSheetId = stocktakingSheetMap.StocktakingSheetId });
+                return ("", new StocktakingSheeteResponse { StocktakingSheetId = stocktakingSheetMap.StocktakingSheetId });
             }
             catch (Exception ex)
             {
@@ -118,29 +133,120 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
-        private async Task<string> ValidationListStocktakingAreas(List<StocktakingAreaCreate> areaCreates)
+        public async Task<(string, StocktakingSheeteResponse?)> UpdateStocktakingSheet(StocktakingSheetUpdate update, int? userId)
         {
-            if (HasDuplicateAssigneeInSameSheet(areaCreates))
-                return "Không thể phân công 2 nhân viên kho cùng 1 khu vực.";
+            var stocktakingSheetExist = await _stocktakingSheetRepository.GetStocktakingSheetById(update.StocktakingSheetId);
 
-            if (!(await CheckAllAssignAreaStocktaking(areaCreates)))
-                return "Còn khu vực chưa được phân công nhân viên kiểm kê.";
+            if (stocktakingSheetExist == null)
+                return ("Phiếu kiểm kê không tồn tại.".ToMessageForUser(), default);
 
-            return "";
+            if (stocktakingSheetExist.CreatedBy != userId)
+                return ("Bạn không có quyền cập nhập phiếu kiểm kê.", default);
+
+            var timeNow = DateTime.Now;
+            var startTime = stocktakingSheetExist.StartTime;
+
+            bool isBefore6Hours = startTime.HasValue && timeNow < startTime.Value.AddHours(-hoursBeforeStartTime);
+
+            var currentStatus = stocktakingSheetExist.Status;
+
+            if (currentStatus == StocktakingStatus.Assigned && !isBefore6Hours)
+                return ($"Không thể cập nhật thông tin. Vui lòng thực hiện chỉnh sửa trong vòng {hoursBeforeStartTime} tiếng trước thời điểm bắt đầu kiểm kê.".ToMessageForUser(), default);
+
+            var isDuplicationStartTime = await _stocktakingSheetRepository.IsDuplicationStartTimeStocktakingSheet(update.StocktakingSheetId, update.StartTime);
+            if (isDuplicationStartTime)
+                return ("Thời gian bắt đầu kiểm kê đã tồn tại ở một phiếu kiểm kê khác.", default);
+
+            stocktakingSheetExist.StartTime = startTime;
+
+            if (!string.IsNullOrEmpty(update.Note))
+                stocktakingSheetExist.Note = update.Note;
+
+            var resultUpdate = await _stocktakingSheetRepository.UpdateStockingtakingSheet(stocktakingSheetExist);
+            if (resultUpdate == 0)
+                return ("Cập nhật phiếu kiểm kê thất bại.", default);
+
+            return ("", new StocktakingSheeteResponse { StocktakingSheetId = stocktakingSheetExist.StocktakingSheetId });
         }
 
-        private bool HasDuplicateAssigneeInSameSheet(List<StocktakingAreaCreate> areas)
+        public async Task<(string, StocktakingSheeteResponse?)> UpdateStocktakingSheetStatus<T>(T update, int? userId) where T : StocktakingSheetStatusUpdate
         {
-            return areas.GroupBy(sa => sa.AssignTo)
-                        .Any(g => g.Count() > 1);
-        }
+            var stocktakingSheetExist = await _stocktakingSheetRepository.GetStocktakingSheetById(update.StocktakingSheetId);
 
-        private async Task<bool> CheckAllAssignAreaStocktaking(List<StocktakingAreaCreate> areaCreates)
+            if (stocktakingSheetExist == null)
+                return ("Phiếu kiểm kê không tồn tại.".ToMessageForUser(), default);
+
+            var currentStatus = stocktakingSheetExist.Status;
+            var isPermission = userId != null && stocktakingSheetExist.CreatedBy == userId;
+
+            if (!isPermission)
+                return ("Bạn không có quyền thực hiện chức năng cập nhật trạng thái trong phiếu kiểm kê.".ToMessageForUser(), default);
+
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                if (update is StocktakingSheetAssignStatus sheetAssignStatus)
+                {
+                    if (currentStatus != StocktakingStatus.Draft)
+                        throw new Exception("Chỉ đươc chuyển sang trạng thái Đã phân công khi phiếu kiểm kê ở trạng thái Nháp.".ToMessageForUser());
+
+                    var (msg, stocktakingSheetId) = await _stocktakingAreaService.CreateStocktakingAreaBulk(update.StocktakingSheetId, sheetAssignStatus.StocktakingAreaCreates);
+                    if (!string.IsNullOrEmpty(msg))
+                        throw new Exception(msg);
+
+                    stocktakingSheetExist.Status = StocktakingStatus.Assigned;
+                }
+
+                if(update is StocktakingSheetCancelStatus)
+                {
+                    if (currentStatus != StocktakingStatus.Assigned)
+                        throw new Exception("Chỉ được chuyển sang trạng thái Huỷ khi phiếu kiểm kê ở trạng thái Đã phân công.".ToMessageForUser());
+
+                    var timeNow = DateTime.Now;
+                    var startTime = stocktakingSheetExist.StartTime;
+
+                    var isBefore6Hours = startTime.HasValue && timeNow < startTime.Value.AddMilliseconds(-hoursBeforeStartTime);
+
+                    if (!isBefore6Hours)
+                        throw new Exception($"Chỉ được chuyển sang trạng thái Huỷ khi phiếu kiểm kê trước thời gian bắt đầu {hoursBeforeStartTime} giờ".ToMessageForUser());
+
+                    stocktakingSheetExist.Status = StocktakingStatus.Cancelled;
+                }    
+
+                var updateResult = await _stocktakingSheetRepository.UpdateStockingtakingSheet(stocktakingSheetExist);
+                if (updateResult == 0)
+                    throw new Exception("Cập nhật trạng thái phiếu kiểm kê thất bại.".ToMessageForUser());
+
+                await _unitOfWork.CommitTransactionAsync();
+                return ("", new StocktakingSheeteResponse { StocktakingSheetId = update.StocktakingSheetId });
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ($"{ex.Message}", default);
+            }
+        }
+        public async Task<(string, StocktakingSheeteResponse?)> DeleteStocktakingSheet(Guid stocktakingSheetId, int? userId)
         {
-            var areas = await _areaRepository.GetActiveAreasAsync();
+            if (stocktakingSheetId == Guid.Empty)
+                return ("Mã phiếu kiểm kê không hợp lệ.", default);
 
-            return areas.All(area => areaCreates.Any(ac => ac.AreaId == area.AreaId && ac.AssignTo != null));
+            var stocktakingSheetExist = await _stocktakingSheetRepository.GetStocktakingSheetById(stocktakingSheetId);
+            if (stocktakingSheetExist == null)
+                return ("Phiếu kiểm kê không tồn tại.".ToMessageForUser(), default);
+
+            if (userId == null || stocktakingSheetExist.CreatedBy != userId)
+                return ("Bạn không có quyền thực hiện xoá phiếu kiểm kê này.", default);
+
+            if (stocktakingSheetExist.Status != StocktakingStatus.Draft)
+                return ("Chỉ có thể xoá phiếu kiểm kê khi phiếu ở trạng thái Nháp".ToMessageForUser(), default);
+
+            var resultDelete = await _stocktakingSheetRepository.DeleteStocktakingSheet(stocktakingSheetExist);
+            if (resultDelete == 0)
+                return ("Xoá phiếu kiểm kê thất bại.", default);
+
+            return ("", new StocktakingSheeteResponse { StocktakingSheetId = stocktakingSheetId });
         }
-
     }
 }
