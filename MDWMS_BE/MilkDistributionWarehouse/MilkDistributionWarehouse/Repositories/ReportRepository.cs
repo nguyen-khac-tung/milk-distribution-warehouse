@@ -13,6 +13,7 @@ namespace MilkDistributionWarehouse.Repositories
     {
         Task<PageResult<ReportDto.InventoryReportDto>> GetInventoryReportAsync(PagedRequest request, int? areaId = null, CancellationToken cancellationToken = default);
         Task<ReportDto.LocationReportSummaryDto> GetLocationReportAsync(int? areaId = null, CancellationToken cancellationToken = default);
+        Task<List<ReportDto.SaleBySupplierReportDto>> GetSaleBySupplierReportAsync(int? supplierId, CancellationToken cancellationToken = default);
     }
 
     public class ReportRepository : IReportRepository
@@ -189,6 +190,63 @@ namespace MilkDistributionWarehouse.Repositories
             };
 
             return summary;
+        }
+
+        public async Task<List<ReportDto.SaleBySupplierReportDto>> GetSaleBySupplierReportAsync(int? supplierId, CancellationToken cancellationToken = default)
+        {
+            var sodQuery = _context.SalesOrderDetails
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (supplierId.HasValue)
+                sodQuery = sodQuery.Where(sod => sod.Goods != null && sod.Goods.SupplierId == supplierId.Value);
+
+            sodQuery = sodQuery.Where(sod => sod.GoodsId != null);
+
+            var grouped = await sodQuery
+                .GroupBy(sod => new { GoodId = sod.GoodsId.Value, GoodsPackingId = sod.GoodsPackingId })
+                .Select(g => new
+                {
+                    GoodId = g.Key.GoodId,
+                    GoodsPackingId = g.Key.GoodsPackingId,
+                    TotalPackages = g.Sum(x => x.PackageQuantity ?? 0)
+                })
+                .ToListAsync(cancellationToken);
+
+            if (grouped == null || grouped.Count == 0)
+                return new List<ReportDto.SaleBySupplierReportDto>();
+
+            var goodsIds = grouped.Select(g => g.GoodId).Distinct().ToList();
+            var packingIds = grouped.Where(g => g.GoodsPackingId.HasValue).Select(g => g.GoodsPackingId.Value).Distinct().ToList();
+
+            var goodsDict = await _context.Goods
+                .Where(g => goodsIds.Contains(g.GoodsId))
+                .Include(g => g.Supplier)
+                .ToDictionaryAsync(g => g.GoodsId, cancellationToken);
+
+            var packingDict = packingIds.Any()
+                ? await _context.Set<GoodsPacking>().Where(p => packingIds.Contains(p.GoodsPackingId)).ToDictionaryAsync(p => p.GoodsPackingId, cancellationToken)
+                : new Dictionary<int, GoodsPacking>();
+
+            var result = grouped.Select(g =>
+            {
+                goodsDict.TryGetValue(g.GoodId, out var good);
+                packingDict.TryGetValue(g.GoodsPackingId ?? 0, out var packing);
+
+                return new ReportDto.SaleBySupplierReportDto
+                {
+                    SupplierId = good?.SupplierId ?? 0,
+                    CompanyName = good?.Supplier?.CompanyName,
+                    GoodsId = g.GoodId,
+                    GoodCode = good?.GoodsCode,
+                    GoodName = good?.GoodsName,
+                    GoodsPackingId = g.GoodsPackingId ?? 0,
+                    UnitPerPackage = packing?.UnitPerPackage.HasValue == true ? packing.UnitPerPackage.Value.ToString() : null,
+                    totalPackagesSold = g.TotalPackages
+                };
+            }).ToList();
+
+            return result;
         }
     }
 }

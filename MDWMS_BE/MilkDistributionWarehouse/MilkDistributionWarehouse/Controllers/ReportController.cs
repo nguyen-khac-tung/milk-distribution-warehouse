@@ -35,5 +35,14 @@ namespace MilkDistributionWarehouse.Controllers
                 return ApiResponse<string>.ToResultError(message);
             return ApiResponse<ReportDto.LocationReportSummaryDto>.ToResultOk(data);
         }
+
+        [HttpPost("SaleBySupplierReport")]
+        public async Task<IActionResult> SaleBySupplierReport([FromQuery] int? supplierId)
+        {
+            var (message, data) = await _reportService.GetSaleBySupplierReportAsync(supplierId);
+            if (!string.IsNullOrEmpty(message))
+                return ApiResponse<string>.ToResultError(message);
+            return ApiResponse<List<ReportDto.SaleBySupplierReportDto>>.ToResultOk(data);
+        }
     }
 }
