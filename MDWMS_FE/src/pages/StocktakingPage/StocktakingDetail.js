@@ -9,6 +9,8 @@ import { getStocktakingDetail } from '../../services/StocktakingService';
 import { extractErrorMessage } from '../../utils/Validation';
 import StatusDisplay from '../../components/StocktakingComponents/StatusDisplay';
 import AssignAreaModal from '../../components/StocktakingComponents/AssignAreaModal';
+import { PERMISSIONS } from '../../utils/permissions';
+import PermissionWrapper from '../../components/Common/PermissionWrapper';
 import dayjs from 'dayjs';
 
 const StocktakingDetail = () => {
@@ -234,26 +236,30 @@ const StocktakingDetail = () => {
                             </CardContent>
                         </Card>
 
-                        {/* Assignment Button */}
-                        <div className="flex justify-center">
-                            <Button
-                                onClick={handleStartAssignment}
-                                className="h-[42px] px-8 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
-                            >
-                                <Users className="mr-2 h-5 w-5" />
-                                Bắt đầu phân công theo khu vực
-                            </Button>
-                        </div>
+                        {/* Assignment Button - Only visible for Warehouse Manager */}
+                        <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_VIEW_WM}>
+                            <div className="flex justify-center">
+                                <Button
+                                    onClick={handleStartAssignment}
+                                    className="h-[42px] px-8 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
+                                >
+                                    <Users className="mr-2 h-5 w-5" />
+                                    Bắt đầu phân công theo khu vực
+                                </Button>
+                            </div>
+                        </PermissionWrapper>
                     </div>
                 </Card>
 
-                {/* Assign Area Modal */}
-                <AssignAreaModal
-                    isOpen={showAssignModal}
-                    onClose={() => setShowAssignModal(false)}
-                    onSuccess={handleAssignmentSuccess}
-                    stocktakingSheetId={stocktaking?.stocktakingSheetId || id}
-                />
+                {/* Assign Area Modal - Only accessible for Warehouse Manager */}
+                <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_VIEW_WM}>
+                    <AssignAreaModal
+                        isOpen={showAssignModal}
+                        onClose={() => setShowAssignModal(false)}
+                        onSuccess={handleAssignmentSuccess}
+                        stocktakingSheetId={stocktaking?.stocktakingSheetId || id}
+                    />
+                </PermissionWrapper>
             </div>
         </div>
     );
