@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Repositories;
@@ -10,7 +8,7 @@ namespace MilkDistributionWarehouse.Services
 {
     public interface IReportService
     {
-        Task<(string, List<ReportDto.InventoryReportDto>)> GetInventoryReportAsync(CancellationToken cancellationToken = default);
+        Task<(string, PageResult<ReportDto.InventoryReportDto>)> GetInventoryReportAsync(PagedRequest request, int? areaId = null, CancellationToken cancellationToken = default);
     }
 
     public class ReportService : IReportService
@@ -22,12 +20,12 @@ namespace MilkDistributionWarehouse.Services
             _reportRepository = reportRepository;
         }
 
-        public async Task<(string, List<ReportDto.InventoryReportDto>)> GetInventoryReportAsync(CancellationToken cancellationToken = default)
+        public async Task<(string, PageResult<ReportDto.InventoryReportDto>)> GetInventoryReportAsync(PagedRequest request, int? areaId = null, CancellationToken cancellationToken = default)
         {
-            var data = await _reportRepository.GetInventoryReportAsync(cancellationToken);
+            var data = await _reportRepository.GetInventoryReportAsync(request, areaId, cancellationToken);
 
-            if (data == null || !data.Any())
-                return ("No inventory data found.".ToMessageForUser(), new List<ReportDto.InventoryReportDto>());
+            if (data == null || data.Items == null || data.Items.Count == 0)
+                return ("No inventory data found.".ToMessageForUser(), new PageResult<ReportDto.InventoryReportDto> { Items = new(), TotalCount = 0, PageNumber = request.PageNumber, PageSize = request.PageSize });
 
             return ("", data);
         }
