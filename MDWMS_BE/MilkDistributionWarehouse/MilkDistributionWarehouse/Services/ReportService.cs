@@ -9,6 +9,7 @@ namespace MilkDistributionWarehouse.Services
     public interface IReportService
     {
         Task<(string, PageResult<ReportDto.InventoryReportDto>)> GetInventoryReportAsync(PagedRequest request, int? areaId = null, CancellationToken cancellationToken = default);
+        Task<(string, ReportDto.LocationReportSummaryDto)> GetLocationReportAsync(int? areaId = null, CancellationToken cancellationToken = default);
     }
 
     public class ReportService : IReportService
@@ -27,6 +28,14 @@ namespace MilkDistributionWarehouse.Services
             if (data == null || data.Items == null || data.Items.Count == 0)
                 return ("No inventory data found.".ToMessageForUser(), new PageResult<ReportDto.InventoryReportDto> { Items = new(), TotalCount = 0, PageNumber = request.PageNumber, PageSize = request.PageSize });
 
+            return ("", data);
+        }
+
+        public async Task<(string, ReportDto.LocationReportSummaryDto)> GetLocationReportAsync(int? areaId = null, CancellationToken cancellationToken = default)
+        {
+            var data = await _reportRepository.GetLocationReportAsync(areaId, cancellationToken);
+            if (data == null)
+                return ("No location data found.".ToMessageForUser(), new ReportDto.LocationReportSummaryDto());
             return ("", data);
         }
     }
