@@ -75,6 +75,8 @@ import {
 } from "recharts"
 
 import OrdersPage from "./OrdersPage"
+import { getLocationReport } from "../../services/DashboardService"
+import { getAreaDropdown } from "../../services/AreaServices"
 
 export default function Dashboard({ activeSection = "dashboard", onSectionChange }) {
   const navigate = useNavigate()
@@ -82,6 +84,15 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
   const [showOrders, setShowOrders] = useState(false)
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false)
   const [showOrderDialog, setShowOrderDialog] = useState(false)
+  const [locationReport, setLocationReport] = useState({
+    totalLocations: 0,
+    availableLocationCount: 0,
+    areaDetails: []
+  })
+  const [locationReportLoading, setLocationReportLoading] = useState(true)
+  const [selectedAreaId, setSelectedAreaId] = useState(null)
+  const [areas, setAreas] = useState([])
+  const [areasLoading, setAreasLoading] = useState(false)
   // const { toast } = useToast()
 
   // Mock toast function
@@ -109,15 +120,96 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
     { name: "Fri", value: 8000 },
   ]
 
-  const storageData = [
-    { name: "Sun", occupied: 15, reserved: 10, available: 25 },
-    { name: "Mon", occupied: 20, reserved: 12, available: 18 },
-    { name: "Tue", occupied: 18, reserved: 15, available: 17 },
-    { name: "Wed", occupied: 22, reserved: 10, available: 18 },
-    { name: "Thu", occupied: 20, reserved: 15, available: 15 },
-    { name: "Fri", occupied: 18, reserved: 12, available: 20 },
-    { name: "Sat", occupied: 15, reserved: 10, available: 25 },
-  ]
+  // Fetch areas dropdown
+  useEffect(() => {
+    const fetchAreas = async () => {
+      try {
+        setAreasLoading(true)
+        const response = await getAreaDropdown()
+        // Handle response structure: { status, message, data: [...], success }
+        // or { data: { data: [...] } } or direct array
+        let areasList = []
+        if (Array.isArray(response)) {
+          areasList = response
+        } else if (response?.data) {
+          // Check if response.data is array or nested
+          areasList = Array.isArray(response.data) ? response.data : (response.data?.data || [])
+        } else if (response?.items) {
+          areasList = response.items
+        }
+        setAreas(areasList)
+      } catch (error) {
+        console.error("Error fetching areas:", error)
+        setAreas([])
+      } finally {
+        setAreasLoading(false)
+      }
+    }
+
+    if (activeSection === "dashboard") {
+      fetchAreas()
+    }
+  }, [activeSection])
+
+  // Fetch location report data
+  useEffect(() => {
+    const fetchLocationReport = async () => {
+      try {
+        setLocationReportLoading(true)
+        // Khi có selectedAreaId: truyền areaId để lấy dữ liệu khu vực đó
+        // Khi không có selectedAreaId: không truyền areaId để lấy tổng hợp tất cả khu vực
+        const params = selectedAreaId ? { areaId: selectedAreaId } : {}
+        const data = await getLocationReport(params)
+        
+        // Đảm bảo dữ liệu hợp lệ
+        if (data) {
+          setLocationReport({
+            totalLocations: data.totalLocations || 0,
+            availableLocationCount: data.availableLocationCount || 0,
+            areaDetails: data.areaDetails || []
+          })
+        } else {
+          setLocationReport({
+            totalLocations: 0,
+            availableLocationCount: 0,
+            areaDetails: []
+          })
+        }
+      } catch (error) {
+        console.error("Error fetching location report:", error)
+        setLocationReport({
+          totalLocations: 0,
+          availableLocationCount: 0,
+          areaDetails: []
+        })
+      } finally {
+        setLocationReportLoading(false)
+      }
+    }
+
+    if (activeSection === "dashboard") {
+      fetchLocationReport()
+    }
+  }, [activeSection, selectedAreaId])
+
+  // Get selected area name for display
+  const selectedAreaName = selectedAreaId 
+    ? areas.find(area => area.areaId === selectedAreaId)?.areaName || ""
+    : ""
+
+  // Transform data for pie chart - calculate total used and available
+  const storagePieData = [
+    {
+      name: "Đã sử dụng",
+      value: locationReport.totalLocations - locationReport.availableLocationCount,
+      color: "#3B82F6"
+    },
+    {
+      name: "Trống",
+      value: locationReport.availableLocationCount,
+      color: "#F59E0B"
+    }
+  ].filter(item => item.value > 0) // Only show items with value > 0
 
   const categoryData = [
     { name: "Sữa tươi", value: 35 },
@@ -305,7 +397,6 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent className="p-4">
             <p className="text-sm text-gray-500 mb-2">Hoạt động hôm nay</p>
@@ -442,30 +533,44 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
         <Card>
           <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
             <CardTitle className="text-base font-medium">Khu vực lưu trữ</CardTitle>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 text-xs">
-                  tuần này <ChevronDown className="ml-1 h-3 w-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem>Tháng này</DropdownMenuItem>
-                <DropdownMenuItem>Năm nay</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="flex items-center gap-2">
+              <Select
+                key={`area-select-${selectedAreaId || 'all'}`}
+                value={selectedAreaId !== null && selectedAreaId !== undefined ? selectedAreaId.toString() : ""}
+                onValueChange={(value) => {
+                  const newAreaId = value === "" || value === null || value === undefined ? null : parseInt(value)
+                  setSelectedAreaId(newAreaId)
+                }}
+                disabled={areasLoading}
+              >
+                <SelectTrigger className="h-8 w-[180px] text-xs">
+                  <span className="flex-1 text-left">
+                    {selectedAreaId && selectedAreaName 
+                      ? selectedAreaName 
+                      : (areasLoading ? "Đang tải..." : "Tất cả khu vực")
+                    }
+                  </span>
+                  <ChevronDown className="h-3 w-3 opacity-50" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Tất cả khu vực</SelectItem>
+                  {areas.map((area) => (
+                    <SelectItem key={area.areaId} value={area.areaId.toString()}>
+                      {area.areaName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
           <CardContent className="p-4 pt-0">
             <div className="text-xs mb-2">
               <div className="flex items-center justify-between">
-                <p>Tổng 50 khu vực</p>
+                <p>Tổng {locationReport.totalLocations} vị trí</p>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-1">
                     <span className="h-2 w-2 rounded-full bg-blue-500"></span>
                     <span>Đã sử dụng</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="h-2 w-2 rounded-full bg-green-500"></span>
-                    <span>Đã đặt</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <span className="h-2 w-2 rounded-full bg-amber-500"></span>
@@ -474,31 +579,65 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                 </div>
               </div>
             </div>
-            <div className="h-[180px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <RechartsBarChart data={storageData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                  <YAxis hide={true} />
-                  <Tooltip
-                    content={({ active, payload }) => {
-                      if (active && payload && payload.length) {
-                        return (
-                          <div className="bg-white p-2 border rounded shadow-sm">
-                            <p className="text-xs">{`Đã sử dụng: ${payload[0].value}`}</p>
-                            <p className="text-xs">{`Đã đặt: ${payload[1].value}`}</p>
-                            <p className="text-xs">{`Trống: ${payload[2].value}`}</p>
-                          </div>
-                        )
-                      }
-                      return null
-                    }}
-                  />
-                  <Bar dataKey="occupied" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="reserved" fill="#10B981" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="available" fill="#F59E0B" radius={[4, 4, 0, 0]} />
-                </RechartsBarChart>
-              </ResponsiveContainer>
+            <div className="h-[180px] w-full relative">
+              {locationReportLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                </div>
+              ) : storagePieData.length > 0 ? (
+                <>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={storagePieData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={false}
+                        outerRadius={70}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {storagePieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0]
+                            return (
+                              <div className="bg-white p-2 border rounded shadow-sm">
+                                <p className="text-xs font-medium">{data.name}</p>
+                                <p className="text-xs">{`Số lượng: ${data.value}`}</p>
+                                <p className="text-xs">{`Tỷ lệ: ${((data.value / locationReport.totalLocations) * 100).toFixed(1)}%`}</p>
+                              </div>
+                            )
+                          }
+                          return null
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  {/* Text ở góc phải dưới cùng */}
+                  <div className="absolute bottom-0 right-0 flex flex-col items-end gap-1">
+                    <div className="text-xs font-medium text-blue-500">
+                      Đã sử dụng: {locationReport.totalLocations > 0 
+                        ? (((locationReport.totalLocations - locationReport.availableLocationCount) / locationReport.totalLocations) * 100).toFixed(0)
+                        : 0}%
+                    </div>
+                    <div className="text-xs font-medium text-amber-500">
+                      Trống: {locationReport.totalLocations > 0 
+                        ? ((locationReport.availableLocationCount / locationReport.totalLocations) * 100).toFixed(0)
+                        : 0}%
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500 text-sm">
+                  Không có dữ liệu
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
