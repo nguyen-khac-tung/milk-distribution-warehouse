@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Search,
   Filter,
@@ -43,6 +43,36 @@ export default function StocktakingFilterToggle({
 }) {
   const [showSearchFilter, setShowSearchFilter] = useState(defaultOpen);
   const [statusSearchQuery, setStatusSearchQuery] = useState("");
+  
+  // Refs for dropdown elements
+  const statusFilterRef = useRef(null);
+  const pageSizeFilterRef = useRef(null);
+
+  // Handle click outside to close dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Close status filter dropdown if clicked outside
+      if (showStatusFilter && statusFilterRef.current && !statusFilterRef.current.contains(event.target)) {
+        setShowStatusFilter(false);
+        setStatusSearchQuery("");
+      }
+      
+      // Close page size filter dropdown if clicked outside
+      if (showPageSizeFilter && pageSizeFilterRef.current && !pageSizeFilterRef.current.contains(event.target)) {
+        setShowPageSizeFilter(false);
+      }
+    };
+
+    // Add event listener when dropdowns are open
+    if (showStatusFilter || showPageSizeFilter) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    // Cleanup
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showStatusFilter, showPageSizeFilter]);
 
   const handleToggle = () => {
     setShowSearchFilter(!showSearchFilter);
@@ -117,7 +147,7 @@ export default function StocktakingFilterToggle({
 
               {/* Page Size Filter */}
               {showPageSizeButton && (
-                <div className="relative page-size-filter-dropdown">
+                <div className="relative page-size-filter-dropdown" ref={pageSizeFilterRef}>
                   <button
                     onClick={() => setShowPageSizeFilter(!showPageSizeFilter)}
                     className="flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706] transition-colors bg-white text-slate-700"
@@ -170,7 +200,7 @@ export default function StocktakingFilterToggle({
               </div>
 
               {/* Status Filter */}
-              <div className="relative status-filter-dropdown">
+              <div className="relative status-filter-dropdown" ref={statusFilterRef}>
                 <button
                   onClick={() => setShowStatusFilter(!showStatusFilter)}
                   className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors min-w-0 max-w-48
