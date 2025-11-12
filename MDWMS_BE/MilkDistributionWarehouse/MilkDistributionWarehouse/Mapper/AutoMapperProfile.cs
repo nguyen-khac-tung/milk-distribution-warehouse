@@ -499,7 +499,29 @@ namespace MilkDistributionWarehouse.Mapper
             CreateMap<StocktakingArea, StocktakingAreaDetail>()
                 .ForMember(dest => dest.AssignToName, opt => opt.MapFrom(src => src.AssignToNavigation.FullName))
                 .ForMember(dest => dest.AreaDetail, opt => opt.MapFrom(src => src.Area));
+            CreateMap<StocktakingArea, StocktakingAreaDetailDto>()
+                .IncludeBase<StocktakingArea, StocktakingAreaDetail>()
+                .ForMember(dest => dest.StocktakingLocations, opt => opt.MapFrom(src => src.StocktakingLocations));
 
+            //Map StocktakingLocation
+            CreateMap<Location, StocktakingLocation>()
+                .ForMember(dest => dest.StocktakingLocationId, opt => opt.MapFrom(_ => Guid.NewGuid()))
+                .ForMember(dest => dest.LocationId, opt => opt.MapFrom(src => src.LocationId))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => StockLocationStatus.Pending))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now))
+                .ForMember(dest => dest.UpdateAt, opt => opt.Ignore());
+            CreateMap<StocktakingArea, StocktakingLocationCreate>();
+            CreateMap<StocktakingLocation, StocktakingLocationDto>()
+                .ForMember(dest => dest.LocationCode, opt => opt.MapFrom(src => src.Location.LocationCode));
+
+            //Map StocktakingPallet
+            CreateMap<Pallet, StocktakingPallet>()
+                .ForMember(dest => dest.StocktakingPalletId, opt => opt.MapFrom(_ => Guid.NewGuid()))
+                .ForMember(dest => dest.PalletId, opt => opt.MapFrom(src => src.PalletId))
+                .ForMember(dest => dest.ExpectedPackageQuantity, opt => opt.MapFrom(src => src.PackageQuantity))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => StockPalletStatus.Unscanned))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now))
+                .ForMember(dest => dest.UpdateAt, opt => opt.Ignore());
         }
     }
 }
