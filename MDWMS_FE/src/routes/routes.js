@@ -38,6 +38,7 @@ import StocktakingList from "../pages/StocktakingPage/StocktakingList";
 import CreateStocktaking from "../pages/StocktakingPage/CreateStocktaking";
 import UpdateStocktaking from "../pages/StocktakingPage/UpdateStocktaking";
 import StocktakingDetail from "../pages/StocktakingPage/StocktakingDetail";
+import StocktakingArea from "../pages/StocktakingArea/StocktakingArea";
 
 export const routes = [
     {
@@ -325,6 +326,15 @@ export const routes = [
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.STOCKTAKING_UPDATE}>
                 <UpdateStocktaking />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/stocktaking-area/:id",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.STOCKTAKING_AREA_VIEW_DETAILS}>
+                <StocktakingArea />
             </ProtectedRoute>
         ),
         isShowHeader: true,

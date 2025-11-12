@@ -9,7 +9,7 @@ import CancelStocktakingModal from "../../components/StocktakingComponents/Cance
 import DeleteModal from "../../components/Common/DeleteModal";
 import StocktakingTable from "./StocktakingTable";
 import { extractErrorMessage } from "../../utils/Validation";
-import { getStocktakingListForWarehouseManager, getStocktakingListForWarehouseStaff, getStocktakingListForSaleManager, cancelStocktaking, deleteStocktaking } from "../../services/StocktakingService";
+import { getStocktakingListForWarehouseManager, getStocktakingListForWarehouseStaff, getStocktakingListForSaleManager, cancelStocktaking, deleteStocktaking, inProgressStocktaking } from "../../services/StocktakingService";
 import { PERMISSIONS, STOCKTAKING_STATUS } from "../../utils/permissions";
 import { usePermissions } from "../../hooks/usePermissions";
 import PermissionWrapper from "../../components/Common/PermissionWrapper";
@@ -250,6 +250,30 @@ export default function StocktakingList() {
         setSelectedStocktaking(null);
     };
 
+    const handleStartStocktaking = async (stocktaking) => {
+        try {
+            // Nếu status là Assigned (2), gọi API inProgressStocktaking trước
+            if (stocktaking.status === STOCKTAKING_STATUS.Assigned || 
+                stocktaking.status === 2 || 
+                stocktaking.status === '2') {
+                await inProgressStocktaking({ stocktakingSheetId: stocktaking.stocktakingSheetId });
+                
+                if (window.showToast) {
+                    window.showToast("Bắt đầu kiểm kê thành công!", "success");
+                }
+            }
+            
+            // Navigate đến màn hình StocktakingArea
+            navigate(`/stocktaking-area/${stocktaking.stocktakingSheetId}`);
+        } catch (error) {
+            console.error("Error starting stocktaking:", error);
+            const errorMessage = extractErrorMessage(error);
+            if (window.showToast) {
+                window.showToast(errorMessage || "Có lỗi xảy ra khi bắt đầu kiểm kê", "error");
+            }
+        }
+    };
+
     const handlePageChange = (newPage) => {
         setPagination(prev => ({ ...prev, current: newPage }));
 
@@ -401,6 +425,7 @@ export default function StocktakingList() {
                         onEdit={handleEditClick}
                         onCancel={handleCancelClick}
                         onDelete={handleDeleteClick}
+                        onStartStocktaking={handleStartStocktaking}
                         onClearFilters={clearAllFilters}
                         loading={loading}
                     />
