@@ -151,3 +151,28 @@ export const assignStocktakingAreas = async (data) => {
     }
 };
 
+export const inProgressStocktaking = async (data) => {
+    try {
+        const body = {
+            stocktakingSheetId: data.stocktakingSheetId
+        };
+
+        const res = await api.put("/StocktakingSheet/InProgress", body);
+        return res.data;
+    } catch (error) {
+        console.error("Error setting stocktaking to in progress:", error);
+        throw error;
+    }
+};
+
+// Lấy chi tiết StocktakingArea theo stocktakingSheetId
+export const getStocktakingAreaDetailBySheetId = async (stocktakingSheetId) => {
+    try {
+        const res = await api.get(`/StocktakingArea/GetDetailByStocktakingSheetId/${stocktakingSheetId}`);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching stocktaking area detail:", error);
+        throw error;
+    }
+};
+

@@ -54,9 +54,9 @@ namespace MilkDistributionWarehouse.Services
 
             switch (roleName)
             {
-                //case RoleNames.WarehouseManager:
+                case RoleNames.WarehouseManager:
 
-                //    break;
+                    break;
                 case RoleNames.SalesManager:
                     var status = new int[]
                     {
