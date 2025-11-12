@@ -27,4 +27,9 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public Guid StocktakingAreaId { get; set; }
     }
 
+    public class StocktakingAreaDetailDto : StocktakingAreaDetail
+    {
+        public List<StocktakingLocationDto> StocktakingLocations { get; set; }
+    }
+
 }

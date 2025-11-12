@@ -499,6 +499,9 @@ namespace MilkDistributionWarehouse.Mapper
             CreateMap<StocktakingArea, StocktakingAreaDetail>()
                 .ForMember(dest => dest.AssignToName, opt => opt.MapFrom(src => src.AssignToNavigation.FullName))
                 .ForMember(dest => dest.AreaDetail, opt => opt.MapFrom(src => src.Area));
+            CreateMap<StocktakingArea, StocktakingAreaDetailDto>()
+                .IncludeBase<StocktakingArea, StocktakingAreaDetail>()
+                .ForMember(dest => dest.StocktakingLocations, opt => opt.MapFrom(src => src.StocktakingLocations));
 
             //Map StocktakingLocation
             CreateMap<Location, StocktakingLocation>()
@@ -508,6 +511,8 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now))
                 .ForMember(dest => dest.UpdateAt, opt => opt.Ignore());
             CreateMap<StocktakingArea, StocktakingLocationCreate>();
+            CreateMap<StocktakingLocation, StocktakingLocationDto>()
+                .ForMember(dest => dest.LocationCode, opt => opt.MapFrom(src => src.Location.LocationCode));
 
             //Map StocktakingPallet
             CreateMap<Pallet, StocktakingPallet>()

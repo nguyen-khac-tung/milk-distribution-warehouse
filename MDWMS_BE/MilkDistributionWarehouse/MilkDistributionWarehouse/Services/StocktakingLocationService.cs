@@ -34,6 +34,10 @@ namespace MilkDistributionWarehouse.Services
             if (!locations.Any())
                 return ("Danh sách vị trí theo khu vực trống.", default);
 
+            var anyStocktakingLocation = await _stocktakingLocationRepository.AnyStocktakingLocationByStockAreaId(create.StocktakingAreaId);
+            if (anyStocktakingLocation)
+                return ("Đã tồn tại các vị trí kiểm kê theo khu vực được phân công.", default);
+
             List<StocktakingLocation> stocktakingLocations = new List<StocktakingLocation>();
             List<StocktakingPalletCreate> stocktakingPalletCreates = new List<StocktakingPalletCreate>();
 
