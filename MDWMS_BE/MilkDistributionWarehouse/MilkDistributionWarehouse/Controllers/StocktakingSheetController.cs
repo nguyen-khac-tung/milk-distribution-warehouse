@@ -101,6 +101,15 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<StocktakingSheeteResponse?>.ToResultOk(stocktaking);
         }
 
+        [HttpPut("InProgress")]
+        [Authorize(Roles = RoleNames.WarehouseStaff)]
+        public async Task<IActionResult> InProgressStocktakingSheet([FromBody] StocktakingSheetInProgressStatus update)
+        {
+            var (msg, stocktaking) = await _stocktakingSheetService.UpdateStocktakingSheetStatus(update, User.GetUserId());
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<StocktakingSheeteResponse?>.ToResultOk(stocktaking);
+        }
 
         [HttpDelete("Delete/{stocktakingSheetId}")]
         [Authorize(Roles = RoleNames.WarehouseManager)]

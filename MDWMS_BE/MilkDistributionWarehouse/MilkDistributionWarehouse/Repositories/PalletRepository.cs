@@ -20,6 +20,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> ExistsGoodRecieveNote(string? goodRcNoteId);
         Task<List<Pallet>> GetPotentiallyPalletsForPicking(int? goodsId, int? goodsPackingId);
         Task<bool> IsAnyDiffActivePalletByGRNId(string grndId);
+        Task<List<Pallet>> GetActivePalletIdsByLocationId(List<int> locationIds);
     }
 
     public class PalletRepository : IPalletRepository
@@ -162,6 +163,15 @@ namespace MilkDistributionWarehouse.Repositories
                 .AnyAsync(p => p.GoodsReceiptNoteId.Equals(grndId)
                 && (p.Status != CommonStatus.Active
                 || p.LocationId == null));
+        }
+
+        public async Task<List<Pallet>> GetActivePalletIdsByLocationId(List<int> locationIds)
+        {
+            return await _context.Pallets
+                .Where(p => p.LocationId.HasValue 
+                && locationIds.Contains(p.LocationId.Value) 
+                && p.Status == CommonStatus.Active)
+                .ToListAsync();
         }
     }
 }

@@ -9,6 +9,7 @@ namespace MilkDistributionWarehouse.Services
 {
     public interface IStocktakingAreaService
     {
+        Task<(string, StocktakingAreaDetailDto?)> GetStocktakingAreaByStocktakingSheetId(Guid stoctakingSheetId);
         Task<(string, StocktakingSheeteResponse?)> CreateStocktakingAreaBulk(Guid stocktakingSheetId, List<StocktakingAreaCreate> creates);
     }
     public class StocktakingAreaService : IStocktakingAreaService
@@ -21,6 +22,20 @@ namespace MilkDistributionWarehouse.Services
             _stocktakingAreaRepository = stocktakingAreaRepository;
             _areaRepository = areaRepository;
             _mapper = mapper;
+        }
+
+        public async Task<(string, StocktakingAreaDetailDto?)> GetStocktakingAreaByStocktakingSheetId(Guid stoctakingSheetId)
+        {
+            if (stoctakingSheetId == Guid.Empty)
+                return ("Mã phiếu kiểm kê không hợp lệ.", default);
+
+            var stocktakingArea = await _stocktakingAreaRepository.GetStocktakingAreaByStocktakingSheetId(stoctakingSheetId);
+            if (stocktakingArea == null)
+                return ("Phiếu kiểm kê khu vực không tồn tại.", default);
+
+            var stocktakingAreaMap = _mapper.Map<StocktakingAreaDetailDto>(stocktakingArea);
+
+            return ("", stocktakingAreaMap);
         }
 
         public async Task<(string, StocktakingSheeteResponse?)> CreateStocktakingAreaBulk(Guid stocktakingSheetId, List<StocktakingAreaCreate> creates)
