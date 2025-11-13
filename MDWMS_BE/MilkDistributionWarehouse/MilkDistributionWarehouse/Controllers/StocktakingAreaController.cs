@@ -21,7 +21,7 @@ namespace MilkDistributionWarehouse.Controllers
 
         [HttpGet("GetDetailForWarehouseStaffByStocktakingSheetId/{stoctakingSheetId}")]
         [Authorize(Roles = RoleNames.WarehouseStaff)]
-        public async Task<IActionResult> GetDetailStocktakingAreaByStocktakingSheetId(Guid stoctakingSheetId)
+        public async Task<IActionResult> GetDetailStocktakingAreaByStocktakingSheetId(string stoctakingSheetId)
         {
             var (msg, stocktakingAreaDetail) = await _stocktakingAreaService.GetStocktakingAreaByStocktakingSheetId(stoctakingSheetId, User.GetUserId());
             if (!string.IsNullOrEmpty(msg))
@@ -31,7 +31,7 @@ namespace MilkDistributionWarehouse.Controllers
 
         [HttpGet("GetDetailForOtherRoleByStocktakingSheetId/{stoctakingSheetId}")]
         [Authorize(Roles = $"{RoleNames.WarehouseManager}, {RoleNames.SalesManager}")]
-        public async Task<IActionResult> GetDetailOtherRoleStocktakingAreaByStocktakingSheetId(Guid stoctakingSheetId)
+        public async Task<IActionResult> GetDetailOtherRoleStocktakingAreaByStocktakingSheetId(string stoctakingSheetId)
         {
             var (msg, stocktakingAreaDetail) = await _stocktakingAreaService.GetStocktakingAreaByStocktakingSheetId(stoctakingSheetId, null);
             if (!string.IsNullOrEmpty(msg))

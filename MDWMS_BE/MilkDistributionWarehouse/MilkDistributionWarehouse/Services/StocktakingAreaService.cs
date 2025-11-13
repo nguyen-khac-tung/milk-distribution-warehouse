@@ -4,15 +4,16 @@ using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
 using MilkDistributionWarehouse.Utilities;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace MilkDistributionWarehouse.Services
 {
     public interface IStocktakingAreaService
     {
-        Task<(string, StocktakingAreaDetailDto?)> GetStocktakingAreaByStocktakingSheetId(Guid stoctakingSheetId, int? userId);
-        Task<(string, StocktakingSheeteResponse?)> CreateStocktakingAreaBulk(Guid stocktakingSheetId, List<StocktakingAreaCreate> creates);
-        Task<(string, StocktakingSheeteResponse?)> UpdateStocktakingAreaBulk(Guid stocktakingSheetId, List<StocktakingAreaUpdate> updates);
+        Task<(string, StocktakingAreaDetailDto?)> GetStocktakingAreaByStocktakingSheetId(string stoctakingSheetId, int? userId);
+        Task<(string, StocktakingSheeteResponse?)> CreateStocktakingAreaBulk(string stocktakingSheetId, List<StocktakingAreaCreate> creates);
+        Task<(string, StocktakingSheeteResponse?)> UpdateStocktakingAreaBulk(string stocktakingSheetId, List<StocktakingAreaUpdate> updates);
     }
     public class StocktakingAreaService : IStocktakingAreaService
     {
@@ -29,9 +30,9 @@ namespace MilkDistributionWarehouse.Services
             _stocktakingLocationRepository = stocktakingLocationRepository;
         }
 
-        public async Task<(string, StocktakingAreaDetailDto?)> GetStocktakingAreaByStocktakingSheetId(Guid stoctakingSheetId, int? userId)
+        public async Task<(string, StocktakingAreaDetailDto?)> GetStocktakingAreaByStocktakingSheetId(string stoctakingSheetId, int? userId)
         {
-            if (stoctakingSheetId == Guid.Empty)
+            if (string.IsNullOrEmpty(stoctakingSheetId))
                 return ("Mã phiếu kiểm kê không hợp lệ.", default);
 
             var stocktakingArea = new StocktakingArea();
@@ -51,7 +52,7 @@ namespace MilkDistributionWarehouse.Services
 
 
 
-        public async Task<(string, StocktakingSheeteResponse?)> CreateStocktakingAreaBulk(Guid stocktakingSheetId, List<StocktakingAreaCreate> creates)
+        public async Task<(string, StocktakingSheeteResponse?)> CreateStocktakingAreaBulk(string stocktakingSheetId, List<StocktakingAreaCreate> creates)
         {
             if (await _stocktakingAreaRepository.IsCheckStocktakingAreaExist(stocktakingSheetId))
                 return ("Phiểu kiểm kê đã tồn tại phân công nhân viên theo khu vực.", default);
@@ -74,10 +75,10 @@ namespace MilkDistributionWarehouse.Services
             return ("", new StocktakingSheeteResponse { StocktakingSheetId = stocktakingSheetId });
         }
 
-        public async Task<(string, StocktakingSheeteResponse?)> UpdateStocktakingAreaBulk(Guid stocktakingSheetId, List<StocktakingAreaUpdate> updates)
+        public async Task<(string, StocktakingSheeteResponse?)> UpdateStocktakingAreaBulk(string stocktakingSheetId, List<StocktakingAreaUpdate> updates)
         {
-            if (await _stocktakingAreaRepository.IsCheckStocktakingAreaExist(stocktakingSheetId))
-                return ("Phiểu kiểm kê đã tồn tại phân công nhân viên theo khu vực.", default);
+            //if (await _stocktakingAreaRepository.IsCheckStocktakingAreaExist(stocktakingSheetId))
+            //    return ("Phiểu kiểm kê đã tồn tại phân công nhân viên theo khu vực.", default);
 
             var stocktakingAreas = await _stocktakingAreaRepository.GetStocktakingAreasByStocktakingSheetId(stocktakingSheetId);
 
@@ -88,7 +89,17 @@ namespace MilkDistributionWarehouse.Services
             if(!string.IsNullOrEmpty(validationReAssignStocktakingArea))
                 return (validationReAssignStocktakingArea.ToMessageForUser(), default);
 
-            _mapper.Map(updates, stocktakingAreas);
+            var areaIdToStocktakingArea = stocktakingAreas
+                .GroupBy(sa => sa.AreaId)
+                .ToDictionary(g => g.Key, g => g.First());
+
+            foreach (var update in updates)
+            {
+                if (!areaIdToStocktakingArea.TryGetValue(update.AreaId, out var existingEntity))
+                    continue;
+
+                _mapper.Map(update, existingEntity);
+            }
 
             var updateBulkResult = await _stocktakingAreaRepository.UpdateStocktakingAreaBulk(stocktakingAreas);
             if (updateBulkResult == 0)
@@ -110,7 +121,7 @@ namespace MilkDistributionWarehouse.Services
 
             var areaIds = updates.Select(u => u.AreaId).ToList();
 
-            var locationsByAreaIds = await _stocktakingLocationRepository.GetLocationsByAreaIdsAsync(areaIds);
+            var locationsByAreaIds = await _stocktakingLocationRepository.GetLocationsByStockSheetIdAreaIdsAsync(stockSheetId, areaIds);
 
             var assignToIds = updates.Select(u => u.AssignTo).Distinct().ToList();
 
