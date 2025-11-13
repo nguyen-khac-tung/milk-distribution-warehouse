@@ -11,6 +11,9 @@ import { DatePicker, ConfigProvider } from 'antd';
 import dayjs from 'dayjs';
 import { updateStocktaking, getStocktakingDetail } from '../../services/StocktakingService';
 import { extractErrorMessage } from '../../utils/Validation';
+import AssignAreaModal from '../../components/StocktakingComponents/AssignAreaModal';
+import PermissionWrapper from '../../components/Common/PermissionWrapper';
+import { PERMISSIONS } from '../../utils/permissions';
 
 const UpdateStocktaking = () => {
     const navigate = useNavigate();
@@ -39,6 +42,7 @@ const UpdateStocktaking = () => {
     const [fieldErrors, setFieldErrors] = useState({});
     const [updateLoading, setUpdateLoading] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [showAssignModal, setShowAssignModal] = useState(false);
 
     // Load dữ liệu hiện tại
     useEffect(() => {
@@ -146,6 +150,8 @@ const UpdateStocktaking = () => {
             if (window.showToast) {
                 window.showToast('Cập nhật phiếu kiểm kê thành công!', 'success');
             }
+
+            // Navigate về danh sách sau khi cập nhật thành công
             navigate('/stocktakings');
         } catch (error) {
             console.error('Error updating stocktaking:', error);
@@ -156,6 +162,26 @@ const UpdateStocktaking = () => {
         } finally {
             setUpdateLoading(false);
         }
+    };
+
+    const handleOpenAssignModal = (e) => {
+        e.preventDefault();
+
+        // Chỉ validate form, không gọi API
+        if (!validateForm()) {
+            window.showToast('Vui lòng điền đầy đủ thông tin bắt buộc', 'error');
+            return;
+        }
+
+        // Chỉ mở modal, chưa lưu gì cả
+        setShowAssignModal(true);
+    };
+
+    const handleAssignmentSuccess = () => {
+        // Sau khi phân công thành công, navigate về danh sách
+        // Toast đã được hiển thị trong modal
+        setShowAssignModal(false);
+        navigate('/stocktakings');
     };
 
     if (loading) {
@@ -292,25 +318,40 @@ const UpdateStocktaking = () => {
                         <div className="flex justify-end gap-3 pt-6 border-t border-gray-200 mt-6">
                             <Button
                                 type="button"
-                                variant="outline"
-                                onClick={() => navigate('/stocktakings')}
+                                onClick={handleUpdate}
                                 disabled={updateLoading}
-                                className="h-[38px] px-6 border-slate-300 text-slate-700 hover:bg-slate-50 font-medium rounded-lg"
+                                className="h-[38px] px-6 bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Hủy
+                                {updateLoading ? 'Đang cập nhật...' : 'Cập nhật'}
                             </Button>
                             <Button
                                 type="button"
-                                onClick={handleUpdate}
+                                onClick={handleOpenAssignModal}
                                 disabled={updateLoading}
                                 className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {updateLoading ? 'Đang cập nhật...' : 'Cập nhật'}
+                                Phân công
                             </Button>
                         </div>
                     </div>
                 </Card>
             </div>
+
+            {/* Assign Area Modal - Hiển thị khi click nút Phân công */}
+            <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_VIEW_WM}>
+                <AssignAreaModal
+                    isOpen={showAssignModal}
+                    onClose={() => {
+                        // Chỉ đóng modal, không làm gì cả, form vẫn giữ nguyên
+                        setShowAssignModal(false);
+                    }}
+                    onSuccess={handleAssignmentSuccess}
+                    stocktakingSheetId={formData.stocktakingSheetId || id}
+                    isReassign={false}
+                    stocktaking={null}
+                    formData={formData} // Truyền formData để modal tự cập nhật khi confirm
+                />
+            </PermissionWrapper>
         </div>
     );
 };

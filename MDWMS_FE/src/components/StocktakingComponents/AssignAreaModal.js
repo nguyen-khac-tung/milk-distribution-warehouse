@@ -4,7 +4,7 @@ import { X, MapPin, Users, User, CheckCircle2, Thermometer, Droplets, Sun, Packa
 import { Button } from '../ui/button';
 import { getStocktakingArea } from '../../services/AreaServices';
 import { getUserDropDownByRoleName } from '../../services/AccountService';
-import { assignStocktakingAreas, reAssignAreaConfirm, createStocktaking } from '../../services/StocktakingService';
+import { assignStocktakingAreas, reAssignAreaConfirm, createStocktaking, updateStocktaking } from '../../services/StocktakingService';
 import { extractErrorMessage } from '../../utils/Validation';
 import dayjs from 'dayjs';
 
@@ -88,8 +88,8 @@ const AssignAreaModal = ({
         try {
             let finalStocktakingSheetId = stocktakingSheetId;
 
-            // Nếu chưa có stocktakingSheetId và có formData, tạo phiếu kiểm kê trước
-            if (!finalStocktakingSheetId && formData) {
+            // Nếu có formData, cần tạo hoặc cập nhật phiếu kiểm kê trước
+            if (formData) {
                 try {
                     // Format date
                     let startTimeISO = null;
@@ -98,28 +98,35 @@ const AssignAreaModal = ({
                         startTimeISO = date.format('YYYY-MM-DDTHH:mm:ss');
                     }
 
-                    const createData = {
+                    const submitData = {
                         startTime: startTimeISO,
                         note: formData.reason?.trim() || ''
                     };
 
-                    const createResponse = await createStocktaking(createData);
-                    
-                    // Extract stocktakingSheetId from response
-                    finalStocktakingSheetId = createResponse?.data?.stocktakingSheetId || 
-                                            createResponse?.stocktakingSheetId || 
-                                            createResponse?.data?.data?.stocktakingSheetId;
+                    if (finalStocktakingSheetId) {
+                        // Nếu đã có stocktakingSheetId, cập nhật
+                        submitData.stocktakingSheetId = finalStocktakingSheetId;
+                        await updateStocktaking(submitData);
+                    } else {
+                        // Nếu chưa có stocktakingSheetId, tạo mới
+                        const createResponse = await createStocktaking(submitData);
 
-                    if (!finalStocktakingSheetId) {
-                        throw new Error('Không thể lấy ID phiếu kiểm kê sau khi tạo');
+                        // Extract stocktakingSheetId from response
+                        finalStocktakingSheetId = createResponse?.data?.stocktakingSheetId ||
+                            createResponse?.stocktakingSheetId ||
+                            createResponse?.data?.data?.stocktakingSheetId;
+
+                        if (!finalStocktakingSheetId) {
+                            throw new Error('Không thể lấy ID phiếu kiểm kê sau khi tạo');
+                        }
                     }
 
                     // Không hiển thị toast ở đây, sẽ hiển thị một toast duy nhất ở cuối
                 } catch (error) {
-                    console.error('Error creating stocktaking:', error);
+                    console.error('Error creating/updating stocktaking:', error);
                     const errorMessage = extractErrorMessage(error);
                     if (window.showToast) {
-                        window.showToast(errorMessage || 'Có lỗi xảy ra khi tạo phiếu kiểm kê', 'error');
+                        window.showToast(errorMessage || 'Có lỗi xảy ra khi tạo/cập nhật phiếu kiểm kê', 'error');
                     }
                     throw error;
                 }
@@ -156,8 +163,12 @@ const AssignAreaModal = ({
             // Hiển thị toast duy nhất
             if (window.showToast) {
                 if (formData) {
-                    // Vừa tạo vừa phân công
-                    window.showToast('Tạo và phân công thành công!', 'success');
+                    // Vừa tạo/cập nhật vừa phân công
+                    if (stocktakingSheetId) {
+                        window.showToast('Cập nhật và phân công thành công!', 'success');
+                    } else {
+                        window.showToast('Tạo và phân công thành công!', 'success');
+                    }
                 } else {
                     // Chỉ phân công
                     window.showToast(isReassign ? 'Phân công lại thành công!' : 'Phân công thành công!', 'success');
@@ -226,15 +237,15 @@ const AssignAreaModal = ({
                                     const areaId = area.areaId || area.id;
                                     const areaName = area.areaName || area.name || 'Khu vực';
                                     const selectedEmployeeId = areaAssignments[areaId];
-                                    
+
                                     // Get current assignment info for this area
-                                    const currentAssignment = isReassign && stocktaking?.stocktakingAreas 
+                                    const currentAssignment = isReassign && stocktaking?.stocktakingAreas
                                         ? stocktaking.stocktakingAreas.find(sa => sa.areaId === areaId)
                                         : null;
-                                    const currentEmployeeName = currentAssignment?.assignToName || 
-                                                               currentAssignment?.assignToNavigation?.fullName || 
-                                                               currentAssignment?.assignToNavigation?.name || 
-                                                               '';
+                                    const currentEmployeeName = currentAssignment?.assignToName ||
+                                        currentAssignment?.assignToNavigation?.fullName ||
+                                        currentAssignment?.assignToNavigation?.name ||
+                                        '';
 
                                     return (
                                         <div
@@ -249,7 +260,7 @@ const AssignAreaModal = ({
                                                     </div>
                                                     <h4 className="font-bold text-slate-700 text-base">{areaName}</h4>
                                                 </div>
-                                                
+
                                                 {/* Current Assignment Info - Chỉ hiển thị khi phân công lại */}
                                                 {isReassign && currentAssignment && currentEmployeeName && (
                                                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2 mb-2">
@@ -262,7 +273,7 @@ const AssignAreaModal = ({
                                                         </div>
                                                     </div>
                                                 )}
-                                                
+
                                                 {/* Area Information */}
                                                 <div className="grid grid-cols-2 gap-2 text-xs">
                                                     {area.availableLocationCount !== undefined && (
