@@ -140,7 +140,7 @@ export const assignStocktakingAreas = async (data) => {
     try {
         const body = {
             stocktakingSheetId: data.stocktakingSheetId,
-            stocktakingAreaCreates: data.stocktakingAreaCreates || [] // Array of { areaId: number, assignTo: number }
+            stocktakingAreaAssign: data.stocktakingAreaAssign || [] // Array of { areaId: number, assignTo: number }
         };
 
         const res = await api.put("/StocktakingSheet/AssignAreaConfirm", body);
@@ -168,10 +168,26 @@ export const inProgressStocktaking = async (data) => {
 // Lấy chi tiết StocktakingArea theo stocktakingSheetId
 export const getStocktakingAreaDetailBySheetId = async (stocktakingSheetId) => {
     try {
-        const res = await api.get(`/StocktakingArea/GetDetailByStocktakingSheetId/${stocktakingSheetId}`);
+        const res = await api.get(`/StocktakingArea/GetDetailForWarehouseStaffByStocktakingSheetId/${stocktakingSheetId}`);
         return res.data;
     } catch (error) {
         console.error("Error fetching stocktaking area detail:", error);
+        throw error;
+    }
+};
+
+// Phân công lại nhân viên theo khu vực
+export const reAssignAreaConfirm = async (data) => {
+    try {
+        const body = {
+            stocktakingSheetId: data.stocktakingSheetId,
+            stocktakingAreaReAssign: data.stocktakingAreaReAssign || [] // Array of { areaId: number, assignTo: number }
+        };
+
+        const res = await api.put("/StocktakingSheet/ReAssignAreaConfirm", body);
+        return res.data;
+    } catch (error) {
+        console.error("Error re-assigning stocktaking areas:", error);
         throw error;
     }
 };

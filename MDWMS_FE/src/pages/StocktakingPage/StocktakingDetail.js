@@ -7,7 +7,7 @@ import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
 import { getStocktakingDetail } from '../../services/StocktakingService';
 import { extractErrorMessage } from '../../utils/Validation';
-import StatusDisplay from '../../components/StocktakingComponents/StatusDisplay';
+import StatusDisplay, { STOCKTAKING_STATUS } from '../../components/StocktakingComponents/StatusDisplay';
 import AssignAreaModal from '../../components/StocktakingComponents/AssignAreaModal';
 import { PERMISSIONS } from '../../utils/permissions';
 import PermissionWrapper from '../../components/Common/PermissionWrapper';
@@ -22,6 +22,7 @@ const StocktakingDetail = () => {
 
     // Assignment modal state
     const [showAssignModal, setShowAssignModal] = useState(false);
+    const [isReassign, setIsReassign] = useState(false);
 
     useEffect(() => {
         const fetchStocktakingDetail = async () => {
@@ -68,6 +69,8 @@ const StocktakingDetail = () => {
     };
 
     const handleStartAssignment = () => {
+        // Check if it's reassignment (status is Assigned) or initial assignment (status is Draft)
+        setIsReassign(stocktaking?.status === STOCKTAKING_STATUS.Assigned);
         setShowAssignModal(true);
     };
 
@@ -237,29 +240,67 @@ const StocktakingDetail = () => {
                         </Card>
 
                         {/* Assignment Button - Only visible for Warehouse Manager */}
-                        <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_VIEW_WM}>
-                            <div className="flex justify-center">
-                                <Button
-                                    onClick={handleStartAssignment}
-                                    className="h-[42px] px-8 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
-                                >
-                                    <Users className="mr-2 h-5 w-5" />
-                                    Bắt đầu phân công theo khu vực
-                                </Button>
-                            </div>
-                        </PermissionWrapper>
+                        {/* Show "Bắt đầu phân công" button when status is Draft (1) */}
+                        {stocktaking.status === STOCKTAKING_STATUS.Draft && (
+                            <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_VIEW_WM}>
+                                <div className="flex justify-center">
+                                    <Button
+                                        onClick={handleStartAssignment}
+                                        className="h-[42px] px-8 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
+                                    >
+                                        <Users className="mr-2 h-5 w-5" />
+                                        Bắt đầu phân công theo khu vực
+                                    </Button>
+                                </div>
+                            </PermissionWrapper>
+                        )}
+                        
+                        {/* Show "Phân công lại" button when status is Assigned (2) */}
+                        {stocktaking.status === STOCKTAKING_STATUS.Assigned && (
+                            <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_REASSIGN_AREA}>
+                                <div className="flex justify-center">
+                                    <Button
+                                        onClick={handleStartAssignment}
+                                        className="h-[42px] px-8 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
+                                    >
+                                        <Users className="mr-2 h-5 w-5" />
+                                        Phân công lại theo khu vực
+                                    </Button>
+                                </div>
+                            </PermissionWrapper>
+                        )}
+                        
+                        {/* No button shown when status is InProgress (4) or other statuses */}
                     </div>
                 </Card>
 
                 {/* Assign Area Modal - Only accessible for Warehouse Manager */}
-                <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_VIEW_WM}>
-                    <AssignAreaModal
-                        isOpen={showAssignModal}
-                        onClose={() => setShowAssignModal(false)}
-                        onSuccess={handleAssignmentSuccess}
-                        stocktakingSheetId={stocktaking?.stocktakingSheetId || id}
-                    />
-                </PermissionWrapper>
+                {(stocktaking?.status === STOCKTAKING_STATUS.Draft || stocktaking?.status === STOCKTAKING_STATUS.Assigned) && (
+                    <>
+                        {stocktaking?.status === STOCKTAKING_STATUS.Draft && (
+                            <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_VIEW_WM}>
+                                <AssignAreaModal
+                                    isOpen={showAssignModal}
+                                    onClose={() => setShowAssignModal(false)}
+                                    onSuccess={handleAssignmentSuccess}
+                                    stocktakingSheetId={stocktaking?.stocktakingSheetId || id}
+                                    isReassign={isReassign}
+                                />
+                            </PermissionWrapper>
+                        )}
+                        {stocktaking?.status === STOCKTAKING_STATUS.Assigned && (
+                            <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_REASSIGN_AREA}>
+                                <AssignAreaModal
+                                    isOpen={showAssignModal}
+                                    onClose={() => setShowAssignModal(false)}
+                                    onSuccess={handleAssignmentSuccess}
+                                    stocktakingSheetId={stocktaking?.stocktakingSheetId || id}
+                                    isReassign={isReassign}
+                                />
+                            </PermissionWrapper>
+                        )}
+                    </>
+                )}
             </div>
         </div>
     );

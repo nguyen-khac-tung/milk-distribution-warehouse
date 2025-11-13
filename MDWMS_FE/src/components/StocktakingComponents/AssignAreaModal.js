@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, MapPin, Users, User, CheckCircle2 } from 'lucide-react';
+import { X, MapPin, Users, User, CheckCircle2, Thermometer, Droplets, Sun, Package } from 'lucide-react';
 import { Button } from '../ui/button';
-import { getAreaDropdown } from '../../services/AreaServices';
+import { getStocktakingArea } from '../../services/AreaServices';
 import { getUserDropDownByRoleName } from '../../services/AccountService';
-import { assignStocktakingAreas } from '../../services/StocktakingService';
+import { assignStocktakingAreas, reAssignAreaConfirm } from '../../services/StocktakingService';
 import { extractErrorMessage } from '../../utils/Validation';
 
 const AssignAreaModal = ({
     isOpen,
     onClose,
     onSuccess,
-    stocktakingSheetId
+    stocktakingSheetId,
+    isReassign = false
 }) => {
     const [areas, setAreas] = useState([]);
     const [employees, setEmployees] = useState([]);
@@ -32,8 +33,8 @@ const AssignAreaModal = ({
         setLoadingEmployees(true);
 
         try {
-            // Fetch areas
-            const areasResponse = await getAreaDropdown();
+            // Fetch stocktaking areas with detailed information
+            const areasResponse = await getStocktakingArea();
             const areasData = areasResponse?.data || areasResponse || [];
             setAreas(Array.isArray(areasData) ? areasData : []);
 
@@ -79,13 +80,22 @@ const AssignAreaModal = ({
                 };
             });
 
-            await assignStocktakingAreas({
-                stocktakingSheetId: stocktakingSheetId,
-                stocktakingAreaCreates: assignmentData
-            });
+            if (isReassign) {
+                // Use reAssignAreaConfirm API for reassignment
+                await reAssignAreaConfirm({
+                    stocktakingSheetId: stocktakingSheetId,
+                    stocktakingAreaReAssign: assignmentData
+                });
+            } else {
+                // Use assignStocktakingAreas API for initial assignment
+                await assignStocktakingAreas({
+                    stocktakingSheetId: stocktakingSheetId,
+                    stocktakingAreaAssign: assignmentData
+                });
+            }
 
             if (window.showToast) {
-                window.showToast('Phân công thành công!', 'success');
+                window.showToast(isReassign ? 'Phân công lại thành công!' : 'Phân công thành công!', 'success');
             }
 
             if (onSuccess) {
@@ -97,7 +107,7 @@ const AssignAreaModal = ({
             console.error('Error submitting assignment:', error);
             const errorMessage = extractErrorMessage(error);
             if (window.showToast) {
-                window.showToast(errorMessage || 'Có lỗi xảy ra khi phân công', 'error');
+                window.showToast(errorMessage || (isReassign ? 'Có lỗi xảy ra khi phân công lại' : 'Có lỗi xảy ra khi phân công'), 'error');
             }
         } finally {
             setSubmitting(false);
@@ -120,7 +130,9 @@ const AssignAreaModal = ({
                                 <MapPin className="h-6 w-6 text-orange-500" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-bold text-gray-900">Phân công nhân viên theo khu vực</h2>
+                                <h2 className="text-2xl font-bold text-gray-900">
+                                    {isReassign ? 'Phân công lại nhân viên theo khu vực' : 'Phân công nhân viên theo khu vực'}
+                                </h2>
                                 <p className="text-sm text-gray-500 mt-1">Chọn nhân viên cho từng khu vực kiểm kê</p>
                             </div>
                         </div>
@@ -153,13 +165,43 @@ const AssignAreaModal = ({
                                         <div
                                             key={areaId}
                                             className="border-2 border-gray-200 rounded-xl p-4 bg-white hover:border-orange-300 transition-all shadow-sm flex flex-col"
-                                            style={{ height: '380px' }}
+                                            style={{ height: '450px' }}
                                         >
-                                            <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100 flex-shrink-0">
-                                                <div className="p-1.5 bg-orange-50 rounded-lg">
-                                                    <MapPin className="h-4 w-4 text-orange-500" />
+                                            <div className="flex-shrink-0 mb-3 pb-3 border-b border-gray-100">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <div className="p-1.5 bg-orange-50 rounded-lg">
+                                                        <MapPin className="h-4 w-4 text-orange-500" />
+                                                    </div>
+                                                    <h4 className="font-bold text-slate-700 text-base">{areaName}</h4>
                                                 </div>
-                                                <h4 className="font-bold text-slate-700 text-base">{areaName}</h4>
+                                                
+                                                {/* Area Information */}
+                                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                                    {area.availableLocationCount !== undefined && (
+                                                        <div className="flex items-center gap-1 text-slate-600">
+                                                            <Package className="h-3 w-3 text-blue-500" />
+                                                            <span>Vị trí khả dụng: <span className="font-semibold text-blue-600">{area.availableLocationCount}</span></span>
+                                                        </div>
+                                                    )}
+                                                    {area.temperatureMin !== undefined && area.temperatureMax !== undefined && (
+                                                        <div className="flex items-center gap-1 text-slate-600">
+                                                            <Thermometer className="h-3 w-3 text-red-500" />
+                                                            <span>Nhiệt độ: <span className="font-semibold text-red-600">{area.temperatureMin}°C - {area.temperatureMax}°C</span></span>
+                                                        </div>
+                                                    )}
+                                                    {area.humidityMin !== undefined && area.humidityMax !== undefined && (
+                                                        <div className="flex items-center gap-1 text-slate-600">
+                                                            <Droplets className="h-3 w-3 text-cyan-500" />
+                                                            <span>Độ ẩm: <span className="font-semibold text-cyan-600">{area.humidityMin}% - {area.humidityMax}%</span></span>
+                                                        </div>
+                                                    )}
+                                                    {area.lightLevel && (
+                                                        <div className="flex items-center gap-1 text-slate-600">
+                                                            <Sun className="h-3 w-3 text-yellow-500" />
+                                                            <span>Ánh sáng: <span className="font-semibold text-yellow-600">{area.lightLevel}</span></span>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
 
                                             {/* Employee Selection */}
@@ -261,7 +303,7 @@ const AssignAreaModal = ({
                             ) : (
                                 <>
                                     <CheckCircle2 className="mr-2 h-4 w-4" />
-                                    Xác nhận phân công
+                                    {isReassign ? 'Xác nhận phân công lại' : 'Xác nhận phân công'}
                                 </>
                             )}
                         </Button>
