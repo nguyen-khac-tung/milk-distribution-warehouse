@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace MilkDistributionWarehouse.Models.DTOs
@@ -43,6 +43,20 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public int GoodsPackingId { get; set; }
             public string UnitPerPackage { get; set; }
             public int totalPackagesSold { get; set; }
+        }
+
+        public class GoodsReceiptReportDto
+        {
+            public int SupplierId { get; set; }
+            public string SupplierName { get; set; }
+            public int GoodsId { get; set; }
+            public string GoodsCode { get; set; }
+            public string GoodsName { get; set; }
+            public int GoodsPackingId { get; set; }
+            public int? UnitPerPackage { get; set; }
+            public DateTime? ReceiptDate { get; set; }
+            public int TotalPackageQuantity { get; set; }     // total packages (thùng)
+            public int TotalUnitQuantity { get; set; }      // total units = packages * unitPerPackage
         }
     }
 }

@@ -1,8 +1,5 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using AutoMapper;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
@@ -14,15 +11,18 @@ namespace MilkDistributionWarehouse.Repositories
         Task<PageResult<ReportDto.InventoryReportDto>> GetInventoryReportAsync(PagedRequest request, int? areaId = null, CancellationToken cancellationToken = default);
         Task<ReportDto.LocationReportSummaryDto> GetLocationReportAsync(int? areaId = null, CancellationToken cancellationToken = default);
         Task<List<ReportDto.SaleBySupplierReportDto>> GetSaleBySupplierReportAsync(int? supplierId, CancellationToken cancellationToken = default);
+        Task<List<ReportDto.GoodsReceiptReportDto>> GetGoodsReceiptReportAsync(DateTime? fromDate, DateTime? toDate, CancellationToken cancellationToken = default);
     }
 
     public class ReportRepository : IReportRepository
     {
         private readonly WarehouseContext _context;
+        private readonly IMapper _mapper;
 
-        public ReportRepository(WarehouseContext context)
+        public ReportRepository(WarehouseContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
 
         public async Task<PageResult<ReportDto.InventoryReportDto>> GetInventoryReportAsync(PagedRequest request, int? areaId = null, CancellationToken cancellationToken = default)
@@ -245,6 +245,60 @@ namespace MilkDistributionWarehouse.Repositories
                     totalPackagesSold = g.TotalPackages
                 };
             }).ToList();
+
+            return result;
+        }
+            
+        // NEW: Goods receipt report grouped by Supplier + Goods + Packing + ReceiptDate (date part)
+        public async Task<List<ReportDto.GoodsReceiptReportDto>> GetGoodsReceiptReportAsync(DateTime? fromDate, DateTime? toDate, CancellationToken cancellationToken = default)
+        {
+            var query = _context.GoodsReceiptNoteDetails
+                .AsNoTracking()
+                .Include(d => d.Goods)
+                .Include(d => d.GoodsPacking)
+                .Include(d => d.GoodsReceiptNote)
+                    .ThenInclude(grn => grn.PurchaseOder)
+                        .ThenInclude(po => po.Supplier)
+                .AsQueryable();
+
+            if (fromDate.HasValue)
+            {
+                var from = fromDate.Value.Date;
+                query = query.Where(d => d.GoodsReceiptNote.CreatedAt >= from);
+            }
+
+            if (toDate.HasValue)
+            {
+                var to = toDate.Value;
+                query = query.Where(d => d.GoodsReceiptNote.CreatedAt <= to);
+            }
+
+            var details = await query.ToListAsync(cancellationToken);
+
+            var mapped = _mapper.Map<List<ReportDto.GoodsReceiptReportDto>>(details);
+
+            if (mapped == null || mapped.Count == 0)
+                return new List<ReportDto.GoodsReceiptReportDto>();
+
+            var result = mapped
+                .GroupBy(d => new { d.SupplierId, d.GoodsId, d.GoodsPackingId, ReceiptDate = d.ReceiptDate?.Date })
+                .Select(g => new ReportDto.GoodsReceiptReportDto
+                {
+                    SupplierId = g.Key.SupplierId,
+                    SupplierName = g.Select(x => x.SupplierName).FirstOrDefault(s => !string.IsNullOrEmpty(s)),
+                    GoodsId = g.Key.GoodsId,
+                    GoodsCode = g.Select(x => x.GoodsCode).FirstOrDefault(s => !string.IsNullOrEmpty(s)),
+                    GoodsName = g.Select(x => x.GoodsName).FirstOrDefault(s => !string.IsNullOrEmpty(s)),
+                    GoodsPackingId = g.Key.GoodsPackingId,
+                    UnitPerPackage = g.Select(x => x.UnitPerPackage).FirstOrDefault(p => p.HasValue),
+                    ReceiptDate = g.Key.ReceiptDate,
+                    TotalPackageQuantity = g.Sum(x => x.TotalPackageQuantity),
+                    TotalUnitQuantity = g.Sum(x => x.TotalUnitQuantity)
+                })
+                .OrderBy(r => r.ReceiptDate)
+                .ThenBy(r => r.SupplierId)
+                .ThenBy(r => r.GoodsId)
+                .ToList();
 
             return result;
         }

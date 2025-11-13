@@ -1,6 +1,4 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
-using MilkDistributionWarehouse.Models.DTOs;
+﻿using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Repositories;
 using MilkDistributionWarehouse.Utilities;
 
@@ -11,6 +9,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, PageResult<ReportDto.InventoryReportDto>)> GetInventoryReportAsync(PagedRequest request, int? areaId = null, CancellationToken cancellationToken = default);
         Task<(string, ReportDto.LocationReportSummaryDto)> GetLocationReportAsync(int? areaId = null, CancellationToken cancellationToken = default);
         Task<(string, List<ReportDto.SaleBySupplierReportDto>)> GetSaleBySupplierReportAsync(int? supplierId, CancellationToken cancellationToken = default);
+        Task<(string, List<ReportDto.GoodsReceiptReportDto>)> GetGoodsReceiptReportAsync(DateTime? fromDate, DateTime? toDate, CancellationToken cancellationToken = default);
     }
 
     public class ReportService : IReportService
@@ -46,6 +45,24 @@ namespace MilkDistributionWarehouse.Services
 
             if (data == null || data.Count == 0)
                 return ("No sales data found.".ToMessageForUser(), new List<ReportDto.SaleBySupplierReportDto>());
+
+            return ("", data);
+        }
+
+        public async Task<(string, List<ReportDto.GoodsReceiptReportDto>)> GetGoodsReceiptReportAsync(DateTime? fromDate, DateTime? toDate, CancellationToken cancellationToken = default)
+        {
+            // Default: current month if neither date provided
+            if (!fromDate.HasValue && !toDate.HasValue)
+            {
+                var now = DateTime.Now;
+                fromDate = new DateTime(now.Year, now.Month, 1);
+                toDate = now;
+            }
+
+            var data = await _reportRepository.GetGoodsReceiptReportAsync(fromDate, toDate, cancellationToken);
+
+            if (data == null || data.Count == 0)
+                return ("No goods receipt data found.".ToMessageForUser(), new List<ReportDto.GoodsReceiptReportDto>());
 
             return ("", data);
         }

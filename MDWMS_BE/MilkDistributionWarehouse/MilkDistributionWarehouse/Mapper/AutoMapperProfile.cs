@@ -522,6 +522,30 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => StockPalletStatus.Unscanned))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now))
                 .ForMember(dest => dest.UpdateAt, opt => opt.Ignore());
+
+            //Map GoodsReceiptNoteDetail -> GoodsReceiptReportDto (per-detail projection)
+            CreateMap<GoodsReceiptNoteDetail, ReportDto.GoodsReceiptReportDto>()
+                .ForMember(dest => dest.SupplierId,
+                    opt => opt.MapFrom(src => src.GoodsReceiptNote != null && src.GoodsReceiptNote.PurchaseOder != null
+                        ? src.GoodsReceiptNote.PurchaseOder.SupplierId ?? src.Goods.SupplierId ?? 0
+                        : src.Goods.SupplierId ?? 0))
+                .ForMember(dest => dest.SupplierName,
+                    opt => opt.MapFrom(src => src.GoodsReceiptNote != null && src.GoodsReceiptNote.PurchaseOder != null && src.GoodsReceiptNote.PurchaseOder.Supplier != null
+                        ? src.GoodsReceiptNote.PurchaseOder.Supplier.CompanyName
+                        : src.Goods != null && src.Goods.Supplier != null ? src.Goods.Supplier.CompanyName : null))
+                .ForMember(dest => dest.GoodsId, opt => opt.MapFrom(src => src.GoodsId))
+                .ForMember(dest => dest.GoodsCode, opt => opt.MapFrom(src => src.Goods.GoodsCode))
+                .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Goods.GoodsName))
+                .ForMember(dest => dest.GoodsPackingId, opt => opt.MapFrom(src => src.GoodsPackingId ?? 0))
+                .ForMember(dest => dest.UnitPerPackage, opt => opt.MapFrom(src => src.GoodsPacking.UnitPerPackage))
+                .ForMember(dest => dest.ReceiptDate, opt => opt.MapFrom(src => src.GoodsReceiptNote != null ? src.GoodsReceiptNote.CreatedAt : (DateTime?)null))
+                // Received packages: prefer ActualPackageQuantity, otherwise Delivered - Reject
+                .ForMember(dest => dest.TotalPackageQuantity,
+                    opt => opt.MapFrom(src => src.ActualPackageQuantity ?? ((src.DeliveredPackageQuantity ?? 0) - (src.RejectPackageQuantity ?? 0))))
+                // Total units = packages * unit-per-package (unit-per-package may be null -> treated as 0)
+                .ForMember(dest => dest.TotalUnitQuantity,
+                    opt => opt.MapFrom(src => (src.ActualPackageQuantity ?? ((src.DeliveredPackageQuantity ?? 0) - (src.RejectPackageQuantity ?? 0)))
+                                             * (src.GoodsPacking.UnitPerPackage ?? 0)));
         }
     }
 }
