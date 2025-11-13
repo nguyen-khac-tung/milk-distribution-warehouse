@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, MapPin, Users, User, CheckCircle2, Thermometer, Droplets, Sun, Package } from 'lucide-react';
+import { X, MapPin, Users, User, CheckCircle2, Thermometer, Droplets, Sun, Package, AlertCircle } from 'lucide-react';
 import { Button } from '../ui/button';
 import { getStocktakingArea } from '../../services/AreaServices';
 import { getUserDropDownByRoleName } from '../../services/AccountService';
@@ -12,7 +12,8 @@ const AssignAreaModal = ({
     onClose,
     onSuccess,
     stocktakingSheetId,
-    isReassign = false
+    isReassign = false,
+    stocktaking = null
 }) => {
     const [areas, setAreas] = useState([]);
     const [employees, setEmployees] = useState([]);
@@ -24,9 +25,20 @@ const AssignAreaModal = ({
     useEffect(() => {
         if (isOpen) {
             fetchAreasAndEmployees();
-            setAreaAssignments({});
+            // Pre-select current assignments if reassigning
+            if (isReassign && stocktaking?.stocktakingAreas) {
+                const currentAssignments = {};
+                stocktaking.stocktakingAreas.forEach((sa) => {
+                    if (sa.areaId && sa.assignTo) {
+                        currentAssignments[sa.areaId] = sa.assignTo;
+                    }
+                });
+                setAreaAssignments(currentAssignments);
+            } else {
+                setAreaAssignments({});
+            }
         }
-    }, [isOpen]);
+    }, [isOpen, isReassign, stocktaking]);
 
     const fetchAreasAndEmployees = async () => {
         setLoadingAreas(true);
@@ -160,6 +172,15 @@ const AssignAreaModal = ({
                                     const areaId = area.areaId || area.id;
                                     const areaName = area.areaName || area.name || 'Khu vực';
                                     const selectedEmployeeId = areaAssignments[areaId];
+                                    
+                                    // Get current assignment info for this area
+                                    const currentAssignment = isReassign && stocktaking?.stocktakingAreas 
+                                        ? stocktaking.stocktakingAreas.find(sa => sa.areaId === areaId)
+                                        : null;
+                                    const currentEmployeeName = currentAssignment?.assignToName || 
+                                                               currentAssignment?.assignToNavigation?.fullName || 
+                                                               currentAssignment?.assignToNavigation?.name || 
+                                                               '';
 
                                     return (
                                         <div
@@ -174,6 +195,19 @@ const AssignAreaModal = ({
                                                     </div>
                                                     <h4 className="font-bold text-slate-700 text-base">{areaName}</h4>
                                                 </div>
+                                                
+                                                {/* Current Assignment Info - Chỉ hiển thị khi phân công lại */}
+                                                {isReassign && currentAssignment && currentEmployeeName && (
+                                                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2 mb-2">
+                                                        <div className="flex items-center gap-1.5 mb-1">
+                                                            <AlertCircle className="h-3 w-3 text-yellow-600" />
+                                                            <span className="font-medium text-yellow-800 text-xs">Đã phân công:</span>
+                                                        </div>
+                                                        <div className="text-xs text-yellow-900 font-semibold ml-4">
+                                                            {currentEmployeeName}
+                                                        </div>
+                                                    </div>
+                                                )}
                                                 
                                                 {/* Area Information */}
                                                 <div className="grid grid-cols-2 gap-2 text-xs">

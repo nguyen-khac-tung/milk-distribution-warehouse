@@ -2,20 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { ArrowLeft, FileText, Calendar, User, Hash, Clock, Users } from 'lucide-react';
+import { ArrowLeft, FileText, Calendar, User, Hash, Clock, Users, Play } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
 import { getStocktakingDetail } from '../../services/StocktakingService';
 import { extractErrorMessage } from '../../utils/Validation';
 import StatusDisplay, { STOCKTAKING_STATUS } from '../../components/StocktakingComponents/StatusDisplay';
 import AssignAreaModal from '../../components/StocktakingComponents/AssignAreaModal';
+import StartStocktakingModal from '../../components/StocktakingComponents/StartStocktakingModal';
 import { PERMISSIONS } from '../../utils/permissions';
 import PermissionWrapper from '../../components/Common/PermissionWrapper';
+import { usePermissions } from '../../hooks/usePermissions';
 import dayjs from 'dayjs';
 
 const StocktakingDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { hasPermission } = usePermissions();
     const [loading, setLoading] = useState(true);
     const [stocktaking, setStocktaking] = useState(null);
     const [error, setError] = useState(null);
@@ -23,6 +26,10 @@ const StocktakingDetail = () => {
     // Assignment modal state
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [isReassign, setIsReassign] = useState(false);
+
+    // Start stocktaking modal state
+    const [showStartStocktakingModal, setShowStartStocktakingModal] = useState(false);
+    const [startStocktakingLoading, setStartStocktakingLoading] = useState(false);
 
     useEffect(() => {
         const fetchStocktakingDetail = async () => {
@@ -89,6 +96,28 @@ const StocktakingDetail = () => {
             }
         };
         fetchStocktakingDetail();
+    };
+
+    const handleStartStocktaking = () => {
+        setShowStartStocktakingModal(true);
+    };
+
+    const handleStartStocktakingConfirm = async () => {
+        // Modal sẽ tự xử lý API call và navigation
+        // Chỉ cần refresh data nếu cần
+        const fetchStocktakingDetail = async () => {
+            if (!id) return;
+            try {
+                const response = await getStocktakingDetail(id);
+                const data = response?.data || response;
+                if (data) {
+                    setStocktaking(data);
+                }
+            } catch (error) {
+                console.error('Error refreshing stocktaking detail:', error);
+            }
+        };
+        // Không cần fetch vì sẽ navigate đi rồi
     };
 
     if (loading) {
@@ -254,22 +283,37 @@ const StocktakingDetail = () => {
                                 </div>
                             </PermissionWrapper>
                         )}
-                        
-                        {/* Show "Phân công lại" button when status is Assigned (2) */}
+
+                        {/* Show "Phân công lại" button when status is Assigned (2) - for Warehouse Manager */}
                         {stocktaking.status === STOCKTAKING_STATUS.Assigned && (
-                            <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_REASSIGN_AREA}>
-                                <div className="flex justify-center">
-                                    <Button
-                                        onClick={handleStartAssignment}
-                                        className="h-[42px] px-8 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
-                                    >
-                                        <Users className="mr-2 h-5 w-5" />
-                                        Phân công lại theo khu vực
-                                    </Button>
-                                </div>
-                            </PermissionWrapper>
+                            <>
+                                <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_REASSIGN_AREA}>
+                                    <div className="flex justify-center">
+                                        <Button
+                                            onClick={handleStartAssignment}
+                                            className="h-[42px] px-8 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
+                                        >
+                                            <Users className="mr-2 h-5 w-5" />
+                                            Phân công lại theo khu vực
+                                        </Button>
+                                    </div>
+                                </PermissionWrapper>
+
+                                {/* Show "Bắt đầu kiểm kê" button for Warehouse Staff */}
+                                {hasPermission(PERMISSIONS.STOCKTAKING_IN_PROGRESS) && (
+                                    <div className="flex justify-center mt-4">
+                                        <Button
+                                            onClick={handleStartStocktaking}
+                                            className="h-[42px] px-8 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
+                                        >
+                                            <Play className="mr-2 h-5 w-5" />
+                                            Bắt đầu kiểm kê
+                                        </Button>
+                                    </div>
+                                )}
+                            </>
                         )}
-                        
+
                         {/* No button shown when status is InProgress (4) or other statuses */}
                     </div>
                 </Card>
@@ -285,6 +329,7 @@ const StocktakingDetail = () => {
                                     onSuccess={handleAssignmentSuccess}
                                     stocktakingSheetId={stocktaking?.stocktakingSheetId || id}
                                     isReassign={isReassign}
+                                    stocktaking={stocktaking}
                                 />
                             </PermissionWrapper>
                         )}
@@ -296,10 +341,22 @@ const StocktakingDetail = () => {
                                     onSuccess={handleAssignmentSuccess}
                                     stocktakingSheetId={stocktaking?.stocktakingSheetId || id}
                                     isReassign={isReassign}
+                                    stocktaking={stocktaking}
                                 />
                             </PermissionWrapper>
                         )}
                     </>
+                )}
+
+                {/* Start Stocktaking Modal - for Warehouse Staff */}
+                {stocktaking?.status === STOCKTAKING_STATUS.Assigned && hasPermission(PERMISSIONS.STOCKTAKING_IN_PROGRESS) && (
+                    <StartStocktakingModal
+                        isOpen={showStartStocktakingModal}
+                        onClose={() => setShowStartStocktakingModal(false)}
+                        onConfirm={handleStartStocktakingConfirm}
+                        stocktaking={stocktaking}
+                        loading={startStocktakingLoading}
+                    />
                 )}
             </div>
         </div>

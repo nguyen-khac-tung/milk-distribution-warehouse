@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -23,6 +23,7 @@ const StocktakingArea = () => {
         detail: true,
         check: true
     });
+    const isFetchingRef = useRef(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -32,7 +33,13 @@ const StocktakingArea = () => {
                 return;
             }
 
+            // Tránh gọi API nhiều lần nếu đang fetch
+            if (isFetchingRef.current) {
+                return;
+            }
+
             try {
+                isFetchingRef.current = true;
                 setLoading(true);
 
                 // Fetch cả hai API song song
@@ -65,6 +72,7 @@ const StocktakingArea = () => {
                 }
             } finally {
                 setLoading(false);
+                isFetchingRef.current = false;
             }
         };
 
@@ -99,8 +107,9 @@ const StocktakingArea = () => {
     };
 
     const handleRefresh = async () => {
-        if (!id) return;
+        if (!id || isFetchingRef.current) return;
         try {
+            isFetchingRef.current = true;
             setLoading(true);
             const [areaResponse, detailResponse] = await Promise.all([
                 getStocktakingAreaDetailBySheetId(id),
@@ -119,6 +128,7 @@ const StocktakingArea = () => {
             }
         } finally {
             setLoading(false);
+            isFetchingRef.current = false;
         }
     };
 
@@ -281,18 +291,6 @@ const StocktakingArea = () => {
                             <div>
                                 <h3 className="text-xs font-medium text-gray-500 mb-3">Thông tin người</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {/* Quản Lý Kho / Người được phân công */}
-                                    <div>
-                                        <div className="text-xs text-gray-500 mb-0.5 flex items-center gap-1.5">
-                                            <User className="h-4 w-4 text-indigo-500" />
-                                            Quản Lý Kho
-                                        </div>
-                                        <div className="text-base font-semibold text-gray-900">
-                                            {stocktakingArea?.assignToName || '-'}
-                                        </div>
-                                    </div>
-
-                                    {/* Người tạo */}
                                     <div>
                                         <div className="text-xs text-gray-500 mb-0.5 flex items-center gap-1.5">
                                             <User className="h-4 w-4 text-teal-500" />
@@ -300,6 +298,15 @@ const StocktakingArea = () => {
                                         </div>
                                         <div className="text-base font-semibold text-gray-900">
                                             {stocktakingDetail?.createByName || stocktakingDetail?.createdBy || '-'}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className="text-xs text-gray-500 mb-0.5 flex items-center gap-1.5">
+                                            <User className="h-4 w-4 text-indigo-500" />
+                                            Người tiếp nhận
+                                        </div>
+                                        <div className="text-base font-semibold text-gray-900">
+                                            {stocktakingArea?.assignToName || '-'}
                                         </div>
                                     </div>
                                 </div>
