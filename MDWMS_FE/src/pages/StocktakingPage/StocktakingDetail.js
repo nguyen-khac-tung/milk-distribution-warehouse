@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { ArrowLeft, FileText, Calendar, User, Hash, Clock, Users, Play } from 'lucide-react';
+import { ArrowLeft, FileText, Calendar, User, Hash, Clock, Users, Play, Edit } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
 import { getStocktakingDetail } from '../../services/StocktakingService';
@@ -181,9 +181,22 @@ const StocktakingDetail = () => {
                         {/* Information Card */}
                         <Card className="bg-white border border-gray-200 shadow-sm">
                             <CardHeader className="bg-gray-50 border-b border-gray-200">
-                                <CardTitle className="text-xl font-semibold text-slate-700 flex items-center gap-2">
-                                    <FileText className="h-5 w-5 text-orange-500" />
-                                    Thông Tin Phiếu Kiểm Kê
+                                <CardTitle className="text-xl font-semibold text-slate-700 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <FileText className="h-5 w-5 text-orange-500" />
+                                        Thông Tin Phiếu Kiểm Kê
+                                    </div>
+                                    {stocktaking.status === STOCKTAKING_STATUS.Draft && (
+                                        <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_VIEW_WM}>
+                                            <button
+                                                onClick={() => navigate(`/stocktakings/update/${stocktaking.stocktakingSheetId}`)}
+                                                className="p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                                                title="Cập nhật"
+                                            >
+                                                <Edit className="h-7 w-7 text-blue-500 hover:text-blue-600" />
+                                            </button>
+                                        </PermissionWrapper>
+                                    )}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-6">
