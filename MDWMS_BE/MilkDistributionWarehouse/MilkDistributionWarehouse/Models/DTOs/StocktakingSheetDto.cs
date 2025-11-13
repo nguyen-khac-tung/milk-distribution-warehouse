@@ -11,6 +11,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public DateTime? CreatedAt { get; set; }
         public int? CreatedBy { get; set; }
         public string CreateByName { get; set; }
+        public bool CanViewStocktakingArea { get; set; }
     }
 
     public class StocktakingSheetCreate
