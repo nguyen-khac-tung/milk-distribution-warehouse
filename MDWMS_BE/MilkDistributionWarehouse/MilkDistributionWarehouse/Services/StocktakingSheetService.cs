@@ -183,6 +183,7 @@ namespace MilkDistributionWarehouse.Services
                 string errorMessage = update switch
                 {
                     StocktakingSheetAssignStatus assignStatus => await HandleAssignStatus(stocktakingSheetExist, assignStatus, userId),
+                    StocktakingSheetReAssignStatus reAssingStatus => await HandleReAssignStatus(stocktakingSheetExist, reAssingStatus, userId),
                     StocktakingSheetCancelStatus => HandleCancelStatus(stocktakingSheetExist, userId),
                     StocktakingSheetInProgressStatus => await HandleInProgressStatus(stocktakingSheetExist, userId),
                     _ => "Loại cập nhật trạng thái không hợp lệ.".ToMessageForUser()
@@ -210,6 +211,7 @@ namespace MilkDistributionWarehouse.Services
                 return (ex.Message.ToMessageForUser(), default);
             }
         }
+
         public async Task<(string, StocktakingSheeteResponse?)> DeleteStocktakingSheet(Guid stocktakingSheetId, int? userId)
         {
             if (stocktakingSheetId == Guid.Empty)
@@ -256,11 +258,26 @@ namespace MilkDistributionWarehouse.Services
             if (sheet.Status != StocktakingStatus.Draft)
                 return "Chỉ đươc chuyển sang trạng thái Đã phân công khi phiếu kiểm kê ở trạng thái Nháp.".ToMessageForUser();
 
-            var (msg, _) = await _stocktakingAreaService.CreateStocktakingAreaBulk(assignStatus.StocktakingSheetId, assignStatus.StocktakingAreaCreates);
+            var (msg, _) = await _stocktakingAreaService.CreateStocktakingAreaBulk(assignStatus.StocktakingSheetId, assignStatus.StocktakingAreaAssign);
             if (!string.IsNullOrEmpty(msg))
                 return msg;
 
             sheet.Status = StocktakingStatus.Assigned;
+            return string.Empty;
+        }
+
+        private async Task<string> HandleReAssignStatus(StocktakingSheet sheet, StocktakingSheetReAssignStatus reAssingStatus, int? userId)
+        {
+            if (!IsWarehouseManager(sheet, userId))
+                return "Bạn không có quyền thực hiện chức năng cập nhật trạng thái trong phiếu kiểm kê.".ToMessageForUser();
+
+            if(sheet.Status != StocktakingStatus.Assigned)
+                return "Chỉ đươc được phân công lại khi phiếu kiểm kê ở trạng thái Đã phân công.".ToMessageForUser();
+
+            var (msg, _) = await _stocktakingAreaService.UpdateStocktakingAreaBulk(sheet.StocktakingSheetId, reAssingStatus.StocktakingAreaReAssign);
+            if (!string.IsNullOrEmpty(msg))
+                return msg;
+
             return string.Empty;
         }
 
@@ -311,5 +328,7 @@ namespace MilkDistributionWarehouse.Services
 
             return string.Empty;
         }
+
+
     }
 }

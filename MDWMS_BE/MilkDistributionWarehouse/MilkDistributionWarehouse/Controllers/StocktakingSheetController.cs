@@ -91,6 +91,16 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<StocktakingSheeteResponse?>.ToResultOk(stocktaking);
         }
 
+        [HttpPut("ReAssignAreaConfirm")]
+        [Authorize(Roles = RoleNames.WarehouseManager)]
+        public async Task<IActionResult> ReAssignAreaConfirmStocktakingSheet([FromBody] StocktakingSheetReAssignStatus update)
+        {
+            var (msg, stocktaking) = await _stocktakingSheetService.UpdateStocktakingSheetStatus(update, User.GetUserId());
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<StocktakingSheeteResponse?>.ToResultOk(stocktaking);
+        }
+
         [HttpPut("Cancel")]
         [Authorize(Roles = RoleNames.WarehouseManager)]
         public async Task<IActionResult> CancelStocktakingSheet([FromBody] StocktakingSheetCancelStatus update)
