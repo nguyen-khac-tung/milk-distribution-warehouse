@@ -47,7 +47,13 @@ namespace MilkDistributionWarehouse.Models.DTOs
     public class StocktakingSheetAssignStatus : StocktakingSheetStatusUpdate
     {
         [Required(ErrorMessage = "Danh sách phân công nhân viên theo khu vực là bắt buộc.")]
-        public List<StocktakingAreaCreate> StocktakingAreaCreates { get; set; }
+        public List<StocktakingAreaCreate> StocktakingAreaAssign { get; set; }
+    }
+
+    public class StocktakingSheetReAssignStatus : StocktakingSheetStatusUpdate
+    {
+        [Required(ErrorMessage = "Danh sách phân công nhân viên theo khu vực là bắt buộc.")]
+        public List<StocktakingAreaUpdate> StocktakingAreaReAssign { get; set; }
     }
 
     public class StocktakingSheetCancelStatus : StocktakingSheetStatusUpdate { }
