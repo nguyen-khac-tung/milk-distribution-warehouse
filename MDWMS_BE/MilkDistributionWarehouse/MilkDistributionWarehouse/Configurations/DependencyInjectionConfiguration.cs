@@ -117,6 +117,26 @@ namespace MilkDistributionWarehouse.Configurations
             //Picking Allocation
             services.AddScoped<IPickAllocationRepository, PickAllocationRepository>();
             services.AddScoped<IPickAllocationService, PickAllocationService>();
+
+            //StocktakingSheet
+            services.AddScoped<IStocktakingSheetRepository, StocktakingSheetRepository>();
+            services.AddScoped<IStocktakingSheetService, StocktakingSheetService>();
+
+            //StocktakingArea
+            services.AddScoped<IStocktakingAreaRepository, StocktakingAreaRepository>();
+            services.AddScoped<IStocktakingAreaService, StocktakingAreaService>();
+
+            //StocktakingLocation
+            services.AddScoped<IStocktakingLocationRepository, StocktakingLocationRepository>();
+            services.AddScoped<IStocktakingLocationService, StocktakingLocationService>();
+
+            //StocktakingPallet
+            services.AddScoped<IStocktakingPalletRepository, StocktakingPalletRepository>();
+            services.AddScoped<IStocktakingPalletService, StocktakingPalletService>();
+          
+            //Report
+            services.AddScoped<IReportRepository, ReportRepository>();
+            services.AddScoped<IReportService, ReportService>();
         }
     }
 }

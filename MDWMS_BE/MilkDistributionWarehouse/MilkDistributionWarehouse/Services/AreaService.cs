@@ -6,6 +6,7 @@ using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
 using MilkDistributionWarehouse.Utilities;
+using System.Threading.Tasks;
 
 namespace MilkDistributionWarehouse.Services
 {
@@ -19,6 +20,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, AreaDto.AreaResponseDto)> DeleteArea(int areaId);
         Task<(string, AreaDto.AreaResponseDto)> UpdateStatus(int areaId, int status);
         Task<(string, List<AreaDto.AreaActiveDto>)> GetAreaDropdown();
+        Task<(string, List<AreaDto.StocktakingAreaDto>?)> GetStocktakingArea();
     }
 
     public class AreaService : IAreaService
@@ -182,6 +184,18 @@ namespace MilkDistributionWarehouse.Services
 
             var areaDtos = _mapper.Map<List<AreaDto.AreaActiveDto>>(areas);
             return ("", areaDtos);
+        }
+
+        public async Task<(string, List<AreaDto.StocktakingAreaDto>?)> GetStocktakingArea()
+        {
+            var areas = await _areaRepository.GetActiveAreasAsync();
+
+            var areaMaps = _mapper.Map<List<AreaDto.StocktakingAreaDto>>(areas);
+
+            if (!areaMaps.Any())
+                return ("Danh sách khu vực để kiểm kê trống.", default);
+
+            return ("", areaMaps);
         }
     }
 }
