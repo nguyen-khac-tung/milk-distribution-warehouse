@@ -11,6 +11,9 @@ import { DatePicker, ConfigProvider } from 'antd';
 import dayjs from 'dayjs';
 import { createStocktaking } from '../../services/StocktakingService';
 import { extractErrorMessage } from '../../utils/Validation';
+import AssignAreaModal from '../../components/StocktakingComponents/AssignAreaModal';
+import PermissionWrapper from '../../components/Common/PermissionWrapper';
+import { PERMISSIONS } from '../../utils/permissions';
 
 const CreateStocktaking = () => {
     const navigate = useNavigate();
@@ -36,6 +39,7 @@ const CreateStocktaking = () => {
 
     const [fieldErrors, setFieldErrors] = useState({});
     const [saveDraftLoading, setSaveDraftLoading] = useState(false);
+    const [showAssignModal, setShowAssignModal] = useState(false);
 
     // Không set default values - người dùng phải tự chọn
 
@@ -75,6 +79,30 @@ const CreateStocktaking = () => {
         return isValid;
     };
 
+    const createStocktakingData = async () => {
+        // Format date giữ nguyên giờ local, không convert sang UTC
+        let startTimeISO = null;
+        if (formData.startTime) {
+            const date = dayjs(formData.startTime);
+            // Format: YYYY-MM-DDTHH:mm:ss (giữ nguyên giờ local)
+            startTimeISO = date.format('YYYY-MM-DDTHH:mm:ss');
+        }
+
+        const submitData = {
+            startTime: startTimeISO,
+            note: formData.reason.trim()
+        };
+
+        const response = await createStocktaking(submitData);
+        
+        // Extract stocktakingSheetId from response
+        const stocktakingSheetId = response?.data?.stocktakingSheetId || 
+                                  response?.stocktakingSheetId || 
+                                  response?.data?.data?.stocktakingSheetId;
+
+        return stocktakingSheetId;
+    };
+
     const handleSaveDraft = async (e) => {
         e.preventDefault();
 
@@ -85,24 +113,13 @@ const CreateStocktaking = () => {
 
         setSaveDraftLoading(true);
         try {
-            // Format date giữ nguyên giờ local, không convert sang UTC
-            let startTimeISO = null;
-            if (formData.startTime) {
-                const date = dayjs(formData.startTime);
-                // Format: YYYY-MM-DDTHH:mm:ss (giữ nguyên giờ local)
-                startTimeISO = date.format('YYYY-MM-DDTHH:mm:ss');
-            }
-
-            const submitData = {
-                startTime: startTimeISO,
-                note: formData.reason.trim()
-            };
-
-            await createStocktaking(submitData);
+            await createStocktakingData();
 
             if (window.showToast) {
                 window.showToast('Lưu nháp thành công!', 'success');
             }
+            
+            // Chỉ navigate về danh sách, không mở modal
             navigate('/stocktakings');
         } catch (error) {
             console.error('Error saving draft:', error);
@@ -113,6 +130,26 @@ const CreateStocktaking = () => {
         } finally {
             setSaveDraftLoading(false);
         }
+    };
+
+    const handleOpenAssignModal = (e) => {
+        e.preventDefault();
+
+        // Chỉ validate form, không gọi API
+        if (!validateForm()) {
+            window.showToast('Vui lòng điền đầy đủ thông tin bắt buộc', 'error');
+            return;
+        }
+
+        // Chỉ mở modal, chưa lưu gì cả
+        setShowAssignModal(true);
+    };
+
+    const handleAssignmentSuccess = () => {
+        // Sau khi phân công thành công, navigate về danh sách
+        // Toast đã được hiển thị trong modal
+        setShowAssignModal(false);
+        navigate('/stocktakings');
     };
 
 
@@ -244,14 +281,38 @@ const CreateStocktaking = () => {
                                 type="button"
                                 onClick={handleSaveDraft}
                                 disabled={saveDraftLoading}
-                                className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="h-[38px] px-6 bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {saveDraftLoading ? 'Đang lưu...' : 'Lưu nháp'}
+                            </Button>
+                            <Button
+                                type="button"
+                                onClick={handleOpenAssignModal}
+                                disabled={saveDraftLoading}
+                                className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Phân công
                             </Button>
                         </div>
                     </div>
                 </Card>
             </div>
+
+            {/* Assign Area Modal - Hiển thị khi click nút Phân công */}
+            <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_VIEW_WM}>
+                <AssignAreaModal
+                    isOpen={showAssignModal}
+                    onClose={() => {
+                        // Chỉ đóng modal, không làm gì cả, form vẫn giữ nguyên
+                        setShowAssignModal(false);
+                    }}
+                    onSuccess={handleAssignmentSuccess}
+                    stocktakingSheetId={null} // Chưa có ID vì chưa tạo
+                    isReassign={false}
+                    stocktaking={null}
+                    formData={formData} // Truyền formData để modal tự tạo khi confirm
+                />
+            </PermissionWrapper>
         </div>
     );
 };

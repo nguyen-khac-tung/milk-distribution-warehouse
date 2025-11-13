@@ -4,8 +4,9 @@ import { X, MapPin, Users, User, CheckCircle2, Thermometer, Droplets, Sun, Packa
 import { Button } from '../ui/button';
 import { getStocktakingArea } from '../../services/AreaServices';
 import { getUserDropDownByRoleName } from '../../services/AccountService';
-import { assignStocktakingAreas, reAssignAreaConfirm } from '../../services/StocktakingService';
+import { assignStocktakingAreas, reAssignAreaConfirm, createStocktaking } from '../../services/StocktakingService';
 import { extractErrorMessage } from '../../utils/Validation';
+import dayjs from 'dayjs';
 
 const AssignAreaModal = ({
     isOpen,
@@ -13,7 +14,8 @@ const AssignAreaModal = ({
     onSuccess,
     stocktakingSheetId,
     isReassign = false,
-    stocktaking = null
+    stocktaking = null,
+    formData = null // Form data để tạo phiếu kiểm kê (chỉ dùng khi chưa có stocktakingSheetId)
 }) => {
     const [areas, setAreas] = useState([]);
     const [employees, setEmployees] = useState([]);
@@ -84,6 +86,51 @@ const AssignAreaModal = ({
 
         setSubmitting(true);
         try {
+            let finalStocktakingSheetId = stocktakingSheetId;
+
+            // Nếu chưa có stocktakingSheetId và có formData, tạo phiếu kiểm kê trước
+            if (!finalStocktakingSheetId && formData) {
+                try {
+                    // Format date
+                    let startTimeISO = null;
+                    if (formData.startTime) {
+                        const date = dayjs(formData.startTime);
+                        startTimeISO = date.format('YYYY-MM-DDTHH:mm:ss');
+                    }
+
+                    const createData = {
+                        startTime: startTimeISO,
+                        note: formData.reason?.trim() || ''
+                    };
+
+                    const createResponse = await createStocktaking(createData);
+                    
+                    // Extract stocktakingSheetId from response
+                    finalStocktakingSheetId = createResponse?.data?.stocktakingSheetId || 
+                                            createResponse?.stocktakingSheetId || 
+                                            createResponse?.data?.data?.stocktakingSheetId;
+
+                    if (!finalStocktakingSheetId) {
+                        throw new Error('Không thể lấy ID phiếu kiểm kê sau khi tạo');
+                    }
+
+                    // Không hiển thị toast ở đây, sẽ hiển thị một toast duy nhất ở cuối
+                } catch (error) {
+                    console.error('Error creating stocktaking:', error);
+                    const errorMessage = extractErrorMessage(error);
+                    if (window.showToast) {
+                        window.showToast(errorMessage || 'Có lỗi xảy ra khi tạo phiếu kiểm kê', 'error');
+                    }
+                    throw error;
+                }
+            }
+
+            // Nếu vẫn không có stocktakingSheetId, báo lỗi
+            if (!finalStocktakingSheetId) {
+                throw new Error('Không tìm thấy ID phiếu kiểm kê');
+            }
+
+            // Tiến hành phân công
             const assignmentData = areas.map(area => {
                 const areaId = area.areaId || area.id;
                 return {
@@ -95,19 +142,26 @@ const AssignAreaModal = ({
             if (isReassign) {
                 // Use reAssignAreaConfirm API for reassignment
                 await reAssignAreaConfirm({
-                    stocktakingSheetId: stocktakingSheetId,
+                    stocktakingSheetId: finalStocktakingSheetId,
                     stocktakingAreaReAssign: assignmentData
                 });
             } else {
                 // Use assignStocktakingAreas API for initial assignment
                 await assignStocktakingAreas({
-                    stocktakingSheetId: stocktakingSheetId,
+                    stocktakingSheetId: finalStocktakingSheetId,
                     stocktakingAreaAssign: assignmentData
                 });
             }
 
+            // Hiển thị toast duy nhất
             if (window.showToast) {
-                window.showToast(isReassign ? 'Phân công lại thành công!' : 'Phân công thành công!', 'success');
+                if (formData) {
+                    // Vừa tạo vừa phân công
+                    window.showToast('Tạo và phân công thành công!', 'success');
+                } else {
+                    // Chỉ phân công
+                    window.showToast(isReassign ? 'Phân công lại thành công!' : 'Phân công thành công!', 'success');
+                }
             }
 
             if (onSuccess) {
