@@ -435,12 +435,12 @@ export default function PalletList() {
     const filteredStatusOptions = useMemo(() => {
         const statusOptions = [
             { value: "", label: "Tất cả trạng thái" },
-            { value: "1", label: "Còn sử dụng" },
-            { value: "2", label: "Không còn sử dụng" }
+            { value: "1", label: "Đã đưa vào vị trí" },
+            { value: "2", label: "Chưa đưa vào vị trí" }
         ]
         if (!statusSearchQuery) return statusOptions
         const query = statusSearchQuery.toLowerCase()
-        return statusOptions.filter(option => 
+        return statusOptions.filter(option =>
             option.label.toLowerCase().includes(query)
         )
     }, [statusSearchQuery])
@@ -687,8 +687,8 @@ export default function PalletList() {
                                                 <TableCell className="px-6 py-4 text-slate-600 font-medium">
                                                     {index + 1}
                                                 </TableCell>
-                                                <TableCell 
-                                                    className="px-6 py-4 text-slate-700 font-medium max-w-[150px] truncate" 
+                                                <TableCell
+                                                    className="px-6 py-4 text-slate-700 font-medium max-w-[150px] truncate"
                                                     title={pallet?.palletId || ''}
                                                 >
                                                     {pallet?.palletId || ''}

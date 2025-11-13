@@ -150,61 +150,89 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
             const map = {};
             validPalletsFromAPI.forEach(p => { map[p.goodsReceiptNoteDetailId] = p.goodsPackingId; });
             setGoodsPackingByDetailId(map);
-            setPalletRows(fetchedPallets);
+            
+            // Kiểm tra và bổ sung các sản phẩm còn thiếu (có số lượng thực nhận > 0 nhưng chưa có trong API)
+            const existingProductIds = new Set(
+              fetchedPallets.map(p => p.productId)
+            );
+            const missingProducts = filteredProductOptions.filter(
+              product => !existingProductIds.has(product.value)
+            );
+            
+            if (missingProducts.length > 0) {
+              const additionalRows = await Promise.all(
+                missingProducts.map(async (product) => ({
+                  productId: product.value || "",
+                  productName: product.label || "",
+                  batchId: "",
+                  batchCode: "",
+                  unitName: product.unitName || "",
+                  unitsPerPackage: product.unitsPerPackage || "",
+                  numPackages: "",
+                  goodsPackingId: product.goodsPackingId || goodsPackingByDetailId[product.value] || null,
+                  batchOptions: await fetchBatchOptionsByGoodsId(product.goodsId)
+                }))
+              );
+              setPalletRows([...fetchedPallets, ...additionalRows]);
+            } else {
+              setPalletRows(fetchedPallets);
+            }
           } else {
-            // Nếu không có pallet hợp lệ từ API, tạo dòng mới
-            const first = filteredProductOptions[0];
-            if (first) {
-              const defaultRow = {
-                productId: first.value || "",
-                productName: first.label || "",
-                batchId: "",
-                batchCode: "",
-                unitName: first.unitName || "",
-                unitsPerPackage: first.unitsPerPackage || "",
-                numPackages: "",
-                goodsPackingId: first.goodsPackingId || goodsPackingByDetailId[first.value] || null,
-                batchOptions: await fetchBatchOptionsByGoodsId(first.goodsId)
-              };
-              setPalletRows([defaultRow]);
+            // Nếu không có pallet hợp lệ từ API, tạo dòng mới cho TẤT CẢ sản phẩm có số lượng thực nhận > 0
+            if (filteredProductOptions.length > 0) {
+              const defaultRows = await Promise.all(
+                filteredProductOptions.map(async (product) => ({
+                  productId: product.value || "",
+                  productName: product.label || "",
+                  batchId: "",
+                  batchCode: "",
+                  unitName: product.unitName || "",
+                  unitsPerPackage: product.unitsPerPackage || "",
+                  numPackages: "",
+                  goodsPackingId: product.goodsPackingId || goodsPackingByDetailId[product.value] || null,
+                  batchOptions: await fetchBatchOptionsByGoodsId(product.goodsId)
+                }))
+              );
+              setPalletRows(defaultRows);
             }
           }
         } else {
-          // Nếu không có dữ liệu, tạo dòng mới
-          // Chọn mặc định sản phẩm đầu tiên có số lượng thực nhận > 0, và load batch
-          const first = filteredProductOptions[0];
-          if (first) {
-            const defaultRow = {
-              productId: first.value || "",
-              productName: first.label || "",
-              batchId: "",
-              batchCode: "",
-              unitName: first.unitName || "",
-              unitsPerPackage: first.unitsPerPackage || "",
-              numPackages: "",
-              goodsPackingId: first.goodsPackingId || goodsPackingByDetailId[first.value] || null,
-              batchOptions: await fetchBatchOptionsByGoodsId(first.goodsId)
-            };
-            setPalletRows([defaultRow]);
+          // Nếu không có dữ liệu, tạo dòng mới cho TẤT CẢ sản phẩm có số lượng thực nhận > 0
+          if (filteredProductOptions.length > 0) {
+            const defaultRows = await Promise.all(
+              filteredProductOptions.map(async (product) => ({
+                productId: product.value || "",
+                productName: product.label || "",
+                batchId: "",
+                batchCode: "",
+                unitName: product.unitName || "",
+                unitsPerPackage: product.unitsPerPackage || "",
+                numPackages: "",
+                goodsPackingId: product.goodsPackingId || goodsPackingByDetailId[product.value] || null,
+                batchOptions: await fetchBatchOptionsByGoodsId(product.goodsId)
+              }))
+            );
+            setPalletRows(defaultRows);
           }
         }
       } catch (error) {
         console.error("Error fetching pallet data:", error);
-        // Nếu có lỗi, vẫn tạo dòng mới với sản phẩm có số lượng thực nhận > 0
-        const first = filteredProductOptions[0];
-        if (first) {
-          const defaultRow = {
-            productId: first.value || "",
-            productName: first.label || "",
-            batchId: "",
-            batchCode: "",
-            unitName: first.unitName || "",
-            unitsPerPackage: first.unitsPerPackage || "",
-            numPackages: "",
-            goodsPackingId: first.goodsPackingId || goodsPackingByDetailId[first.value] || null,
-            batchOptions: await fetchBatchOptionsByGoodsId(first.goodsId)
-          };
-          setPalletRows([defaultRow]);
+        // Nếu có lỗi, vẫn tạo dòng mới cho TẤT CẢ sản phẩm có số lượng thực nhận > 0
+        if (filteredProductOptions.length > 0) {
+          const defaultRows = await Promise.all(
+            filteredProductOptions.map(async (product) => ({
+              productId: product.value || "",
+              productName: product.label || "",
+              batchId: "",
+              batchCode: "",
+              unitName: product.unitName || "",
+              unitsPerPackage: product.unitsPerPackage || "",
+              numPackages: "",
+              goodsPackingId: product.goodsPackingId || goodsPackingByDetailId[product.value] || null,
+              batchOptions: await fetchBatchOptionsByGoodsId(product.goodsId)
+            }))
+          );
+          setPalletRows(defaultRows);
         }
       } finally {
         setLoading(false);

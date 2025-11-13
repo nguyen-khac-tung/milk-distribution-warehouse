@@ -44,6 +44,9 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
         if (pathname.startsWith('/sales-orders')) {
             keys.push('sales-orders-management');
         }
+        if (pathname.startsWith('/stocktakings') || pathname.startsWith('/stocktaking')) {
+            keys.push('stocktaking-management');
+        }
         if (pathname.startsWith('/pallets')) {
             // Pallet không có submenu, không cần thêm key
         }
@@ -109,6 +112,28 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                         icon: <ComponentIcon name="createpuscharorder" size={14} collapsed={collapsed} />,
                         label: "Tạo đơn bán hàng",
                         permission: [PERMISSIONS.PURCHASE_ORDER_CREATE],
+                    }
+                ],
+            },
+            {
+                key: "stocktaking-management",
+                icon: <ComponentIcon name="clipboard" size={16} collapsed={collapsed} />,
+                label: "Quản lý đơn kiểm kê",
+                permission: [PERMISSIONS.STOCKTAKING_VIEW, PERMISSIONS.STOCKTAKING_VIEW_WM, PERMISSIONS.STOCKTAKING_VIEW_WS],
+                requireAll: false,
+                children: [
+                    {
+                        key: "/stocktakings",
+                        icon: <ComponentIcon name="taskListEdit" size={14} collapsed={collapsed} />,
+                        label: "Danh sách đơn kiểm kê",
+                        permission: [PERMISSIONS.STOCKTAKING_VIEW, PERMISSIONS.STOCKTAKING_VIEW_WM, PERMISSIONS.STOCKTAKING_VIEW_WS],
+                        requireAll: false,
+                    },
+                    {
+                        key: "/stocktaking/create",
+                        icon: <ComponentIcon name="createTaskListEdit" size={14} collapsed={collapsed} />,
+                        label: "Tạo đơn kiểm kê",
+                        permission: PERMISSIONS.STOCKTAKING_CREATE,
                     }
                 ],
             },

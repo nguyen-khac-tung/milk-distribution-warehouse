@@ -268,8 +268,9 @@ const PurchaseOrderDetail = () => {
     };
 
     const canEdit = () => {
-        return purchaseOrder?.status === PURCHASE_ORDER_STATUS.Draft || 
-               purchaseOrder?.status === PURCHASE_ORDER_STATUS.Rejected;
+        return hasPermission(PERMISSIONS.PURCHASE_ORDER_UPDATE) &&
+               (purchaseOrder?.status === PURCHASE_ORDER_STATUS.Draft || 
+                purchaseOrder?.status === PURCHASE_ORDER_STATUS.Rejected);
     };
 
     const canChangeDeliveryDate = () => {

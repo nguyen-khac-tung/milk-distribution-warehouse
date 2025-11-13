@@ -1,13 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import {
   BarChart,
-  ChevronLeft,
-  ChevronRight,
   Search,
   Plus,
-  Edit,
   Trash,
   ChevronDown,
   Bell,
@@ -27,23 +25,26 @@ import {
   Printer,
   MoreHorizontal,
   Menu,
+  TrendingUp,
+  Package,
+  ShoppingCart,
 } from "lucide-react"
-import { Button } from "../../../components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "../../../components/ui/card"
-import { Tabs, TabsList, TabsTrigger } from "../../../components/ui/tabs"
-import { Avatar, AvatarFallback, AvatarImage } from "../../../components/ui/avatar"
+import InventoryReport from "./InventoryReport"
+import { Button } from "../../components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "../../components/ui/card"
+import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from "../../../components/ui/dropdown-menu"
-import { Progress } from "../../../components/ui/progress"
-import { Badge } from "../../../components/ui/badge"
-import { Input } from "../../../components/ui/input"
-import { Label } from "../../../components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select"
+} from "../../components/ui/dropdown-menu"
+import { Progress } from "../../components/ui/progress"
+import { Badge } from "../../components/ui/badge"
+import { Input } from "../../components/ui/input"
+import { Label } from "../../components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
 import {
   Dialog,
   DialogContent,
@@ -52,10 +53,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "../../../components/ui/dialog"
-import { Checkbox } from "../../../components/ui/checkbox"
-import { Textarea } from "../../../components/ui/textarea"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table"
+} from "../../components/ui/dialog"
+import { Checkbox } from "../../components/ui/checkbox"
+import { Textarea } from "../../components/ui/textarea"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
 // import { useToast } from "@/components/ui/use-toast"
 import {
   Bar,
@@ -72,44 +73,186 @@ import {
   Cell,
 } from "recharts"
 
+import OrdersPage from "./OrdersPage"
+import { getLocationReport } from "../../services/DashboardService"
+import { getAreaDropdown } from "../../services/AreaServices"
+import WarehouseEventCalendar from "./WarehouseEventCalendar"
+import WarehousePerformance from "./WarehousePerformance"
+import ExpiringProducts from "./ExpiringProducts"
+import RecentActivities from "./RecentActivities"
+import dayjs from "dayjs"
+
 export default function Dashboard({ activeSection = "dashboard", onSectionChange }) {
-  const [activeTab, setActiveTab] = useState("stays")
+  const navigate = useNavigate()
+  const [showInventoryReport, setShowInventoryReport] = useState(false)
+  const [showOrders, setShowOrders] = useState(false)
+  const [showInvoiceDialog, setShowInvoiceDialog] = useState(false)
+  const [showOrderDialog, setShowOrderDialog] = useState(false)
+  const [locationReport, setLocationReport] = useState({
+    totalLocations: 0,
+    availableLocationCount: 0,
+    areaDetails: []
+  })
+  const [locationReportLoading, setLocationReportLoading] = useState(true)
+  const [selectedAreaId, setSelectedAreaId] = useState(null)
+  const [areas, setAreas] = useState([])
+  const [areasLoading, setAreasLoading] = useState(false)
+  const [purchaseOrdersData, setPurchaseOrdersData] = useState([])
+  const [salesOrdersData, setSalesOrdersData] = useState([])
   // const { toast } = useToast()
-  
+
   // Mock toast function
   const toast = ({ title, description, variant }) => {
     console.log(`${title}: ${description}`)
   }
 
-  // Sample data for charts
-  const inventoryData = [
-    { name: "Sun", value: 8 },
-    { name: "Mon", value: 10 },
-    { name: "Tue", value: 12 },
-    { name: "Wed", value: 11 },
-    { name: "Thu", value: 9 },
-    { name: "Fri", value: 11 },
-    { name: "Sat", value: 12 },
-  ]
+  // Map day of week to Vietnamese
+  const getDayNameVietnamese = (dayOfWeek) => {
+    const dayNames = {
+      0: "CN", // Chủ nhật
+      1: "T2", // Thứ hai
+      2: "T3", // Thứ ba
+      3: "T4", // Thứ tư
+      4: "T5", // Thứ năm
+      5: "T6", // Thứ sáu
+      6: "T7", // Thứ bảy
+    }
+    return dayNames[dayOfWeek] || ""
+  }
 
-  const ordersData = [
-    { name: "Sun", value: 8000 },
-    { name: "Mon", value: 10000 },
-    { name: "Tue", value: 12000 },
-    { name: "Wed", value: 9000 },
-    { name: "Thu", value: 6000 },
-    { name: "Fri", value: 8000 },
-  ]
+  // Get current week days (Sunday to Saturday)
+  const getCurrentWeekDays = () => {
+    const today = dayjs()
+    const currentDayOfWeek = today.day() // 0 = Sunday, 6 = Saturday
+    
+    // Get Sunday of current week
+    const sunday = today.subtract(currentDayOfWeek, "day")
+    
+    // Generate 7 days starting from Sunday
+    const weekDays = []
+    for (let i = 0; i < 7; i++) {
+      const day = sunday.add(i, "day")
+      weekDays.push({
+        date: day,
+        dayName: getDayNameVietnamese(day.day()),
+        dayOfWeek: day.day(),
+      })
+    }
+    
+    return weekDays
+  }
 
-  const storageData = [
-    { name: "Sun", occupied: 15, reserved: 10, available: 25 },
-    { name: "Mon", occupied: 20, reserved: 12, available: 18 },
-    { name: "Tue", occupied: 18, reserved: 15, available: 17 },
-    { name: "Wed", occupied: 22, reserved: 10, available: 18 },
-    { name: "Thu", occupied: 20, reserved: 15, available: 15 },
-    { name: "Fri", occupied: 18, reserved: 12, available: 20 },
-    { name: "Sat", occupied: 15, reserved: 10, available: 25 },
-  ]
+  // Initialize chart data with current week days
+  useEffect(() => {
+    const weekDays = getCurrentWeekDays()
+    
+    // Initialize purchase orders data with current week days
+    // Note: Values are still mock data, but days are now dynamic
+    const purchaseData = weekDays.map((day, index) => ({
+      name: day.dayName,
+      value: [8, 10, 12, 11, 9, 11, 12][index] || 0, // Mock values, can be replaced with API data
+    }))
+    setPurchaseOrdersData(purchaseData)
+    
+    // Initialize sales orders data with current week days (excluding Saturday for sales)
+    const salesData = weekDays.slice(0, 6).map((day, index) => ({
+      name: day.dayName,
+      value: [8000, 10000, 12000, 9000, 6000, 8000][index] || 0, // Mock values, can be replaced with API data
+    }))
+    setSalesOrdersData(salesData)
+  }, [])
+
+  // Fetch areas dropdown
+  useEffect(() => {
+    const fetchAreas = async () => {
+      try {
+        setAreasLoading(true)
+        const response = await getAreaDropdown()
+        // Handle response structure: { status, message, data: [...], success }
+        // or { data: { data: [...] } } or direct array
+        let areasList = []
+        if (Array.isArray(response)) {
+          areasList = response
+        } else if (response?.data) {
+          // Check if response.data is array or nested
+          areasList = Array.isArray(response.data) ? response.data : (response.data?.data || [])
+        } else if (response?.items) {
+          areasList = response.items
+        }
+        setAreas(areasList)
+      } catch (error) {
+        console.error("Error fetching areas:", error)
+        setAreas([])
+      } finally {
+        setAreasLoading(false)
+      }
+    }
+
+    if (activeSection === "dashboard") {
+      fetchAreas()
+    }
+  }, [activeSection])
+
+  // Fetch location report data
+  useEffect(() => {
+    const fetchLocationReport = async () => {
+      try {
+        setLocationReportLoading(true)
+        // Khi có selectedAreaId: truyền areaId để lấy dữ liệu khu vực đó
+        // Khi không có selectedAreaId: không truyền areaId để lấy tổng hợp tất cả khu vực
+        const params = selectedAreaId ? { areaId: selectedAreaId } : {}
+        const data = await getLocationReport(params)
+        
+        // Đảm bảo dữ liệu hợp lệ
+        if (data) {
+          setLocationReport({
+            totalLocations: data.totalLocations || 0,
+            availableLocationCount: data.availableLocationCount || 0,
+            areaDetails: data.areaDetails || []
+          })
+        } else {
+          setLocationReport({
+            totalLocations: 0,
+            availableLocationCount: 0,
+            areaDetails: []
+          })
+        }
+      } catch (error) {
+        console.error("Error fetching location report:", error)
+        setLocationReport({
+          totalLocations: 0,
+          availableLocationCount: 0,
+          areaDetails: []
+        })
+      } finally {
+        setLocationReportLoading(false)
+      }
+    }
+
+    if (activeSection === "dashboard") {
+      fetchLocationReport()
+    }
+  }, [activeSection, selectedAreaId])
+
+
+  // Get selected area name for display
+  const selectedAreaName = selectedAreaId 
+    ? areas.find(area => area.areaId === selectedAreaId)?.areaName || ""
+    : ""
+
+  // Transform data for pie chart - calculate total used and available
+  const storagePieData = [
+    {
+      name: "Đã sử dụng",
+      value: locationReport.totalLocations - locationReport.availableLocationCount,
+      color: "#3B82F6"
+    },
+    {
+      name: "Trống",
+      value: locationReport.availableLocationCount,
+      color: "#F59E0B"
+    }
+  ].filter(item => item.value > 0) // Only show items with value > 0
 
   const categoryData = [
     { name: "Sữa tươi", value: 35 },
@@ -119,57 +262,6 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
   ]
 
   const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"]
-
-  const recentOrdersData = [
-    {
-      id: 1,
-      customerName: "Công ty ABC",
-      phone: "0901234567",
-      orderId: "ORD001",
-      quantity: 50,
-      productType: "Sữa tươi Vinamilk",
-      area: "Khu vực A",
-      status: "Đang xử lý",
-      total: "2,500,000",
-      avatar: "/placeholder.svg?height=32&width=32",
-    },
-    {
-      id: 2,
-      customerName: "Siêu thị XYZ",
-      phone: "0907654321",
-      orderId: "ORD002",
-      quantity: 100,
-      productType: ["Sữa chua", "Phô mai"],
-      area: "Khu vực B",
-      status: "Hoàn thành",
-      total: "5,000,000",
-      avatar: "/placeholder.svg?height=32&width=32",
-    },
-    {
-      id: 3,
-      customerName: "Nhà hàng DEF",
-      phone: "0909876543",
-      orderId: "ORD003",
-      quantity: 30,
-      productType: ["Bơ", "Sữa tươi"],
-      area: "Khu vực C",
-      status: "Đang giao",
-      total: "1,800,000",
-      avatar: "/placeholder.svg?height=32&width=32",
-    },
-    {
-      id: 4,
-      customerName: "Cửa hàng GHI",
-      phone: "0904567890",
-      orderId: "ORD004",
-      quantity: 75,
-      productType: "Sữa tươi TH True Milk",
-      area: "Khu vực A",
-      status: "Chờ xử lý",
-      total: "3,750,000",
-      avatar: "/placeholder.svg?height=32&width=32",
-    },
-  ]
 
   const foodOrders = [
     {
@@ -237,16 +329,27 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
     },
   ]
 
-  const calendarEvents = [
-    { date: 2, guest: "Carl Larson II", nights: 2, guests: 2 },
-    { date: 9, guest: "Mrs. Emmett Morar", nights: 2, guests: 2 },
-    { date: 24, guest: "Marjorie Klocko", nights: 2, guests: 2 },
-  ]
 
-  const renderDashboard = () => (
+  const renderDashboard = () => {
+    // Get current date in Vietnamese format
+    const today = dayjs()
+    const dayNames = {
+      0: "Chủ nhật",
+      1: "Thứ hai",
+      2: "Thứ ba",
+      3: "Thứ tư",
+      4: "Thứ năm",
+      5: "Thứ sáu",
+      6: "Thứ bảy",
+    }
+    const currentDayName = dayNames[today.day()] || ""
+    const formattedDate = today.format("DD/MM/YYYY")
+    const currentDateDisplay = `${currentDayName}, ${formattedDate}`
+
+    return (
     <>
       <div className="flex justify-end mb-4">
-        <p className="text-sm text-gray-600">Wed // July 26th, 2023</p>
+        <p className="text-sm text-gray-600">{currentDateDisplay}</p>
       </div>
 
       {/* Stats Cards */}
@@ -272,7 +375,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
             </div>
             <div>
               <p className="text-sm text-gray-500">
-                Nhập kho <span className="text-xs">(Tuần này)</span>
+                Đơn mua hàng <span className="text-xs">(Tuần này)</span>
               </p>
               <div className="flex items-center">
                 <h3 className="text-2xl font-bold mr-2">73</h3>
@@ -304,7 +407,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
             </div>
             <div>
               <p className="text-sm text-gray-500">
-                Xuất kho <span className="text-xs">(Tuần này)</span>
+                Đơn bán hàng <span className="text-xs">(Tuần này)</span>
               </p>
               <div className="flex items-center">
                 <h3 className="text-2xl font-bold mr-2">35</h3>
@@ -338,7 +441,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
             </div>
             <div>
               <p className="text-sm text-gray-500">
-                Đơn hàng <span className="text-xs">(Tuần này)</span>
+                Tồn kho <span className="text-xs">(Tuần này)</span>
               </p>
               <div className="flex items-center">
                 <h3 className="text-2xl font-bold mr-2">237</h3>
@@ -348,7 +451,6 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent className="p-4">
             <p className="text-sm text-gray-500 mb-2">Hoạt động hôm nay</p>
@@ -380,10 +482,6 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                 <p className="text-xs">Sản phẩm</p>
               </div>
             </div>
-            <div className="mt-4">
-              <p className="text-xs text-gray-500">Tổng doanh thu</p>
-              <p className="text-lg font-bold">35M VNĐ</p>
-            </div>
           </CardContent>
         </Card>
       </div>
@@ -392,7 +490,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
-            <CardTitle className="text-base font-medium">Tồn kho</CardTitle>
+            <CardTitle className="text-base font-medium">Đơn mua hàng</CardTitle>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8 text-xs">
@@ -408,7 +506,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
           <CardContent className="p-4 pt-0">
             <div className="h-[200px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <RechartsBarChart data={inventoryData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <RechartsBarChart data={purchaseOrdersData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} />
                   <YAxis hide={true} />
@@ -417,7 +515,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                       if (active && payload && payload.length) {
                         return (
                           <div className="bg-white p-2 border rounded shadow-sm">
-                            <p className="text-xs">{`${payload[0].value}K sản phẩm`}</p>
+                            <p className="text-xs">{`${payload[0].value} đơn`}</p>
                           </div>
                         )
                       }
@@ -433,7 +531,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
-            <CardTitle className="text-base font-medium">Đơn hàng</CardTitle>
+            <CardTitle className="text-base font-medium">Đơn bán hàng</CardTitle>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8 text-xs">
@@ -449,7 +547,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
           <CardContent className="p-4 pt-0">
             <div className="h-[200px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <RechartsLineChart data={ordersData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <RechartsLineChart data={salesOrdersData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} />
                   <YAxis hide={true} />
@@ -489,30 +587,44 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
         <Card>
           <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
             <CardTitle className="text-base font-medium">Khu vực lưu trữ</CardTitle>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 text-xs">
-                  tuần này <ChevronDown className="ml-1 h-3 w-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem>Tháng này</DropdownMenuItem>
-                <DropdownMenuItem>Năm nay</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="flex items-center gap-2">
+              <Select
+                key={`area-select-${selectedAreaId || 'all'}`}
+                value={selectedAreaId !== null && selectedAreaId !== undefined ? selectedAreaId.toString() : ""}
+                onValueChange={(value) => {
+                  const newAreaId = value === "" || value === null || value === undefined ? null : parseInt(value)
+                  setSelectedAreaId(newAreaId)
+                }}
+                disabled={areasLoading}
+              >
+                <SelectTrigger className="h-8 w-[180px] text-xs">
+                  <span className="flex-1 text-left">
+                    {selectedAreaId && selectedAreaName 
+                      ? selectedAreaName 
+                      : (areasLoading ? "Đang tải..." : "Tất cả khu vực")
+                    }
+                  </span>
+                  <ChevronDown className="h-3 w-3 opacity-50" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Tất cả khu vực</SelectItem>
+                  {areas.map((area) => (
+                    <SelectItem key={area.areaId} value={area.areaId.toString()}>
+                      {area.areaName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
           <CardContent className="p-4 pt-0">
             <div className="text-xs mb-2">
               <div className="flex items-center justify-between">
-                <p>Tổng 50 khu vực</p>
+                <p>Tổng {locationReport.totalLocations} vị trí</p>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-1">
                     <span className="h-2 w-2 rounded-full bg-blue-500"></span>
                     <span>Đã sử dụng</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="h-2 w-2 rounded-full bg-green-500"></span>
-                    <span>Đã đặt</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <span className="h-2 w-2 rounded-full bg-amber-500"></span>
@@ -521,388 +633,181 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                 </div>
               </div>
             </div>
-            <div className="h-[180px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <RechartsBarChart data={storageData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                  <YAxis hide={true} />
-                  <Tooltip
-                    content={({ active, payload }) => {
-                      if (active && payload && payload.length) {
-                        return (
-                          <div className="bg-white p-2 border rounded shadow-sm">
-                            <p className="text-xs">{`Đã sử dụng: ${payload[0].value}`}</p>
-                            <p className="text-xs">{`Đã đặt: ${payload[1].value}`}</p>
-                            <p className="text-xs">{`Trống: ${payload[2].value}`}</p>
-                          </div>
-                        )
-                      }
-                      return null
-                    }}
-                  />
-                  <Bar dataKey="occupied" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="reserved" fill="#10B981" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="available" fill="#F59E0B" radius={[4, 4, 0, 0]} />
-                </RechartsBarChart>
-              </ResponsiveContainer>
+            <div className="h-[180px] w-full relative">
+              {locationReportLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                </div>
+              ) : storagePieData.length > 0 ? (
+                <>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={storagePieData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={false}
+                        outerRadius={70}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {storagePieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0]
+                            return (
+                              <div className="bg-white p-2 border rounded shadow-sm">
+                                <p className="text-xs font-medium">{data.name}</p>
+                                <p className="text-xs">{`Số lượng: ${data.value}`}</p>
+                                <p className="text-xs">{`Tỷ lệ: ${((data.value / locationReport.totalLocations) * 100).toFixed(1)}%`}</p>
+                              </div>
+                            )
+                          }
+                          return null
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  {/* Text ở góc phải dưới cùng */}
+                  <div className="absolute bottom-0 right-0 flex flex-col items-end gap-1">
+                    <div className="text-xs font-medium text-blue-500">
+                      Đã sử dụng: {locationReport.totalLocations > 0 
+                        ? (((locationReport.totalLocations - locationReport.availableLocationCount) / locationReport.totalLocations) * 100).toFixed(0)
+                        : 0}%
+                    </div>
+                    <div className="text-xs font-medium text-amber-500">
+                      Trống: {locationReport.totalLocations > 0 
+                        ? ((locationReport.availableLocationCount / locationReport.totalLocations) * 100).toFixed(0)
+                        : 0}%
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500 text-sm">
+                  Không có dữ liệu
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Recent Orders Table */}
+      {/* Inventory Report Section */}
       <Card className="mb-6">
-        <CardHeader className="p-4 pb-0">
-          <CardTitle className="text-base font-medium">
-            Đơn hàng gần đây <span className="text-xs font-normal text-gray-500">(8 đơn hôm nay)</span>
-          </CardTitle>
+        <CardHeader className="p-4 pb-2">
+          <CardTitle className="text-base font-medium">Thống kê tồn kho</CardTitle>
         </CardHeader>
         <CardContent className="p-4">
-          <Tabs defaultValue="processing" className="w-full">
-            <TabsList className="mb-4 border-b w-full justify-start rounded-none bg-transparent p-0">
-              <TabsTrigger
-                value="processing"
-                className="rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-                onClick={() => setActiveTab("processing")}
-              >
-                Đang xử lý
-              </TabsTrigger>
-              <TabsTrigger
-                value="completed"
-                className="rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-                onClick={() => setActiveTab("completed")}
-              >
-                Hoàn thành
-              </TabsTrigger>
-              <TabsTrigger
-                value="shipping"
-                className="rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-                onClick={() => setActiveTab("shipping")}
-              >
-                Đang giao
-              </TabsTrigger>
-              <TabsTrigger
-                value="pending"
-                className="rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-                onClick={() => setActiveTab("pending")}
-              >
-                Chờ xử lý
-              </TabsTrigger>
-            </TabsList>
-
-            <div className="flex flex-col md:flex-row justify-between mb-4 gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm theo tên khách hàng, số điện thoại hoặc mã đơn hàng"
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-full md:w-[400px] text-sm"
-                />
+          {!showInventoryReport ? (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="bg-orange-50 p-3 rounded-full">
+                  <Package className="h-6 w-6 text-orange-500" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">Báo cáo tồn kho</h3>
+                  <p className="text-sm text-gray-500">Xem chi tiết báo cáo tồn kho và thống kê</p>
+                </div>
               </div>
-              <Button className="bg-blue-500 hover:bg-blue-600 text-white">
-                <Plus className="h-4 w-4 mr-2" />
-                Tạo đơn hàng
+              <Button
+                onClick={() => setShowInventoryReport(true)}
+                className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
+              >
+                Xem báo cáo tồn kho
               </Button>
             </div>
-
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="whitespace-nowrap">
-                      <div className="flex items-center">
-                        KHÁCH HÀNG <ChevronDown className="h-4 w-4 ml-1" />
-                      </div>
-                    </TableHead>
-                    <TableHead className="whitespace-nowrap">MÃ ĐƠN HÀNG</TableHead>
-                    <TableHead className="whitespace-nowrap">SỐ LƯỢNG</TableHead>
-                    <TableHead className="whitespace-nowrap">LOẠI SẢN PHẨM</TableHead>
-                    <TableHead className="whitespace-nowrap">KHU VỰC</TableHead>
-                    <TableHead className="whitespace-nowrap">TRẠNG THÁI</TableHead>
-                    <TableHead className="whitespace-nowrap">TỔNG TIỀN</TableHead>
-                    <TableHead className="whitespace-nowrap">THAO TÁC</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentOrdersData.map((order) => (
-                    <TableRow key={order.id}>
-                      <TableCell>
-                        <div className="flex items-center">
-                          <Avatar className="h-8 w-8 mr-3">
-                            <AvatarImage src={order.avatar} alt={order.customerName} />
-                            <AvatarFallback>
-                              {order.customerName
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">{order.customerName}</p>
-                            <p className="text-xs text-gray-500">{order.phone}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{order.orderId}</TableCell>
-                      <TableCell>{order.quantity}</TableCell>
-                      <TableCell>
-                        {Array.isArray(order.productType) ? (
-                          <div>
-                            {order.productType.map((type, index) => (
-                              <p key={index}>{type}</p>
-                            ))}
-                          </div>
-                        ) : (
-                          order.productType
-                        )}
-                      </TableCell>
-                      <TableCell>{order.area}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            order.status === "Hoàn thành"
-                              ? "success"
-                              : order.status === "Đang xử lý"
-                                ? "warning"
-                                : order.status === "Đang giao"
-                                  ? "default"
-                                  : "outline"
-                          }
-                        >
-                          {order.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{order.total} VNĐ</TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+          ) : (
+            <div>
+              <div className="flex justify-end mb-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowInventoryReport(false)}
+                  className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white"
+                >
+                  Đóng
+                </Button>
+              </div>
+              <InventoryReport />
             </div>
-            <div className="flex justify-end mt-4">
-              <Button variant="link" className="text-blue-500 hover:text-blue-600">
-                Xem tất cả đơn hàng
-              </Button>
-            </div>
-          </Tabs>
+          )}
         </CardContent>
       </Card>
 
-      {/* Calendar and Rating */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader className="p-4 pb-0">
-            <CardTitle className="text-base font-medium">Calender</CardTitle>
-          </CardHeader>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-4">
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <ChevronLeft className="h-4 w-4" />
+      {/* Recent Orders Section */}
+      <Card className="mb-6">
+        <CardHeader className="p-4 pb-2">
+          <CardTitle className="text-base font-medium">
+            Đơn hàng <span className="text-xs font-normal text-gray-500">(Quản lý đơn mua hàng và đơn bán hàng)</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-4">
+          {!showOrders ? (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="bg-blue-50 p-3 rounded-full">
+                  <ShoppingCart className="h-6 w-6 text-blue-500" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">Đơn hàng</h3>
+                  <p className="text-sm text-gray-500">Xem danh sách đơn mua hàng và đơn bán hàng</p>
+                </div>
+              </div>
+              <Button
+                onClick={() => setShowOrders(true)}
+                className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
+              >
+                Xem đơn hàng
               </Button>
-              <h3 className="text-sm font-medium">August 2023</h3>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <ChevronRight className="h-4 w-4" />
-              </Button>
             </div>
-            <div className="grid grid-cols-7 gap-1 text-center text-xs">
-              <div className="py-1 font-medium">SU</div>
-              <div className="py-1 font-medium">MO</div>
-              <div className="py-1 font-medium">TU</div>
-              <div className="py-1 font-medium">WE</div>
-              <div className="py-1 font-medium">TH</div>
-              <div className="py-1 font-medium">FR</div>
-              <div className="py-1 font-medium">SA</div>
-
-              <div className="py-1 text-gray-400">31</div>
-              <div className="py-1">1</div>
-              <div className="py-1 relative">
-                2
-                <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-500 rounded-full"></span>
-              </div>
-              <div className="py-1">3</div>
-              <div className="py-1">4</div>
-              <div className="py-1">5</div>
-              <div className="py-1">6</div>
-
-              <div className="py-1">7</div>
-              <div className="py-1">8</div>
-              <div className="py-1 relative">
-                9
-                <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-500 rounded-full"></span>
-              </div>
-              <div className="py-1">10</div>
-              <div className="py-1">11</div>
-              <div className="py-1">12</div>
-              <div className="py-1">13</div>
-
-              <div className="py-1">14</div>
-              <div className="py-1">15</div>
-              <div className="py-1">16</div>
-              <div className="py-1">17</div>
-              <div className="py-1">18</div>
-              <div className="py-1">19</div>
-              <div className="py-1">20</div>
-
-              <div className="py-1">21</div>
-              <div className="py-1">22</div>
-              <div className="py-1">23</div>
-              <div className="py-1 relative">
-                24
-                <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-500 rounded-full"></span>
-              </div>
-              <div className="py-1">25</div>
-              <div className="py-1">26</div>
-              <div className="py-1">27</div>
-
-              <div className="py-1">28</div>
-              <div className="py-1">29</div>
-              <div className="py-1">30</div>
-              <div className="py-1">31</div>
-              <div className="py-1 text-gray-400">1</div>
-              <div className="py-1 text-gray-400">2</div>
-              <div className="py-1 text-gray-400">3</div>
+          ) : (
+            <div>
+              <OrdersPage onClose={() => setShowOrders(false)} />
             </div>
+          )}
+        </CardContent>
+      </Card>
 
-            <div className="mt-6 border rounded-md p-3">
-              <h4 className="text-sm font-medium mb-2">August 02, 2023 Booking Lists</h4>
-              <p className="text-xs text-gray-500 mb-3">(3 Bookings)</p>
+      {/* Calendar and Warehouse Statistics */}
+      <div className="grid grid-cols-2 gap-6 items-stretch">
+        <div>
+          <WarehouseEventCalendar />
+        </div>
+        <div>
+          <WarehousePerformance />
+        </div>
+      </div>
 
-              <div className="space-y-3">
-                {calendarEvents.map((event, index) => (
-                  <div key={index} className="flex items-center">
-                    <Avatar className="h-8 w-8 mr-3">
-                      <AvatarImage src="/placeholder.svg?height=32&width=32" alt={event.guest} />
-                      <AvatarFallback>
-                        {event.guest
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="text-sm font-medium">{event.guest}</p>
-                      <p className="text-xs text-gray-500">
-                        {event.nights} Nights | {event.guests} Guests
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between p-4 pb-0">
-            <CardTitle className="text-base font-medium">Overall Rating</CardTitle>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 text-xs">
-                  This Week <ChevronDown className="ml-1 h-3 w-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem>This Month</DropdownMenuItem>
-                <DropdownMenuItem>This Year</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </CardHeader>
-          <CardContent className="p-4">
-            <div className="flex justify-center mb-6">
-              <div className="relative w-48 h-24">
-                <svg viewBox="0 0 100 50" className="w-full h-full">
-                  <path d="M 0 50 A 50 50 0 0 1 100 50" fill="none" stroke="#e5e7eb" strokeWidth="10" />
-                  <path d="M 0 50 A 50 50 0 0 1 90 50" fill="none" stroke="#3b82f6" strokeWidth="10" />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <div className="text-center">
-                    <p className="text-sm font-medium">Rating</p>
-                    <p className="text-2xl font-bold">4.5/5</p>
-                    <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-600 rounded">+31%</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Cleanliness</span>
-                <div className="flex items-center gap-2">
-                  <Progress value={90} className="h-2 w-32" />
-                  <span className="text-sm">4.5</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Facilities</span>
-                <div className="flex items-center gap-2">
-                  <Progress value={90} className="h-2 w-32" />
-                  <span className="text-sm">4.5</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Location</span>
-                <div className="flex items-center gap-2">
-                  <Progress value={50} className="h-2 w-32" />
-                  <span className="text-sm">2.5</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Room Comfort</span>
-                <div className="flex items-center gap-2">
-                  <Progress value={50} className="h-2 w-32" />
-                  <span className="text-sm">2.5</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Service</span>
-                <div className="flex items-center gap-2">
-                  <Progress value={76} className="h-2 w-32" />
-                  <span className="text-sm">3.8</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Value for money</span>
-                <div className="flex items-center gap-2">
-                  <Progress value={76} className="h-2 w-32" />
-                  <span className="text-sm">3.8</span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Warehouse Information Cards */}
+      <div className="grid grid-cols-2 gap-6 mt-6">
+        <ExpiringProducts />
+        <RecentActivities onShowAllClick={() => setShowOrders(true)} />
       </div>
     </>
   )
+}
 
   const renderBillingSystem = () => (
     <>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold">Billing System</h2>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="flex items-center gap-1">
+          <Button variant="outline" className="h-[38px] px-4 flex items-center gap-1">
             <Filter className="h-4 w-4" />
             Filter
           </Button>
-          <Button variant="outline" size="sm" className="flex items-center gap-1">
+          <Button variant="outline" className="h-[38px] px-4 flex items-center gap-1">
             <Download className="h-4 w-4" />
             Export
           </Button>
-          <Button size="sm" className="flex items-center gap-1">
+          <Button
+            className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white flex items-center gap-1"
+            onClick={() => setShowInvoiceDialog(true)}
+          >
             <Plus className="h-4 w-4" />
             New Invoice
           </Button>
@@ -1037,10 +942,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
         </CardContent>
       </Card>
 
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button className="mb-6">Create New Invoice</Button>
-        </DialogTrigger>
+      <Dialog open={showInvoiceDialog} onOpenChange={setShowInvoiceDialog}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Create New Invoice</DialogTitle>
@@ -1100,13 +1002,23 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
           </div>
           <DialogFooter>
             <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowInvoiceDialog(false)}
+              className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white"
+            >
+              Hủy
+            </Button>
+            <Button
               type="submit"
               onClick={() => {
                 toast({
                   title: "Invoice created",
                   description: "New invoice has been created successfully",
                 })
+                setShowInvoiceDialog(false)
               }}
+              className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
             >
               Create Invoice
             </Button>
@@ -1121,11 +1033,14 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold">Food Delivery System</h2>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="flex items-center gap-1">
+          <Button variant="outline" className="h-[38px] px-4 flex items-center gap-1">
             <Filter className="h-4 w-4" />
             Filter
           </Button>
-          <Button size="sm" className="flex items-center gap-1">
+          <Button
+            className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white flex items-center gap-1"
+            onClick={() => setShowOrderDialog(true)}
+          >
             <Plus className="h-4 w-4" />
             New Order
           </Button>
@@ -1316,10 +1231,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
         </div>
       </div>
 
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button className="mb-6">Place New Order</Button>
-        </DialogTrigger>
+      <Dialog open={showOrderDialog} onOpenChange={setShowOrderDialog}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Place New Food Order</DialogTitle>
@@ -1391,13 +1303,23 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
           </div>
           <DialogFooter>
             <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowOrderDialog(false)}
+              className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white"
+            >
+              Hủy
+            </Button>
+            <Button
               type="submit"
               onClick={() => {
                 toast({
                   title: "Order placed",
                   description: "Food order has been placed successfully",
                 })
+                setShowOrderDialog(false)
               }}
+              className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
             >
               Place Order
             </Button>
@@ -1436,7 +1358,12 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                 </p>
               </CardContent>
               <CardFooter>
-                <Button onClick={() => onSectionChange?.("dashboard")}>Return to Dashboard</Button>
+                <Button
+                  onClick={() => onSectionChange?.("dashboard")}
+                  className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
+                >
+                  Return to Dashboard
+                </Button>
               </CardFooter>
             </Card>
           </div>

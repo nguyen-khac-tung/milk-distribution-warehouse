@@ -320,11 +320,11 @@ namespace MilkDistributionWarehouse.Services
             if (sheet.Status != StocktakingStatus.Assigned)
                 return "Chỉ được chuyển sang trạng thái Đang kiểm kê khi phiếu kiểm kê ở trạng thái Đã phân công.".ToMessageForUser();
 
-            if (sheet.StartTime.HasValue && DateTime.Now < sheet.StartTime.Value)
-            {
-                var remaining = sheet.StartTime.Value - DateTime.Now;
-                return $"Còn {remaining.Hours} giờ {remaining.Minutes} phút nữa đến thời gian bắt đầu kiểm kê.".ToMessageForUser();
-            }
+            //if (sheet.StartTime.HasValue && DateTime.Now < sheet.StartTime.Value)
+            //{
+            //    var remaining = sheet.StartTime.Value - DateTime.Now;
+            //    return $"Còn {remaining.Hours} giờ {remaining.Minutes} phút nữa đến thời gian bắt đầu kiểm kê.".ToMessageForUser();
+            //}
 
             var stocktakingAreaOfAssignedStaff = sheet.StocktakingAreas.FirstOrDefault(sa => sa.AssignTo == userId);
             if (stocktakingAreaOfAssignedStaff == null)
