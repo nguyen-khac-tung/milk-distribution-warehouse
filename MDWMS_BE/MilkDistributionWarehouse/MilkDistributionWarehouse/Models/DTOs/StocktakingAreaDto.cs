@@ -22,10 +22,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int AssignTo { get; set; }
     }
 
-    public class StocktakingAreaUpdate : StocktakingAreaCreate
-    {
-        public Guid StocktakingAreaId { get; set; }
-    }
+    public class StocktakingAreaUpdate : StocktakingAreaCreate {}
 
     public class StocktakingAreaDetailDto : StocktakingAreaDetail
     {
