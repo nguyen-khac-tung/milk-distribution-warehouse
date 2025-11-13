@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.EntityFrameworkCore;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
@@ -8,6 +9,7 @@ using MilkDistributionWarehouse.Repositories;
 using MilkDistributionWarehouse.Utilities;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace MilkDistributionWarehouse.Services
 {
@@ -80,9 +82,22 @@ namespace MilkDistributionWarehouse.Services
                     return ("Bạn không có quyền xem danh sách kiểm kê.".ToMessageForUser(), default);
             }
 
-            var stocktakingSheetMap = stocktakingSheetQuery.ProjectTo<StocktakingSheetDto>(_mapper.ConfigurationProvider);
+            //var stocktakingSheetMap = stocktakingSheetQuery.ProjectTo<StocktakingSheetDto>(_mapper.ConfigurationProvider);
 
-            var items = await stocktakingSheetMap.ToPagedResultAsync(request);
+            var queryDto = stocktakingSheetQuery.Select(ss => new StocktakingSheetDto
+            {
+                StocktakingSheetId = ss.StocktakingSheetId,
+                Status = ss.Status,
+                StartTime = ss.StartTime,
+                CreatedAt = ss.CreatedAt,
+                CreatedBy = ss.CreatedBy,
+                CreateByName = ss.CreatedByNavigation.FullName,
+                CanViewStocktakingArea = roleName == RoleNames.WarehouseManager || roleName == RoleNames.SalesManager
+            ? ss.StocktakingAreas.Any(sa => sa.StocktakingLocations.Any())
+            : ss.StocktakingAreas.Any(sa => sa.AssignTo == userId && sa.StocktakingLocations.Any())
+            });
+
+            var items = await queryDto.ToPagedResultAsync(request);
 
             if (!items.Items.Any())
                 return ("Danh sách phiếu kiểm kê trống.".ToMessageForUser(), default);
@@ -271,7 +286,7 @@ namespace MilkDistributionWarehouse.Services
             if (!IsWarehouseManager(sheet, userId))
                 return "Bạn không có quyền thực hiện chức năng cập nhật trạng thái trong phiếu kiểm kê.".ToMessageForUser();
 
-            if(sheet.Status != StocktakingStatus.Assigned)
+            if (sheet.Status != StocktakingStatus.Assigned)
                 return "Chỉ đươc được phân công lại khi phiếu kiểm kê ở trạng thái Đã phân công.".ToMessageForUser();
 
             var (msg, _) = await _stocktakingAreaService.UpdateStocktakingAreaBulk(sheet.StocktakingSheetId, reAssingStatus.StocktakingAreaReAssign);
