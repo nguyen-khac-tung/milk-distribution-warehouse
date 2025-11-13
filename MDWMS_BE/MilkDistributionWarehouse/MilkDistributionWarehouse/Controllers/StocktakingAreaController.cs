@@ -28,5 +28,15 @@ namespace MilkDistributionWarehouse.Controllers
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<StocktakingAreaDetailDto>.ToResultOk(stocktakingAreaDetail);
         }
+
+        [HttpGet("GetDetailForOtherRoleByStocktakingSheetId/{stoctakingSheetId}")]
+        [Authorize(Roles = $"{RoleNames.WarehouseManager}, {RoleNames.SalesManager}")]
+        public async Task<IActionResult> GetDetailOtherRoleStocktakingAreaByStocktakingSheetId(Guid stoctakingSheetId)
+        {
+            var (msg, stocktakingAreaDetail) = await _stocktakingAreaService.GetStocktakingAreaByStocktakingSheetId(stoctakingSheetId, null);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<StocktakingAreaDetailDto>.ToResultOk(stocktakingAreaDetail);
+        }
     }
 }

@@ -34,10 +34,13 @@ namespace MilkDistributionWarehouse.Services
             if (stoctakingSheetId == Guid.Empty)
                 return ("Mã phiếu kiểm kê không hợp lệ.", default);
 
-            if (!userId.HasValue)
-                return ("Bạn không có quyền thực hiện chức năng xem chi tiết trong kiểm kê khu vực.", default);
+            var stocktakingArea = new StocktakingArea();
 
-            var stocktakingArea = await _stocktakingAreaRepository.GetStocktakingAreaByStocktakingSheetIdAndAssignTo(stoctakingSheetId, userId.Value);
+            if (userId.HasValue)
+                stocktakingArea = await _stocktakingAreaRepository.GetStocktakingAreaByStocktakingSheetIdAndAssignTo(stoctakingSheetId, userId.Value);
+            else 
+                stocktakingArea = await _stocktakingAreaRepository.GetStocktakingAreaByStocktakingSheetIdAndAssignTo(stoctakingSheetId, null);
+
             if (stocktakingArea == null)
                 return ("Phiếu kiểm kê khu vực không tồn tại.", default);
 
@@ -45,6 +48,8 @@ namespace MilkDistributionWarehouse.Services
 
             return ("", stocktakingAreaMap);
         }
+
+
 
         public async Task<(string, StocktakingSheeteResponse?)> CreateStocktakingAreaBulk(Guid stocktakingSheetId, List<StocktakingAreaCreate> creates)
         {
