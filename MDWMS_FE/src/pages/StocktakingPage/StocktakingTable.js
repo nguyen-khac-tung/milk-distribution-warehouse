@@ -193,17 +193,15 @@ const StocktakingTable = ({
                                                     <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_IN_PROGRESS}>
                                                         <button
                                                             className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                            title={stocktaking.status === STOCKTAKING_STATUS.Assigned || stocktaking.status === 2 || stocktaking.status === '2' 
-                                                                ? "Bắt đầu kiểm kê" 
-                                                                : "Xem chi tiết kiểm kê"}
+                                                            title={stocktaking.canViewStocktakingArea === true
+                                                                ? "Xem chi tiết kiểm kê" 
+                                                                : "Bắt đầu kiểm kê"}
                                                             onClick={() => handleStartStocktakingClick(stocktaking)}
                                                         >
                                                             <PlayCircle className={`h-4 w-4 ${
-                                                                stocktaking.status === STOCKTAKING_STATUS.Assigned || 
-                                                                stocktaking.status === 2 || 
-                                                                stocktaking.status === '2'
-                                                                    ? 'text-green-500' 
-                                                                    : 'text-blue-500'
+                                                                stocktaking.canViewStocktakingArea === true
+                                                                    ? 'text-blue-500' 
+                                                                    : 'text-green-500'
                                                             }`} />
                                                         </button>
                                                     </PermissionWrapper>
