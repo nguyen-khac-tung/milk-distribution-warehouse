@@ -82,10 +82,10 @@ const AssignPickingModal = ({
                   <span className="font-medium text-gray-900">Thông tin đơn hàng</span>
                 </div>
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
+                  {/* <div className="flex justify-between">
                     <span className="text-gray-600">Mã đơn hàng:</span>
                     <span className="font-medium">{saleOrder?.salesOrderId || "-"}</span>
-                  </div>
+                  </div> */}
                   <div className="flex justify-between">
                     <span className="text-gray-600">Nhà bán lẻ:</span>
                     <span className="font-medium">{saleOrder?.retailerName || "-"}</span>
