@@ -203,3 +203,14 @@ export const reAssignAreaConfirm = async (data) => {
     }
 };
 
+// Lấy chi tiết StocktakingPallet theo stocktakingLocationId
+export const getStocktakingPalletDetail = async (stocktakingLocationId) => {
+    try {
+        const res = await api.get(`/StocktakingPallet/GetDetail/${stocktakingLocationId}`);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching stocktaking pallet detail:", error);
+        throw error;
+    }
+};
+
