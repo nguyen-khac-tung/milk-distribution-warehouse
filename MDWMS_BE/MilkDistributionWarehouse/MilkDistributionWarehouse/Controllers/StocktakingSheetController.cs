@@ -23,7 +23,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpGet("GetDetail/{stocktakingSheetId}")]
-        public async Task<IActionResult> GetStocktakingSheetDetail(Guid stocktakingSheetId)
+        public async Task<IActionResult> GetStocktakingSheetDetail(string stocktakingSheetId)
         {
             var (msg, stocktakingDetail) = await _stocktakingSheetService.GetStocktakingSheetDetail(stocktakingSheetId);
             if (!string.IsNullOrEmpty(msg))
@@ -123,7 +123,7 @@ namespace MilkDistributionWarehouse.Controllers
 
         [HttpDelete("Delete/{stocktakingSheetId}")]
         [Authorize(Roles = RoleNames.WarehouseManager)]
-        public async Task<IActionResult> DeleteStocktakingSheet(Guid stocktakingSheetId)
+        public async Task<IActionResult> DeleteStocktakingSheet(string stocktakingSheetId)
         {
             var (msg, stocktaking) = await _stocktakingSheetService.DeleteStocktakingSheet(stocktakingSheetId, User.GetUserId());
             if (!string.IsNullOrEmpty(msg))

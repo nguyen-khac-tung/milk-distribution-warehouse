@@ -4,8 +4,6 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import {
   BarChart,
-  ChevronLeft,
-  ChevronRight,
   Search,
   Plus,
   Trash,
@@ -27,6 +25,7 @@ import {
   Printer,
   MoreHorizontal,
   Menu,
+  TrendingUp,
   Package,
   ShoppingCart,
 } from "lucide-react"
@@ -77,6 +76,11 @@ import {
 import OrdersPage from "./OrdersPage"
 import { getLocationReport } from "../../services/DashboardService"
 import { getAreaDropdown } from "../../services/AreaServices"
+import WarehouseEventCalendar from "./WarehouseEventCalendar"
+import WarehousePerformance from "./WarehousePerformance"
+import ExpiringProducts from "./ExpiringProducts"
+import RecentActivities from "./RecentActivities"
+import dayjs from "dayjs"
 
 export default function Dashboard({ activeSection = "dashboard", onSectionChange }) {
   const navigate = useNavigate()
@@ -93,6 +97,8 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
   const [selectedAreaId, setSelectedAreaId] = useState(null)
   const [areas, setAreas] = useState([])
   const [areasLoading, setAreasLoading] = useState(false)
+  const [purchaseOrdersData, setPurchaseOrdersData] = useState([])
+  const [salesOrdersData, setSalesOrdersData] = useState([])
   // const { toast } = useToast()
 
   // Mock toast function
@@ -100,25 +106,61 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
     console.log(`${title}: ${description}`)
   }
 
-  // Sample data for charts
-  const purchaseOrdersData = [
-    { name: "Sun", value: 8 },
-    { name: "Mon", value: 10 },
-    { name: "Tue", value: 12 },
-    { name: "Wed", value: 11 },
-    { name: "Thu", value: 9 },
-    { name: "Fri", value: 11 },
-    { name: "Sat", value: 12 },
-  ]
+  // Map day of week to Vietnamese
+  const getDayNameVietnamese = (dayOfWeek) => {
+    const dayNames = {
+      0: "CN", // Chủ nhật
+      1: "T2", // Thứ hai
+      2: "T3", // Thứ ba
+      3: "T4", // Thứ tư
+      4: "T5", // Thứ năm
+      5: "T6", // Thứ sáu
+      6: "T7", // Thứ bảy
+    }
+    return dayNames[dayOfWeek] || ""
+  }
 
-  const salesOrdersData = [
-    { name: "Sun", value: 8000 },
-    { name: "Mon", value: 10000 },
-    { name: "Tue", value: 12000 },
-    { name: "Wed", value: 9000 },
-    { name: "Thu", value: 6000 },
-    { name: "Fri", value: 8000 },
-  ]
+  // Get current week days (Sunday to Saturday)
+  const getCurrentWeekDays = () => {
+    const today = dayjs()
+    const currentDayOfWeek = today.day() // 0 = Sunday, 6 = Saturday
+    
+    // Get Sunday of current week
+    const sunday = today.subtract(currentDayOfWeek, "day")
+    
+    // Generate 7 days starting from Sunday
+    const weekDays = []
+    for (let i = 0; i < 7; i++) {
+      const day = sunday.add(i, "day")
+      weekDays.push({
+        date: day,
+        dayName: getDayNameVietnamese(day.day()),
+        dayOfWeek: day.day(),
+      })
+    }
+    
+    return weekDays
+  }
+
+  // Initialize chart data with current week days
+  useEffect(() => {
+    const weekDays = getCurrentWeekDays()
+    
+    // Initialize purchase orders data with current week days
+    // Note: Values are still mock data, but days are now dynamic
+    const purchaseData = weekDays.map((day, index) => ({
+      name: day.dayName,
+      value: [8, 10, 12, 11, 9, 11, 12][index] || 0, // Mock values, can be replaced with API data
+    }))
+    setPurchaseOrdersData(purchaseData)
+    
+    // Initialize sales orders data with current week days (excluding Saturday for sales)
+    const salesData = weekDays.slice(0, 6).map((day, index) => ({
+      name: day.dayName,
+      value: [8000, 10000, 12000, 9000, 6000, 8000][index] || 0, // Mock values, can be replaced with API data
+    }))
+    setSalesOrdersData(salesData)
+  }, [])
 
   // Fetch areas dropdown
   useEffect(() => {
@@ -191,6 +233,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
       fetchLocationReport()
     }
   }, [activeSection, selectedAreaId])
+
 
   // Get selected area name for display
   const selectedAreaName = selectedAreaId 
@@ -286,16 +329,27 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
     },
   ]
 
-  const calendarEvents = [
-    { date: 2, guest: "Carl Larson II", nights: 2, guests: 2 },
-    { date: 9, guest: "Mrs. Emmett Morar", nights: 2, guests: 2 },
-    { date: 24, guest: "Marjorie Klocko", nights: 2, guests: 2 },
-  ]
 
-  const renderDashboard = () => (
+  const renderDashboard = () => {
+    // Get current date in Vietnamese format
+    const today = dayjs()
+    const dayNames = {
+      0: "Chủ nhật",
+      1: "Thứ hai",
+      2: "Thứ ba",
+      3: "Thứ tư",
+      4: "Thứ năm",
+      5: "Thứ sáu",
+      6: "Thứ bảy",
+    }
+    const currentDayName = dayNames[today.day()] || ""
+    const formattedDate = today.format("DD/MM/YYYY")
+    const currentDateDisplay = `${currentDayName}, ${formattedDate}`
+
+    return (
     <>
       <div className="flex justify-end mb-4">
-        <p className="text-sm text-gray-600">Wed // July 26th, 2023</p>
+        <p className="text-sm text-gray-600">{currentDateDisplay}</p>
       </div>
 
       {/* Stats Cards */}
@@ -718,187 +772,24 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
         </CardContent>
       </Card>
 
-      {/* Calendar and Rating */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader className="p-4 pb-0">
-            <CardTitle className="text-base font-medium">Calender</CardTitle>
-          </CardHeader>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-4">
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <h3 className="text-sm font-medium">August 2023</h3>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="grid grid-cols-7 gap-1 text-center text-xs">
-              <div className="py-1 font-medium">SU</div>
-              <div className="py-1 font-medium">MO</div>
-              <div className="py-1 font-medium">TU</div>
-              <div className="py-1 font-medium">WE</div>
-              <div className="py-1 font-medium">TH</div>
-              <div className="py-1 font-medium">FR</div>
-              <div className="py-1 font-medium">SA</div>
+      {/* Calendar and Warehouse Statistics */}
+      <div className="grid grid-cols-2 gap-6 items-stretch">
+        <div>
+          <WarehouseEventCalendar />
+        </div>
+        <div>
+          <WarehousePerformance />
+        </div>
+      </div>
 
-              <div className="py-1 text-gray-400">31</div>
-              <div className="py-1">1</div>
-              <div className="py-1 relative">
-                2
-                <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-500 rounded-full"></span>
-              </div>
-              <div className="py-1">3</div>
-              <div className="py-1">4</div>
-              <div className="py-1">5</div>
-              <div className="py-1">6</div>
-
-              <div className="py-1">7</div>
-              <div className="py-1">8</div>
-              <div className="py-1 relative">
-                9
-                <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-500 rounded-full"></span>
-              </div>
-              <div className="py-1">10</div>
-              <div className="py-1">11</div>
-              <div className="py-1">12</div>
-              <div className="py-1">13</div>
-
-              <div className="py-1">14</div>
-              <div className="py-1">15</div>
-              <div className="py-1">16</div>
-              <div className="py-1">17</div>
-              <div className="py-1">18</div>
-              <div className="py-1">19</div>
-              <div className="py-1">20</div>
-
-              <div className="py-1">21</div>
-              <div className="py-1">22</div>
-              <div className="py-1">23</div>
-              <div className="py-1 relative">
-                24
-                <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-500 rounded-full"></span>
-              </div>
-              <div className="py-1">25</div>
-              <div className="py-1">26</div>
-              <div className="py-1">27</div>
-
-              <div className="py-1">28</div>
-              <div className="py-1">29</div>
-              <div className="py-1">30</div>
-              <div className="py-1">31</div>
-              <div className="py-1 text-gray-400">1</div>
-              <div className="py-1 text-gray-400">2</div>
-              <div className="py-1 text-gray-400">3</div>
-            </div>
-
-            <div className="mt-6 border rounded-md p-3">
-              <h4 className="text-sm font-medium mb-2">August 02, 2023 Booking Lists</h4>
-              <p className="text-xs text-gray-500 mb-3">(3 Bookings)</p>
-
-              <div className="space-y-3">
-                {calendarEvents.map((event, index) => (
-                  <div key={index} className="flex items-center">
-                    <div>
-                      <p className="text-sm font-medium">{event.guest}</p>
-                      <p className="text-xs text-gray-500">
-                        {event.nights} Nights | {event.guests} Guests
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between p-4 pb-0">
-            <CardTitle className="text-base font-medium">Overall Rating</CardTitle>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 text-xs">
-                  This Week <ChevronDown className="ml-1 h-3 w-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem>This Month</DropdownMenuItem>
-                <DropdownMenuItem>This Year</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </CardHeader>
-          <CardContent className="p-4">
-            <div className="flex justify-center mb-6">
-              <div className="relative w-48 h-24">
-                <svg viewBox="0 0 100 50" className="w-full h-full">
-                  <path d="M 0 50 A 50 50 0 0 1 100 50" fill="none" stroke="#e5e7eb" strokeWidth="10" />
-                  <path d="M 0 50 A 50 50 0 0 1 90 50" fill="none" stroke="#3b82f6" strokeWidth="10" />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <div className="text-center">
-                    <p className="text-sm font-medium">Rating</p>
-                    <p className="text-2xl font-bold">4.5/5</p>
-                    <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-600 rounded">+31%</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Cleanliness</span>
-                <div className="flex items-center gap-2">
-                  <Progress value={90} className="h-2 w-32" />
-                  <span className="text-sm">4.5</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Facilities</span>
-                <div className="flex items-center gap-2">
-                  <Progress value={90} className="h-2 w-32" />
-                  <span className="text-sm">4.5</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Location</span>
-                <div className="flex items-center gap-2">
-                  <Progress value={50} className="h-2 w-32" />
-                  <span className="text-sm">2.5</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Room Comfort</span>
-                <div className="flex items-center gap-2">
-                  <Progress value={50} className="h-2 w-32" />
-                  <span className="text-sm">2.5</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Service</span>
-                <div className="flex items-center gap-2">
-                  <Progress value={76} className="h-2 w-32" />
-                  <span className="text-sm">3.8</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Value for money</span>
-                <div className="flex items-center gap-2">
-                  <Progress value={76} className="h-2 w-32" />
-                  <span className="text-sm">3.8</span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Warehouse Information Cards */}
+      <div className="grid grid-cols-2 gap-6 mt-6">
+        <ExpiringProducts />
+        <RecentActivities onShowAllClick={() => setShowOrders(true)} />
       </div>
     </>
   )
+}
 
   const renderBillingSystem = () => (
     <>

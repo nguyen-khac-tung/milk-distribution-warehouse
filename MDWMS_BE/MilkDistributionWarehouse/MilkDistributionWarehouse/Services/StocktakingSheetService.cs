@@ -16,9 +16,9 @@ namespace MilkDistributionWarehouse.Services
     public interface IStocktakingSheetService
     {
         Task<(string, PageResult<StocktakingSheetDto>?)> GetStocktakingSheets(PagedRequest request, string roleName, int? userId);
-        Task<(string, StocktakingSheetDetail?)> GetStocktakingSheetDetail(Guid stocktakingSheetId);
+        Task<(string, StocktakingSheetDetail?)> GetStocktakingSheetDetail(string stocktakingSheetId);
         Task<(string, StocktakingSheeteResponse?)> CreateStocktakingSheet(StocktakingSheetCreate create, int? userId);
-        Task<(string, StocktakingSheeteResponse?)> DeleteStocktakingSheet(Guid stocktakingSheetId, int? userId);
+        Task<(string, StocktakingSheeteResponse?)> DeleteStocktakingSheet(string stocktakingSheetId, int? userId);
         Task<(string, StocktakingSheeteResponse?)> UpdateStocktakingSheet(StocktakingSheetUpdate update, int? userId);
         Task<(string, StocktakingSheeteResponse?)> UpdateStocktakingSheetStatus<T>(T update, int? userId) where T : StocktakingSheetStatusUpdate;
     }
@@ -105,9 +105,9 @@ namespace MilkDistributionWarehouse.Services
             return ("", items);
         }
 
-        public async Task<(string, StocktakingSheetDetail?)> GetStocktakingSheetDetail(Guid stocktakingSheetId)
+        public async Task<(string, StocktakingSheetDetail?)> GetStocktakingSheetDetail(string stocktakingSheetId)
         {
-            if (stocktakingSheetId == Guid.Empty)
+            if (string.IsNullOrEmpty(stocktakingSheetId))
                 return ("Mã phiếu kiểm kê không hợp lệ.".ToMessageForUser(), default);
 
             var stocktakingSheetDetail = await _stocktakingSheetRepository.GetStocktakingSheetById(stocktakingSheetId);
@@ -150,7 +150,7 @@ namespace MilkDistributionWarehouse.Services
             catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                return ($"{ex.Message}".ToMessageForUser(), default);
+                return ($"{ex.Message}", default);
             }
         }
 
@@ -177,6 +177,7 @@ namespace MilkDistributionWarehouse.Services
             if (!string.IsNullOrEmpty(update.Note))
                 stocktakingSheetExist.Note = update.Note;
 
+            stocktakingSheetExist.UpdateAt = DateTime.Now;
             var resultUpdate = await _stocktakingSheetRepository.UpdateStockingtakingSheet(stocktakingSheetExist);
             if (resultUpdate == 0)
                 return ("Cập nhật phiếu kiểm kê thất bại.".ToMessageForUser(), default);
@@ -227,9 +228,9 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
-        public async Task<(string, StocktakingSheeteResponse?)> DeleteStocktakingSheet(Guid stocktakingSheetId, int? userId)
+        public async Task<(string, StocktakingSheeteResponse?)> DeleteStocktakingSheet(string stocktakingSheetId, int? userId)
         {
-            if (stocktakingSheetId == Guid.Empty)
+            if (string.IsNullOrEmpty(stocktakingSheetId))
                 return ("Mã phiếu kiểm kê không hợp lệ.".ToMessageForUser(), default);
 
             var stocktakingSheetExist = await _stocktakingSheetRepository.GetStocktakingSheetById(stocktakingSheetId);
@@ -319,11 +320,11 @@ namespace MilkDistributionWarehouse.Services
             if (sheet.Status != StocktakingStatus.Assigned)
                 return "Chỉ được chuyển sang trạng thái Đang kiểm kê khi phiếu kiểm kê ở trạng thái Đã phân công.".ToMessageForUser();
 
-            if (sheet.StartTime.HasValue && DateTime.Now < sheet.StartTime.Value)
-            {
-                var remaining = sheet.StartTime.Value - DateTime.Now;
-                return $"Còn {remaining.Hours} giờ {remaining.Minutes} phút nữa đến thời gian bắt đầu kiểm kê.".ToMessageForUser();
-            }
+            //if (sheet.StartTime.HasValue && DateTime.Now < sheet.StartTime.Value)
+            //{
+            //    var remaining = sheet.StartTime.Value - DateTime.Now;
+            //    return $"Còn {remaining.Hours} giờ {remaining.Minutes} phút nữa đến thời gian bắt đầu kiểm kê.".ToMessageForUser();
+            //}
 
             var stocktakingAreaOfAssignedStaff = sheet.StocktakingAreas.FirstOrDefault(sa => sa.AssignTo == userId);
             if (stocktakingAreaOfAssignedStaff == null)
@@ -340,10 +341,9 @@ namespace MilkDistributionWarehouse.Services
 
             var hasAllStarted = await _stocktakingLocationRepository.AreExistStocklocationByAllStockAreaIdsAsync(stockAreaIds);
             sheet.Status = hasAllStarted ? StocktakingStatus.InProgress : StocktakingStatus.Assigned;
+            sheet.UpdateAt = DateTime.Now;
 
             return string.Empty;
         }
-
-
     }
 }

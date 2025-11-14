@@ -9,11 +9,13 @@ public partial class StocktakingArea
 {
     public Guid StocktakingAreaId { get; set; }
 
-    public Guid? StocktakingSheetId { get; set; }
+    public string StocktakingSheetId { get; set; }
 
     public int? AreaId { get; set; }
 
     public int? AssignTo { get; set; }
+
+    public int? Status { get; set; }
 
     public DateTime? CreatedAt { get; set; }
 

@@ -7,17 +7,19 @@ namespace MilkDistributionWarehouse.Models.Entities;
 
 public partial class StocktakingSheet
 {
-    public Guid StocktakingSheetId { get; set; }
+    public string StocktakingSheetId { get; set; }
 
     public int? Status { get; set; }
 
     public DateTime? StartTime { get; set; }
 
+    public string Note { get; set; }
+
     public DateTime? CreatedAt { get; set; }
 
     public int? CreatedBy { get; set; }
 
-    public string Note { get; set; }
+    public DateTime? UpdateAt { get; set; }
 
     public virtual User CreatedByNavigation { get; set; }
 

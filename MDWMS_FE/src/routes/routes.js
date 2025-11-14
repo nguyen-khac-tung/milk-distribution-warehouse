@@ -36,6 +36,9 @@ import UpdateSaleOrder from "../pages/SalesOrderPage/UpdateSaleOrder";
 import GoodsIssueNoteDetail from "../pages/GoodsIssueNotePage/GoodsIssueNoteDetail";
 import StocktakingList from "../pages/StocktakingPage/StocktakingList";
 import CreateStocktaking from "../pages/StocktakingPage/CreateStocktaking";
+import UpdateStocktaking from "../pages/StocktakingPage/UpdateStocktaking";
+import StocktakingDetail from "../pages/StocktakingPage/StocktakingDetail";
+import StocktakingArea from "../pages/StocktakingArea/StocktakingArea";
 
 export const routes = [
     {
@@ -301,10 +304,37 @@ export const routes = [
         isShowHeader: true,
     },
     {
+        path: "/stocktakings/:id",
+        page: () => (
+            <ProtectedRoute requiredPermission={[PERMISSIONS.STOCKTAKING_VIEW, PERMISSIONS.STOCKTAKING_VIEW_WM, PERMISSIONS.STOCKTAKING_VIEW_WS, PERMISSIONS.STOCKTAKING_VIEW_SM]} requireAll={false}>
+                <StocktakingDetail />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
         path: "/stocktaking/create",
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.STOCKTAKING_CREATE}>
                 <CreateStocktaking />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/stocktakings/update/:id",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.STOCKTAKING_UPDATE}>
+                <UpdateStocktaking />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/stocktaking-area/:id",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.STOCKTAKING_AREA_VIEW_DETAILS}>
+                <StocktakingArea />
             </ProtectedRoute>
         ),
         isShowHeader: true,

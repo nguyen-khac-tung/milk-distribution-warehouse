@@ -125,6 +125,19 @@ export const getAreaDropdown = async () => {
     }
 };
 
+// Lấy danh sách khu vực cho kiểm kê (với thông tin chi tiết)
+export const getStocktakingArea = async () => {
+    try {
+        const res = await api.get("/Area/GetStocktakingArea");
+        console.log("Stocktaking Area API response:", res.data);
+
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching stocktaking areas:", error);
+        return { data: [], totalCount: 0 };
+    }
+};
+
 // Update areas status
 export const updateAreaStatus = async (areaId, status) => {
     try {
