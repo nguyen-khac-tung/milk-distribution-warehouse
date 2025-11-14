@@ -144,6 +144,17 @@
     }
 
     /// <summary>
+    /// Trạng thái của những khu vực (trong phiếu kiểm kê tổng)
+    /// </summary>
+    public static class StockAreaStatus
+    {
+        public const int Pending = 1;             //Đang chờ
+        public const int Counted = 2;             //Đã kiểm
+        public const int PendingApproval = 3;     //Chờ duyệt
+        public const int Completed = 4;           //Đã hoàn thành
+    }
+
+    /// <summary>
     /// Trạng thái của những vị trí (trong phiếu kiểm kê tổng)
     /// </summary>
     public static class StockLocationStatus

@@ -8,6 +8,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public AreaDto.StocktakingAreaDto AreaDetail { get; set; }
         public int AssignTo { get; set; }
         public string AssignToName { get; set; }    
+        public int Status { get; set;  }
     }
 
 

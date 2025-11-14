@@ -5,7 +5,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
 {
     public class StocktakingSheetDto
     {
-        public Guid StocktakingSheetId { get; set; }
+        public string StocktakingSheetId { get; set; }
         public int? Status { get; set; }
         public DateTime? StartTime { get; set; }
         public DateTime? CreatedAt { get; set; }
@@ -23,13 +23,13 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
     public class StocktakingSheeteResponse
     {
-        public Guid StocktakingSheetId { get; set; }
+        public string StocktakingSheetId { get; set; }
     }
 
     public class StocktakingSheetUpdate
     {
         [Required(ErrorMessage = "Mã phiếu kiểm kê là bắt buộc.")]
-        public Guid StocktakingSheetId { get; set; }
+        public string StocktakingSheetId { get; set; }
         [Required(ErrorMessage = "Thời gian bắt đầu kiểm kê là bắt buộc.")]
         public DateTime StartTime { get; set; }
         public string? Note { get; set; }
@@ -42,7 +42,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
     public class StocktakingSheetStatusUpdate
     {
-        public Guid StocktakingSheetId { get; set; }
+        public string StocktakingSheetId { get; set; }
     }
 
     public class StocktakingSheetAssignStatus : StocktakingSheetStatusUpdate
