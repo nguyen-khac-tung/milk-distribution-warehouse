@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, Calendar, User, X, MapPin, Clock, Thermometer, Droplets, Sun } from 'lucide-react';
+import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, Calendar, User, X, MapPin, Clock, Thermometer, Droplets, Sun, RotateCcw } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
 import { getStocktakingAreaDetailForOtherRoleBySheetId, getStocktakingDetail, getStocktakingPalletDetail } from '../../services/StocktakingService';
@@ -26,6 +26,7 @@ const StocktakingAreaDetailForOther = () => {
     });
     const [locationPackages, setLocationPackages] = useState({});
     const [loadingPackages, setLoadingPackages] = useState({});
+    const [selectedLocations, setSelectedLocations] = useState(new Set());
     const isFetchingRef = useRef(false);
 
     useEffect(() => {
@@ -199,6 +200,42 @@ const StocktakingAreaDetailForOther = () => {
         if (window.showToast) {
             window.showToast('Chức năng xóa gói hàng đang được phát triển', 'info');
         }
+    };
+
+    const handleLocationSelect = (locationId, event) => {
+        event.stopPropagation(); // Ngăn chặn toggle expand khi click checkbox
+        setSelectedLocations(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(locationId)) {
+                newSet.delete(locationId);
+            } else {
+                newSet.add(locationId);
+            }
+            return newSet;
+        });
+    };
+
+    const handleRecheckLocations = () => {
+        // TODO: Implement API call để kiểm kê lại các vị trí đã chọn
+        const selectedIds = Array.from(selectedLocations);
+        console.log('Kiểm kê lại các vị trí:', selectedIds);
+        if (window.showToast) {
+            window.showToast(`Đang kiểm kê lại ${selectedIds.length} vị trí...`, 'info');
+        }
+        // Sau khi gọi API thành công, có thể clear selection
+        // setSelectedLocations(new Set());
+    };
+
+    const handleSelectAll = () => {
+        if (stocktakingLocations.length === 0) return;
+        const allLocationIds = stocktakingLocations.map(loc => 
+            loc.stocktakingLocationId || loc.locationId
+        );
+        setSelectedLocations(new Set(allLocationIds));
+    };
+
+    const handleDeselectAll = () => {
+        setSelectedLocations(new Set());
     };
 
     if (loading) {
@@ -428,35 +465,82 @@ const StocktakingAreaDetailForOther = () => {
                         <CardTitle className="text-lg font-semibold text-slate-700 m-0">
                             Phiếu kiểm kê
                         </CardTitle>
-                        <button
-                            onClick={handleRefresh}
-                            className="flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706] transition-colors bg-white text-slate-700"
-                        >
-                            <RefreshCw className="h-4 w-4" />
-                            <span className="text-sm font-medium">Làm mới</span>
-                        </button>
+                        <div className="flex items-center gap-3">
+                            {selectedLocations.size > 0 && (
+                                <div className="text-sm text-slate-600 mr-2">
+                                    Đã chọn: {selectedLocations.size} vị trí
+                                </div>
+                            )}
+                            <Button
+                                onClick={handleRecheckLocations}
+                                disabled={selectedLocations.size === 0}
+                                className={`flex items-center space-x-2 px-4 py-2 h-[38px] ${
+                                    selectedLocations.size === 0
+                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                        : 'bg-orange-500 hover:bg-orange-600 text-white'
+                                } transition-colors`}
+                            >
+                                <RotateCcw className="h-4 w-4" />
+                                <span className="text-sm font-medium">Kiểm kê lại</span>
+                            </Button>
+                            <button
+                                onClick={handleRefresh}
+                                className="flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706] transition-colors bg-white text-slate-700"
+                            >
+                                <RefreshCw className="h-4 w-4" />
+                                <span className="text-sm font-medium">Làm mới</span>
+                            </button>
+                        </div>
                     </div>
 
                     <CardContent className="p-0">
                         <div className="space-y-4 p-6">
+                            {stocktakingLocations && stocktakingLocations.length > 0 && (
+                                <div className="mb-4 flex items-center justify-between pb-3 border-b border-gray-200">
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={handleSelectAll}
+                                            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                                        >
+                                            Chọn tất cả
+                                        </button>
+                                        <span className="text-gray-400">|</span>
+                                        <button
+                                            onClick={handleDeselectAll}
+                                            className="text-sm text-gray-600 hover:text-gray-700 font-medium"
+                                        >
+                                            Bỏ chọn tất cả
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                             {stocktakingLocations && stocktakingLocations.length > 0 ? (
                                 stocktakingLocations.map((location, index) => {
                                     const locationId = location.stocktakingLocationId || location.locationId || index;
                                     const isExpanded = expandedSections.sheets[locationId] || false;
                                     const packages = locationPackages[locationId] || [];
                                     const isLoading = loadingPackages[locationId] || false;
+                                    const isSelected = selectedLocations.has(locationId);
 
                                     return (
                                         <div
                                             key={locationId}
-                                            className={`border border-gray-200 rounded-lg ${isExpanded ? 'bg-gray-50' : 'bg-white'} transition-colors`}
+                                            className={`border border-gray-200 rounded-lg ${isExpanded ? 'bg-gray-50' : 'bg-white'} ${isSelected ? 'ring-2 ring-orange-500' : ''} transition-colors`}
                                         >
                                             {/* Location Header */}
                                             <div
                                                 className="p-4 cursor-pointer flex items-center justify-between hover:bg-gray-100 transition-colors"
                                                 onClick={() => toggleSheet(location)}
                                             >
-                                                <div className="flex-1 grid grid-cols-3 gap-4">
+                                                <div className="flex items-center gap-3">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isSelected}
+                                                        onChange={(e) => handleLocationSelect(locationId, e)}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded cursor-pointer"
+                                                    />
+                                                    <div className="flex-1 grid grid-cols-3 gap-4">
                                                     <div>
                                                         <div className="text-xs text-gray-500 mb-1">Vị trí</div>
                                                         <div className="text-sm font-semibold text-gray-900">
@@ -479,6 +563,7 @@ const StocktakingAreaDetailForOther = () => {
                                                             {stocktakingArea?.assignToName || 'N/A'}
                                                         </div>
                                                     </div>
+                                                </div>
                                                 </div>
                                                 <div className="ml-4">
                                                     {isExpanded ? (
@@ -533,7 +618,7 @@ const StocktakingAreaDetailForOther = () => {
                                                                 <TableBody>
                                                                     {packages.map((pkg, pkgIndex) => {
                                                                         const pkgId = pkg.stocktakingPalletId || pkg.palletId || pkgIndex;
-                                                                        const goodsName = pkg.goodsName || pkg.goodName || pkg.pallet?.goodsName || pkg.pallet?.goodName || '-';
+                                                                        const goodsName = pkg.gooodsName || pkg.gooodsName || pkg.pallet?.gooodsName || pkg.pallet?.gooodsName || '-';
                                                                         const goodsCode = pkg.goodsCode || pkg.goodCode || pkg.pallet?.goodsCode || pkg.pallet?.goodCode || '';
                                                                         const batchCode = pkg.batchCode || pkg.pallet?.batchCode || pkg.batch?.batchCode || pkg.lot || '-';
                                                                         const expected = pkg.expectedPackageQuantity ?? pkg.expectedQuantity ?? 0;

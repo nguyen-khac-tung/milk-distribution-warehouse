@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { ArrowLeft, FileText, Calendar, User, Hash, Clock, Users, Play, Edit } from 'lucide-react';
+import { ArrowLeft, FileText, Calendar, User, Hash, Clock, Users, Play, Edit, MapPin, Thermometer, Droplets, Sun } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
 import { getStocktakingDetail } from '../../services/StocktakingService';
@@ -13,6 +13,7 @@ import StartStocktakingModal from '../../components/StocktakingComponents/StartS
 import { PERMISSIONS } from '../../utils/permissions';
 import PermissionWrapper from '../../components/Common/PermissionWrapper';
 import { usePermissions } from '../../hooks/usePermissions';
+import AreaStatusDisplay from '../StocktakingArea/AreaStatusDisplay';
 import dayjs from 'dayjs';
 
 const StocktakingDetail = () => {
@@ -280,6 +281,104 @@ const StocktakingDetail = () => {
                                 </div>
                             </CardContent>
                         </Card>
+
+                        {/* Stocktaking Areas List - Show when areas exist */}
+                        {stocktaking.stocktakingAreas && stocktaking.stocktakingAreas.length > 0 && (
+                            <Card className="bg-white border border-gray-200 shadow-sm">
+                                <CardHeader className="bg-gray-50 border-b border-gray-200">
+                                    <CardTitle className="text-xl font-semibold text-slate-700 flex items-center gap-2">
+                                        <MapPin className="h-5 w-5 text-orange-500" />
+                                        Danh Sách Khu Vực Được Phân Công
+                                        <span className="text-sm font-normal text-slate-500 ml-2">
+                                            ({stocktaking.stocktakingAreas.length} khu vực)
+                                        </span>
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-6">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        {stocktaking.stocktakingAreas.map((area, index) => (
+                                            <Card
+                                                key={area.stocktakingAreaId || area.areaId}
+                                                className="border border-slate-200 shadow-sm hover:shadow-lg transition-all duration-200 bg-white"
+                                            >
+                                                <CardHeader className="bg-gradient-to-r from-orange-50 to-orange-100 border-b border-orange-200 pb-4 px-5 pt-5">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-base shadow-md">
+                                                                {index + 1}
+                                                            </div>
+                                                            <CardTitle className="text-xl font-bold text-slate-700 m-0">
+                                                                {area.areaName || '-'}
+                                                            </CardTitle>
+                                                        </div>
+                                                        {area.status && (
+                                                            <AreaStatusDisplay status={area.status} />
+                                                        )}
+                                                    </div>
+                                                </CardHeader>
+                                                <CardContent className="p-5 space-y-4">
+                                                    {/* Người được phân công */}
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="p-2 rounded-lg bg-slate-100">
+                                                            <User className="h-5 w-5 text-slate-600" />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">
+                                                                Người được phân công
+                                                            </div>
+                                                            <div className="text-base font-bold text-slate-700">
+                                                                {area.assignName || `ID: ${area.assignTo || '-'}`}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Điều kiện bảo quản */}
+                                                    {(area.temperatureMin !== null || area.humidityMin !== null || area.lightLevel) && (
+                                                        <div className="border-t border-slate-200 pt-4">
+                                                            <div className="text-xs font-semibold text-slate-500 mb-3 uppercase tracking-wide">
+                                                                Điều kiện bảo quản
+                                                            </div>
+                                                            <div className="grid grid-cols-1 gap-2.5">
+                                                                {area.temperatureMin !== null && area.temperatureMax !== null && (
+                                                                    <div className="flex items-center gap-3 p-2.5 rounded-lg bg-blue-50 border border-blue-100">
+                                                                        <div className="p-2 rounded-md bg-blue-100">
+                                                                            <Thermometer className="h-4 w-4 text-blue-600" />
+                                                                        </div>
+                                                                        <span className="text-sm font-semibold text-slate-700">
+                                                                            Nhiệt độ: {area.temperatureMin}°C - {area.temperatureMax}°C
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                                {area.humidityMin !== null && area.humidityMax !== null && (
+                                                                    <div className="flex items-center gap-3 p-2.5 rounded-lg bg-cyan-50 border border-cyan-100">
+                                                                        <div className="p-2 rounded-md bg-cyan-100">
+                                                                            <Droplets className="h-4 w-4 text-cyan-600" />
+                                                                        </div>
+                                                                        <span className="text-sm font-semibold text-slate-700">
+                                                                            Độ ẩm: {area.humidityMin}% - {area.humidityMax}%
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                                {area.lightLevel && (
+                                                                    <div className="flex items-center gap-3 p-2.5 rounded-lg bg-yellow-50 border border-yellow-100">
+                                                                        <div className="p-2 rounded-md bg-yellow-100">
+                                                                            <Sun className="h-4 w-4 text-yellow-600" />
+                                                                        </div>
+                                                                        <span className="text-sm font-semibold text-slate-700">
+                                                                            Mức độ ánh sáng: {area.lightLevel}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </CardContent>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
 
                         {/* Assignment Button - Only visible for Warehouse Manager */}
                         {/* Show "Bắt đầu phân công" button when status is Draft (1) */}
