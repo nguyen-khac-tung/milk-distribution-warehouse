@@ -13,20 +13,16 @@ import {
 import { Button } from "../../components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
-import { getPurchaseOrderSaleManagers, getPurchaseOrderSaleRepresentatives, getPurchaseOrderWarehouseManagers, getPurchaseOrderWarehouseStaff } from "../../services/PurchaseOrderService"
-import { getSalesOrderListSaleManager, getSalesOrderListSalesRepresentatives, getSalesOrderListWarehouseManager, getSalesOrderListWarehouseStaff } from "../../services/SalesOrderService"
-import { PERMISSIONS } from "../../utils/permissions"
-import { usePermissions } from "../../hooks/usePermissions"
+import { getGoodsReceiptReport, getGoodsIssueReport } from "../../services/DashboardService"
+import dayjs from "dayjs"
+import { DatePicker, ConfigProvider } from 'antd'
+import locale from 'antd/locale/vi_VN'
 import Loading from "../../components/Common/Loading"
-import StatusDisplay, { PURCHASE_ORDER_STATUS, STATUS_LABELS as PO_STATUS_LABELS } from "../../components/PurchaseOrderComponents/StatusDisplay"
-import StatusDisplaySaleOrder, { STATUS_LABELS as SO_STATUS_LABELS, SALE_ORDER_STATUS } from "../../components/SaleOrderCompoents/StatusDisplaySaleOrder"
 import Pagination from "../../components/Common/Pagination"
 
 export default function OrdersPage({ onClose }) {
   const navigate = useNavigate()
-  const { hasPermission } = usePermissions()
   const [activeOrderType, setActiveOrderType] = useState("purchase") // "purchase" or "sales"
-  const [activeStatusTab, setActiveStatusTab] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [loading, setLoading] = useState(false)
   const [purchaseOrders, setPurchaseOrders] = useState([])
@@ -36,66 +32,65 @@ export default function OrdersPage({ onClose }) {
     pageSize: 10,
     total: 0
   })
-
-  // Map status tab to status number
-  const getStatusFilter = () => {
-    if (activeStatusTab === "all") return null
-    if (activeOrderType === "purchase") {
-      const statusMap = {
-        "processing": PURCHASE_ORDER_STATUS.Receiving, // Đang tiếp nhận
-        "completed": PURCHASE_ORDER_STATUS.Completed, // Đã nhập kho
-        "shipping": PURCHASE_ORDER_STATUS.GoodsReceived, // Đã giao đến
-        "pending": PURCHASE_ORDER_STATUS.PendingApproval, // Chờ duyệt
-      }
-      return statusMap[activeStatusTab]
-    } else {
-      const statusMap = {
-        "processing": SALE_ORDER_STATUS.Picking, // Đang lấy hàng
-        "completed": SALE_ORDER_STATUS.Completed, // Đã xuất kho
-        "shipping": SALE_ORDER_STATUS.AssignedForPicking, // Đã phân công
-        "pending": SALE_ORDER_STATUS.PendingApproval, // Chờ duyệt
-      }
-      return statusMap[activeStatusTab]
-    }
-  }
+  // Date range for report APIs (default: current month - from first day to last day)
+  const [dateRange, setDateRange] = useState({
+    fromDate: dayjs().startOf('month').format('YYYY-MM-DD'),
+    toDate: dayjs().endOf('month').format('YYYY-MM-DD')
+  })
 
   // Fetch purchase orders
   const fetchPurchaseOrders = async () => {
     try {
       setLoading(true)
-      const statusFilter = getStatusFilter()
-      const params = {
-        pageNumber: pagination.current,
-        pageSize: pagination.pageSize,
-        search: searchQuery,
-        filters: {
-          ...(statusFilter && { status: statusFilter })
-        }
+      
+      // Format dates to YYYY-MM-DD format for API
+      const fromDate = dateRange.fromDate ? dayjs(dateRange.fromDate).format('YYYY-MM-DD') : null
+      const toDate = dateRange.toDate ? dayjs(dateRange.toDate).format('YYYY-MM-DD') : null
+      
+      const response = await getGoodsReceiptReport({
+        fromDate: fromDate,
+        toDate: toDate
+      })
+
+      // Handle response structure - API may return array or object with items
+      let orders = []
+      if (Array.isArray(response)) {
+        orders = response
+      } else if (response?.items && Array.isArray(response.items)) {
+        orders = response.items
+      } else if (response?.data && Array.isArray(response.data)) {
+        orders = response.data
+      } else if (response?.data?.items && Array.isArray(response.data.items)) {
+        orders = response.data.items
       }
 
-      let response
-      if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_SM)) {
-        response = await getPurchaseOrderSaleManagers(params)
-      } else if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WM)) {
-        response = await getPurchaseOrderWarehouseManagers(params)
-      } else if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_WS)) {
-        response = await getPurchaseOrderWarehouseStaff(params)
-      } else if (hasPermission(PERMISSIONS.PURCHASE_ORDER_VIEW_RS)) {
-        response = await getPurchaseOrderSaleRepresentatives(params)
-      } else {
-        response = await getPurchaseOrderSaleRepresentatives(params)
+      // Apply search filter client-side if needed
+      let filteredOrders = orders
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase()
+        filteredOrders = orders.filter(order => {
+          const supplierName = (order.supplierName || '').toLowerCase()
+          const goodsCode = (order.goodsCode || '').toLowerCase()
+          const goodsName = (order.goodsName || '').toLowerCase()
+          return supplierName.includes(query) || goodsCode.includes(query) || goodsName.includes(query)
+        })
       }
 
-      if (response?.data?.items) {
-        setPurchaseOrders(response.data.items)
-        setPagination(prev => ({
-          ...prev,
-          total: response.data.totalCount || 0
-        }))
-      }
+
+      // Apply pagination client-side
+      const startIndex = (pagination.current - 1) * pagination.pageSize
+      const endIndex = startIndex + pagination.pageSize
+      const paginatedOrders = filteredOrders.slice(startIndex, endIndex)
+
+      setPurchaseOrders(paginatedOrders)
+      setPagination(prev => ({
+        ...prev,
+        total: filteredOrders.length
+      }))
     } catch (error) {
       console.error("Error fetching purchase orders:", error)
       setPurchaseOrders([])
+      setPagination(prev => ({ ...prev, total: 0 }))
     } finally {
       setLoading(false)
     }
@@ -105,39 +100,55 @@ export default function OrdersPage({ onClose }) {
   const fetchSalesOrders = async () => {
     try {
       setLoading(true)
-      const statusFilter = getStatusFilter()
-      const params = {
-        pageNumber: pagination.current,
-        pageSize: pagination.pageSize,
-        search: searchQuery,
-        filters: {
-          ...(statusFilter && { status: statusFilter })
-        }
+      
+      // Format dates to YYYY-MM-DD format for API
+      const fromDate = dateRange.fromDate ? dayjs(dateRange.fromDate).format('YYYY-MM-DD') : null
+      const toDate = dateRange.toDate ? dayjs(dateRange.toDate).format('YYYY-MM-DD') : null
+      
+      const response = await getGoodsIssueReport({
+        fromDate: fromDate,
+        toDate: toDate
+      })
+
+      // Handle response structure - API may return array or object with items
+      let orders = []
+      if (Array.isArray(response)) {
+        orders = response
+      } else if (response?.items && Array.isArray(response.items)) {
+        orders = response.items
+      } else if (response?.data && Array.isArray(response.data)) {
+        orders = response.data
+      } else if (response?.data?.items && Array.isArray(response.data.items)) {
+        orders = response.data.items
       }
 
-      let response
-      if (hasPermission(PERMISSIONS.SALES_ORDER_VIEW_SM)) {
-        response = await getSalesOrderListSaleManager(params)
-      } else if (hasPermission(PERMISSIONS.SALES_ORDER_VIEW_WM)) {
-        response = await getSalesOrderListWarehouseManager(params)
-      } else if (hasPermission(PERMISSIONS.SALES_ORDER_VIEW_WS)) {
-        response = await getSalesOrderListWarehouseStaff(params)
-      } else if (hasPermission(PERMISSIONS.SALES_ORDER_VIEW_SR)) {
-        response = await getSalesOrderListSalesRepresentatives(params)
-      } else {
-        response = await getSalesOrderListSalesRepresentatives(params)
+      // Apply search filter client-side if needed
+      let filteredOrders = orders
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase()
+        filteredOrders = orders.filter(order => {
+          const retailerName = (order.retailerName || '').toLowerCase()
+          const goodsCode = (order.goodsCode || '').toLowerCase()
+          const goodsName = (order.goodsName || '').toLowerCase()
+          return retailerName.includes(query) || goodsCode.includes(query) || goodsName.includes(query)
+        })
       }
 
-      if (response?.data?.items) {
-        setSalesOrders(response.data.items)
-        setPagination(prev => ({
-          ...prev,
-          total: response.data.totalCount || 0
-        }))
-      }
+
+      // Apply pagination client-side
+      const startIndex = (pagination.current - 1) * pagination.pageSize
+      const endIndex = startIndex + pagination.pageSize
+      const paginatedOrders = filteredOrders.slice(startIndex, endIndex)
+
+      setSalesOrders(paginatedOrders)
+      setPagination(prev => ({
+        ...prev,
+        total: filteredOrders.length
+      }))
     } catch (error) {
       console.error("Error fetching sales orders:", error)
       setSalesOrders([])
+      setPagination(prev => ({ ...prev, total: 0 }))
     } finally {
       setLoading(false)
     }
@@ -145,9 +156,9 @@ export default function OrdersPage({ onClose }) {
 
   // Fetch data based on active order type
   useEffect(() => {
-    // Reset pagination when changing order type or status
+    // Reset pagination when changing order type
     setPagination(prev => ({ ...prev, current: 1 }))
-  }, [activeOrderType, activeStatusTab])
+  }, [activeOrderType])
 
   useEffect(() => {
     if (activeOrderType === "purchase") {
@@ -156,7 +167,7 @@ export default function OrdersPage({ onClose }) {
       fetchSalesOrders()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeOrderType, activeStatusTab, searchQuery, pagination.current, pagination.pageSize])
+  }, [activeOrderType, searchQuery, pagination.current, pagination.pageSize, dateRange])
 
   // Get current orders based on active type
   const currentOrders = useMemo(() => {
@@ -165,34 +176,34 @@ export default function OrdersPage({ onClose }) {
 
   // Transform order data for display
   const displayOrders = useMemo(() => {
-    return currentOrders.map(order => {
+    return currentOrders.map((order, index) => {
       if (activeOrderType === "purchase") {
-        // Purchase order structure
-        const details = order.purchaseOrderDetails || []
-        const productNames = details.map(detail => detail.goodsName || detail.goods?.goodsName || "").filter(Boolean)
+        // GoodsReceiptReport structure
         return {
-          id: order.purchaseOrderId || order.purchaseOderId || order.id,
-          orderId: order.purchaseOrderCode || order.code || "",
-          customerName: order.supplierName || order.supplier?.companyName || order.supplier?.name || "",
-          phone: order.supplierPhone || order.supplier?.phone || "",
-          quantity: order.totalQuantity || details.reduce((sum, d) => sum + (d.packageQuantity || 0), 0),
-          productType: productNames.join(", ") || "N/A",
-          status: order.status,
-          createdAt: order.createdAt || "",
+          id: order.goodsId || order.id || index,
+          supplierId: order.supplierId,
+          supplierName: order.supplierName || "",
+          goodsId: order.goodsId,
+          goodsCode: order.goodsCode || "",
+          goodsName: order.goodsName || "",
+          totalPackageQuantity: order.totalPackageQuantity || 0,
+          totalUnitQuantity: order.totalUnitQuantity || 0,
+          receiptDate: order.receiptDate || "",
+          unitPerPackage: order.unitPerPackage || 0,
         }
       } else {
-        // Sales order structure
-        const details = order.salesOrderItemDetails || []
-        const productNames = details.map(detail => detail.goodsName || detail.goods?.goodsName || "").filter(Boolean)
+        // GoodsIssueReport structure
         return {
-          id: order.salesOrderId || order.id,
-          orderId: order.salesOrderCode || order.code || "",
-          customerName: order.retailerName || order.retailer?.companyName || order.retailer?.name || "",
-          phone: order.retailerPhone || order.retailer?.phone || "",
-          quantity: order.totalQuantity || details.reduce((sum, d) => sum + (d.packageQuantity || 0), 0),
-          productType: productNames.join(", ") || "N/A",
-          status: order.status,
-          createdAt: order.createdAt || "",
+          id: order.goodsId || order.id || index,
+          retailerId: order.retailerId,
+          retailerName: order.retailerName || "",
+          goodsId: order.goodsId,
+          goodsCode: order.goodsCode || "",
+          goodsName: order.goodsName || "",
+          totalPackageQuantity: order.totalPackageQuantity || 0,
+          totalUnitQuantity: order.totalUnitQuantity || 0,
+          issueDate: order.issueDate || "",
+          unitPerPackage: order.unitPerPackage || 0,
         }
       }
     })
@@ -253,55 +264,51 @@ export default function OrdersPage({ onClose }) {
           </Tabs>
         </div>
         <div className="p-4">
-          {/* Status Tabs */}
-          <div className="mb-4">
-            <Tabs value={activeStatusTab} onValueChange={setActiveStatusTab} className="w-full">
-              <TabsList className="border-b w-full justify-start rounded-none bg-transparent p-0">
-                <TabsTrigger
-                  value="all"
-                  className="rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-                >
-                  Tất cả
-                </TabsTrigger>
-                <TabsTrigger
-                  value="pending"
-                  className="rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-                >
-                  Chờ duyệt
-                </TabsTrigger>
-                <TabsTrigger
-                  value="processing"
-                  className="rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-                >
-                  {activeOrderType === "purchase" ? "Đang tiếp nhận" : "Đang lấy hàng"}
-                </TabsTrigger>
-                <TabsTrigger
-                  value="shipping"
-                  className="rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-                >
-                  {activeOrderType === "purchase" ? "Đã giao đến" : "Đã phân công"}
-                </TabsTrigger>
-                <TabsTrigger
-                  value="completed"
-                  className="rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-                >
-                  {activeOrderType === "purchase" ? "Đã nhập kho" : "Đã xuất kho"}
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
-
-          {/* Search and Actions */}
+          {/* Search and Date Pickers */}
           <div className="flex flex-col md:flex-row justify-between mb-4 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Tìm kiếm theo mã đơn hàng, tên khách hàng..."
+                placeholder="Tìm kiếm theo nhà cung cấp, mã sản phẩm, tên sản phẩm..."
                 className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-full md:w-[400px] text-sm"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
+            </div>
+            <div className="flex items-center gap-3">
+              <ConfigProvider locale={locale}>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-gray-700 whitespace-nowrap">Từ ngày:</label>
+                  <DatePicker
+                    format="DD/MM/YYYY"
+                    value={dateRange.fromDate ? dayjs(dateRange.fromDate) : null}
+                    onChange={(date) => {
+                      setDateRange(prev => ({
+                        ...prev,
+                        fromDate: date ? date.format('YYYY-MM-DD') : ''
+                      }))
+                    }}
+                    className="w-[150px]"
+                    placeholder="Chọn ngày"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-gray-700 whitespace-nowrap">Đến ngày:</label>
+                  <DatePicker
+                    format="DD/MM/YYYY"
+                    value={dateRange.toDate ? dayjs(dateRange.toDate) : null}
+                    onChange={(date) => {
+                      setDateRange(prev => ({
+                        ...prev,
+                        toDate: date ? date.format('YYYY-MM-DD') : ''
+                      }))
+                    }}
+                    className="w-[150px]"
+                    placeholder="Chọn ngày"
+                  />
+                </div>
+              </ConfigProvider>
             </div>
           </div>
         </div>
@@ -316,84 +323,74 @@ export default function OrdersPage({ onClose }) {
               <Table className="w-full">
                 <TableHeader>
                   <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
+                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-16">
+                      STT
+                    </TableHead>
                     <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                       {activeOrderType === "purchase" ? "Nhà cung cấp" : "Khách hàng"}
                     </TableHead>
                     <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                      Mã đơn hàng
+                      Mã sản phẩm
                     </TableHead>
                     <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                      Số lượng
-                    </TableHead>
-                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                      Loại sản phẩm
-                    </TableHead>
-                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                      Trạng thái
+                      Tên sản phẩm
                     </TableHead>
                     <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                      Hoạt động
+                      Số thùng
+                    </TableHead>
+                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                      Số đơn vị
+                    </TableHead>
+                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                      {activeOrderType === "purchase" ? "Ngày nhập" : "Ngày xuất"}
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {displayOrders.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center text-gray-500 py-8">
-                        Không có đơn hàng nào
+                      <TableCell colSpan={7} className="text-center text-gray-500 py-8">
+                        Không có dữ liệu nào
                       </TableCell>
                     </TableRow>
                   ) : (
-                    displayOrders.map((order) => (
+                    displayOrders.map((order, index) => {
+                      const stt = (pagination.current - 1) * pagination.pageSize + index + 1
+                      return (
                       <TableRow
                         key={order.id}
                         className="hover:bg-slate-50 border-b border-slate-200"
                       >
+                        <TableCell className="px-6 py-4 text-center text-slate-700">
+                          {stt}
+                        </TableCell>
                         <TableCell className="px-6 py-4 text-slate-700">
-                          <div>
-                            <p className="font-medium">{order.customerName}</p>
-                            {order.phone && (
-                              <p className="text-xs text-gray-500">{order.phone}</p>
-                            )}
-                          </div>
+                          <p className="font-medium">
+                            {activeOrderType === "purchase" ? order.supplierName : order.retailerName}
+                          </p>
                         </TableCell>
                         <TableCell className="px-6 py-4 text-slate-700 font-medium">
-                          {order.orderId}
+                          {order.goodsCode}
                         </TableCell>
                         <TableCell className="px-6 py-4 text-slate-700">
-                          {order.quantity}
-                        </TableCell>
-                        <TableCell className="px-6 py-4 text-slate-700">
-                          <div className="max-w-xs truncate" title={order.productType}>
-                            {order.productType}
+                          <div className="max-w-xs truncate" title={order.goodsName}>
+                            {order.goodsName}
                           </div>
                         </TableCell>
-                        <TableCell className="px-6 py-4 text-slate-700">
-                          {activeOrderType === "purchase" ? (
-                            <StatusDisplay status={order.status} />
-                          ) : (
-                            <StatusDisplaySaleOrder status={order.status} />
-                          )}
+                        <TableCell className="px-6 py-4 text-center text-slate-700">
+                          {order.totalPackageQuantity}
                         </TableCell>
-                        <TableCell className="px-6 py-4 text-center">
-                          <div className="flex items-center justify-center space-x-1">
-                            <button
-                              className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                              title="Xem chi tiết"
-                              onClick={() => {
-                                if (activeOrderType === "purchase") {
-                                  navigate(`/purchase-orders/${order.id}`)
-                                } else {
-                                  navigate(`/sales-orders/${order.id}`)
-                                }
-                              }}
-                            >
-                              <Eye className="h-4 w-4 text-orange-500" />
-                            </button>
-                          </div>
+                        <TableCell className="px-6 py-4 text-center text-slate-700">
+                          {order.totalUnitQuantity}
+                        </TableCell>
+                        <TableCell className="px-6 py-4 text-slate-700">
+                          {order.receiptDate || order.issueDate 
+                            ? dayjs(order.receiptDate || order.issueDate).format('DD/MM/YYYY')
+                            : '-'}
                         </TableCell>
                       </TableRow>
-                    ))
+                      )
+                    })
                   )}
                 </TableBody>
               </Table>
