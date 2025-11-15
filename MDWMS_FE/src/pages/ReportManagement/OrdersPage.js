@@ -189,6 +189,7 @@ export default function OrdersPage({ onClose }) {
           goodsName: order.goodsName || "",
           totalPackageQuantity: order.totalPackageQuantity || 0,
           totalUnitQuantity: order.totalUnitQuantity || 0,
+          unitOfMeasure: order.unitOfMeasure || "",
           receiptDate: order.receiptDate || "",
           unitPerPackage: order.unitPerPackage || 0,
         }
@@ -203,6 +204,7 @@ export default function OrdersPage({ onClose }) {
           goodsName: order.goodsName || "",
           totalPackageQuantity: order.totalPackageQuantity || 0,
           totalUnitQuantity: order.totalUnitQuantity || 0,
+          unitOfMeasure: order.unitOfMeasure || "",
           issueDate: order.issueDate || "",
           unitPerPackage: order.unitPerPackage || 0,
         }
@@ -353,7 +355,10 @@ export default function OrdersPage({ onClose }) {
                         Số thùng
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                        Số đơn vị
+                       Tổng số đơn vị
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                        Đơn vị tính
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                         {activeOrderType === "purchase" ? "Ngày nhập" : "Ngày xuất"}
@@ -363,7 +368,7 @@ export default function OrdersPage({ onClose }) {
                   <TableBody>
                     {displayOrders.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center text-gray-500 py-8">
+                        <TableCell colSpan={8} className="text-center text-gray-500 py-8">
                           Không có dữ liệu nào
                         </TableCell>
                       </TableRow>
@@ -396,6 +401,9 @@ export default function OrdersPage({ onClose }) {
                             </TableCell>
                             <TableCell className="px-6 py-4 text-center text-slate-700">
                               {order.totalUnitQuantity}
+                            </TableCell>
+                            <TableCell className="px-6 py-4 text-center text-slate-700">
+                              {order.unitOfMeasure || '-'}
                             </TableCell>
                             <TableCell className="px-6 py-4 text-slate-700">
                               {order.receiptDate || order.issueDate
