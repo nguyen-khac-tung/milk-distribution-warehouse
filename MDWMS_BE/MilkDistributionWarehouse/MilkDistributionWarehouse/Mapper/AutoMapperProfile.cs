@@ -550,7 +550,9 @@ namespace MilkDistributionWarehouse.Mapper
                 // Total units = packages * unit-per-package (unit-per-package may be null -> treated as 0)
                 .ForMember(dest => dest.TotalUnitQuantity,
                     opt => opt.MapFrom(src => (src.ActualPackageQuantity ?? ((src.DeliveredPackageQuantity ?? 0) - (src.RejectPackageQuantity ?? 0)))
-                                             * (src.GoodsPacking.UnitPerPackage ?? 0)));
+                                             * (src.GoodsPacking.UnitPerPackage ?? 0)))
+                .ForMember(dest => dest.UnitOfMeasure,
+                    opt => opt.MapFrom(src => src.Goods != null && src.Goods.UnitMeasure != null ? src.Goods.UnitMeasure.Name : null));
         }
     }
 }
