@@ -177,35 +177,36 @@ export default function InventoryReport({ onClose }) {
   }
 
   return (
-    <div className="w-full -mx-4 -mb-4">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4 px-4">
-        <div>
-          <h2 className="text-xl font-bold">Báo cáo tồn kho</h2>
-          <p className="text-sm text-gray-500">Theo dõi tồn kho chi tiết theo lô</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
-            onClick={handleExport}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Xuất báo cáo
-          </Button>
-          {onClose && (
+    <div className="min-h-screen">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-600">Báo cáo tồn kho</h1>
+            <p className="text-slate-600 mt-1">Theo dõi tồn kho chi tiết theo lô</p>
+          </div>
+          <div className="flex items-center gap-2">
             <Button
-              variant="outline"
-              onClick={onClose}
-              className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white"
+              className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
+              onClick={handleExport}
             >
-              Đóng
+              <Download className="h-4 w-4 mr-2" />
+              Xuất báo cáo
             </Button>
-          )}
+            {onClose && (
+              <Button
+                variant="outline"
+                onClick={onClose}
+                className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white"
+              >
+                Đóng
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Inventory Table */}
-      <div className="w-full bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+        {/* Inventory Table */}
+        <div className="w-full bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
         <InventorySearchFilter
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -353,6 +354,7 @@ export default function InventoryReport({ onClose }) {
             />
           </div>
         )}
+        </div>
       </div>
     </div>
   )

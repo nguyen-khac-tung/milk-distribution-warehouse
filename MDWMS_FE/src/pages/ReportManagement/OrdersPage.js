@@ -9,6 +9,7 @@ import {
   ShoppingCart,
   Package,
   Eye,
+  Download,
 } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs"
@@ -213,42 +214,55 @@ export default function OrdersPage({ onClose }) {
     setPagination(prev => ({ ...prev, current: page }))
   }
 
-  return (
-    <div className="w-full -mx-4 -mb-4">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4 px-4">
-        <div>
-          <h2 className="text-xl font-bold">Đơn hàng</h2>
-          <p className="text-sm text-gray-500">Quản lý đơn mua hàng và đơn bán hàng</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button 
-            className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
-            onClick={() => {
-              if (activeOrderType === "purchase") {
-                navigate("/purchase-orders/create")
-              } else {
-                navigate("/sales-orders/create")
-              }
-            }}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            {activeOrderType === "purchase" ? "Tạo đơn mua hàng" : "Tạo đơn bán hàng"}
-          </Button>
-          {onClose && (
-            <Button
-              variant="outline"
-              onClick={onClose}
-              className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white"
-            >
-              Đóng
-            </Button>
-          )}
-        </div>
-      </div>
+  const handleExport = () => {
+    // TODO: Implement export functionality
+    console.log("Export orders report", { activeOrderType, dateRange })
+  }
 
-      {/* Main Tabs: Purchase Orders vs Sales Orders */}
-      <div className="w-full bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+  return (
+    <div className="min-h-screen">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-600">Đơn hàng</h1>
+            <p className="text-slate-600 mt-1">Quản lý đơn mua hàng và đơn bán hàng</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
+              onClick={handleExport}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Xuất báo cáo
+            </Button>
+            <Button 
+              className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
+              onClick={() => {
+                if (activeOrderType === "purchase") {
+                  navigate("/purchase-orders/create")
+                } else {
+                  navigate("/sales-orders/create")
+                }
+              }}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {activeOrderType === "purchase" ? "Tạo đơn mua hàng" : "Tạo đơn bán hàng"}
+            </Button>
+            {onClose && (
+              <Button
+                variant="outline"
+                onClick={onClose}
+                className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white"
+              >
+                Đóng
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Main Tabs: Purchase Orders vs Sales Orders */}
+        <div className="w-full bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
         <div className="p-4 pb-2 border-b border-slate-200">
           <Tabs value={activeOrderType} onValueChange={setActiveOrderType} className="w-full">
             <TabsList className="grid w-full max-w-md grid-cols-2">
@@ -407,6 +421,7 @@ export default function OrdersPage({ onClose }) {
             />
           </div>
         )}
+        </div>
       </div>
     </div>
   )

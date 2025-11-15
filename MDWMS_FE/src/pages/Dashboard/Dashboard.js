@@ -29,7 +29,6 @@ import {
   Package,
   ShoppingCart,
 } from "lucide-react"
-import InventoryReport from "./InventoryReport"
 import { Button } from "../../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "../../components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs"
@@ -73,7 +72,6 @@ import {
   Cell,
 } from "recharts"
 
-import OrdersPage from "./OrdersPage"
 import { getLocationReport } from "../../services/DashboardService"
 import { getAreaDropdown } from "../../services/AreaServices"
 import WarehouseEventCalendar from "./WarehouseEventCalendar"
@@ -84,8 +82,6 @@ import dayjs from "dayjs"
 
 export default function Dashboard({ activeSection = "dashboard", onSectionChange }) {
   const navigate = useNavigate()
-  const [showInventoryReport, setShowInventoryReport] = useState(false)
-  const [showOrders, setShowOrders] = useState(false)
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false)
   const [showOrderDialog, setShowOrderDialog] = useState(false)
   const [locationReport, setLocationReport] = useState({
@@ -703,38 +699,23 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
           <CardTitle className="text-base font-medium">Thống kê tồn kho</CardTitle>
         </CardHeader>
         <CardContent className="p-4">
-          {!showInventoryReport ? (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="bg-orange-50 p-3 rounded-full">
-                  <Package className="h-6 w-6 text-orange-500" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold">Báo cáo tồn kho</h3>
-                  <p className="text-sm text-gray-500">Xem chi tiết báo cáo tồn kho và thống kê</p>
-                </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="bg-orange-50 p-3 rounded-full">
+                <Package className="h-6 w-6 text-orange-500" />
               </div>
-              <Button
-                onClick={() => setShowInventoryReport(true)}
-                className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
-              >
-                Xem báo cáo tồn kho
-              </Button>
-            </div>
-          ) : (
-            <div>
-              <div className="flex justify-end mb-4">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowInventoryReport(false)}
-                  className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white"
-                >
-                  Đóng
-                </Button>
+              <div>
+                <h3 className="text-lg font-semibold">Báo cáo tồn kho</h3>
+                <p className="text-sm text-gray-500">Xem chi tiết báo cáo tồn kho và thống kê</p>
               </div>
-              <InventoryReport />
             </div>
-          )}
+            <Button
+              onClick={() => navigate("/reports/inventory")}
+              className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
+            >
+              Xem báo cáo tồn kho
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -746,29 +727,23 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
           </CardTitle>
         </CardHeader>
         <CardContent className="p-4">
-          {!showOrders ? (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="bg-blue-50 p-3 rounded-full">
-                  <ShoppingCart className="h-6 w-6 text-blue-500" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold">Đơn hàng</h3>
-                  <p className="text-sm text-gray-500">Xem danh sách đơn mua hàng và đơn bán hàng</p>
-                </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="bg-blue-50 p-3 rounded-full">
+                <ShoppingCart className="h-6 w-6 text-blue-500" />
               </div>
-              <Button
-                onClick={() => setShowOrders(true)}
-                className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
-              >
-                Xem đơn hàng
-              </Button>
+              <div>
+                <h3 className="text-lg font-semibold">Đơn hàng</h3>
+                <p className="text-sm text-gray-500">Xem danh sách đơn mua hàng và đơn bán hàng</p>
+              </div>
             </div>
-          ) : (
-            <div>
-              <OrdersPage onClose={() => setShowOrders(false)} />
-            </div>
-          )}
+            <Button
+              onClick={() => navigate("/reports/orders")}
+              className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
+            >
+              Xem đơn hàng
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -785,7 +760,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
       {/* Warehouse Information Cards */}
       <div className="grid grid-cols-2 gap-6 mt-6">
         <ExpiringProducts />
-        <RecentActivities onShowAllClick={() => setShowOrders(true)} />
+        <RecentActivities onShowAllClick={() => navigate("/reports/orders")} />
       </div>
     </>
   )
