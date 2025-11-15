@@ -72,7 +72,7 @@ import {
   Cell,
 } from "recharts"
 
-import { getLocationReport } from "../../services/DashboardService"
+import { getLocationReport, getGoodsReceiptReport, getGoodsIssueReport } from "../../services/DashboardService"
 import { getAreaDropdown } from "../../services/AreaServices"
 import WarehouseEventCalendar from "./WarehouseEventCalendar"
 import WarehousePerformance from "./WarehousePerformance"
@@ -95,6 +95,9 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
   const [areasLoading, setAreasLoading] = useState(false)
   const [purchaseOrdersData, setPurchaseOrdersData] = useState([])
   const [salesOrdersData, setSalesOrdersData] = useState([])
+  const [purchaseOrdersStats, setPurchaseOrdersStats] = useState({ current: 0, previous: 0, change: 0 })
+  const [salesOrdersStats, setSalesOrdersStats] = useState({ current: 0, previous: 0, change: 0 })
+  const [chartLoading, setChartLoading] = useState(false)
   // const { toast } = useToast()
 
   // Mock toast function
@@ -138,25 +141,131 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
     return weekDays
   }
 
-  // Initialize chart data with current week days
+  // Fetch purchase and sales orders data for charts and stats
   useEffect(() => {
-    const weekDays = getCurrentWeekDays()
+    const fetchOrdersData = async () => {
+      try {
+        setChartLoading(true)
+        const weekDays = getCurrentWeekDays()
+        
+        // Get current week date range (Sunday to Saturday)
+        const sunday = weekDays[0].date
+        const saturday = weekDays[6].date
+        const fromDate = sunday.format('YYYY-MM-DD')
+        const toDate = saturday.format('YYYY-MM-DD')
+        
+        // Get previous week date range for comparison
+        const prevSunday = sunday.subtract(7, 'day')
+        const prevSaturday = saturday.subtract(7, 'day')
+        const prevFromDate = prevSunday.format('YYYY-MM-DD')
+        const prevToDate = prevSaturday.format('YYYY-MM-DD')
 
-    // Initialize purchase orders data with current week days
-    // Note: Values are still mock data, but days are now dynamic
-    const purchaseData = weekDays.map((day, index) => ({
-      name: day.dayName,
-      value: [8, 10, 12, 11, 9, 11, 12][index] || 0, // Mock values, can be replaced with API data
-    }))
-    setPurchaseOrdersData(purchaseData)
+        // Fetch current week data
+        const [currentReceipts, currentIssues, previousReceipts, previousIssues] = await Promise.all([
+          getGoodsReceiptReport({ fromDate, toDate }).catch(() => []),
+          getGoodsIssueReport({ fromDate, toDate }).catch(() => []),
+          getGoodsReceiptReport({ fromDate: prevFromDate, toDate: prevToDate }).catch(() => []),
+          getGoodsIssueReport({ fromDate: prevFromDate, toDate: prevToDate }).catch(() => [])
+        ])
 
-    // Initialize sales orders data with current week days (excluding Saturday for sales)
-    const salesData = weekDays.slice(0, 6).map((day, index) => ({
-      name: day.dayName,
-      value: [8000, 10000, 12000, 9000, 6000, 8000][index] || 0, // Mock values, can be replaced with API data
-    }))
-    setSalesOrdersData(salesData)
-  }, [])
+        // Handle response structure
+        const normalizeData = (response) => {
+          if (Array.isArray(response)) return response
+          if (response?.items && Array.isArray(response.items)) return response.items
+          if (response?.data && Array.isArray(response.data)) return response.data
+          if (response?.data?.items && Array.isArray(response.data.items)) return response.data.items
+          return []
+        }
+
+        const currentReceiptsList = normalizeData(currentReceipts)
+        const currentIssuesList = normalizeData(currentIssues)
+        const previousReceiptsList = normalizeData(previousReceipts)
+        const previousIssuesList = normalizeData(previousIssues)
+
+        // Calculate stats
+        const currentPurchaseCount = currentReceiptsList.length
+        const previousPurchaseCount = previousReceiptsList.length
+        const purchaseChange = previousPurchaseCount > 0 
+          ? ((currentPurchaseCount - previousPurchaseCount) / previousPurchaseCount * 100).toFixed(0)
+          : currentPurchaseCount > 0 ? 100 : 0
+
+        const currentSalesCount = currentIssuesList.length
+        const previousSalesCount = previousIssuesList.length
+        const salesChange = previousSalesCount > 0
+          ? ((currentSalesCount - previousSalesCount) / previousSalesCount * 100).toFixed(0)
+          : currentSalesCount > 0 ? 100 : 0
+
+        setPurchaseOrdersStats({
+          current: currentPurchaseCount,
+          previous: previousPurchaseCount,
+          change: parseFloat(purchaseChange)
+        })
+
+        setSalesOrdersStats({
+          current: currentSalesCount,
+          previous: previousSalesCount,
+          change: parseFloat(salesChange)
+        })
+
+        // Group receipts by day of week
+        const purchaseDataByDay = {}
+        weekDays.forEach(day => {
+          purchaseDataByDay[day.dayOfWeek] = 0
+        })
+
+        currentReceiptsList.forEach(receipt => {
+          if (receipt.receiptDate) {
+            const receiptDate = dayjs(receipt.receiptDate)
+            const dayOfWeek = receiptDate.day()
+            if (purchaseDataByDay.hasOwnProperty(dayOfWeek)) {
+              purchaseDataByDay[dayOfWeek]++
+            }
+          }
+        })
+
+        const purchaseData = weekDays.map(day => ({
+          name: day.dayName,
+          value: purchaseDataByDay[day.dayOfWeek] || 0
+        }))
+        setPurchaseOrdersData(purchaseData)
+
+        // Group issues by day of week (excluding Saturday)
+        const salesDataByDay = {}
+        weekDays.slice(0, 6).forEach(day => {
+          salesDataByDay[day.dayOfWeek] = 0
+        })
+
+        currentIssuesList.forEach(issue => {
+          if (issue.issueDate) {
+            const issueDate = dayjs(issue.issueDate)
+            const dayOfWeek = issueDate.day()
+            if (salesDataByDay.hasOwnProperty(dayOfWeek)) {
+              salesDataByDay[dayOfWeek]++
+            }
+          }
+        })
+
+        const salesData = weekDays.slice(0, 6).map(day => ({
+          name: day.dayName,
+          value: salesDataByDay[day.dayOfWeek] || 0
+        }))
+        setSalesOrdersData(salesData)
+
+      } catch (error) {
+        console.error("Error fetching orders data:", error)
+        // Fallback to empty data
+        const weekDays = getCurrentWeekDays()
+        setPurchaseOrdersData(weekDays.map(day => ({ name: day.dayName, value: 0 })))
+        setSalesOrdersData(weekDays.slice(0, 6).map(day => ({ name: day.dayName, value: 0 })))
+      } finally {
+        setChartLoading(false)
+      }
+    }
+
+    if (activeSection === "dashboard") {
+      fetchOrdersData()
+    }
+  }, [activeSection])
 
   // Fetch areas dropdown
   useEffect(() => {
@@ -374,10 +483,18 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                   Đơn mua hàng <span className="text-xs">(Tuần này)</span>
                 </p>
                 <div className="flex items-center">
-                  <h3 className="text-2xl font-bold mr-2">73</h3>
-                  <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-600 rounded">+24%</span>
+                  <h3 className="text-2xl font-bold mr-2">{purchaseOrdersStats.current}</h3>
+                  {purchaseOrdersStats.change !== 0 && (
+                    <span className={`text-xs px-1.5 py-0.5 rounded ${
+                      purchaseOrdersStats.change > 0 
+                        ? 'bg-green-100 text-green-600' 
+                        : 'bg-red-100 text-red-600'
+                    }`}>
+                      {purchaseOrdersStats.change > 0 ? '+' : ''}{purchaseOrdersStats.change}%
+                    </span>
+                  )}
                 </div>
-                <p className="text-xs text-gray-500">Tuần trước: 35</p>
+                <p className="text-xs text-gray-500">Tuần trước: {purchaseOrdersStats.previous}</p>
               </div>
             </CardContent>
           </Card>
@@ -406,10 +523,18 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                   Đơn bán hàng <span className="text-xs">(Tuần này)</span>
                 </p>
                 <div className="flex items-center">
-                  <h3 className="text-2xl font-bold mr-2">35</h3>
-                  <span className="text-xs px-1.5 py-0.5 bg-red-100 text-red-600 rounded">-12%</span>
+                  <h3 className="text-2xl font-bold mr-2">{salesOrdersStats.current}</h3>
+                  {salesOrdersStats.change !== 0 && (
+                    <span className={`text-xs px-1.5 py-0.5 rounded ${
+                      salesOrdersStats.change > 0 
+                        ? 'bg-green-100 text-green-600' 
+                        : 'bg-red-100 text-red-600'
+                    }`}>
+                      {salesOrdersStats.change > 0 ? '+' : ''}{salesOrdersStats.change}%
+                    </span>
+                  )}
                 </div>
-                <p className="text-xs text-gray-500">Tuần trước: 97</p>
+                <p className="text-xs text-gray-500">Tuần trước: {salesOrdersStats.previous}</p>
               </div>
             </CardContent>
           </Card>

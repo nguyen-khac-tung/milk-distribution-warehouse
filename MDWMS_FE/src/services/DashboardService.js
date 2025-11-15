@@ -4,7 +4,7 @@ import api from "./api";
 export const getInventoryReport = async (params = {}) => {
     try {
         const { areaId, pageNumber = 1, pageSize = 10, search = "", sortField = "", sortAscending = true, filters = {} } = params;
-        
+
         // Build query string for areaId (query parameter)
         const queryParams = new URLSearchParams();
         if (areaId) {
@@ -12,7 +12,7 @@ export const getInventoryReport = async (params = {}) => {
         }
         const queryString = queryParams.toString();
         const url = `/Report/InventoryReport${queryString ? `?${queryString}` : ''}`;
-        
+
         // Build request body - backend uses 1-based pageNumber
         const body = {
             pageNumber: pageNumber, // Backend uses 1-based index
@@ -61,7 +61,7 @@ export const getInventoryReport = async (params = {}) => {
                     pageSize: pageSize
                 };
             }
-        }        
+        }
         return {
             items: [],
             totalCount: 0,
@@ -90,10 +90,10 @@ export const getInventoryReport = async (params = {}) => {
 export const getLocationReport = async (params = {}) => {
     try {
         const { areaId } = params;
-        
+
         // Build query string for areaId
         const queryParams = areaId ? `?areaId=${areaId}` : "";
-        
+
         // Build request body - backend doesn't use it but kept for compatibility
         const body = {
             pageNumber: 1,
@@ -103,9 +103,9 @@ export const getLocationReport = async (params = {}) => {
             sortAscending: true,
             filters: {}
         };
-        
+
         const res = await api.post(`/Report/LocationReport${queryParams}`, body);
-        
+
         // Handle response structure
         if (res?.data) {
             // Case 1: res.data.data (nested structure)
@@ -125,7 +125,7 @@ export const getLocationReport = async (params = {}) => {
                 };
             }
         }
-        
+
         return {
             totalLocations: 0,
             availableLocationCount: 0,
@@ -152,7 +152,7 @@ export const getLocationReport = async (params = {}) => {
 export const getGoodsReceiptReport = async (params = {}) => {
     try {
         const { fromDate, toDate } = params;
-        
+
         // Build query string for fromDate and toDate
         const queryParams = new URLSearchParams();
         if (fromDate) {
@@ -161,13 +161,13 @@ export const getGoodsReceiptReport = async (params = {}) => {
         if (toDate) {
             queryParams.append('toDate', toDate);
         }
-        
+
         const queryString = queryParams.toString();
         const url = `/Report/GoodsReceiptReport${queryString ? `?${queryString}` : ''}`;
-        
+
         // POST request cần có body (dù rỗng) để set Content-Type đúng
         const res = await api.post(url, {});
-        
+
         // Handle response structure
         if (res?.data) {
             // Case 1: res.data.data (nested structure)
@@ -177,7 +177,7 @@ export const getGoodsReceiptReport = async (params = {}) => {
             // Case 2: res.data (direct structure)
             return res.data;
         }
-        
+
         return null;
     } catch (error) {
         if (error.response) {
@@ -197,7 +197,7 @@ export const getGoodsReceiptReport = async (params = {}) => {
 export const getGoodsIssueReport = async (params = {}) => {
     try {
         const { fromDate, toDate } = params;
-        
+
         // Build query string for fromDate and toDate
         const queryParams = new URLSearchParams();
         if (fromDate) {
@@ -206,13 +206,13 @@ export const getGoodsIssueReport = async (params = {}) => {
         if (toDate) {
             queryParams.append('toDate', toDate);
         }
-        
+
         const queryString = queryParams.toString();
         const url = `/Report/GoodsIssueReport${queryString ? `?${queryString}` : ''}`;
-        
+
         // POST request cần có body (dù rỗng) để set Content-Type đúng
         const res = await api.post(url, {});
-        
+
         // Handle response structure
         if (res?.data) {
             // Case 1: res.data.data (nested structure)
@@ -222,7 +222,7 @@ export const getGoodsIssueReport = async (params = {}) => {
             // Case 2: res.data (direct structure)
             return res.data;
         }
-        
+
         return null;
     } catch (error) {
         if (error.response) {

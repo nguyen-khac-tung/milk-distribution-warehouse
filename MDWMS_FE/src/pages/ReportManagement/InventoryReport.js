@@ -102,7 +102,7 @@ export default function InventoryReport({ onClose }) {
   const fetchInventoryData = async () => {
     try {
       setLoading(true)
-      
+
       // Build filters object - include timeRange (areaId is passed as query parameter, not in filters)
       const filters = {}
       if (timeRange) {
@@ -121,7 +121,7 @@ export default function InventoryReport({ onClose }) {
 
 
       const response = await getInventoryReport(requestParams)
-      
+
       if (response && response.items) {
         // Handle response with items array (even if empty)
         const itemsArray = Array.isArray(response.items) ? response.items : []
@@ -179,6 +179,16 @@ export default function InventoryReport({ onClose }) {
     return expiry < today
   }
 
+  const isExpiringSoon = (expiryDate, daysThreshold = 30) => {
+    if (!expiryDate) return false
+    const expiry = new Date(expiryDate)
+    const today = new Date()
+    const diffTime = expiry - today
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    // Sắp hết hạn: còn từ 0 đến daysThreshold ngày (và chưa hết hạn)
+    return diffDays >= 0 && diffDays <= daysThreshold
+  }
+
   const handleExport = () => {
     // TODO: Implement export functionality
     console.log("Export inventory report")
@@ -228,156 +238,168 @@ export default function InventoryReport({ onClose }) {
 
         {/* Inventory Table */}
         <div className="w-full bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-        <InventorySearchFilter
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          searchPlaceholder="Tìm kiếm theo mã lô, tên sản phẩm..."
-          timeRange={timeRange}
-          setTimeRange={setTimeRange}
-          timeRangeOptions={[
-            { value: "week", label: "Tuần này" },
-            { value: "month", label: "Tháng này" },
-            { value: "year", label: "Năm nay" }
-          ]}
-          areaId={areaId}
-          setAreaId={setAreaId}
-          areas={areas}
-          onClearAll={handleClearAllFilters}
-          showClearButton={true}
-          showToggle={true}
-          defaultOpen={true}
-          searchWidth="w-80"
-        />
-        <div className="w-full">
-          {loading ? (
-            <div className="p-8">
-              <Loading />
-            </div>
-          ) : (
-            <div className="overflow-x-auto w-full">
-              <Table className="w-full">
-                <TableHeader>
-                  <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
-                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-16">
-                      STT
-                    </TableHead>
-                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                      Mã sản phẩm
-                    </TableHead>
-                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                      Tên sản phẩm
-                    </TableHead>
-                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                      Mã lô
-                    </TableHead>
-                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                      Ngày sản xuất
-                    </TableHead>
-                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                      Ngày hết hạn
-                    </TableHead>
-                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-right">
-                      Số lượng thùng
-                    </TableHead>
-                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                      Số pallet
-                    </TableHead>
-                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                      Số vị trí
-                    </TableHead>
-                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
-                      Hoạt động
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {inventoryData.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={10} className="text-center text-gray-500 py-8">
-                        Không có dữ liệu tồn kho
-                      </TableCell>
+          <InventorySearchFilter
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            searchPlaceholder="Tìm kiếm theo mã lô, tên sản phẩm..."
+            timeRange={timeRange}
+            setTimeRange={setTimeRange}
+            timeRangeOptions={[
+              { value: "week", label: "Tuần này" },
+              { value: "month", label: "Tháng này" },
+              { value: "year", label: "Năm nay" }
+            ]}
+            areaId={areaId}
+            setAreaId={setAreaId}
+            areas={areas}
+            onClearAll={handleClearAllFilters}
+            showClearButton={true}
+            showToggle={true}
+            defaultOpen={true}
+            searchWidth="w-80"
+          />
+          <div className="w-full">
+            {loading ? (
+              <div className="p-8">
+                <Loading />
+              </div>
+            ) : (
+              <div className="overflow-x-auto w-full">
+                <Table className="w-full">
+                  <TableHeader>
+                    <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-16">
+                        STT
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                        Mã sản phẩm
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                        Tên sản phẩm
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                        Mã lô
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                        Ngày sản xuất
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                        Ngày hết hạn
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-right">
+                        Số lượng thùng
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                        Số pallet
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                        Số vị trí
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                        Trạng thái
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
+                        Hoạt động
+                      </TableHead>
                     </TableRow>
-                  ) : (
-                    inventoryData.map((item, index) => {
-                      const rowNumber = (pagination.current - 1) * pagination.pageSize + index + 1
-                      const expired = isExpired(item.expiryDate)
+                  </TableHeader>
+                  <TableBody>
+                    {inventoryData.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={11} className="text-center text-gray-500 py-8">
+                          Không có dữ liệu tồn kho
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      inventoryData.map((item, index) => {
+                        const rowNumber = (pagination.current - 1) * pagination.pageSize + index + 1
+                        const expired = isExpired(item.expiryDate)
+                        const expiringSoon = isExpiringSoon(item.expiryDate, 30) // Cảnh báo trong 30 ngày
 
-                      return (
-                        <TableRow
-                          key={item.batchId || index}
-                          className="hover:bg-slate-50 border-b border-slate-200"
-                        >
-                          <TableCell className="px-6 py-4 text-slate-600 font-medium">
-                            {rowNumber}
-                          </TableCell>
-                          <TableCell className="px-6 py-4 text-slate-700 font-medium">
-                            {item.goodsCode || "-"}
-                          </TableCell>
-                          <TableCell className="px-6 py-4 text-slate-700">
-                            {item.goodName || "-"}
-                          </TableCell>
-                          <TableCell className="px-6 py-4 text-slate-700 font-medium">
-                            {item.batchCode || "-"}
-                          </TableCell>
-                          <TableCell className="px-6 py-4 text-slate-700">
-                            {formatDate(item.manufacturingDate)}
-                          </TableCell>
-                          <TableCell className="px-6 py-4 text-slate-700">
-                            <div className="flex items-center gap-2">
-                              <span>{formatDate(item.expiryDate)}</span>
-                              {expired && (
-                                <Badge variant="destructive" className="text-xs">
+                        return (
+                          <TableRow
+                            key={item.batchId || index}
+                            className="hover:bg-slate-50 border-b border-slate-200"
+                          >
+                            <TableCell className="px-6 py-4 text-slate-600 font-medium">
+                              {rowNumber}
+                            </TableCell>
+                            <TableCell className="px-6 py-4 text-slate-700 font-medium">
+                              {item.goodsCode || "-"}
+                            </TableCell>
+                            <TableCell className="px-6 py-4 text-slate-700">
+                              {item.goodName || "-"}
+                            </TableCell>
+                            <TableCell className="px-6 py-4 text-slate-700 font-medium">
+                              {item.batchCode || "-"}
+                            </TableCell>
+                            <TableCell className="px-6 py-4 text-slate-700">
+                              {formatDate(item.manufacturingDate)}
+                            </TableCell>
+                            <TableCell className="px-6 py-4 text-slate-700">
+                              {formatDate(item.expiryDate)}
+                            </TableCell>
+                            <TableCell className="px-6 py-4 text-slate-700 text-right font-medium">
+                              {item.totalPackageQuantity?.toLocaleString("vi-VN") || 0}
+                            </TableCell>
+                            <TableCell className="px-6 py-4 text-center">
+                              <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                                {item.palletIds?.length || 0}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="px-6 py-4 text-center">
+                              <Badge variant="outline" className="bg-green-50 text-green-700">
+                                {item.locationCodes?.length || 0}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="px-6 py-4 text-center">
+                              {expired ? (
+                                <Badge variant="destructive" className="text-xs bg-red-500 text-white">
                                   Hết hạn
                                 </Badge>
+                              ) : expiringSoon ? (
+                                <Badge variant="outline" className="text-xs bg-orange-100 text-orange-700 border-orange-300">
+                                  Sắp hết hạn
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
+                                  Còn hạn
+                                </Badge>
                               )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="px-6 py-4 text-slate-700 text-right font-medium">
-                            {item.totalPackageQuantity?.toLocaleString("vi-VN") || 0}
-                          </TableCell>
-                          <TableCell className="px-6 py-4 text-center">
-                            <Badge variant="outline" className="bg-blue-50 text-blue-700">
-                              {item.palletIds?.length || 0}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="px-6 py-4 text-center">
-                            <Badge variant="outline" className="bg-green-50 text-green-700">
-                              {item.locationCodes?.length || 0}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="px-6 py-4 text-center">
-                            <div className="flex items-center justify-center space-x-1">
-                              <button
-                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                title="Xem chi tiết"
-                                onClick={() => handleViewClick(item)}
-                              >
-                                <Eye className="h-4 w-4 text-orange-500" />
-                              </button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })
-                  )}
-                </TableBody>
-              </Table>
+                            </TableCell>
+                            <TableCell className="px-6 py-4 text-center">
+                              <div className="flex items-center justify-center space-x-1">
+                                <button
+                                  className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                  title="Xem chi tiết"
+                                  onClick={() => handleViewClick(item)}
+                                >
+                                  <Eye className="h-4 w-4 text-orange-500" />
+                                </button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+          {!loading && pagination.total > 0 && (
+            <div className="bg-gray-50 border-t border-slate-200 p-4">
+              <Pagination
+                current={pagination.current}
+                pageSize={pagination.pageSize}
+                total={pagination.total}
+                onChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+                showPageSize={true}
+                pageSizeOptions={[10, 20, 30, 50]}
+              />
             </div>
           )}
-        </div>
-        {!loading && pagination.total > 0 && (
-          <div className="bg-gray-50 border-t border-slate-200 p-4">
-            <Pagination
-              current={pagination.current}
-              pageSize={pagination.pageSize}
-              total={pagination.total}
-              onChange={handlePageChange}
-              onPageSizeChange={handlePageSizeChange}
-              showPageSize={true}
-              pageSizeOptions={[10, 20, 30, 50]}
-            />
-          </div>
-        )}
         </div>
       </div>
     </div>

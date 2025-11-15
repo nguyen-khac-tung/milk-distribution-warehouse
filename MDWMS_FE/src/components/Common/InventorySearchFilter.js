@@ -183,7 +183,7 @@ export default function InventorySearchFilter({
                       }`}
                   >
                     <span className="text-sm font-medium truncate">
-                      {areaId 
+                      {areaId
                         ? (areas.find(a => String(a.areaId || a.AreaId) === String(areaId))?.areaName || areas.find(a => String(a.areaId || a.AreaId) === String(areaId))?.AreaName || "Chọn khu vực")
                         : "Tất cả khu vực"
                       }

@@ -94,17 +94,17 @@ export default function ExpiringProducts() {
                 <div key={index} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors">
                   <div className="flex-1">
                     <p className="text-sm font-medium text-slate-700">
-                      {product.goodsName || product.productName || "Sản phẩm"}
+                      {product.goodsName || product.goodName || product.productName || "Sản phẩm"}
                     </p>
                     <div className="flex items-center gap-3 mt-1">
+                      {product.goodsCode && (
+                        <p className="text-xs text-gray-500">
+                          Mã: {product.goodsCode}
+                        </p>
+                      )}
                       <p className="text-xs text-gray-500">
                         Lô: {product.batchCode || product.batchNumber || "N/A"}
                       </p>
-                      {product.quantity && (
-                        <p className="text-xs text-gray-500">
-                          SL: {product.quantity}
-                        </p>
-                      )}
                     </div>
                   </div>
                   <div className="text-right">
