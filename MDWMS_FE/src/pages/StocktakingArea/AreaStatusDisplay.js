@@ -1,0 +1,45 @@
+import React from 'react';
+
+// Trạng thái khu vực trong kiểm kê (theo backend StockAreaStatus)
+export const STOCK_AREA_STATUS = {
+    Assigned: 1,            // Đã phân công
+    Pending: 2,             // Đang chờ
+    Counted: 3,             // Đã kiểm
+    PendingApproval: 4,     // Chờ duyệt
+    Completed: 5           // Đã hoàn thành
+};
+
+// Chuyển đổi trạng thái sang tiếng Việt
+export const AREA_STATUS_LABELS = {
+    [STOCK_AREA_STATUS.Assigned]: 'Đã phân công',
+    [STOCK_AREA_STATUS.Pending]: 'Đang chờ',
+    [STOCK_AREA_STATUS.Counted]: 'Đã kiểm',
+    [STOCK_AREA_STATUS.PendingApproval]: 'Chờ duyệt',
+    [STOCK_AREA_STATUS.Completed]: 'Đã hoàn thành'
+};
+
+// Màu sắc cho từng trạng thái
+export const AREA_STATUS_COLORS = {
+    [STOCK_AREA_STATUS.Assigned]: 'bg-blue-100 text-blue-800',
+    [STOCK_AREA_STATUS.Pending]: 'bg-gray-100 text-gray-800',
+    [STOCK_AREA_STATUS.Counted]: 'bg-cyan-100 text-cyan-800',
+    [STOCK_AREA_STATUS.PendingApproval]: 'bg-yellow-100 text-yellow-800',
+    [STOCK_AREA_STATUS.Completed]: 'bg-green-100 text-green-800'
+};
+
+// Component hiển thị trạng thái khu vực
+const AreaStatusDisplay = ({ status, className = '' }) => {
+    const statusLabel = AREA_STATUS_LABELS[status] || 'Không xác định';
+    const statusColor = AREA_STATUS_COLORS[status] || 'bg-gray-100 text-gray-800';
+
+    return (
+        <span
+            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor} ${className}`}
+        >
+            {statusLabel}
+        </span>
+    );
+};
+
+export default AreaStatusDisplay;
+
