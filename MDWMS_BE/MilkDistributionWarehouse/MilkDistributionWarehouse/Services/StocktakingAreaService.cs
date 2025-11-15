@@ -14,6 +14,8 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, StocktakingAreaDetailDto?)> GetStocktakingAreaByStocktakingSheetId(string stoctakingSheetId, int? userId);
         Task<(string, StocktakingSheeteResponse?)> CreateStocktakingAreaBulk(string stocktakingSheetId, List<StocktakingAreaCreate> creates);
         Task<(string, StocktakingSheeteResponse?)> UpdateStocktakingAreaBulk(string stocktakingSheetId, List<StocktakingAreaUpdate> updates);
+        Task<(string, StocktakingAreaReAssignStatus?)> UpdateStocktakingReAssignTo(StocktakingAreaReAssignStatus update);
+        Task<(string, StocktakingArea?)> UpdateStocktakingAreaStatus(StocktakingAreaUpdateStatus update);
     }
     public class StocktakingAreaService : IStocktakingAreaService
     {
@@ -49,8 +51,6 @@ namespace MilkDistributionWarehouse.Services
 
             return ("", stocktakingAreaMap);
         }
-
-
 
         public async Task<(string, StocktakingSheeteResponse?)> CreateStocktakingAreaBulk(string stocktakingSheetId, List<StocktakingAreaCreate> creates)
         {
@@ -106,6 +106,41 @@ namespace MilkDistributionWarehouse.Services
                 return ("Cập nhật danh sách kiểm kê khu vực thất bại.", default);
 
             return ("", default);
+        }
+
+        public async Task<(string, StocktakingArea?)> UpdateStocktakingAreaStatus(StocktakingAreaUpdateStatus update)
+        {
+            var stocktakingArea = await _stocktakingAreaRepository.GetStocktakingAreaByStocktakingAreaId(update.StocktakingAreaId);
+            if (stocktakingArea == null) return ("Kiểm kê khu vực không tồn tại.", default);
+
+            stocktakingArea.Status = update.Status;
+            stocktakingArea.UpdateAt = DateTime.Now;
+
+            var updateResult = await _stocktakingAreaRepository.UpdateStocktakingArea(stocktakingArea);
+            if (updateResult == 0) return ("Cập nhật kiểm kê khu vực thất bại.", default);
+
+            return ("", stocktakingArea);
+        }
+
+        public async Task<(string, StocktakingAreaReAssignStatus?)> UpdateStocktakingReAssignTo(StocktakingAreaReAssignStatus update)
+        {
+            var stocktakingArea = await _stocktakingAreaRepository.GetStocktakingAreaByStocktakingAreaId(update.StocktakingAreaId);
+            if (stocktakingArea == null) return ("Kiểm kê khu vực không tồn tại.", default);
+
+            if (stocktakingArea.StocktakingLocations.Any())
+                return ("Nhân viên đang tiến hành kiểm kê. Không thể phân công lại.", default);
+
+            var isStockAreAssignTo = await _stocktakingAreaRepository.IsStocktakingAreaAssignTo(stocktakingArea.AreaId, stocktakingArea.StocktakingSheetId, update.AssignTo);
+            if (isStockAreAssignTo)
+                return ("Nhân viên này đã được phân công kiểm kê ở khu vực khác.".ToMessageForUser(), default);
+            
+            stocktakingArea.AssignTo = update.AssignTo;
+            stocktakingArea.UpdateAt = DateTime.Now;
+
+            var updateResult = await _stocktakingAreaRepository.UpdateStocktakingArea(stocktakingArea);
+            if (updateResult == 0) return ("Cập nhật kiểm kê khu vực thất bại.", default);
+
+            return ("", update);
         }
 
         private async Task<string> ValidationReAssignStocktakingArea(List<StocktakingArea> stocktakingAreas, List<StocktakingAreaUpdate> updates)
