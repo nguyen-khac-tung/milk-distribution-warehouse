@@ -214,3 +214,40 @@ export const getStocktakingPalletDetail = async (stocktakingLocationId) => {
     }
 };
 
+// Lấy chi tiết StocktakingPallet theo stocktakingLocationId và locationCode
+export const getStocktakingPalletDetailByLocationCode = async (stocktakingLocationId, locationCode) => {
+    try {
+        if (!stocktakingLocationId) {
+            throw new Error("stocktakingLocationId is required");
+        }
+        if (!locationCode) {
+            throw new Error("locationCode is required");
+        }
+        const res = await api.get(`/StocktakingPallet/GetDetail/${stocktakingLocationId}/${locationCode}`);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching stocktaking pallet detail by location code:", error);
+        throw error;
+    }
+};
+
+// Quét pallet trong kiểm kê
+export const scannerStocktakingPallet = async (stocktakingLocationId, palletId) => {
+    try {
+        if (!stocktakingLocationId) {
+            throw new Error("stocktakingLocationId is required");
+        }
+        if (!palletId) {
+            throw new Error("palletId is required");
+        }
+        const res = await api.post("/StocktakingPallet/ScannerStocktakingPallet", {
+            stocktakingLocationId: stocktakingLocationId,
+            palletId: palletId
+        });
+        return res.data;
+    } catch (error) {
+        console.error("Error scanning stocktaking pallet:", error);
+        throw error;
+    }
+};
+

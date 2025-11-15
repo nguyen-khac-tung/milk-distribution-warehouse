@@ -10,6 +10,8 @@ import { extractErrorMessage } from '../../utils/Validation';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
 import StatusDisplay from '../../components/StocktakingComponents/StatusDisplay';
 import LocationStatusDisplay from './LocationStatusDisplay';
+import ScanLocationStocktakingModal from '../../components/StocktakingComponents/ScanLocationStocktakingModal';
+import ScanPalletStocktakingModal from '../../components/StocktakingComponents/ScanPalletStocktakingModal';
 import dayjs from 'dayjs';
 
 const StocktakingArea = () => {
@@ -23,6 +25,10 @@ const StocktakingArea = () => {
         detail: true,
         check: true
     });
+    const [showScanModal, setShowScanModal] = useState(false);
+    const [showPalletModal, setShowPalletModal] = useState(false);
+    const [selectedLocation, setSelectedLocation] = useState(null);
+    const [validatedLocationData, setValidatedLocationData] = useState(null);
     const isFetchingRef = useRef(false);
 
     useEffect(() => {
@@ -133,11 +139,28 @@ const StocktakingArea = () => {
     };
 
     const handleProceedLocation = (location) => {
-        // TODO: Implement logic to proceed with location checking
-        console.log('Proceed with location:', location);
-        if (window.showToast) {
-            window.showToast(`Bắt đầu kiểm tra vị trí: ${location.locationCode}`, 'info');
-        }
+        setSelectedLocation(location);
+        setShowScanModal(true);
+    };
+
+    const handleLocationValidated = (locationData) => {
+        // Lưu dữ liệu location đã validate
+        setValidatedLocationData(locationData);
+        // Đóng modal location và mở modal pallet
+        setShowScanModal(false);
+        setShowPalletModal(true);
+    };
+
+    const handleScanModalClose = () => {
+        setShowScanModal(false);
+        setSelectedLocation(null);
+    };
+
+    const handlePalletModalClose = () => {
+        setShowPalletModal(false);
+        setValidatedLocationData(null);
+        // Refresh data sau khi đóng modal pallet
+        handleRefresh();
     };
 
     if (loading) {
@@ -434,6 +457,23 @@ const StocktakingArea = () => {
                         </div>
                     )}
                 </Card>
+
+                {/* Scan Location Modal */}
+                <ScanLocationStocktakingModal
+                    isOpen={showScanModal}
+                    onClose={handleScanModalClose}
+                    location={selectedLocation}
+                    stocktakingLocationId={selectedLocation?.stocktakingLocationId}
+                    onLocationValidated={handleLocationValidated}
+                />
+
+                {/* Scan Pallet Modal */}
+                <ScanPalletStocktakingModal
+                    isOpen={showPalletModal}
+                    onClose={handlePalletModalClose}
+                    stocktakingLocationId={validatedLocationData?.stocktakingLocationId}
+                    locationCode={validatedLocationData?.locationCode}
+                />
             </div>
         </div>
     );
