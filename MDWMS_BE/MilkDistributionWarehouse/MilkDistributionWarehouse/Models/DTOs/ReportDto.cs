@@ -13,6 +13,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public DateOnly? ExpiryDate { get; set; }
             public string GoodsCode { get; set; }
             public string GoodName { get; set; }
+            public string UnitOfMeasure { get; set; }
             public List<string> PalletIds { get; set; } = new();
             public int TotalPackageQuantity { get; set; }
             public List<string> LocationCodes { get; set; } = new();
@@ -52,6 +53,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public int GoodsId { get; set; }
             public string GoodsCode { get; set; }
             public string GoodsName { get; set; }
+            public string UnitOfMeasure { get; set; }
             public int GoodsPackingId { get; set; }
             public int? UnitPerPackage { get; set; }
             public DateTime? ReceiptDate { get; set; }
@@ -68,6 +70,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public int GoodsId { get; set; }
             public string GoodsCode { get; set; }
             public string GoodsName { get; set; }
+            public string UnitOfMeasure { get; set; }
             public int GoodsPackingId { get; set; }
             public int? UnitPerPackage { get; set; }
             public DateTime? IssueDate { get; set; }
