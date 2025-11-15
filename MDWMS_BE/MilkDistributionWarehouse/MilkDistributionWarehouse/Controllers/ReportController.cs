@@ -2,7 +2,6 @@
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Services;
 using MilkDistributionWarehouse.Utilities;
-using System.Threading.Tasks;
 
 namespace MilkDistributionWarehouse.Controllers
 {
@@ -43,6 +42,24 @@ namespace MilkDistributionWarehouse.Controllers
             if (!string.IsNullOrEmpty(message))
                 return ApiResponse<string>.ToResultError(message);
             return ApiResponse<List<ReportDto.SaleBySupplierReportDto>>.ToResultOk(data);
+        }
+
+        [HttpPost("GoodsReceiptReport")]
+        public async Task<IActionResult> GetGoodsReceiptReport([FromBody] PagedRequest request, [FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate)
+        {
+            var (message, data) = await _reportService.GetGoodsReceiptReportAsync(request, fromDate, toDate);
+            if (!string.IsNullOrEmpty(message))
+                return ApiResponse<string>.ToResultError(message);
+            return ApiResponse<PageResult<ReportDto.GoodsReceiptReportDto>>.ToResultOk(data);
+        }
+
+        [HttpPost("GoodsIssueReport")]
+        public async Task<IActionResult> GetGoodsIssueReport([FromBody] PagedRequest request, [FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate)
+        {
+            var (message, data) = await _reportService.GetGoodsIssueReportAsync(request, fromDate, toDate);
+            if (!string.IsNullOrEmpty(message))
+                return ApiResponse<string>.ToResultError(message);
+            return ApiResponse<PageResult<ReportDto.GoodIssueReportDto>>.ToResultOk(data);
         }
     }
 }
