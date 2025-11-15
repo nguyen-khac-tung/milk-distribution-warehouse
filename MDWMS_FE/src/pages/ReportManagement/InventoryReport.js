@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "../../components/ui/table"
 import { getInventoryReport } from "../../services/DashboardService"
+import { getAreaDropdown } from "../../services/AreaServices"
 import Loading from "../../components/Common/Loading"
 import Pagination from "../../components/Common/Pagination"
 import { Badge } from "../../components/ui/badge"
@@ -25,6 +26,7 @@ export default function InventoryReport({ onClose }) {
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [areaId, setAreaId] = useState("")
+  const [areas, setAreas] = useState([])
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -32,6 +34,28 @@ export default function InventoryReport({ onClose }) {
   })
   const [timeRange, setTimeRange] = useState("week") // week, month, year
   const searchTimeoutRef = useRef(null)
+
+  // Fetch areas for dropdown
+  useEffect(() => {
+    const fetchAreas = async () => {
+      try {
+        const response = await getAreaDropdown()
+        let areasList = []
+        if (Array.isArray(response)) {
+          areasList = response
+        } else if (response?.data) {
+          areasList = Array.isArray(response.data) ? response.data : (response.data?.data || [])
+        } else if (response?.items) {
+          areasList = response.items
+        }
+        setAreas(areasList)
+      } catch (error) {
+        console.error("Error fetching areas:", error)
+        setAreas([])
+      }
+    }
+    fetchAreas()
+  }, [])
 
   // Initial load on component mount
   useEffect(() => {
@@ -79,17 +103,14 @@ export default function InventoryReport({ onClose }) {
     try {
       setLoading(true)
       
-      // Build filters object - include timeRange
+      // Build filters object - include timeRange (areaId is passed as query parameter, not in filters)
       const filters = {}
       if (timeRange) {
         filters.timeRange = timeRange
       }
-      if (areaId) {
-        filters.areaId = areaId
-      }
 
       const requestParams = {
-        areaId: areaId || undefined,
+        areaId: areaId ? parseInt(areaId) : undefined, // Convert to integer for query parameter
         pageNumber: pagination.current,
         pageSize: pagination.pageSize,
         search: searchQuery || "",
@@ -218,6 +239,9 @@ export default function InventoryReport({ onClose }) {
             { value: "month", label: "Tháng này" },
             { value: "year", label: "Năm nay" }
           ]}
+          areaId={areaId}
+          setAreaId={setAreaId}
+          areas={areas}
           onClearAll={handleClearAllFilters}
           showClearButton={true}
           showToggle={true}

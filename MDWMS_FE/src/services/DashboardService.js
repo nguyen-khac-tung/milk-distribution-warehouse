@@ -5,8 +5,13 @@ export const getInventoryReport = async (params = {}) => {
     try {
         const { areaId, pageNumber = 1, pageSize = 10, search = "", sortField = "", sortAscending = true, filters = {} } = params;
         
-        // Build query string for areaId (note: backend uses 'areald' not 'areaId')
-        const queryParams = areaId ? `?areald=${areaId}` : "";
+        // Build query string for areaId (query parameter)
+        const queryParams = new URLSearchParams();
+        if (areaId) {
+            queryParams.append('areaId', areaId);
+        }
+        const queryString = queryParams.toString();
+        const url = `/Report/InventoryReport${queryString ? `?${queryString}` : ''}`;
         
         // Build request body - backend uses 1-based pageNumber
         const body = {
@@ -17,7 +22,7 @@ export const getInventoryReport = async (params = {}) => {
             sortAscending,
             filters
         };
-        const res = await api.post(`/Report/InventoryReport${queryParams}`, body);
+        const res = await api.post(url, body);
         // Handle response structure - check multiple possible structures
         if (res?.data) {
             // Case 1: res.data.data.items (nested structure)
