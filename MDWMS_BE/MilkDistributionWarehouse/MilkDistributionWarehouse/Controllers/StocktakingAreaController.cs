@@ -38,5 +38,15 @@ namespace MilkDistributionWarehouse.Controllers
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<StocktakingAreaDetailDto>.ToResultOk(stocktakingAreaDetail);
         }
+
+        [HttpPut("ReAssignStocktakingArea")]
+        [Authorize(Roles = RoleNames.WarehouseManager)]
+        public async Task<IActionResult> UpdateStocktakingAreaReAssignStatus([FromBody] StocktakingAreaReAssignStatus update)
+        {
+            var(msg, stocktakingArea) = await _stocktakingAreaService.UpdateStocktakingReAssignTo(update);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<StocktakingAreaReAssignStatus>.ToResultOk(stocktakingArea);
+        }
     }
 }

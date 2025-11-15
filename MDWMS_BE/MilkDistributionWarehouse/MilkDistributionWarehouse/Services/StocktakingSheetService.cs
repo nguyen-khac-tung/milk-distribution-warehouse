@@ -279,6 +279,7 @@ namespace MilkDistributionWarehouse.Services
                 return msg;
 
             sheet.Status = StocktakingStatus.Assigned;
+
             return string.Empty;
         }
 
@@ -330,8 +331,18 @@ namespace MilkDistributionWarehouse.Services
             if (stocktakingAreaOfAssignedStaff == null)
                 return "Không tìm thấy khu vực được phân công cho nhân viên này.".ToMessageForUser();
 
+            var (msg, _) = await _stocktakingAreaService.UpdateStocktakingAreaStatus(new StocktakingAreaUpdateStatus
+            {
+                StocktakingAreaId = stocktakingAreaOfAssignedStaff.StocktakingAreaId,
+                Status = StockAreaStatus.Pending,
+            });
+
+            if (!string.IsNullOrEmpty(msg))
+                return "Cập nhật trạng thái kiểm kê khu vực thất bại";
+
             var stockLocationCreate = _mapper.Map<StocktakingLocationCreate>(stocktakingAreaOfAssignedStaff);
-            var (msg, _) = await _stocktakingLocationService.CreateStocktakingLocationBulk(stockLocationCreate);
+
+            (msg, _) = await _stocktakingLocationService.CreateStocktakingLocationBulk(stockLocationCreate);
             if (!string.IsNullOrEmpty(msg))
                 return msg;
 

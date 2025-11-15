@@ -12,6 +12,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> AreExistStocklocationByAllStockAreaIdsAsync(List<Guid> stockAreaIds);
         Task<bool> AnyStocktakingLocationByStockAreaId(Guid stocktakingAreaId);
         Task<bool> AnyStocktakingLocationSameStockSheetAsync(string stockSheetId, Guid stockAreaId, int assignTo);
+        Task<bool> IsExistStocktakingLocationByStockLocationIdAndLocationCode(Guid stocktakingLocationId, string locationCode);
     }
     public class StocktakingLocationRepository : IStocktakingLocationRepository
     {
@@ -19,6 +20,28 @@ namespace MilkDistributionWarehouse.Repositories
         public StocktakingLocationRepository(WarehouseContext context)
         {
             _context = context;
+        }
+
+        public async Task<List<StocktakingLocation>> GetLocationsByStockSheetIdAreaIdsAsync(string stockSheetId, List<int> areaIds)
+        {
+            return await _context.StocktakingLocations
+                .Include(sl => sl.StocktakingArea)
+                .Where(sl => sl.StocktakingArea.StocktakingSheetId.Equals(stockSheetId) &&
+                            sl.StocktakingArea.AreaId.HasValue &&
+                            areaIds.Contains(sl.StocktakingArea.AreaId.Value)
+                      )
+                .ToListAsync();
+        }
+
+        public async Task<List<StocktakingLocation>> GetLocationsBySheetAndAssignToAsync(string? sheetId, List<int> assignToIds)
+        {
+            return await _context.StocktakingLocations
+                .Where(sl =>
+                            sl.StocktakingArea.StocktakingSheetId.Equals(sheetId) &&
+                            sl.StocktakingArea.AssignTo.HasValue &&
+                            assignToIds.Contains(sl.StocktakingArea.AssignTo.Value)
+                        )
+                .ToListAsync();
         }
 
         public async Task<int> CreateStocktakingLocationBulk(List<StocktakingLocation> creates)
@@ -62,26 +85,14 @@ namespace MilkDistributionWarehouse.Repositories
                 );
         }
 
-        public async Task<List<StocktakingLocation>> GetLocationsByStockSheetIdAreaIdsAsync(string stockSheetId, List<int> areaIds)
+        public async Task<bool> IsExistStocktakingLocationByStockLocationIdAndLocationCode(Guid stocktakingLocationId, string locationCode)
         {
             return await _context.StocktakingLocations
-                .Include(sl => sl.StocktakingArea)
-                .Where(sl => sl.StocktakingArea.StocktakingSheetId.Equals(stockSheetId) && 
-                            sl.StocktakingArea.AreaId.HasValue &&
-                            areaIds.Contains(sl.StocktakingArea.AreaId.Value)
-                      )
-                .ToListAsync();
-        }
-
-        public async Task<List<StocktakingLocation>> GetLocationsBySheetAndAssignToAsync(string? sheetId, List<int> assignToIds)
-        {
-            return await _context.StocktakingLocations
-                .Where(sl =>
-                            sl.StocktakingArea.StocktakingSheetId.Equals(sheetId) &&
-                            sl.StocktakingArea.AssignTo.HasValue &&
-                            assignToIds.Contains(sl.StocktakingArea.AssignTo.Value)
-                        )
-                .ToListAsync();
+                .Include(sl => sl.Location)
+                .AnyAsync(sl =>
+                        sl.StocktakingLocationId == stocktakingLocationId &&
+                        sl.Location.LocationCode.Equals(locationCode)
+                );
         }
     }
 }

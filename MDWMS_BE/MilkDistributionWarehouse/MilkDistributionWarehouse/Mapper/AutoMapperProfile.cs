@@ -491,12 +491,13 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => StocktakingStatus.Draft))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now));
             CreateMap<StocktakingSheet, StocktakingSheetDetail>()
-                .IncludeBase<StocktakingSheet, StocktakingSheetDto>();
+                .IncludeBase<StocktakingSheet, StocktakingSheetDto>()
+                .ForMember(dest => dest.StocktakingAreas, opt => opt.MapFrom(src => src.StocktakingAreas));
 
             //Map StocktakingArea
             CreateMap<StocktakingAreaCreate, StocktakingArea>()
                 .ForMember(dest => dest.StocktakingAreaId, opt => opt.MapFrom(_ => Guid.NewGuid()))
-                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => StockAreaStatus.Pending))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => StockAreaStatus.Assigned))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now));
             CreateMap<StocktakingArea, StocktakingAreaDetail>()
                 .ForMember(dest => dest.AssignToName, opt => opt.MapFrom(src => src.AssignToNavigation.FullName))
@@ -507,6 +508,14 @@ namespace MilkDistributionWarehouse.Mapper
             CreateMap<StocktakingAreaUpdate, StocktakingArea>()
                 .ForMember(dest => dest.StocktakingAreaId, opt => opt.Ignore())
                 .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => DateTime.Now));
+            CreateMap<StocktakingArea, StocktakingAreaUpdateDto>()
+                .ForMember(dest => dest.AreaName, opt => opt.MapFrom(src => src.Area.AreaName))
+                .ForMember(dest => dest.TemperatureMax, opt => opt.MapFrom(src => src.Area.StorageCondition.TemperatureMax))
+                .ForMember(dest => dest.TemperatureMin, opt => opt.MapFrom(src => src.Area.StorageCondition.TemperatureMin))
+                .ForMember(dest => dest.HumidityMin, opt => opt.MapFrom(src => src.Area.StorageCondition.HumidityMin))
+                .ForMember(dest => dest.HumidityMax, opt => opt.MapFrom(src => src.Area.StorageCondition.HumidityMax))
+                .ForMember(dest => dest.LightLevel, opt => opt.MapFrom(src => src.Area.StorageCondition.LightLevel))
+                .ForMember(dest => dest.AssignName, opt => opt.MapFrom(src => src.AssignToNavigation.FullName));
 
             //Map StocktakingLocation
             CreateMap<Location, StocktakingLocation>()
@@ -527,7 +536,22 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => StockPalletStatus.Unscanned))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now))
                 .ForMember(dest => dest.UpdateAt, opt => opt.Ignore());
-            CreateMap<StocktakingPallet, StocktakingPalletDto>();
+            CreateMap<StocktakingPallet, StocktakingPalletDto>()
+                .ForMember(dest => dest.GoodsCode, opt => opt.MapFrom(src => src.Pallet.Batch.Goods.GoodsCode))
+                .ForMember(dest => dest.GooodsName, opt => opt.MapFrom(src => src.Pallet.Batch.Goods.GoodsName))
+                .ForMember(dest => dest.BatchCode, opt => opt.MapFrom(src => src.Pallet.Batch.BatchCode));
+            CreateMap<StocktakingPalletUpdateStatus, StocktakingPallet>()
+                .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => DateTime.Now));
+            CreateMap<StocktakingPalletMissingStatus, StocktakingPallet>()
+                .IncludeBase<StocktakingPalletUpdateStatus, StocktakingPallet>()
+                .ForMember(dest => dest.ActualPackageQuantity, opt => opt.MapFrom(_ => 0))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => StockPalletStatus.Missing));
+            CreateMap<StocktakingPalletMatchStatus, StocktakingPallet>()
+                .IncludeBase<StocktakingPalletUpdateStatus, StocktakingPallet>()
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => StockPalletStatus.Matched));
+            CreateMap<StocktakingPalletSurplusStatus, StocktakingPallet>()
+                .IncludeBase<StocktakingPalletUpdateStatus, StocktakingPallet>()
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => StockPalletStatus.Surplus));
         }
     }
 }
