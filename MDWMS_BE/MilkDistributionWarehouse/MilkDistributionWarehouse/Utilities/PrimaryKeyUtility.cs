@@ -12,6 +12,12 @@
 
             return $"{customName}_{customType}_{timestamp}";
         }
+        public static string GenerateStocktakingKey(long? customTimestamp = null)
+        {
+            string datePart = DateTime.UtcNow.ToString("yyyyMMdd");
+
+            return GenerateKey("STK", datePart, customTimestamp);
+        }
 
     }
 }

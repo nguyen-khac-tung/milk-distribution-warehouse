@@ -4,12 +4,14 @@ using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
+using MilkDistributionWarehouse.Utilities;
 using System.Threading.Tasks;
 
 namespace MilkDistributionWarehouse.Services
 {
     public interface IStocktakingPalletService
     {
+        Task<(string, StocktakingPalletDto?)> GetStocktakingPalletByStocktakingLocationId(Guid stocktakingLocationId);
         Task<(string, List<StocktakingPalletCreate>?)> CreateStocktakingPalletBulk(List<StocktakingPalletCreate> creates);
     }
     public class StocktakingPalletService : IStocktakingPalletService
@@ -57,6 +59,20 @@ namespace MilkDistributionWarehouse.Services
                 return ("Tạo kiểm kê kệ kê hàng thất bại.", default);
 
             return ("", creates);
+        }
+
+        public async Task<(string, StocktakingPalletDto?)> GetStocktakingPalletByStocktakingLocationId(Guid stocktakingLocationId)
+        {
+            if (stocktakingLocationId == Guid.Empty)
+                return ("Mã kiểm kê kệ kê hàng không hợp lệ.", default);
+
+            var stocktakingPallet = await _stocktakingPalletRepository.GetStocktakingPalletByStocktakingLocationId(stocktakingLocationId);
+            if(stocktakingPallet == null)
+                return ("Dữ liệu kiểm kê kệ hàng không tồn tại.".ToMessageForUser(), default);
+
+            var stocktakingPalletMap = _mapper.Map<StocktakingPalletDto>(stocktakingPallet);
+         
+            return ("",  stocktakingPalletMap);
         }
     }
 }

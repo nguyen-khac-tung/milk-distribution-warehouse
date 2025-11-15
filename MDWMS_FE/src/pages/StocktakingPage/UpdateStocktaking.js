@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -9,14 +9,15 @@ import { Calendar, User, FileText } from 'lucide-react';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
 import { DatePicker, ConfigProvider } from 'antd';
 import dayjs from 'dayjs';
-import { createStocktaking } from '../../services/StocktakingService';
+import { updateStocktaking, getStocktakingDetail } from '../../services/StocktakingService';
 import { extractErrorMessage } from '../../utils/Validation';
 import AssignAreaModal from '../../components/StocktakingComponents/AssignAreaModal';
 import PermissionWrapper from '../../components/Common/PermissionWrapper';
 import { PERMISSIONS } from '../../utils/permissions';
 
-const CreateStocktaking = () => {
+const UpdateStocktaking = () => {
     const navigate = useNavigate();
+    const { id } = useParams(); // stocktakingSheetId từ URL
 
     // Get current user info from localStorage
     const currentUserInfo = useMemo(() => {
@@ -32,16 +33,52 @@ const CreateStocktaking = () => {
     }, []);
 
     const [formData, setFormData] = useState({
+        stocktakingSheetId: id || '',
         createdBy: currentUserInfo.fullName || '',
         startTime: null,
         reason: ''
     });
 
     const [fieldErrors, setFieldErrors] = useState({});
-    const [saveDraftLoading, setSaveDraftLoading] = useState(false);
+    const [updateLoading, setUpdateLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [showAssignModal, setShowAssignModal] = useState(false);
 
-    // Không set default values - người dùng phải tự chọn
+    // Load dữ liệu hiện tại
+    useEffect(() => {
+        const fetchStocktakingDetail = async () => {
+            if (!id) {
+                setLoading(false);
+                return;
+            }
+
+            try {
+                const response = await getStocktakingDetail(id);
+                // Handle different response structures
+                const data = response?.data || response;
+
+                if (data) {
+                    setFormData({
+                        stocktakingSheetId: data.stocktakingSheetId || id,
+                        createdBy: data.createByName || data.createdBy || currentUserInfo.fullName,
+                        startTime: data.startTime ? dayjs(data.startTime) : null,
+                        reason: data.note || ''
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching stocktaking detail:', error);
+                const errorMessage = extractErrorMessage(error);
+                if (window.showToast) {
+                    window.showToast(errorMessage || 'Không thể tải thông tin phiếu kiểm kê', 'error');
+                }
+                navigate('/stocktakings');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStocktakingDetail();
+    }, [id, navigate, currentUserInfo.fullName]);
 
     const handleInputChange = (field, value) => {
         setFormData(prev => {
@@ -79,31 +116,7 @@ const CreateStocktaking = () => {
         return isValid;
     };
 
-    const createStocktakingData = async () => {
-        // Format date giữ nguyên giờ local, không convert sang UTC
-        let startTimeISO = null;
-        if (formData.startTime) {
-            const date = dayjs(formData.startTime);
-            // Format: YYYY-MM-DDTHH:mm:ss (giữ nguyên giờ local)
-            startTimeISO = date.format('YYYY-MM-DDTHH:mm:ss');
-        }
-
-        const submitData = {
-            startTime: startTimeISO,
-            note: formData.reason.trim()
-        };
-
-        const response = await createStocktaking(submitData);
-        
-        // Extract stocktakingSheetId from response
-        const stocktakingSheetId = response?.data?.stocktakingSheetId || 
-                                  response?.stocktakingSheetId || 
-                                  response?.data?.data?.stocktakingSheetId;
-
-        return stocktakingSheetId;
-    };
-
-    const handleSaveDraft = async (e) => {
+    const handleUpdate = async (e) => {
         e.preventDefault();
 
         if (!validateForm()) {
@@ -111,24 +124,43 @@ const CreateStocktaking = () => {
             return;
         }
 
-        setSaveDraftLoading(true);
+        if (!formData.stocktakingSheetId) {
+            window.showToast('Không tìm thấy mã phiếu kiểm kê', 'error');
+            return;
+        }
+
+        setUpdateLoading(true);
         try {
-            await createStocktakingData();
+            // Format date giữ nguyên giờ local, không convert sang UTC
+            let startTimeISO = null;
+            if (formData.startTime) {
+                const date = dayjs(formData.startTime);
+                // Format: YYYY-MM-DDTHH:mm:ss (giữ nguyên giờ local)
+                startTimeISO = date.format('YYYY-MM-DDTHH:mm:ss');
+            }
+
+            const submitData = {
+                stocktakingSheetId: formData.stocktakingSheetId,
+                startTime: startTimeISO,
+                note: formData.reason.trim()
+            };
+
+            await updateStocktaking(submitData);
 
             if (window.showToast) {
-                window.showToast('Lưu nháp thành công!', 'success');
+                window.showToast('Cập nhật phiếu kiểm kê thành công!', 'success');
             }
-            
-            // Chỉ navigate về danh sách, không mở modal
+
+            // Navigate về danh sách sau khi cập nhật thành công
             navigate('/stocktakings');
         } catch (error) {
-            console.error('Error saving draft:', error);
+            console.error('Error updating stocktaking:', error);
             const errorMessage = extractErrorMessage(error);
             if (window.showToast) {
-                window.showToast(errorMessage || 'Có lỗi xảy ra khi lưu nháp', 'error');
+                window.showToast(errorMessage || 'Có lỗi xảy ra khi cập nhật', 'error');
             }
         } finally {
-            setSaveDraftLoading(false);
+            setUpdateLoading(false);
         }
     };
 
@@ -152,6 +184,13 @@ const CreateStocktaking = () => {
         navigate('/stocktakings');
     };
 
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -165,7 +204,7 @@ const CreateStocktaking = () => {
                         <ComponentIcon name="arrowBackCircleOutline" size={28} />
                     </button>
                     <h1 className="text-2xl font-bold text-slate-600 m-0">
-                        Tạo Đơn Kiểm Kê Mới
+                        Cập Nhật Đơn Kiểm Kê
                     </h1>
                 </div>
             </div>
@@ -279,16 +318,16 @@ const CreateStocktaking = () => {
                         <div className="flex justify-end gap-3 pt-6 border-t border-gray-200 mt-6">
                             <Button
                                 type="button"
-                                onClick={handleSaveDraft}
-                                disabled={saveDraftLoading}
+                                onClick={handleUpdate}
+                                disabled={updateLoading}
                                 className="h-[38px] px-6 bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {saveDraftLoading ? 'Đang lưu...' : 'Lưu nháp'}
+                                {updateLoading ? 'Đang cập nhật...' : 'Cập nhật'}
                             </Button>
                             <Button
                                 type="button"
                                 onClick={handleOpenAssignModal}
-                                disabled={saveDraftLoading}
+                                disabled={updateLoading}
                                 className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Phân công
@@ -307,14 +346,15 @@ const CreateStocktaking = () => {
                         setShowAssignModal(false);
                     }}
                     onSuccess={handleAssignmentSuccess}
-                    stocktakingSheetId={null} // Chưa có ID vì chưa tạo
+                    stocktakingSheetId={formData.stocktakingSheetId || id}
                     isReassign={false}
                     stocktaking={null}
-                    formData={formData} // Truyền formData để modal tự tạo khi confirm
+                    formData={formData} // Truyền formData để modal tự cập nhật khi confirm
                 />
             </PermissionWrapper>
         </div>
     );
 };
 
-export default CreateStocktaking;
+export default UpdateStocktaking;
+

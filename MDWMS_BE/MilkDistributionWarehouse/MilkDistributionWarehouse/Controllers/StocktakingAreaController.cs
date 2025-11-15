@@ -19,11 +19,21 @@ namespace MilkDistributionWarehouse.Controllers
             _stocktakingAreaService = stocktakingAreaService;
         }
 
-        [HttpGet("GetDetailByStocktakingSheetId/{stoctakingSheetId}")]
-        [Authorize(Roles = $"{RoleNames.WarehouseManager}, {RoleNames.WarehouseStaff}, {RoleNames.SalesManager}")]
-        public async Task<IActionResult> GetDetailStocktakingAreaByStocktakingSheetId(Guid stoctakingSheetId)
+        [HttpGet("GetDetailForWarehouseStaffByStocktakingSheetId/{stoctakingSheetId}")]
+        [Authorize(Roles = RoleNames.WarehouseStaff)]
+        public async Task<IActionResult> GetDetailStocktakingAreaByStocktakingSheetId(string stoctakingSheetId)
         {
-            var (msg, stocktakingAreaDetail) = await _stocktakingAreaService.GetStocktakingAreaByStocktakingSheetId(stoctakingSheetId);
+            var (msg, stocktakingAreaDetail) = await _stocktakingAreaService.GetStocktakingAreaByStocktakingSheetId(stoctakingSheetId, User.GetUserId());
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<StocktakingAreaDetailDto>.ToResultOk(stocktakingAreaDetail);
+        }
+
+        [HttpGet("GetDetailForOtherRoleByStocktakingSheetId/{stoctakingSheetId}")]
+        [Authorize(Roles = $"{RoleNames.WarehouseManager}, {RoleNames.SalesManager}")]
+        public async Task<IActionResult> GetDetailOtherRoleStocktakingAreaByStocktakingSheetId(string stoctakingSheetId)
+        {
+            var (msg, stocktakingAreaDetail) = await _stocktakingAreaService.GetStocktakingAreaByStocktakingSheetId(stoctakingSheetId, null);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<StocktakingAreaDetailDto>.ToResultOk(stocktakingAreaDetail);

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Search,
   Filter,
@@ -6,7 +6,8 @@ import {
   ChevronUp,
   Settings,
   RefreshCw,
-  X
+  X,
+  Calendar
 } from "lucide-react";
 import { Input } from "../ui/input";
 import ClearFiltersButton from "../Common/ClearFiltersButton";
@@ -39,10 +40,54 @@ export default function StocktakingFilterToggle({
   showPageSizeButton = false,
   // Refresh button
   onRefresh = null,
-  showRefreshButton = true
+  showRefreshButton = true,
+  // Date Range Filter
+  dateRangeFilter,
+  setDateRangeFilter,
+  showDateRangeFilter,
+  setShowDateRangeFilter,
+  onDateRangeFilter,
+  applyDateRangeFilter,
+  clearDateRangeFilter
 }) {
   const [showSearchFilter, setShowSearchFilter] = useState(defaultOpen);
   const [statusSearchQuery, setStatusSearchQuery] = useState("");
+  
+  // Refs for dropdown elements
+  const statusFilterRef = useRef(null);
+  const pageSizeFilterRef = useRef(null);
+  const dateRangeFilterRef = useRef(null);
+
+  // Handle click outside to close dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Close status filter dropdown if clicked outside
+      if (showStatusFilter && statusFilterRef.current && !statusFilterRef.current.contains(event.target)) {
+        setShowStatusFilter(false);
+        setStatusSearchQuery("");
+      }
+      
+      // Close page size filter dropdown if clicked outside
+      if (showPageSizeFilter && pageSizeFilterRef.current && !pageSizeFilterRef.current.contains(event.target)) {
+        setShowPageSizeFilter(false);
+      }
+      
+      // Close date range filter dropdown if clicked outside
+      if (showDateRangeFilter && dateRangeFilterRef.current && !dateRangeFilterRef.current.contains(event.target)) {
+        setShowDateRangeFilter(false);
+      }
+    };
+
+    // Add event listener when dropdowns are open
+    if (showStatusFilter || showPageSizeFilter || showDateRangeFilter) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    // Cleanup
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showStatusFilter, showPageSizeFilter, showDateRangeFilter]);
 
   const handleToggle = () => {
     setShowSearchFilter(!showSearchFilter);
@@ -117,7 +162,7 @@ export default function StocktakingFilterToggle({
 
               {/* Page Size Filter */}
               {showPageSizeButton && (
-                <div className="relative page-size-filter-dropdown">
+                <div className="relative page-size-filter-dropdown" ref={pageSizeFilterRef}>
                   <button
                     onClick={() => setShowPageSizeFilter(!showPageSizeFilter)}
                     className="flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706] transition-colors bg-white text-slate-700"
@@ -170,7 +215,7 @@ export default function StocktakingFilterToggle({
               </div>
 
               {/* Status Filter */}
-              <div className="relative status-filter-dropdown">
+              <div className="relative status-filter-dropdown" ref={statusFilterRef}>
                 <button
                   onClick={() => setShowStatusFilter(!showStatusFilter)}
                   className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors min-w-0 max-w-48
@@ -239,6 +284,63 @@ export default function StocktakingFilterToggle({
                   </div>
                 )}
               </div>
+
+              {/* Date Filter */}
+              {dateRangeFilter !== undefined && (
+                <div className="relative" ref={dateRangeFilterRef}>
+                  <button
+                    onClick={() => setShowDateRangeFilter(!showDateRangeFilter)}
+                    className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors
+                      focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
+                      ${(dateRangeFilter?.fromDate || dateRangeFilter?.toDate)
+                        ? 'bg-[#d97706] text-white hover:bg-[#d97706]'
+                        : 'bg-white text-slate-700 hover:bg-slate-50'
+                      }`}
+                  >
+                    <Calendar className="h-4 w-4 flex-shrink-0" />
+                    <span className="text-sm font-medium">
+                      Thời gian bắt đầu
+                    </span>
+                    <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                  </button>
+
+                  {showDateRangeFilter && (
+                    <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-50 p-4">
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-1">Chọn ngày</label>
+                          <input
+                            type="date"
+                            value={dateRangeFilter?.fromDate || dateRangeFilter?.toDate || ''}
+                            onChange={(e) => onDateRangeFilter({ fromDate: e.target.value, toDate: e.target.value })}
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]"
+                          />
+                        </div>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => {
+                              applyDateRangeFilter();
+                              setShowDateRangeFilter(false);
+                            }}
+                            className="flex-1 px-4 py-2 bg-[#d97706] text-white rounded-lg hover:bg-[#b45309] transition-colors text-sm font-medium"
+                          >
+                            Áp dụng
+                          </button>
+                          <button
+                            onClick={() => {
+                              clearDateRangeFilter();
+                              setShowDateRangeFilter(false);
+                            }}
+                            className="flex-1 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium"
+                          >
+                            Xóa
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Clear Filters Button - Đặt ở bên phải nhất */}
@@ -246,7 +348,7 @@ export default function StocktakingFilterToggle({
               <div className="w-full lg:w-auto flex justify-end">
                 <ClearFiltersButton
                   onClear={onClearAll}
-                  hasActiveFilters={!!(statusFilter || searchQuery)}
+                  hasActiveFilters={!!(statusFilter || searchQuery || (dateRangeFilter?.fromDate) || (dateRangeFilter?.toDate))}
                   buttonText="Bỏ lọc"
                   variant="outline"
                   size="sm"

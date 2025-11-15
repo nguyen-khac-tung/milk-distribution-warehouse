@@ -6,9 +6,10 @@ import { Plus } from "lucide-react";
 import Pagination from "../../components/Common/Pagination";
 import StocktakingFilterToggle from "../../components/StocktakingComponents/StocktakingFilterToggle";
 import CancelStocktakingModal from "../../components/StocktakingComponents/CancelStocktakingModal";
+import DeleteModal from "../../components/Common/DeleteModal";
 import StocktakingTable from "./StocktakingTable";
 import { extractErrorMessage } from "../../utils/Validation";
-import { getStocktakingListForWarehouseManager, getStocktakingListForWarehouseStaff, getStocktakingListForSaleManager, cancelStocktaking } from "../../services/StocktakingService";
+import { getStocktakingListForWarehouseManager, getStocktakingListForWarehouseStaff, getStocktakingListForSaleManager, cancelStocktaking, deleteStocktaking, inProgressStocktaking } from "../../services/StocktakingService";
 import { PERMISSIONS, STOCKTAKING_STATUS } from "../../utils/permissions";
 import { usePermissions } from "../../hooks/usePermissions";
 import PermissionWrapper from "../../components/Common/PermissionWrapper";
@@ -31,12 +32,18 @@ export default function StocktakingList() {
     const [statusFilter, setStatusFilter] = useState("");
     const [showStatusFilter, setShowStatusFilter] = useState(false);
     const [showPageSizeFilter, setShowPageSizeFilter] = useState(false);
+    const [dateRangeFilter, setDateRangeFilter] = useState({ fromDate: '', toDate: '' });
+    const [showDateRangeFilter, setShowDateRangeFilter] = useState(false);
     const [hasInitialLoad, setHasInitialLoad] = useState(false);
 
     // Cancel modal states
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [selectedStocktaking, setSelectedStocktaking] = useState(null);
     const [cancelLoading, setCancelLoading] = useState(false);
+
+    // Delete modal states
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleteLoading, setDeleteLoading] = useState(false);
 
     // Fetch data from API
     const fetchDataWithParams = async (params) => {
@@ -101,6 +108,14 @@ export default function StocktakingList() {
 
     // Helper function để tạo request params
     const createRequestParams = (overrides = {}) => {
+        // Format date filter: chỉ cần 1 ngày, format "date~date" để filter đúng ngày đó
+        let startTimeFilter = "";
+        const selectedDate = dateRangeFilter.fromDate || dateRangeFilter.toDate;
+        if (selectedDate) {
+            // Format: "date~date" để filter đúng ngày đó (từ đầu ngày đến cuối ngày)
+            startTimeFilter = `${selectedDate}~${selectedDate}`;
+        }
+
         return {
             pageNumber: pagination.current,
             pageSize: pagination.pageSize,
@@ -109,6 +124,7 @@ export default function StocktakingList() {
             sortAscending: sortAscending,
             filters: {
                 ...(statusFilter && { status: statusFilter }),
+                ...(startTimeFilter && { startTime: startTimeFilter }),
                 ...overrides.filters
             },
             ...overrides
@@ -210,6 +226,71 @@ export default function StocktakingList() {
         setSelectedStocktaking(null);
     };
 
+    const handleDeleteClick = (stocktaking) => {
+        setSelectedStocktaking(stocktaking);
+        setShowDeleteModal(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!selectedStocktaking) return;
+
+        setDeleteLoading(true);
+        try {
+            await deleteStocktaking(selectedStocktaking.stocktakingSheetId);
+
+            if (window.showToast) {
+                window.showToast("Xóa phiếu kiểm kê thành công!", "success");
+            }
+
+            setShowDeleteModal(false);
+            setSelectedStocktaking(null);
+            fetchData();
+        } catch (error) {
+            console.error("Error deleting stocktaking:", error);
+            const errorMessage = extractErrorMessage(error);
+            if (window.showToast) {
+                window.showToast(errorMessage || "Có lỗi xảy ra khi xóa phiếu kiểm kê", "error");
+            }
+        } finally {
+            setDeleteLoading(false);
+        }
+    };
+
+    const handleDeleteModalClose = () => {
+        setShowDeleteModal(false);
+        setSelectedStocktaking(null);
+    };
+
+    const handleStartStocktaking = async (stocktaking) => {
+        try {
+            // Kiểm tra canViewStocktakingArea
+            // Nếu canViewStocktakingArea = false → cần gọi API inProgressStocktaking (bắt đầu kiểm kê)
+            // Nếu canViewStocktakingArea = true → chỉ view, không gọi API nữa
+            if (stocktaking.canViewStocktakingArea === false || stocktaking.canViewStocktakingArea === undefined) {
+                // Chỉ gọi API khi chưa bắt đầu kiểm kê (canViewStocktakingArea = false)
+                if (stocktaking.status === STOCKTAKING_STATUS.Assigned || 
+                    stocktaking.status === 2 || 
+                    stocktaking.status === '2') {
+                    await inProgressStocktaking({ stocktakingSheetId: stocktaking.stocktakingSheetId });
+                    
+                    if (window.showToast) {
+                        window.showToast("Bắt đầu kiểm kê thành công!", "success");
+                    }
+                }
+            }
+            // Nếu canViewStocktakingArea = true, chỉ navigate, không gọi API
+            
+            // Navigate đến màn hình StocktakingArea
+            navigate(`/stocktaking-area/${stocktaking.stocktakingSheetId}`);
+        } catch (error) {
+            console.error("Error starting stocktaking:", error);
+            const errorMessage = extractErrorMessage(error);
+            if (window.showToast) {
+                window.showToast(errorMessage || "Có lỗi xảy ra khi bắt đầu kiểm kê", "error");
+            }
+        }
+    };
+
     const handlePageChange = (newPage) => {
         setPagination(prev => ({ ...prev, current: newPage }));
 
@@ -258,11 +339,34 @@ export default function StocktakingList() {
         fetchDataWithParams(requestParams);
     };
 
+    const handleDateRangeFilter = (value) => {
+        setDateRangeFilter(value);
+    };
+
+    const applyDateRangeFilter = () => {
+        setPagination(prev => ({ ...prev, current: 1 }));
+        const requestParams = createRequestParams({
+            pageNumber: 1
+        });
+        fetchDataWithParams(requestParams);
+    };
+
+    const clearDateRangeFilter = () => {
+        setDateRangeFilter({ fromDate: '', toDate: '' });
+        setPagination(prev => ({ ...prev, current: 1 }));
+        const requestParams = createRequestParams({
+            pageNumber: 1
+        });
+        fetchDataWithParams(requestParams);
+    };
+
     const clearAllFilters = () => {
         setSearchQuery("");
         setStatusFilter("");
+        setDateRangeFilter({ fromDate: '', toDate: '' });
         setPagination(prev => ({ ...prev, current: 1 }));
         setShowStatusFilter(false);
+        setShowDateRangeFilter(false);
 
         const emptyParams = {
             pageNumber: 1,
@@ -348,6 +452,13 @@ export default function StocktakingList() {
                         pageSizeOptions={[10, 20, 30, 40]}
                         onPageSizeChange={handlePageSizeChangeFilter}
                         showPageSizeButton={true}
+                        dateRangeFilter={dateRangeFilter}
+                        setDateRangeFilter={setDateRangeFilter}
+                        showDateRangeFilter={showDateRangeFilter}
+                        setShowDateRangeFilter={setShowDateRangeFilter}
+                        onDateRangeFilter={handleDateRangeFilter}
+                        applyDateRangeFilter={applyDateRangeFilter}
+                        clearDateRangeFilter={clearDateRangeFilter}
                     />
 
                     {/* Table */}
@@ -360,6 +471,8 @@ export default function StocktakingList() {
                         onView={handleViewClick}
                         onEdit={handleEditClick}
                         onCancel={handleCancelClick}
+                        onDelete={handleDeleteClick}
+                        onStartStocktaking={handleStartStocktaking}
                         onClearFilters={clearAllFilters}
                         loading={loading}
                     />
@@ -385,6 +498,14 @@ export default function StocktakingList() {
                     onClose={handleCancelModalClose}
                     onConfirm={handleCancelConfirm}
                     stocktakingSheetId={selectedStocktaking?.stocktakingSheetId || ''}
+                />
+
+                {/* Delete Confirmation Modal */}
+                <DeleteModal
+                    isOpen={showDeleteModal}
+                    onClose={handleDeleteModalClose}
+                    onConfirm={handleDeleteConfirm}
+                    itemName={"phiếu kiểm kê này"}
                 />
             </div>
         </div>

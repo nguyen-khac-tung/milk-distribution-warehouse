@@ -486,6 +486,9 @@ public partial class WarehouseContext : DbContext
         modelBuilder.Entity<StocktakingArea>(entity =>
         {
             entity.Property(e => e.StocktakingAreaId).ValueGeneratedNever();
+            entity.Property(e => e.StocktakingSheetId)
+                .HasMaxLength(100)
+                .IsUnicode(false);
 
             entity.HasOne(d => d.Area).WithMany(p => p.StocktakingAreas)
                 .HasForeignKey(d => d.AreaId)
@@ -544,7 +547,9 @@ public partial class WarehouseContext : DbContext
         {
             entity.HasKey(e => e.StocktakingSheetId).HasName("PK_StocktakingOrders");
 
-            entity.Property(e => e.StocktakingSheetId).ValueGeneratedNever();
+            entity.Property(e => e.StocktakingSheetId)
+                .HasMaxLength(100)
+                .IsUnicode(false);
             entity.Property(e => e.Note).HasMaxLength(255);
 
             entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.StocktakingSheets)

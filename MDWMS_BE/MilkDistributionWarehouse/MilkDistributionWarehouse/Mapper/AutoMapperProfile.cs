@@ -2,6 +2,7 @@
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
+using MilkDistributionWarehouse.Utilities;
 using static MilkDistributionWarehouse.Models.DTOs.PalletDto;
 
 namespace MilkDistributionWarehouse.Mapper
@@ -486,7 +487,7 @@ namespace MilkDistributionWarehouse.Mapper
             CreateMap<StocktakingSheet, StocktakingSheetDto>()
                 .ForMember(dest => dest.CreateByName, opt => opt.MapFrom(src => src.CreatedByNavigation.FullName));
             CreateMap<StocktakingSheetCreate, StocktakingSheet>()
-                .ForMember(dest => dest.StocktakingSheetId, opt => opt.MapFrom(_ => Guid.NewGuid()))
+                .ForMember(dest => dest.StocktakingSheetId, opt => opt.MapFrom(_ => PrimaryKeyUtility.GenerateStocktakingKey(null)))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => StocktakingStatus.Draft))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now));
             CreateMap<StocktakingSheet, StocktakingSheetDetail>()
@@ -495,6 +496,7 @@ namespace MilkDistributionWarehouse.Mapper
             //Map StocktakingArea
             CreateMap<StocktakingAreaCreate, StocktakingArea>()
                 .ForMember(dest => dest.StocktakingAreaId, opt => opt.MapFrom(_ => Guid.NewGuid()))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => StockAreaStatus.Pending))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now));
             CreateMap<StocktakingArea, StocktakingAreaDetail>()
                 .ForMember(dest => dest.AssignToName, opt => opt.MapFrom(src => src.AssignToNavigation.FullName))
@@ -502,6 +504,9 @@ namespace MilkDistributionWarehouse.Mapper
             CreateMap<StocktakingArea, StocktakingAreaDetailDto>()
                 .IncludeBase<StocktakingArea, StocktakingAreaDetail>()
                 .ForMember(dest => dest.StocktakingLocations, opt => opt.MapFrom(src => src.StocktakingLocations));
+            CreateMap<StocktakingAreaUpdate, StocktakingArea>()
+                .ForMember(dest => dest.StocktakingAreaId, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => DateTime.Now));
 
             //Map StocktakingLocation
             CreateMap<Location, StocktakingLocation>()
