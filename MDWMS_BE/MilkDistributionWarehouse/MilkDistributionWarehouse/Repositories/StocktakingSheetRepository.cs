@@ -30,16 +30,25 @@ namespace MilkDistributionWarehouse.Repositories
         public async Task<StocktakingSheet?> GetStocktakingSheetById(string stocktakingSheetId)
         {
             return await _context.StocktakingSheets
+
                 .Include(ss => ss.CreatedByNavigation)
+
                 .Include(ss => ss.StocktakingAreas)
                     .ThenInclude(sa => sa.AssignToNavigation)
+
                 .Include(ss => ss.StocktakingAreas)
                     .ThenInclude(sa => sa.Area)
                         .ThenInclude(a => a.StorageCondition)
-                    .ThenInclude(sa => sa.Areas)
+
+                .Include(ss => ss.StocktakingAreas)
+                    .ThenInclude(sa => sa.Area)
                         .ThenInclude(a => a.Locations)
+
+                .AsSplitQuery()
+                .AsNoTracking()
                 .FirstOrDefaultAsync(ss => ss.StocktakingSheetId.Equals(stocktakingSheetId));
         }
+
 
         public async Task<int> CreateStocktakingSheet(StocktakingSheet create)
         {
@@ -59,7 +68,28 @@ namespace MilkDistributionWarehouse.Repositories
         {
             try
             {
-                _context.StocktakingSheets.Update(update);
+                var trackedEntity = await _context.StocktakingSheets
+                    .FirstOrDefaultAsync(ss => ss.StocktakingSheetId == update.StocktakingSheetId);
+
+                if (trackedEntity != null)
+                {
+                    trackedEntity.Status = update.Status;
+                    trackedEntity.StartTime = update.StartTime;
+                    trackedEntity.Note = update.Note;
+                    trackedEntity.UpdateAt = update.UpdateAt;
+                }
+                else
+                {
+                    update.StocktakingAreas = null;
+                    update.CreatedByNavigation = null;
+
+                    _context.StocktakingSheets.Attach(update);
+                    _context.Entry(update).Property(x => x.Status).IsModified = true;
+                    _context.Entry(update).Property(x => x.StartTime).IsModified = true;
+                    _context.Entry(update).Property(x => x.Note).IsModified = true;
+                    _context.Entry(update).Property(x => x.UpdateAt).IsModified = true;
+                }
+
                 await _context.SaveChangesAsync();
                 return 1;
             }

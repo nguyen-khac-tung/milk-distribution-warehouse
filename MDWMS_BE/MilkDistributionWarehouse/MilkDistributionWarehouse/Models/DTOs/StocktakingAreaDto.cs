@@ -30,4 +30,21 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public List<StocktakingLocationDto> StocktakingLocations { get; set; }
     }
 
+    public class StocktakingAreaUpdateDto : AreaDto.StocktakingAreaDto
+    {
+        public Guid StocktakingAreaId { get; set; }
+    }
+    public class StocktakingAreaReAssignStatus
+    {
+        [Required (ErrorMessage = "Mã kiểm kê khu vực là bắt buộc")]
+        public Guid StocktakingAreaId { get; set; }
+        [Required (ErrorMessage = "Mã nhân viên phân công là bắt buộc")]
+        public int AssignTo { get; set; }
+    }
+
+    public class StocktakingAreaUpdateStatus
+    {
+        public Guid StocktakingAreaId { get; set; }
+        public int Status { get; set; }
+    }
 }
