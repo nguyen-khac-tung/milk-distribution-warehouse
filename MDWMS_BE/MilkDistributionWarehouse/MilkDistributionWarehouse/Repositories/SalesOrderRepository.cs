@@ -11,7 +11,7 @@ namespace MilkDistributionWarehouse.Repositories
     {
         IQueryable<SalesOrder> GetAllSalesOrders();
         IQueryable<SalesOrder> GetListSalesOrdersByStatus(int status);
-        Task<SalesOrder?> GetSalesOrderById(Guid? id);
+        Task<SalesOrder?> GetSalesOrderById(string? id);
         Task<bool> HasActiveSalesOrder(int retailerId);
         Task<bool> IsAllSalesOrderDraffOrEmpty(int retailerId);
         Task CreateSalesOrder(SalesOrder salesOrder);
@@ -47,7 +47,7 @@ namespace MilkDistributionWarehouse.Repositories
                     .Where(s => s.Status == status);
         }
 
-        public async Task<SalesOrder?> GetSalesOrderById(Guid? id)
+        public async Task<SalesOrder?> GetSalesOrderById(string? id)
         {
             return await _context.SalesOrders
                 .Include(s => s.Retailer)

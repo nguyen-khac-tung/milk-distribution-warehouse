@@ -335,7 +335,6 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.Goods, opt => opt.MapFrom(src => src.Goods))
                 .ForMember(dest => dest.GoodsPacking, opt => opt.MapFrom(src => src.GoodsPacking));
             CreateMap<SalesOrderCreateDto, SalesOrder>()
-                .ForMember(dest => dest.SalesOrderId, opt => opt.MapFrom(_ => Guid.NewGuid()))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => SalesOrderStatus.Draft))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now))
                 .ForMember(dest => dest.Note, opt => opt.MapFrom(src => src.Note ?? ""))
@@ -439,7 +438,6 @@ namespace MilkDistributionWarehouse.Mapper
 
             // Map GoodsIssueNote
             CreateMap<SalesOrder, GoodsIssueNote>()
-                .ForMember(dest => dest.GoodsIssueNoteId, opt => opt.MapFrom(_ => Guid.NewGuid()))
                 .ForMember(dest => dest.SalesOderId, opt => opt.MapFrom(src => src.SalesOrderId))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => GoodsIssueNoteStatus.Picking))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now))

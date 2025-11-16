@@ -5,9 +5,9 @@ using System.Collections.Generic;
 
 namespace MilkDistributionWarehouse.Models.Entities;
 
-public partial class GoodsIssueNote
+public partial class DisposalNote
 {
-    public string GoodsIssueNoteId { get; set; }
+    public string DisposalNoteId { get; set; }
 
     public int? Status { get; set; }
 
@@ -19,13 +19,13 @@ public partial class GoodsIssueNote
 
     public DateTime? UpdatedAt { get; set; }
 
-    public string SalesOderId { get; set; }
+    public string DisposalRequestId { get; set; }
 
     public virtual User ApprovalByNavigation { get; set; }
 
     public virtual User CreatedByNavigation { get; set; }
 
-    public virtual ICollection<GoodsIssueNoteDetail> GoodsIssueNoteDetails { get; set; } = new List<GoodsIssueNoteDetail>();
+    public virtual ICollection<DisposalNoteDetail> DisposalNoteDetails { get; set; } = new List<DisposalNoteDetail>();
 
-    public virtual SalesOrder SalesOder { get; set; }
+    public virtual DisposalRequest DisposalRequest { get; set; }
 }

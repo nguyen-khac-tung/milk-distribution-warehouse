@@ -14,11 +14,11 @@ namespace MilkDistributionWarehouse.Services
     public interface ISalesOrderService
     {
         Task<(string, PageResult<T>?)> GetSalesOrderList<T>(PagedRequest request, int? userId);
-        Task<(string, SalesOrderDetailDto?)> GetSalesOrderDetail(Guid? saleOrderId);
+        Task<(string, SalesOrderDetailDto?)> GetSalesOrderDetail(string? saleOrderId);
         Task<(string, SalesOrderCreateDto?)> CreateSalesOrder(SalesOrderCreateDto salesOrderCreate, int? userId);
         Task<(string, SalesOrderUpdateDto?)> UpdateSalesOrder(SalesOrderUpdateDto salesOrderUpdate, int? userId);
         Task<(string, T?)> UpdateStatusSalesOrder<T>(T salesOrderUpdateStatus, int? userId) where T : SaleSOrderUpdateStatusDto;
-        Task<string> DeleteSalesOrder(Guid? salesOrderId, int? userId);
+        Task<string> DeleteSalesOrder(string? salesOrderId, int? userId);
     }
 
 
@@ -93,7 +93,7 @@ namespace MilkDistributionWarehouse.Services
             return ("", result);
         }
 
-        public async Task<(string, SalesOrderDetailDto?)> GetSalesOrderDetail(Guid? saleOrderId)
+        public async Task<(string, SalesOrderDetailDto?)> GetSalesOrderDetail(string? saleOrderId)
         {
             if (saleOrderId == null) return ("SaleOrderId is invalid.", null);
             var salesOrder = await _salesOrderRepository.GetSalesOrderById(saleOrderId);
@@ -121,6 +121,7 @@ namespace MilkDistributionWarehouse.Services
                 await _unitOfWork.BeginTransactionAsync();
 
                 var salesOrder = _mapper.Map<SalesOrder>(salesOrderCreate);
+                salesOrder.SalesOrderId = PrimaryKeyUtility.GenerateKey("RET", "SO");
                 salesOrder.CreatedBy = userId;
                 await _salesOrderRepository.CreateSalesOrder(salesOrder);
 
@@ -196,7 +197,7 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
-        public async Task<string> DeleteSalesOrder(Guid? salesOrderId, int? userId)
+        public async Task<string> DeleteSalesOrder(string? salesOrderId, int? userId)
         {
             if (salesOrderId == null) return "SalesOrderId is invalid.";
 
