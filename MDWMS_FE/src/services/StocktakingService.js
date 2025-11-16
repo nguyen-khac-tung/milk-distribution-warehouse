@@ -375,3 +375,24 @@ export const submitStocktakingArea = async (stocktakingAreaId) => {
     }
 };
 
+// Phân công lại khu vực kiểm kê (Re-assign stocktaking area)
+export const reAssignStocktakingArea = async (stocktakingAreaId, assignTo) => {
+    try {
+        if (!stocktakingAreaId) {
+            throw new Error("stocktakingAreaId is required");
+        }
+        if (assignTo === undefined || assignTo === null) {
+            throw new Error("assignTo is required");
+        }
+        const body = {
+            stocktakingAreaId: stocktakingAreaId,
+            assignTo: assignTo
+        };
+        const res = await api.put("/StocktakingArea/ReAssignStocktakingArea", body);
+        return res.data;
+    } catch (error) {
+        console.error("Error re-assigning stocktaking area:", error);
+        throw error;
+    }
+};
+
