@@ -5,11 +5,11 @@ import { Button } from '../../components/ui/button';
 import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, MapPin, Clock, Calendar, User, Thermometer, Droplets, Sun, CheckCircle2 } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
-import { getStocktakingAreaDetailBySheetId, getStocktakingDetail, confirmStocktakingLocationCounted } from '../../services/StocktakingService';
+import { getStocktakingAreaDetailBySheetId, getStocktakingDetail, confirmStocktakingLocationCounted, submitStocktakingArea } from '../../services/StocktakingService';
 import { extractErrorMessage } from '../../utils/Validation';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
 import StatusDisplay from '../../components/StocktakingComponents/StatusDisplay';
-import LocationStatusDisplay from './LocationStatusDisplay';
+import LocationStatusDisplay, { STOCK_LOCATION_STATUS } from './LocationStatusDisplay';
 import ScanLocationStocktakingModal from '../../components/StocktakingComponents/ScanLocationStocktakingModal';
 import ScanPalletStocktakingModal from '../../components/StocktakingComponents/ScanPalletStocktakingModal';
 import dayjs from 'dayjs';
@@ -30,6 +30,7 @@ const StocktakingArea = () => {
     const [selectedLocation, setSelectedLocation] = useState(null);
     const [validatedLocationData, setValidatedLocationData] = useState(null);
     const [confirmingLocationId, setConfirmingLocationId] = useState(null);
+    const [submittingArea, setSubmittingArea] = useState(false);
     const isFetchingRef = useRef(false);
 
     useEffect(() => {
@@ -187,6 +188,45 @@ const StocktakingArea = () => {
             }
         } finally {
             setConfirmingLocationId(null);
+        }
+    };
+
+    const handleSubmitArea = async () => {
+        if (!stocktakingArea?.stocktakingAreaId || submittingArea) {
+            return;
+        }
+
+        // Kiểm tra xem tất cả locations đã ở trạng thái "Đã kiểm" chưa
+        const allLocations = stocktakingArea?.stocktakingLocations || [];
+        const allCounted = allLocations.length > 0 && allLocations.every(
+            location => location.status === STOCK_LOCATION_STATUS.Counted
+        );
+
+        if (!allCounted) {
+            if (window.showToast) {
+                window.showToast('Vui lòng kiểm kê tất cả các vị trí trước khi nộp!', 'warning');
+            }
+            return;
+        }
+
+        setSubmittingArea(true);
+        try {
+            await submitStocktakingArea(stocktakingArea.stocktakingAreaId);
+
+            if (window.showToast) {
+                window.showToast('Nộp kiểm kê thành công!', 'success');
+            }
+
+            // Refresh data sau khi submit
+            await handleRefresh();
+        } catch (error) {
+            console.error('Error submitting stocktaking area:', error);
+            const errorMessage = extractErrorMessage(error);
+            if (window.showToast) {
+                window.showToast(errorMessage || 'Có lỗi xảy ra khi nộp kiểm kê', 'error');
+            }
+        } finally {
+            setSubmittingArea(false);
         }
     };
 
@@ -433,77 +473,184 @@ const StocktakingArea = () => {
                         )}
                     </div>
 
-                    {expandedSections.check && (
-                        <div className="overflow-x-auto">
-                            <Table className="w-full">
-                                <TableHeader>
-                                    <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                                            Vị Trí
-                                        </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                                            Trạng Thái
-                                        </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                                            Hành Động
-                                        </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                                            Xác Nhận
-                                        </TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {stocktakingArea?.stocktakingLocations && stocktakingArea.stocktakingLocations.length > 0 ? (
-                                        stocktakingArea.stocktakingLocations.map((location, index) => (
-                                            <TableRow
-                                                key={location.stocktakingLocationId || index}
-                                                className="hover:bg-slate-50 border-b border-slate-200"
-                                            >
-                                                <TableCell className="px-6 py-4 text-slate-700">
-                                                    {location.locationCode || '-'}
-                                                </TableCell>
-                                                <TableCell className="px-6 py-4 text-center">
-                                                    <LocationStatusDisplay status={location.status} />
-                                                </TableCell>
-                                                <TableCell className="px-6 py-4 text-center">
-                                                    <Button
-                                                        onClick={() => handleProceedLocation(location)}
-                                                        className="bg-blue-500 hover:bg-blue-600 text-white text-sm px-4 py-2 h-8"
-                                                    >
-                                                        Tiến Hành
-                                                    </Button>
-                                                </TableCell>
-                                                <TableCell className="px-6 py-4 text-center">
-                                                    {location.isAvailable === true ? (
-                                                        <button
-                                                            onClick={() => handleConfirmCounted(location.stocktakingLocationId)}
-                                                            disabled={confirmingLocationId === location.stocktakingLocationId}
-                                                            className="flex items-center justify-center w-10 h-10 rounded-full bg-green-500 hover:bg-green-600 text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-green-500"
-                                                            title="Xác nhận trong hệ thống không có pallet và bên ngoài không có pallet"
-                                                        >
-                                                            {confirmingLocationId === location.stocktakingLocationId ? (
-                                                                <RefreshCw className="h-5 w-5 animate-spin" />
-                                                            ) : (
-                                                                <CheckCircle2 className="h-5 w-5" />
-                                                            )}
-                                                        </button>
+                    {expandedSections.check && (() => {
+                        // Phân loại locations thành 2 nhóm: Chưa kiểm kê và Đã kiểm kê
+                        const unCheckedLocations = stocktakingArea?.stocktakingLocations?.filter(
+                            location => location.status === STOCK_LOCATION_STATUS.Pending
+                        ) || [];
+
+                        const checkedLocations = stocktakingArea?.stocktakingLocations?.filter(
+                            location => location.status !== STOCK_LOCATION_STATUS.Pending
+                        ) || [];
+
+                        // Kiểm tra xem có location nào cần hiển thị cột Xác Nhận không (chỉ trong Chưa kiểm kê)
+                        const hasConfirmableLocation = unCheckedLocations.some(
+                            location => location.isAvailable === true && location.status === STOCK_LOCATION_STATUS.Pending
+                        );
+
+                        // Render function cho một row trong table
+                        const renderLocationRow = (location, index, isUnchecked = false) => {
+                            return (
+                                <TableRow
+                                    key={location.stocktakingLocationId || index}
+                                    className="hover:bg-slate-50 border-b border-slate-200"
+                                >
+                                    <TableCell className="px-6 py-4 text-slate-700">
+                                        {location.locationCode || '-'}
+                                    </TableCell>
+                                    <TableCell className="px-6 py-4 text-center">
+                                        <LocationStatusDisplay status={location.status} />
+                                    </TableCell>
+                                    <TableCell className="px-6 py-4 text-center">
+                                        <Button
+                                            onClick={() => handleProceedLocation(location)}
+                                            className={isUnchecked
+                                                ? "bg-blue-500 hover:bg-blue-600 text-white text-sm px-4 py-2 h-8"
+                                                : "bg-orange-300 hover:bg-orange-400 text-white text-sm px-4 py-2 h-8"
+                                            }
+                                        >
+                                            {isUnchecked ? 'Tiến Hành' : 'Kiểm kê lại'}
+                                        </Button>
+                                    </TableCell>
+                                    {isUnchecked && hasConfirmableLocation && (
+                                        <TableCell className="px-6 py-4 text-center">
+                                            {location.isAvailable === true && location.status === STOCK_LOCATION_STATUS.Pending ? (
+                                                <button
+                                                    onClick={() => handleConfirmCounted(location.stocktakingLocationId)}
+                                                    disabled={confirmingLocationId === location.stocktakingLocationId}
+                                                    className="flex items-center justify-center w-10 h-10 rounded-full bg-green-500 hover:bg-green-600 text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-green-500"
+                                                    title="Xác nhận trong hệ thống không có pallet và bên ngoài không có pallet"
+                                                >
+                                                    {confirmingLocationId === location.stocktakingLocationId ? (
+                                                        <RefreshCw className="h-5 w-5 animate-spin" />
                                                     ) : (
-                                                        <span className="text-gray-400 text-sm">-</span>
+                                                        <CheckCircle2 className="h-5 w-5" />
                                                     )}
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    ) : (
-                                        <TableRow>
-                                            <TableCell colSpan={4} className="px-6 py-8 text-center text-gray-500">
-                                                Không có vị trí nào để kiểm tra
-                                            </TableCell>
-                                        </TableRow>
+                                                </button>
+                                            ) : null}
+                                        </TableCell>
                                     )}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    )}
+                                </TableRow>
+                            );
+                        };
+
+                        const colSpanUnchecked = hasConfirmableLocation ? 4 : 3;
+                        const colSpanChecked = 3;
+
+                        return (
+                            <div className="space-y-6">
+                                {/* Card Chưa kiểm kê */}
+                                <Card className="border border-slate-200 shadow-sm">
+                                    <CardHeader className="pb-3">
+                                        <CardTitle className="text-lg font-semibold text-slate-700">
+                                            Chưa kiểm kê
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="overflow-x-auto">
+                                            <Table className="w-full">
+                                                <TableHeader>
+                                                    <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
+                                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                                            Vị Trí
+                                                        </TableHead>
+                                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                                                            Trạng Thái
+                                                        </TableHead>
+                                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                                                            Hành Động
+                                                        </TableHead>
+                                                        {hasConfirmableLocation && (
+                                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                                                                Xác Nhận
+                                                            </TableHead>
+                                                        )}
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {unCheckedLocations.length > 0 ? (
+                                                        unCheckedLocations.map((location, index) => renderLocationRow(location, index, true))
+                                                    ) : (
+                                                        <TableRow>
+                                                            <TableCell colSpan={colSpanUnchecked} className="px-6 py-8 text-center text-gray-500">
+                                                                Không có vị trí chưa kiểm kê
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    )}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                {/* Card Đã kiểm kê */}
+                                <Card className="border border-slate-200 shadow-sm">
+                                    <CardHeader className="pb-3">
+                                        <CardTitle className="text-lg font-semibold text-slate-700">
+                                            Đã kiểm kê
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="overflow-x-auto">
+                                            <Table className="w-full">
+                                                <TableHeader>
+                                                    <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
+                                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                                            Vị Trí
+                                                        </TableHead>
+                                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                                                            Trạng Thái
+                                                        </TableHead>
+                                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                                                            Hành Động
+                                                        </TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {checkedLocations.length > 0 ? (
+                                                        checkedLocations.map((location, index) => renderLocationRow(location, index, false))
+                                                    ) : (
+                                                        <TableRow>
+                                                            <TableCell colSpan={colSpanChecked} className="px-6 py-8 text-center text-gray-500">
+                                                                Không có vị trí đã kiểm kê
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    )}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+
+                                        {/* Button Nộp kiểm kê */}
+                                        {(() => {
+                                            const allLocations = stocktakingArea?.stocktakingLocations || [];
+                                            const allCounted = allLocations.length > 0 && allLocations.every(
+                                                location => location.status === STOCK_LOCATION_STATUS.Counted
+                                            );
+
+                                            return (
+                                                <div className="flex justify-end pt-4 border-t">
+                                                    <Button
+                                                        onClick={handleSubmitArea}
+                                                        disabled={submittingArea || !allCounted || allLocations.length === 0}
+                                                        className="bg-green-500 hover:bg-green-600 text-white font-medium px-6 py-2 h-10 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    >
+                                                        {submittingArea ? (
+                                                            <div className="flex items-center gap-2">
+                                                                <RefreshCw className="h-4 w-4 animate-spin" />
+                                                                <span>Đang nộp...</span>
+                                                            </div>
+                                                        ) : (
+                                                            'Nộp kiểm kê'
+                                                        )}
+                                                    </Button>
+                                                </div>
+                                            );
+                                        })()}
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        );
+                    })()}
                 </Card>
 
                 {/* Scan Location Modal */}

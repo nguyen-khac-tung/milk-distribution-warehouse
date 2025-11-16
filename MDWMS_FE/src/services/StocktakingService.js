@@ -358,3 +358,20 @@ export const confirmStocktakingLocationCounted = async (stocktakingLocationId) =
     }
 };
 
+// Nộp kiểm kê (Submit stocktaking area)
+export const submitStocktakingArea = async (stocktakingAreaId) => {
+    try {
+        if (!stocktakingAreaId) {
+            throw new Error("stocktakingAreaId is required");
+        }
+        const body = {
+            stocktakingAreaId: stocktakingAreaId
+        };
+        const res = await api.put("/StocktakingArea/Submit", body);
+        return res.data;
+    } catch (error) {
+        console.error("Error submitting stocktaking area:", error);
+        throw error;
+    }
+};
+
