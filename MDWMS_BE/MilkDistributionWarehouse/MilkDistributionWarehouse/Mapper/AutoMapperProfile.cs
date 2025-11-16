@@ -513,7 +513,8 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.HumidityMin, opt => opt.MapFrom(src => src.Area.StorageCondition.HumidityMin))
                 .ForMember(dest => dest.HumidityMax, opt => opt.MapFrom(src => src.Area.StorageCondition.HumidityMax))
                 .ForMember(dest => dest.LightLevel, opt => opt.MapFrom(src => src.Area.StorageCondition.LightLevel))
-                .ForMember(dest => dest.AssignName, opt => opt.MapFrom(src => src.AssignToNavigation.FullName));
+                .ForMember(dest => dest.AssignName, opt => opt.MapFrom(src => src.AssignToNavigation.FullName))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status));
 
             //Map StocktakingLocation
             CreateMap<Location, StocktakingLocation>()
@@ -524,7 +525,8 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.UpdateAt, opt => opt.Ignore());
             CreateMap<StocktakingArea, StocktakingLocationCreate>();
             CreateMap<StocktakingLocation, StocktakingLocationDto>()
-                .ForMember(dest => dest.LocationCode, opt => opt.MapFrom(src => src.Location.LocationCode));
+                .ForMember(dest => dest.LocationCode, opt => opt.MapFrom(src => src.Location.LocationCode))
+                .ForMember(dest => dest.IsAvailable, opt => opt.MapFrom(src => src.Location.IsAvailable));
 
             //Map StocktakingPallet
             CreateMap<Pallet, StocktakingPallet>()
