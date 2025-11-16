@@ -331,10 +331,9 @@ namespace MilkDistributionWarehouse.Services
             if (stocktakingAreaOfAssignedStaff == null)
                 return "Không tìm thấy khu vực được phân công cho nhân viên này.".ToMessageForUser();
 
-            var (msg, _) = await _stocktakingAreaService.UpdateStocktakingAreaStatus(new StocktakingAreaUpdateStatus
+            var (msg, _) = await _stocktakingAreaService.UpdateStocktakingAreaStatus(new StocktakingAreaPendingStatus
             {
                 StocktakingAreaId = stocktakingAreaOfAssignedStaff.StocktakingAreaId,
-                Status = StockAreaStatus.Pending,
             });
 
             if (!string.IsNullOrEmpty(msg))

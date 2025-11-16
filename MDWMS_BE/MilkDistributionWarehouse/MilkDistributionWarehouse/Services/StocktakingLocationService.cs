@@ -10,6 +10,7 @@ namespace MilkDistributionWarehouse.Services
     public interface IStocktakingLocationService
     {
         Task<(string, StocktakingLocationCreate?)> CreateStocktakingLocationBulk(StocktakingLocationCreate create);
+        Task<(string, StocktakingLocationResponse?)> UpdateStocktakingLocationStatus<T>(T update) where T : StocktakingLocationUpdateStatus;
     }
 
     public class StocktakingLocationService : IStocktakingLocationService
@@ -65,5 +66,57 @@ namespace MilkDistributionWarehouse.Services
 
             return ("", create);
         }
+
+        public async Task<(string, StocktakingLocationResponse?)> UpdateStocktakingLocationStatus<T> (T update) where T : StocktakingLocationUpdateStatus
+        {
+            if (update == null)
+                return ("Dữ liệu cập nhật kiểm kê vị trí không hợp lệ.", default);
+
+            var stocktakingLocationExist = await _stocktakingLocationRepository.GetStocktakingLocationById(update.StocktakingLocationId);
+            if (stocktakingLocationExist == null)
+                return ("Kiểm kê vị trí không tồn tại trong hệ thống.", default);
+
+            try
+            {
+                var errorMessage = update switch
+                {
+                    StocktakingLocationPendingStatus => HandleStocktakingLocationPending(stocktakingLocationExist),
+                    StocktakingLocationCountedStatus => HandleStocktakingLocationCounted(stocktakingLocationExist),
+                    StocktakingLocationPendingApprovalStatus => await HandleStocktakingLocationPendingApproval(stocktakingLocationExist),
+                    _ => "Cập nhật kiểm kê vị trí thất bại."
+                };
+
+                var updateResult = await _stocktakingLocationRepository.UpdateStocktakingLocation(stocktakingLocationExist);
+                if (updateResult == 0)
+                    throw new Exception("Cập nhật trạng thái kiểm kê vị trí thất bại.", default);
+
+                return ("", new StocktakingLocationResponse { StocktakingLocationId = update.StocktakingLocationId});
+            }
+            catch (Exception ex)
+            {
+                return ($"{ex.Message}", default);
+            }
+        }
+
+        private async Task<string> HandleStocktakingLocationPendingApproval(StocktakingLocation update)
+        {
+
+
+            update.Status = StockLocationStatus.PendingApproval;
+            return "";
+        }
+
+        private string HandleStocktakingLocationPending(StocktakingLocation update)
+        {
+            update.Status = StockLocationStatus.Pending;
+            return "";
+        }
+
+        private string HandleStocktakingLocationCounted(StocktakingLocation update)
+        {
+            update.Status = StockLocationStatus.Counted;
+            return "";
+        }
+
     }
 }

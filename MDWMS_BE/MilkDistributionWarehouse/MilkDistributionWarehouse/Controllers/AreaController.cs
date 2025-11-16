@@ -57,7 +57,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpGet("GetStocktakingArea/{stocktakingSheetId}")]
-        public async Task<IActionResult> GetStocktakingArea(string stocktakingSheetId)
+        public async Task<IActionResult> GetStocktakingArea(string? stocktakingSheetId)
         {
             var (msg, stocktakingArea) = await _areaService.GetStocktakingArea(stocktakingSheetId);
             if (!string.IsNullOrEmpty(msg))

@@ -81,7 +81,31 @@ namespace MilkDistributionWarehouse.Repositories
         {
             try
             {
-                _context.StocktakingPallets.Update(update);
+                var trackedEntity = await _context.StocktakingPallets
+                    .FirstOrDefaultAsync(sp => sp.StocktakingPalletId == update.StocktakingPalletId);
+
+                if (trackedEntity != null)
+                {
+                    trackedEntity.Status = update.Status;
+                    trackedEntity.ActualPackageQuantity = update.ActualPackageQuantity;
+                    trackedEntity.ExpectedPackageQuantity = update.ExpectedPackageQuantity;
+                    trackedEntity.Note = update.Note;
+                    trackedEntity.UpdateAt = update.UpdateAt;
+                }
+                else
+                {
+                    // Clear navigation properties before attaching to avoid tracking conflicts
+                    update.Pallet = null;
+                    update.StocktakingLocation = null;
+
+                    _context.StocktakingPallets.Attach(update);
+                    _context.Entry(update).Property(x => x.Status).IsModified = true;
+                    _context.Entry(update).Property(x => x.ActualPackageQuantity).IsModified = true;
+                    _context.Entry(update).Property(x => x.ExpectedPackageQuantity).IsModified = true;
+                    _context.Entry(update).Property(x => x.Note).IsModified = true;
+                    _context.Entry(update).Property(x => x.UpdateAt).IsModified = true;
+                }
+
                 await _context.SaveChangesAsync();
                 return 1;
             }
