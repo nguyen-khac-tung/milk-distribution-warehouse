@@ -114,6 +114,10 @@ namespace MilkDistributionWarehouse.Configurations
             services.AddScoped<IGoodsIssueNoteDetailRepository, GoodsIssueNoteDetailRepository>();
             services.AddScoped<IGoodsIssueNoteDetailService, GoodsIssueNoteDetailService>();
             
+            //Disposal Request
+            services.AddScoped<IDisposalRequestRepository, DisposalRequestRepository>();
+            services.AddScoped<IDisposalRequestService, DisposalRequestService>();
+
             //Picking Allocation
             services.AddScoped<IPickAllocationRepository, PickAllocationRepository>();
             services.AddScoped<IPickAllocationService, PickAllocationService>();
