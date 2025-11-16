@@ -581,6 +581,9 @@ namespace MilkDistributionWarehouse.Mapper
             CreateMap<StocktakingLocation, StocktakingLocationDto>()
                 .ForMember(dest => dest.LocationCode, opt => opt.MapFrom(src => src.Location.LocationCode))
                 .ForMember(dest => dest.IsAvailable, opt => opt.MapFrom(src => src.Location.IsAvailable));
+            CreateMap<StocktakingLocationRejectStatus, StocktakingLocation>()
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => StockLocationStatus.Pending))
+                .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => DateTime.Now));
 
             //Map StocktakingPallet
             CreateMap<Pallet, StocktakingPallet>()

@@ -4,6 +4,7 @@ using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Services;
 using MilkDistributionWarehouse.Utilities;
 using System.Threading.Tasks;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace MilkDistributionWarehouse.Controllers
 {
@@ -24,6 +25,24 @@ namespace MilkDistributionWarehouse.Controllers
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<StocktakingLocationResponse>.ToResultOk(stocktakingLocation);
+        }
+
+        [HttpPut("RejectRecords")]
+        public async Task<IActionResult> RejectStocktakingLocationBulk([FromBody] List<StocktakingLocationRejectStatus> update)
+        {
+            var (msg, stocktakingLocation) = await _stocktakingLocationService.RejectStocktakingLocationBulk(update);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<List<StocktakingLocationRejectStatus>>.ToResultOk(stocktakingLocation);
+        }
+
+        [HttpPut("CancelRecord")]
+        public async Task<IActionResult> CancelStocktakingLocationBulk([FromBody] List<StocktakingLocationCancelStatus> update)
+        {
+            var (msg, stocktakingLocation) = await _stocktakingLocationService.CancelStocktakingLocationBulk(update);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<List<StocktakingLocationCancelStatus>>.ToResultOk(stocktakingLocation);
         }
     }
 }
