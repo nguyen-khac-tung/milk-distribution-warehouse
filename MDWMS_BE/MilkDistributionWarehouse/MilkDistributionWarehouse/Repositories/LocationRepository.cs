@@ -20,7 +20,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<int> CreateLocationsBulk(List<Location> locations);
         Task<bool> IsDuplicateLocationCodeInAreaAsync(string locationCode, int areaId, int? excludeId = null);
         Task<bool> UpdateIsAvailableAsync(int? locationId, bool isAvailable);
-        Task<List<Location>> GetUnavailableLocationByAreaIdAsync(int areaId);
+        Task<List<Location>> GetActiveLocationByAreaIdAsync(int areaId);
     }
 
     public class LocationRepository : ILocationRepository
@@ -165,11 +165,10 @@ namespace MilkDistributionWarehouse.Repositories
             return true;
         }
 
-        public async Task<List<Location>> GetUnavailableLocationByAreaIdAsync(int areaId)
+        public async Task<List<Location>> GetActiveLocationByAreaIdAsync(int areaId)
         {
             return await _context.Locations
                 .Where(l => l.AreaId == areaId
-                       && l.IsAvailable == false
                        && l.Status == CommonStatus.Active)
                 .ToListAsync();
         }

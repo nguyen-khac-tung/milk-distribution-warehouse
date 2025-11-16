@@ -18,6 +18,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> HasDependentLocationsOrStocktakingsAsync(int areaId);
         Task<bool> VerifyStorageConditionUsage(int storageConditionId);
         Task<List<Area>> GetActiveAreasAsync();
+        Task<List<Area>> GetActiveAreasByStocktakingId(string stocktakingSheetId);
     }
 
     public class AreaRepository : IAreaRepository
@@ -126,5 +127,20 @@ namespace MilkDistributionWarehouse.Repositories
                 .AsNoTracking()
                 .ToListAsync();
         }
+
+        public async Task<List<Area>> GetActiveAreasByStocktakingId(string stocktakingSheetId)
+        {
+            return await _context.Areas
+                .Where(a => a.Status == CommonStatus.Active)
+                .Where(a => a.StocktakingAreas
+                    .Any(sa => sa.StocktakingSheetId == stocktakingSheetId))
+                .Include(a => a.StorageCondition)
+                .Include(a => a.Locations)
+                .Include(a => a.StocktakingAreas
+                    .Where(sa => sa.StocktakingSheetId == stocktakingSheetId)) 
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
     }
 }

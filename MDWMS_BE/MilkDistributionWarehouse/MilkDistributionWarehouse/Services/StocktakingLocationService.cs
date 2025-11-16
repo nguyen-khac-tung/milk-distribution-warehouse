@@ -29,7 +29,7 @@ namespace MilkDistributionWarehouse.Services
 
         public async Task<(string, StocktakingLocationCreate?)> CreateStocktakingLocationBulk(StocktakingLocationCreate create)
         {
-            var locations = await _locationRepository.GetUnavailableLocationByAreaIdAsync(create.AreaId);
+            var locations = await _locationRepository.GetActiveLocationByAreaIdAsync(create.AreaId);
 
             if (!locations.Any())
                 return ("Danh sách vị trí theo khu vực trống.", default);

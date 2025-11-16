@@ -11,7 +11,9 @@ namespace MilkDistributionWarehouse.Repositories
         Task<StocktakingArea?> GetStocktakingAreaByStocktakingSheetIdAndAssignTo(string stocktakingSheetId, int? assignTo);
         Task<List<Guid>> GetAreaIdsBySheetId(string stocktakingSheetId);
         Task<List<StocktakingArea>> GetStocktakingAreasByStocktakingSheetId(string stocktakingSheetId);
+        Task<StocktakingArea?> GetStocktakingAreaByStocktakingAreaId(Guid stocktakingAreaId);
         Task<int?> CreateStocktakingAreaBulk(List<StocktakingArea> creates);
+        Task<int> UpdateStocktakingArea(StocktakingArea stocktakingArea);
         Task<int?> UpdateStocktakingAreaBulk(List<StocktakingArea> updates);
         Task<bool> IsStocktakingAreaAssignTo(int? areaId, string stocktakingSheetId, int assignTo);
         Task<bool> IsCheckStocktakingAreaExist(string stocktakingSheetId);
@@ -22,6 +24,13 @@ namespace MilkDistributionWarehouse.Repositories
         public StocktakingAreaRepository(WarehouseContext context)
         {
             _context = context;
+        }
+
+        public async Task<StocktakingArea?> GetStocktakingAreaByStocktakingAreaId (Guid stocktakingAreaId)
+        {
+            return await _context.StocktakingAreas
+                .Include(sa => sa.StocktakingLocations)
+                .FirstOrDefaultAsync(sa => sa.StocktakingAreaId == stocktakingAreaId);
         }
 
         public async Task<List<Guid>> GetAreaIdsBySheetId(string stocktakingSheetId)
@@ -59,6 +68,20 @@ namespace MilkDistributionWarehouse.Repositories
                 await _context.StocktakingAreas.AddRangeAsync(creates);
                 await _context.SaveChangesAsync();
                 return creates.Count;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        public async Task<int> UpdateStocktakingArea(StocktakingArea stocktakingArea)
+        {
+            try
+            {
+                _context.StocktakingAreas.Update(stocktakingArea);  
+                await _context.SaveChangesAsync();
+                return 1;
             }
             catch
             {

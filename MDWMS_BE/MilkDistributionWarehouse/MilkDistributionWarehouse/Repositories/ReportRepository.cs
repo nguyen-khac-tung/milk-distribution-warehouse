@@ -35,6 +35,7 @@ namespace MilkDistributionWarehouse.Repositories
         {
             var query = _context.Batchs
                 .Include(b => b.Goods)
+                    .ThenInclude(g => g.UnitMeasure) // <- ensure UnitMeasure is loaded
                 .Include(b => b.Pallets)
                     .ThenInclude(p => p.Location)
                 .Where(b => b.Status == CommonStatus.Active && b.Pallets.Any(p => p.Status == CommonStatus.Active));
@@ -90,7 +91,7 @@ namespace MilkDistributionWarehouse.Repositories
                         query = request.SortAscending ? query.OrderBy(b => b.ManufacturingDate) : query.OrderByDescending(b => b.ManufacturingDate);
                         break;
                     case "ExpiryDate":
-                        query = request.SortAscending ? query.OrderBy(b => b.ExpiryDate) : query.OrderByDescending(b => b.ExpiryDate);
+                        query = request.SortAscending ? query.OrderBy(b => b.ExpiryDate) : request.SortAscending ? query.OrderBy(b => b.ExpiryDate) : query.OrderByDescending(b => b.ExpiryDate);
                         break;
                     default:
                         query = query.OrderByDescending(b => b.CreateAt);
@@ -112,6 +113,7 @@ namespace MilkDistributionWarehouse.Repositories
                     b.ExpiryDate,
                     GoodCode = b.Goods != null ? b.Goods.GoodsCode : null,
                     GoodName = b.Goods != null ? b.Goods.GoodsName : null,
+                    UnitMeasureName = b.Goods != null && b.Goods.UnitMeasure != null ? b.Goods.UnitMeasure.Name : null,
                     Pallets = b.Pallets
                         .Where(p => p.Status == CommonStatus.Active
                             && (!areaId.HasValue || (p.Location != null && p.Location.AreaId == areaId.Value)))
@@ -133,6 +135,7 @@ namespace MilkDistributionWarehouse.Repositories
                 ExpiryDate = b.ExpiryDate,
                 GoodsCode = b.GoodCode,
                 GoodName = b.GoodName,
+                UnitOfMeasure = b.UnitMeasureName,
                 PalletIds = b.Pallets.Select(p => p.PalletId.ToString()).Where(id => id != null).ToList(),
                 TotalPackageQuantity = b.Pallets.Sum(p => p.PackageQuantity),
                 LocationCodes = b.Pallets.Select(p => p.LocationCode).Where(l => l != null).Distinct().ToList()
@@ -262,6 +265,7 @@ namespace MilkDistributionWarehouse.Repositories
             var query = _context.GoodsReceiptNoteDetails
                 .AsNoTracking()
                 .Include(d => d.Goods)
+                    .ThenInclude(g => g.UnitMeasure) // <- ensure UnitMeasure is loaded for mapping
                 .Include(d => d.GoodsPacking)
                 .Include(d => d.GoodsReceiptNote)
                     .ThenInclude(grn => grn.PurchaseOder)
@@ -278,7 +282,7 @@ namespace MilkDistributionWarehouse.Repositories
 
             if (toDate.HasValue)
             {
-                var to = toDate.Value;
+                var to = toDate.Value.Date.AddDays(1).AddTicks(-1);
                 query = query.Where(d => d.GoodsReceiptNote.CreatedAt <= to);
             }
 
@@ -309,7 +313,8 @@ namespace MilkDistributionWarehouse.Repositories
                     UnitPerPackage = g.Select(x => x.UnitPerPackage).FirstOrDefault(p => p.HasValue),
                     ReceiptDate = g.Key.ReceiptDate,
                     TotalPackageQuantity = g.Sum(x => x.TotalPackageQuantity),
-                    TotalUnitQuantity = g.Sum(x => x.TotalUnitQuantity)
+                    TotalUnitQuantity = g.Sum(x => x.TotalUnitQuantity),
+                    UnitOfMeasure = g.Select(x => x.UnitOfMeasure).FirstOrDefault(u => !string.IsNullOrEmpty(u))
                 })
                 .ToList();
 
@@ -415,6 +420,8 @@ namespace MilkDistributionWarehouse.Repositories
                 .AsNoTracking()
                 .Include(d => d.Goods)
                     .ThenInclude(g => g.Supplier)
+                .Include(d => d.Goods)
+                    .ThenInclude(g => g.UnitMeasure) // <- ensure UnitMeasure is loaded for issue report
                 .Include(d => d.GoodsPacking)
                 .Include(d => d.GoodsIssueNote)
                     .ThenInclude(gin => gin.SalesOder)
@@ -432,7 +439,7 @@ namespace MilkDistributionWarehouse.Repositories
 
             if (toDate.HasValue)
             {
-                var to = toDate.Value;
+                var to = toDate.Value.Date.AddDays(1).AddTicks(-1);
                 query = query.Where(d => d.GoodsIssueNote.CreatedAt <= to);
             }
 
@@ -512,6 +519,7 @@ namespace MilkDistributionWarehouse.Repositories
                     GoodsId = (int)d.GoodsId,
                     GoodsCode = d.Goods?.GoodsCode,
                     GoodsName = d.Goods?.GoodsName,
+                    UnitOfMeasure = d.Goods?.UnitMeasure?.Name,
                     GoodsPackingId = d.GoodsPackingId ?? 0,
                     UnitPerPackage = d.GoodsPacking?.UnitPerPackage,
                     IssueDate = d.GoodsIssueNote?.CreatedAt,
@@ -534,6 +542,7 @@ namespace MilkDistributionWarehouse.Repositories
                     GoodsName = g.Select(x => x.GoodsName).FirstOrDefault(s => !string.IsNullOrEmpty(s)),
                     GoodsPackingId = Convert.ToInt32(g.Key.GoodsPackingId),
                     UnitPerPackage = g.Select(x => x.UnitPerPackage).FirstOrDefault(p => p.HasValue),
+                    UnitOfMeasure = g.Select(x => x.UnitOfMeasure).FirstOrDefault(u => !string.IsNullOrEmpty(u)),
                     IssueDate = g.Key.IssueDate,
                     TotalPackageQuantity = g.Sum(x => x.TotalPackageQuantity),
                     TotalUnitQuantity = g.Sum(x => x.TotalUnitQuantity)
