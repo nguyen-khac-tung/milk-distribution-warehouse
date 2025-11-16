@@ -3,7 +3,9 @@ using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
+using MilkDistributionWarehouse.Utilities;
 using System.Threading.Tasks;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace MilkDistributionWarehouse.Services
 {
@@ -11,6 +13,8 @@ namespace MilkDistributionWarehouse.Services
     {
         Task<(string, StocktakingLocationCreate?)> CreateStocktakingLocationBulk(StocktakingLocationCreate create);
         Task<(string, StocktakingLocationResponse?)> UpdateStocktakingLocationStatus<T>(T update) where T : StocktakingLocationUpdateStatus;
+        Task<(string, List<StocktakingLocationRejectStatus>?)> RejectStocktakingLocationBulk(List<StocktakingLocationRejectStatus> update);
+        Task<(string, List<StocktakingLocationCancelStatus>?)> CancelStocktakingLocationBulk(List<StocktakingLocationCancelStatus> update);
     }
 
     public class StocktakingLocationService : IStocktakingLocationService
@@ -19,13 +23,20 @@ namespace MilkDistributionWarehouse.Services
         private readonly IMapper _mapper;
         private readonly ILocationRepository _locationRepository;
         private readonly IStocktakingPalletService _stocktakingPalletService;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IStocktakingPalletRepository _stocktakingPalletRepository;
+        private readonly IStocktakingAreaRepository _stocktakingAreaRepository;
         public StocktakingLocationService(IStocktakingLocationRepository stocktakingLocationRepository, IMapper mapper,
-            ILocationRepository locationRepository, IStocktakingPalletService stocktakingPalletService)
+            ILocationRepository locationRepository, IStocktakingPalletService stocktakingPalletService, IUnitOfWork unitOfWork,
+            IStocktakingPalletRepository stocktakingPalletRepository, IStocktakingAreaRepository stocktakingAreaRepository)
         {
             _stocktakingLocationRepository = stocktakingLocationRepository;
             _mapper = mapper;
             _locationRepository = locationRepository;
             _stocktakingPalletService = stocktakingPalletService;
+            _unitOfWork = unitOfWork;
+            _stocktakingPalletRepository = stocktakingPalletRepository;
+            _stocktakingAreaRepository = stocktakingAreaRepository;
         }
 
         public async Task<(string, StocktakingLocationCreate?)> CreateStocktakingLocationBulk(StocktakingLocationCreate create)
@@ -50,7 +61,7 @@ namespace MilkDistributionWarehouse.Services
                 stocktakingLocations.Add(stocktakingLocation);
                 stocktakingPalletCreates.Add(new StocktakingPalletCreate
                 {
-                    StocktakingLocationid = stocktakingLocation.StocktakingLocationId,
+                    StocktakingLocationId = stocktakingLocation.StocktakingLocationId,
                     LocationId = location.LocationId
                 });
             }
@@ -67,7 +78,7 @@ namespace MilkDistributionWarehouse.Services
             return ("", create);
         }
 
-        public async Task<(string, StocktakingLocationResponse?)> UpdateStocktakingLocationStatus<T> (T update) where T : StocktakingLocationUpdateStatus
+        public async Task<(string, StocktakingLocationResponse?)> UpdateStocktakingLocationStatus<T>(T update) where T : StocktakingLocationUpdateStatus
         {
             if (update == null)
                 return ("Dữ liệu cập nhật kiểm kê vị trí không hợp lệ.", default);
@@ -90,7 +101,7 @@ namespace MilkDistributionWarehouse.Services
                 if (updateResult == 0)
                     throw new Exception("Cập nhật trạng thái kiểm kê vị trí thất bại.", default);
 
-                return ("", new StocktakingLocationResponse { StocktakingLocationId = update.StocktakingLocationId});
+                return ("", new StocktakingLocationResponse { StocktakingLocationId = update.StocktakingLocationId });
             }
             catch (Exception ex)
             {
@@ -98,10 +109,152 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
+        public async Task<(string, List<StocktakingLocationRejectStatus>?)> RejectStocktakingLocationBulk(List<StocktakingLocationRejectStatus> update)
+        {
+            if (!update.Any())
+                return ("Danh sách từ chối kiểm kê trống.", default);
+
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                var(msg, stocktakingLocations) = await ValidationStocktakingLocationUpdateBulk(update, StockLocationStatus.PendingApproval);
+                if(!string.IsNullOrEmpty(msg))
+                    throw new Exception(msg);
+
+                (msg, _) = await DeleteStocktakingPalletBulk(update);
+                if(!string.IsNullOrEmpty(msg))
+                    throw new Exception(msg);
+
+                var stocktakingPalletCreates = update.Select(sl => new StocktakingPalletCreate
+                {
+                    StocktakingLocationId = sl.StocktakingLocationId,
+                    LocationId = sl.LocationId
+                }).ToList();
+
+                (msg, _) = await _stocktakingPalletService.CreateStocktakingPalletBulk(stocktakingPalletCreates);
+                if (!string.IsNullOrEmpty(msg))
+                    throw new Exception(msg);
+
+                var updateStocktakingLocationBulksResult = await _stocktakingLocationRepository.UpdateStocktakingLocationBulk(stocktakingLocations);
+
+                if (updateStocktakingLocationBulksResult == 0)
+                    throw new Exception("Cập nhật trạng thái của kiểm kể vị trí thất bại.");
+
+                var stocktakingAreaId = stocktakingLocations.FirstOrDefault().StocktakingAreaId;
+
+                msg = await UpdateStocktakingAreaStatus((Guid)stocktakingAreaId, StockAreaStatus.Pending);
+                if(!string.IsNullOrEmpty(msg))
+                    throw new Exception(msg);
+
+                await _unitOfWork.CommitTransactionAsync();
+                return ("", update);
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ($"{ex.Message}", default);
+            }
+        }
+
+        private async Task<string> UpdateStocktakingAreaStatus(Guid stocktakingAreaId, int statusChange)
+        {
+            var stocktakingArea = await _stocktakingAreaRepository.GetStocktakingAreaByStocktakingAreaId(stocktakingAreaId);
+            if (stocktakingArea == null)
+                return "Kiểm kê khu vực trống.";
+
+            stocktakingArea.Status = statusChange;
+            stocktakingArea.UpdateAt =DateTime.Now;
+            
+            var updateResult = await _stocktakingAreaRepository.UpdateStocktakingArea(stocktakingArea);
+            if (updateResult == 0) return "Cập nhật trạng thái của kiểm kê khu vực thất bại.";
+
+            return "";
+        }
+
+        public async Task<(string, List<StocktakingLocationCancelStatus>?)> CancelStocktakingLocationBulk(List<StocktakingLocationCancelStatus> update)
+        {
+            if (!update.Any())
+                return ("Danh sách từ chối kiểm kê trống.", default);
+
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                var (msg, stocktakingLocations) = await ValidationStocktakingLocationUpdateBulk(update, StockLocationStatus.Counted);
+                if (!string.IsNullOrEmpty(msg))
+                    throw new Exception(msg);
+
+                (msg, _) = await DeleteStocktakingPalletBulk(update);
+                if (!string.IsNullOrEmpty(msg))
+                    throw new Exception(msg);
+
+                var stocktakingPalletCreates = update.Select(sl => new StocktakingPalletCreate
+                {
+                    StocktakingLocationId = sl.StocktakingLocationId,
+                    LocationId = sl.LocationId
+                }).ToList();
+
+                (msg, _) = await _stocktakingPalletService.CreateStocktakingPalletBulk(stocktakingPalletCreates);
+                if (!string.IsNullOrEmpty(msg))
+                    throw new Exception(msg);
+
+                var updateStocktakingLocationBulksResult = await _stocktakingLocationRepository.UpdateStocktakingLocationBulk(stocktakingLocations);
+
+                if (updateStocktakingLocationBulksResult == 0)
+                    throw new Exception("Cập nhật trạng thái của kiểm kể vị trí thất bại.");
+
+                await _unitOfWork.CommitTransactionAsync();
+                return ("", update);
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ($"{ex.Message}", default);
+            }
+        }
+
+        private async Task<(string, int?)> DeleteStocktakingPalletBulk <T> (List<T> rejectStatuses) where T : StocktakingLocationUpdateStatus
+        {
+            var stocktakingLocationIds = rejectStatuses.Select(sl => sl.StocktakingLocationId).ToList();
+            
+            var stocktakingPallets = await _stocktakingPalletRepository.GetStocktakingPalletsByStocktakingLocationIds(stocktakingLocationIds);
+
+            if (!stocktakingPallets.Any())
+                return ("Danh sách mã kiểm kê kệ kê hàng trống.", default);
+
+            var deleteStocktakingPalletBulkResult = await _stocktakingPalletRepository.DeleteStocktakingPalletBulk(stocktakingPallets);
+            if (deleteStocktakingPalletBulkResult == 0)
+                return ("Xoá danh sách kiểm kê kệ kê hàng thất bại.", default);
+
+            return ("",  deleteStocktakingPalletBulkResult);
+        }
+
+        private async Task<(string, List<StocktakingLocation>?)> ValidationStocktakingLocationUpdateBulk <T> (List<T> rejectStatuses, int statusCheck) where T : StocktakingLocationUpdateStatus
+        {
+            var stocktakingLocations = new List<StocktakingLocation>();
+
+            foreach (var item in rejectStatuses)
+            {
+                var stocktakingLocation = await _stocktakingLocationRepository.GetStocktakingLocationById(item.StocktakingLocationId);
+                if (stocktakingLocation == null)
+                    return ($"Kiểm kê vị trí có mã [{item.StocktakingLocationId}] không tồn tại trong hệ thống.", default);
+
+                if (statusCheck == StockLocationStatus.PendingApproval && stocktakingLocation.Status != StockLocationStatus.PendingApproval)
+                    return ("Chỉ được từ chối kiểm kê vị trí khi kiểm kê vị trí ở trạng thái Chờ duyệt.".ToMessageForUser(), default);
+
+                if (statusCheck == StockLocationStatus.Counted && stocktakingLocation.Status != StockLocationStatus.Counted)
+                    return ("Chỉ được kiểm kê lại vị trí khi kiểm kê vị trí ở trạng thái Đã kiểm.".ToMessageForUser(), default);
+
+                stocktakingLocation.Status = StockLocationStatus.Pending;
+                stocktakingLocation.UpdateAt = DateTime.Now;
+                stocktakingLocations.Add(stocktakingLocation);
+            }
+            return ("", stocktakingLocations);
+        }
+
         private async Task<string> HandleStocktakingLocationPendingApproval(StocktakingLocation update)
         {
-
-
             update.Status = StockLocationStatus.PendingApproval;
             return "";
         }

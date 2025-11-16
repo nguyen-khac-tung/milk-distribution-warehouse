@@ -154,7 +154,9 @@ public partial class WarehouseContext : DbContext
                 .IsRequired()
                 .HasMaxLength(50)
                 .IsUnicode(false);
-            entity.Property(e => e.Status).HasDefaultValue(1);
+            entity.Property(e => e.Status)
+                .HasDefaultValue(1)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF__DisposalN__Statu__1F63A897");
 
             entity.HasOne(d => d.ApprovalByNavigation).WithMany(p => p.DisposalNoteApprovalByNavigations)
                 .HasForeignKey(d => d.ApprovalBy)
@@ -180,7 +182,9 @@ public partial class WarehouseContext : DbContext
                 .IsUnicode(false);
             entity.Property(e => e.Note).HasMaxLength(255);
             entity.Property(e => e.RejectionReason).HasMaxLength(255);
-            entity.Property(e => e.Status).HasDefaultValue(1);
+            entity.Property(e => e.Status)
+                .HasDefaultValue(1)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF__DisposalN__Statu__22401542");
 
             entity.HasOne(d => d.DisposalNote).WithMany(p => p.DisposalNoteDetails)
                 .HasForeignKey(d => d.DisposalNoteId)
@@ -275,7 +279,9 @@ public partial class WarehouseContext : DbContext
                 .IsRequired()
                 .HasMaxLength(50)
                 .IsUnicode(false);
-            entity.Property(e => e.Status).HasDefaultValue(1);
+            entity.Property(e => e.Status)
+                .HasDefaultValue(1)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF__GoodsIssu__Statu__2DE6D218");
 
             entity.HasOne(d => d.ApprovalByNavigation).WithMany(p => p.GoodsIssueNoteApprovalByNavigations)
                 .HasForeignKey(d => d.ApprovalBy)
@@ -299,7 +305,9 @@ public partial class WarehouseContext : DbContext
                 .IsUnicode(false);
             entity.Property(e => e.Note).HasMaxLength(255);
             entity.Property(e => e.RejectionReason).HasMaxLength(255);
-            entity.Property(e => e.Status).HasDefaultValue(1);
+            entity.Property(e => e.Status)
+                .HasDefaultValue(1)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF__GoodsIssu__Statu__2CF2ADDF");
 
             entity.HasOne(d => d.Goods).WithMany(p => p.GoodsIssueNoteDetails)
                 .HasForeignKey(d => d.GoodsId)
@@ -453,7 +461,9 @@ public partial class WarehouseContext : DbContext
                 .HasMaxLength(26)
                 .IsUnicode(false)
                 .IsFixedLength();
-            entity.Property(e => e.Status).HasDefaultValue(1);
+            entity.Property(e => e.Status)
+                .HasDefaultValue(1)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF__PickAlloc__Statu__2EDAF651");
 
             entity.HasOne(d => d.DisposalNoteDetail).WithMany(p => p.PickAllocations)
                 .HasForeignKey(d => d.DisposalNoteDetailId)
@@ -634,6 +644,7 @@ public partial class WarehouseContext : DbContext
 
             entity.Property(e => e.StocktakingLocationId).ValueGeneratedNever();
             entity.Property(e => e.Note).HasMaxLength(255);
+            entity.Property(e => e.RejectReason).HasMaxLength(100);
 
             entity.HasOne(d => d.Location).WithMany(p => p.StocktakingLocations)
                 .HasForeignKey(d => d.LocationId)
