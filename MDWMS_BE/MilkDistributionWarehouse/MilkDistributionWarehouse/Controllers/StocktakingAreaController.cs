@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
+using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Services;
 using MilkDistributionWarehouse.Utilities;
 using System.Threading.Tasks;
@@ -47,6 +48,15 @@ namespace MilkDistributionWarehouse.Controllers
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<StocktakingAreaReAssignStatus>.ToResultOk(stocktakingArea);
+        }
+
+        [HttpPut("Submit")]
+        public async Task<IActionResult> SubmitStocktakingArea([FromBody] StocktakingAreaPendingAprrovalStatus update)
+        {
+            var (msg, stocktakingArea) = await _stocktakingAreaService.UpdateStocktakingAreaStatus(update);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<StocktakingAreaResponse>.ToResultOk(stocktakingArea);
         }
     }
 }

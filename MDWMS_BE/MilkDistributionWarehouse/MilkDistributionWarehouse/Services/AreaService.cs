@@ -20,7 +20,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, AreaDto.AreaResponseDto)> DeleteArea(int areaId);
         Task<(string, AreaDto.AreaResponseDto)> UpdateStatus(int areaId, int status);
         Task<(string, List<AreaDto.AreaActiveDto>)> GetAreaDropdown();
-        Task<(string, List<AreaDto.StocktakingAreaDto>?)> GetStocktakingArea(string stocktakingSheetId);
+        Task<(string, List<AreaDto.StocktakingAreaDto>?)> GetStocktakingArea(string? stocktakingSheetId);
     }
 
     public class AreaService : IAreaService
@@ -191,12 +191,20 @@ namespace MilkDistributionWarehouse.Services
             return ("", areaDtos);
         }
 
-        public async Task<(string, List<AreaDto.StocktakingAreaDto>?)> GetStocktakingArea(string stocktakingSheetId)
+        public async Task<(string, List<AreaDto.StocktakingAreaDto>?)> GetStocktakingArea(string? stocktakingSheetId)
         {
-            var areas = await _areaRepository.GetActiveAreasByStocktakingId(stocktakingSheetId);
+            var areas = await _areaRepository.GetActiveAreasByStocktakingId();
 
             var results = new List<AreaDto.StocktakingAreaDto>();
 
+            if (string.IsNullOrEmpty(stocktakingSheetId))
+            {
+                var areaMap = _mapper.Map<List<AreaDto.StocktakingAreaDto>>(areas);
+                if(!areaMap.Any())
+                    return ("Danh sách khu vực để kiểm kê trống.", default);
+                return ("", areaMap);
+            } 
+                
             foreach (var a in areas)
             {
                 var assignTo = await _userRepository.GetAssignToStockArea(stocktakingSheetId, a.AreaId);

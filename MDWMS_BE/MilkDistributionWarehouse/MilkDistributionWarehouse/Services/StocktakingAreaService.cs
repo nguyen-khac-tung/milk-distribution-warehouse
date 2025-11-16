@@ -1,11 +1,13 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http.HttpResults;
+using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
 using MilkDistributionWarehouse.Utilities;
 using System.Linq;
 using System.Threading.Tasks;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace MilkDistributionWarehouse.Services
 {
@@ -15,7 +17,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, StocktakingSheeteResponse?)> CreateStocktakingAreaBulk(string stocktakingSheetId, List<StocktakingAreaCreate> creates);
         Task<(string, StocktakingSheeteResponse?)> UpdateStocktakingAreaBulk(string stocktakingSheetId, List<StocktakingAreaUpdate> updates);
         Task<(string, StocktakingAreaReAssignStatus?)> UpdateStocktakingReAssignTo(StocktakingAreaReAssignStatus update);
-        Task<(string, StocktakingArea?)> UpdateStocktakingAreaStatus(StocktakingAreaUpdateStatus update);
+        Task<(string, StocktakingAreaResponse?)> UpdateStocktakingAreaStatus<T>(T update) where T : StocktakingAreaUpdateStatus;
     }
     public class StocktakingAreaService : IStocktakingAreaService
     {
@@ -108,18 +110,48 @@ namespace MilkDistributionWarehouse.Services
             return ("", default);
         }
 
-        public async Task<(string, StocktakingArea?)> UpdateStocktakingAreaStatus(StocktakingAreaUpdateStatus update)
+        //public async Task<(string, StocktakingArea?)> UpdateStocktakingAreaStatus(StocktakingAreaUpdateStatus update)
+        //{
+        //    var stocktakingArea = await _stocktakingAreaRepository.GetStocktakingAreaByStocktakingAreaId(update.StocktakingAreaId);
+        //    if (stocktakingArea == null) return ("Kiểm kê khu vực không tồn tại.", default);
+
+        //    stocktakingArea.Status = update.Status;
+        //    stocktakingArea.UpdateAt = DateTime.Now;
+
+        //    var updateResult = await _stocktakingAreaRepository.UpdateStocktakingArea(stocktakingArea);
+        //    if (updateResult == 0) return ("Cập nhật kiểm kê khu vực thất bại.", default);
+
+        //    return ("", stocktakingArea);
+        //}
+
+        public async Task<(string, StocktakingAreaResponse?)> UpdateStocktakingAreaStatus <T>(T update) where T : StocktakingAreaUpdateStatus
         {
             var stocktakingArea = await _stocktakingAreaRepository.GetStocktakingAreaByStocktakingAreaId(update.StocktakingAreaId);
             if (stocktakingArea == null) return ("Kiểm kê khu vực không tồn tại.", default);
 
-            stocktakingArea.Status = update.Status;
-            stocktakingArea.UpdateAt = DateTime.Now;
+            try
+            {
+                var errorMessage = update switch
+                {
+                    StocktakingAreaPendingStatus => await HandleStocktakingAreaPending(stocktakingArea),
+                    StocktakingAreaPendingAprrovalStatus => await HandleStocktakingAreaPendingApproval(stocktakingArea),
+                    _ => "Cập nhật trạng thái của kiểm kê khu vực thất bại."
+                };
 
-            var updateResult = await _stocktakingAreaRepository.UpdateStocktakingArea(stocktakingArea);
-            if (updateResult == 0) return ("Cập nhật kiểm kê khu vực thất bại.", default);
+                if(!string.IsNullOrEmpty(errorMessage))
+                    throw new Exception(errorMessage);
 
-            return ("", stocktakingArea);
+                stocktakingArea.UpdateAt = DateTime.Now;
+
+                var updateResult = await _stocktakingAreaRepository.UpdateStocktakingArea(stocktakingArea);
+                if (updateResult == 0) return ("Cập nhật kiểm kê khu vực thất bại.", default);
+
+                return ("", new StocktakingAreaResponse { StocktakingAreaId = update.StocktakingAreaId});
+            }
+            catch (Exception ex)
+            {
+                return ($"{ex.Message}", default);
+            }
         }
 
         public async Task<(string, StocktakingAreaReAssignStatus?)> UpdateStocktakingReAssignTo(StocktakingAreaReAssignStatus update)
@@ -209,6 +241,50 @@ namespace MilkDistributionWarehouse.Services
         {
             var areas = await _areaRepository.GetActiveAreasAsync();
             return areas.All(area => areaCreates.Any(ac => ac.AreaId == area.AreaId && ac.AssignTo != 0));
+        }
+
+        private async Task<string> HandleStocktakingAreaPendingApproval(StocktakingArea stocktakingArea)
+        {
+            if (stocktakingArea.StocktakingAreaId == Guid.Empty)
+                return "Mã kiểm kê khu vực không hợp lệ.";
+
+            if (stocktakingArea.Status != StockAreaStatus.Pending)
+                return "Chỉ được chuyển sang trạng thái Chờ duyệt khi trạng thái của kiểm kê khu vực là Đang chờ kiểm kê.";
+
+            var anyStockLocationPending = await _stocktakingLocationRepository.AnyStocktakingLocationPendingStatus((Guid)stocktakingArea.StocktakingAreaId);
+
+            if (anyStockLocationPending)
+                return "Chỉ được chuyển trạng thái Chờ duyệt khi toàn bộ các vị trị ở trạng thái Đã kiểm kê.".ToMessageForUser();
+
+            if (!stocktakingArea.StocktakingLocations.Any())
+                return "Danh sách kiểm kê vị trí của khu vực này trống.";
+
+            var message = UpdateStocktakingLocationStatusPendingApproval((List<StocktakingLocation>)stocktakingArea.StocktakingLocations);
+            if(!string.IsNullOrEmpty(message))
+                return message;
+
+            stocktakingArea.Status = StockAreaStatus.PendingApproval;
+            return "";
+        }
+
+        private async Task<string> HandleStocktakingAreaPending(StocktakingArea stocktakingArea)
+        {
+            stocktakingArea.Status = StockAreaStatus.Pending;
+            return "";
+        }
+
+        private string UpdateStocktakingLocationStatusPendingApproval(List<StocktakingLocation> stocktakingLocations)
+        {
+            string message = "";
+            foreach (var stockLocation in stocktakingLocations)
+            {
+                if (stockLocation.Status != StockLocationStatus.Counted)
+                    return $"Kiểm kê vị trí [{stockLocation.LocationId}] đang ở trạng thái khác trạng thái đã kiểm tra.";
+                stockLocation.Status = StockLocationStatus.PendingApproval;
+                stockLocation.UpdateAt = DateTime.Now;
+            }
+
+            return message;
         }
     }
 }
