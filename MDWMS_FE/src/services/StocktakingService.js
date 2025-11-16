@@ -341,3 +341,58 @@ export const deleteStocktakingPallet = async (stocktakingPalletId) => {
     }
 };
 
+// Xác nhận đã đếm vị trí kiểm kê
+export const confirmStocktakingLocationCounted = async (stocktakingLocationId) => {
+    try {
+        if (!stocktakingLocationId) {
+            throw new Error("stocktakingLocationId is required");
+        }
+        const body = {
+            stocktakingLocationId: stocktakingLocationId
+        };
+        const res = await api.post("/StocktakingLocation/ConfirmCounted", body);
+        return res.data;
+    } catch (error) {
+        console.error("Error confirming stocktaking location counted:", error);
+        throw error;
+    }
+};
+
+// Nộp kiểm kê (Submit stocktaking area)
+export const submitStocktakingArea = async (stocktakingAreaId) => {
+    try {
+        if (!stocktakingAreaId) {
+            throw new Error("stocktakingAreaId is required");
+        }
+        const body = {
+            stocktakingAreaId: stocktakingAreaId
+        };
+        const res = await api.put("/StocktakingArea/Submit", body);
+        return res.data;
+    } catch (error) {
+        console.error("Error submitting stocktaking area:", error);
+        throw error;
+    }
+};
+
+// Phân công lại khu vực kiểm kê (Re-assign stocktaking area)
+export const reAssignStocktakingArea = async (stocktakingAreaId, assignTo) => {
+    try {
+        if (!stocktakingAreaId) {
+            throw new Error("stocktakingAreaId is required");
+        }
+        if (assignTo === undefined || assignTo === null) {
+            throw new Error("assignTo is required");
+        }
+        const body = {
+            stocktakingAreaId: stocktakingAreaId,
+            assignTo: assignTo
+        };
+        const res = await api.put("/StocktakingArea/ReAssignStocktakingArea", body);
+        return res.data;
+    } catch (error) {
+        console.error("Error re-assigning stocktaking area:", error);
+        throw error;
+    }
+};
+
