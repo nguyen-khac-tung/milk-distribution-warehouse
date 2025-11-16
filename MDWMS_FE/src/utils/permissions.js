@@ -173,6 +173,24 @@ export const PERMISSIONS = {
     STOCKTAKING_AREA_VIEW_DETAILS_FOR_OTHER: 'StocktakingArea.ViewDetailsForOther',
     STOCKTAKING_REASSIGN_AREA: 'Stocktaking.ReAssignArea',
 
+    // Disposal Request permissions
+    DISPOSAL_REQUEST_VIEW: 'DisposalRequest.View',
+    DISPOSAL_REQUEST_VIEW_WM: 'DisposalRequest.ViewListWM',        // Warehouse Manager - view list
+    DISPOSAL_REQUEST_VIEW_SM: 'DisposalRequest.ViewListSM',        // Sale Manager - view list
+    DISPOSAL_REQUEST_VIEW_WS: 'DisposalRequest.ViewListWS',        // Warehouse Staff - view list
+    DISPOSAL_REQUEST_VIEW_DETAILS: 'DisposalRequest.ViewDetails',  // All roles (WM, SM, WS) - view detail
+
+    DISPOSAL_REQUEST_GET_EXPIRED_GOODS: 'DisposalRequest.GetExpiredGoods', // Warehouse Manager - get expired goods
+
+    DISPOSAL_REQUEST_CREATE: 'DisposalRequest.Create',   // Warehouse Manager
+    DISPOSAL_REQUEST_UPDATE: 'DisposalRequest.Update',   // Warehouse Manager
+    DISPOSAL_REQUEST_DELETE: 'DisposalRequest.Delete',   // Warehouse Manager
+
+    // Status transitions
+    DISPOSAL_REQUEST_SUBMIT_PENDING_APPROVAL: 'DisposalRequest.SubmitPendingApproval', // Warehouse Manager
+    DISPOSAL_REQUEST_APPROVE: 'DisposalRequest.Approve',          // Sale Manager
+    DISPOSAL_REQUEST_REJECT: 'DisposalRequest.Reject',            // Sale Manager
+    DISPOSAL_REQUEST_ASSIGN_FOR_PICKING: 'DisposalRequest.AssignForPicking', // Warehouse Manager
 
 };
 
@@ -207,7 +225,8 @@ export const ROLE_PERMISSIONS = {
         PERMISSIONS.SALES_ORDER_APPROVE, PERMISSIONS.SALES_ORDER_REJECT_ORDER,
         PERMISSIONS.STOCKTAKING_VIEW, PERMISSIONS.STOCKTAKING_VIEW_SM, PERMISSIONS.STOCKTAKING_VIEW_DETAILS,
         PERMISSIONS.STOCKTAKING_AREA_VIEW_DETAILS_FOR_OTHER,
-        PERMISSIONS.REPORT_VIEW, PERMISSIONS.REPORT_EXPORT
+        PERMISSIONS.REPORT_VIEW, PERMISSIONS.REPORT_EXPORT,
+        PERMISSIONS.DISPOSAL_REQUEST_VIEW, PERMISSIONS.DISPOSAL_REQUEST_VIEW_DETAILS, PERMISSIONS.DISPOSAL_REQUEST_VIEW_SM, PERMISSIONS.DISPOSAL_REQUEST_APPROVE, PERMISSIONS.DISPOSAL_REQUEST_REJECT
     ],
 
     [ROLES.SALES_REPRESENTATIVE]: [
@@ -243,7 +262,9 @@ export const ROLE_PERMISSIONS = {
         PERMISSIONS.STOCKTAKING_VIEW, PERMISSIONS.STOCKTAKING_VIEW_WM, PERMISSIONS.STOCKTAKING_CREATE, PERMISSIONS.STOCKTAKING_UPDATE, PERMISSIONS.STOCKTAKING_DELETE, PERMISSIONS.STOCKTAKING_VIEW_DETAILS,
         PERMISSIONS.STOCKTAKING_AREA_VIEW_DETAILS_FOR_OTHER,
         PERMISSIONS.STOCKTAKING_REASSIGN_AREA,
-        PERMISSIONS.REPORT_VIEW, PERMISSIONS.REPORT_EXPORT
+        PERMISSIONS.REPORT_VIEW, PERMISSIONS.REPORT_EXPORT,
+        PERMISSIONS.DISPOSAL_REQUEST_VIEW_DETAILS, PERMISSIONS.DISPOSAL_REQUEST_VIEW_WM, PERMISSIONS.DISPOSAL_REQUEST_CREATE, PERMISSIONS.DISPOSAL_REQUEST_UPDATE, PERMISSIONS.DISPOSAL_REQUEST_DELETE,
+        PERMISSIONS.DISPOSAL_REQUEST_VIEW, PERMISSIONS.DISPOSAL_REQUEST_SUBMIT_PENDING_APPROVAL, PERMISSIONS.DISPOSAL_REQUEST_ASSIGN_FOR_PICKING, PERMISSIONS.DISPOSAL_REQUEST_GET_EXPIRED_GOODS
     ],
 
     [ROLES.WAREHOUSE_STAFF]: [
@@ -262,7 +283,8 @@ export const ROLE_PERMISSIONS = {
         PERMISSIONS.PALLET_SCAN_BARCODE, PERMISSIONS.PALLET_VIEW_SUGGESTED_LOCATIONS, PERMISSIONS.PALLET_CONFIRM_INBOUND_PUTAWAY,
         PERMISSIONS.STOCKTAKING_VIEW, PERMISSIONS.STOCKTAKING_VIEW_WS, PERMISSIONS.STOCKTAKING_VIEW_DETAILS,
         PERMISSIONS.STOCKTAKING_IN_PROGRESS, PERMISSIONS.STOCKTAKING_AREA_VIEW_DETAILS,
-        PERMISSIONS.REPORT_VIEW
+        PERMISSIONS.REPORT_VIEW,
+        PERMISSIONS.DISPOSAL_REQUEST_VIEW, PERMISSIONS.DISPOSAL_REQUEST_VIEW_DETAILS, PERMISSIONS.DISPOSAL_REQUEST_VIEW_WS
     ]
 };
 
@@ -371,6 +393,17 @@ export const STOCKTAKING_STATUS = {
     PendingApproval: 5,          // Chờ duyệt
     Approved: 6,                 // Đã duyệt
     Completed: 7                 // Đã hoàn thành
+};
+
+// Disposal Request Status Constants
+export const DISPOSAL_REQUEST_STATUS = {
+    Draft: 1,               // Nháp
+    PendingApproval: 2,     // Chờ duyệt
+    Rejected: 3,            // Từ chối
+    Approved: 4,            // Đã duyệt
+    AssignedForPicking: 5,  // Đã phân công
+    Picking: 6,             // Đang lấy hàng
+    Completed: 7            // Đã xuất hủy
 };
 
 export const canPerformSalesOrderAction = (action, order, hasPermission, userInfo = null) => {
@@ -543,6 +576,113 @@ export const canPerformSalesOrderDetailAction = (action, order, hasPermission, u
             case 'assign':
             case 'assign_for_picking':
                 return false; // Warehouse Staff không có quyền này
+            default:
+                return false;
+        }
+    }
+
+    return false;
+};
+
+/**
+ * Kiểm tra quyền chi tiết cho Disposal Request dựa trên role và trạng thái
+ * @param {string} action - Hành động cần kiểm tra
+ * @param {Object} request - Đối tượng disposal request
+ * @param {Function} hasPermission - Function kiểm tra permission
+ * @param {Object} userInfo - Thông tin user hiện tại
+ * @returns {boolean} - Có thể thực hiện hành động không
+ */
+export const canPerformDisposalRequestDetailAction = (action, request, hasPermission, userInfo) => {
+    const currentUserId = userInfo?.userId;
+
+    // Flexible ownership check - handle different possible field structures
+    const isOwnRequest =
+        request?.createdBy?.userId === currentUserId ||
+        request?.createdBy?.id === currentUserId ||
+        request?.createdBy === currentUserId ||
+        request?.createdById === currentUserId ||
+        request?.createdByUserId === currentUserId;
+
+    // For warehouse staff, actions are based on being the assigned user, not the creator
+    const isAssignedToSelf =
+        request?.assignTo?.userId === currentUserId ||
+        request?.assignTo?.id === currentUserId ||
+        request?.assignTo === currentUserId ||
+        request?.assignToId === currentUserId ||
+        request?.assignToUserId === currentUserId;
+
+    const status = request?.status;
+
+    // Warehouse Manager (Quản lý kho)
+    if (hasPermission(PERMISSIONS.DISPOSAL_REQUEST_VIEW_WM)) {
+        switch (action) {
+            case 'view':
+                return true;
+            case 'edit':
+                // Chỉ có thể edit Draft/Rejected của mình
+                const canEditDraft = status === DISPOSAL_REQUEST_STATUS.Draft || status === 1 || status === "1";
+                const canEditRejected = status === DISPOSAL_REQUEST_STATUS.Rejected || status === 3 || status === "3";
+                return isOwnRequest && (canEditDraft || canEditRejected);
+            case 'delete':
+                // Chỉ có thể delete Draft của mình
+                const canDeleteDraft = status === DISPOSAL_REQUEST_STATUS.Draft || status === 1 || status === "1";
+                return isOwnRequest && canDeleteDraft;
+            case 'submit_pending_approval':
+                // Chỉ có thể submit Draft/Rejected của mình
+                const canSubmitDraft = status === DISPOSAL_REQUEST_STATUS.Draft || status === 1 || status === "1";
+                const canSubmitRejected = status === DISPOSAL_REQUEST_STATUS.Rejected || status === 3 || status === "3";
+                return isOwnRequest && (canSubmitDraft || canSubmitRejected);
+            case 'assign_for_picking':
+                // Chỉ cho phép phân công/lại nếu trạng thái là Approved hoặc AssignedForPicking
+                return (
+                    status === DISPOSAL_REQUEST_STATUS.Approved ||
+                    status === DISPOSAL_REQUEST_STATUS.AssignedForPicking ||
+                    status === 4 ||
+                    status === '4' ||
+                    status === 5 ||
+                    status === '5'
+                );
+            case 'approve':
+            case 'reject':
+                return false; // Warehouse Manager không có quyền này
+            default:
+                return false;
+        }
+    }
+
+    // Sale Manager (Quản lý kinh doanh)
+    if (hasPermission(PERMISSIONS.DISPOSAL_REQUEST_VIEW_SM)) {
+        switch (action) {
+            case 'view':
+                return true;
+            case 'approve':
+                // Chỉ có thể approve PendingApproval
+                return status === DISPOSAL_REQUEST_STATUS.PendingApproval || status === 2 || status === "2";
+            case 'reject':
+                // Chỉ có thể reject PendingApproval
+                return status === DISPOSAL_REQUEST_STATUS.PendingApproval || status === 2 || status === "2";
+            case 'edit':
+            case 'delete':
+            case 'submit_pending_approval':
+            case 'assign_for_picking':
+                return false; // Sale Manager không có quyền này
+            default:
+                return false;
+        }
+    }
+
+    // Warehouse Staff (Nhân viên kho)
+    if (hasPermission(PERMISSIONS.DISPOSAL_REQUEST_VIEW_WS)) {
+        switch (action) {
+            case 'view':
+                return true;
+            case 'edit':
+            case 'delete':
+            case 'approve':
+            case 'reject':
+            case 'submit_pending_approval':
+            case 'assign_for_picking':
+                return false; // Warehouse Staff chỉ có quyền xem
             default:
                 return false;
         }

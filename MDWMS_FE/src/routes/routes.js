@@ -42,6 +42,10 @@ import StocktakingArea from "../pages/StocktakingArea/StocktakingArea";
 import StocktakingAreaDetailForOther from "../pages/StocktakingArea/StocktakingAreaDetailForOther";
 import OrdersPage from "../pages/ReportManagement/OrdersPage";
 import InventoryReport from "../pages/ReportManagement/InventoryReport";
+import DisposalList from "../pages/DisposalPage/DisposalList";
+import DisposalDetail from "../pages/DisposalPage/DisposalDetail";
+import CreateDisposal from "../pages/DisposalPage/CreateDisposal";
+import UpdateDisposal from "../pages/DisposalPage/UpdateDisposal";
 
 export const routes = [
     {
@@ -360,5 +364,51 @@ export const routes = [
         ),
         isShowHeader: true,
     },
+    //xuat huy
+    {
+        path: "/disposal",
+        page: () => (
+            <ProtectedRoute requiredPermission={[PERMISSIONS.DISPOSAL_REQUEST_VIEW]} requireAll={false}>
+                <DisposalList />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/disposal/:id",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.DISPOSAL_REQUEST_VIEW_DETAILS}>
+                <DisposalDetail />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/disposal/create",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.DISPOSAL_REQUEST_CREATE}>
+                <CreateDisposal />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/disposal/update/:id",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.DISPOSAL_REQUEST_UPDATE}>
+                <UpdateDisposal />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    // {
+    //     path: "/goods-issue-note-detail/:id",
+    //     page: () => (
+    //         <ProtectedRoute requiredPermission={PERMISSIONS.SALES_ORDER_VIEW_DELIVERY_SLIP}>
+    //             <GoodsIssueNoteDetail />
+    //         </ProtectedRoute>
+    //     ),
+    //     isShowHeader: true,
+    // },
     { path: "*", page: NotFoundPage },
 ];

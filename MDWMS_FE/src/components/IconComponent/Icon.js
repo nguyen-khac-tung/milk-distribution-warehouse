@@ -60,6 +60,9 @@ export const IconMap = [
   { keywords: ['clipboard'], icon: 'emojione-monotone:clipboard' },
   { keywords: ['taskListEdit'], icon: 'streamline-plump:task-list-edit' },
   { keywords: ['createTaskListEdit'], icon: 'gridicons:create' },
+  { keywords: ['disposal'], icon: 'mdi:note-text-outline' },
+  { keywords: ['disposalList'], icon: 'mdi:clipboard-list-outline' },
+  { keywords: ['createDisposal'], icon: 'mdi:format-list-bulleted' },
 
   // có thể thêm nhiều icon khác ở đây
 ];
@@ -115,6 +118,10 @@ export const ComponentIcon = ({ name, color = "#000000", size = 20, collapsed = 
   const isClipboardIcon = name === 'clipboard';
   const isTaskListEditIcon = name === 'taskListEdit';
   const isCreateTaskListEditIcon = name === 'createTaskListEdit';
+  const isDisposal = name === 'disposal';
+  const isDispaslList = name === "disposalList";
+  const isCreateDispasl = name === "createDisposal";
+
   const needsSpecialAlignment = isMilkIcon || isUnitMeasureIcon || isCategoryIcon || isStorageCondition ||
     isPartnerIcon || isRetailerIcon || isSupplierIcon || isThermometerIcon ||
     isPackageIcon || isBuildingIcon || isDropletsIcon || isSunIcon || isTagIcon ||
@@ -123,8 +130,8 @@ export const ComponentIcon = ({ name, color = "#000000", size = 20, collapsed = 
     || isCalendarzxIcon || isCrownIcon || isServerNetworkIcon || isPeopleIcon || isEuropeanNameBadgeIcon
     || isSchoolboyRunawayIcon || isBatchIcon || isPalletIcon || isUserIcon || isShoppingCartIcon || isTrashIcon || isCartIcon || isPurchaseOrder
     || isCPOrder || isGoodsReceiptNoteIcon
-    || isCPOrder || isBackOrderIcon || isArrowBackCircleOutlineIcon || isClipboardIcon||
-    isTaskListEditIcon || isCreateTaskListEditIcon;
+    || isCPOrder || isBackOrderIcon || isArrowBackCircleOutlineIcon || isClipboardIcon ||
+    isTaskListEditIcon || isCreateTaskListEditIcon || isDisposal || isDispaslList || isCreateDispasl;
 
   return (
     <Icon

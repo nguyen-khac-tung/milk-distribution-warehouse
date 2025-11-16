@@ -173,6 +173,31 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                 permission: PERMISSIONS.GOODS_VIEW
             },
             {
+                key: "disposal-management",
+                icon: <ComponentIcon name="disposal" size={16} collapsed={collapsed} />,
+                label: "Quản lý đơn xuất hủy",
+                permission: [PERMISSIONS.DISPOSAL_REQUEST_VIEW, PERMISSIONS.DISPOSAL_REQUEST_VIEW_SM, PERMISSIONS.DISPOSAL_REQUEST_VIEW_WM, PERMISSIONS.DISPOSAL_REQUEST_VIEW_WS],
+                requireAll: false,
+                children: [
+                    {
+                        key: "/disposal",
+                        icon: <ComponentIcon name="disposalList" size={14} collapsed={collapsed} />,
+                        label: "Danh sách đơn xuất hủy",
+                        permission: [
+                            PERMISSIONS.DISPOSAL_REQUEST_VIEW_SM,
+                            PERMISSIONS.DISPOSAL_REQUEST_VIEW_WM,
+                            PERMISSIONS.DISPOSAL_REQUEST_VIEW_WS],
+                        requireAll: false,
+                    },
+                    {
+                        key: "/disposal/create",
+                        icon: <ComponentIcon name="createDisposal" size={14} collapsed={collapsed} />,
+                        label: "Tạo đơn xuất hủy",
+                        permission: PERMISSIONS.DISPOSAL_REQUEST_CREATE,
+                    }
+                ],
+            },
+            {
                 key: "/categories",
                 icon: <ComponentIcon name="category" size={16} collapsed={collapsed} />,
                 label: "Quản lý danh mục",
