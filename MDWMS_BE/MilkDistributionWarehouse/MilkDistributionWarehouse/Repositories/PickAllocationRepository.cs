@@ -7,7 +7,8 @@ namespace MilkDistributionWarehouse.Repositories
     public interface IPickAllocationRepository
     {
         Task<PickAllocation?> GetPickAllocationDetailById(int? id);
-        Task<Dictionary<string, int>?> GetCommittedQuantitiesByPallet();
+        Task<Dictionary<string, int>> GetCommittedQuantitiesForSalesByPallet();
+        Task<Dictionary<string, int>> GetCommittedQuantitiesForDisposalByPallet();
         Task UpdatePickAllocation(PickAllocation pickAllocation);
     }
 
@@ -21,12 +22,26 @@ namespace MilkDistributionWarehouse.Repositories
         }
 
         // Get the total allocated quantity on each pallet for uncompleted goods issue notes detail
-        public async Task<Dictionary<string, int>?> GetCommittedQuantitiesByPallet()
+        public async Task<Dictionary<string, int>?> GetCommittedQuantitiesForSalesByPallet()
         {
             
             return await _context.PickAllocations
                 .Where(pa => pa.GoodsIssueNoteDetailId != null 
                              && pa.GoodsIssueNoteDetail.GoodsIssueNote.Status != GoodsIssueNoteStatus.Completed)
+                .GroupBy(pa => pa.PalletId)
+                .Select(g => new
+                {
+                    PalletId = g.Key,
+                    CommittedQuantity = g.Sum(pa => pa.PackageQuantity ?? 0)
+                })
+                .ToDictionaryAsync(x => x.PalletId, x => x.CommittedQuantity);
+        }
+
+        public async Task<Dictionary<string, int>> GetCommittedQuantitiesForDisposalByPallet()
+        {
+            return await _context.PickAllocations
+                .Where(pa => pa.DisposalNoteDetailId != null
+                             && pa.DisposalNoteDetail.DisposalNote.Status != DisposalNoteStatus.Completed)
                 .GroupBy(pa => pa.PalletId)
                 .Select(g => new
                 {
