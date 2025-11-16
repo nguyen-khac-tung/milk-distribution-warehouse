@@ -13,7 +13,7 @@ namespace MilkDistributionWarehouse.Services
 {
     public interface IStocktakingAreaService
     {
-        Task<(string, StocktakingAreaDetailDto?)> GetStocktakingAreaByStocktakingSheetId(string stoctakingSheetId, int? userId);
+        Task<(string, List<StocktakingAreaDetailDto>?)> GetStocktakingAreaByStocktakingSheetId(string stoctakingSheetId, int? userId);
         Task<(string, StocktakingSheeteResponse?)> CreateStocktakingAreaBulk(string stocktakingSheetId, List<StocktakingAreaCreate> creates);
         Task<(string, StocktakingSheeteResponse?)> UpdateStocktakingAreaBulk(string stocktakingSheetId, List<StocktakingAreaUpdate> updates);
         Task<(string, StocktakingAreaReAssignStatus?)> UpdateStocktakingReAssignTo(StocktakingAreaReAssignStatus update);
@@ -34,12 +34,12 @@ namespace MilkDistributionWarehouse.Services
             _stocktakingLocationRepository = stocktakingLocationRepository;
         }
 
-        public async Task<(string, StocktakingAreaDetailDto?)> GetStocktakingAreaByStocktakingSheetId(string stoctakingSheetId, int? userId)
+        public async Task<(string, List<StocktakingAreaDetailDto>?)> GetStocktakingAreaByStocktakingSheetId(string stoctakingSheetId, int? userId)
         {
             if (string.IsNullOrEmpty(stoctakingSheetId))
                 return ("Mã phiếu kiểm kê không hợp lệ.", default);
 
-            var stocktakingArea = new StocktakingArea();
+            var stocktakingArea = new List<StocktakingArea>();
 
             if (userId.HasValue)
                 stocktakingArea = await _stocktakingAreaRepository.GetStocktakingAreaByStocktakingSheetIdAndAssignTo(stoctakingSheetId, userId.Value);
@@ -49,7 +49,7 @@ namespace MilkDistributionWarehouse.Services
             if (stocktakingArea == null)
                 return ("Phiếu kiểm kê khu vực không tồn tại.", default);
 
-            var stocktakingAreaMap = _mapper.Map<StocktakingAreaDetailDto>(stocktakingArea);
+            var stocktakingAreaMap = _mapper.Map<List<StocktakingAreaDetailDto>>(stocktakingArea);
 
             return ("", stocktakingAreaMap);
         }
