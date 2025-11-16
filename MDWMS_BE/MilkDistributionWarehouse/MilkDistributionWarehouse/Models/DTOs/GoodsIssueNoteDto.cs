@@ -4,13 +4,13 @@ namespace MilkDistributionWarehouse.Models.DTOs
 {
     public class GoodsIssueNoteCreateDto
     {
-        public Guid? SalesOrderId { get; set; }
+        public string? SalesOrderId { get; set; }
     }
 
     public class GoodsIssueNoteDetailDto
     {
-        public Guid GoodsIssueNoteId { get; set; }
-        public Guid SalesOderId { get; set; }
+        public string GoodsIssueNoteId { get; set; }
+        public string SalesOderId { get; set; }
         public int Status { get; set; }
         public DateOnly? EstimatedTimeDeparture { get; set; }
         public string? RetailerName { get; set; }
@@ -45,11 +45,11 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
     public class SubmitGoodsIssueNoteDto
     {
-        public Guid? GoodsIssueNoteId { get; set; }
+        public string? GoodsIssueNoteId { get; set; }
     }
 
     public class ApproveGoodsIssueNoteDto
     {
-        public Guid GoodsIssueNoteId { get; set; }
+        public string? GoodsIssueNoteId { get; set; }
     }
 }

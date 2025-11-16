@@ -59,7 +59,7 @@ namespace MilkDistributionWarehouse.Controllers
 
         [Authorize(Roles = "Sale Manager, Sales Representative, Warehouse Staff, Warehouse Manager")]
         [HttpGet("GetSalesOrderDetail/{salesOrderId}")]
-        public async Task<IActionResult> GetSalesOrderDetail(Guid? salesOrderId)
+        public async Task<IActionResult> GetSalesOrderDetail(string? salesOrderId)
         {
             var (msg, salesOrder) = await _salesOrderService.GetSalesOrderDetail(salesOrderId);
             if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
@@ -89,7 +89,7 @@ namespace MilkDistributionWarehouse.Controllers
 
         [Authorize(Roles = "Sales Representative")]
         [HttpDelete("DeleteSalesOrder/{salesOrderId}")]
-        public async Task<IActionResult> DeleteSalesOrder(Guid? salesOrderId)
+        public async Task<IActionResult> DeleteSalesOrder(string? salesOrderId)
         {
             var msg = await _salesOrderService.DeleteSalesOrder(salesOrderId, User.GetUserId());
             if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);

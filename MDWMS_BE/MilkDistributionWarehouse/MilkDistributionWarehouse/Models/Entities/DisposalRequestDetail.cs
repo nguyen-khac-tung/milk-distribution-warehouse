@@ -9,7 +9,7 @@ public partial class DisposalRequestDetail
 {
     public int DisposalRequestDetailId { get; set; }
 
-    public Guid? DisposalRequestId { get; set; }
+    public string DisposalRequestId { get; set; }
 
     public int? GoodsId { get; set; }
 

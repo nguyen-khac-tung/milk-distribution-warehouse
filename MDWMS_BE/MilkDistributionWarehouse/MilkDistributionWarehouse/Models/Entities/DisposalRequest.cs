@@ -7,7 +7,7 @@ namespace MilkDistributionWarehouse.Models.Entities;
 
 public partial class DisposalRequest
 {
-    public Guid DisposalRequestId { get; set; }
+    public string DisposalRequestId { get; set; }
 
     public DateOnly? EstimatedTimeDeparture { get; set; }
 

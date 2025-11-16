@@ -7,7 +7,7 @@ namespace MilkDistributionWarehouse.Models.Entities;
 
 public partial class DisposalNote
 {
-    public Guid DisposalNoteId { get; set; }
+    public string DisposalNoteId { get; set; }
 
     public int? Status { get; set; }
 
@@ -19,7 +19,7 @@ public partial class DisposalNote
 
     public DateTime? UpdatedAt { get; set; }
 
-    public Guid DisposalRequestId { get; set; }
+    public string DisposalRequestId { get; set; }
 
     public virtual User ApprovalByNavigation { get; set; }
 

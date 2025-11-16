@@ -147,7 +147,13 @@ public partial class WarehouseContext : DbContext
         {
             entity.HasKey(e => e.DisposalNoteId).HasName("PK__Disposal__520D5C00B0E4A467");
 
-            entity.Property(e => e.DisposalNoteId).ValueGeneratedNever();
+            entity.Property(e => e.DisposalNoteId)
+                .HasMaxLength(50)
+                .IsUnicode(false);
+            entity.Property(e => e.DisposalRequestId)
+                .IsRequired()
+                .HasMaxLength(50)
+                .IsUnicode(false);
             entity.Property(e => e.Status).HasDefaultValue(1);
 
             entity.HasOne(d => d.ApprovalByNavigation).WithMany(p => p.DisposalNoteApprovalByNavigations)
@@ -161,7 +167,7 @@ public partial class WarehouseContext : DbContext
             entity.HasOne(d => d.DisposalRequest).WithMany(p => p.DisposalNotes)
                 .HasForeignKey(d => d.DisposalRequestId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_DisposalNotes_DisposalRequests");
+                .HasConstraintName("FK_DisposalNotes_DisposalRequests1");
         });
 
         modelBuilder.Entity<DisposalNoteDetail>(entity =>
@@ -169,13 +175,16 @@ public partial class WarehouseContext : DbContext
             entity.HasKey(e => e.DisposalNoteDetailId).HasName("PK__Disposal__C3D1F4DD12871FDA");
 
             entity.Property(e => e.DisposalNoteDetailId).ValueGeneratedNever();
+            entity.Property(e => e.DisposalNoteId)
+                .HasMaxLength(50)
+                .IsUnicode(false);
             entity.Property(e => e.Note).HasMaxLength(255);
             entity.Property(e => e.RejectionReason).HasMaxLength(255);
             entity.Property(e => e.Status).HasDefaultValue(1);
 
             entity.HasOne(d => d.DisposalNote).WithMany(p => p.DisposalNoteDetails)
                 .HasForeignKey(d => d.DisposalNoteId)
-                .HasConstraintName("FK_DisposalNoteDetails_DisposalNotes");
+                .HasConstraintName("FK_DisposalNoteDetails_DisposalNotes1");
 
             entity.HasOne(d => d.Goods).WithMany(p => p.DisposalNoteDetails)
                 .HasForeignKey(d => d.GoodsId)
@@ -190,7 +199,9 @@ public partial class WarehouseContext : DbContext
         {
             entity.HasKey(e => e.DisposalRequestId).HasName("PK__Disposal__E01900E5CC9B31AE");
 
-            entity.Property(e => e.DisposalRequestId).ValueGeneratedNever();
+            entity.Property(e => e.DisposalRequestId)
+                .HasMaxLength(50)
+                .IsUnicode(false);
             entity.Property(e => e.Note).HasMaxLength(250);
             entity.Property(e => e.RejectionReason).HasMaxLength(255);
 
@@ -211,9 +222,13 @@ public partial class WarehouseContext : DbContext
         {
             entity.HasKey(e => e.DisposalRequestDetailId).HasName("PK__Disposal__71BD39471FA51889");
 
+            entity.Property(e => e.DisposalRequestId)
+                .HasMaxLength(50)
+                .IsUnicode(false);
+
             entity.HasOne(d => d.DisposalRequest).WithMany(p => p.DisposalRequestDetails)
                 .HasForeignKey(d => d.DisposalRequestId)
-                .HasConstraintName("FK_DisposalRequestDetails_DisposalRequests");
+                .HasConstraintName("FK_DisposalRequestDetails_DisposalRequests1");
 
             entity.HasOne(d => d.Goods).WithMany(p => p.DisposalRequestDetails)
                 .HasForeignKey(d => d.GoodsId)
@@ -253,7 +268,13 @@ public partial class WarehouseContext : DbContext
 
         modelBuilder.Entity<GoodsIssueNote>(entity =>
         {
-            entity.Property(e => e.GoodsIssueNoteId).ValueGeneratedNever();
+            entity.Property(e => e.GoodsIssueNoteId)
+                .HasMaxLength(50)
+                .IsUnicode(false);
+            entity.Property(e => e.SalesOderId)
+                .IsRequired()
+                .HasMaxLength(50)
+                .IsUnicode(false);
             entity.Property(e => e.Status).HasDefaultValue(1);
 
             entity.HasOne(d => d.ApprovalByNavigation).WithMany(p => p.GoodsIssueNoteApprovalByNavigations)
@@ -273,6 +294,9 @@ public partial class WarehouseContext : DbContext
         modelBuilder.Entity<GoodsIssueNoteDetail>(entity =>
         {
             entity.Property(e => e.GoodsIssueNoteDetailId).ValueGeneratedNever();
+            entity.Property(e => e.GoodsIssueNoteId)
+                .HasMaxLength(50)
+                .IsUnicode(false);
             entity.Property(e => e.Note).HasMaxLength(255);
             entity.Property(e => e.RejectionReason).HasMaxLength(255);
             entity.Property(e => e.Status).HasDefaultValue(1);
@@ -534,7 +558,9 @@ public partial class WarehouseContext : DbContext
         {
             entity.HasKey(e => e.SalesOrderId).HasName("PK_ExportOrders");
 
-            entity.Property(e => e.SalesOrderId).ValueGeneratedNever();
+            entity.Property(e => e.SalesOrderId)
+                .HasMaxLength(50)
+                .IsUnicode(false);
             entity.Property(e => e.Note).HasMaxLength(250);
             entity.Property(e => e.RejectionReason).HasMaxLength(255);
 
@@ -563,6 +589,10 @@ public partial class WarehouseContext : DbContext
         {
             entity.HasKey(e => e.SalesOrderDetailId).HasName("PK_ExportOrderDetails");
 
+            entity.Property(e => e.SalesOrderId)
+                .HasMaxLength(50)
+                .IsUnicode(false);
+
             entity.HasOne(d => d.Goods).WithMany(p => p.SalesOrderDetails)
                 .HasForeignKey(d => d.GoodsId)
                 .HasConstraintName("FK_ExportOrderDetails_Products");
@@ -573,7 +603,7 @@ public partial class WarehouseContext : DbContext
 
             entity.HasOne(d => d.SalesOrder).WithMany(p => p.SalesOrderDetails)
                 .HasForeignKey(d => d.SalesOrderId)
-                .HasConstraintName("FK_ExportOrderDetails_ExportOrders");
+                .HasConstraintName("FK_SalesOrderDetails_SalesOrders");
         });
 
         modelBuilder.Entity<StocktakingArea>(entity =>

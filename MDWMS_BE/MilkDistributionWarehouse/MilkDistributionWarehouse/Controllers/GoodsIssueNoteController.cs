@@ -30,7 +30,7 @@ namespace MilkDistributionWarehouse.Controllers
 
         [Authorize(Roles = "Warehouse Staff, Warehouse Manager")]
         [HttpGet("GetDetailGoodsIssueNote/{salesOrderId}")]
-        public async Task<IActionResult> GetDetailGoodsIssueNote(Guid? salesOrderId)
+        public async Task<IActionResult> GetDetailGoodsIssueNote(string? salesOrderId)
         {
             var (msg, goodsIssueNote) = await _goodsIssueNoteService.GetDetailGoodsIssueNote(salesOrderId);
             if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
