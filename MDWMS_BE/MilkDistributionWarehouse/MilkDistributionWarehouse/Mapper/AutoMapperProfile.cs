@@ -464,6 +464,33 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.UnitPerPackage, opt => opt.MapFrom(src => src.GoodsPacking.UnitPerPackage))
                 .ForMember(dest => dest.RequiredPackageQuantity, opt => opt.MapFrom(src => src.PackageQuantity));
 
+            //Map DisposalRequest
+            CreateMap<DisposalRequest, DisposalRequestDtoSaleManager>()
+                .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => src.CreatedByNavigation.FullName))
+                .ForMember(dest => dest.ApprovalByName, opt => opt.MapFrom(src => src.ApprovalByNavigation.FullName));
+            CreateMap<DisposalRequest, DisposalRequestDtoWarehouseManager>()
+                .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => src.CreatedByNavigation.FullName))
+                .ForMember(dest => dest.ApprovalByName, opt => opt.MapFrom(src => src.ApprovalByNavigation.FullName))
+                .ForMember(dest => dest.AssignToName, opt => opt.MapFrom(src => src.AssignToNavigation.FullName));
+            CreateMap<DisposalRequest, DisposalRequestDtoWarehouseStaff>()
+                .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => src.CreatedByNavigation.FullName))
+                .ForMember(dest => dest.AssignToName, opt => opt.MapFrom(src => src.AssignToNavigation.FullName));
+            CreateMap<DisposalRequest, DisposalRequestDetailDto>()
+                .ForMember(dest => dest.CreatedBy, opt => opt.MapFrom(src => src.CreatedByNavigation))
+                .ForMember(dest => dest.ApprovalBy, opt => opt.MapFrom(src => src.ApprovalByNavigation))
+                .ForMember(dest => dest.AssignTo, opt => opt.MapFrom(src => src.AssignToNavigation))
+                .ForMember(dest => dest.DisposalRequestDetails, opt => opt.MapFrom(src => src.DisposalRequestDetails.ToList()));
+            CreateMap<DisposalRequestDetail, DisposalRequestItemDetailDto>()
+                .ForMember(dest => dest.Goods, opt => opt.MapFrom(src => src.Goods))
+                .ForMember(dest => dest.GoodsPacking, opt => opt.MapFrom(src => src.GoodsPacking));
+            CreateMap<DisposalRequestCreateDto, DisposalRequest>()
+               .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => DisposalRequestStatus.Draft))
+               .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now))
+               .ForMember(dest => dest.Note, opt => opt.MapFrom(src => src.Note ?? ""))
+               .ForMember(dest => dest.DisposalRequestDetails, opt => opt.MapFrom(src => src.DisposalRequestItems));
+            CreateMap<DisposalRequestItemCreateDto, DisposalRequestDetail>()
+                .ForMember(dest => dest.DisposalRequestDetailId, opt => opt.Ignore());
+
             // Map PickAllocation            
             CreateMap<PickAllocation, PickAllocationDto>()
                 .ForMember(dest => dest.PickPackageQuantity, opt => opt.MapFrom(src => src.PackageQuantity))
