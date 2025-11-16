@@ -82,7 +82,7 @@ namespace MilkDistributionWarehouse.Controllers
 
         [HttpPut("SuplusStocktakingPallet")]
         [Authorize(Roles = RoleNames.WarehouseStaff)]
-        public async Task<IActionResult> UpdateStocktakingPalletSuplusStatus([FromBody] StocktakingPalletMatchStatus update)
+        public async Task<IActionResult> UpdateStocktakingPalletSuplusStatus([FromBody] StocktakingPalletSurplusStatus update)
         {
             var (msg, stoctakingPallet) = await _stocktakingPalletService.UpdateStocktakingPalletStauts(update);
             if (!string.IsNullOrEmpty(msg))
