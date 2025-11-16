@@ -341,3 +341,20 @@ export const deleteStocktakingPallet = async (stocktakingPalletId) => {
     }
 };
 
+// Xác nhận đã đếm vị trí kiểm kê
+export const confirmStocktakingLocationCounted = async (stocktakingLocationId) => {
+    try {
+        if (!stocktakingLocationId) {
+            throw new Error("stocktakingLocationId is required");
+        }
+        const body = {
+            stocktakingLocationId: stocktakingLocationId
+        };
+        const res = await api.post("/StocktakingLocation/ConfirmCounted", body);
+        return res.data;
+    } catch (error) {
+        console.error("Error confirming stocktaking location counted:", error);
+        throw error;
+    }
+};
+

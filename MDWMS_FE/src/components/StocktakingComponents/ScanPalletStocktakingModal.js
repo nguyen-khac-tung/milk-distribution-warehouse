@@ -5,7 +5,7 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { X, Barcode, Trash2 } from "lucide-react";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "../ui/table";
-import { getStocktakingPalletDetailByLocationCode, scannerStocktakingPallet, missStocktakingPallet, matchStocktakingPallet, surplusStocktakingPallet, deleteStocktakingPallet, undoStocktakingPallet } from "../../services/StocktakingService";
+import { getStocktakingPalletDetailByLocationCode, scannerStocktakingPallet, missStocktakingPallet, matchStocktakingPallet, surplusStocktakingPallet, deleteStocktakingPallet, undoStocktakingPallet, confirmStocktakingLocationCounted } from "../../services/StocktakingService";
 import { extractErrorMessage } from "../../utils/Validation";
 import PalletStatusDisplay, { STOCK_PALLET_STATUS } from "../../pages/StocktakingArea/PalletStatusDisplay";
 
@@ -413,6 +413,28 @@ export default function ScanPalletStocktakingModal({
         try {
             setLoading(true);
 
+            // Kiểm tra nếu không có pallet dự kiến, gọi API confirm location counted
+            if (expectedPallets.length === 0) {
+                if (stocktakingLocationId) {
+                    await confirmStocktakingLocationCounted(stocktakingLocationId);
+                    if (window.showToast) {
+                        window.showToast("Xác nhận đã kiểm kê thành công! (Không có pallet dự kiến)", "success");
+                    }
+
+                    // Gọi callback nếu có
+                    if (onSuccess) {
+                        onSuccess({
+                            action: "confirm",
+                            stocktakingLocationId: stocktakingLocationId
+                        });
+                    }
+
+                    // Đóng modal sau khi confirm
+                    handleReset();
+                    return;
+                }
+            }
+
             // Lưu tất cả pallet dự kiến có số lượng thực tế (match)
             const matchPromises = expectedPallets
                 .filter(p =>
@@ -483,6 +505,11 @@ export default function ScanPalletStocktakingModal({
 
     if (!isOpen) return null;
 
+    // Kiểm tra xem vị trí đã được quyết định chưa (có pallet Matched hoặc có pallet không mong đợi)
+    const isLocationDecided = 
+        expectedPallets.some(p => p.status === STOCK_PALLET_STATUS.Matched) || 
+        unexpectedPallets.length > 0;
+
     return createPortal(
         <div
             className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm"
@@ -519,12 +546,12 @@ export default function ScanPalletStocktakingModal({
                             </Label>
                             <Input
                                 id="palletCode"
-                                placeholder="Quét mã pallet hoặc nhập mã"
+                                placeholder={isLocationDecided ? "Vị trí này đã được quét xong" : "Quét mã pallet hoặc nhập mã"}
                                 value={palletCode}
                                 onChange={(e) => handlePalletCodeChange(e.target.value)}
-                                className="h-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg"
-                                disabled={loading || scanningPallet}
-                                autoFocus
+                                className="h-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                disabled={loading || scanningPallet || isLocationDecided}
+                                autoFocus={!isLocationDecided}
                             />
                         </div>
 
@@ -745,9 +772,15 @@ export default function ScanPalletStocktakingModal({
                     </Button>
                     <Button
                         type="button"
-                        className="h-10 px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md transition-all"
+                        className="h-10 px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={handleConfirm}
-                        disabled={loading || scanningPallet}
+                        disabled={
+                            loading || 
+                            scanningPallet || 
+                            (expectedPallets.length > 0 && 
+                             expectedPallets.every(p => !p.status || p.status === STOCK_PALLET_STATUS.Unscanned) && 
+                             unexpectedPallets.length === 0)
+                        }
                     >
                         {loading ? "Đang xử lý..." : "Xác nhận"}
                     </Button>

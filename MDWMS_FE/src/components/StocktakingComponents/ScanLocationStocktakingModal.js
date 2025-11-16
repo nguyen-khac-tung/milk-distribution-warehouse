@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { X, CheckCircle2, AlertCircle } from "lucide-react";
+import { X, AlertCircle } from "lucide-react";
 import { getStocktakingPalletDetailByLocationCode } from "../../services/StocktakingService";
 import { extractErrorMessage } from "../../utils/Validation";
 
@@ -44,13 +44,13 @@ export default function ScanLocationStocktakingModal({ isOpen, onClose, onSucces
 
     // Đảm bảo codeToCheck là string và không rỗng
     if (!codeToCheck || typeof codeToCheck !== 'string') {
-      window.showToast?.("Vui lòng nhập mã vị trí", "error");
+      setError("Vui lòng nhập mã vị trí");
       return;
     }
 
     const trimmedCode = codeToCheck.trim();
     if (!trimmedCode) {
-      window.showToast?.("Vui lòng nhập mã vị trí", "error");
+      setError("Vui lòng nhập mã vị trí");
       return;
     }
 
@@ -59,7 +59,6 @@ export default function ScanLocationStocktakingModal({ isOpen, onClose, onSucces
     if (!currentStocktakingLocationId) {
       const errorMsg = "Thiếu thông tin stocktakingLocationId";
       setError(errorMsg);
-      window.showToast?.(errorMsg, "error");
       return;
     }
 
@@ -83,9 +82,7 @@ export default function ScanLocationStocktakingModal({ isOpen, onClose, onSucces
           setValidatedLocationData(null);
           const errorMsg = "Mã vị trí không khớp với vị trí được chọn";
           setError(errorMsg);
-          window.showToast?.(errorMsg, "error");
         } else {
-          setLocationValidated(true);
           // Lưu thông tin location từ response
           const locationData = {
             locationCode: validatedCode,
@@ -96,25 +93,21 @@ export default function ScanLocationStocktakingModal({ isOpen, onClose, onSucces
             column: responseData.column,
             ...responseData
           };
-          setValidatedLocationData(locationData);
-          
-          // Đóng modal location và mở modal pallet khi validate thành công
-          setTimeout(() => {
-            if (onLocationValidated) {
-              onLocationValidated({
-                ...locationData,
-                stocktakingLocationId: currentStocktakingLocationId
-              });
-            }
-            onClose && onClose();
-          }, 500); // Delay nhỏ để user thấy validation thành công
+
+          // Chuyển thẳng sang modal pallet ngay khi validate thành công
+          if (onLocationValidated) {
+            onLocationValidated({
+              ...locationData,
+              stocktakingLocationId: currentStocktakingLocationId
+            });
+          }
+          onClose && onClose();
         }
       } else {
         setLocationValidated(false);
         setValidatedLocationData(null);
         const errorMsg = "Không tìm thấy thông tin vị trí";
         setError(errorMsg);
-        window.showToast?.(errorMsg, "error");
       }
     } catch (error) {
       console.error("Error checking location code:", error);
@@ -122,7 +115,6 @@ export default function ScanLocationStocktakingModal({ isOpen, onClose, onSucces
       setValidatedLocationData(null);
       const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi kiểm tra mã vị trí");
       setError(errorMessage);
-      window.showToast?.(errorMessage, "error");
     } finally {
       setCheckingLocation(false);
     }
@@ -204,7 +196,7 @@ export default function ScanLocationStocktakingModal({ isOpen, onClose, onSucces
         <div className="p-6">
           <div className="space-y-6">
             {/* Mã vị trí với nút Kiểm Tra */}
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-3">
               <Label htmlFor="locationCode" className="text-sm font-medium text-slate-700">
                 Mã vị trí <span className="text-red-500">*</span>
               </Label>
@@ -215,7 +207,12 @@ export default function ScanLocationStocktakingModal({ isOpen, onClose, onSucces
                   value={formData.locationCode}
                   onChange={(e) => handleLocationCodeChange(e.target.value)}
                   onBlur={handleLocationCodeBlur}
-                  className="h-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg flex-1"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && formData.locationCode && formData.locationCode.trim()) {
+                      handleCheckLocationCode();
+                    }
+                  }}
+                  className="h-12 border-slate-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg flex-1 text-base"
                   disabled={loading || checkingLocation}
                   autoFocus
                 />
@@ -223,112 +220,25 @@ export default function ScanLocationStocktakingModal({ isOpen, onClose, onSucces
                   type="button"
                   onClick={() => handleCheckLocationCode()}
                   disabled={loading || checkingLocation || !(formData.locationCode && typeof formData.locationCode === 'string' && formData.locationCode.trim())}
-                  className="h-10 px-6 border border-blue-300 text-blue-600 hover:bg-blue-50 font-medium rounded-lg transition-all disabled:opacity-50 whitespace-nowrap"
+                  className="h-12 px-8 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                 >
-                  {checkingLocation ? "Đang kiểm tra..." : "Kiểm Tra"}
+                  {checkingLocation ? (
+                    <span className="flex items-center gap-2">
+                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      Đang kiểm tra...
+                    </span>
+                  ) : (
+                    "Kiểm Tra"
+                  )}
                 </Button>
               </div>
-              {locationValidated && validatedLocationData && (
-                <div className="flex items-center gap-2 text-green-600 text-sm mt-1">
-                  <CheckCircle2 className="h-4 w-4" />
-                  <span>Mã vị trí hợp lệ</span>
-                </div>
-              )}
               {error && (
-                <div className="flex items-center gap-2 text-red-600 text-sm mt-1">
+                <div className="flex items-center gap-2 text-red-600 text-sm mt-1 px-1">
                   <AlertCircle className="h-4 w-4" />
                   <span>{error}</span>
                 </div>
               )}
             </div>
-
-            {/* Khu vực - Chỉ hiển thị (read-only) khi đã validate */}
-            {locationValidated && validatedLocationData ? (
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="areaName" className="text-sm font-medium text-slate-700">
-                  Khu vực
-                </Label>
-                <div className="h-10 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-700 flex items-center">
-                  {validatedLocationData.areaName || 'N/A'}
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="areaId" className="text-sm font-medium text-slate-700">
-                  Khu vực
-                </Label>
-                <div className="h-10 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-400 flex items-center">
-                  Vui lòng kiểm tra mã vị trí trước
-                </div>
-              </div>
-            )}
-
-            {/* Kệ, Hàng, Cột - Chỉ hiển thị (read-only) khi đã validate */}
-            {locationValidated && validatedLocationData ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Kệ */}
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="rack" className="text-sm font-medium text-slate-700">
-                    Kệ
-                  </Label>
-                  <div className="h-10 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-700 flex items-center">
-                    {validatedLocationData.rack || 'N/A'}
-                  </div>
-                </div>
-
-                {/* Hàng */}
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="row" className="text-sm font-medium text-slate-700">
-                    Hàng
-                  </Label>
-                  <div className="h-10 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-700 flex items-center">
-                    {validatedLocationData.row != null ? validatedLocationData.row : 'N/A'}
-                  </div>
-                </div>
-
-                {/* Cột */}
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="column" className="text-sm font-medium text-slate-700">
-                    Cột
-                  </Label>
-                  <div className="h-10 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-700 flex items-center">
-                    {validatedLocationData.column != null ? validatedLocationData.column : 'N/A'}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Kệ */}
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="rack" className="text-sm font-medium text-slate-700">
-                    Kệ
-                  </Label>
-                  <div className="h-10 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-400 flex items-center">
-                    Vui lòng kiểm tra mã vị trí
-                  </div>
-                </div>
-
-                {/* Hàng */}
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="row" className="text-sm font-medium text-slate-700">
-                    Hàng
-                  </Label>
-                  <div className="h-10 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-400 flex items-center">
-                    Vui lòng kiểm tra mã vị trí
-                  </div>
-                </div>
-
-                {/* Cột */}
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="column" className="text-sm font-medium text-slate-700">
-                    Cột
-                  </Label>
-                  <div className="h-10 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-400 flex items-center">
-                    Vui lòng kiểm tra mã vị trí
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Actions */}
             <div className="flex justify-end gap-4 pt-6 border-t">

@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, MapPin, Clock, Calendar, User, Thermometer, Droplets, Sun } from 'lucide-react';
+import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, MapPin, Clock, Calendar, User, Thermometer, Droplets, Sun, CheckCircle2 } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
-import { getStocktakingAreaDetailBySheetId, getStocktakingDetail } from '../../services/StocktakingService';
+import { getStocktakingAreaDetailBySheetId, getStocktakingDetail, confirmStocktakingLocationCounted } from '../../services/StocktakingService';
 import { extractErrorMessage } from '../../utils/Validation';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
 import StatusDisplay from '../../components/StocktakingComponents/StatusDisplay';
@@ -29,6 +29,7 @@ const StocktakingArea = () => {
     const [showPalletModal, setShowPalletModal] = useState(false);
     const [selectedLocation, setSelectedLocation] = useState(null);
     const [validatedLocationData, setValidatedLocationData] = useState(null);
+    const [confirmingLocationId, setConfirmingLocationId] = useState(null);
     const isFetchingRef = useRef(false);
 
     useEffect(() => {
@@ -161,6 +162,32 @@ const StocktakingArea = () => {
         setValidatedLocationData(null);
         // Refresh data sau khi đóng modal pallet
         handleRefresh();
+    };
+
+    const handleConfirmCounted = async (stocktakingLocationId) => {
+        if (!stocktakingLocationId || confirmingLocationId === stocktakingLocationId) {
+            return;
+        }
+
+        setConfirmingLocationId(stocktakingLocationId);
+        try {
+            await confirmStocktakingLocationCounted(stocktakingLocationId);
+
+            if (window.showToast) {
+                window.showToast('Xác nhận đã đếm thành công!', 'success');
+            }
+
+            // Refresh data sau khi confirm
+            await handleRefresh();
+        } catch (error) {
+            console.error('Error confirming counted:', error);
+            const errorMessage = extractErrorMessage(error);
+            if (window.showToast) {
+                window.showToast(errorMessage || 'Có lỗi xảy ra khi xác nhận đã đếm', 'error');
+            }
+        } finally {
+            setConfirmingLocationId(null);
+        }
     };
 
     if (loading) {
@@ -420,6 +447,9 @@ const StocktakingArea = () => {
                                         <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
                                             Hành Động
                                         </TableHead>
+                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                                            Xác Nhận
+                                        </TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -443,11 +473,29 @@ const StocktakingArea = () => {
                                                         Tiến Hành
                                                     </Button>
                                                 </TableCell>
+                                                <TableCell className="px-6 py-4 text-center">
+                                                    {location.isAvailable === true ? (
+                                                        <button
+                                                            onClick={() => handleConfirmCounted(location.stocktakingLocationId)}
+                                                            disabled={confirmingLocationId === location.stocktakingLocationId}
+                                                            className="flex items-center justify-center w-10 h-10 rounded-full bg-green-500 hover:bg-green-600 text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-green-500"
+                                                            title="Xác nhận trong hệ thống không có pallet và bên ngoài không có pallet"
+                                                        >
+                                                            {confirmingLocationId === location.stocktakingLocationId ? (
+                                                                <RefreshCw className="h-5 w-5 animate-spin" />
+                                                            ) : (
+                                                                <CheckCircle2 className="h-5 w-5" />
+                                                            )}
+                                                        </button>
+                                                    ) : (
+                                                        <span className="text-gray-400 text-sm">-</span>
+                                                    )}
+                                                </TableCell>
                                             </TableRow>
                                         ))
                                     ) : (
                                         <TableRow>
-                                            <TableCell colSpan={3} className="px-6 py-8 text-center text-gray-500">
+                                            <TableCell colSpan={4} className="px-6 py-8 text-center text-gray-500">
                                                 Không có vị trí nào để kiểm tra
                                             </TableCell>
                                         </TableRow>

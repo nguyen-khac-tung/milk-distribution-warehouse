@@ -39,7 +39,9 @@ const CreateStocktaking = () => {
 
     const [fieldErrors, setFieldErrors] = useState({});
     const [saveDraftLoading, setSaveDraftLoading] = useState(false);
+    const [assignLoading, setAssignLoading] = useState(false);
     const [showAssignModal, setShowAssignModal] = useState(false);
+    const [stocktakingSheetId, setStocktakingSheetId] = useState(null);
 
     // Không set default values - người dùng phải tự chọn
 
@@ -132,17 +134,39 @@ const CreateStocktaking = () => {
         }
     };
 
-    const handleOpenAssignModal = (e) => {
+    const handleOpenAssignModal = async (e) => {
         e.preventDefault();
 
-        // Chỉ validate form, không gọi API
+        // Validate form trước
         if (!validateForm()) {
             window.showToast('Vui lòng điền đầy đủ thông tin bắt buộc', 'error');
             return;
         }
 
-        // Chỉ mở modal, chưa lưu gì cả
-        setShowAssignModal(true);
+        setAssignLoading(true);
+        try {
+            // Tạo stocktaking trước để lấy ID
+            const newStocktakingSheetId = await createStocktakingData();
+            
+            if (!newStocktakingSheetId) {
+                window.showToast('Không thể lấy ID phiếu kiểm kê', 'error');
+                return;
+            }
+
+            // Lưu ID vào state
+            setStocktakingSheetId(newStocktakingSheetId);
+            
+            // Mở modal sau khi đã có ID
+            setShowAssignModal(true);
+        } catch (error) {
+            console.error('Error creating stocktaking:', error);
+            const errorMessage = extractErrorMessage(error);
+            if (window.showToast) {
+                window.showToast(errorMessage || 'Có lỗi xảy ra khi tạo phiếu kiểm kê', 'error');
+            }
+        } finally {
+            setAssignLoading(false);
+        }
     };
 
     const handleAssignmentSuccess = () => {
@@ -288,10 +312,10 @@ const CreateStocktaking = () => {
                             <Button
                                 type="button"
                                 onClick={handleOpenAssignModal}
-                                disabled={saveDraftLoading}
+                                disabled={saveDraftLoading || assignLoading}
                                 className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Phân công
+                                {assignLoading ? 'Đang tạo...' : 'Phân công'}
                             </Button>
                         </div>
                     </div>
@@ -307,10 +331,10 @@ const CreateStocktaking = () => {
                         setShowAssignModal(false);
                     }}
                     onSuccess={handleAssignmentSuccess}
-                    stocktakingSheetId={null} // Chưa có ID vì chưa tạo
+                    stocktakingSheetId={stocktakingSheetId} // ID đã được tạo khi click "Phân công"
                     isReassign={false}
                     stocktaking={null}
-                    formData={formData} // Truyền formData để modal tự tạo khi confirm
+                    formData={formData} // Truyền formData để modal có thể sử dụng nếu cần
                 />
             </PermissionWrapper>
         </div>
