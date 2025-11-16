@@ -25,7 +25,8 @@ namespace MilkDistributionWarehouse.Repositories
         {
             
             return await _context.PickAllocations
-                .Where(pa => pa.GoodsIssueNoteDetail.GoodsIssueNote.Status != GoodsIssueNoteStatus.Completed)
+                .Where(pa => pa.GoodsIssueNoteDetailId != null 
+                             && pa.GoodsIssueNoteDetail.GoodsIssueNote.Status != GoodsIssueNoteStatus.Completed)
                 .GroupBy(pa => pa.PalletId)
                 .Select(g => new
                 {

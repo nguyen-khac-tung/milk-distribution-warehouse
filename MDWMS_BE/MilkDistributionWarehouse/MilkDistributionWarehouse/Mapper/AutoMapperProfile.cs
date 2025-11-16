@@ -490,6 +490,11 @@ namespace MilkDistributionWarehouse.Mapper
                .ForMember(dest => dest.DisposalRequestDetails, opt => opt.MapFrom(src => src.DisposalRequestItems));
             CreateMap<DisposalRequestItemCreateDto, DisposalRequestDetail>()
                 .ForMember(dest => dest.DisposalRequestDetailId, opt => opt.Ignore());
+            CreateMap<DisposalRequestUpdateDto, DisposalRequest>()
+                .ForMember(dest => dest.Note, opt => opt.MapFrom(src => src.Note ?? ""))
+                .ForMember(dest => dest.DisposalRequestDetails, opt => opt.Ignore());
+            CreateMap<DisposalRequestItemUpdateDto, DisposalRequestDetail>();
+
 
             // Map PickAllocation            
             CreateMap<PickAllocation, PickAllocationDto>()

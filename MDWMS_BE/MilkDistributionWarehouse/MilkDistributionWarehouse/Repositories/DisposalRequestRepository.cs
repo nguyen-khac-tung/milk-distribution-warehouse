@@ -10,6 +10,8 @@ namespace MilkDistributionWarehouse.Repositories
         Task<DisposalRequest?> GetDisposalRequestById(string? id);
         Task<List<DisposalRequestDetail>> GetCommittedDisposalQuantities();
         Task CreateDisposalRequest(DisposalRequest disposalRequest);
+        Task UpdateDisposalRequest(DisposalRequest disposalRequest);
+        Task DeleteDisposalRequest(DisposalRequest disposalRequest);
     }
 
     public class DisposalRequestRepository : IDisposalRequestRepository
@@ -62,6 +64,18 @@ namespace MilkDistributionWarehouse.Repositories
         public async Task CreateDisposalRequest(DisposalRequest disposalRequest)
         {
             await _context.DisposalRequests.AddAsync(disposalRequest);
+        }
+
+        public async Task UpdateDisposalRequest(DisposalRequest disposalRequest)
+        {
+            _context.DisposalRequests.Update(disposalRequest);
+            await Task.CompletedTask;
+        }
+
+        public async Task DeleteDisposalRequest(DisposalRequest disposalRequest)
+        {
+            _context.DisposalRequests.Remove(disposalRequest);
+            await Task.CompletedTask;
         }
     }
 }

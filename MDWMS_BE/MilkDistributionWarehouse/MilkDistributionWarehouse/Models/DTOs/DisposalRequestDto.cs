@@ -53,6 +53,13 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int? PackageQuantity { get; set; }
     }
 
+    public class ExpiredGoodsDisposalDto
+    {
+        public GoodsDto Goods { get; set; }
+        public GoodsPackingDto GoodsPacking { get; set; }
+        public int TotalExpiredPackageQuantity { get; set; }
+    }
+
     public class DisposalRequestCreateDto
     {
         [Required(ErrorMessage = "Ngày dự kiến xuất hủy không được bỏ trống.")]
@@ -77,10 +84,48 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int? PackageQuantity { get; set; }
     }
 
-    public class ExpiredGoodsDisposalDto
+    public class DisposalRequestUpdateDto
     {
-        public GoodsDto Goods { get; set; }
-        public GoodsPackingDto GoodsPacking { get; set; }
-        public int TotalExpiredPackageQuantity { get; set; }
+        [Required(ErrorMessage = "Mã yêu cầu xuất hủy không được bỏ trống.")]
+        public string DisposalRequestId { get; set; }
+
+        [Required(ErrorMessage = "Ngày dự kiến xuất hủy không được bỏ trống.")]
+        public DateOnly? EstimatedTimeDeparture { get; set; }
+
+        [Required(ErrorMessage = "Danh sách hàng hóa không được bỏ trống.")]
+        public List<DisposalRequestItemUpdateDto> DisposalRequestItems { get; set; }
+
+        public string? Note { get; set; }
+    }
+
+    public class DisposalRequestItemUpdateDto : DisposalRequestItemCreateDto
+    {
+        public int? DisposalRequestDetailId { get; set; }
+    }
+
+    public class DisposalRequestUpdateStatusDto
+    {
+        [Required(ErrorMessage = "Mã yêu cầu xuất hủy không được bỏ trống.")]
+        public string DisposalRequestId { get; set; }
+    }
+
+    public class DisposalRequestPendingApprovalDto : DisposalRequestUpdateStatusDto
+    {
+    }
+
+    public class DisposalRequestApprovalDto : DisposalRequestUpdateStatusDto
+    {
+    }
+
+    public class DisposalRequestRejectDto : DisposalRequestUpdateStatusDto
+    {
+        [Required(ErrorMessage = "Lý do từ chối không được bỏ trống.")]
+        public string? RejectionReason { get; set; }
+    }
+
+    public class DisposalRequestAssignedForPickingDto : DisposalRequestUpdateStatusDto
+    {
+        [Required(ErrorMessage = "Nhân viên kho không được bỏ trống.")]
+        public int? AssignTo { get; set; }
     }
 }

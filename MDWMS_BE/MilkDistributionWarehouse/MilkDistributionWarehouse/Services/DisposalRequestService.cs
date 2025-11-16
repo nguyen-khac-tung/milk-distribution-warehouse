@@ -15,23 +15,29 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, DisposalRequestDetailDto?)> GetDisposalRequestDetail(string? disposalRequestId);
         Task<(string, List<ExpiredGoodsDisposalDto>?)> GetExpiredGoodsForDisposal();
         Task<(string, DisposalRequestCreateDto?)> CreateDisposalRequest(DisposalRequestCreateDto createDto, int? userId);
+        Task<(string, DisposalRequestUpdateDto?)> UpdateDisposalRequest(DisposalRequestUpdateDto updateDto, int? userId);
+        Task<string> DeleteDisposalRequest(string? disposalRequestId, int? userId);
+        Task<(string, T?)> UpdateStatusDisposalRequest<T>(T updateStatusDto, int? userId) where T : DisposalRequestUpdateStatusDto;
     }
 
     public class DisposalRequestService : IDisposalRequestService
     {
         private readonly IDisposalRequestRepository _disposalRequestRepository;
+        private readonly IDisposalRequestDetailRepository _disposalRequestDetailRepository;
         private readonly IUserRepository _userRepository;
         private readonly IGoodsRepository _goodsRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
         public DisposalRequestService(IDisposalRequestRepository disposalRequestRepository,
+                                      IDisposalRequestDetailRepository disposalRequestDetailRepository,
                                       IUserRepository userRepository,
                                       IGoodsRepository goodsRepository,
                                       IUnitOfWork unitOfWork,
                                       IMapper mapper)
         {
             _disposalRequestRepository = disposalRequestRepository;
+            _disposalRequestDetailRepository = disposalRequestDetailRepository;
             _userRepository = userRepository;
             _goodsRepository = goodsRepository;
             _unitOfWork = unitOfWork;
@@ -49,7 +55,7 @@ namespace MilkDistributionWarehouse.Services
             var disposalRequests = _disposalRequestRepository.GetAllDisposalRequests();
 
             if (userRoles.Contains(RoleType.WarehouseManager))
-                disposalRequests = disposalRequests.Where(dr => dr.Status != null && 
+                disposalRequests = disposalRequests.Where(dr => dr.Status != null &&
                                                                 (dr.Status != DisposalRequestStatus.Draft || (dr.Status == DisposalRequestStatus.Draft && dr.CreatedBy == userId)));
 
             if (userRoles.Contains(RoleType.SaleManager))
@@ -157,6 +163,161 @@ namespace MilkDistributionWarehouse.Services
             {
                 await _unitOfWork.RollbackTransactionAsync();
                 return ("Tạo yêu cầu xuất hủy thất bại.".ToMessageForUser(), null);
+            }
+        }
+
+        public async Task<(string, DisposalRequestUpdateDto?)> UpdateDisposalRequest(DisposalRequestUpdateDto updateDto, int? userId)
+        {
+            if (updateDto == null) return ("Data disposal request update is null.", null);
+
+            if (updateDto.EstimatedTimeDeparture <= DateOnly.FromDateTime(DateTime.Now))
+                return ("Ngày xuất hủy không hợp lệ. Vui lòng chọn một ngày trong tương lai.".ToMessageForUser(), null);
+
+            if (updateDto.DisposalRequestItems.IsNullOrEmpty())
+                return ("Danh sách hàng hóa không được bỏ trống.".ToMessageForUser(), null);
+
+            var existingRequest = await _disposalRequestRepository.GetDisposalRequestById(updateDto.DisposalRequestId);
+            if (existingRequest == null) return ("Disposal request exist is null.", null);
+
+            if (existingRequest.Status != DisposalRequestStatus.Draft && existingRequest.Status != DisposalRequestStatus.Rejected)
+                return ("Chỉ được cập nhật khi yêu cầu ở trạng thái Nháp hoặc Bị từ chối.".ToMessageForUser(), null);
+
+            if (existingRequest.CreatedBy != userId) return ("Bạn không có quyền cập nhật yêu cầu này.".ToMessageForUser(), null);
+
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                _mapper.Map(updateDto, existingRequest);
+                existingRequest.UpdateAt = DateTime.Now;
+
+                var updateDetails = updateDto.DisposalRequestItems;
+                var existingDetails = existingRequest.DisposalRequestDetails.ToList();
+
+                foreach (var exDetail in existingDetails)
+                {
+                    if (!updateDetails.Any(up => up.DisposalRequestDetailId == exDetail.DisposalRequestDetailId))
+                    {
+                        await _disposalRequestDetailRepository.Remove(exDetail);
+                    }
+                }
+
+                foreach (var updateDetail in updateDetails)
+                {
+                    var existingDetail = existingDetails.FirstOrDefault(ex => ex.DisposalRequestDetailId == updateDetail.DisposalRequestDetailId);
+                    if (existingDetail != null)
+                    {
+                        _mapper.Map(updateDetail, existingDetail);
+                    }
+                    else
+                    {
+                        var newDetail = _mapper.Map<DisposalRequestDetail>(updateDetail);
+                        existingRequest.DisposalRequestDetails.Add(newDetail);
+                    }
+                }
+
+                await _disposalRequestRepository.UpdateDisposalRequest(existingRequest);
+                await _unitOfWork.CommitTransactionAsync();
+
+                return ("", updateDto);
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ("Cập nhật yêu cầu xuất hủy thất bại.".ToMessageForUser(), null);
+            }
+        }
+
+        public async Task<string> DeleteDisposalRequest(string? disposalRequestId, int? userId)
+        {
+            if (string.IsNullOrEmpty(disposalRequestId)) return "DisposalRequestId is invalid.";
+
+            var existingRequest = await _disposalRequestRepository.GetDisposalRequestById(disposalRequestId);
+            if (existingRequest == null) return "Disposal request exist is null.";
+
+            if (existingRequest.CreatedBy != userId) return "Bạn không có quyền xóa yêu cầu này.".ToMessageForUser();
+
+            if (existingRequest.Status != DisposalRequestStatus.Draft) return "Chỉ có thể xóa khi yêu cầu ở trạng thái Nháp.".ToMessageForUser();
+
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                foreach (var item in existingRequest.DisposalRequestDetails.ToList())
+                {
+                    await _disposalRequestDetailRepository.Remove(item);
+                }
+
+                await _disposalRequestRepository.DeleteDisposalRequest(existingRequest);
+
+                await _unitOfWork.CommitTransactionAsync();
+                return "";
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return "Xóa yêu cầu xuất hủy thất bại.".ToMessageForUser();
+            }
+        }
+
+        public async Task<(string, T?)> UpdateStatusDisposalRequest<T>(T updateStatusDto, int? userId) 
+            where T : DisposalRequestUpdateStatusDto
+        {
+            var disposalRequest = await _disposalRequestRepository.GetDisposalRequestById(updateStatusDto.DisposalRequestId);
+            if (disposalRequest == null) return ("Disposal request exist is null.", null);
+
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                if (updateStatusDto is DisposalRequestPendingApprovalDto)
+                {
+                    if (disposalRequest.Status != DisposalRequestStatus.Draft && disposalRequest.Status != DisposalRequestStatus.Rejected)
+                        return ("Chỉ được nộp khi yêu cầu ở trạng thái Nháp hoặc Bị từ chối.".ToMessageForUser(), null);
+                    if (disposalRequest.CreatedBy != userId) return ("Bạn không có quyền thực hiện thao tác này.".ToMessageForUser(), null);
+
+                    disposalRequest.Status = DisposalRequestStatus.PendingApproval;
+                }
+
+                if (updateStatusDto is DisposalRequestRejectDto rejectDto)
+                {
+                    if (disposalRequest.Status != DisposalRequestStatus.PendingApproval)
+                        return ("Chỉ được từ chối khi yêu cầu ở trạng thái Chờ duyệt.".ToMessageForUser(), null);
+                    disposalRequest.Status = DisposalRequestStatus.Rejected;
+                    disposalRequest.ApprovalBy = userId;
+                    disposalRequest.RejectionReason = rejectDto.RejectionReason;
+                    disposalRequest.ApprovalAt = DateTime.Now;
+                }
+
+                if (updateStatusDto is DisposalRequestApprovalDto)
+                {
+                    if (disposalRequest.Status != DisposalRequestStatus.PendingApproval)
+                        return ("Chỉ được duyệt khi yêu cầu ở trạng thái Chờ duyệt.".ToMessageForUser(), null);
+                    disposalRequest.Status = DisposalRequestStatus.Approved;
+                    disposalRequest.ApprovalBy = userId;
+                    disposalRequest.RejectionReason = "";
+                    disposalRequest.ApprovalAt = DateTime.Now;
+                }
+
+                if (updateStatusDto is DisposalRequestAssignedForPickingDto assignedDto)
+                {
+                    if (disposalRequest.Status != DisposalRequestStatus.Approved && disposalRequest.Status != DisposalRequestStatus.AssignedForPicking)
+                        return ("Chỉ được phân công khi yêu cầu ở trạng thái Đã duyệt hoặc Đã phân công.".ToMessageForUser(), null);
+                    disposalRequest.Status = DisposalRequestStatus.AssignedForPicking;
+                    disposalRequest.AssignTo = assignedDto.AssignTo;
+                    disposalRequest.AssignAt = DateTime.Now;
+                }
+
+                disposalRequest.UpdateAt = DateTime.Now;
+                await _disposalRequestRepository.UpdateDisposalRequest(disposalRequest);
+                await _unitOfWork.CommitTransactionAsync();
+
+                return ("", updateStatusDto);
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ("Cập nhật trạng thái yêu cầu xuất hủy thất bại.".ToMessageForUser(), null);
             }
         }
     }
