@@ -21,6 +21,14 @@ public partial class WarehouseContext : DbContext
 
     public virtual DbSet<Category> Categories { get; set; }
 
+    public virtual DbSet<DisposalNote> DisposalNotes { get; set; }
+
+    public virtual DbSet<DisposalNoteDetail> DisposalNoteDetails { get; set; }
+
+    public virtual DbSet<DisposalRequest> DisposalRequests { get; set; }
+
+    public virtual DbSet<DisposalRequestDetail> DisposalRequestDetails { get; set; }
+
     public virtual DbSet<Good> Goods { get; set; }
 
     public virtual DbSet<GoodsIssueNote> GoodsIssueNotes { get; set; }
@@ -133,6 +141,87 @@ public partial class WarehouseContext : DbContext
         {
             entity.Property(e => e.CategoryName).HasMaxLength(100);
             entity.Property(e => e.Description).HasMaxLength(255);
+        });
+
+        modelBuilder.Entity<DisposalNote>(entity =>
+        {
+            entity.HasKey(e => e.DisposalNoteId).HasName("PK__Disposal__520D5C00B0E4A467");
+
+            entity.Property(e => e.DisposalNoteId).ValueGeneratedNever();
+            entity.Property(e => e.Status).HasDefaultValue(1);
+
+            entity.HasOne(d => d.ApprovalByNavigation).WithMany(p => p.DisposalNoteApprovalByNavigations)
+                .HasForeignKey(d => d.ApprovalBy)
+                .HasConstraintName("FK_DisposalNotes_Users1");
+
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.DisposalNoteCreatedByNavigations)
+                .HasForeignKey(d => d.CreatedBy)
+                .HasConstraintName("FK_DisposalNotes_Users");
+
+            entity.HasOne(d => d.DisposalRequest).WithMany(p => p.DisposalNotes)
+                .HasForeignKey(d => d.DisposalRequestId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_DisposalNotes_DisposalRequests");
+        });
+
+        modelBuilder.Entity<DisposalNoteDetail>(entity =>
+        {
+            entity.HasKey(e => e.DisposalNoteDetailId).HasName("PK__Disposal__C3D1F4DD12871FDA");
+
+            entity.Property(e => e.DisposalNoteDetailId).ValueGeneratedNever();
+            entity.Property(e => e.Note).HasMaxLength(255);
+            entity.Property(e => e.RejectionReason).HasMaxLength(255);
+            entity.Property(e => e.Status).HasDefaultValue(1);
+
+            entity.HasOne(d => d.DisposalNote).WithMany(p => p.DisposalNoteDetails)
+                .HasForeignKey(d => d.DisposalNoteId)
+                .HasConstraintName("FK_DisposalNoteDetails_DisposalNotes");
+
+            entity.HasOne(d => d.Goods).WithMany(p => p.DisposalNoteDetails)
+                .HasForeignKey(d => d.GoodsId)
+                .HasConstraintName("FK_DisposalNoteDetails_Goods");
+
+            entity.HasOne(d => d.GoodsPacking).WithMany(p => p.DisposalNoteDetails)
+                .HasForeignKey(d => d.GoodsPackingId)
+                .HasConstraintName("FK_DisposalNoteDetails_GoodsPacking");
+        });
+
+        modelBuilder.Entity<DisposalRequest>(entity =>
+        {
+            entity.HasKey(e => e.DisposalRequestId).HasName("PK__Disposal__E01900E5CC9B31AE");
+
+            entity.Property(e => e.DisposalRequestId).ValueGeneratedNever();
+            entity.Property(e => e.Note).HasMaxLength(250);
+            entity.Property(e => e.RejectionReason).HasMaxLength(255);
+
+            entity.HasOne(d => d.ApprovalByNavigation).WithMany(p => p.DisposalRequestApprovalByNavigations)
+                .HasForeignKey(d => d.ApprovalBy)
+                .HasConstraintName("FK_DisposalRequests_Users1");
+
+            entity.HasOne(d => d.AssignToNavigation).WithMany(p => p.DisposalRequestAssignToNavigations)
+                .HasForeignKey(d => d.AssignTo)
+                .HasConstraintName("FK_DisposalRequests_Users2");
+
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.DisposalRequestCreatedByNavigations)
+                .HasForeignKey(d => d.CreatedBy)
+                .HasConstraintName("FK_DisposalRequests_Users");
+        });
+
+        modelBuilder.Entity<DisposalRequestDetail>(entity =>
+        {
+            entity.HasKey(e => e.DisposalRequestDetailId).HasName("PK__Disposal__71BD39471FA51889");
+
+            entity.HasOne(d => d.DisposalRequest).WithMany(p => p.DisposalRequestDetails)
+                .HasForeignKey(d => d.DisposalRequestId)
+                .HasConstraintName("FK_DisposalRequestDetails_DisposalRequests");
+
+            entity.HasOne(d => d.Goods).WithMany(p => p.DisposalRequestDetails)
+                .HasForeignKey(d => d.GoodsId)
+                .HasConstraintName("FK_DisposalRequestDetails_Goods");
+
+            entity.HasOne(d => d.GoodsPacking).WithMany(p => p.DisposalRequestDetails)
+                .HasForeignKey(d => d.GoodsPackingId)
+                .HasConstraintName("FK_DisposalRequestDetails_GoodsPacking");
         });
 
         modelBuilder.Entity<Good>(entity =>
@@ -341,6 +430,10 @@ public partial class WarehouseContext : DbContext
                 .IsUnicode(false)
                 .IsFixedLength();
             entity.Property(e => e.Status).HasDefaultValue(1);
+
+            entity.HasOne(d => d.DisposalNoteDetail).WithMany(p => p.PickAllocations)
+                .HasForeignKey(d => d.DisposalNoteDetailId)
+                .HasConstraintName("FK_PickAllocation_DisposalNoteDetails");
 
             entity.HasOne(d => d.GoodsIssueNoteDetail).WithMany(p => p.PickAllocations)
                 .HasForeignKey(d => d.GoodsIssueNoteDetailId)
