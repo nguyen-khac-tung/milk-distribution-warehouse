@@ -64,6 +64,7 @@ export default function BackOrderList() {
     const [updateBackOrderId, setUpdateBackOrderId] = useState(null)
     const [itemToView, setItemToView] = useState(null)
     const [selectedBackOrders, setSelectedBackOrders] = useState(new Set())
+    const [selectedBackOrdersData, setSelectedBackOrdersData] = useState(new Map()) // Lưu trữ thông tin đầy đủ của các items đã chọn
     const [suppliers, setSuppliers] = useState([])
     const [retailers, setRetailers] = useState([])
     const [pagination, setPagination] = useState({
@@ -324,10 +325,24 @@ export default function BackOrderList() {
     const handleDeleteConfirm = async () => {
         try {
             console.log("Deleting backOrder:", itemToDelete)
-            await deleteBackOrder(itemToDelete?.backOrderId)
+            const deletedBackOrderId = itemToDelete?.backOrderId
+            
+            await deleteBackOrder(deletedBackOrderId)
             window.showToast(`Đã xóa đơn đặt hàng: ${itemToDelete?.retailerName || ''}`, "success")
             setShowDeleteModal(false)
             setItemToDelete(null)
+
+            // Xóa khỏi danh sách đã chọn nếu có
+            setSelectedBackOrders(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(deletedBackOrderId);
+                return newSet;
+            });
+            setSelectedBackOrdersData(prevData => {
+                const newMap = new Map(prevData);
+                newMap.delete(deletedBackOrderId);
+                return newMap;
+            });
 
             // Calculate if current page will be empty after deletion
             const currentPageItemCount = backOrders.length
@@ -482,8 +497,23 @@ export default function BackOrderList() {
             const newSet = new Set(prev);
             if (checked) {
                 newSet.add(backOrderId);
+                // Tìm và lưu thông tin đầy đủ của item đã chọn
+                const backOrder = filteredBackOrders.find(bo => bo.backOrderId === backOrderId);
+                if (backOrder) {
+                    setSelectedBackOrdersData(prevData => {
+                        const newMap = new Map(prevData);
+                        newMap.set(backOrderId, backOrder);
+                        return newMap;
+                    });
+                }
             } else {
                 newSet.delete(backOrderId);
+                // Xóa khỏi selectedBackOrdersData
+                setSelectedBackOrdersData(prevData => {
+                    const newMap = new Map(prevData);
+                    newMap.delete(backOrderId);
+                    return newMap;
+                });
             }
             return newSet;
         });
@@ -492,12 +522,35 @@ export default function BackOrderList() {
     // Xử lý select all (chỉ chọn các đơn có statusDinamic === 'Available')
     const handleSelectAll = (checked) => {
         if (checked) {
-            const availableBackOrderIds = filteredBackOrders
-                .filter(bo => bo.statusDinamic === 'Available')
-                .map(bo => bo.backOrderId);
+            const availableBackOrders = filteredBackOrders.filter(bo => bo.statusDinamic === 'Available');
+            const availableBackOrderIds = availableBackOrders.map(bo => bo.backOrderId);
             setSelectedBackOrders(new Set(availableBackOrderIds));
+            // Lưu thông tin đầy đủ của tất cả các items đã chọn
+            const newMap = new Map();
+            availableBackOrders.forEach(bo => {
+                newMap.set(bo.backOrderId, bo);
+            });
+            setSelectedBackOrdersData(prevData => {
+                // Merge với các items đã chọn trước đó (có thể từ các trang khác)
+                const mergedMap = new Map(prevData);
+                availableBackOrders.forEach(bo => {
+                    mergedMap.set(bo.backOrderId, bo);
+                });
+                return mergedMap;
+            });
         } else {
-            setSelectedBackOrders(new Set());
+            // Chỉ xóa các items trong filteredBackOrders hiện tại
+            const currentPageIds = new Set(filteredBackOrders.map(bo => bo.backOrderId));
+            setSelectedBackOrders(prev => {
+                const newSet = new Set(prev);
+                currentPageIds.forEach(id => newSet.delete(id));
+                return newSet;
+            });
+            setSelectedBackOrdersData(prevData => {
+                const newMap = new Map(prevData);
+                currentPageIds.forEach(id => newMap.delete(id));
+                return newMap;
+            });
         }
     };
 
@@ -514,8 +567,15 @@ export default function BackOrderList() {
         }
 
         try {
-            // Lấy thông tin các đơn đã chọn
-            const selectedOrders = filteredBackOrders.filter(bo => selectedBackOrders.has(bo.backOrderId));
+            // Lấy thông tin các đơn đã chọn từ selectedBackOrdersData (chứa tất cả items đã chọn, kể cả không còn trong danh sách hiện tại)
+            const selectedOrders = Array.from(selectedBackOrdersData.values()).filter(order => 
+                order.statusDinamic === 'Available' // Chỉ lấy các items có sẵn
+            );
+
+            if (selectedOrders.length === 0) {
+                window.showToast("Vui lòng chọn ít nhất một đơn hàng có sẵn", "error");
+                return;
+            }
 
             // Kiểm tra xem tất cả các đơn đã chọn có cùng retailer không
             const retailerIds = [...new Set(selectedOrders.map(order => order.retailerId))];
