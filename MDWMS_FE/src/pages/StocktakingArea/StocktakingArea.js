@@ -338,13 +338,14 @@ const StocktakingArea = () => {
             return;
         }
 
-        // Kiểm tra xem tất cả locations đã ở trạng thái "Đã kiểm" chưa
+        // Kiểm tra xem tất cả locations đã ở trạng thái "Đã kiểm" hoặc "Chờ duyệt" chưa
         const allLocations = area.stocktakingLocations || [];
-        const allCounted = allLocations.length > 0 && allLocations.every(
-            location => location.status === STOCK_LOCATION_STATUS.Counted
+        const allCountedOrPendingApproval = allLocations.length > 0 && allLocations.every(
+            location => location.status === STOCK_LOCATION_STATUS.Counted ||
+                location.status === STOCK_LOCATION_STATUS.PendingApproval
         );
 
-        if (!allCounted) {
+        if (!allCountedOrPendingApproval) {
             if (window.showToast) {
                 window.showToast('Vui lòng kiểm kê tất cả các vị trí trước khi nộp!', 'warning');
             }
@@ -899,15 +900,33 @@ const StocktakingArea = () => {
                                                         {/* Button Nộp kiểm kê */}
                                                         {(() => {
                                                             const allLocations = area.stocktakingLocations || [];
-                                                            const allCounted = allLocations.length > 0 && allLocations.every(
-                                                                location => location.status === STOCK_LOCATION_STATUS.Counted
+
+                                                            // Kiểm tra card "Chưa kiểm kê" có rỗng không
+                                                            const isUncheckedEmpty = unCheckedLocations.length === 0;
+
+                                                            // Kiểm tra tất cả vị trí đều ở trạng thái "Đã kiểm" hoặc "Chờ duyệt"
+                                                            const allCountedOrPendingApproval = allLocations.length > 0 && allLocations.every(
+                                                                location => location.status === STOCK_LOCATION_STATUS.Counted ||
+                                                                    location.status === STOCK_LOCATION_STATUS.PendingApproval
                                                             );
+
+                                                            // Kiểm tra xem tất cả vị trí có đều ở trạng thái "Chờ duyệt" không
+                                                            const allPendingApproval = allLocations.length > 0 && allLocations.every(
+                                                                location => location.status === STOCK_LOCATION_STATUS.PendingApproval
+                                                            );
+
+                                                            // Disable nút khi:
+                                                            // - Card "Chưa kiểm kê" còn > 0
+                                                            // - Hoặc không phải tất cả vị trí đều ở trạng thái "Đã kiểm" hoặc "Chờ duyệt"
+                                                            // - Hoặc tất cả vị trí đều ở trạng thái "Chờ duyệt"
+                                                            // - Hoặc đang submit
+                                                            const isDisabled = !isUncheckedEmpty || !allCountedOrPendingApproval || allLocations.length === 0 || allPendingApproval || submittingArea;
 
                                                             return (
                                                                 <div className="flex justify-end pt-4 border-t">
                                                                     <Button
                                                                         onClick={() => handleSubmitArea(areaId)}
-                                                                        disabled={submittingArea || !allCounted || allLocations.length === 0}
+                                                                        disabled={isDisabled}
                                                                         className="bg-green-500 hover:bg-green-600 text-white font-medium px-6 py-2 h-10 disabled:opacity-50 disabled:cursor-not-allowed"
                                                                     >
                                                                         {submittingArea ? (

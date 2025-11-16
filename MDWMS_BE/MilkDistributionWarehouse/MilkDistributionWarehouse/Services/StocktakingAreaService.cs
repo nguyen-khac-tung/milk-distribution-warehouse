@@ -278,6 +278,8 @@ namespace MilkDistributionWarehouse.Services
             string message = "";
             foreach (var stockLocation in stocktakingLocations)
             {
+                if (stockLocation.Status == StockLocationStatus.PendingApproval)
+                    continue;
                 if (stockLocation.Status != StockLocationStatus.Counted)
                     return $"Kiểm kê vị trí [{stockLocation.LocationId}] đang ở trạng thái khác trạng thái đã kiểm tra.";
                 stockLocation.Status = StockLocationStatus.PendingApproval;

@@ -5,12 +5,14 @@ import { Button } from '../../components/ui/button';
 import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, Calendar, User, X, MapPin, Clock, Thermometer, Droplets, Sun, RotateCcw } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
-import { getStocktakingAreaDetailForOtherRoleBySheetId, getStocktakingDetail, getStocktakingPalletDetail } from '../../services/StocktakingService';
+import { getStocktakingAreaDetailForOtherRoleBySheetId, getStocktakingDetail, getStocktakingPalletDetail, rejectStocktakingLocationRecords } from '../../services/StocktakingService';
 import { extractErrorMessage } from '../../utils/Validation';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
 import StatusDisplay from '../../components/StocktakingComponents/StatusDisplay';
-import LocationStatusDisplay from './LocationStatusDisplay';
+import LocationStatusDisplay, { STOCK_LOCATION_STATUS } from './LocationStatusDisplay';
+import AreaStatusDisplay, { STOCK_AREA_STATUS } from './AreaStatusDisplay';
 import PalletStatusDisplay from './PalletStatusDisplay';
+import RejectStocktakingLocationModal from '../../components/StocktakingComponents/RejectStocktakingLocationModal';
 import dayjs from 'dayjs';
 
 const StocktakingAreaDetailForOther = () => {
@@ -28,6 +30,8 @@ const StocktakingAreaDetailForOther = () => {
     const [locationPackages, setLocationPackages] = useState({});
     const [loadingPackages, setLoadingPackages] = useState({});
     const [selectedLocations, setSelectedLocations] = useState(new Set());
+    const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+    const [isRejecting, setIsRejecting] = useState(false);
     const isFetchingRef = useRef(false);
 
     useEffect(() => {
@@ -212,8 +216,48 @@ const StocktakingAreaDetailForOther = () => {
         }
     };
 
-    const handleLocationSelect = (locationId, event) => {
+    // Helper function để tìm areaId từ locationId
+    const getAreaIdByLocationId = (locationId) => {
+        for (const area of stocktakingAreas) {
+            const location = (area.stocktakingLocations || []).find(
+                loc => (loc.stocktakingLocationId || loc.locationId) === locationId
+            );
+            if (location) {
+                return area.stocktakingAreaId;
+            }
+        }
+        return null;
+    };
+
+    const handleLocationSelect = (locationId, areaStatus, currentAreaId, event) => {
         event.stopPropagation(); // Ngăn chặn toggle expand khi click checkbox
+
+        // Chỉ cho phép chọn các vị trí khi khu vực ở trạng thái Chờ duyệt
+        if (areaStatus !== STOCK_AREA_STATUS.PendingApproval) {
+            return;
+        }
+
+        // Kiểm tra xem đã có vị trí nào được chọn chưa
+        if (selectedLocations.size > 0) {
+            // Lấy areaId của vị trí đầu tiên đã được chọn
+            const firstSelectedLocationId = Array.from(selectedLocations)[0];
+            const selectedAreaId = getAreaIdByLocationId(firstSelectedLocationId);
+
+            // Nếu đang cố chọn vị trí ở khu vực khác
+            if (selectedAreaId && selectedAreaId !== currentAreaId) {
+                const selectedArea = stocktakingAreas.find(a => a.stocktakingAreaId === selectedAreaId);
+                const selectedAreaName = selectedArea?.areaDetail?.areaName || 'khu vực đã chọn';
+                
+                if (window.showToast) {
+                    window.showToast(
+                        `Bạn đã chọn vị trí ở ${selectedAreaName}. Vui lòng bỏ chọn trước khi chọn vị trí ở khu vực khác.`,
+                        'error'
+                    );
+                }
+                return;
+            }
+        }
+
         setSelectedLocations(prev => {
             const newSet = new Set(prev);
             if (newSet.has(locationId)) {
@@ -226,23 +270,86 @@ const StocktakingAreaDetailForOther = () => {
     };
 
     const handleRecheckLocations = () => {
-        // TODO: Implement API call để kiểm kê lại các vị trí đã chọn
-        const selectedIds = Array.from(selectedLocations);
-        console.log('Kiểm kê lại các vị trí:', selectedIds);
-        if (window.showToast) {
-            window.showToast(`Đang kiểm kê lại ${selectedIds.length} vị trí...`, 'info');
+        if (selectedLocations.size === 0) {
+            if (window.showToast) {
+                window.showToast('Vui lòng chọn ít nhất một vị trí để kiểm kê lại', 'warning');
+            }
+            return;
         }
-        // Sau khi gọi API thành công, có thể clear selection
-        // setSelectedLocations(new Set());
+        setIsRejectModalOpen(true);
+    };
+
+    const handleRejectConfirm = async (records) => {
+        if (!records || records.length === 0) {
+            if (window.showToast) {
+                window.showToast('Không có dữ liệu để xử lý', 'error');
+            }
+            return;
+        }
+
+        try {
+            setIsRejecting(true);
+            await rejectStocktakingLocationRecords(records);
+
+            if (window.showToast) {
+                window.showToast(`Đã từ chối ${records.length} vị trí kiểm kê thành công`, 'success');
+            }
+
+            // Close modal and clear selection
+            setIsRejectModalOpen(false);
+            setSelectedLocations(new Set());
+
+            // Refresh data
+            await handleRefresh();
+        } catch (error) {
+            console.error('Error rejecting stocktaking locations:', error);
+            const errorMessage = extractErrorMessage(error);
+            if (window.showToast) {
+                window.showToast(errorMessage || 'Không thể từ chối kiểm kê vị trí', 'error');
+            }
+        } finally {
+            setIsRejecting(false);
+        }
+    };
+
+    const handleRejectCancel = () => {
+        setIsRejectModalOpen(false);
     };
 
     const handleSelectAll = (areaId) => {
         if (!areaId) return;
         const area = stocktakingAreas.find(a => a.stocktakingAreaId === areaId);
         if (!area || !area.stocktakingLocations || area.stocktakingLocations.length === 0) return;
-        const allLocationIds = area.stocktakingLocations.map(loc =>
-            loc.stocktakingLocationId || loc.locationId
-        ).filter(id => id);
+
+        // Chỉ chọn tất cả vị trí khi khu vực ở trạng thái Chờ duyệt
+        if (area.status !== STOCK_AREA_STATUS.PendingApproval) {
+            return;
+        }
+
+        // Kiểm tra xem đã có vị trí nào được chọn ở khu vực khác chưa
+        if (selectedLocations.size > 0) {
+            const firstSelectedLocationId = Array.from(selectedLocations)[0];
+            const selectedAreaId = getAreaIdByLocationId(firstSelectedLocationId);
+
+            // Nếu đang cố chọn vị trí ở khu vực khác
+            if (selectedAreaId && selectedAreaId !== areaId) {
+                const selectedArea = stocktakingAreas.find(a => a.stocktakingAreaId === selectedAreaId);
+                const selectedAreaName = selectedArea?.areaDetail?.areaName || 'khu vực đã chọn';
+                
+                if (window.showToast) {
+                    window.showToast(
+                        `Bạn đã chọn vị trí ở ${selectedAreaName}. Vui lòng bỏ chọn trước khi chọn vị trí ở khu vực khác.`,
+                        'error'
+                    );
+                }
+                return;
+            }
+        }
+
+        const allLocationIds = area.stocktakingLocations
+            .map(loc => loc.stocktakingLocationId || loc.locationId)
+            .filter(id => id);
+
         setSelectedLocations(prev => {
             const newSet = new Set(prev);
             allLocationIds.forEach(id => newSet.add(id));
@@ -538,10 +645,15 @@ const StocktakingAreaDetailForOther = () => {
                                             className="p-4 cursor-pointer flex items-center justify-between hover:bg-gray-50 transition-colors border-b border-gray-200"
                                             onClick={() => toggleArea(areaId)}
                                         >
-                                            <div className="flex items-center gap-3">
+                                            <div className="flex items-center gap-3 flex-1">
                                                 <div className="flex-1">
-                                                    <div className="text-sm font-semibold text-gray-900 mb-1">
-                                                        {area.areaDetail?.areaName || `Khu vực ${areaIndex + 1}`}
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <div className="text-sm font-semibold text-gray-900">
+                                                            {area.areaDetail?.areaName || `Khu vực ${areaIndex + 1}`}
+                                                        </div>
+                                                        {area.status && (
+                                                            <AreaStatusDisplay status={area.status} />
+                                                        )}
                                                     </div>
                                                     <div className="text-xs text-gray-500">
                                                         {area.assignToName && `Người tiếp nhận: ${area.assignToName}`}
@@ -561,25 +673,32 @@ const StocktakingAreaDetailForOther = () => {
                                         {/* Locations List */}
                                         {isAreaExpanded && (
                                             <div className="p-4 space-y-4">
-                                                {hasLocations && (
-                                                    <div className="mb-4 flex items-center justify-between pb-3 border-b border-gray-200">
-                                                        <div className="flex items-center gap-2">
-                                                            <button
-                                                                onClick={() => handleSelectAll(areaId)}
-                                                                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                                                            >
-                                                                Chọn tất cả
-                                                            </button>
-                                                            <span className="text-gray-400">|</span>
-                                                            <button
-                                                                onClick={handleDeselectAll}
-                                                                className="text-sm text-gray-600 hover:text-gray-700 font-medium"
-                                                            >
-                                                                Bỏ chọn tất cả
-                                                            </button>
+                                                {hasLocations && (() => {
+                                                    // Chỉ hiển thị nút chọn tất cả khi khu vực ở trạng thái Chờ duyệt
+                                                    const isAreaPendingApproval = area.status === STOCK_AREA_STATUS.PendingApproval;
+
+                                                    if (!isAreaPendingApproval) return null;
+
+                                                    return (
+                                                        <div className="mb-4 flex items-center justify-between pb-3 border-b border-gray-200">
+                                                            <div className="flex items-center gap-2">
+                                                                <button
+                                                                    onClick={() => handleSelectAll(areaId)}
+                                                                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                                                                >
+                                                                    Chọn tất cả ({stocktakingLocations.length} vị trí)
+                                                                </button>
+                                                                <span className="text-gray-400">|</span>
+                                                                <button
+                                                                    onClick={handleDeselectAll}
+                                                                    className="text-sm text-gray-600 hover:text-gray-700 font-medium"
+                                                                >
+                                                                    Bỏ chọn tất cả
+                                                                </button>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                )}
+                                                    );
+                                                })()}
                                                 {hasLocations ? (
                                                     stocktakingLocations.map((location, index) => {
                                                         const locationId = location.stocktakingLocationId || location.locationId || index;
@@ -587,6 +706,8 @@ const StocktakingAreaDetailForOther = () => {
                                                         const packages = locationPackages[locationId] || [];
                                                         const isLoading = loadingPackages[locationId] || false;
                                                         const isSelected = selectedLocations.has(locationId);
+                                                        const areaStatus = area.status;
+                                                        const isAreaPendingApproval = areaStatus === STOCK_AREA_STATUS.PendingApproval;
 
                                                         return (
                                                             <div
@@ -599,13 +720,17 @@ const StocktakingAreaDetailForOther = () => {
                                                                     onClick={() => toggleSheet(location)}
                                                                 >
                                                                     <div className="flex items-center gap-3">
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            checked={isSelected}
-                                                                            onChange={(e) => handleLocationSelect(locationId, e)}
-                                                                            onClick={(e) => e.stopPropagation()}
-                                                                            className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded cursor-pointer"
-                                                                        />
+                                                                        {isAreaPendingApproval ? (
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                checked={isSelected}
+                                                                                onChange={(e) => handleLocationSelect(locationId, areaStatus, areaId, e)}
+                                                                                onClick={(e) => e.stopPropagation()}
+                                                                                className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded cursor-pointer"
+                                                                            />
+                                                                        ) : (
+                                                                            <div className="w-4 h-4"></div>
+                                                                        )}
                                                                         <div className="flex-1 grid grid-cols-3 gap-4">
                                                                             <div>
                                                                                 <div className="text-xs text-gray-500 mb-1">Vị trí</div>
@@ -756,6 +881,16 @@ const StocktakingAreaDetailForOther = () => {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Reject Stocktaking Location Modal */}
+            <RejectStocktakingLocationModal
+                isOpen={isRejectModalOpen}
+                onClose={handleRejectCancel}
+                onConfirm={handleRejectConfirm}
+                selectedLocations={Array.from(selectedLocations)}
+                stocktakingAreas={stocktakingAreas}
+                loading={isRejecting}
+            />
         </div>
     );
 };
