@@ -77,5 +77,65 @@ namespace MilkDistributionWarehouse.Controllers
 
             return ApiResponse<DisposalRequestCreateDto>.ToResultOk(createdRequest);
         }
+
+        [Authorize(Roles = "Warehouse Manager")]
+        [HttpPut("UpdateDisposalRequest")]
+        public async Task<IActionResult> UpdateDisposalRequest(DisposalRequestUpdateDto updateDto)
+        {
+            var (msg, updatedRequest) = await _disposalRequestService.UpdateDisposalRequest(updateDto, User.GetUserId());
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<DisposalRequestUpdateDto>.ToResultOk(updatedRequest);
+        }
+
+        [Authorize(Roles = "Warehouse Manager")]
+        [HttpDelete("DeleteDisposalRequest/{disposalRequestId}")]
+        public async Task<IActionResult> DeleteDisposalRequest(string? disposalRequestId)
+        {
+            var msg = await _disposalRequestService.DeleteDisposalRequest(disposalRequestId, User.GetUserId());
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<string>.ToResultOkMessage();
+        }
+
+        [Authorize(Roles = "Warehouse Manager")]
+        [HttpPut("UpdateStatusPendingApproval")]
+        public async Task<IActionResult> UpdateStatusPendingApproval(DisposalRequestPendingApprovalDto dto)
+        {
+            var (msg, result) = await _disposalRequestService.UpdateStatusDisposalRequest(dto, User.GetUserId());
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<DisposalRequestPendingApprovalDto>.ToResultOk(result);
+        }
+
+        [Authorize(Roles = "Sale Manager")]
+        [HttpPut("UpdateStatusReject")]
+        public async Task<IActionResult> UpdateStatusReject(DisposalRequestRejectDto dto)
+        {
+            var (msg, result) = await _disposalRequestService.UpdateStatusDisposalRequest(dto, User.GetUserId());
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<DisposalRequestRejectDto>.ToResultOk(result);
+        }
+
+        [Authorize(Roles = "Sale Manager")]
+        [HttpPut("UpdateStatusApproval")]
+        public async Task<IActionResult> UpdateStatusApproval(DisposalRequestApprovalDto dto)
+        {
+            var (msg, result) = await _disposalRequestService.UpdateStatusDisposalRequest(dto, User.GetUserId());
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<DisposalRequestApprovalDto>.ToResultOk(result);
+        }
+
+        [Authorize(Roles = "Warehouse Manager")]
+        [HttpPut("UpdateStatusAssignedForPicking")]
+        public async Task<IActionResult> UpdateStatusAssignedForPicking(DisposalRequestAssignedForPickingDto dto)
+        {
+            var (msg, result) = await _disposalRequestService.UpdateStatusDisposalRequest(dto, User.GetUserId());
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<DisposalRequestAssignedForPickingDto>.ToResultOk(result);
+        }
     }
 }
