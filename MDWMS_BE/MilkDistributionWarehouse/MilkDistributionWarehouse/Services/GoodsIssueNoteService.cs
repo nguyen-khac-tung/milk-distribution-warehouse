@@ -12,7 +12,7 @@ namespace MilkDistributionWarehouse.Services
     public interface IGoodsIssueNoteService
     {
         Task<string> CreateGoodsIssueNote(GoodsIssueNoteCreateDto goodsIssueNoteCreate, int? userId);
-        Task<(string, GoodsIssueNoteDetailDto?)> GetDetailGoodsIssueNote(Guid? salesOrderId);
+        Task<(string, GoodsIssueNoteDetailDto?)> GetDetailGoodsIssueNote(string? salesOrderId);
         Task<string> SubmitGoodsIssueNote(SubmitGoodsIssueNoteDto submitGoodsIssueDto, int? userId);
         Task<string> ApproveGoodsIssueNote(ApproveGoodsIssueNoteDto approveGoodsIssueDto, int? userId);
     }
@@ -50,8 +50,8 @@ namespace MilkDistributionWarehouse.Services
 
             if (salesOrder.AssignTo != userId) return "Người dùng hiện tại không được phân công cho đơn hàng này.".ToMessageForUser();
 
-            if (salesOrder.EstimatedTimeDeparture > DateOnly.FromDateTime(DateTime.Now))
-                return "Không tạo được phiếu xuất kho trước ngày dự kiến xuất kho.".ToMessageForUser();
+            //if (salesOrder.EstimatedTimeDeparture > DateOnly.FromDateTime(DateTime.Now))
+            //    return "Không tạo được phiếu xuất kho trước ngày dự kiến xuất kho.".ToMessageForUser();
 
             if (salesOrder.Status != SalesOrderStatus.AssignedForPicking)
                 return "Chỉ có thể tạo phiếu xuất kho cho đơn hàng ở trạng thái 'Đã phân công'.".ToMessageForUser();
@@ -64,6 +64,7 @@ namespace MilkDistributionWarehouse.Services
                 await _unitOfWork.BeginTransactionAsync();
 
                 var goodsIssueNote = _mapper.Map<GoodsIssueNote>(salesOrder);
+                goodsIssueNote.GoodsIssueNoteId = PrimaryKeyUtility.GenerateKey("RET", "GIN");
                 goodsIssueNote.CreatedBy = userId;
 
                 var committedQuantities = await _pickAllocationRepository.GetCommittedQuantitiesByPallet();
@@ -130,9 +131,9 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
-        public async Task<(string, GoodsIssueNoteDetailDto?)> GetDetailGoodsIssueNote(Guid? salesOrderId)
+        public async Task<(string, GoodsIssueNoteDetailDto?)> GetDetailGoodsIssueNote(string? salesOrderId)
         {
-            if (salesOrderId == Guid.Empty) return ("Sales Order Id is not valid", null);
+            if (salesOrderId == null) return ("Sales Order Id is not valid", null);
             var goodsIssueNote = await _goodsIssueNoteRepository.GetGINDetailBySalesOrderId(salesOrderId);
             if (goodsIssueNote == null) return ("Không tìm thấy phiếu xuất kho.".ToMessageForUser(), null);
 
@@ -142,7 +143,7 @@ namespace MilkDistributionWarehouse.Services
 
         public async Task<string> SubmitGoodsIssueNote(SubmitGoodsIssueNoteDto submitGoodsIssueDto, int? userId)
         {
-            if (submitGoodsIssueDto.GoodsIssueNoteId == Guid.Empty) return "GoodsIssueNoteId is null.";
+            if (submitGoodsIssueDto.GoodsIssueNoteId == null) return "GoodsIssueNoteId is null.";
 
             var goodsIssueNote = await _goodsIssueNoteRepository.GetGINByGoodsIssueNoteId(submitGoodsIssueDto.GoodsIssueNoteId);
             if (goodsIssueNote == null) return "Không tìm thấy phiếu xuất kho.".ToMessageForUser();
@@ -187,7 +188,7 @@ namespace MilkDistributionWarehouse.Services
 
         public async Task<string> ApproveGoodsIssueNote(ApproveGoodsIssueNoteDto approveGoodsIssueDto, int? userId)
         {
-            if (approveGoodsIssueDto.GoodsIssueNoteId == Guid.Empty) return "GoodsIssueNoteId is null.";
+            if (approveGoodsIssueDto.GoodsIssueNoteId == null) return "GoodsIssueNoteId is null.";
 
             var goodsIssueNote = await _goodsIssueNoteRepository.GetGINByGoodsIssueNoteId(approveGoodsIssueDto.GoodsIssueNoteId);
             if (goodsIssueNote == null) return "Không tìm thấy phiếu xuất kho.".ToMessageForUser();
