@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
-import { ArrowUp, ArrowDown, ArrowUpDown, Eye, Edit, X, Trash2, PlayCircle } from 'lucide-react';
+import { ArrowUp, ArrowDown, ArrowUpDown, Eye, Edit, X, Trash2, PlayCircle, FileText } from 'lucide-react';
 import EmptyState from '../../components/Common/EmptyState';
 import PermissionWrapper from '../../components/Common/PermissionWrapper';
 import { PERMISSIONS } from '../../utils/permissions';
@@ -23,6 +24,7 @@ const StocktakingTable = ({
     loading
 }) => {
     const { isWarehouseManager } = usePermissions();
+    const navigate = useNavigate();
 
     // Detect available fields in data
     const availableFields = useMemo(() => {
@@ -64,6 +66,12 @@ const StocktakingTable = ({
 
     const handleStartStocktakingClick = (stocktaking) => {
         onStartStocktaking(stocktaking);
+    };
+
+    const handleViewDetailForOtherClick = (stocktaking) => {
+        if (stocktaking?.stocktakingSheetId) {
+            navigate(`/stocktaking-area-detail-other/${stocktaking.stocktakingSheetId}`);
+        }
     };
 
     // Use all data from backend (pagination is handled by backend)
@@ -184,28 +192,27 @@ const StocktakingTable = ({
                                         <TableCell className="px-6 py-4 text-center">
                                             <div className="flex items-center justify-center space-x-1">
                                                 {/* Icon bắt đầu kiểm kê - chỉ hiển thị khi status = Assigned hoặc InProgress */}
-                                                {(stocktaking.status === STOCKTAKING_STATUS.Assigned || 
-                                                  stocktaking.status === 2 || 
-                                                  stocktaking.status === '2' ||
-                                                  stocktaking.status === STOCKTAKING_STATUS.InProgress ||
-                                                  stocktaking.status === 4 ||
-                                                  stocktaking.status === '4') && (
-                                                    <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_IN_PROGRESS}>
-                                                        <button
-                                                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                            title={stocktaking.canViewStocktakingArea === true
-                                                                ? "Xem chi tiết kiểm kê" 
-                                                                : "Bắt đầu kiểm kê"}
-                                                            onClick={() => handleStartStocktakingClick(stocktaking)}
-                                                        >
-                                                            <PlayCircle className={`h-4 w-4 ${
-                                                                stocktaking.canViewStocktakingArea === true
-                                                                    ? 'text-blue-500' 
-                                                                    : 'text-green-500'
-                                                            }`} />
-                                                        </button>
-                                                    </PermissionWrapper>
-                                                )}
+                                                {(stocktaking.status === STOCKTAKING_STATUS.Assigned ||
+                                                    stocktaking.status === 2 ||
+                                                    stocktaking.status === '2' ||
+                                                    stocktaking.status === STOCKTAKING_STATUS.InProgress ||
+                                                    stocktaking.status === 4 ||
+                                                    stocktaking.status === '4') && (
+                                                        <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_IN_PROGRESS}>
+                                                            <button
+                                                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                                title={stocktaking.canViewStocktakingArea === true
+                                                                    ? "Xem chi tiết kiểm kê"
+                                                                    : "Bắt đầu kiểm kê"}
+                                                                onClick={() => handleStartStocktakingClick(stocktaking)}
+                                                            >
+                                                                <PlayCircle className={`h-4 w-4 ${stocktaking.canViewStocktakingArea === true
+                                                                        ? 'text-blue-500'
+                                                                        : 'text-green-500'
+                                                                    }`} />
+                                                            </button>
+                                                        </PermissionWrapper>
+                                                    )}
                                                 <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_VIEW_DETAILS}>
                                                     <button
                                                         className="p-1.5 hover:bg-slate-100 rounded transition-colors"
@@ -215,6 +222,28 @@ const StocktakingTable = ({
                                                         <Eye className="h-4 w-4 text-orange-500" />
                                                     </button>
                                                 </PermissionWrapper>
+                                                {(stocktaking.status === STOCKTAKING_STATUS.InProgress || 
+                                                  stocktaking.status === 4 || 
+                                                  stocktaking.status === '4' ||
+                                                  stocktaking.status === STOCKTAKING_STATUS.PendingApproval ||
+                                                  stocktaking.status === 5 ||
+                                                  stocktaking.status === '5' ||
+                                                  stocktaking.status === STOCKTAKING_STATUS.Approved ||
+                                                  stocktaking.status === 6 ||
+                                                  stocktaking.status === '6' ||
+                                                  stocktaking.status === STOCKTAKING_STATUS.Completed ||
+                                                  stocktaking.status === 7 ||
+                                                  stocktaking.status === '7') && (
+                                                    <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_AREA_VIEW_DETAILS_FOR_OTHER}>
+                                                        <button
+                                                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                            title="Xem chi tiết đơn kiểm kê kho"
+                                                            onClick={() => handleViewDetailForOtherClick(stocktaking)}
+                                                        >
+                                                            <FileText className="h-4 w-4 text-blue-500" />
+                                                        </button>
+                                                    </PermissionWrapper>
+                                                )}
                                                 {isWarehouseManager && (stocktaking.status === STOCKTAKING_STATUS.Draft || stocktaking.status === 1 || stocktaking.status === '1') && (
                                                     <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_UPDATE}>
                                                         <button
@@ -229,16 +258,16 @@ const StocktakingTable = ({
                                                 {isWarehouseManager && (
                                                     (stocktaking.status === STOCKTAKING_STATUS.Assigned || stocktaking.status === 2 || stocktaking.status === '2')
                                                 ) && (
-                                                    <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_DELETE}>
-                                                        <button
-                                                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                            title="Hủy phiếu kiểm kê"
-                                                            onClick={() => handleCancelClick(stocktaking)}
-                                                        >
-                                                            <X className="h-4 w-4 text-red-500" />
-                                                        </button>
-                                                    </PermissionWrapper>
-                                                )}
+                                                        <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_DELETE}>
+                                                            <button
+                                                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                                title="Hủy phiếu kiểm kê"
+                                                                onClick={() => handleCancelClick(stocktaking)}
+                                                            >
+                                                                <X className="h-4 w-4 text-red-500" />
+                                                            </button>
+                                                        </PermissionWrapper>
+                                                    )}
                                                 {isWarehouseManager && (stocktaking.status === STOCKTAKING_STATUS.Draft || stocktaking.status === 1 || stocktaking.status === '1') && (
                                                     <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_DELETE}>
                                                         <button

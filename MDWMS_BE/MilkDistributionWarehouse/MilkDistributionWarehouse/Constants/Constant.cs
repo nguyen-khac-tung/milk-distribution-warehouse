@@ -92,6 +92,41 @@
     }
 
     /// <summary>
+    /// Các trạng thái của Đơn Yêu Cầu Xuất Hủy (Disposal Request)
+    /// </summary>
+    public static class DisposalRequestStatus
+    {
+        public const int Draft = 1;
+        public const int PendingApproval = 2;
+        public const int Rejected = 3;
+        public const int Approved = 4;
+        public const int AssignedForPicking = 5;
+        public const int Picking = 6;
+        public const int Completed = 7;
+    }
+
+    /// <summary>
+    /// Các trạng thái của Phiếu Xuất Hủy (Disposal Note)
+    /// </summary>
+    public static class DisposalNoteStatus
+    {
+        public const int Picking = 1;
+        public const int PendingApproval = 2;
+        public const int Completed = 3;
+    }
+
+    /// <summary>
+    /// Các trạng thái của từng dòng sản phẩm trong Phiếu Xuất Hủy (Disposal Note)
+    /// </summary>
+    public static class DisposalNoteItemStatus
+    {
+        public const int Picking = 1;
+        public const int Picked = 2;
+        public const int PendingApproval = 3;
+        public const int Completed = 4;
+    }
+
+    /// <summary>
     /// Các trạng thái của PickAllocation
     /// </summary>
     public static class PickAllocationStatus
@@ -148,10 +183,11 @@
     /// </summary>
     public static class StockAreaStatus
     {
-        public const int Pending = 1;             //Đang chờ
-        public const int Counted = 2;             //Đã kiểm
-        public const int PendingApproval = 3;     //Chờ duyệt
-        public const int Completed = 4;           //Đã hoàn thành
+        public const int Assigned = 1;
+        public const int Pending = 2;             //Đang chờ
+        public const int Counted = 3;             //Đã kiểm
+        public const int PendingApproval = 4;     //Chờ duyệt
+        public const int Completed = 5;           //Đã hoàn thành
     }
 
     /// <summary>

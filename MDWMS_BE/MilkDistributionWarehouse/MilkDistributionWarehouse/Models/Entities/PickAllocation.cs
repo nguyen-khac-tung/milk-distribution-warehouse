@@ -11,11 +11,15 @@ public partial class PickAllocation
 
     public Guid? GoodsIssueNoteDetailId { get; set; }
 
+    public Guid? DisposalNoteDetailId { get; set; }
+
     public string PalletId { get; set; }
 
     public int? PackageQuantity { get; set; }
 
     public int? Status { get; set; }
+
+    public virtual DisposalNoteDetail DisposalNoteDetail { get; set; }
 
     public virtual GoodsIssueNoteDetail GoodsIssueNoteDetail { get; set; }
 

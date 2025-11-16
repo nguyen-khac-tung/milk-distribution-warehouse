@@ -5,11 +5,11 @@ using System.Collections.Generic;
 
 namespace MilkDistributionWarehouse.Models.Entities;
 
-public partial class SalesOrderDetail
+public partial class DisposalRequestDetail
 {
-    public int SalesOrderDetailId { get; set; }
+    public int DisposalRequestDetailId { get; set; }
 
-    public string SalesOrderId { get; set; }
+    public string DisposalRequestId { get; set; }
 
     public int? GoodsId { get; set; }
 
@@ -17,9 +17,9 @@ public partial class SalesOrderDetail
 
     public int? PackageQuantity { get; set; }
 
+    public virtual DisposalRequest DisposalRequest { get; set; }
+
     public virtual Good Goods { get; set; }
 
     public virtual GoodsPacking GoodsPacking { get; set; }
-
-    public virtual SalesOrder SalesOrder { get; set; }
 }

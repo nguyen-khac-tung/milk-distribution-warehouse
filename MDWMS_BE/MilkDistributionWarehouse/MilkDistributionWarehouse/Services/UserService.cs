@@ -25,7 +25,7 @@ namespace MilkDistributionWarehouse.Services
         Task<string> UpdateUserStatus(UserStatusUpdateDto userUpdate);
         Task<string> DeleteUser(int? userId);
         Task<(string, List<UserDropDown>?)> GetUserDropDownByRoleName(string roleName);
-        Task<(string, List<UserAssignedDropDown>?)> GetAvailableReceiversOrPickersDropDown(string? purchaseOrderId, Guid? salesOrderId);
+        Task<(string, List<UserAssignedDropDown>?)> GetAvailableReceiversOrPickersDropDown(string? purchaseOrderId, string? salesOrderId);
     }
 
     public class UserService : IUserService
@@ -205,7 +205,7 @@ namespace MilkDistributionWarehouse.Services
             return ("", userDropDowns);
         }
 
-        public async Task<(string, List<UserAssignedDropDown>?)> GetAvailableReceiversOrPickersDropDown(string? purchaseOrderId, Guid? salesOrderId)
+        public async Task<(string, List<UserAssignedDropDown>?)> GetAvailableReceiversOrPickersDropDown(string? purchaseOrderId, string? salesOrderId)
         {
             int? assignedUser = null;
 

@@ -40,7 +40,7 @@ const AssignAreaModal = ({
                 setAreaAssignments({});
             }
         }
-    }, [isOpen, isReassign, stocktaking]);
+    }, [isOpen, isReassign, stocktaking, stocktakingSheetId]);
 
     const fetchAreasAndEmployees = async () => {
         setLoadingAreas(true);
@@ -48,9 +48,15 @@ const AssignAreaModal = ({
 
         try {
             // Fetch stocktaking areas with detailed information
-            const areasResponse = await getStocktakingArea();
-            const areasData = areasResponse?.data || areasResponse || [];
-            setAreas(Array.isArray(areasData) ? areasData : []);
+            // Only fetch if stocktakingSheetId is available
+            if (stocktakingSheetId) {
+                const areasResponse = await getStocktakingArea(stocktakingSheetId);
+                const areasData = areasResponse?.data || areasResponse || [];
+                setAreas(Array.isArray(areasData) ? areasData : []);
+            } else {
+                // If no stocktakingSheetId, set empty array
+                setAreas([]);
+            }
 
             // Fetch warehouse staff
             const employeesResponse = await getUserDropDownByRoleName('Warehouse Staff');

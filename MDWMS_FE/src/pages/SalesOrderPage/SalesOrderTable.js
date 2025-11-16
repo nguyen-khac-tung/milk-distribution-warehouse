@@ -103,20 +103,13 @@ const SalesOrderTable = ({
 
                                 {/* Người tạo */}
                                 {availableFields.hasCreatedByName && (
-                                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                                        Người tạo
-                                    </TableHead>
-                                )}
-
-                                {/* Người duyệt */}
-                                {availableFields.hasApprovalByName && (
                                     <TableHead
                                         className="font-semibold text-slate-900 px-6 py-3 text-center"
-                                        onClick={() => handleSort("approvalByName")}
+                                        onClick={() => handleSort("createdByName")}
                                     >
                                         <div className="flex items-center justify-center space-x-2 cursor-pointer">
-                                            <span>Người duyệt</span>
-                                            {sortField === "approvalByName" ? (
+                                            <span>Người tạo</span>
+                                            {sortField === "createdByName" ? (
                                                 sortAscending ? (
                                                     <ArrowUp className="h-4 w-4 text-orange-500" />
                                                 ) : (
@@ -126,6 +119,13 @@ const SalesOrderTable = ({
                                                 <ArrowUpDown className="h-4 w-4 text-slate-400" />
                                             )}
                                         </div>
+                                    </TableHead>
+                                )}
+
+                                {/* Người duyệt */}
+                                {availableFields.hasApprovalByName && (
+                                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                                        Người duyệt
                                     </TableHead>
                                 )}
 
@@ -206,7 +206,7 @@ const SalesOrderTable = ({
                                         </TableCell>
 
                                         {/* Nhà bán lẻ */}
-                                        <TableCell className="text-left px-6 py-4">
+                                        <TableCell className="text-left px-6 py-4 max-w-[180px] break-words whitespace-normal">
                                             {order?.retailerName || "-"}
                                         </TableCell>
 

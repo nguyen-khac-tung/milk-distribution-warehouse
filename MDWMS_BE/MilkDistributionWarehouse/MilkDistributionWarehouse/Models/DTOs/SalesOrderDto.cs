@@ -6,7 +6,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
 {
     public class SalesOrderDto
     {
-        public Guid SalesOrderId { get; set; }
+        public string SalesOrderId { get; set; }
         public int RetailerId { get; set; }
         public string RetailerName { get; set; }
         public DateOnly? EstimatedTimeDeparture { get; set; }
@@ -102,7 +102,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
     public class SalesOrderUpdateDto
     {
-        public Guid SalesOrderId { get; set; }
+        public string SalesOrderId { get; set; }
 
         [Required(ErrorMessage = "Nhà bán lẻ không được bỏ trống.")]
         public int? RetailerId { get; set; }
@@ -125,7 +125,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
     public class SaleSOrderUpdateStatusDto
     {
-        public Guid SalesOrderId { get; set; }
+        public string SalesOrderId { get; set; }
     }
 
     public class SalesOrderPendingApprovalDto: SaleSOrderUpdateStatusDto

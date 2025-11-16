@@ -47,6 +47,9 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
         if (pathname.startsWith('/stocktakings') || pathname.startsWith('/stocktaking')) {
             keys.push('stocktaking-management');
         }
+        if (pathname.startsWith('/reports')) {
+            keys.push('reports-management');
+        }
         if (pathname.startsWith('/pallets')) {
             // Pallet không có submenu, không cần thêm key
         }
@@ -229,10 +232,24 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
             },
 
             {
-                key: "/reports",
+                key: "reports-management",
                 icon: <BarChartOutlined style={{ color: '#000000' }} />,
                 label: "Báo cáo",
-                permission: PERMISSIONS.REPORT_VIEW
+                permission: PERMISSIONS.REPORT_VIEW,
+                children: [
+                    {
+                        key: "/reports/orders",
+                        icon: <ShoppingCartOutlined style={{ color: '#000000' }} />,
+                        label: "Báo cáo đơn hàng",
+                        permission: PERMISSIONS.REPORT_VIEW
+                    },
+                    {
+                        key: "/reports/inventory",
+                        icon: <AppstoreOutlined style={{ color: '#000000' }} />,
+                        label: "Báo cáo tồn kho",
+                        permission: PERMISSIONS.REPORT_VIEW
+                    }
+                ]
             },
             // {
             //     key: "/settings",

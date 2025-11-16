@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Search, ChevronDown, ChevronUp, Settings, X } from "lucide-react";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
@@ -14,6 +14,9 @@ export default function InventorySearchFilter({
     { value: "month", label: "Tháng này" },
     { value: "year", label: "Năm nay" }
   ],
+  areaId,
+  setAreaId,
+  areas = [],
   onClearAll = null,
   showClearButton = true,
   showToggle = true,
@@ -22,6 +25,24 @@ export default function InventorySearchFilter({
 }) {
   const [showSearchFilter, setShowSearchFilter] = useState(defaultOpen);
   const [showTimeRangeFilter, setShowTimeRangeFilter] = useState(false);
+  const [showAreaFilter, setShowAreaFilter] = useState(false);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showTimeRangeFilter && !event.target.closest('.time-range-filter-dropdown')) {
+        setShowTimeRangeFilter(false);
+      }
+      if (showAreaFilter && !event.target.closest('.area-filter-dropdown')) {
+        setShowAreaFilter(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showTimeRangeFilter, showAreaFilter]);
 
   const handleToggle = () => {
     setShowSearchFilter(!showSearchFilter);
@@ -33,10 +54,11 @@ export default function InventorySearchFilter({
     } else {
       setSearchQuery("");
       setTimeRange("week");
+      setAreaId("");
     }
   };
 
-  const hasActiveFilters = searchQuery || (timeRange && timeRange !== "week");
+  const hasActiveFilters = searchQuery || (timeRange && timeRange !== "week") || areaId;
 
   const currentTimeRangeLabel = timeRangeOptions.find(opt => opt.value === timeRange)?.label || timeRangeOptions[0].label;
 
@@ -147,6 +169,63 @@ export default function InventorySearchFilter({
                   </div>
                 )}
               </div>
+
+              {/* Area Filter */}
+              {areas && areas.length > 0 && (
+                <div className="relative area-filter-dropdown">
+                  <button
+                    onClick={() => setShowAreaFilter(!showAreaFilter)}
+                    className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors min-w-0 max-w-48
+                      focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
+                      ${areaId
+                        ? 'bg-[#d97706] text-white hover:bg-[#d97706]'
+                        : 'bg-white text-slate-700 hover:bg-white'
+                      }`}
+                  >
+                    <span className="text-sm font-medium truncate">
+                      {areaId
+                        ? (areas.find(a => String(a.areaId || a.AreaId) === String(areaId))?.areaName || areas.find(a => String(a.areaId || a.AreaId) === String(areaId))?.AreaName || "Chọn khu vực")
+                        : "Tất cả khu vực"
+                      }
+                    </span>
+                    <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                  </button>
+
+                  {showAreaFilter && (
+                    <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md shadow-lg border z-50 max-h-64 overflow-hidden flex flex-col">
+                      <div className="py-1 overflow-y-auto dropdown-scroll max-h-48" style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 #f1f5f9' }}>
+                        <button
+                          onClick={() => {
+                            setAreaId("");
+                            setShowAreaFilter(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center justify-between"
+                        >
+                          Tất cả khu vực
+                          {!areaId && <span className="text-[#d97706]">✓</span>}
+                        </button>
+                        {areas.map((area) => {
+                          const areaIdValue = String(area.areaId || area.AreaId);
+                          const areaName = area.areaName || area.AreaName;
+                          return (
+                            <button
+                              key={areaIdValue}
+                              onClick={() => {
+                                setAreaId(areaIdValue);
+                                setShowAreaFilter(false);
+                              }}
+                              className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center justify-between"
+                            >
+                              <span className="truncate">{areaName}</span>
+                              {areaId === areaIdValue && <span className="text-[#d97706]">✓</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Clear Filters Button */}

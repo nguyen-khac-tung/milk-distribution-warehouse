@@ -29,7 +29,6 @@ import {
   Package,
   ShoppingCart,
 } from "lucide-react"
-import InventoryReport from "./InventoryReport"
 import { Button } from "../../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "../../components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs"
@@ -73,8 +72,7 @@ import {
   Cell,
 } from "recharts"
 
-import OrdersPage from "./OrdersPage"
-import { getLocationReport } from "../../services/DashboardService"
+import { getLocationReport, getGoodsReceiptReport, getGoodsIssueReport } from "../../services/DashboardService"
 import { getAreaDropdown } from "../../services/AreaServices"
 import WarehouseEventCalendar from "./WarehouseEventCalendar"
 import WarehousePerformance from "./WarehousePerformance"
@@ -84,8 +82,6 @@ import dayjs from "dayjs"
 
 export default function Dashboard({ activeSection = "dashboard", onSectionChange }) {
   const navigate = useNavigate()
-  const [showInventoryReport, setShowInventoryReport] = useState(false)
-  const [showOrders, setShowOrders] = useState(false)
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false)
   const [showOrderDialog, setShowOrderDialog] = useState(false)
   const [locationReport, setLocationReport] = useState({
@@ -99,6 +95,9 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
   const [areasLoading, setAreasLoading] = useState(false)
   const [purchaseOrdersData, setPurchaseOrdersData] = useState([])
   const [salesOrdersData, setSalesOrdersData] = useState([])
+  const [purchaseOrdersStats, setPurchaseOrdersStats] = useState({ current: 0, previous: 0, change: 0 })
+  const [salesOrdersStats, setSalesOrdersStats] = useState({ current: 0, previous: 0, change: 0 })
+  const [chartLoading, setChartLoading] = useState(false)
   // const { toast } = useToast()
 
   // Mock toast function
@@ -124,10 +123,10 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
   const getCurrentWeekDays = () => {
     const today = dayjs()
     const currentDayOfWeek = today.day() // 0 = Sunday, 6 = Saturday
-    
+
     // Get Sunday of current week
     const sunday = today.subtract(currentDayOfWeek, "day")
-    
+
     // Generate 7 days starting from Sunday
     const weekDays = []
     for (let i = 0; i < 7; i++) {
@@ -138,29 +137,135 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
         dayOfWeek: day.day(),
       })
     }
-    
+
     return weekDays
   }
 
-  // Initialize chart data with current week days
+  // Fetch purchase and sales orders data for charts and stats
   useEffect(() => {
-    const weekDays = getCurrentWeekDays()
-    
-    // Initialize purchase orders data with current week days
-    // Note: Values are still mock data, but days are now dynamic
-    const purchaseData = weekDays.map((day, index) => ({
-      name: day.dayName,
-      value: [8, 10, 12, 11, 9, 11, 12][index] || 0, // Mock values, can be replaced with API data
-    }))
-    setPurchaseOrdersData(purchaseData)
-    
-    // Initialize sales orders data with current week days (excluding Saturday for sales)
-    const salesData = weekDays.slice(0, 6).map((day, index) => ({
-      name: day.dayName,
-      value: [8000, 10000, 12000, 9000, 6000, 8000][index] || 0, // Mock values, can be replaced with API data
-    }))
-    setSalesOrdersData(salesData)
-  }, [])
+    const fetchOrdersData = async () => {
+      try {
+        setChartLoading(true)
+        const weekDays = getCurrentWeekDays()
+        
+        // Get current week date range (Sunday to Saturday)
+        const sunday = weekDays[0].date
+        const saturday = weekDays[6].date
+        const fromDate = sunday.format('YYYY-MM-DD')
+        const toDate = saturday.format('YYYY-MM-DD')
+        
+        // Get previous week date range for comparison
+        const prevSunday = sunday.subtract(7, 'day')
+        const prevSaturday = saturday.subtract(7, 'day')
+        const prevFromDate = prevSunday.format('YYYY-MM-DD')
+        const prevToDate = prevSaturday.format('YYYY-MM-DD')
+
+        // Fetch current week data
+        const [currentReceipts, currentIssues, previousReceipts, previousIssues] = await Promise.all([
+          getGoodsReceiptReport({ fromDate, toDate }).catch(() => []),
+          getGoodsIssueReport({ fromDate, toDate }).catch(() => []),
+          getGoodsReceiptReport({ fromDate: prevFromDate, toDate: prevToDate }).catch(() => []),
+          getGoodsIssueReport({ fromDate: prevFromDate, toDate: prevToDate }).catch(() => [])
+        ])
+
+        // Handle response structure
+        const normalizeData = (response) => {
+          if (Array.isArray(response)) return response
+          if (response?.items && Array.isArray(response.items)) return response.items
+          if (response?.data && Array.isArray(response.data)) return response.data
+          if (response?.data?.items && Array.isArray(response.data.items)) return response.data.items
+          return []
+        }
+
+        const currentReceiptsList = normalizeData(currentReceipts)
+        const currentIssuesList = normalizeData(currentIssues)
+        const previousReceiptsList = normalizeData(previousReceipts)
+        const previousIssuesList = normalizeData(previousIssues)
+
+        // Calculate stats
+        const currentPurchaseCount = currentReceiptsList.length
+        const previousPurchaseCount = previousReceiptsList.length
+        const purchaseChange = previousPurchaseCount > 0 
+          ? ((currentPurchaseCount - previousPurchaseCount) / previousPurchaseCount * 100).toFixed(0)
+          : currentPurchaseCount > 0 ? 100 : 0
+
+        const currentSalesCount = currentIssuesList.length
+        const previousSalesCount = previousIssuesList.length
+        const salesChange = previousSalesCount > 0
+          ? ((currentSalesCount - previousSalesCount) / previousSalesCount * 100).toFixed(0)
+          : currentSalesCount > 0 ? 100 : 0
+
+        setPurchaseOrdersStats({
+          current: currentPurchaseCount,
+          previous: previousPurchaseCount,
+          change: parseFloat(purchaseChange)
+        })
+
+        setSalesOrdersStats({
+          current: currentSalesCount,
+          previous: previousSalesCount,
+          change: parseFloat(salesChange)
+        })
+
+        // Group receipts by day of week
+        const purchaseDataByDay = {}
+        weekDays.forEach(day => {
+          purchaseDataByDay[day.dayOfWeek] = 0
+        })
+
+        currentReceiptsList.forEach(receipt => {
+          if (receipt.receiptDate) {
+            const receiptDate = dayjs(receipt.receiptDate)
+            const dayOfWeek = receiptDate.day()
+            if (purchaseDataByDay.hasOwnProperty(dayOfWeek)) {
+              purchaseDataByDay[dayOfWeek]++
+            }
+          }
+        })
+
+        const purchaseData = weekDays.map(day => ({
+          name: day.dayName,
+          value: purchaseDataByDay[day.dayOfWeek] || 0
+        }))
+        setPurchaseOrdersData(purchaseData)
+
+        // Group issues by day of week (excluding Saturday)
+        const salesDataByDay = {}
+        weekDays.slice(0, 6).forEach(day => {
+          salesDataByDay[day.dayOfWeek] = 0
+        })
+
+        currentIssuesList.forEach(issue => {
+          if (issue.issueDate) {
+            const issueDate = dayjs(issue.issueDate)
+            const dayOfWeek = issueDate.day()
+            if (salesDataByDay.hasOwnProperty(dayOfWeek)) {
+              salesDataByDay[dayOfWeek]++
+            }
+          }
+        })
+
+        const salesData = weekDays.slice(0, 6).map(day => ({
+          name: day.dayName,
+          value: salesDataByDay[day.dayOfWeek] || 0
+        }))
+        setSalesOrdersData(salesData)
+
+      } catch (error) {
+        console.error("Error fetching orders data:", error)
+        // Fallback to empty data
+        const weekDays = getCurrentWeekDays()
+        setPurchaseOrdersData(weekDays.map(day => ({ name: day.dayName, value: 0 })))
+        setSalesOrdersData(weekDays.slice(0, 6).map(day => ({ name: day.dayName, value: 0 })))
+      } finally {
+        setChartLoading(false)
+      }
+    }
+
+    if (activeSection === "dashboard") {
+      fetchOrdersData()
+    }
+  }, [activeSection])
 
   // Fetch areas dropdown
   useEffect(() => {
@@ -202,7 +307,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
         // Khi không có selectedAreaId: không truyền areaId để lấy tổng hợp tất cả khu vực
         const params = selectedAreaId ? { areaId: selectedAreaId } : {}
         const data = await getLocationReport(params)
-        
+
         // Đảm bảo dữ liệu hợp lệ
         if (data) {
           setLocationReport({
@@ -236,7 +341,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
 
 
   // Get selected area name for display
-  const selectedAreaName = selectedAreaId 
+  const selectedAreaName = selectedAreaId
     ? areas.find(area => area.areaId === selectedAreaId)?.areaName || ""
     : ""
 
@@ -347,363 +452,378 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
     const currentDateDisplay = `${currentDayName}, ${formattedDate}`
 
     return (
-    <>
-      <div className="flex justify-end mb-4">
-        <p className="text-sm text-gray-600">{currentDateDisplay}</p>
-      </div>
+      <>
+        <div className="flex justify-end mb-4">
+          <p className="text-sm text-gray-600">{currentDateDisplay}</p>
+        </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
-        <Card>
-          <CardContent className="p-4 flex items-center">
-            <div className="bg-blue-50 p-3 rounded-full mr-4">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6 text-blue-500"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M5 12h14"></path>
-                <path d="M12 5l7 7-7 7"></path>
-              </svg>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">
-                Đơn mua hàng <span className="text-xs">(Tuần này)</span>
-              </p>
-              <div className="flex items-center">
-                <h3 className="text-2xl font-bold mr-2">73</h3>
-                <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-600 rounded">+24%</span>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
+          <Card>
+            <CardContent className="p-4 flex items-center">
+              <div className="bg-blue-50 p-3 rounded-full mr-4">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6 text-blue-500"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M5 12h14"></path>
+                  <path d="M12 5l7 7-7 7"></path>
+                </svg>
               </div>
-              <p className="text-xs text-gray-500">Tuần trước: 35</p>
-            </div>
-          </CardContent>
-        </Card>
+              <div>
+                <p className="text-sm text-gray-500">
+                  Đơn mua hàng <span className="text-xs">(Tuần này)</span>
+                </p>
+                <div className="flex items-center">
+                  <h3 className="text-2xl font-bold mr-2">{purchaseOrdersStats.current}</h3>
+                  {purchaseOrdersStats.change !== 0 && (
+                    <span className={`text-xs px-1.5 py-0.5 rounded ${
+                      purchaseOrdersStats.change > 0 
+                        ? 'bg-green-100 text-green-600' 
+                        : 'bg-red-100 text-red-600'
+                    }`}>
+                      {purchaseOrdersStats.change > 0 ? '+' : ''}{purchaseOrdersStats.change}%
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500">Tuần trước: {purchaseOrdersStats.previous}</p>
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="p-4 flex items-center">
-            <div className="bg-amber-50 p-3 rounded-full mr-4">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6 text-amber-500"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M19 12H5"></path>
-                <path d="M12 19l-7-7 7-7"></path>
-              </svg>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">
-                Đơn bán hàng <span className="text-xs">(Tuần này)</span>
-              </p>
-              <div className="flex items-center">
-                <h3 className="text-2xl font-bold mr-2">35</h3>
-                <span className="text-xs px-1.5 py-0.5 bg-red-100 text-red-600 rounded">-12%</span>
+          <Card>
+            <CardContent className="p-4 flex items-center">
+              <div className="bg-amber-50 p-3 rounded-full mr-4">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6 text-amber-500"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M19 12H5"></path>
+                  <path d="M12 19l-7-7 7-7"></path>
+                </svg>
               </div>
-              <p className="text-xs text-gray-500">Tuần trước: 97</p>
-            </div>
-          </CardContent>
-        </Card>
+              <div>
+                <p className="text-sm text-gray-500">
+                  Đơn bán hàng <span className="text-xs">(Tuần này)</span>
+                </p>
+                <div className="flex items-center">
+                  <h3 className="text-2xl font-bold mr-2">{salesOrdersStats.current}</h3>
+                  {salesOrdersStats.change !== 0 && (
+                    <span className={`text-xs px-1.5 py-0.5 rounded ${
+                      salesOrdersStats.change > 0 
+                        ? 'bg-green-100 text-green-600' 
+                        : 'bg-red-100 text-red-600'
+                    }`}>
+                      {salesOrdersStats.change > 0 ? '+' : ''}{salesOrdersStats.change}%
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500">Tuần trước: {salesOrdersStats.previous}</p>
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="p-4 flex items-center">
-            <div className="bg-cyan-50 p-3 rounded-full mr-4">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6 text-cyan-500"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="16" y1="2" x2="16" y2="6"></line>
-                <line x1="8" y1="2" x2="8" y2="6"></line>
-                <line x1="3" y1="10" x2="21" y2="10"></line>
-              </svg>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">
-                Tồn kho <span className="text-xs">(Tuần này)</span>
-              </p>
-              <div className="flex items-center">
-                <h3 className="text-2xl font-bold mr-2">237</h3>
-                <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-600 rounded">+31%</span>
+          <Card>
+            <CardContent className="p-4 flex items-center">
+              <div className="bg-cyan-50 p-3 rounded-full mr-4">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6 text-cyan-500"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
               </div>
-              <p className="text-xs text-gray-500">Tuần trước: 187</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
+              <div>
+                <p className="text-sm text-gray-500">
+                  Tồn kho <span className="text-xs">(Tuần này)</span>
+                </p>
+                <div className="flex items-center">
+                  <h3 className="text-2xl font-bold mr-2">237</h3>
+                  <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-600 rounded">+31%</span>
+                </div>
+                <p className="text-xs text-gray-500">Tuần trước: 187</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-sm text-gray-500 mb-2">Hoạt động hôm nay</p>
+              <div className="flex justify-between mb-2">
+                <div className="text-center">
+                  <div className="bg-blue-500 text-white rounded-full w-10 h-10 flex items-center justify-center mx-auto mb-1">
+                    <span>5</span>
+                  </div>
+                  <p className="text-xs">
+                    Khu vực
+                    <br />
+                    Trống
+                  </p>
+                </div>
+                <div className="text-center">
+                  <div className="bg-orange-500 text-white rounded-full w-10 h-10 flex items-center justify-center mx-auto mb-1">
+                    <span>10</span>
+                  </div>
+                  <p className="text-xs">
+                    Khu vực
+                    <br />
+                    Đầy
+                  </p>
+                </div>
+                <div className="text-center">
+                  <div className="bg-green-500 text-white rounded-full w-10 h-10 flex items-center justify-center mx-auto mb-1">
+                    <span>15</span>
+                  </div>
+                  <p className="text-xs">Sản phẩm</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Charts */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
+              <CardTitle className="text-base font-medium">Đơn mua hàng</CardTitle>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 text-xs">
+                    tuần này <ChevronDown className="ml-1 h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem>Tháng này</DropdownMenuItem>
+                  <DropdownMenuItem>Năm nay</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <div className="h-[200px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RechartsBarChart data={purchaseOrdersData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} />
+                    <YAxis hide={true} />
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          return (
+                            <div className="bg-white p-2 border rounded shadow-sm">
+                              <p className="text-xs">{`${payload[0].value} đơn`}</p>
+                            </div>
+                          )
+                        }
+                        return null
+                      }}
+                    />
+                    <Bar dataKey="value" fill="#F59E0B" radius={[4, 4, 0, 0]} />
+                  </RechartsBarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
+              <CardTitle className="text-base font-medium">Đơn bán hàng</CardTitle>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 text-xs">
+                    tuần này <ChevronDown className="ml-1 h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem>Tháng này</DropdownMenuItem>
+                  <DropdownMenuItem>Năm nay</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <div className="h-[200px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RechartsLineChart data={salesOrdersData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} />
+                    <YAxis hide={true} />
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          return (
+                            <div className="bg-white p-2 border rounded shadow-sm">
+                              <p className="text-xs">{`${payload[0].value} đơn`}</p>
+                            </div>
+                          )
+                        }
+                        return null
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      stroke="#3B82F6"
+                      strokeWidth={2}
+                      dot={{ r: 4, fill: "white", stroke: "#3B82F6", strokeWidth: 2 }}
+                      activeDot={{ r: 6 }}
+                      fill="url(#colorUv)"
+                    />
+                    <defs>
+                      <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                  </RechartsLineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
+              <CardTitle className="text-base font-medium">Khu vực lưu trữ</CardTitle>
+              <div className="flex items-center gap-2">
+                <Select
+                  key={`area-select-${selectedAreaId || 'all'}`}
+                  value={selectedAreaId !== null && selectedAreaId !== undefined ? selectedAreaId.toString() : ""}
+                  onValueChange={(value) => {
+                    const newAreaId = value === "" || value === null || value === undefined ? null : parseInt(value)
+                    setSelectedAreaId(newAreaId)
+                  }}
+                  disabled={areasLoading}
+                >
+                  <SelectTrigger className="h-8 w-[180px] text-xs">
+                    <span className="flex-1 text-left">
+                      {selectedAreaId && selectedAreaName
+                        ? selectedAreaName
+                        : (areasLoading ? "Đang tải..." : "Tất cả khu vực")
+                      }
+                    </span>
+                    <ChevronDown className="h-3 w-3 opacity-50" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Tất cả khu vực</SelectItem>
+                    {areas.map((area) => (
+                      <SelectItem key={area.areaId} value={area.areaId.toString()}>
+                        {area.areaName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <div className="text-xs mb-2">
+                <div className="flex items-center justify-between">
+                  <p>Tổng {locationReport.totalLocations} vị trí</p>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1">
+                      <span className="h-2 w-2 rounded-full bg-blue-500"></span>
+                      <span>Đã sử dụng</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="h-2 w-2 rounded-full bg-amber-500"></span>
+                      <span>Trống</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="h-[180px] w-full relative">
+                {locationReportLoading ? (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                  </div>
+                ) : storagePieData.length > 0 ? (
+                  <>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={storagePieData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={false}
+                          outerRadius={70}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {storagePieData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              const data = payload[0]
+                              return (
+                                <div className="bg-white p-2 border rounded shadow-sm">
+                                  <p className="text-xs font-medium">{data.name}</p>
+                                  <p className="text-xs">{`Số lượng: ${data.value}`}</p>
+                                  <p className="text-xs">{`Tỷ lệ: ${((data.value / locationReport.totalLocations) * 100).toFixed(1)}%`}</p>
+                                </div>
+                              )
+                            }
+                            return null
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    {/* Text ở góc phải dưới cùng */}
+                    <div className="absolute bottom-0 right-0 flex flex-col items-end gap-1">
+                      <div className="text-xs font-medium text-blue-500">
+                        Đã sử dụng: {locationReport.totalLocations > 0
+                          ? (((locationReport.totalLocations - locationReport.availableLocationCount) / locationReport.totalLocations) * 100).toFixed(0)
+                          : 0}%
+                      </div>
+                      <div className="text-xs font-medium text-amber-500">
+                        Trống: {locationReport.totalLocations > 0
+                          ? ((locationReport.availableLocationCount / locationReport.totalLocations) * 100).toFixed(0)
+                          : 0}%
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-gray-500 text-sm">
+                    Không có dữ liệu
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Inventory Report Section */}
+        <Card className="mb-6">
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-base font-medium">Thống kê tồn kho</CardTitle>
+          </CardHeader>
           <CardContent className="p-4">
-            <p className="text-sm text-gray-500 mb-2">Hoạt động hôm nay</p>
-            <div className="flex justify-between mb-2">
-              <div className="text-center">
-                <div className="bg-blue-500 text-white rounded-full w-10 h-10 flex items-center justify-center mx-auto mb-1">
-                  <span>5</span>
-                </div>
-                <p className="text-xs">
-                  Khu vực
-                  <br />
-                  Trống
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="bg-orange-500 text-white rounded-full w-10 h-10 flex items-center justify-center mx-auto mb-1">
-                  <span>10</span>
-                </div>
-                <p className="text-xs">
-                  Khu vực
-                  <br />
-                  Đầy
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="bg-green-500 text-white rounded-full w-10 h-10 flex items-center justify-center mx-auto mb-1">
-                  <span>15</span>
-                </div>
-                <p className="text-xs">Sản phẩm</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Charts */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
-            <CardTitle className="text-base font-medium">Đơn mua hàng</CardTitle>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 text-xs">
-                  tuần này <ChevronDown className="ml-1 h-3 w-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem>Tháng này</DropdownMenuItem>
-                <DropdownMenuItem>Năm nay</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </CardHeader>
-          <CardContent className="p-4 pt-0">
-            <div className="h-[200px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <RechartsBarChart data={purchaseOrdersData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                  <YAxis hide={true} />
-                  <Tooltip
-                    content={({ active, payload }) => {
-                      if (active && payload && payload.length) {
-                        return (
-                          <div className="bg-white p-2 border rounded shadow-sm">
-                            <p className="text-xs">{`${payload[0].value} đơn`}</p>
-                          </div>
-                        )
-                      }
-                      return null
-                    }}
-                  />
-                  <Bar dataKey="value" fill="#F59E0B" radius={[4, 4, 0, 0]} />
-                </RechartsBarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
-            <CardTitle className="text-base font-medium">Đơn bán hàng</CardTitle>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 text-xs">
-                  tuần này <ChevronDown className="ml-1 h-3 w-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem>Tháng này</DropdownMenuItem>
-                <DropdownMenuItem>Năm nay</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </CardHeader>
-          <CardContent className="p-4 pt-0">
-            <div className="h-[200px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <RechartsLineChart data={salesOrdersData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                  <YAxis hide={true} />
-                  <Tooltip
-                    content={({ active, payload }) => {
-                      if (active && payload && payload.length) {
-                        return (
-                          <div className="bg-white p-2 border rounded shadow-sm">
-                            <p className="text-xs">{`${payload[0].value} đơn`}</p>
-                          </div>
-                        )
-                      }
-                      return null
-                    }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="value"
-                    stroke="#3B82F6"
-                    strokeWidth={2}
-                    dot={{ r: 4, fill: "white", stroke: "#3B82F6", strokeWidth: 2 }}
-                    activeDot={{ r: 6 }}
-                    fill="url(#colorUv)"
-                  />
-                  <defs>
-                    <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.2} />
-                      <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                </RechartsLineChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
-            <CardTitle className="text-base font-medium">Khu vực lưu trữ</CardTitle>
-            <div className="flex items-center gap-2">
-              <Select
-                key={`area-select-${selectedAreaId || 'all'}`}
-                value={selectedAreaId !== null && selectedAreaId !== undefined ? selectedAreaId.toString() : ""}
-                onValueChange={(value) => {
-                  const newAreaId = value === "" || value === null || value === undefined ? null : parseInt(value)
-                  setSelectedAreaId(newAreaId)
-                }}
-                disabled={areasLoading}
-              >
-                <SelectTrigger className="h-8 w-[180px] text-xs">
-                  <span className="flex-1 text-left">
-                    {selectedAreaId && selectedAreaName 
-                      ? selectedAreaName 
-                      : (areasLoading ? "Đang tải..." : "Tất cả khu vực")
-                    }
-                  </span>
-                  <ChevronDown className="h-3 w-3 opacity-50" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Tất cả khu vực</SelectItem>
-                  {areas.map((area) => (
-                    <SelectItem key={area.areaId} value={area.areaId.toString()}>
-                      {area.areaName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardHeader>
-          <CardContent className="p-4 pt-0">
-            <div className="text-xs mb-2">
-              <div className="flex items-center justify-between">
-                <p>Tổng {locationReport.totalLocations} vị trí</p>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1">
-                    <span className="h-2 w-2 rounded-full bg-blue-500"></span>
-                    <span>Đã sử dụng</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="h-2 w-2 rounded-full bg-amber-500"></span>
-                    <span>Trống</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="h-[180px] w-full relative">
-              {locationReportLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-                </div>
-              ) : storagePieData.length > 0 ? (
-                <>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={storagePieData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={false}
-                        outerRadius={70}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {storagePieData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        content={({ active, payload }) => {
-                          if (active && payload && payload.length) {
-                            const data = payload[0]
-                            return (
-                              <div className="bg-white p-2 border rounded shadow-sm">
-                                <p className="text-xs font-medium">{data.name}</p>
-                                <p className="text-xs">{`Số lượng: ${data.value}`}</p>
-                                <p className="text-xs">{`Tỷ lệ: ${((data.value / locationReport.totalLocations) * 100).toFixed(1)}%`}</p>
-                              </div>
-                            )
-                          }
-                          return null
-                        }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  {/* Text ở góc phải dưới cùng */}
-                  <div className="absolute bottom-0 right-0 flex flex-col items-end gap-1">
-                    <div className="text-xs font-medium text-blue-500">
-                      Đã sử dụng: {locationReport.totalLocations > 0 
-                        ? (((locationReport.totalLocations - locationReport.availableLocationCount) / locationReport.totalLocations) * 100).toFixed(0)
-                        : 0}%
-                    </div>
-                    <div className="text-xs font-medium text-amber-500">
-                      Trống: {locationReport.totalLocations > 0 
-                        ? ((locationReport.availableLocationCount / locationReport.totalLocations) * 100).toFixed(0)
-                        : 0}%
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-500 text-sm">
-                  Không có dữ liệu
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Inventory Report Section */}
-      <Card className="mb-6">
-        <CardHeader className="p-4 pb-2">
-          <CardTitle className="text-base font-medium">Thống kê tồn kho</CardTitle>
-        </CardHeader>
-        <CardContent className="p-4">
-          {!showInventoryReport ? (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="bg-orange-50 p-3 rounded-full">
@@ -715,38 +835,23 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                 </div>
               </div>
               <Button
-                onClick={() => setShowInventoryReport(true)}
+                onClick={() => navigate("/reports/inventory")}
                 className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
               >
                 Xem báo cáo tồn kho
               </Button>
             </div>
-          ) : (
-            <div>
-              <div className="flex justify-end mb-4">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowInventoryReport(false)}
-                  className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white"
-                >
-                  Đóng
-                </Button>
-              </div>
-              <InventoryReport />
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* Recent Orders Section */}
-      <Card className="mb-6">
-        <CardHeader className="p-4 pb-2">
-          <CardTitle className="text-base font-medium">
-            Đơn hàng <span className="text-xs font-normal text-gray-500">(Quản lý đơn mua hàng và đơn bán hàng)</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-4">
-          {!showOrders ? (
+        {/* Recent Orders Section */}
+        <Card className="mb-6">
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-base font-medium">
+              Đơn hàng <span className="text-xs font-normal text-gray-500">(Quản lý đơn mua hàng và đơn bán hàng)</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="bg-blue-50 p-3 rounded-full">
@@ -758,38 +863,33 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                 </div>
               </div>
               <Button
-                onClick={() => setShowOrders(true)}
+                onClick={() => navigate("/reports/orders")}
                 className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
               >
                 Xem đơn hàng
               </Button>
             </div>
-          ) : (
-            <div>
-              <OrdersPage onClose={() => setShowOrders(false)} />
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* Calendar and Warehouse Statistics */}
-      <div className="grid grid-cols-2 gap-6 items-stretch">
-        <div>
-          <WarehouseEventCalendar />
+        {/* Calendar and Warehouse Statistics */}
+        <div className="grid grid-cols-2 gap-6 items-stretch">
+          <div>
+            <WarehouseEventCalendar />
+          </div>
+          <div>
+            <WarehousePerformance />
+          </div>
         </div>
-        <div>
-          <WarehousePerformance />
-        </div>
-      </div>
 
-      {/* Warehouse Information Cards */}
-      <div className="grid grid-cols-2 gap-6 mt-6">
-        <ExpiringProducts />
-        <RecentActivities onShowAllClick={() => setShowOrders(true)} />
-      </div>
-    </>
-  )
-}
+        {/* Warehouse Information Cards */}
+        <div className="grid grid-cols-2 gap-6 mt-6">
+          <ExpiringProducts />
+          <RecentActivities onShowAllClick={() => navigate("/reports/orders")} />
+        </div>
+      </>
+    )
+  }
 
   const renderBillingSystem = () => (
     <>

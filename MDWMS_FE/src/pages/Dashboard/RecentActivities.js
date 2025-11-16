@@ -3,8 +3,7 @@ import { Activity, ShoppingCart, Package } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
 import { Badge } from "../../components/ui/badge"
-import { getPurchaseOrderWarehouseManagers } from "../../services/PurchaseOrderService"
-import { getSalesOrderListWarehouseManager } from "../../services/SalesOrderService"
+import { getGoodsReceiptReport, getGoodsIssueReport } from "../../services/DashboardService"
 import dayjs from "dayjs"
 
 // Helper function to get time ago in Vietnamese
@@ -41,53 +40,53 @@ export default function RecentActivities({ onShowAllClick }) {
       try {
         setRecentActivitiesLoading(true)
         
-        // Fetch recent purchase orders and sales orders
-        const purchaseParams = {
-          pageNumber: 1,
-          pageSize: 3,
-          search: "",
-        }
+        // Get date range for last 7 days
+        const toDate = dayjs().format('YYYY-MM-DD')
+        const fromDate = dayjs().subtract(7, 'day').format('YYYY-MM-DD')
         
-        const salesParams = {
-          pageNumber: 1,
-          pageSize: 3,
-          search: "",
-        }
-        
-        const [purchaseOrders, salesOrders] = await Promise.all([
-          getPurchaseOrderWarehouseManagers(purchaseParams).catch(() => ({ data: { items: [] } })),
-          getSalesOrderListWarehouseManager(salesParams).catch(() => ({ data: { items: [] } }))
+        // Fetch recent receipts and issues
+        const [receipts, issues] = await Promise.all([
+          getGoodsReceiptReport({ fromDate, toDate }).catch(() => []),
+          getGoodsIssueReport({ fromDate, toDate }).catch(() => [])
         ])
+        
+        // Handle response structure
+        const normalizeData = (response) => {
+          if (Array.isArray(response)) return response
+          if (response?.items && Array.isArray(response.items)) return response.items
+          if (response?.data && Array.isArray(response.data)) return response.data
+          if (response?.data?.items && Array.isArray(response.data.items)) return response.data.items
+          return []
+        }
+        
+        const receiptsList = normalizeData(receipts)
+        const issuesList = normalizeData(issues)
         
         const activities = []
         
-        // Add purchase orders
-        if (purchaseOrders?.data?.items) {
-          purchaseOrders.data.items.slice(0, 3).forEach(order => {
-            activities.push({
-              type: "purchase",
-              id: order.purchaseOrderId || order.id,
-              code: order.purchaseOrderCode || order.code || `PO-${order.purchaseOrderId}`,
-              date: order.createdAt || order.createdDate,
-              status: order.status,
-              description: `Đơn mua hàng ${order.purchaseOrderCode || order.code || order.purchaseOrderId}`,
-            })
+        // Add receipts (purchase orders)
+        receiptsList.forEach(receipt => {
+          activities.push({
+            type: "purchase",
+            id: receipt.goodsId || receipt.id,
+            code: receipt.goodsCode || `GR-${receipt.goodsId}`,
+            goodsName: receipt.goodsName || "",
+            date: receipt.receiptDate || receipt.createdAt,
+            supplierName: receipt.supplierName || "",
           })
-        }
+        })
         
-        // Add sales orders
-        if (salesOrders?.data?.items) {
-          salesOrders.data.items.slice(0, 3).forEach(order => {
-            activities.push({
-              type: "sales",
-              id: order.salesOrderId || order.id,
-              code: order.salesOrderCode || order.code || `SO-${order.salesOrderId}`,
-              date: order.createdAt || order.createdDate,
-              status: order.status,
-              description: `Đơn bán hàng ${order.salesOrderCode || order.code || order.salesOrderId}`,
-            })
+        // Add issues (sales orders)
+        issuesList.forEach(issue => {
+          activities.push({
+            type: "sales",
+            id: issue.goodsId || issue.id,
+            code: issue.goodsCode || `GI-${issue.goodsId}`,
+            goodsName: issue.goodsName || "",
+            date: issue.issueDate || issue.createdAt,
+            retailerName: issue.retailerName || "",
           })
-        }
+        })
         
         // Sort by date (newest first) and take top 5
         activities.sort((a, b) => {
@@ -151,9 +150,11 @@ export default function RecentActivities({ onShowAllClick }) {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-700 truncate">
-                      {activity.description || activity.code}
-                    </p>
+                    {activity.goodsName && (
+                      <p className="text-xs text-gray-600 mt-0.5 truncate">
+                        {activity.goodsName}
+                      </p>
+                    )}
                     <p className="text-xs text-gray-500 mt-1">
                       {timeAgo} • {dayjs(activity.date).format("DD/MM/YYYY HH:mm")}
                     </p>

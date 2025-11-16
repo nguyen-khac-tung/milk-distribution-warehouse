@@ -5,11 +5,9 @@ using System.Collections.Generic;
 
 namespace MilkDistributionWarehouse.Models.Entities;
 
-public partial class SalesOrder
+public partial class DisposalRequest
 {
-    public string SalesOrderId { get; set; }
-
-    public int? RetailerId { get; set; }
+    public string DisposalRequestId { get; set; }
 
     public DateOnly? EstimatedTimeDeparture { get; set; }
 
@@ -19,8 +17,6 @@ public partial class SalesOrder
 
     public int? ApprovalBy { get; set; }
 
-    public int? AcknowledgedBy { get; set; }
-
     public int? AssignTo { get; set; }
 
     public DateTime? CreatedAt { get; set; }
@@ -29,15 +25,11 @@ public partial class SalesOrder
 
     public DateTime? ApprovalAt { get; set; }
 
-    public DateTime? AcknowledgeAt { get; set; }
-
-    public DateTime? PickingAt { get; set; }
+    public DateTime? AssignAt { get; set; }
 
     public string Note { get; set; }
 
     public string RejectionReason { get; set; }
-
-    public virtual User AcknowledgedByNavigation { get; set; }
 
     public virtual User ApprovalByNavigation { get; set; }
 
@@ -45,9 +37,7 @@ public partial class SalesOrder
 
     public virtual User CreatedByNavigation { get; set; }
 
-    public virtual ICollection<GoodsIssueNote> GoodsIssueNotes { get; set; } = new List<GoodsIssueNote>();
+    public virtual ICollection<DisposalNote> DisposalNotes { get; set; } = new List<DisposalNote>();
 
-    public virtual Retailer Retailer { get; set; }
-
-    public virtual ICollection<SalesOrderDetail> SalesOrderDetails { get; set; } = new List<SalesOrderDetail>();
+    public virtual ICollection<DisposalRequestDetail> DisposalRequestDetails { get; set; } = new List<DisposalRequestDetail>();
 }

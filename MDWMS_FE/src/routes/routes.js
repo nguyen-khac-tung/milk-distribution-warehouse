@@ -2,7 +2,7 @@
 import NotFoundPage from "../pages/NotFoundPage";
 import Dashboard from "../pages/Dashboard/Dashboard";
 import CreateSaleOrder from "../pages/SalesOrderPage/CreateSaleOrder";
-import Reports from "../pages/Reports";
+import Reports from "../pages/ReportManagement/Reports";
 // import Settings from "../pages/Settings";
 import Areas from "../pages/AreaAndLocationPage/AreaPage/AreasList";
 import Locations from "../pages/AreaAndLocationPage/LocationPage/LocationList";
@@ -39,6 +39,9 @@ import CreateStocktaking from "../pages/StocktakingPage/CreateStocktaking";
 import UpdateStocktaking from "../pages/StocktakingPage/UpdateStocktaking";
 import StocktakingDetail from "../pages/StocktakingPage/StocktakingDetail";
 import StocktakingArea from "../pages/StocktakingArea/StocktakingArea";
+import StocktakingAreaDetailForOther from "../pages/StocktakingArea/StocktakingAreaDetailForOther";
+import OrdersPage from "../pages/ReportManagement/OrdersPage";
+import InventoryReport from "../pages/ReportManagement/InventoryReport";
 
 export const routes = [
     {
@@ -185,10 +188,19 @@ export const routes = [
         isShowHeader: true,
     },
     {
-        path: "/reports",
+        path: "/reports/orders",
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.REPORT_VIEW}>
-                <Reports />
+                <OrdersPage />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/reports/inventory",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.REPORT_VIEW}>
+                <InventoryReport />
             </ProtectedRoute>
         ),
         isShowHeader: true,
@@ -335,6 +347,15 @@ export const routes = [
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.STOCKTAKING_AREA_VIEW_DETAILS}>
                 <StocktakingArea />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/stocktaking-area-detail-other/:id",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.STOCKTAKING_AREA_VIEW_DETAILS_FOR_OTHER}>
+                <StocktakingAreaDetailForOther />
             </ProtectedRoute>
         ),
         isShowHeader: true,
