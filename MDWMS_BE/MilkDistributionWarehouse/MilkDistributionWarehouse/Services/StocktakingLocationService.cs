@@ -196,8 +196,8 @@ namespace MilkDistributionWarehouse.Services
                 }).ToList();
 
                 (msg, _) = await _stocktakingPalletService.CreateStocktakingPalletBulk(stocktakingPalletCreates);
-                if (!string.IsNullOrEmpty(msg))
-                    throw new Exception(msg);
+                //if (!string.IsNullOrEmpty(msg))
+                //    throw new Exception(msg);
 
                 var updateStocktakingLocationBulksResult = await _stocktakingLocationRepository.UpdateStocktakingLocationBulk(stocktakingLocations);
 
@@ -221,7 +221,7 @@ namespace MilkDistributionWarehouse.Services
             var stocktakingPallets = await _stocktakingPalletRepository.GetStocktakingPalletsByStocktakingLocationIds(stocktakingLocationIds);
 
             if (!stocktakingPallets.Any())
-                return ("Danh sách mã kiểm kê kệ kê hàng trống.", default);
+                return ("", default);
 
             var deleteStocktakingPalletBulkResult = await _stocktakingPalletRepository.DeleteStocktakingPalletBulk(stocktakingPallets);
             if (deleteStocktakingPalletBulkResult == 0)

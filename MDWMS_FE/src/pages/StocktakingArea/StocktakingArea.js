@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, MapPin, Clock, Calendar, User, Thermometer, Droplets, Sun, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, MapPin, Clock, Calendar, User, Thermometer, Droplets, Sun, CheckCircle2, RotateCcw } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
-import { getStocktakingAreaDetailBySheetId, getStocktakingDetail, confirmStocktakingLocationCounted, submitStocktakingArea } from '../../services/StocktakingService';
+import { getStocktakingAreaDetailBySheetId, getStocktakingDetail, confirmStocktakingLocationCounted, submitStocktakingArea, cancelStocktakingLocationRecord } from '../../services/StocktakingService';
 import { extractErrorMessage } from '../../utils/Validation';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
 import StatusDisplay from '../../components/StocktakingComponents/StatusDisplay';
@@ -31,6 +31,9 @@ const StocktakingArea = () => {
     const [validatedLocationData, setValidatedLocationData] = useState(null);
     const [confirmingLocationId, setConfirmingLocationId] = useState(null);
     const [submittingArea, setSubmittingArea] = useState(false);
+    const [cancelingLocationId, setCancelingLocationId] = useState(null);
+    const [selectedLocations, setSelectedLocations] = useState(new Set());
+    const [recheckingLocations, setRecheckingLocations] = useState(false);
     const isFetchingRef = useRef(false);
 
     useEffect(() => {
@@ -143,6 +146,108 @@ const StocktakingArea = () => {
     const handleProceedLocation = (location) => {
         setSelectedLocation(location);
         setShowScanModal(true);
+    };
+
+    const handleRecheckLocation = async (location) => {
+        if (!location?.stocktakingLocationId || !location?.locationId || cancelingLocationId === location.stocktakingLocationId) {
+            return;
+        }
+
+        setCancelingLocationId(location.stocktakingLocationId);
+        try {
+            await cancelStocktakingLocationRecord([{
+                stocktakingLocationId: location.stocktakingLocationId,
+                locationId: location.locationId
+            }]);
+
+            if (window.showToast) {
+                window.showToast('Hủy bản ghi kiểm kê thành công!', 'success');
+            }
+
+            // Refresh data sau khi cancel
+            await handleRefresh();
+        } catch (error) {
+            console.error('Error canceling stocktaking location record:', error);
+            const errorMessage = extractErrorMessage(error);
+            if (window.showToast) {
+                window.showToast(errorMessage || 'Có lỗi xảy ra khi hủy bản ghi kiểm kê', 'error');
+            }
+        } finally {
+            setCancelingLocationId(null);
+        }
+    };
+
+    const handleLocationSelect = (locationId, event) => {
+        event.stopPropagation(); // Ngăn chặn toggle expand khi click checkbox
+        setSelectedLocations(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(locationId)) {
+                newSet.delete(locationId);
+            } else {
+                newSet.add(locationId);
+            }
+            return newSet;
+        });
+    };
+
+    const handleSelectAll = () => {
+        const allLocations = stocktakingArea?.stocktakingLocations || [];
+        const allLocationIds = allLocations
+            .filter(loc => loc.status === STOCK_LOCATION_STATUS.Counted)
+            .map(loc => loc.stocktakingLocationId || loc.locationId)
+            .filter(id => id);
+        setSelectedLocations(new Set(allLocationIds));
+    };
+
+    const handleDeselectAll = () => {
+        setSelectedLocations(new Set());
+    };
+
+    const handleRecheckLocations = async () => {
+        if (selectedLocations.size === 0 || recheckingLocations) {
+            return;
+        }
+
+        setRecheckingLocations(true);
+        try {
+            const locationsToCancel = stocktakingArea?.stocktakingLocations?.filter(loc => {
+                const locationId = loc.stocktakingLocationId || loc.locationId;
+                return selectedLocations.has(locationId) && loc.status === STOCK_LOCATION_STATUS.Counted;
+            }) || [];
+
+            if (locationsToCancel.length === 0) {
+                if (window.showToast) {
+                    window.showToast('Không có vị trí nào được chọn để kiểm kê lại', 'warning');
+                }
+                return;
+            }
+
+            // Gọi API cancel cho tất cả các location đã chọn
+            const records = locationsToCancel.map(loc => ({
+                stocktakingLocationId: loc.stocktakingLocationId,
+                locationId: loc.locationId
+            }));
+
+            await cancelStocktakingLocationRecord(records);
+
+            if (window.showToast) {
+                window.showToast(`Hủy bản ghi kiểm kê thành công cho ${locationsToCancel.length} vị trí!`, 'success');
+            }
+
+            // Refresh data sau khi cancel
+            await handleRefresh();
+
+            // Clear selection sau khi thành công
+            setSelectedLocations(new Set());
+        } catch (error) {
+            console.error('Error canceling stocktaking location records:', error);
+            const errorMessage = extractErrorMessage(error);
+            if (window.showToast) {
+                window.showToast(errorMessage || 'Có lỗi xảy ra khi hủy bản ghi kiểm kê', 'error');
+            }
+        } finally {
+            setRecheckingLocations(false);
+        }
     };
 
     const handleLocationValidated = (locationData) => {
@@ -450,27 +555,25 @@ const StocktakingArea = () => {
 
                 {/* Kiểm Tra Section */}
                 <Card className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-                    <div
-                        className="p-6 border-b border-gray-200 cursor-pointer flex items-center justify-between hover:bg-gray-50 transition-colors"
-                        onClick={() => toggleSection('check')}
-                    >
+                    <div className="p-6 border-b border-gray-200 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <RefreshCw
                                 className="w-5 h-5 text-gray-400 cursor-pointer hover:text-orange-500 transition-colors"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleRefresh();
-                                }}
+                                onClick={handleRefresh}
                             />
                             <CardTitle className="text-lg font-semibold text-slate-700 m-0">
                                 Kiểm Tra
                             </CardTitle>
                         </div>
-                        {expandedSections.check ? (
-                            <ChevronUp className="w-5 h-5 text-gray-400" />
-                        ) : (
-                            <ChevronDown className="w-5 h-5 text-gray-400" />
-                        )}
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={handleRefresh}
+                                className="flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706] transition-colors bg-white text-slate-700"
+                            >
+                                <RefreshCw className="h-4 w-4" />
+                                <span className="text-sm font-medium">Làm mới</span>
+                            </button>
+                        </div>
                     </div>
 
                     {expandedSections.check && (() => {
@@ -490,11 +593,29 @@ const StocktakingArea = () => {
 
                         // Render function cho một row trong table
                         const renderLocationRow = (location, index, isUnchecked = false) => {
+                            const locationId = location.stocktakingLocationId || location.locationId || index;
+                            const isSelected = selectedLocations.has(locationId);
+                            const canSelect = location.status === STOCK_LOCATION_STATUS.Counted;
+
                             return (
                                 <TableRow
-                                    key={location.stocktakingLocationId || index}
-                                    className="hover:bg-slate-50 border-b border-slate-200"
+                                    key={locationId}
+                                    className={`hover:bg-slate-50 border-b border-slate-200 ${isSelected ? 'bg-orange-50' : ''}`}
                                 >
+                                    {!isUnchecked && (
+                                        <TableCell className="px-6 py-4">
+                                            {canSelect ? (
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isSelected}
+                                                    onChange={(e) => handleLocationSelect(locationId, e)}
+                                                    className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded cursor-pointer"
+                                                />
+                                            ) : (
+                                                <span className="text-gray-400">-</span>
+                                            )}
+                                        </TableCell>
+                                    )}
                                     <TableCell className="px-6 py-4 text-slate-700">
                                         {location.locationCode || '-'}
                                     </TableCell>
@@ -502,15 +623,31 @@ const StocktakingArea = () => {
                                         <LocationStatusDisplay status={location.status} />
                                     </TableCell>
                                     <TableCell className="px-6 py-4 text-center">
-                                        <Button
-                                            onClick={() => handleProceedLocation(location)}
-                                            className={isUnchecked
-                                                ? "bg-blue-500 hover:bg-blue-600 text-white text-sm px-4 py-2 h-8"
-                                                : "bg-orange-300 hover:bg-orange-400 text-white text-sm px-4 py-2 h-8"
-                                            }
-                                        >
-                                            {isUnchecked ? 'Tiến Hành' : 'Kiểm kê lại'}
-                                        </Button>
+                                        {isUnchecked ? (
+                                            <Button
+                                                onClick={() => handleProceedLocation(location)}
+                                                className="bg-blue-500 hover:bg-blue-600 text-white text-sm px-4 py-2 h-8"
+                                            >
+                                                Tiến Hành
+                                            </Button>
+                                        ) : location.status === STOCK_LOCATION_STATUS.Counted ? (
+                                            <Button
+                                                onClick={() => handleRecheckLocation(location)}
+                                                disabled={cancelingLocationId === location.stocktakingLocationId}
+                                                className="bg-orange-300 hover:bg-orange-400 text-white text-sm px-4 py-2 h-8 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {cancelingLocationId === location.stocktakingLocationId ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <RefreshCw className="h-4 w-4 animate-spin" />
+                                                        <span>Đang hủy...</span>
+                                                    </div>
+                                                ) : (
+                                                    'Kiểm kê lại'
+                                                )}
+                                            </Button>
+                                        ) : (
+                                            <span className="text-gray-400 text-sm">-</span>
+                                        )}
                                     </TableCell>
                                     {isUnchecked && hasConfirmableLocation && (
                                         <TableCell className="px-6 py-4 text-center">
@@ -535,7 +672,7 @@ const StocktakingArea = () => {
                         };
 
                         const colSpanUnchecked = hasConfirmableLocation ? 4 : 3;
-                        const colSpanChecked = 3;
+                        const colSpanChecked = 4; // Thêm 1 cột cho checkbox
 
                         return (
                             <div className="space-y-6">
@@ -591,10 +728,60 @@ const StocktakingArea = () => {
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
+                                        {checkedLocations.length > 0 && (
+                                            <div className="mb-4 flex items-center justify-between pb-3 border-b border-gray-200">
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={handleSelectAll}
+                                                        className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                                                    >
+                                                        Chọn tất cả
+                                                    </button>
+                                                    <span className="text-gray-400">|</span>
+                                                    <button
+                                                        onClick={handleDeselectAll}
+                                                        className="text-sm text-gray-600 hover:text-gray-700 font-medium"
+                                                    >
+                                                        Bỏ chọn tất cả
+                                                    </button>
+                                                    {selectedLocations.size > 0 && (
+                                                        <>
+                                                            <span className="text-gray-400">|</span>
+                                                            <div className="text-sm text-slate-600">
+                                                                Đã chọn: {selectedLocations.size} vị trí
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                                <Button
+                                                    onClick={handleRecheckLocations}
+                                                    disabled={selectedLocations.size === 0 || recheckingLocations}
+                                                    className={`flex items-center space-x-2 px-4 py-2 h-[38px] ${selectedLocations.size === 0 || recheckingLocations
+                                                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                                            : 'bg-orange-500 hover:bg-orange-600 text-white'
+                                                        } transition-colors`}
+                                                >
+                                                    {recheckingLocations ? (
+                                                        <>
+                                                            <RefreshCw className="h-4 w-4 animate-spin" />
+                                                            <span className="text-sm font-medium">Đang xử lý...</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <RotateCcw className="h-4 w-4" />
+                                                            <span className="text-sm font-medium">Kiểm kê lại</span>
+                                                        </>
+                                                    )}
+                                                </Button>
+                                            </div>
+                                        )}
                                         <div className="overflow-x-auto">
                                             <Table className="w-full">
                                                 <TableHeader>
                                                     <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
+                                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                                                            Chọn
+                                                        </TableHead>
                                                         <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                                                             Vị Trí
                                                         </TableHead>
