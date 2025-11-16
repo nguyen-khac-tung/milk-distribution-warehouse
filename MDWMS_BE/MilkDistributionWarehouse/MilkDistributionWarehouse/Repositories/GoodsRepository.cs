@@ -120,16 +120,19 @@ namespace MilkDistributionWarehouse.Repositories
             var today = DateOnly.FromDateTime(DateTime.Now);
 
             var groupedPallets = await _warehouseContext.Pallets
+                                .Include(p => p.Batch)
+                                    .ThenInclude(b => b.Goods)
+                                .Include(p => p.GoodsPacking)
                                 .Where(p => p.Batch.ExpiryDate <= today && p.PackageQuantity > 0 && p.Status == CommonStatus.Active)
                                 .GroupBy(p => new { p.Batch.Goods.GoodsId, p.GoodsPacking.GoodsPackingId })
                                 .AsNoTracking()
-                                .ToListAsync(); 
+                                .ToListAsync();
 
             return groupedPallets.Select(g => new
             {
-                Goods = g.FirstOrDefault()?.Batch.Goods,
+                Goods = g.FirstOrDefault()?.Batch?.Goods,
                 GoodsPacking = g.FirstOrDefault()?.GoodsPacking,
-                TotalExpiredPackageQuantity = g.Sum(p => p.PackageQuantity)
+                TotalExpiredPackageQuantity = g.Sum(p => p.PackageQuantity ?? 0)
             });
         }
 
