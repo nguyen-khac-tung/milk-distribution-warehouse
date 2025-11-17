@@ -24,6 +24,8 @@ namespace MilkDistributionWarehouse.Repositories
         public async Task<DisposalNoteDetail?> GetDisposalNoteDetailById(Guid? id)
         {
             return await _context.DisposalNoteDetails
+                .Include(d => d.DisposalNote)
+                .Include(d => d.PickAllocations)
                 .FirstOrDefaultAsync(d => d.DisposalNoteDetailId == id);
         }
 
