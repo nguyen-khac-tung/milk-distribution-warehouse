@@ -12,6 +12,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<StocktakingLocation?> GetStocktakingLocationById(Guid stocktakingLocationId);
         Task<int> CreateStocktakingLocationBulk(List<StocktakingLocation> creates);
         Task<int> UpdateStocktakingLocation(StocktakingLocation stocktakingLocation);
+        Task<int> UpdateStocktakingLocationBulk(List<StocktakingLocation> updates);
         Task<bool> AreExistStocklocationByAllStockAreaIdsAsync(List<Guid> stockAreaIds);
         Task<bool> AnyStocktakingLocationByStockAreaId(Guid stocktakingAreaId);
         Task<bool> AnyStocktakingLocationSameStockSheetAsync(string stockSheetId, Guid stockAreaId, int assignTo);
@@ -75,6 +76,20 @@ namespace MilkDistributionWarehouse.Repositories
                 _context.StocktakingLocations.Update(stocktakingLocation);
                 await _context.SaveChangesAsync();
                 return 1;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        public async Task<int> UpdateStocktakingLocationBulk(List<StocktakingLocation> updates)
+        {
+            try
+            {
+                _context.StocktakingLocations.UpdateRange(updates);
+                await _context.SaveChangesAsync();
+                return updates.Count;
             }
             catch
             {

@@ -8,6 +8,7 @@ import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from ".
 import { getStocktakingPalletDetailByLocationCode, scannerStocktakingPallet, missStocktakingPallet, matchStocktakingPallet, surplusStocktakingPallet, deleteStocktakingPallet, undoStocktakingPallet, confirmStocktakingLocationCounted } from "../../services/StocktakingService";
 import { extractErrorMessage } from "../../utils/Validation";
 import PalletStatusDisplay, { STOCK_PALLET_STATUS } from "../../pages/StocktakingArea/PalletStatusDisplay";
+import DeletePalletConfirmModal from "./DeletePalletConfirmModal";
 
 export default function ScanPalletStocktakingModal({
     isOpen,
@@ -23,6 +24,8 @@ export default function ScanPalletStocktakingModal({
     const [unexpectedPallets, setUnexpectedPallets] = useState([]);
     const [loadingPallets, setLoadingPallets] = useState(false);
     const [savingPallets, setSavingPallets] = useState(new Set());
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [palletToDelete, setPalletToDelete] = useState(null);
     const scanTimeoutRef = useRef(null);
     const matchTimeoutRef = useRef({});
     const surplusTimeoutRef = useRef({});
@@ -272,9 +275,16 @@ export default function ScanPalletStocktakingModal({
 
     const handleUpdateUnexpectedActual = (pallet, actualQuantity) => {
         // Chỉ cập nhật số lượng thực tế trong state cho pallet không mong đợi, không tự động lưu
+        // Không cho phép số lượng âm
+        let quantity;
+        if (actualQuantity === '' || actualQuantity === null || actualQuantity === undefined) {
+            quantity = '';
+        } else {
+            quantity = Math.max(0, Number(actualQuantity) || 0);
+        }
         const updatedPallets = unexpectedPallets.map(p =>
             p.stocktakingPalletId === pallet.stocktakingPalletId
-                ? { ...p, actualPackageQuantity: actualQuantity }
+                ? { ...p, actualPackageQuantity: quantity }
                 : p
         );
         setUnexpectedPallets(updatedPallets);
@@ -290,21 +300,28 @@ export default function ScanPalletStocktakingModal({
         setUnexpectedPallets(updatedPallets);
     };
 
-    const handleDeleteUnexpected = async (pallet) => {
+    const handleDeleteUnexpected = (pallet) => {
         if (!pallet || !pallet.stocktakingPalletId) {
             window.showToast?.("Thông tin pallet không hợp lệ", "error");
             return;
         }
 
-        // Xác nhận trước khi xóa
-        if (!window.confirm(`Bạn có chắc chắn muốn xóa pallet ${pallet.palletId || ''} không?`)) {
+        // Mở modal xác nhận xóa
+        setPalletToDelete(pallet);
+        setDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!palletToDelete || !palletToDelete.stocktakingPalletId) {
+            setDeleteModalOpen(false);
+            setPalletToDelete(null);
             return;
         }
 
         try {
-            setSavingPallets(prev => new Set(prev).add(pallet.stocktakingPalletId));
+            setSavingPallets(prev => new Set(prev).add(palletToDelete.stocktakingPalletId));
 
-            await deleteStocktakingPallet(pallet.stocktakingPalletId);
+            await deleteStocktakingPallet(palletToDelete.stocktakingPalletId);
 
             // Reload danh sách pallet sau khi xóa thành công
             await loadPallets();
@@ -322,9 +339,13 @@ export default function ScanPalletStocktakingModal({
                     stocktakingLocationId,
                     locationCode,
                     action: "delete",
-                    pallet: pallet
+                    pallet: palletToDelete
                 });
             }
+
+            // Đóng modal và reset
+            setDeleteModalOpen(false);
+            setPalletToDelete(null);
         } catch (error) {
             console.error("Error deleting unexpected pallet:", error);
             const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi xóa pallet");
@@ -332,10 +353,15 @@ export default function ScanPalletStocktakingModal({
         } finally {
             setSavingPallets(prev => {
                 const newSet = new Set(prev);
-                newSet.delete(pallet.stocktakingPalletId);
+                newSet.delete(palletToDelete.stocktakingPalletId);
                 return newSet;
             });
         }
+    };
+
+    const handleCancelDelete = () => {
+        setDeleteModalOpen(false);
+        setPalletToDelete(null);
     };
 
     const handleMatchPallet = async (pallet) => {
@@ -391,9 +417,16 @@ export default function ScanPalletStocktakingModal({
 
     const handleUpdateActual = (pallet, actualQuantity) => {
         // Chỉ cập nhật số lượng thực tế trong state, không tự động lưu
+        // Không cho phép số lượng âm
+        let quantity;
+        if (actualQuantity === '' || actualQuantity === null || actualQuantity === undefined) {
+            quantity = '';
+        } else {
+            quantity = Math.max(0, Number(actualQuantity) || 0);
+        }
         const updatedPallets = expectedPallets.map(p =>
             p.stocktakingPalletId === pallet.stocktakingPalletId
-                ? { ...p, actualPackageQuantity: actualQuantity }
+                ? { ...p, actualPackageQuantity: quantity }
                 : p
         );
         setExpectedPallets(updatedPallets);
@@ -606,7 +639,23 @@ export default function ScanPalletStocktakingModal({
                                                         <Input
                                                             type="number"
                                                             value={pallet.actualPackageQuantity ?? ''}
-                                                            onChange={(e) => handleUpdateActual(pallet, parseInt(e.target.value) || 0)}
+                                                            onChange={(e) => {
+                                                                const value = e.target.value;
+                                                                if (value === '' || value === '-') {
+                                                                    handleUpdateActual(pallet, '');
+                                                                    return;
+                                                                }
+                                                                const numValue = parseInt(value);
+                                                                if (!isNaN(numValue)) {
+                                                                    handleUpdateActual(pallet, numValue);
+                                                                }
+                                                            }}
+                                                            onKeyDown={(e) => {
+                                                                // Ngăn chặn nhập dấu trừ và các ký tự không hợp lệ
+                                                                if (e.key === '-' || e.key === '+' || e.key === 'e' || e.key === 'E' || e.key === '.') {
+                                                                    e.preventDefault();
+                                                                }
+                                                            }}
                                                             className="w-20 h-8 text-center border-slate-300 focus:border-orange-500 focus:ring-orange-500 rounded"
                                                             min="0"
                                                             disabled={!pallet.status || pallet.status === STOCK_PALLET_STATUS.Unscanned || pallet.status === STOCK_PALLET_STATUS.Missing}
@@ -711,7 +760,23 @@ export default function ScanPalletStocktakingModal({
                                                         <Input
                                                             type="number"
                                                             value={pallet.actualPackageQuantity ?? ''}
-                                                            onChange={(e) => handleUpdateUnexpectedActual(pallet, parseInt(e.target.value) || 0)}
+                                                            onChange={(e) => {
+                                                                const value = e.target.value;
+                                                                if (value === '' || value === '-') {
+                                                                    handleUpdateUnexpectedActual(pallet, '');
+                                                                    return;
+                                                                }
+                                                                const numValue = parseInt(value);
+                                                                if (!isNaN(numValue)) {
+                                                                    handleUpdateUnexpectedActual(pallet, numValue);
+                                                                }
+                                                            }}
+                                                            onKeyDown={(e) => {
+                                                                // Ngăn chặn nhập dấu trừ và các ký tự không hợp lệ
+                                                                if (e.key === '-' || e.key === '+' || e.key === 'e' || e.key === 'E' || e.key === '.') {
+                                                                    e.preventDefault();
+                                                                }
+                                                            }}
                                                             className="w-20 h-8 text-center border-slate-300 focus:border-orange-500 focus:ring-orange-500 rounded"
                                                             min="0"
                                                         />
@@ -786,6 +851,15 @@ export default function ScanPalletStocktakingModal({
                     </Button>
                 </div>
             </div>
+
+            {/* Delete Confirmation Modal */}
+            <DeletePalletConfirmModal
+                isOpen={deleteModalOpen}
+                onClose={handleCancelDelete}
+                onConfirm={handleConfirmDelete}
+                palletId={palletToDelete?.palletId || ''}
+                loading={palletToDelete ? savingPallets.has(palletToDelete.stocktakingPalletId) : false}
+            />
         </div>,
         document.body
     );
