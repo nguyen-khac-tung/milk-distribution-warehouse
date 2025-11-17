@@ -8,7 +8,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../../components/ui/dropdown-menu"
-import { Progress } from "../../components/ui/progress"
 import { getLocationReport } from "../../services/DashboardService"
 
 export default function WarehousePerformance() {
@@ -87,47 +86,53 @@ export default function WarehousePerformance() {
         </DropdownMenu>
       </CardHeader>
       <CardContent className="p-4">
-        <div className="flex justify-center mb-6">
-          <div className="relative w-48 h-24">
-            <svg viewBox="0 0 100 50" className="w-full h-full">
-              {/* Background arc */}
-              <path 
-                d="M 10 50 A 40 40 0 0 1 90 50" 
-                fill="none" 
-                stroke="#e5e7eb" 
-                strokeWidth="8" 
+        <div className="flex flex-col items-center mb-6">
+          <div className="relative w-64 h-60">
+            <svg viewBox="0 0 200 100" className="w-full h-full">
+              {/* Outer arc - light grey background, full semi-circle, thin */}
+              <path
+                d="M 20 100 A 80 80 0 0 1 180 100"
+                fill="none"
+                stroke="#e5e7eb"
+                strokeWidth="6"
                 strokeLinecap="round"
               />
-              {/* Progress arc - calculated based on percentage */}
-              {(() => {
-                const percentage = warehouseStats.spaceUtilization
-                const angle = (percentage / 100) * 180 // 0-180 degrees
-                const radians = (angle * Math.PI) / 180
-                const radius = 40
-                const centerX = 50
-                const centerY = 50
-                const startX = 10
-                const startY = 50
-                const endX = centerX + radius * Math.cos(Math.PI - radians)
-                const endY = centerY - radius * Math.sin(Math.PI - radians)
-                const largeArcFlag = percentage > 50 ? 1 : 0
-                
-                return (
-                  <path 
-                    d={`M ${startX} ${startY} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${endX} ${endY}`}
-                    fill="none" 
-                    stroke="#3b82f6" 
-                    strokeWidth="8" 
-                    strokeLinecap="round"
-                  />
-                )
-              })()}
+              <path
+                d="M 20.6 100 A 80 80 0 1 1 172.8 66.9"
+                fill="none"
+                stroke="#3b82f6"
+                strokeWidth="8"
+                strokeLinecap="round"
+              />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <div className="text-center">
-                <p className="text-sm font-medium">Hiệu suất</p>
-                <p className="text-2xl font-bold">{warehouseStats.spaceUtilization}%</p>
-                <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-600 rounded">Sử dụng không gian</span>
+                {(() => {
+                  // Calculate average of all metrics (0-100%)
+                  const avgPercentage = (
+                    warehouseStats.spaceUtilization +
+                    warehouseStats.orderCompletionRate +
+                    warehouseStats.inventoryTurnover +
+                    warehouseStats.averageProcessingTime
+                  ) / 4
+
+                  // Convert to rating (0-100% -> 0-5)
+                  const rating = (avgPercentage / 100) * 5
+
+                  // Calculate percentage change (based on average)
+                  const percentageChange = Math.round(avgPercentage * 0.4)
+
+                  return (
+                    <>
+                      <p className="text-3xl font-bold mb-2">
+                        {rating.toFixed(1)}/5
+                      </p>
+                      <div className="px-2.5 py-1 bg-green-100 text-green-600 rounded-md text-sm font-medium inline-block">
+                        +{percentageChange}%
+                      </div>
+                    </>
+                  )
+                })()}
               </div>
             </div>
           </div>
@@ -137,7 +142,12 @@ export default function WarehousePerformance() {
           <div className="flex items-center justify-between">
             <span className="text-sm">Sử dụng không gian</span>
             <div className="flex items-center gap-2">
-              <Progress value={warehouseStats.spaceUtilization} className="h-2 w-32" />
+              <div className="h-2 w-32 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-blue-500 rounded-full transition-all"
+                  style={{ width: `${warehouseStats.spaceUtilization}%` }}
+                />
+              </div>
               <span className="text-sm">{warehouseStats.spaceUtilization}%</span>
             </div>
           </div>
@@ -145,7 +155,12 @@ export default function WarehousePerformance() {
           <div className="flex items-center justify-between">
             <span className="text-sm">Tỷ lệ hoàn thành đơn hàng</span>
             <div className="flex items-center gap-2">
-              <Progress value={warehouseStats.orderCompletionRate} className="h-2 w-32" />
+              <div className="h-2 w-32 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-green-500 rounded-full transition-all"
+                  style={{ width: `${warehouseStats.orderCompletionRate}%` }}
+                />
+              </div>
               <span className="text-sm">{warehouseStats.orderCompletionRate}%</span>
             </div>
           </div>
@@ -153,7 +168,12 @@ export default function WarehousePerformance() {
           <div className="flex items-center justify-between">
             <span className="text-sm">Vòng quay tồn kho</span>
             <div className="flex items-center gap-2">
-              <Progress value={warehouseStats.inventoryTurnover} className="h-2 w-32" />
+              <div className="h-2 w-32 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-purple-500 rounded-full transition-all"
+                  style={{ width: `${warehouseStats.inventoryTurnover}%` }}
+                />
+              </div>
               <span className="text-sm">{warehouseStats.inventoryTurnover}%</span>
             </div>
           </div>
@@ -161,7 +181,12 @@ export default function WarehousePerformance() {
           <div className="flex items-center justify-between">
             <span className="text-sm">Hiệu quả xử lý</span>
             <div className="flex items-center gap-2">
-              <Progress value={warehouseStats.averageProcessingTime} className="h-2 w-32" />
+              <div className="h-2 w-32 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-orange-500 rounded-full transition-all"
+                  style={{ width: `${warehouseStats.averageProcessingTime}%` }}
+                />
+              </div>
               <span className="text-sm">{warehouseStats.averageProcessingTime}%</span>
             </div>
           </div>
