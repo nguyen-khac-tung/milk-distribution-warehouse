@@ -495,6 +495,28 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.DisposalRequestDetails, opt => opt.Ignore());
             CreateMap<DisposalRequestItemUpdateDto, DisposalRequestDetail>();
 
+            // Map DisposalNote
+            CreateMap<DisposalRequest, DisposalNote>()
+                .ForMember(dest => dest.DisposalRequestId, opt => opt.MapFrom(src => src.DisposalRequestId))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => DisposalNoteStatus.Picking))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now))
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.ApprovalBy, opt => opt.Ignore());
+            CreateMap<DisposalRequestDetail, DisposalNoteDetail>()
+                .ForMember(dest => dest.DisposalNoteDetailId, opt => opt.MapFrom(_ => Guid.NewGuid()))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => DisposalNoteItemStatus.Picking))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now))
+                .ForMember(dest => dest.Note, opt => opt.Ignore())
+                .ForMember(dest => dest.RejectionReason, opt => opt.Ignore());
+            CreateMap<DisposalNote, DisposalNoteDetailDto>()
+                .ForMember(dest => dest.EstimatedTimeDeparture, opt => opt.MapFrom(src => src.DisposalRequest.EstimatedTimeDeparture))
+                .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => src.CreatedByNavigation.FullName))
+                .ForMember(dest => dest.ApprovalByName, opt => opt.MapFrom(src => src.ApprovalByNavigation.FullName));
+            CreateMap<DisposalNoteDetail, DisposalNoteItemDetailDto>()
+                .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Goods.GoodsName))
+                .ForMember(dest => dest.GoodsCode, opt => opt.MapFrom(src => src.Goods.GoodsCode))
+                .ForMember(dest => dest.UnitPerPackage, opt => opt.MapFrom(src => src.GoodsPacking.UnitPerPackage))
+                .ForMember(dest => dest.RequiredPackageQuantity, opt => opt.MapFrom(src => src.PackageQuantity));
 
             // Map PickAllocation            
             CreateMap<PickAllocation, PickAllocationDto>()
@@ -559,6 +581,9 @@ namespace MilkDistributionWarehouse.Mapper
             CreateMap<StocktakingLocation, StocktakingLocationDto>()
                 .ForMember(dest => dest.LocationCode, opt => opt.MapFrom(src => src.Location.LocationCode))
                 .ForMember(dest => dest.IsAvailable, opt => opt.MapFrom(src => src.Location.IsAvailable));
+            CreateMap<StocktakingLocationRejectStatus, StocktakingLocation>()
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => StockLocationStatus.Pending))
+                .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => DateTime.Now));
 
             //Map StocktakingPallet
             CreateMap<Pallet, StocktakingPallet>()

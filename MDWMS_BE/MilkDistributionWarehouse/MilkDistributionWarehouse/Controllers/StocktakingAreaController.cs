@@ -27,7 +27,7 @@ namespace MilkDistributionWarehouse.Controllers
             var (msg, stocktakingAreaDetail) = await _stocktakingAreaService.GetStocktakingAreaByStocktakingSheetId(stoctakingSheetId, User.GetUserId());
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<StocktakingAreaDetailDto>.ToResultOk(stocktakingAreaDetail);
+            return ApiResponse<List<StocktakingAreaDetailDto>>.ToResultOk(stocktakingAreaDetail);
         }
 
         [HttpGet("GetDetailForOtherRoleByStocktakingSheetId/{stoctakingSheetId}")]
@@ -37,7 +37,7 @@ namespace MilkDistributionWarehouse.Controllers
             var (msg, stocktakingAreaDetail) = await _stocktakingAreaService.GetStocktakingAreaByStocktakingSheetId(stoctakingSheetId, null);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<StocktakingAreaDetailDto>.ToResultOk(stocktakingAreaDetail);
+            return ApiResponse<List<StocktakingAreaDetailDto>>.ToResultOk(stocktakingAreaDetail);
         }
 
         [HttpPut("ReAssignStocktakingArea")]

@@ -67,7 +67,7 @@ namespace MilkDistributionWarehouse.Services
                 goodsIssueNote.GoodsIssueNoteId = PrimaryKeyUtility.GenerateKey("RET", "GIN");
                 goodsIssueNote.CreatedBy = userId;
 
-                var committedQuantities = await _pickAllocationRepository.GetCommittedQuantitiesByPallet();
+                var committedQuantities = await _pickAllocationRepository.GetCommittedQuantitiesForSalesByPallet();
 
                 foreach (var orderDetail in salesOrder.SalesOrderDetails)
                 {

@@ -9,10 +9,12 @@ namespace MilkDistributionWarehouse.Repositories
         Task<StocktakingPallet?> GetStocktakingPalletByStocktakingPalletId(Guid stocktakingPalletId);
         Task<List<StocktakingPallet>?> GetStocktakingPalletByStocktakingLocationId(Guid stoctakingLocationId);
         Task<StocktakingPallet?> GetStocktakingPalletByStockLocationIdAndPalletId(Guid stocktakingLocationId, string palletId);
+        Task<List<StocktakingPallet>?> GetStocktakingPalletsByStocktakingLocationIds(List<Guid> stocktakingLocationIds);
         Task<StocktakingPallet?> CreateStocktakingPallet(StocktakingPallet create);
         Task<int> CreateStocktakingPalletBulk(List<StocktakingPallet> creates);
         Task<int> UpdateStocktakingPallet(StocktakingPallet update);
         Task<int> DeleteStockPallet(StocktakingPallet stocktakingPallet);
+        Task<int> DeleteStocktakingPalletBulk(List<StocktakingPallet> deletes);
     }
 
     public class StocktakingPalletRepository : IStocktakingPalletRepository
@@ -49,6 +51,13 @@ namespace MilkDistributionWarehouse.Repositories
                 .FirstOrDefaultAsync(sp => sp.StocktakingLocationId == stocktakingLocationId && sp.PalletId.Equals(palletId));
         }
 
+        public async Task<List<StocktakingPallet>?> GetStocktakingPalletsByStocktakingLocationIds(List<Guid> stocktakingLocationIds)
+        {
+            return await _context.StocktakingPallets
+                .Where(sp => stocktakingLocationIds.Contains((Guid)sp.StocktakingLocationId))
+                .ToListAsync();
+        }
+
         public async Task<StocktakingPallet?> CreateStocktakingPallet(StocktakingPallet create)
         {
             try
@@ -81,31 +90,7 @@ namespace MilkDistributionWarehouse.Repositories
         {
             try
             {
-                var trackedEntity = await _context.StocktakingPallets
-                    .FirstOrDefaultAsync(sp => sp.StocktakingPalletId == update.StocktakingPalletId);
-
-                if (trackedEntity != null)
-                {
-                    trackedEntity.Status = update.Status;
-                    trackedEntity.ActualPackageQuantity = update.ActualPackageQuantity;
-                    trackedEntity.ExpectedPackageQuantity = update.ExpectedPackageQuantity;
-                    trackedEntity.Note = update.Note;
-                    trackedEntity.UpdateAt = update.UpdateAt;
-                }
-                else
-                {
-                    // Clear navigation properties before attaching to avoid tracking conflicts
-                    update.Pallet = null;
-                    update.StocktakingLocation = null;
-
-                    _context.StocktakingPallets.Attach(update);
-                    _context.Entry(update).Property(x => x.Status).IsModified = true;
-                    _context.Entry(update).Property(x => x.ActualPackageQuantity).IsModified = true;
-                    _context.Entry(update).Property(x => x.ExpectedPackageQuantity).IsModified = true;
-                    _context.Entry(update).Property(x => x.Note).IsModified = true;
-                    _context.Entry(update).Property(x => x.UpdateAt).IsModified = true;
-                }
-
+                _context.StocktakingPallets.Update(update);
                 await _context.SaveChangesAsync();
                 return 1;
             }
@@ -122,6 +107,20 @@ namespace MilkDistributionWarehouse.Repositories
                 _context.StocktakingPallets.Remove(stocktakingPallet);
                 await _context.SaveChangesAsync();
                 return 1;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        public async Task<int> DeleteStocktakingPalletBulk(List<StocktakingPallet> deletes)
+        {
+            try
+            {
+                _context.StocktakingPallets.RemoveRange(deletes);
+                await _context.SaveChangesAsync();  
+                return deletes.Count;
             }
             catch
             {

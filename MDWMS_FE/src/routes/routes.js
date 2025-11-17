@@ -40,7 +40,7 @@ import UpdateStocktaking from "../pages/StocktakingPage/UpdateStocktaking";
 import StocktakingDetail from "../pages/StocktakingPage/StocktakingDetail";
 import StocktakingArea from "../pages/StocktakingArea/StocktakingArea";
 import StocktakingAreaDetailForOther from "../pages/StocktakingArea/StocktakingAreaDetailForOther";
-import OrdersPage from "../pages/ReportManagement/OrdersPage";
+import OrdersPage from "../pages/ReportManagement/OrdersPageReport";
 import InventoryReport from "../pages/ReportManagement/InventoryReport";
 import DisposalList from "../pages/DisposalPage/DisposalList";
 import DisposalDetail from "../pages/DisposalPage/DisposalDetail";

@@ -119,7 +119,7 @@ namespace MilkDistributionWarehouse.Services
 
             var locationToStocktaking = creates
                 .GroupBy(g => g.LocationId)
-                .ToDictionary(g => g.Key, g => g.First().StocktakingLocationid);
+                .ToDictionary(g => g.Key, g => g.First().StocktakingLocationId);
 
             foreach (var pallet in pallets)
             {

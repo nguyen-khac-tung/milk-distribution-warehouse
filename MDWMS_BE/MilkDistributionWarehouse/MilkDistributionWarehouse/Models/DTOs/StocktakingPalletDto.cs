@@ -18,7 +18,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
     public class StocktakingPalletCreate
     {
-        public Guid StocktakingLocationid { get; set; }
+        public Guid StocktakingLocationId { get; set; }
         public int LocationId { get; set; }
     }
 

@@ -17,16 +17,19 @@ namespace MilkDistributionWarehouse.Services
     {
         private readonly IPickAllocationRepository _pickAllocationRepository;
         private readonly IGoodsIssueNoteDetailRepository _goodsIssueNoteDetailRepository;
+        private readonly IDisposalNoteDetailRepository _disposalNoteDetailRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
         public PickAllocationService(IPickAllocationRepository pickAllocationRepository,
                             IGoodsIssueNoteDetailRepository goodsIssueNoteDetailRepository,
+                            IDisposalNoteDetailRepository disposalNoteDetailRepository,
                             IUnitOfWork unitOfWork,
                             IMapper mapper)
         {
             _pickAllocationRepository = pickAllocationRepository;
             _goodsIssueNoteDetailRepository = goodsIssueNoteDetailRepository;
+            _disposalNoteDetailRepository = disposalNoteDetailRepository;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
         }
@@ -59,13 +62,34 @@ namespace MilkDistributionWarehouse.Services
                 pickAllocation.Status = PickAllocationStatus.Scanned;
                 await _pickAllocationRepository.UpdatePickAllocation(pickAllocation);
 
-                var pickAllocationList = await _goodsIssueNoteDetailRepository.GetPickAllocationsByGIN(pickAllocation.GoodsIssueNoteDetailId);
-                if (pickAllocationList != null && pickAllocationList.All(p => p.Status == PickAllocationStatus.Scanned))
+                if (pickAllocation.GoodsIssueNoteDetailId.HasValue)
                 {
-                    var gin = await _goodsIssueNoteDetailRepository.GetGoodsIssueNoteDetailById(pickAllocation.GoodsIssueNoteDetailId);
-                    gin.Status = IssueItemStatus.Picked;
-                    gin.UpdatedAt = DateTime.Now;
-                    await _goodsIssueNoteDetailRepository.UpdateGoodsIssueNoteDetail(gin);
+                    var relatedPickAllocations = await _goodsIssueNoteDetailRepository.GetPickAllocationsByGIN(pickAllocation.GoodsIssueNoteDetailId);
+                    if (relatedPickAllocations != null && relatedPickAllocations.All(p => p.Status == PickAllocationStatus.Scanned))
+                    {
+                        var ginDetail = await _goodsIssueNoteDetailRepository.GetGoodsIssueNoteDetailById(pickAllocation.GoodsIssueNoteDetailId);
+                        if (ginDetail != null)
+                        {
+                            ginDetail.Status = IssueItemStatus.Picked;
+                            ginDetail.UpdatedAt = DateTime.Now;
+                            await _goodsIssueNoteDetailRepository.UpdateGoodsIssueNoteDetail(ginDetail);
+                        }
+                    }
+                }
+                
+                if (pickAllocation.DisposalNoteDetailId.HasValue)
+                {
+                    var relatedPickAllocations = await _disposalNoteDetailRepository.GetPickAllocationsByDN(pickAllocation.DisposalNoteDetailId);
+                    if (relatedPickAllocations != null && relatedPickAllocations.All(p => p.Status == PickAllocationStatus.Scanned))
+                    {
+                        var dnDetail = await _disposalNoteDetailRepository.GetDisposalNoteDetailById(pickAllocation.DisposalNoteDetailId);
+                        if (dnDetail != null)
+                        {
+                            dnDetail.Status = DisposalNoteItemStatus.Picked;
+                            dnDetail.UpdatedAt = DateTime.Now;
+                            await _disposalNoteDetailRepository.UpdateDisposalNoteDetail(dnDetail);
+                        }
+                    }
                 }
 
                 await _unitOfWork.CommitTransactionAsync();
