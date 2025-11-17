@@ -157,6 +157,25 @@ export const createDisposalRequest = async (payload) => {
     }
 };
 
+export const updateDisposalRequest = async (payload) => {
+    try {
+        const res = await api.put(
+            `/DisposalRequest/UpdateDisposalRequest`,
+            payload
+        );
+
+        return res.data;
+    } catch (error) {
+        console.error("Error updating disposal request:", error);
+
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
+
+        throw error;
+    }
+};
+
 export const deleteDisposalRequest = async (disposalRequestId) => {
     try {
         const res = await api.delete(
@@ -247,6 +266,104 @@ export const assignDisposalRequestForPicking = async (payload) => {
             throw new Error(error.response.data.message);
         }
 
+        throw error;
+    }
+};
+
+// Tạo mới phiếu xuất hủy theo disposalRequestId
+export const createDisposalNote = async (data) => {
+    try {
+        const body = {
+            disposalRequestId: data.disposalRequestId,
+        };
+
+        const res = await api.post("/DisposalNote/CreateDisposalNote", body);
+        console.log("createDisposalNote:", res.data);
+        return res.data;
+    } catch (error) {
+        console.error("Error creating disposal note:", error);
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
+        throw error;
+    }
+};
+
+// Lấy chi tiết phiếu xuất hủy theo Disposal Request ID
+export const getDetailDisposalNote = async (disposalRequestId) => {
+    try {
+        const res = await api.get(`/DisposalNote/GetDetailDisposalNote/${disposalRequestId}`);
+        console.log("getDetailDisposalNote:", res.data);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching Disposal Note detail:", error);
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
+        throw error;
+    }
+};
+
+// Gửi phiếu xuất hủy (Submit)
+export const submitDisposalNote = async (disposalNoteId) => {
+    try {
+        const res = await api.put(`/DisposalNote/SubmitDisposalNote`, {
+            disposalNoteId,
+        });
+        console.log("submitDisposalNote:", res.data);
+        return res.data;
+    } catch (error) {
+        console.error("Error submitting Disposal Note:", error);
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
+        throw error;
+    }
+};
+
+// Duyệt phiếu xuất hủy
+export const approveDisposalNote = async (disposalNoteId) => {
+    try {
+        const res = await api.put(`/DisposalNote/ApproveDisposalNote`, {
+            disposalNoteId,
+        });
+        console.log("approveDisposalNote:", res.data);
+        return res.data;
+    } catch (error) {
+        console.error("Error approving Disposal Note:", error);
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
+        throw error;
+    }
+};
+
+// Re-pick lại một chi tiết phiếu xuất hủy
+export const rePickDisposalNoteDetail = async (data) => {
+    try {
+        const res = await api.put(`/DisposalNoteDetail/RePickDisposalNoteDetail`, data);
+        console.log("rePickDisposalNoteDetail:", res.data);
+        return res.data;
+    } catch (error) {
+        console.error("Error re-picking disposal note detail:", error);
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
+        throw error;
+    }
+};
+
+// Re-pick danh sách chi tiết phiếu xuất hủy (dành cho quản lý kho)
+export const rePickDisposalNoteDetailList = async (items) => {
+    try {
+        const res = await api.put(`/DisposalNoteDetail/RePickDisposalNoteDetailList`, items);
+        console.log("rePickDisposalNoteDetailList:", res.data);
+        return res.data;
+    } catch (error) {
+        console.error("Error re-picking disposal note detail list:", error);
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
         throw error;
     }
 };
