@@ -50,6 +50,9 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
         if (pathname.startsWith('/reports')) {
             keys.push('reports-management');
         }
+        if (pathname.startsWith('/disposal')) {
+            keys.push('disposal-management');
+        }
         if (pathname.startsWith('/pallets')) {
             // Pallet không có submenu, không cần thêm key
         }
