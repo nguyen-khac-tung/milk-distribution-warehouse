@@ -99,7 +99,7 @@ namespace MilkDistributionWarehouse.Repositories
         public async Task<bool> IsDuplicationNameAndSupplier(string goodsName, int supplierId)
         {
             return await _warehouseContext.Goods
-                .AnyAsync(g => g.Status != CommonStatus.Deleted 
+                .AnyAsync(g => g.Status != CommonStatus.Deleted
                 && g.SupplierId == supplierId && g.GoodsName.Equals(goodsName));
         }
 
@@ -122,6 +122,10 @@ namespace MilkDistributionWarehouse.Repositories
             var groupedPallets = await _warehouseContext.Pallets
                                 .Include(p => p.Batch)
                                     .ThenInclude(b => b.Goods)
+                                        .ThenInclude(g => g.UnitMeasure)
+                                .Include(p => p.Batch)
+                                    .ThenInclude(b => b.Goods)
+                                        .ThenInclude(g => g.Supplier)
                                 .Include(p => p.GoodsPacking)
                                 .Where(p => p.Batch.ExpiryDate <= today && p.PackageQuantity > 0 && p.Status == CommonStatus.Active)
                                 .GroupBy(p => new { p.Batch.Goods.GoodsId, p.GoodsPacking.GoodsPackingId })

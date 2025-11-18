@@ -5,28 +5,33 @@ import { Button } from '../../components/ui/button';
 import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, Calendar, User, X, MapPin, Clock, Thermometer, Droplets, Sun, RotateCcw } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
-import { getStocktakingAreaDetailForOtherRoleBySheetId, getStocktakingDetail, getStocktakingPalletDetail } from '../../services/StocktakingService';
+import { getStocktakingAreaDetailForOtherRoleBySheetId, getStocktakingDetail, getStocktakingPalletDetail, rejectStocktakingLocationRecords } from '../../services/StocktakingService';
 import { extractErrorMessage } from '../../utils/Validation';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
 import StatusDisplay from '../../components/StocktakingComponents/StatusDisplay';
-import LocationStatusDisplay from './LocationStatusDisplay';
+import LocationStatusDisplay, { STOCK_LOCATION_STATUS } from './LocationStatusDisplay';
+import AreaStatusDisplay, { STOCK_AREA_STATUS } from './AreaStatusDisplay';
 import PalletStatusDisplay from './PalletStatusDisplay';
+import RejectStocktakingLocationModal from '../../components/StocktakingComponents/RejectStocktakingLocationModal';
 import dayjs from 'dayjs';
 
 const StocktakingAreaDetailForOther = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
-    const [stocktakingArea, setStocktakingArea] = useState(null);
+    const [stocktakingAreas, setStocktakingAreas] = useState([]);
     const [stocktakingDetail, setStocktakingDetail] = useState(null);
     const [error, setError] = useState(null);
     const [expandedSections, setExpandedSections] = useState({
         detail: true,
+        areas: {},
         sheets: {}
     });
     const [locationPackages, setLocationPackages] = useState({});
     const [loadingPackages, setLoadingPackages] = useState({});
     const [selectedLocations, setSelectedLocations] = useState(new Set());
+    const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+    const [isRejecting, setIsRejecting] = useState(false);
     const isFetchingRef = useRef(false);
 
     useEffect(() => {
@@ -51,10 +56,14 @@ const StocktakingAreaDetailForOther = () => {
                     getStocktakingDetail(id)
                 ]);
 
-                // Handle area data
+                // Handle area data - API trả về mảng các areas
                 const areaData = areaResponse?.data || areaResponse;
                 if (areaData) {
-                    setStocktakingArea(areaData);
+                    // Kiểm tra xem là mảng hay object đơn
+                    const areasArray = Array.isArray(areaData) ? areaData : [areaData];
+                    setStocktakingAreas(areasArray);
+                } else {
+                    setStocktakingAreas([]);
                 }
 
                 // Handle detail data
@@ -178,7 +187,12 @@ const StocktakingAreaDetailForOther = () => {
             const areaData = areaResponse?.data || areaResponse;
             const detailData = detailResponse?.data || detailResponse;
 
-            if (areaData) setStocktakingArea(areaData);
+            if (areaData) {
+                const areasArray = Array.isArray(areaData) ? areaData : [areaData];
+                setStocktakingAreas(areasArray);
+            } else {
+                setStocktakingAreas([]);
+            }
             if (detailData) setStocktakingDetail(detailData);
 
             // Clear cached packages to force reload when expanded
@@ -202,8 +216,48 @@ const StocktakingAreaDetailForOther = () => {
         }
     };
 
-    const handleLocationSelect = (locationId, event) => {
+    // Helper function để tìm areaId từ locationId
+    const getAreaIdByLocationId = (locationId) => {
+        for (const area of stocktakingAreas) {
+            const location = (area.stocktakingLocations || []).find(
+                loc => (loc.stocktakingLocationId || loc.locationId) === locationId
+            );
+            if (location) {
+                return area.stocktakingAreaId;
+            }
+        }
+        return null;
+    };
+
+    const handleLocationSelect = (locationId, areaStatus, currentAreaId, event) => {
         event.stopPropagation(); // Ngăn chặn toggle expand khi click checkbox
+
+        // Chỉ cho phép chọn các vị trí khi khu vực ở trạng thái Chờ duyệt
+        if (areaStatus !== STOCK_AREA_STATUS.PendingApproval) {
+            return;
+        }
+
+        // Kiểm tra xem đã có vị trí nào được chọn chưa
+        if (selectedLocations.size > 0) {
+            // Lấy areaId của vị trí đầu tiên đã được chọn
+            const firstSelectedLocationId = Array.from(selectedLocations)[0];
+            const selectedAreaId = getAreaIdByLocationId(firstSelectedLocationId);
+
+            // Nếu đang cố chọn vị trí ở khu vực khác
+            if (selectedAreaId && selectedAreaId !== currentAreaId) {
+                const selectedArea = stocktakingAreas.find(a => a.stocktakingAreaId === selectedAreaId);
+                const selectedAreaName = selectedArea?.areaDetail?.areaName || 'khu vực đã chọn';
+                
+                if (window.showToast) {
+                    window.showToast(
+                        `Bạn đã chọn vị trí ở ${selectedAreaName}. Vui lòng bỏ chọn trước khi chọn vị trí ở khu vực khác.`,
+                        'error'
+                    );
+                }
+                return;
+            }
+        }
+
         setSelectedLocations(prev => {
             const newSet = new Set(prev);
             if (newSet.has(locationId)) {
@@ -216,22 +270,91 @@ const StocktakingAreaDetailForOther = () => {
     };
 
     const handleRecheckLocations = () => {
-        // TODO: Implement API call để kiểm kê lại các vị trí đã chọn
-        const selectedIds = Array.from(selectedLocations);
-        console.log('Kiểm kê lại các vị trí:', selectedIds);
-        if (window.showToast) {
-            window.showToast(`Đang kiểm kê lại ${selectedIds.length} vị trí...`, 'info');
+        if (selectedLocations.size === 0) {
+            if (window.showToast) {
+                window.showToast('Vui lòng chọn ít nhất một vị trí để kiểm kê lại', 'warning');
+            }
+            return;
         }
-        // Sau khi gọi API thành công, có thể clear selection
-        // setSelectedLocations(new Set());
+        setIsRejectModalOpen(true);
     };
 
-    const handleSelectAll = () => {
-        if (stocktakingLocations.length === 0) return;
-        const allLocationIds = stocktakingLocations.map(loc => 
-            loc.stocktakingLocationId || loc.locationId
-        );
-        setSelectedLocations(new Set(allLocationIds));
+    const handleRejectConfirm = async (records) => {
+        if (!records || records.length === 0) {
+            if (window.showToast) {
+                window.showToast('Không có dữ liệu để xử lý', 'error');
+            }
+            return;
+        }
+
+        try {
+            setIsRejecting(true);
+            await rejectStocktakingLocationRecords(records);
+
+            if (window.showToast) {
+                window.showToast(`Đã từ chối ${records.length} vị trí kiểm kê thành công`, 'success');
+            }
+
+            // Close modal and clear selection
+            setIsRejectModalOpen(false);
+            setSelectedLocations(new Set());
+
+            // Refresh data
+            await handleRefresh();
+        } catch (error) {
+            console.error('Error rejecting stocktaking locations:', error);
+            const errorMessage = extractErrorMessage(error);
+            if (window.showToast) {
+                window.showToast(errorMessage || 'Không thể từ chối kiểm kê vị trí', 'error');
+            }
+        } finally {
+            setIsRejecting(false);
+        }
+    };
+
+    const handleRejectCancel = () => {
+        setIsRejectModalOpen(false);
+    };
+
+    const handleSelectAll = (areaId) => {
+        if (!areaId) return;
+        const area = stocktakingAreas.find(a => a.stocktakingAreaId === areaId);
+        if (!area || !area.stocktakingLocations || area.stocktakingLocations.length === 0) return;
+
+        // Chỉ chọn tất cả vị trí khi khu vực ở trạng thái Chờ duyệt
+        if (area.status !== STOCK_AREA_STATUS.PendingApproval) {
+            return;
+        }
+
+        // Kiểm tra xem đã có vị trí nào được chọn ở khu vực khác chưa
+        if (selectedLocations.size > 0) {
+            const firstSelectedLocationId = Array.from(selectedLocations)[0];
+            const selectedAreaId = getAreaIdByLocationId(firstSelectedLocationId);
+
+            // Nếu đang cố chọn vị trí ở khu vực khác
+            if (selectedAreaId && selectedAreaId !== areaId) {
+                const selectedArea = stocktakingAreas.find(a => a.stocktakingAreaId === selectedAreaId);
+                const selectedAreaName = selectedArea?.areaDetail?.areaName || 'khu vực đã chọn';
+                
+                if (window.showToast) {
+                    window.showToast(
+                        `Bạn đã chọn vị trí ở ${selectedAreaName}. Vui lòng bỏ chọn trước khi chọn vị trí ở khu vực khác.`,
+                        'error'
+                    );
+                }
+                return;
+            }
+        }
+
+        const allLocationIds = area.stocktakingLocations
+            .map(loc => loc.stocktakingLocationId || loc.locationId)
+            .filter(id => id);
+
+        setSelectedLocations(prev => {
+            const newSet = new Set(prev);
+            allLocationIds.forEach(id => newSet.add(id));
+            return newSet;
+        });
     };
 
     const handleDeselectAll = () => {
@@ -246,7 +369,7 @@ const StocktakingAreaDetailForOther = () => {
         );
     }
 
-    if (error || !stocktakingArea) {
+    if (error || stocktakingAreas.length === 0) {
         return (
             <div className="min-h-screen">
                 <div className="max-w-7xl mx-auto p-6">
@@ -269,8 +392,15 @@ const StocktakingAreaDetailForOther = () => {
         );
     }
 
-    // Extract stocktaking locations from area data
-    const stocktakingLocations = stocktakingArea?.stocktakingLocations || [];
+    const toggleArea = (areaId) => {
+        setExpandedSections(prev => ({
+            ...prev,
+            areas: {
+                ...prev.areas,
+                [areaId]: !prev.areas[areaId]
+            }
+        }));
+    };
 
     return (
         <div className="min-h-screen">
@@ -320,10 +450,10 @@ const StocktakingAreaDetailForOther = () => {
                                     <div>
                                         <div className="text-xs text-gray-500 mb-0.5 flex items-center gap-1.5">
                                             <MapPin className="h-4 w-4 text-blue-500" />
-                                            Khu Vực
+                                            Số khu vực
                                         </div>
                                         <div className="text-base font-semibold text-gray-900">
-                                            {stocktakingArea?.areaDetail?.areaName || '-'}
+                                            {stocktakingAreas.length} khu vực
                                         </div>
                                     </div>
 
@@ -371,7 +501,7 @@ const StocktakingAreaDetailForOther = () => {
                                             Số vị trí có sẵn
                                         </div>
                                         <div className="text-base font-semibold text-gray-900">
-                                            {stocktakingArea?.areaDetail?.availableLocationCount ?? '-'}
+                                            {stocktakingAreas.reduce((sum, area) => sum + (area.areaDetail?.availableLocationCount || 0), 0)}
                                         </div>
                                     </div>
 
@@ -382,7 +512,7 @@ const StocktakingAreaDetailForOther = () => {
                                             Số vị trí không có sẵn
                                         </div>
                                         <div className="text-base font-semibold text-gray-900">
-                                            {stocktakingArea?.areaDetail?.unAvailableLocationCount ?? '-'}
+                                            {stocktakingAreas.reduce((sum, area) => sum + (area.areaDetail?.unAvailableLocationCount || 0), 0)}
                                         </div>
                                     </div>
                                 </div>
@@ -407,7 +537,7 @@ const StocktakingAreaDetailForOther = () => {
                                             Người tiếp nhận
                                         </div>
                                         <div className="text-base font-semibold text-gray-900">
-                                            {stocktakingArea?.assignToName || '-'}
+                                            {stocktakingAreas.map(area => area.assignToName).filter(Boolean).join(', ') || '-'}
                                         </div>
                                     </div>
                                 </div>
@@ -424,9 +554,13 @@ const StocktakingAreaDetailForOther = () => {
                                             Nhiệt độ
                                         </div>
                                         <div className="text-base font-semibold text-gray-900">
-                                            {stocktakingArea?.areaDetail?.temperatureMin !== undefined && stocktakingArea?.areaDetail?.temperatureMax !== undefined
-                                                ? `${stocktakingArea.areaDetail.temperatureMin}°C - ${stocktakingArea.areaDetail.temperatureMax}°C`
-                                                : '-'}
+                                            {stocktakingAreas.map(area => {
+                                                const temp = area.areaDetail;
+                                                if (temp?.temperatureMin !== undefined && temp?.temperatureMax !== undefined) {
+                                                    return `${temp.temperatureMin}°C - ${temp.temperatureMax}°C`;
+                                                }
+                                                return null;
+                                            }).filter(Boolean).join(' / ') || '-'}
                                         </div>
                                     </div>
 
@@ -437,9 +571,13 @@ const StocktakingAreaDetailForOther = () => {
                                             Độ ẩm
                                         </div>
                                         <div className="text-base font-semibold text-gray-900">
-                                            {stocktakingArea?.areaDetail?.humidityMin !== undefined && stocktakingArea?.areaDetail?.humidityMax !== undefined
-                                                ? `${stocktakingArea.areaDetail.humidityMin}% - ${stocktakingArea.areaDetail.humidityMax}%`
-                                                : '-'}
+                                            {stocktakingAreas.map(area => {
+                                                const temp = area.areaDetail;
+                                                if (temp?.humidityMin !== undefined && temp?.humidityMax !== undefined) {
+                                                    return `${temp.humidityMin}% - ${temp.humidityMax}%`;
+                                                }
+                                                return null;
+                                            }).filter(Boolean).join(' / ') || '-'}
                                         </div>
                                     </div>
 
@@ -450,7 +588,7 @@ const StocktakingAreaDetailForOther = () => {
                                             Mức ánh sáng
                                         </div>
                                         <div className="text-base font-semibold text-gray-900">
-                                            {stocktakingArea?.areaDetail?.lightLevel || '-'}
+                                            {stocktakingAreas.map(area => area.areaDetail?.lightLevel).filter(Boolean).join(' / ') || '-'}
                                         </div>
                                     </div>
                                 </div>
@@ -474,11 +612,10 @@ const StocktakingAreaDetailForOther = () => {
                             <Button
                                 onClick={handleRecheckLocations}
                                 disabled={selectedLocations.size === 0}
-                                className={`flex items-center space-x-2 px-4 py-2 h-[38px] ${
-                                    selectedLocations.size === 0
-                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                        : 'bg-orange-500 hover:bg-orange-600 text-white'
-                                } transition-colors`}
+                                className={`flex items-center space-x-2 px-4 py-2 h-[38px] ${selectedLocations.size === 0
+                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                    : 'bg-orange-500 hover:bg-orange-600 text-white'
+                                    } transition-colors`}
                             >
                                 <RotateCcw className="h-4 w-4" />
                                 <span className="text-sm font-medium">Kiểm kê lại</span>
@@ -494,197 +631,266 @@ const StocktakingAreaDetailForOther = () => {
                     </div>
 
                     <CardContent className="p-0">
-                        <div className="space-y-4 p-6">
-                            {stocktakingLocations && stocktakingLocations.length > 0 && (
-                                <div className="mb-4 flex items-center justify-between pb-3 border-b border-gray-200">
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            onClick={handleSelectAll}
-                                            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                                        >
-                                            Chọn tất cả
-                                        </button>
-                                        <span className="text-gray-400">|</span>
-                                        <button
-                                            onClick={handleDeselectAll}
-                                            className="text-sm text-gray-600 hover:text-gray-700 font-medium"
-                                        >
-                                            Bỏ chọn tất cả
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                            {stocktakingLocations && stocktakingLocations.length > 0 ? (
-                                stocktakingLocations.map((location, index) => {
-                                    const locationId = location.stocktakingLocationId || location.locationId || index;
-                                    const isExpanded = expandedSections.sheets[locationId] || false;
-                                    const packages = locationPackages[locationId] || [];
-                                    const isLoading = loadingPackages[locationId] || false;
-                                    const isSelected = selectedLocations.has(locationId);
+                        <div className="space-y-6 p-6">
+                            {stocktakingAreas.map((area, areaIndex) => {
+                                const areaId = area.stocktakingAreaId;
+                                const isAreaExpanded = expandedSections.areas[areaId] || false;
+                                const stocktakingLocations = area.stocktakingLocations || [];
+                                const hasLocations = stocktakingLocations.length > 0;
 
-                                    return (
+                                return (
+                                    <div key={areaId || areaIndex} className="border border-gray-200 rounded-lg bg-white">
+                                        {/* Area Header */}
                                         <div
-                                            key={locationId}
-                                            className={`border border-gray-200 rounded-lg ${isExpanded ? 'bg-gray-50' : 'bg-white'} ${isSelected ? 'ring-2 ring-orange-500' : ''} transition-colors`}
+                                            className="p-4 cursor-pointer flex items-center justify-between hover:bg-gray-50 transition-colors border-b border-gray-200"
+                                            onClick={() => toggleArea(areaId)}
                                         >
-                                            {/* Location Header */}
-                                            <div
-                                                className="p-4 cursor-pointer flex items-center justify-between hover:bg-gray-100 transition-colors"
-                                                onClick={() => toggleSheet(location)}
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={isSelected}
-                                                        onChange={(e) => handleLocationSelect(locationId, e)}
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded cursor-pointer"
-                                                    />
-                                                    <div className="flex-1 grid grid-cols-3 gap-4">
-                                                    <div>
-                                                        <div className="text-xs text-gray-500 mb-1">Vị trí</div>
+                                            <div className="flex items-center gap-3 flex-1">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-1">
                                                         <div className="text-sm font-semibold text-gray-900">
-                                                            {location.locationCode || location.location?.locationCode || location.locationName || '-'}
+                                                            {area.areaDetail?.areaName || `Khu vực ${areaIndex + 1}`}
                                                         </div>
+                                                        {area.status && (
+                                                            <AreaStatusDisplay status={area.status} />
+                                                        )}
                                                     </div>
-                                                    <div>
-                                                        <div className="text-xs text-gray-500 mb-1">Trạng thái</div>
-                                                        <div>
-                                                            {location.status ? (
-                                                                <LocationStatusDisplay status={location.status} />
-                                                            ) : (
-                                                                <span className="text-sm text-gray-900">-</span>
-                                                            )}
-                                                        </div>
+                                                    <div className="text-xs text-gray-500">
+                                                        {area.assignToName && `Người tiếp nhận: ${area.assignToName}`}
+                                                        {hasLocations && ` • ${stocktakingLocations.length} vị trí`}
                                                     </div>
-                                                    <div>
-                                                        <div className="text-xs text-gray-500 mb-1">Người kiểm tra</div>
-                                                        <div className="text-sm font-semibold text-gray-900">
-                                                            {stocktakingArea?.assignToName || 'N/A'}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                </div>
-                                                <div className="ml-4">
-                                                    {isExpanded ? (
-                                                        <ChevronUp className="w-5 h-5 text-gray-400" />
-                                                    ) : (
-                                                        <ChevronDown className="w-5 h-5 text-gray-400" />
-                                                    )}
                                                 </div>
                                             </div>
-
-                                            {/* Packages Table */}
-                                            {isExpanded && (
-                                                <div className="border-t border-gray-200 p-4">
-                                                    <h4 className="text-sm font-semibold text-gray-700 mb-4">
-                                                        Kệ kê hàng tại vị trí này
-                                                    </h4>
-                                                    {isLoading ? (
-                                                        <div className="flex justify-center items-center py-8">
-                                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-                                                        </div>
-                                                    ) : packages.length > 0 ? (
-                                                        <div className="overflow-x-auto">
-                                                            <Table className="w-full">
-                                                                <TableHeader>
-                                                                    <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
-                                                                        <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
-                                                                            Mã pallet
-                                                                        </TableHead>
-                                                                        <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
-                                                                            Mã sản phẩm
-                                                                        </TableHead>
-                                                                        <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
-                                                                            Tên sản phẩm
-                                                                        </TableHead>
-                                                                        <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
-                                                                            Số lô
-                                                                        </TableHead>
-                                                                        <TableHead className="font-semibold text-slate-900 px-4 py-3 text-center">
-                                                                            Số thùng dự kiến
-                                                                        </TableHead>
-                                                                        <TableHead className="font-semibold text-slate-900 px-4 py-3 text-center">
-                                                                            Số thùng thực tế
-                                                                        </TableHead>
-                                                                        <TableHead className="font-semibold text-slate-900 px-4 py-3 text-center">
-                                                                            Trạng thái
-                                                                        </TableHead>
-                                                                        <TableHead className="font-semibold text-slate-900 px-4 py-3 text-center">
-                                                                            Hoạt động
-                                                                        </TableHead>
-                                                                    </TableRow>
-                                                                </TableHeader>
-                                                                <TableBody>
-                                                                    {packages.map((pkg, pkgIndex) => {
-                                                                        const pkgId = pkg.stocktakingPalletId || pkg.palletId || pkgIndex;
-                                                                        const goodsName = pkg.gooodsName || pkg.gooodsName || pkg.pallet?.gooodsName || pkg.pallet?.gooodsName || '-';
-                                                                        const goodsCode = pkg.goodsCode || pkg.goodCode || pkg.pallet?.goodsCode || pkg.pallet?.goodCode || '';
-                                                                        const batchCode = pkg.batchCode || pkg.pallet?.batchCode || pkg.batch?.batchCode || pkg.lot || '-';
-                                                                        const expected = pkg.expectedPackageQuantity ?? pkg.expectedQuantity ?? 0;
-                                                                        const actual = pkg.actualPackageQuantity ?? pkg.actualQuantity ?? null;
-                                                                        const status = pkg.status || 1;
-
-                                                                        return (
-                                                                            <TableRow
-                                                                                key={pkgId}
-                                                                                className="hover:bg-slate-50 border-b border-slate-200"
-                                                                            >
-                                                                                <TableCell className="px-4 py-3 text-slate-700">
-                                                                                    {pkg.palletId || pkg.id || String(pkgId).substring(0, 4)}
-                                                                                </TableCell>
-                                                                                <TableCell className="px-4 py-3 text-slate-700">
-                                                                                    {goodsCode || '-'}
-                                                                                </TableCell>
-                                                                                <TableCell className="px-4 py-3 text-slate-700">
-                                                                                    {goodsName || '-'}
-                                                                                </TableCell>
-                                                                                <TableCell className="px-4 py-3 text-slate-700">
-                                                                                    {batchCode}
-                                                                                </TableCell>
-                                                                                <TableCell className="px-4 py-3 text-center text-slate-700">
-                                                                                    {expected}
-                                                                                </TableCell>
-                                                                                <TableCell className="px-4 py-3 text-center text-slate-700">
-                                                                                    {actual !== null && actual !== undefined ? actual : '-'}
-                                                                                </TableCell>
-                                                                                <TableCell className="px-4 py-3 text-center">
-                                                                                    <PalletStatusDisplay status={status} />
-                                                                                </TableCell>
-                                                                                <TableCell className="px-4 py-3 text-center">
-                                                                                    <button
-                                                                                        onClick={() => handleDeletePackage(pkgId)}
-                                                                                        className="text-red-500 hover:text-red-700 transition-colors"
-                                                                                        title="Xóa"
-                                                                                    >
-                                                                                        <X className="h-4 w-4" />
-                                                                                    </button>
-                                                                                </TableCell>
-                                                                            </TableRow>
-                                                                        );
-                                                                    })}
-                                                                </TableBody>
-                                                            </Table>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="text-center py-8 text-gray-500">
-                                                            Không có gói hàng nào tại vị trí này
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
+                                            <div className="ml-4">
+                                                {isAreaExpanded ? (
+                                                    <ChevronUp className="w-5 h-5 text-gray-400" />
+                                                ) : (
+                                                    <ChevronDown className="w-5 h-5 text-gray-400" />
+                                                )}
+                                            </div>
                                         </div>
-                                    );
-                                })
-                            ) : (
-                                <div className="text-center py-8 text-gray-500">
-                                    Không có vị trí kiểm kê nào
-                                </div>
-                            )}
+
+                                        {/* Locations List */}
+                                        {isAreaExpanded && (
+                                            <div className="p-4 space-y-4">
+                                                {hasLocations && (() => {
+                                                    // Chỉ hiển thị nút chọn tất cả khi khu vực ở trạng thái Chờ duyệt
+                                                    const isAreaPendingApproval = area.status === STOCK_AREA_STATUS.PendingApproval;
+
+                                                    if (!isAreaPendingApproval) return null;
+
+                                                    return (
+                                                        <div className="mb-4 flex items-center justify-between pb-3 border-b border-gray-200">
+                                                            <div className="flex items-center gap-2">
+                                                                <button
+                                                                    onClick={() => handleSelectAll(areaId)}
+                                                                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                                                                >
+                                                                    Chọn tất cả ({stocktakingLocations.length} vị trí)
+                                                                </button>
+                                                                <span className="text-gray-400">|</span>
+                                                                <button
+                                                                    onClick={handleDeselectAll}
+                                                                    className="text-sm text-gray-600 hover:text-gray-700 font-medium"
+                                                                >
+                                                                    Bỏ chọn tất cả
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })()}
+                                                {hasLocations ? (
+                                                    stocktakingLocations.map((location, index) => {
+                                                        const locationId = location.stocktakingLocationId || location.locationId || index;
+                                                        const isExpanded = expandedSections.sheets[locationId] || false;
+                                                        const packages = locationPackages[locationId] || [];
+                                                        const isLoading = loadingPackages[locationId] || false;
+                                                        const isSelected = selectedLocations.has(locationId);
+                                                        const areaStatus = area.status;
+                                                        const isAreaPendingApproval = areaStatus === STOCK_AREA_STATUS.PendingApproval;
+
+                                                        return (
+                                                            <div
+                                                                key={locationId}
+                                                                className={`border border-gray-200 rounded-lg ${isExpanded ? 'bg-gray-50' : 'bg-white'} ${isSelected ? 'ring-2 ring-orange-500' : ''} transition-colors`}
+                                                            >
+                                                                {/* Location Header */}
+                                                                <div
+                                                                    className="p-4 cursor-pointer flex items-center justify-between hover:bg-gray-100 transition-colors"
+                                                                    onClick={() => toggleSheet(location)}
+                                                                >
+                                                                    <div className="flex items-center gap-3">
+                                                                        {isAreaPendingApproval ? (
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                checked={isSelected}
+                                                                                onChange={(e) => handleLocationSelect(locationId, areaStatus, areaId, e)}
+                                                                                onClick={(e) => e.stopPropagation()}
+                                                                                className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded cursor-pointer"
+                                                                            />
+                                                                        ) : (
+                                                                            <div className="w-4 h-4"></div>
+                                                                        )}
+                                                                        <div className="flex-1 grid grid-cols-3 gap-4">
+                                                                            <div>
+                                                                                <div className="text-xs text-gray-500 mb-1">Vị trí</div>
+                                                                                <div className="text-sm font-semibold text-gray-900">
+                                                                                    {location.locationCode || location.location?.locationCode || location.locationName || '-'}
+                                                                                </div>
+                                                                            </div>
+                                                                            <div>
+                                                                                <div className="text-xs text-gray-500 mb-1">Trạng thái</div>
+                                                                                <div>
+                                                                                    {location.status ? (
+                                                                                        <LocationStatusDisplay status={location.status} />
+                                                                                    ) : (
+                                                                                        <span className="text-sm text-gray-900">-</span>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                            <div>
+                                                                                <div className="text-xs text-gray-500 mb-1">Người kiểm tra</div>
+                                                                                <div className="text-sm font-semibold text-gray-900">
+                                                                                    {area.assignToName || 'N/A'}
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="ml-4">
+                                                                        {isExpanded ? (
+                                                                            <ChevronUp className="w-5 h-5 text-gray-400" />
+                                                                        ) : (
+                                                                            <ChevronDown className="w-5 h-5 text-gray-400" />
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Packages Table */}
+                                                                {isExpanded && (
+                                                                    <div className="border-t border-gray-200 p-4">
+                                                                        <h4 className="text-sm font-semibold text-gray-700 mb-4">
+                                                                            Kệ kê hàng tại vị trí này
+                                                                        </h4>
+                                                                        {isLoading ? (
+                                                                            <div className="flex justify-center items-center py-8">
+                                                                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                                                                            </div>
+                                                                        ) : packages.length > 0 ? (
+                                                                            <div className="overflow-x-auto">
+                                                                                <Table className="w-full">
+                                                                                    <TableHeader>
+                                                                                        <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
+                                                                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
+                                                                                                Mã pallet
+                                                                                            </TableHead>
+                                                                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
+                                                                                                Mã sản phẩm
+                                                                                            </TableHead>
+                                                                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
+                                                                                                Tên sản phẩm
+                                                                                            </TableHead>
+                                                                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
+                                                                                                Số lô
+                                                                                            </TableHead>
+                                                                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-center">
+                                                                                                Số thùng dự kiến
+                                                                                            </TableHead>
+                                                                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-center">
+                                                                                                Số thùng thực tế
+                                                                                            </TableHead>
+                                                                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-center">
+                                                                                                Trạng thái
+                                                                                            </TableHead>
+                                                                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-center">
+                                                                                                Hoạt động
+                                                                                            </TableHead>
+                                                                                        </TableRow>
+                                                                                    </TableHeader>
+                                                                                    <TableBody>
+                                                                                        {packages.map((pkg, pkgIndex) => {
+                                                                                            const pkgId = pkg.stocktakingPalletId || pkg.palletId || pkgIndex;
+                                                                                            const goodsName = pkg.gooodsName || pkg.gooodsName || pkg.pallet?.gooodsName || pkg.pallet?.gooodsName || '-';
+                                                                                            const goodsCode = pkg.goodsCode || pkg.goodCode || pkg.pallet?.goodsCode || pkg.pallet?.goodCode || '';
+                                                                                            const batchCode = pkg.batchCode || pkg.pallet?.batchCode || pkg.batch?.batchCode || pkg.lot || '-';
+                                                                                            const expected = pkg.expectedPackageQuantity ?? pkg.expectedQuantity ?? 0;
+                                                                                            const actual = pkg.actualPackageQuantity ?? pkg.actualQuantity ?? null;
+                                                                                            const status = pkg.status || 1;
+
+                                                                                            return (
+                                                                                                <TableRow
+                                                                                                    key={pkgId}
+                                                                                                    className="hover:bg-slate-50 border-b border-slate-200"
+                                                                                                >
+                                                                                                    <TableCell className="px-4 py-3 text-slate-700">
+                                                                                                        {pkg.palletId || pkg.id || String(pkgId).substring(0, 4)}
+                                                                                                    </TableCell>
+                                                                                                    <TableCell className="px-4 py-3 text-slate-700">
+                                                                                                        {goodsCode || '-'}
+                                                                                                    </TableCell>
+                                                                                                    <TableCell className="px-4 py-3 text-slate-700">
+                                                                                                        {goodsName || '-'}
+                                                                                                    </TableCell>
+                                                                                                    <TableCell className="px-4 py-3 text-slate-700">
+                                                                                                        {batchCode}
+                                                                                                    </TableCell>
+                                                                                                    <TableCell className="px-4 py-3 text-center text-slate-700">
+                                                                                                        {expected}
+                                                                                                    </TableCell>
+                                                                                                    <TableCell className="px-4 py-3 text-center text-slate-700">
+                                                                                                        {actual !== null && actual !== undefined ? actual : '-'}
+                                                                                                    </TableCell>
+                                                                                                    <TableCell className="px-4 py-3 text-center">
+                                                                                                        <PalletStatusDisplay status={status} />
+                                                                                                    </TableCell>
+                                                                                                    <TableCell className="px-4 py-3 text-center">
+                                                                                                        <button
+                                                                                                            onClick={() => handleDeletePackage(pkgId)}
+                                                                                                            className="text-red-500 hover:text-red-700 transition-colors"
+                                                                                                            title="Xóa"
+                                                                                                        >
+                                                                                                            <X className="h-4 w-4" />
+                                                                                                        </button>
+                                                                                                    </TableCell>
+                                                                                                </TableRow>
+                                                                                            );
+                                                                                        })}
+                                                                                    </TableBody>
+                                                                                </Table>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <div className="text-center py-8 text-gray-500">
+                                                                                Không có gói hàng nào tại vị trí này
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })
+                                                ) : (
+                                                    <div className="text-center py-8 text-gray-500">
+                                                        Không có vị trí kiểm kê nào
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Reject Stocktaking Location Modal */}
+            <RejectStocktakingLocationModal
+                isOpen={isRejectModalOpen}
+                onClose={handleRejectCancel}
+                onConfirm={handleRejectConfirm}
+                selectedLocations={Array.from(selectedLocations)}
+                stocktakingAreas={stocktakingAreas}
+                loading={isRejecting}
+            />
         </div>
     );
 };
