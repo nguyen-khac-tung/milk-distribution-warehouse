@@ -117,5 +117,6 @@ namespace MilkDistributionWarehouse.Repositories
             return await _context.StocktakingAreas.AnyAsync(sa => sa.StocktakingSheetId.Equals(stocktakingSheetId));
         }
 
+
     }
 }

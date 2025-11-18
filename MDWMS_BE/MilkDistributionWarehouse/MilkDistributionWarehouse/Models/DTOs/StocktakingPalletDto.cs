@@ -57,4 +57,10 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public string PalletId { get; set; }
     }
 
+    public class StocktakingPalletInfo
+    {
+        public Guid? StocktakingLocationId { get; set; }
+        public int? ActualPackageQuantity { get; set; }
+        public int? Status { get; set; }
+    }
 }

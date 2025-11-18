@@ -56,5 +56,10 @@ namespace MilkDistributionWarehouse.Models.DTOs
     public class StocktakingAreaPendingStatus : StocktakingAreaUpdateStatus { }
 
     public class StocktakingAreaPendingAprrovalStatus : StocktakingAreaUpdateStatus { }
+    public class StocktakingAreaApprovalStatus : StocktakingAreaUpdateStatus { }
 
+    public class StocktakingAreaApprovalResponse
+    {
+        public List<StocktakingLocationWarming> StocktakingLocationWarmings { get; set; }
+    }
 }
