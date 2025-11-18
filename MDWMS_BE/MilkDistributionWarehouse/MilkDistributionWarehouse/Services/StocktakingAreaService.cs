@@ -173,6 +173,8 @@ namespace MilkDistributionWarehouse.Services
                 stocktakingArea.Status = StockAreaStatus.Completed;
                 stocktakingArea.UpdateAt = DateTime.Now;
 
+                HandleUpdateStockLocation(stocktakingArea.StocktakingLocations);
+
                 var updateResult = await _stocktakingAreaRepository.UpdateStocktakingArea(stocktakingArea);
                 if (updateResult == 0) return ("Cập nhật kiểm kê khu vực thất bại.".ToMessageForUser(), default);
 
@@ -183,6 +185,15 @@ namespace MilkDistributionWarehouse.Services
             catch (Exception ex)
             {
                 return ($"{ex.Message}", default);
+            }
+        }
+
+        private void HandleUpdateStockLocation(ICollection<StocktakingLocation> stocktakingLocations)
+        {
+            foreach(var location in stocktakingLocations)
+            {
+                location.Status = StockLocationStatus.Completed;
+                location.UpdateAt = DateTime.Now;
             }
         }
 
