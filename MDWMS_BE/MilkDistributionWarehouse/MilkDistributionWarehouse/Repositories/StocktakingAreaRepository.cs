@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 using System.Runtime.CompilerServices;
@@ -17,6 +18,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<int?> UpdateStocktakingAreaBulk(List<StocktakingArea> updates);
         Task<bool> IsStocktakingAreaAssignTo(int? areaId, string stocktakingSheetId, int assignTo);
         Task<bool> IsCheckStocktakingAreaExist(string stocktakingSheetId);
+        Task<bool> IsCheckStockAreasCompleted(string stocktakingSheetId);
     }
     public class StocktakingAreaRepository : IStocktakingAreaRepository
     {
@@ -117,5 +119,12 @@ namespace MilkDistributionWarehouse.Repositories
             return await _context.StocktakingAreas.AnyAsync(sa => sa.StocktakingSheetId.Equals(stocktakingSheetId));
         }
 
+        public async Task<bool> IsCheckStockAreasCompleted(string stocktakingSheetId)
+        {
+            return await _context.StocktakingAreas
+                .AllAsync(sa => 
+                sa.StocktakingSheetId.Equals(stocktakingSheetId) && 
+                sa.Status == StockAreaStatus.Completed);
+        }
     }
 }

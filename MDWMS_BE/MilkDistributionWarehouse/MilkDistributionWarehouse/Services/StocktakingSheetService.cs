@@ -202,6 +202,8 @@ namespace MilkDistributionWarehouse.Services
                     StocktakingSheetReAssignStatus reAssingStatus => await HandleReAssignStatus(stocktakingSheetExist, reAssingStatus, userId),
                     StocktakingSheetCancelStatus => HandleCancelStatus(stocktakingSheetExist, userId),
                     StocktakingSheetInProgressStatus => await HandleInProgressStatus(stocktakingSheetExist, userId),
+                    //StocktakingSheetApprovalStatus => 
+                    StocktakingSheetCompletedStatus completedStatus => HandleCompletedStatus(stocktakingSheetExist, completedStatus.Note),
                     _ => "Loại cập nhật trạng thái không hợp lệ.".ToMessageForUser()
                 };
 
@@ -226,6 +228,18 @@ namespace MilkDistributionWarehouse.Services
                 await _unitOfWork.RollbackTransactionAsync();
                 return (ex.Message.ToMessageForUser(), default);
             }
+        }
+
+        private string HandleCompletedStatus(StocktakingSheet sheet, string noteUpdate)
+        {
+            if (sheet.Status != StocktakingStatus.Approved)
+                return "Chỉ đươc chuyển sang trạng thái Hoàn thành khi phiếu kiểm kê ở trạng thái Đã duyệt.".ToMessageForUser();
+
+            sheet.Status = StocktakingStatus.Completed;
+            if (!string.IsNullOrEmpty(noteUpdate))
+                sheet.Note = noteUpdate;
+
+            return string.Empty;
         }
 
         public async Task<(string, StocktakingSheeteResponse?)> DeleteStocktakingSheet(string stocktakingSheetId, int? userId)
@@ -355,5 +369,18 @@ namespace MilkDistributionWarehouse.Services
 
             return string.Empty;
         }
+
+        //private string HandleApprovalStatus(StocktakingSheet sheet, int? userId)
+        //{
+        //    if (!IsWarehouseStaff(sheet, userId))
+        //        return "Bạn không có quyền thực hiện chức năng cập nhật trạng thái trong phiếu kiểm kê.".ToMessageForUser();
+
+        //    if (sheet.Status != StocktakingStatus.PendingApproval)
+        //        return "Chỉ được chuyển sang trạng thái Duyệt khi phiếu kiểm kê ở trạng thái Chờ duyệt.".ToMessageForUser();
+
+        //    var hasNoApprovalStocktakingArea = sheet.StocktakingAreas.Any(sa => sa.Status == StockAreaStatus.Completed);
+        //    if (hasNoApprovalStocktakingArea)
+        //        return "Chỉ được chuyển sang trạng thái Duyệt khi tất cả các khu vực kiểm kê được Duyệt.".ToMessageForUser();
+        //}
     }
 }
