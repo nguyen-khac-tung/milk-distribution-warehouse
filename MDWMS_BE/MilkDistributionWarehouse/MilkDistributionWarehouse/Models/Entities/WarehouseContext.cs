@@ -156,9 +156,7 @@ public partial class WarehouseContext : DbContext
                 .IsRequired()
                 .HasMaxLength(50)
                 .IsUnicode(false);
-            entity.Property(e => e.Status)
-                .HasDefaultValue(1)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__DisposalN__Statu__1F63A897");
+            entity.Property(e => e.Status).HasDefaultValue(1);
 
             entity.HasOne(d => d.ApprovalByNavigation).WithMany(p => p.DisposalNoteApprovalByNavigations)
                 .HasForeignKey(d => d.ApprovalBy)
@@ -184,9 +182,7 @@ public partial class WarehouseContext : DbContext
                 .IsUnicode(false);
             entity.Property(e => e.Note).HasMaxLength(255);
             entity.Property(e => e.RejectionReason).HasMaxLength(255);
-            entity.Property(e => e.Status)
-                .HasDefaultValue(1)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__DisposalN__Statu__22401542");
+            entity.Property(e => e.Status).HasDefaultValue(1);
 
             entity.HasOne(d => d.DisposalNote).WithMany(p => p.DisposalNoteDetails)
                 .HasForeignKey(d => d.DisposalNoteId)
@@ -281,9 +277,7 @@ public partial class WarehouseContext : DbContext
                 .IsRequired()
                 .HasMaxLength(50)
                 .IsUnicode(false);
-            entity.Property(e => e.Status)
-                .HasDefaultValue(1)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__GoodsIssu__Statu__2DE6D218");
+            entity.Property(e => e.Status).HasDefaultValue(1);
 
             entity.HasOne(d => d.ApprovalByNavigation).WithMany(p => p.GoodsIssueNoteApprovalByNavigations)
                 .HasForeignKey(d => d.ApprovalBy)
@@ -307,9 +301,7 @@ public partial class WarehouseContext : DbContext
                 .IsUnicode(false);
             entity.Property(e => e.Note).HasMaxLength(255);
             entity.Property(e => e.RejectionReason).HasMaxLength(255);
-            entity.Property(e => e.Status)
-                .HasDefaultValue(1)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__GoodsIssu__Statu__2CF2ADDF");
+            entity.Property(e => e.Status).HasDefaultValue(1);
 
             entity.HasOne(d => d.Goods).WithMany(p => p.GoodsIssueNoteDetails)
                 .HasForeignKey(d => d.GoodsId)
@@ -434,13 +426,9 @@ public partial class WarehouseContext : DbContext
             entity.Property(e => e.Content).HasMaxLength(500);
             entity.Property(e => e.Title).HasMaxLength(255);
 
-            entity.HasOne(d => d.ReceivedByNavigation).WithMany(p => p.NotificationReceivedByNavigations)
-                .HasForeignKey(d => d.ReceivedBy)
+            entity.HasOne(d => d.User).WithMany(p => p.Notifications)
+                .HasForeignKey(d => d.UserId)
                 .HasConstraintName("FK_Notifications_Users");
-
-            entity.HasOne(d => d.SendByNavigation).WithMany(p => p.NotificationSendByNavigations)
-                .HasForeignKey(d => d.SendBy)
-                .HasConstraintName("FK_Notifications_Users1");
         });
 
         modelBuilder.Entity<Pallet>(entity =>
@@ -482,9 +470,7 @@ public partial class WarehouseContext : DbContext
                 .HasMaxLength(26)
                 .IsUnicode(false)
                 .IsFixedLength();
-            entity.Property(e => e.Status)
-                .HasDefaultValue(1)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__PickAlloc__Statu__2EDAF651");
+            entity.Property(e => e.Status).HasDefaultValue(1);
 
             entity.HasOne(d => d.DisposalNoteDetail).WithMany(p => p.PickAllocations)
                 .HasForeignKey(d => d.DisposalNoteDetailId)
@@ -770,9 +756,7 @@ public partial class WarehouseContext : DbContext
             entity.Property(e => e.Phone)
                 .HasMaxLength(50)
                 .IsUnicode(false);
-            entity.Property(e => e.Status)
-                .HasDefaultValue(1)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF__Users__Status__32AB8735");
+            entity.Property(e => e.Status).HasDefaultValue(1);
 
             entity.HasMany(d => d.Roles).WithMany(p => p.Users)
                 .UsingEntity<Dictionary<string, object>>(

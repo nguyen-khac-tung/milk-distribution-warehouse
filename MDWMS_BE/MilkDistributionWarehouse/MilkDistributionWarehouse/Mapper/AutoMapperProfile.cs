@@ -635,6 +635,9 @@ namespace MilkDistributionWarehouse.Mapper
                                              * (src.GoodsPacking.UnitPerPackage ?? 0)))
                 .ForMember(dest => dest.UnitOfMeasure,
                     opt => opt.MapFrom(src => src.Goods != null && src.Goods.UnitMeasure != null ? src.Goods.UnitMeasure.Name : null));
+
+            // Map Notification
+            CreateMap<Notification, NotificationDto>();
         }
     }
 }

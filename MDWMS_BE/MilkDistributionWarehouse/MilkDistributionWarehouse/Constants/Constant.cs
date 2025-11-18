@@ -211,6 +211,25 @@
         public const int Surplus = 4;       //Thừa pallet
     }
 
+    /// <summary>
+    /// Các trạng thái của thông báo (NotificationStatus)
+    /// </summary>
+    public static class NotificationStatus
+    {
+        public const int Read = 1;
+        public const int Unread = 2;
+        public const int Deleted = 3;
+    }
+
+    /// <summary>
+    /// Các phân loại thông báo (NotificationCategory)
+    /// </summary>
+    public static class NotificationCategory
+    {
+        public const int Normal = 1;
+        public const int Important = 2;
+    }
+
     public static class StocktakingSettings
     {
         public const int HoursBeforeStartToAllowEdit = 6;
