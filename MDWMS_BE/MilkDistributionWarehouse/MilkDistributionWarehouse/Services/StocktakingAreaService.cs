@@ -28,14 +28,17 @@ namespace MilkDistributionWarehouse.Services
         private readonly IMapper _mapper;
         private readonly IStocktakingLocationRepository _stocktakingLocationRepository;
         private readonly IStocktakingPalletRepository _stocktakingPalletRepository;
+        private readonly IStocktakingSheetRepository _stocktakingSheetRepository;
         public StocktakingAreaService(IStocktakingAreaRepository stocktakingAreaRepository, IAreaRepository areaRepository, IMapper mapper,
-            IStocktakingLocationRepository stocktakingLocationRepository, IStocktakingPalletRepository stocktakingPalletRepository)
+            IStocktakingLocationRepository stocktakingLocationRepository, IStocktakingPalletRepository stocktakingPalletRepository,
+            IStocktakingSheetRepository stocktakingSheetRepository)
         {
             _stocktakingAreaRepository = stocktakingAreaRepository;
             _areaRepository = areaRepository;
             _mapper = mapper;
             _stocktakingLocationRepository = stocktakingLocationRepository;
             _stocktakingPalletRepository = stocktakingPalletRepository;
+            _stocktakingSheetRepository = stocktakingSheetRepository;
         }
 
         public async Task<(string, List<StocktakingAreaDetailDto>?)> GetStocktakingAreaByStocktakingSheetId(string stoctakingSheetId, int? userId)
@@ -167,10 +170,13 @@ namespace MilkDistributionWarehouse.Services
                 if (validationStocktakingLocationsToApproval.Any())
                     return ("", new StocktakingAreaApprovalResponse { StocktakingLocationWarmings = validationStocktakingLocationsToApproval });
 
+                stocktakingArea.Status = StockAreaStatus.Completed;
                 stocktakingArea.UpdateAt = DateTime.Now;
 
                 var updateResult = await _stocktakingAreaRepository.UpdateStocktakingArea(stocktakingArea);
                 if (updateResult == 0) return ("Cập nhật kiểm kê khu vực thất bại.".ToMessageForUser(), default);
+
+                await HandleUpdateStockSheetApproval(stocktakingArea.StocktakingSheetId);
 
                 return ("", new StocktakingAreaApprovalResponse { StocktakingLocationWarmings = new List<StocktakingLocationWarming>() });
             }
@@ -180,6 +186,23 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
+        private async Task HandleUpdateStockSheetApproval(string stocktakingSheetId)
+        {
+            var checkAllStockAreaCompleted = await _stocktakingAreaRepository.IsCheckStockAreasCompleted(stocktakingSheetId);
+            if (!checkAllStockAreaCompleted)
+                return;
+
+            var stockSheet = await _stocktakingSheetRepository.GetStocktakingSheetById(stocktakingSheetId);
+            if (stockSheet == null) return;
+
+            if(stockSheet.Status != StocktakingStatus.PendingApproval)
+                return;
+
+            stockSheet.Status = StocktakingStatus.Approved;
+            stockSheet.UpdateAt = DateTime.Now;
+
+            var updateResult = await _stocktakingSheetRepository.UpdateStockingtakingSheet(stockSheet);
+        }
 
         public async Task<(string, StocktakingAreaReAssignStatus?)> UpdateStocktakingReAssignTo(StocktakingAreaReAssignStatus update)
         {
