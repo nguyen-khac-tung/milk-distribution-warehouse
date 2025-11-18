@@ -2,10 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, Calendar, User, X, MapPin, Clock, Thermometer, Droplets, Sun, RotateCcw } from 'lucide-react';
+import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, Calendar, User, X, MapPin, Clock, Thermometer, Droplets, Sun, RotateCcw, CheckCircle2, AlertTriangle } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
-import { getStocktakingAreaDetailForOtherRoleBySheetId, getStocktakingDetail, getStocktakingPalletDetail, rejectStocktakingLocationRecords } from '../../services/StocktakingService';
+import { getStocktakingAreaDetailForOtherRoleBySheetId, getStocktakingDetail, getStocktakingPalletDetail, rejectStocktakingLocationRecords, approveStocktakingArea } from '../../services/StocktakingService';
+import { usePermissions } from '../../hooks/usePermissions';
 import { extractErrorMessage } from '../../utils/Validation';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
 import StatusDisplay from '../../components/StocktakingComponents/StatusDisplay';
@@ -32,7 +33,10 @@ const StocktakingAreaDetailForOther = () => {
     const [selectedLocations, setSelectedLocations] = useState(new Set());
     const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
     const [isRejecting, setIsRejecting] = useState(false);
+    const [approvingAreas, setApprovingAreas] = useState(new Set());
+    const [locationWarnings, setLocationWarnings] = useState({}); // Map locationId -> warnings array
     const isFetchingRef = useRef(false);
+    const { isWarehouseManager } = usePermissions();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -247,7 +251,7 @@ const StocktakingAreaDetailForOther = () => {
             if (selectedAreaId && selectedAreaId !== currentAreaId) {
                 const selectedArea = stocktakingAreas.find(a => a.stocktakingAreaId === selectedAreaId);
                 const selectedAreaName = selectedArea?.areaDetail?.areaName || 'khu vực đã chọn';
-                
+
                 if (window.showToast) {
                     window.showToast(
                         `Bạn đã chọn vị trí ở ${selectedAreaName}. Vui lòng bỏ chọn trước khi chọn vị trí ở khu vực khác.`,
@@ -335,7 +339,7 @@ const StocktakingAreaDetailForOther = () => {
             if (selectedAreaId && selectedAreaId !== areaId) {
                 const selectedArea = stocktakingAreas.find(a => a.stocktakingAreaId === selectedAreaId);
                 const selectedAreaName = selectedArea?.areaDetail?.areaName || 'khu vực đã chọn';
-                
+
                 if (window.showToast) {
                     window.showToast(
                         `Bạn đã chọn vị trí ở ${selectedAreaName}. Vui lòng bỏ chọn trước khi chọn vị trí ở khu vực khác.`,
@@ -359,6 +363,66 @@ const StocktakingAreaDetailForOther = () => {
 
     const handleDeselectAll = () => {
         setSelectedLocations(new Set());
+    };
+
+    const handleApproveArea = async (areaId, event) => {
+        event?.stopPropagation(); // Ngăn chặn toggle expand khi click nút
+
+        if (!areaId) {
+            if (window.showToast) {
+                window.showToast('Không tìm thấy mã khu vực', 'error');
+            }
+            return;
+        }
+
+        try {
+            setApprovingAreas(prev => new Set(prev).add(areaId));
+            const response = await approveStocktakingArea(areaId);
+            
+            // Lấy warnings từ response
+            const warnings = response?.data?.stocktakingLocationWarmings || response?.stocktakingLocationWarmings || [];
+            
+            // Tạo map locationId -> warnings
+            const warningsMap = {};
+            warnings.forEach(warning => {
+                const locationId = warning.stocktakingLocationId;
+                if (!warningsMap[locationId]) {
+                    warningsMap[locationId] = [];
+                }
+                warningsMap[locationId].push(warning);
+            });
+            
+            // Cập nhật state warnings
+            setLocationWarnings(prev => ({
+                ...prev,
+                ...warningsMap
+            }));
+
+            if (warnings.length > 0) {
+                if (window.showToast) {
+                    window.showToast(`Có ${warnings.length} cảnh báo cần kiểm tra.`, 'warning');
+                }
+            } else {
+                if (window.showToast) {
+                    window.showToast('Duyệt khu vực kiểm kê thành công', 'success');
+                }
+            }
+
+            // Refresh data
+            await handleRefresh();
+        } catch (error) {
+            console.error('Error approving stocktaking area:', error);
+            const errorMessage = extractErrorMessage(error);
+            if (window.showToast) {
+                window.showToast(errorMessage || 'Không thể duyệt khu vực kiểm kê', 'error');
+            }
+        } finally {
+            setApprovingAreas(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(areaId);
+                return newSet;
+            });
+        }
     };
 
     if (loading) {
@@ -708,18 +772,20 @@ const StocktakingAreaDetailForOther = () => {
                                                         const isSelected = selectedLocations.has(locationId);
                                                         const areaStatus = area.status;
                                                         const isAreaPendingApproval = areaStatus === STOCK_AREA_STATUS.PendingApproval;
+                                                        const warnings = locationWarnings[locationId] || [];
+                                                        const hasWarnings = warnings.length > 0;
 
                                                         return (
                                                             <div
                                                                 key={locationId}
-                                                                className={`border border-gray-200 rounded-lg ${isExpanded ? 'bg-gray-50' : 'bg-white'} ${isSelected ? 'ring-2 ring-orange-500' : ''} transition-colors`}
+                                                                className={`border rounded-lg ${hasWarnings ? 'border-red-500 border-2 bg-red-50' : 'border-gray-200'} ${isExpanded ? 'bg-gray-50' : 'bg-white'} ${isSelected ? 'ring-2 ring-orange-500' : ''} transition-colors`}
                                                             >
                                                                 {/* Location Header */}
                                                                 <div
                                                                     className="p-4 cursor-pointer flex items-center justify-between hover:bg-gray-100 transition-colors"
                                                                     onClick={() => toggleSheet(location)}
                                                                 >
-                                                                    <div className="flex items-center gap-3">
+                                                                    <div className="flex items-center gap-3 flex-1">
                                                                         {isAreaPendingApproval ? (
                                                                             <input
                                                                                 type="checkbox"
@@ -730,6 +796,9 @@ const StocktakingAreaDetailForOther = () => {
                                                                             />
                                                                         ) : (
                                                                             <div className="w-4 h-4"></div>
+                                                                        )}
+                                                                        {hasWarnings && (
+                                                                            <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0" />
                                                                         )}
                                                                         <div className="flex-1 grid grid-cols-3 gap-4">
                                                                             <div>
@@ -764,6 +833,27 @@ const StocktakingAreaDetailForOther = () => {
                                                                         )}
                                                                     </div>
                                                                 </div>
+
+                                                                {/* Warnings Display */}
+                                                                {hasWarnings && (
+                                                                    <div className="px-4 pb-3 border-b border-red-200">
+                                                                        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                                                                            <div className="flex items-start gap-2 mb-2">
+                                                                                <AlertTriangle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
+                                                                                <div className="text-xs font-semibold text-red-800">
+                                                                                    Cảnh báo ({warnings.length})
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className="space-y-1.5">
+                                                                                {warnings.map((warning, warningIndex) => (
+                                                                                    <div key={warningIndex} className="text-xs text-red-700 pl-6">
+                                                                                        <span className="font-medium">Pallet </span> {warning.message}
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
 
                                                                 {/* Packages Table */}
                                                                 {isExpanded && (
@@ -870,6 +960,29 @@ const StocktakingAreaDetailForOther = () => {
                                                 ) : (
                                                     <div className="text-center py-8 text-gray-500">
                                                         Không có vị trí kiểm kê nào
+                                                    </div>
+                                                )}
+
+                                                {/* Nút Duyệt - chỉ hiển thị cho quản lý kho khi khu vực ở trạng thái Chờ duyệt */}
+                                                {isWarehouseManager && area.status === STOCK_AREA_STATUS.PendingApproval && (
+                                                    <div className="mt-4 pt-4 border-t border-gray-200 flex justify-end">
+                                                        <Button
+                                                            onClick={(e) => handleApproveArea(areaId, e)}
+                                                            disabled={approvingAreas.has(areaId)}
+                                                            className="flex items-center space-x-2 px-4 py-2 h-[38px] bg-green-600 hover:bg-green-700 text-white disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed transition-colors"
+                                                        >
+                                                            {approvingAreas.has(areaId) ? (
+                                                                <>
+                                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                                                    <span className="text-sm font-medium">Đang duyệt...</span>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <CheckCircle2 className="h-4 w-4" />
+                                                                    <span className="text-sm font-medium">Duyệt</span>
+                                                                </>
+                                                            )}
+                                                        </Button>
                                                     </div>
                                                 )}
                                             </div>
