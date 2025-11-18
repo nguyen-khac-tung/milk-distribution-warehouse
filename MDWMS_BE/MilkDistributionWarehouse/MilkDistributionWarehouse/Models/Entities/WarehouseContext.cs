@@ -41,6 +41,8 @@ public partial class WarehouseContext : DbContext
 
     public virtual DbSet<GoodsReceiptNoteDetail> GoodsReceiptNoteDetails { get; set; }
 
+    public virtual DbSet<InventoryLedger> InventoryLedgers { get; set; }
+
     public virtual DbSet<Location> Locations { get; set; }
 
     public virtual DbSet<LogHistory> LogHistories { get; set; }
@@ -382,6 +384,25 @@ public partial class WarehouseContext : DbContext
                 .HasForeignKey(d => d.GoodsReceiptNoteId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_GoodsReceiptNoteDetails_GoodsReceiptNotes");
+        });
+
+        modelBuilder.Entity<InventoryLedger>(entity =>
+        {
+            entity.HasKey(e => e.LedgerId);
+
+            entity.ToTable("InventoryLedger");
+
+            entity.Property(e => e.Note).HasMaxLength(50);
+
+            entity.HasOne(d => d.GoodPacking).WithMany(p => p.InventoryLedgers)
+                .HasForeignKey(d => d.GoodPackingId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_InventoryLedger_GoodsPacking");
+
+            entity.HasOne(d => d.Goods).WithMany(p => p.InventoryLedgers)
+                .HasForeignKey(d => d.GoodsId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_InventoryLedger_Goods");
         });
 
         modelBuilder.Entity<Location>(entity =>
@@ -749,7 +770,9 @@ public partial class WarehouseContext : DbContext
             entity.Property(e => e.Phone)
                 .HasMaxLength(50)
                 .IsUnicode(false);
-            entity.Property(e => e.Status).HasDefaultValue(1);
+            entity.Property(e => e.Status)
+                .HasDefaultValue(1)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF__Users__Status__32AB8735");
 
             entity.HasMany(d => d.Roles).WithMany(p => p.Users)
                 .UsingEntity<Dictionary<string, object>>(
