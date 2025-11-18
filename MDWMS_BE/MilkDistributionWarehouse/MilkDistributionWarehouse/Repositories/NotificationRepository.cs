@@ -10,6 +10,8 @@ namespace MilkDistributionWarehouse.Repositories
         Task<List<Notification>?> GetUnreadNotificationsByUserId(int? userId);
         Task<Notification?> GetNotificationById(Guid notificationId, int? userId);
         Task<List<Notification>> GetNotificationsByIds(List<Guid> notificationIds, int? userId);
+        Task CreateNotification(Notification notification);
+        Task CreateNotifications(List<Notification> notifications);
         Task UpdateNotification(Notification notification);
         Task UpdateNotifications(List<Notification> notifications);
     }
@@ -53,6 +55,16 @@ namespace MilkDistributionWarehouse.Repositories
                 .Where(n => notificationIds.Contains(n.NotificationId)
                    && n.UserId == userId && n.Status != NotificationStatus.Deleted)
                 .ToListAsync();
+        }
+
+        public async Task CreateNotification(Notification notification)
+        {
+            await _context.Notifications.AddAsync(notification);
+        }
+
+        public async Task CreateNotifications(List<Notification> notifications)
+        {
+            await _context.Notifications.AddRangeAsync(notifications);
         }
 
         public async Task UpdateNotification(Notification notification)

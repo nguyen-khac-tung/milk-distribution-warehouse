@@ -9,6 +9,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public string Content { get; set; }
         public int? Category { get; set; }
         public int? Status { get; set; }
+        public int? UserId { get; set; }
         public DateTime? CreatedAt { get; set; }
     }
 

@@ -17,6 +17,16 @@
         public const int SaleManager = 6;
     }
 
+    public static class RoleNames
+    {
+        public const string SalesRepresentative = "Sales Representative";
+        public const string SalesManager = "Sale Manager";
+        public const string WarehouseManager = "Warehouse Manager";
+        public const string WarehouseStaff = "Warehouse Staff";
+        public const string Administrator = "Administrator";
+        public const string BusinessOwner = "Business Owner";
+    }
+
     /// <summary>
     /// Các trạng thái của Đơn đặt hàng (Purchase Order)
     /// </summary>
@@ -152,16 +162,6 @@
     {
         public const string Available = "Available";
         public const string Unavailable = "Unavailable";
-    }
-
-    public static class RoleNames
-    {
-        public const string SalesRepresentative = "Sales Representative";
-        public const string SalesManager = "Sale Manager";
-        public const string WarehouseManager = "Warehouse Manager";
-        public const string WarehouseStaff = "Warehouse Staff";
-        public const string Administrator = "Administrator";
-        public const string BusinessOwner = "Business Owner";
     }
 
     /// <summary>

@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.IdentityModel.Tokens;
 using MilkDistributionWarehouse.Constants;
+using MilkDistributionWarehouse.Hubs;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
@@ -11,6 +13,8 @@ namespace MilkDistributionWarehouse.Services
 {
     public interface INotificationService
     {
+        Task CreateNotification(int userId, string title, string content, int? category);
+        Task CreateNotificationBulk(IEnumerable<NotificationDto> notificationList);
         Task<(string, List<NotificationDto>?)> GetNotifications(int? userId);
         Task<(string, NotificationDto?)> GetNotificationDetail(Guid notificationId, int? userId);
         Task<string> MarkAsRead(NotificationMarkAsReadDto dto, int? userId);
@@ -20,14 +24,87 @@ namespace MilkDistributionWarehouse.Services
     public class NotificationService : INotificationService
     {
         private readonly INotificationRepository _notificationRepository;
+        private readonly IHubContext<NotificationHub> _hubContext;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
-        public NotificationService(INotificationRepository notificationRepository, IUnitOfWork unitOfWork, IMapper mapper)
+        public NotificationService(INotificationRepository notificationRepository, 
+                                   IHubContext<NotificationHub> hubContext,
+                                   IUnitOfWork unitOfWork, 
+                                   IMapper mapper)
         {
             _notificationRepository = notificationRepository;
+            _hubContext = hubContext;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
+        }
+
+        public async Task CreateNotification(int userId, string title, string content, int? category)
+        {
+            var notification = new Notification
+            {
+                NotificationId = Guid.NewGuid(),
+                UserId = userId,
+                Title = title,
+                Content = content,
+                Category = category ?? NotificationCategory.Normal,
+                Status = NotificationStatus.Unread,
+                CreatedAt = DateTime.Now
+            };
+
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+                await _notificationRepository.CreateNotification(notification);
+                var notificationDto = _mapper.Map<NotificationDto>(notification);
+                await _unitOfWork.CommitTransactionAsync();
+                
+                await _hubContext.Clients
+                    .Group(userId.ToString())
+                    .SendAsync("ReceiveNotification", notificationDto);
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+            }
+        }
+
+        public async Task CreateNotificationBulk(IEnumerable<NotificationDto> notificationList)
+        {
+            if (notificationList.IsNullOrEmpty()) return;
+
+            var notificationEntities = new List<Notification>();
+            foreach (var data in notificationList)
+            {
+                notificationEntities.Add(new Notification
+                {
+                    NotificationId = Guid.NewGuid(),
+                    UserId = data.UserId,
+                    Title = data.Title,
+                    Content = data.Content,
+                    Category = data.Category ?? NotificationCategory.Normal,
+                    Status = NotificationStatus.Unread,
+                    CreatedAt = DateTime.Now
+                });
+            }
+
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+                await _notificationRepository.CreateNotifications(notificationEntities);
+                await _unitOfWork.CommitTransactionAsync();
+
+                foreach (var notification in notificationList)
+                {
+                    await _hubContext.Clients
+                        .Group(notification.UserId.ToString() ?? "")
+                        .SendAsync("ReceiveNotification", notification);
+                }
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+            }
         }
 
         public async Task<(string, List<NotificationDto>?)> GetNotifications(int? userId)
