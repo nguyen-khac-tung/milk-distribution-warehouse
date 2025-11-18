@@ -5,7 +5,7 @@ using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Utilities;
 using static MilkDistributionWarehouse.Models.DTOs.PalletDto;
 
-namespace MilkDistributionWarehouse.Mapper
+namespace MilkDistributionWarehouse.Mappers
 {
     public class AutoMapperProfile : Profile
     {

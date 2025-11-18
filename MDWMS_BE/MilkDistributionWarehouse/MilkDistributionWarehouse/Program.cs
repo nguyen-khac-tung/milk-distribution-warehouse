@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using MilkDistributionWarehouse.Configurations;
-using MilkDistributionWarehouse.Mapper;
+using MilkDistributionWarehouse.Mappers;
 using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Utilities;
 using System.Text;
