@@ -20,6 +20,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> IsDuplicationCode(int? goodIds, string goodsCode);
         Task<List<Good>?> GetActiveGoodsBySupplierId(int supplierId);
         Task<Category?> GetInactiveCategoryByGoodsIdAsync(int goodsId);
+        Task<IEnumerable<dynamic>> GetExpiredGoodsForDisposal();
         Task<UnitMeasure?> GetInactiveUnitMeasureByGoodsIdAsync(int goodsId);
         Task<StorageCondition?> GetInactiveStorageConditionByGoodsIdAsync(int goodsId);
         Task<bool> IsGoodsUsedInBatch(int goodsId);
@@ -98,7 +99,7 @@ namespace MilkDistributionWarehouse.Repositories
         public async Task<bool> IsDuplicationNameAndSupplier(string goodsName, int supplierId)
         {
             return await _warehouseContext.Goods
-                .AnyAsync(g => g.Status != CommonStatus.Deleted 
+                .AnyAsync(g => g.Status != CommonStatus.Deleted
                 && g.SupplierId == supplierId && g.GoodsName.Equals(goodsName));
         }
 
@@ -112,6 +113,31 @@ namespace MilkDistributionWarehouse.Repositories
                         .ThenInclude(p => p.GoodsPacking)
                 .Where(g => g.SupplierId == supplierId && g.Status == CommonStatus.Active)
                 .ToListAsync();
+        }
+
+        public async Task<IEnumerable<dynamic>> GetExpiredGoodsForDisposal()
+        {
+            var today = DateOnly.FromDateTime(DateTime.Now);
+
+            var groupedPallets = await _warehouseContext.Pallets
+                                .Include(p => p.Batch)
+                                    .ThenInclude(b => b.Goods)
+                                        .ThenInclude(g => g.UnitMeasure)
+                                .Include(p => p.Batch)
+                                    .ThenInclude(b => b.Goods)
+                                        .ThenInclude(g => g.Supplier)
+                                .Include(p => p.GoodsPacking)
+                                .Where(p => p.Batch.ExpiryDate <= today && p.PackageQuantity > 0 && p.Status == CommonStatus.Active)
+                                .GroupBy(p => new { p.Batch.Goods.GoodsId, p.GoodsPacking.GoodsPackingId })
+                                .AsNoTracking()
+                                .ToListAsync();
+
+            return groupedPallets.Select(g => new
+            {
+                Goods = g.FirstOrDefault()?.Batch?.Goods,
+                GoodsPacking = g.FirstOrDefault()?.GoodsPacking,
+                TotalExpiredPackageQuantity = g.Sum(p => p.PackageQuantity ?? 0)
+            });
         }
 
         public async Task<Category?> GetInactiveCategoryByGoodsIdAsync(int goodsId)

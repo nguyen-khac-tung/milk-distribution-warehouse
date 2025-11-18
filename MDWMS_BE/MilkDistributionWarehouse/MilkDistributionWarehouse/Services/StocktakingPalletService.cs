@@ -119,7 +119,7 @@ namespace MilkDistributionWarehouse.Services
 
             var locationToStocktaking = creates
                 .GroupBy(g => g.LocationId)
-                .ToDictionary(g => g.Key, g => g.First().StocktakingLocationid);
+                .ToDictionary(g => g.Key, g => g.First().StocktakingLocationId);
 
             foreach (var pallet in pallets)
             {
@@ -153,7 +153,7 @@ namespace MilkDistributionWarehouse.Services
                 StocktakingPalletMissingStatus missingStatus => await HandleStocktakingPalletMissing(stocktakingPalletExist, missingStatus),
                 StocktakingPalletMatchStatus matchStatus => await HandleStocktakingPalletMathch(stocktakingPalletExist, matchStatus),
                 StocktakingPalletSurplusStatus suplusStatus => await HandleStocktakingPalletSuplus(stocktakingPalletExist, suplusStatus),
-                _ => ""
+                _ => "Cập nhật kiểm kê kệ kê hàng thất bại."
             };
 
             if (!string.IsNullOrEmpty(errorMessage))
@@ -177,6 +177,13 @@ namespace MilkDistributionWarehouse.Services
             var deleteResult = await _stocktakingPalletRepository.DeleteStockPallet(stocktakingPalletExist);
             if (deleteResult == 0) return ("Xoá kiểm kê kệ kê hàng thất bại.".ToMessageForUser(), default);
 
+            if (stocktakingPalletExist.StocktakingLocationId == Guid.Empty)
+                return ("Mã kiểm kê vị trí không hợp lệ.", default);
+
+            var msg = await UpdateStocktakingLocationStatus((Guid)stocktakingPalletExist.StocktakingLocationId, StockLocationStatus.Pending);
+            if (!string.IsNullOrEmpty(msg))
+                return (msg, default);
+
             return ("", new StocktakingPalletResponse { StocktakingPalletId = stocktakingPalletId });
         }
 
@@ -194,6 +201,13 @@ namespace MilkDistributionWarehouse.Services
             var updateResult = await _stocktakingPalletRepository.UpdateStocktakingPallet(stocktakingPalletExist);
             if (updateResult == 0) return ("Cập nhật kiểm kê kệ kê hàng thất bại.", default);
 
+            if (stocktakingPalletExist.StocktakingLocationId == Guid.Empty)
+                return ("Mã kiểm kê vị trí không hợp lệ.", default);
+
+            var msg = await UpdateStocktakingLocationStatus((Guid)stocktakingPalletExist.StocktakingLocationId, StockLocationStatus.Pending);
+            if (!string.IsNullOrEmpty(msg))
+                return (msg, default);
+
             var stocktakingPalletMap = _mapper.Map<StocktakingPalletDto>(stocktakingPalletExist);
             return ("", stocktakingPalletMap);
         }
@@ -205,6 +219,13 @@ namespace MilkDistributionWarehouse.Services
 
             _mapper.Map(suplusStatus, stocktakingPalletExist);
 
+            if (stocktakingPalletExist.StocktakingLocationId == Guid.Empty)
+                return "Mã kiểm kê vị trí không hợp lệ.";
+
+            var msg = await UpdateStocktakingLocationStatus((Guid)stocktakingPalletExist.StocktakingLocationId, StockLocationStatus.Counted);
+            if (!string.IsNullOrEmpty(msg))
+                return msg;
+
             return "";
         }
 
@@ -215,12 +236,27 @@ namespace MilkDistributionWarehouse.Services
 
             _mapper.Map(matchStatus, stocktakingPalletExist);
 
+            if (stocktakingPalletExist.StocktakingLocationId == Guid.Empty)
+                return "Mã kiểm kê vị trí không hợp lệ.";
+
+            var msg = await UpdateStocktakingLocationStatus((Guid)stocktakingPalletExist.StocktakingLocationId, StockLocationStatus.Counted);
+            if (!string.IsNullOrEmpty(msg))
+                return msg;
+
             return "";
         }
 
         private async Task<string> HandleStocktakingPalletMissing(StocktakingPallet stocktakingPalletExist, StocktakingPalletMissingStatus missingStatus)
         {
             _mapper.Map(missingStatus, stocktakingPalletExist);
+
+            if (stocktakingPalletExist.StocktakingLocationId == Guid.Empty)
+                return "Mã kiểm kê vị trí không hợp lệ.";
+
+            var msg = await UpdateStocktakingLocationStatus((Guid)stocktakingPalletExist.StocktakingLocationId, StockLocationStatus.Counted);
+            if (!string.IsNullOrEmpty(msg))
+                return msg;
+
             return "";
         }
 
@@ -234,5 +270,21 @@ namespace MilkDistributionWarehouse.Services
             return ("", stocktakingPalletMap);
         }
 
+        private async Task<string> UpdateStocktakingLocationStatus(Guid stocktakingLocationId, int status)
+        {
+            if (stocktakingLocationId == Guid.Empty)
+                return "Mã kiểm kê vị trí không hợp lệ.";
+
+            var stocktakingLocationExist = await _stocktakingLocationRepository.GetStocktakingLocationById(stocktakingLocationId);
+            if (stocktakingLocationExist == null)
+                return "Kiểm kê vị trí không tồn tại trong hệ thống.";
+
+            stocktakingLocationExist.Status = status;
+            var updateResult = await _stocktakingLocationRepository.UpdateStocktakingLocation(stocktakingLocationExist);
+            if (updateResult == 0)
+                return "Cập nhật trạng thái kiểm kê vị trí thất bại.";
+
+            return "";
+        }
     }
 }

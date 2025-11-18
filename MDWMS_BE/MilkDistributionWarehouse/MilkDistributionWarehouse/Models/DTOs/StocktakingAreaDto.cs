@@ -30,9 +30,15 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public List<StocktakingLocationDto> StocktakingLocations { get; set; }
     }
 
+    public class StocktakingAreaResponse
+    {
+        public Guid StocktakingAreaId { get; set; }
+    }
+
     public class StocktakingAreaUpdateDto : AreaDto.StocktakingAreaDto
     {
         public Guid StocktakingAreaId { get; set; }
+        public int Status { get; set; }
     }
     public class StocktakingAreaReAssignStatus
     {
@@ -45,6 +51,15 @@ namespace MilkDistributionWarehouse.Models.DTOs
     public class StocktakingAreaUpdateStatus
     {
         public Guid StocktakingAreaId { get; set; }
-        public int Status { get; set; }
+    }
+
+    public class StocktakingAreaPendingStatus : StocktakingAreaUpdateStatus { }
+
+    public class StocktakingAreaPendingAprrovalStatus : StocktakingAreaUpdateStatus { }
+    public class StocktakingAreaApprovalStatus : StocktakingAreaUpdateStatus { }
+
+    public class StocktakingAreaApprovalResponse
+    {
+        public List<StocktakingLocationWarming> StocktakingLocationWarmings { get; set; }
     }
 }

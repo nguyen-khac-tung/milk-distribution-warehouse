@@ -18,7 +18,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
     public class StocktakingPalletCreate
     {
-        public Guid StocktakingLocationid { get; set; }
+        public Guid StocktakingLocationId { get; set; }
         public int LocationId { get; set; }
     }
 
@@ -57,4 +57,10 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public string PalletId { get; set; }
     }
 
+    public class StocktakingPalletInfo
+    {
+        public Guid? StocktakingLocationId { get; set; }
+        public int? ActualPackageQuantity { get; set; }
+        public int? Status { get; set; }
+    }
 }

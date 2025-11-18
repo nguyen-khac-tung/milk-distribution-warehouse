@@ -341,3 +341,122 @@ export const deleteStocktakingPallet = async (stocktakingPalletId) => {
     }
 };
 
+// Xác nhận đã đếm vị trí kiểm kê
+export const confirmStocktakingLocationCounted = async (stocktakingLocationId) => {
+    try {
+        if (!stocktakingLocationId) {
+            throw new Error("stocktakingLocationId is required");
+        }
+        const body = {
+            stocktakingLocationId: stocktakingLocationId
+        };
+        const res = await api.post("/StocktakingLocation/ConfirmCounted", body);
+        return res.data;
+    } catch (error) {
+        console.error("Error confirming stocktaking location counted:", error);
+        throw error;
+    }
+};
+
+// Nộp kiểm kê (Submit stocktaking area)
+export const submitStocktakingArea = async (stocktakingAreaId) => {
+    try {
+        if (!stocktakingAreaId) {
+            throw new Error("stocktakingAreaId is required");
+        }
+        const body = {
+            stocktakingAreaId: stocktakingAreaId
+        };
+        const res = await api.put("/StocktakingArea/Submit", body);
+        return res.data;
+    } catch (error) {
+        console.error("Error submitting stocktaking area:", error);
+        throw error;
+    }
+};
+
+// Phân công lại khu vực kiểm kê (Re-assign stocktaking area)
+export const reAssignStocktakingArea = async (stocktakingAreaId, assignTo) => {
+    try {
+        if (!stocktakingAreaId) {
+            throw new Error("stocktakingAreaId is required");
+        }
+        if (assignTo === undefined || assignTo === null) {
+            throw new Error("assignTo is required");
+        }
+        const body = {
+            stocktakingAreaId: stocktakingAreaId,
+            assignTo: assignTo
+        };
+        const res = await api.put("/StocktakingArea/ReAssignStocktakingArea", body);
+        return res.data;
+    } catch (error) {
+        console.error("Error re-assigning stocktaking area:", error);
+        throw error;
+    }
+};
+
+// Từ chối bản ghi kiểm kê (Reject stocktaking location records)
+export const rejectStocktakingLocationRecords = async (records) => {
+    try {
+        if (!records || !Array.isArray(records) || records.length === 0) {
+            throw new Error("records is required and must be a non-empty array");
+        }
+        
+        // Validate each record
+        records.forEach((record, index) => {
+            if (!record.stocktakingLocationId) {
+                throw new Error(`Record at index ${index} is missing stocktakingLocationId`);
+            }
+            if (record.rejectReason === undefined || record.rejectReason === null) {
+                throw new Error(`Record at index ${index} is missing rejectReason`);
+            }
+            if (record.locationId === undefined || record.locationId === null) {
+                throw new Error(`Record at index ${index} is missing locationId`);
+            }
+        });
+
+        const body = records.map(record => ({
+            stocktakingLocationId: record.stocktakingLocationId,
+            rejectReason: record.rejectReason || "",
+            locationId: record.locationId
+        }));
+
+        const res = await api.put("/StocktakingLocation/RejectRecords", body);
+        return res.data;
+    } catch (error) {
+        console.error("Error rejecting stocktaking location records:", error);
+        throw error;
+    }
+};
+
+// Hủy bản ghi kiểm kê (Cancel stocktaking location record)
+export const cancelStocktakingLocationRecord = async (records) => {
+    try {
+        if (!records || !Array.isArray(records) || records.length === 0) {
+            throw new Error("records is required and must be a non-empty array");
+        }
+        
+        // Validate each record
+        records.forEach((record, index) => {
+            if (!record.stocktakingLocationId) {
+                throw new Error(`Record at index ${index} is missing stocktakingLocationId`);
+            }
+            if (record.locationId === undefined || record.locationId === null) {
+                throw new Error(`Record at index ${index} is missing locationId`);
+            }
+        });
+
+        const body = records.map(record => ({
+            stocktakingLocationId: record.stocktakingLocationId,
+            locationId: record.locationId
+        }));
+
+        const res = await api.put("/StocktakingLocation/CancelRecord", body);
+        return res.data;
+    } catch (error) {
+        console.error("Error canceling stocktaking location record:", error);
+        throw error;
+    }
+};
+

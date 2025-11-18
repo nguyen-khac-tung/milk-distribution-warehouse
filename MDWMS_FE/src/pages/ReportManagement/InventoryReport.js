@@ -290,12 +290,6 @@ export default function InventoryReport({ onClose }) {
                         Số lượng thùng
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                        Số pallet
-                      </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                        Số vị trí
-                      </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
                         Trạng thái
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
@@ -341,16 +335,6 @@ export default function InventoryReport({ onClose }) {
                             </TableCell>
                             <TableCell className="px-6 py-4 text-slate-700 text-right font-medium">
                               {item.totalPackageQuantity?.toLocaleString("vi-VN") || 0}
-                            </TableCell>
-                            <TableCell className="px-6 py-4 text-center">
-                              <Badge variant="outline" className="bg-blue-50 text-blue-700">
-                                {item.palletIds?.length || 0}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="px-6 py-4 text-center">
-                              <Badge variant="outline" className="bg-green-50 text-green-700">
-                                {item.locationCodes?.length || 0}
-                              </Badge>
                             </TableCell>
                             <TableCell className="px-6 py-4 text-center">
                               {expired ? (

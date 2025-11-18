@@ -9,11 +9,12 @@ import { getStocktakingDetail } from '../../services/StocktakingService';
 import { extractErrorMessage } from '../../utils/Validation';
 import StatusDisplay, { STOCKTAKING_STATUS } from '../../components/StocktakingComponents/StatusDisplay';
 import AssignAreaModal from '../../components/StocktakingComponents/AssignAreaModal';
+import AssignSingleAreaModal from '../../components/StocktakingComponents/AssignSingleAreaModal';
 import StartStocktakingModal from '../../components/StocktakingComponents/StartStocktakingModal';
 import { PERMISSIONS } from '../../utils/permissions';
 import PermissionWrapper from '../../components/Common/PermissionWrapper';
 import { usePermissions } from '../../hooks/usePermissions';
-import AreaStatusDisplay from '../StocktakingArea/AreaStatusDisplay';
+import AreaStatusDisplay, { STOCK_AREA_STATUS } from '../StocktakingArea/AreaStatusDisplay';
 import dayjs from 'dayjs';
 
 const StocktakingDetail = () => {
@@ -27,6 +28,7 @@ const StocktakingDetail = () => {
     // Assignment modal state
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [isReassign, setIsReassign] = useState(false);
+    const [areasToReassign, setAreasToReassign] = useState([]); // Danh sách khu vực cần phân công lại (nếu chỉ có 1 khu vực)
 
     // Start stocktaking modal state
     const [showStartStocktakingModal, setShowStartStocktakingModal] = useState(false);
@@ -78,7 +80,28 @@ const StocktakingDetail = () => {
 
     const handleStartAssignment = () => {
         // Check if it's reassignment (status is Assigned) or initial assignment (status is Draft)
-        setIsReassign(stocktaking?.status === STOCKTAKING_STATUS.Assigned);
+        const isReassignMode = stocktaking?.status === STOCKTAKING_STATUS.Assigned;
+        setIsReassign(isReassignMode);
+
+        // Kiểm tra trạng thái các khu vực khi reassign
+        let areasToReassignList = [];
+        if (isReassignMode && stocktaking?.stocktakingAreas) {
+            // Đếm số khu vực có trạng thái "Đã Phân Công" (status = 1)
+            const assignedAreas = stocktaking.stocktakingAreas.filter(
+                area => area.status === STOCK_AREA_STATUS.Assigned
+            );
+            const totalAreas = stocktaking.stocktakingAreas.length;
+
+            // Nếu chỉ có 1 khu vực "Đã Phân Công", chỉ hiển thị khu vực đó
+            if (assignedAreas.length === 1 && totalAreas > 1) {
+                // Lấy areaId (int) để so sánh với API getStocktakingArea
+                areasToReassignList = assignedAreas.map(area => area.areaId);
+            }
+            // Nếu tất cả khu vực đều "Đã Phân Công" (assignedAreas.length === totalAreas), 
+            // giữ nguyên logic cũ (hiển thị tất cả, areasToReassignList = [])
+        }
+
+        setAreasToReassign(areasToReassignList);
         setShowAssignModal(true);
     };
 
@@ -447,14 +470,26 @@ const StocktakingDetail = () => {
                         )}
                         {stocktaking?.status === STOCKTAKING_STATUS.Assigned && (
                             <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_REASSIGN_AREA}>
-                                <AssignAreaModal
-                                    isOpen={showAssignModal}
-                                    onClose={() => setShowAssignModal(false)}
-                                    onSuccess={handleAssignmentSuccess}
-                                    stocktakingSheetId={stocktaking?.stocktakingSheetId || id}
-                                    isReassign={isReassign}
-                                    stocktaking={stocktaking}
-                                />
+                                {areasToReassign.length === 1 ? (
+                                    <AssignSingleAreaModal
+                                        isOpen={showAssignModal}
+                                        onClose={() => setShowAssignModal(false)}
+                                        onSuccess={handleAssignmentSuccess}
+                                        stocktakingSheetId={stocktaking?.stocktakingSheetId || id}
+                                        stocktaking={stocktaking}
+                                        areaIdToReassign={areasToReassign[0]}
+                                    />
+                                ) : (
+                                    <AssignAreaModal
+                                        isOpen={showAssignModal}
+                                        onClose={() => setShowAssignModal(false)}
+                                        onSuccess={handleAssignmentSuccess}
+                                        stocktakingSheetId={stocktaking?.stocktakingSheetId || id}
+                                        isReassign={isReassign}
+                                        stocktaking={stocktaking}
+                                        areasToReassign={areasToReassign}
+                                    />
+                                )}
                             </PermissionWrapper>
                         )}
                     </>

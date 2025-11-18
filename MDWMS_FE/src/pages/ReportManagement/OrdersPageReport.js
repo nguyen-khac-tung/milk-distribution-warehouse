@@ -355,12 +355,12 @@ export default function OrdersPage({ onClose }) {
                         Số thùng
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                       Tổng số đơn vị
+                        Tổng số đơn vị
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
                         Đơn vị tính
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
                         {activeOrderType === "purchase" ? "Ngày nhập" : "Ngày xuất"}
                       </TableHead>
                     </TableRow>
@@ -368,7 +368,7 @@ export default function OrdersPage({ onClose }) {
                   <TableBody>
                     {displayOrders.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center text-gray-500 py-8">
+                        <TableCell colSpan={9} className="text-center text-gray-500 py-8">
                           Không có dữ liệu nào
                         </TableCell>
                       </TableRow>
@@ -405,10 +405,11 @@ export default function OrdersPage({ onClose }) {
                             <TableCell className="px-6 py-4 text-center text-slate-700">
                               {order.unitOfMeasure || '-'}
                             </TableCell>
-                            <TableCell className="px-6 py-4 text-slate-700">
-                              {order.receiptDate || order.issueDate
-                                ? dayjs(order.receiptDate || order.issueDate).format('DD/MM/YYYY')
-                                : '-'}
+                            <TableCell className="px-6 py-4 text-center text-slate-700">
+                              {activeOrderType === "purchase"
+                                ? (order.receiptDate ? dayjs(order.receiptDate).format('DD/MM/YYYY') : '-')
+                                : (order.issueDate ? dayjs(order.issueDate).format('DD/MM/YYYY') : '-')
+                              }
                             </TableCell>
                           </TableRow>
                         )

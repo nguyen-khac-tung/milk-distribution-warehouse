@@ -19,6 +19,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> ExistsLocation(int? locationId);
         Task<bool> ExistsGoodRecieveNote(string? goodRcNoteId);
         Task<List<Pallet>> GetPotentiallyPalletsForPicking(int? goodsId, int? goodsPackingId);
+        Task<List<Pallet>> GetExpiredPalletsForPicking(int? goodsId, int? goodsPackingId);
         Task<bool> IsAnyDiffActivePalletByGRNId(string grndId);
         Task<List<Pallet>> GetActivePalletIdsByLocationId(List<int> locationIds);
     }
@@ -154,6 +155,18 @@ namespace MilkDistributionWarehouse.Repositories
                             p.PackageQuantity > 0 &&
                             p.Status == CommonStatus.Active &&
                             p.Batch.ExpiryDate >= DateOnly.FromDateTime(DateTime.Now))
+                .ToListAsync();
+        }
+
+        public async Task<List<Pallet>> GetExpiredPalletsForPicking(int? goodsId, int? goodsPackingId)
+        {
+            var today = DateOnly.FromDateTime(DateTime.Now);
+            return await _context.Pallets
+                .Include(p => p.Batch)
+                .Where(p => p.Batch.GoodsId == goodsId &&
+                            p.GoodsPackingId == goodsPackingId &&
+                            p.Status == CommonStatus.Active &&
+                            p.Batch.ExpiryDate <= today)
                 .ToListAsync();
         }
 

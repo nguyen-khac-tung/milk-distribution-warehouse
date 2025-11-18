@@ -68,6 +68,10 @@ namespace MilkDistributionWarehouse.Configurations
             services.AddScoped<ISalesOrderService, SalesOrderService>();
             services.AddScoped<ISalesOrderRepository, SalesOrderRepository>();
 
+            //SalesOrderDetail
+            services.AddScoped<ISalesOrderDetailService, SalesOrderDetailService>();
+            services.AddScoped<ISalesOrderDetailRepository, SalesOrderDetailRepository>();
+
             //Role
             services.AddScoped<IRoleService, RoleService>();
             services.AddScoped<IRoleRepository, RoleRepository>();
@@ -85,10 +89,6 @@ namespace MilkDistributionWarehouse.Configurations
             //Pallet
             services.AddScoped<IPalletRepository, PalletRepository>();
             services.AddScoped<IPalletService, PalletService>();
-
-            //SalesOrderDetail
-            services.AddScoped<ISalesOrderDetailService, SalesOrderDetailService>();
-            services.AddScoped<ISalesOrderDetailRepository, SalesOrderDetailRepository>();
 
             //GoodsPacking
             services.AddScoped<IGoodsPackingRepository, GoodsPackingRepository>();
@@ -114,7 +114,22 @@ namespace MilkDistributionWarehouse.Configurations
             services.AddScoped<IGoodsIssueNoteDetailRepository, GoodsIssueNoteDetailRepository>();
             services.AddScoped<IGoodsIssueNoteDetailService, GoodsIssueNoteDetailService>();
             
-            //Picking Allocation
+            //DisposalRequest
+            services.AddScoped<IDisposalRequestRepository, DisposalRequestRepository>();
+            services.AddScoped<IDisposalRequestService, DisposalRequestService>();
+
+            //DisposalRequestDetail
+            services.AddScoped<IDisposalRequestDetailRepository, DisposalRequestDetailRepository>();
+
+            //DisposalNote
+            services.AddScoped<IDisposalNoteRepository, DisposalNoteRepository>();
+            services.AddScoped<IDisposalNoteService, DisposalNoteService>();
+
+            //DisposalNoteDetail
+            services.AddScoped<IDisposalNoteDetailRepository, DisposalNoteDetailRepository>();
+            services.AddScoped<IDisposalNoteDetailService, DisposalNoteDetailService>();
+
+            //PickingAllocation
             services.AddScoped<IPickAllocationRepository, PickAllocationRepository>();
             services.AddScoped<IPickAllocationService, PickAllocationService>();
 

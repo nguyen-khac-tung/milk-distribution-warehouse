@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
+using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Services;
 using MilkDistributionWarehouse.Utilities;
 using System.Threading.Tasks;
@@ -26,7 +27,7 @@ namespace MilkDistributionWarehouse.Controllers
             var (msg, stocktakingAreaDetail) = await _stocktakingAreaService.GetStocktakingAreaByStocktakingSheetId(stoctakingSheetId, User.GetUserId());
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<StocktakingAreaDetailDto>.ToResultOk(stocktakingAreaDetail);
+            return ApiResponse<List<StocktakingAreaDetailDto>>.ToResultOk(stocktakingAreaDetail);
         }
 
         [HttpGet("GetDetailForOtherRoleByStocktakingSheetId/{stoctakingSheetId}")]
@@ -36,7 +37,7 @@ namespace MilkDistributionWarehouse.Controllers
             var (msg, stocktakingAreaDetail) = await _stocktakingAreaService.GetStocktakingAreaByStocktakingSheetId(stoctakingSheetId, null);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<StocktakingAreaDetailDto>.ToResultOk(stocktakingAreaDetail);
+            return ApiResponse<List<StocktakingAreaDetailDto>>.ToResultOk(stocktakingAreaDetail);
         }
 
         [HttpPut("ReAssignStocktakingArea")]
@@ -47,6 +48,24 @@ namespace MilkDistributionWarehouse.Controllers
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<StocktakingAreaReAssignStatus>.ToResultOk(stocktakingArea);
+        }
+
+        [HttpPut("Submit")]
+        public async Task<IActionResult> SubmitStocktakingArea([FromBody] StocktakingAreaPendingAprrovalStatus update)
+        {
+            var (msg, stocktakingArea) = await _stocktakingAreaService.UpdateStocktakingAreaStatus(update);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<StocktakingAreaResponse>.ToResultOk(stocktakingArea);
+        }
+
+        [HttpPut("Approval")]
+        public async Task<IActionResult> ApprovalStocktakingArea([FromBody] StocktakingAreaApprovalStatus update)
+        {
+            var (msg, stocktakingArea) = await _stocktakingAreaService.UpdateStocktakingAreaApprovalStatus(update);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<StocktakingAreaApprovalResponse>.ToResultOk(stocktakingArea);
         }
     }
 }
