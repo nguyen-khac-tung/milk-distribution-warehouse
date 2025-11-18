@@ -72,6 +72,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[InventoryLedger]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[Locations]",
          "ObjectType": 0
       },
