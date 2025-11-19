@@ -139,8 +139,17 @@ namespace MilkDistributionWarehouse.Services
                 if (!string.IsNullOrEmpty(msg))
                     throw new Exception(msg);
 
-                var stocktakingLocationUpdate = _mapper.Map<List<StocktakingLocation>>(update);
-                var updateStocktakingLocationBulksResult = await _stocktakingLocationRepository.UpdateStocktakingLocationBulk(stocktakingLocationUpdate);
+                var rejectMap = update.ToDictionary(x => x.StocktakingLocationId, x => x.RejectReason);
+
+                foreach (var itemLocation in stocktakingLocations)
+                {
+                    if (rejectMap.TryGetValue(itemLocation.StocktakingLocationId, out var reason))
+                    {
+                        itemLocation.RejectReason = reason;
+                    }
+                }
+
+                var updateStocktakingLocationBulksResult = await _stocktakingLocationRepository.UpdateStocktakingLocationBulk(stocktakingLocations);
 
                 if (updateStocktakingLocationBulksResult == 0)
                     throw new Exception("Cập nhật trạng thái của kiểm kể vị trí thất bại.");
