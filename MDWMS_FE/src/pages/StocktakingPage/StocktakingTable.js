@@ -23,7 +23,7 @@ const StocktakingTable = ({
     onStartStocktaking,
     loading
 }) => {
-    const { isWarehouseManager } = usePermissions();
+    const { isWarehouseManager, isWarehouseStaff } = usePermissions();
     const navigate = useNavigate();
 
     // Detect available fields in data
@@ -207,12 +207,31 @@ const StocktakingTable = ({
                                                                 onClick={() => handleStartStocktakingClick(stocktaking)}
                                                             >
                                                                 <PlayCircle className={`h-4 w-4 ${stocktaking.canViewStocktakingArea === true
-                                                                        ? 'text-blue-500'
-                                                                        : 'text-green-500'
+                                                                    ? 'text-blue-500'
+                                                                    : 'text-green-500'
                                                                     }`} />
                                                             </button>
                                                         </PermissionWrapper>
                                                     )}
+                                                {/* Icon xem lại phiếu kiểm kê - logic riêng cho nhân viên kho ở trạng thái Chờ duyệt, Đã duyệt, Đã hoàn thành */}
+                                                {isWarehouseStaff &&
+                                                    ((stocktaking.status === STOCKTAKING_STATUS.PendingApproval ||
+                                                        stocktaking.status === 5 ||
+                                                        stocktaking.status === '5') ||
+                                                     (stocktaking.status === STOCKTAKING_STATUS.Approved ||
+                                                        stocktaking.status === 6 ||
+                                                        stocktaking.status === '6') ||
+                                                     (stocktaking.status === STOCKTAKING_STATUS.Completed ||
+                                                        stocktaking.status === 7 ||
+                                                        stocktaking.status === '7')) && (
+                                                    <button
+                                                        className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                        title="Xem chi tiết kiểm kê"
+                                                        onClick={() => handleStartStocktakingClick(stocktaking)}
+                                                    >
+                                                        <PlayCircle className="h-4 w-4 text-blue-500" />
+                                                    </button>
+                                                )}
                                                 <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_VIEW_DETAILS}>
                                                     <button
                                                         className="p-1.5 hover:bg-slate-100 rounded transition-colors"
@@ -222,8 +241,19 @@ const StocktakingTable = ({
                                                         <Eye className="h-4 w-4 text-orange-500" />
                                                     </button>
                                                 </PermissionWrapper>
-                                                {(stocktaking.status === STOCKTAKING_STATUS.InProgress || 
-                                                  stocktaking.status === 4 || 
+                                                {/* Icon xem chi tiết đơn kiểm kê kho - hiển thị cho các trạng thái khác (có permission, trừ nhân viên kho ở các trạng thái đã xử lý riêng) */}
+                                                {(!isWarehouseStaff || 
+                                                  (stocktaking.status !== STOCKTAKING_STATUS.PendingApproval &&
+                                                   stocktaking.status !== 5 &&
+                                                   stocktaking.status !== '5' &&
+                                                   stocktaking.status !== STOCKTAKING_STATUS.Approved &&
+                                                   stocktaking.status !== 6 &&
+                                                   stocktaking.status !== '6' &&
+                                                   stocktaking.status !== STOCKTAKING_STATUS.Completed &&
+                                                   stocktaking.status !== 7 &&
+                                                   stocktaking.status !== '7')) &&
+                                                 (stocktaking.status === STOCKTAKING_STATUS.InProgress ||
+                                                  stocktaking.status === 4 ||
                                                   stocktaking.status === '4' ||
                                                   stocktaking.status === STOCKTAKING_STATUS.PendingApproval ||
                                                   stocktaking.status === 5 ||
