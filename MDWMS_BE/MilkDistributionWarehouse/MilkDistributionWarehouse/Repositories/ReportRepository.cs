@@ -71,6 +71,15 @@ namespace MilkDistributionWarehouse.Repositories
                     var v = goodsName.Trim().ToLower();
                     query = query.Where(b => b.Goods != null && b.Goods.GoodsName.ToLower().Contains(v));
                 }
+
+                // New: filter by supplierId when provided in filters
+                if (request.Filters.TryGetValue("supplierId", out var supplierId) && !string.IsNullOrWhiteSpace(supplierId))
+                {
+                    if (int.TryParse(supplierId.Trim(), out var sid))
+                    {
+                        query = query.Where(b => b.Goods != null && b.Goods.Supplier != null && b.Goods.Supplier.SupplierId == sid);
+                    }
+                }
             }
 
             if (!string.IsNullOrEmpty(request.Search))
@@ -389,6 +398,25 @@ namespace MilkDistributionWarehouse.Repositories
 
             var mapped = _mapper.Map<List<ReportDto.GoodsReceiptReportDto>>(details);
 
+            // Ensure PurchaseOderId is populated from related entities when AutoMapper didn't map it
+            if (mapped != null && mapped.Count > 0 && details != null && details.Count == mapped.Count)
+            {
+                for (int i = 0; i < mapped.Count; i++)
+                {
+                    if (string.IsNullOrEmpty(mapped[i].PurchaseOderId))
+                    {
+                        mapped[i].PurchaseOderId = details[i].GoodsReceiptNote?.PurchaseOder?.PurchaseOderId;
+                    }
+
+                    // Also ensure SupplierId/SupplierName are populated when possible
+                    if ((mapped[i].SupplierId == 0 || string.IsNullOrEmpty(mapped[i].SupplierName)) && details[i].GoodsReceiptNote?.PurchaseOder?.Supplier != null)
+                    {
+                        mapped[i].SupplierId = details[i].GoodsReceiptNote.PurchaseOder.Supplier.SupplierId;
+                        mapped[i].SupplierName = details[i].GoodsReceiptNote.PurchaseOder.Supplier.CompanyName;
+                    }
+                }
+            }
+
             if (mapped == null || mapped.Count == 0)
                 return new PageResult<ReportDto.GoodsReceiptReportDto>
                 {
@@ -404,6 +432,7 @@ namespace MilkDistributionWarehouse.Repositories
                 {
                     SupplierId = g.Key.SupplierId,
                     SupplierName = g.Select(x => x.SupplierName).FirstOrDefault(s => !string.IsNullOrEmpty(s)),
+                    PurchaseOderId = g.Select(x => x.PurchaseOderId).FirstOrDefault(s => !string.IsNullOrEmpty(s)),
                     GoodsId = g.Key.GoodsId,
                     GoodsCode = g.Select(x => x.GoodsCode).FirstOrDefault(s => !string.IsNullOrEmpty(s)),
                     GoodsName = g.Select(x => x.GoodsName).FirstOrDefault(s => !string.IsNullOrEmpty(s)),
@@ -603,6 +632,8 @@ namespace MilkDistributionWarehouse.Repositories
 
                 return new ReportDto.GoodIssueReportDto
                 {
+                    // include SalesOderId so grouping can pick it up
+                    SalesOderId = d.GoodsIssueNote?.SalesOder?.SalesOrderId,
                     SupplierId = d.Goods?.SupplierId ?? 0,
                     SupplierName = d.Goods?.Supplier?.CompanyName,
                     RetailerId = d.GoodsIssueNote?.SalesOder?.RetailerId ?? 0,
@@ -625,6 +656,7 @@ namespace MilkDistributionWarehouse.Repositories
                 {
                     RetailerId = g.Key.RetailerId,
                     RetailerName = g.Select(x => x.RetailerName).FirstOrDefault(s => !string.IsNullOrEmpty(s)),
+                    SalesOderId = g.Select(x => x.SalesOderId).FirstOrDefault(s => !string.IsNullOrEmpty(s)),
                     SupplierId = g.Key.SupplierId,
                     SupplierName = g.Select(x => x.SupplierName).FirstOrDefault(s => !string.IsNullOrEmpty(s)),
                     GoodsId = g.Key.GoodsId,

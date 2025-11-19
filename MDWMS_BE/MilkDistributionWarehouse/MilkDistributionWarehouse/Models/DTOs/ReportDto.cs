@@ -56,6 +56,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
         {
             public int SupplierId { get; set; }
             public string SupplierName { get; set; }
+            public string PurchaseOderId { get; set; }
             public int GoodsId { get; set; }
             public string GoodsCode { get; set; }
             public string GoodsName { get; set; }
@@ -73,6 +74,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public string SupplierName { get; set; }
             public int RetailerId { get; set; }
             public string RetailerName { get; set; }
+            public string SalesOderId { get; set; }
             public int GoodsId { get; set; }
             public string GoodsCode { get; set; }
             public string GoodsName { get; set; }
