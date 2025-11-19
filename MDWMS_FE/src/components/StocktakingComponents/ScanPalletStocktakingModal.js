@@ -446,12 +446,12 @@ export default function ScanPalletStocktakingModal({
         try {
             setLoading(true);
 
-            // Kiểm tra nếu không có pallet dự kiến, gọi API confirm location counted
-            if (expectedPallets.length === 0) {
+            // Kiểm tra nếu cả pallet dự kiến và không mong đợi đều rỗng, gọi API confirm location counted
+            if (expectedPallets.length === 0 && unexpectedPallets.length === 0) {
                 if (stocktakingLocationId) {
                     await confirmStocktakingLocationCounted(stocktakingLocationId);
                     if (window.showToast) {
-                        window.showToast("Xác nhận đã kiểm kê thành công! (Không có pallet dự kiến)", "success");
+                        window.showToast("Xác nhận đã kiểm kê thành công! (Không có pallet)", "success");
                     }
 
                     // Gọi callback nếu có
@@ -468,6 +468,22 @@ export default function ScanPalletStocktakingModal({
                 }
             }
 
+            // Lưu tất cả pallet không mong đợi (đã được quét vào) - gọi surplusStocktakingPallet
+            const surplusPromises = unexpectedPallets
+                .map(pallet => {
+                    // Sử dụng số lượng thực tế nếu có, nếu không thì dùng số lượng dự kiến, mặc định là 0
+                    const actualQuantity = pallet.actualPackageQuantity !== null &&
+                        pallet.actualPackageQuantity !== undefined
+                        ? pallet.actualPackageQuantity
+                        : (pallet.expectedPackageQuantity ?? 0);
+
+                    return surplusStocktakingPallet({
+                        stocktakingPalletId: pallet.stocktakingPalletId,
+                        actualPackageQuantity: actualQuantity,
+                        note: pallet.note || ""
+                    });
+                });
+
             // Lưu tất cả pallet dự kiến có số lượng thực tế (match)
             const matchPromises = expectedPallets
                 .filter(p =>
@@ -478,21 +494,6 @@ export default function ScanPalletStocktakingModal({
                 )
                 .map(pallet =>
                     matchStocktakingPallet({
-                        stocktakingPalletId: pallet.stocktakingPalletId,
-                        actualPackageQuantity: pallet.actualPackageQuantity,
-                        note: pallet.note || ""
-                    })
-                );
-
-            // Lưu tất cả pallet không mong đợi có số lượng thực tế (surplus)
-            const surplusPromises = unexpectedPallets
-                .filter(p =>
-                    p.actualPackageQuantity !== null &&
-                    p.actualPackageQuantity !== undefined &&
-                    p.actualPackageQuantity >= 0
-                )
-                .map(pallet =>
-                    surplusStocktakingPallet({
                         stocktakingPalletId: pallet.stocktakingPalletId,
                         actualPackageQuantity: pallet.actualPackageQuantity,
                         note: pallet.note || ""
