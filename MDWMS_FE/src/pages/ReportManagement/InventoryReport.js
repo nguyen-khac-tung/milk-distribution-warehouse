@@ -633,8 +633,8 @@ export default function InventoryReport({ onClose }) {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-600">Báo cáo tồn kho</h1>
-            <p className="text-slate-600 mt-1">Theo dõi tồn kho chi tiết theo lô</p>
+            <h1 className="text-2xl font-bold text-slate-600">Báo cáo tồn kho hiện tại</h1>
+            <p className="text-slate-600 mt-1">Theo dõi tồn kho chi tiết hiện tại</p>
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -676,7 +676,7 @@ export default function InventoryReport({ onClose }) {
             </div>
 
             {/* Inventory Trend Chart */}
-            <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
+            {/* <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-semibold text-slate-700">
                   Xu hướng tồn kho
@@ -702,7 +702,7 @@ export default function InventoryReport({ onClose }) {
                 </DropdownMenu>
               </div>
               <InventoryTrendChart data={inventoryData} timeRange={timeRange} />
-            </div>
+            </div> */}
           </>
         )}
 
@@ -714,11 +714,11 @@ export default function InventoryReport({ onClose }) {
             searchPlaceholder="Tìm kiếm theo mã lô, tên sản phẩm..."
             timeRange={timeRange}
             setTimeRange={setTimeRange}
-            timeRangeOptions={[
-              { value: "week", label: "Tuần này" },
-              { value: "month", label: "Tháng này" },
-              { value: "year", label: "Năm nay" }
-            ]}
+            // timeRangeOptions={[
+            //   { value: "week", label: "Tuần này" },
+            //   { value: "month", label: "Tháng này" },
+            //   { value: "year", label: "Năm nay" }
+            // ]}
             areaId={areaId}
             setAreaId={setAreaId}
             areas={areas}
