@@ -785,6 +785,12 @@ const GoodsIssueNoteDetail = () => {
                                     </h3>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
                                         <div>
+                                            <div className="text-xs text-gray-500">Mã đơn bán hàng</div>
+                                            <div className="text-base font-medium text-gray-900">
+                                                {goodsIssueNote.salesOderId || "N/A"}
+                                            </div>
+                                        </div>
+                                        <div>
                                             <div className="text-xs text-gray-500">Người tạo</div>
                                             <div className="text-base font-medium text-gray-900">
                                                 {goodsIssueNote.createdByName || "N/A"}

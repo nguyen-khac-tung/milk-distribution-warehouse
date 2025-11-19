@@ -276,3 +276,21 @@ export const getAvailableReceiversDropDown = async (purchaseOrderId) => {
     }
 };
 
+// Lấy danh sách Picker khả dụng theo disposalRequestId
+export const GetAvailableDisposalPickersDropDown = async (disposalRequestId) => {
+    try {
+        if (!disposalRequestId) {
+            throw new Error("Thiếu disposalRequestId");
+        }
+
+        const res = await api.get(`/User/GetAvailableDisposalPickersDropDown/${disposalRequestId}`);
+        console.log("GetAvailableDisposalPickersDropDown:", res.data);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching available pickers:", error);
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
+        throw error;
+    }
+};
