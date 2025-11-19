@@ -15,6 +15,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, StocktakingLocationResponse?)> UpdateStocktakingLocationStatus<T>(T update) where T : StocktakingLocationUpdateStatus;
         Task<(string, List<StocktakingLocationRejectStatus>?)> RejectStocktakingLocationBulk(List<StocktakingLocationRejectStatus> update);
         Task<(string, List<StocktakingLocationCancelStatus>?)> CancelStocktakingLocationBulk(List<StocktakingLocationCancelStatus> update);
+        Task<(string, StocktakingLocationResponse?)> UpdateStocktakingLocation(StocktakingLocationUpdate update);
     }
 
     public class StocktakingLocationService : IStocktakingLocationService
@@ -79,6 +80,25 @@ namespace MilkDistributionWarehouse.Services
                 return (msg, default);
 
             return ("", create);
+        }
+
+        public async Task<(string, StocktakingLocationResponse?)> UpdateStocktakingLocation(StocktakingLocationUpdate update)
+        {
+            if (update == null)
+                return ("Dữ liệu cập nhật kiểm kê vị trí không hợp lệ.", default);
+
+            var stocktakingLocationExist = await _stocktakingLocationRepository.GetStocktakingLocationById(update.StocktakingLocationId);
+            if (stocktakingLocationExist == null)
+                return ("Kiểm kê vị trí không tồn tại trong hệ thống.", default);
+
+            stocktakingLocationExist.Note = update.Note;
+            stocktakingLocationExist.UpdateAt = DateTime.Now;
+
+            var updateResult = await _stocktakingLocationRepository.UpdateStocktakingLocation(stocktakingLocationExist);
+            if (updateResult == 0)
+                return ("Cập nhật trạng thái kiểm kê vị trí thất bại.", default);
+
+            return ("", default);
         }
 
         public async Task<(string, StocktakingLocationResponse?)> UpdateStocktakingLocationStatus<T>(T update) where T : StocktakingLocationUpdateStatus

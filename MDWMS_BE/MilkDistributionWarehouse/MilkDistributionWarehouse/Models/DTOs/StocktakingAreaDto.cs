@@ -60,6 +60,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
     public class StocktakingAreaApprovalResponse
     {
+        public List<StocktakingLocationFail> StocktakingLocationFails { get; set; }
         public List<StocktakingLocationWarming> StocktakingLocationWarmings { get; set; }
     }
 }
