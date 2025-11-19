@@ -103,9 +103,13 @@ namespace MilkDistributionWarehouse.Services
             }
             else
             {
+                var stocktakingLocation = await _stocktakingLocationRepository.GetStocktakingLocationById(scanner.StocktakingLocationId);
+                if (stocktakingLocation == null)
+                    return ("Dữ liệu kiểm kê vị trí trống.", default);
+
                 var palletInOther = await _stocktakingPalletRepository
                     .GetScannedPalletInOtherLocationAsync(scanner.PalletId, scanner.StocktakingLocationId,
-                        (Guid)stocktakingPalletExist.StocktakingLocation.StocktakingAreaId);
+                        (Guid)stocktakingLocation.StocktakingAreaId);
 
                 if (palletInOther != null)
                     return ($"Kệ kê hàng đã được quét ở vị trí có mã vị trí {palletInOther.StocktakingLocation.Location.LocationCode}".ToMessageForUser(), default);

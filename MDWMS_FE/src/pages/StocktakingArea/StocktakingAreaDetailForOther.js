@@ -381,26 +381,42 @@ const StocktakingAreaDetailForOther = () => {
             setApprovingAreas(prev => new Set(prev).add(areaId));
             const response = await approveStocktakingArea(areaId);
 
-            // Lấy warnings từ response
-            const warnings = response?.data?.stocktakingLocationWarmings || response?.stocktakingLocationWarmings || [];
+            // Lấy data từ response - response có thể là response.data hoặc response trực tiếp
+            const responseData = response?.data || response;
 
-            // Tạo map locationId -> warnings
-            const warningsMap = {};
-            warnings.forEach(warning => {
-                const locationId = warning.stocktakingLocationId;
-                if (!warningsMap[locationId]) {
-                    warningsMap[locationId] = [];
+            // Lấy warnings và fails từ response data
+            const warnings = responseData?.stocktakingLocationWarmings || [];
+            const fails = responseData?.stocktakingLocationFails || [];
+
+            // Gộp cả warnings và fails lại để hiển thị (cả hai đều có cấu trúc tương tự)
+            const allAlerts = [...warnings, ...fails];
+
+            // Tạo map locationId -> alerts (warnings + fails)
+            const alertsMap = {};
+            allAlerts.forEach(alert => {
+                const locationId = alert.stocktakingLocationId;
+                if (!alertsMap[locationId]) {
+                    alertsMap[locationId] = [];
                 }
-                warningsMap[locationId].push(warning);
+                alertsMap[locationId].push(alert);
             });
 
-            // Cập nhật state warnings
+            // Cập nhật state warnings (giữ tên state cũ để không phá vỡ UI)
             setLocationWarnings(prev => ({
                 ...prev,
-                ...warningsMap
+                ...alertsMap
             }));
 
-            if (warnings.length > 0) {
+            // Hiển thị thông báo
+            if (fails.length > 0 && warnings.length > 0) {
+                if (window.showToast) {
+                    window.showToast(`Có ${fails.length} lỗi và ${warnings.length} cảnh báo cần kiểm tra.`, 'warning');
+                }
+            } else if (fails.length > 0) {
+                if (window.showToast) {
+                    window.showToast(`Có ${fails.length} lỗi cần kiểm tra.`, 'error');
+                }
+            } else if (warnings.length > 0) {
                 if (window.showToast) {
                     window.showToast(`Có ${warnings.length} cảnh báo cần kiểm tra.`, 'warning');
                 }
