@@ -72,7 +72,7 @@ import {
   Cell,
 } from "recharts"
 
-import { getLocationReport, getGoodsReceiptReport, getGoodsIssueReport } from "../../services/DashboardService"
+import { getLocationReport, getGoodsReceiptReport, getGoodsIssueReport, getInventoryReport } from "../../services/DashboardService"
 import { getAreaDropdown } from "../../services/AreaServices"
 import WarehouseEventCalendar from "./WarehouseEventCalendar"
 import WarehousePerformance from "./WarehousePerformance"
@@ -98,6 +98,10 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
   const [purchaseOrdersStats, setPurchaseOrdersStats] = useState({ current: 0, previous: 0, change: 0 })
   const [salesOrdersStats, setSalesOrdersStats] = useState({ current: 0, previous: 0, change: 0 })
   const [chartLoading, setChartLoading] = useState(false)
+  const [inventoryStats, setInventoryStats] = useState({ current: 0, previous: 0, change: 0 })
+  const [inventoryLoading, setInventoryLoading] = useState(false)
+  const [activityStats, setActivityStats] = useState({ emptyAreas: 0, fullAreas: 0, products: 0 })
+  const [activityLoading, setActivityLoading] = useState(false)
   // const { toast } = useToast()
 
   // Mock toast function
@@ -147,13 +151,13 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
       try {
         setChartLoading(true)
         const weekDays = getCurrentWeekDays()
-        
+
         // Get current week date range (Sunday to Saturday)
         const sunday = weekDays[0].date
         const saturday = weekDays[6].date
         const fromDate = sunday.format('YYYY-MM-DD')
         const toDate = saturday.format('YYYY-MM-DD')
-        
+
         // Get previous week date range for comparison
         const prevSunday = sunday.subtract(7, 'day')
         const prevSaturday = saturday.subtract(7, 'day')
@@ -185,7 +189,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
         // Calculate stats
         const currentPurchaseCount = currentReceiptsList.length
         const previousPurchaseCount = previousReceiptsList.length
-        const purchaseChange = previousPurchaseCount > 0 
+        const purchaseChange = previousPurchaseCount > 0
           ? ((currentPurchaseCount - previousPurchaseCount) / previousPurchaseCount * 100).toFixed(0)
           : currentPurchaseCount > 0 ? 100 : 0
 
@@ -339,6 +343,94 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
     }
   }, [activeSection, selectedAreaId])
 
+  // Fetch inventory report data for stats
+  useEffect(() => {
+    const fetchInventoryStats = async () => {
+      try {
+        setInventoryLoading(true)
+
+        // Fetch current inventory data - get all items to calculate total quantity
+        // Note: Inventory report shows current stock, not weekly comparison
+        const currentInventory = await getInventoryReport({
+          pageNumber: 1,
+          pageSize: 1000 // Get all items to calculate total
+        }).catch(() => ({ items: [], totalCount: 0 }))
+
+        // Calculate total package quantity from all items
+        const currentCount = currentInventory?.items?.reduce((sum, item) =>
+          sum + (item.totalPackageQuantity || 0), 0) || 0
+
+        // For comparison, we can't easily get previous week data without date filter support
+        // So we'll show current count and set previous to 0 or use current as baseline
+        const previousCount = 0 // Placeholder - could be fetched separately if needed
+        const change = 0 // No comparison data available
+
+        setInventoryStats({
+          current: currentCount,
+          previous: previousCount,
+          change: change
+        })
+      } catch (error) {
+        console.error("Error fetching inventory stats:", error)
+        setInventoryStats({ current: 0, previous: 0, change: 0 })
+      } finally {
+        setInventoryLoading(false)
+      }
+    }
+
+    if (activeSection === "dashboard") {
+      fetchInventoryStats()
+    }
+  }, [activeSection])
+
+  // Fetch activity stats (empty areas, full areas, products)
+  useEffect(() => {
+    const fetchActivityStats = async () => {
+      try {
+        setActivityLoading(true)
+        const locationData = await getLocationReport({})
+
+        // Calculate empty and full areas from areaDetails
+        const emptyAreas = locationData?.areaDetails?.filter(area =>
+          area.availableLocationCount > 0
+        ).length || 0
+
+        const fullAreas = locationData?.areaDetails?.filter(area =>
+          area.availableLocationCount === 0 && area.totalLocations > 0
+        ).length || 0
+
+        // Get total products - count unique goods codes from inventory report
+        const inventoryData = await getInventoryReport({
+          pageNumber: 1,
+          pageSize: 1000 // Get all items to count unique products
+        }).catch(() => ({ items: [] }))
+
+        // Count unique goods codes (different products)
+        const uniqueProducts = new Set(
+          inventoryData?.items
+            ?.map(item => item.goodsCode || item.goodCode)
+            .filter(code => code) || []
+        )
+        const products = uniqueProducts.size
+
+        setActivityStats({
+          emptyAreas,
+          fullAreas,
+          products
+        })
+      } catch (error) {
+        console.error("Error fetching activity stats:", error)
+        setActivityStats({ emptyAreas: 0, fullAreas: 0, products: 0 })
+      } finally {
+        setActivityLoading(false)
+      }
+    }
+
+    if (activeSection === "dashboard") {
+      fetchActivityStats()
+    }
+  }, [activeSection])
+
 
   // Get selected area name for display
   const selectedAreaName = selectedAreaId
@@ -358,81 +450,6 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
       color: "#F59E0B"
     }
   ].filter(item => item.value > 0) // Only show items with value > 0
-
-  const categoryData = [
-    { name: "Sữa tươi", value: 35 },
-    { name: "Sữa chua", value: 45 },
-    { name: "Phô mai", value: 55 },
-    { name: "Bơ", value: 25 },
-  ]
-
-  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"]
-
-  const foodOrders = [
-    {
-      id: "FO-1234",
-      guest: "Ram Kailash",
-      room: "101",
-      items: ["Chicken Curry", "Naan Bread", "Rice"],
-      total: "rsp.850",
-      status: "Delivered",
-      time: "12:30 PM",
-    },
-    {
-      id: "FO-1235",
-      guest: "Samira Karki",
-      room: "205",
-      items: ["Vegetable Pasta", "Garlic Bread", "Tiramisu"],
-      total: "rsp.1200",
-      status: "Preparing",
-      time: "1:15 PM",
-    },
-    {
-      id: "FO-1236",
-      guest: "Jeevan Rai",
-      room: "310",
-      items: ["Club Sandwich", "French Fries", "Coke"],
-      total: "rsp.650",
-      status: "On the way",
-      time: "1:45 PM",
-    },
-  ]
-
-  const invoices = [
-    {
-      id: "INV-2023-001",
-      guest: "Ram Kailash",
-      date: "26 Jul 2023",
-      amount: "rsp.1500",
-      status: "Paid",
-      items: [
-        { description: "Room Charges (2 nights)", amount: "rsp.1200" },
-        { description: "Food & Beverages", amount: "rsp.300" },
-      ],
-    },
-    {
-      id: "INV-2023-002",
-      guest: "Samira Karki",
-      date: "25 Jul 2023",
-      amount: "rsp.5500",
-      status: "Paid",
-      items: [
-        { description: "Room Charges (4 nights)", amount: "rsp.4800" },
-        { description: "Food & Beverages", amount: "rsp.700" },
-      ],
-    },
-    {
-      id: "INV-2023-003",
-      guest: "Jeevan Rai",
-      date: "24 Jul 2023",
-      amount: "rsp.2500",
-      status: "Pending",
-      items: [
-        { description: "Room Charges (1 night)", amount: "rsp.2000" },
-        { description: "Food & Beverages", amount: "rsp.500" },
-      ],
-    },
-  ]
 
 
   const renderDashboard = () => {
@@ -485,11 +502,10 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                 <div className="flex items-center">
                   <h3 className="text-2xl font-bold mr-2">{purchaseOrdersStats.current}</h3>
                   {purchaseOrdersStats.change !== 0 && (
-                    <span className={`text-xs px-1.5 py-0.5 rounded ${
-                      purchaseOrdersStats.change > 0 
-                        ? 'bg-green-100 text-green-600' 
+                    <span className={`text-xs px-1.5 py-0.5 rounded ${purchaseOrdersStats.change > 0
+                        ? 'bg-green-100 text-green-600'
                         : 'bg-red-100 text-red-600'
-                    }`}>
+                      }`}>
                       {purchaseOrdersStats.change > 0 ? '+' : ''}{purchaseOrdersStats.change}%
                     </span>
                   )}
@@ -525,11 +541,10 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                 <div className="flex items-center">
                   <h3 className="text-2xl font-bold mr-2">{salesOrdersStats.current}</h3>
                   {salesOrdersStats.change !== 0 && (
-                    <span className={`text-xs px-1.5 py-0.5 rounded ${
-                      salesOrdersStats.change > 0 
-                        ? 'bg-green-100 text-green-600' 
+                    <span className={`text-xs px-1.5 py-0.5 rounded ${salesOrdersStats.change > 0
+                        ? 'bg-green-100 text-green-600'
                         : 'bg-red-100 text-red-600'
-                    }`}>
+                      }`}>
                       {salesOrdersStats.change > 0 ? '+' : ''}{salesOrdersStats.change}%
                     </span>
                   )}
@@ -564,47 +579,70 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                 <p className="text-sm text-gray-500">
                   Tồn kho <span className="text-xs">(Tuần này)</span>
                 </p>
-                <div className="flex items-center">
-                  <h3 className="text-2xl font-bold mr-2">237</h3>
-                  <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-600 rounded">+31%</span>
-                </div>
-                <p className="text-xs text-gray-500">Tuần trước: 187</p>
+                {inventoryLoading ? (
+                  <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-cyan-500 mr-2"></div>
+                    <span className="text-xs text-gray-500">Đang tải...</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center">
+                      <h3 className="text-2xl font-bold mr-2">{inventoryStats.current}(thùng)</h3>
+                      {inventoryStats.change !== 0 && (
+                        <span className={`text-xs px-1.5 py-0.5 rounded ${inventoryStats.change > 0
+                            ? 'bg-green-100 text-green-600'
+                            : 'bg-red-100 text-red-600'
+                          }`}>
+                          {inventoryStats.change > 0 ? '+' : ''}{inventoryStats.change}%
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500">Tuần trước: {inventoryStats.previous}</p>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
               <p className="text-sm text-gray-500 mb-2">Hoạt động hôm nay</p>
-              <div className="flex justify-between mb-2">
-                <div className="text-center">
-                  <div className="bg-blue-500 text-white rounded-full w-10 h-10 flex items-center justify-center mx-auto mb-1">
-                    <span>5</span>
-                  </div>
-                  <p className="text-xs">
-                    Khu vực
-                    <br />
-                    Trống
-                  </p>
+              {activityLoading ? (
+                <div className="flex items-center justify-center h-20">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500"></div>
                 </div>
-                <div className="text-center">
-                  <div className="bg-orange-500 text-white rounded-full w-10 h-10 flex items-center justify-center mx-auto mb-1">
-                    <span>10</span>
+              ) : (
+                <div className="flex justify-between mb-2">
+                  <div className="text-center">
+                    <div className="bg-blue-500 text-white rounded-full w-10 h-10 flex items-center justify-center mx-auto mb-1">
+                      <span>{activityStats.emptyAreas}</span>
+                    </div>
+                    <p className="text-xs">
+                      Khu vực
+                      <br />
+                      Trống
+                    </p>
                   </div>
-                  <p className="text-xs">
-                    Khu vực
-                    <br />
-                    Đầy
-                  </p>
-                </div>
-                <div className="text-center">
-                  <div className="bg-green-500 text-white rounded-full w-10 h-10 flex items-center justify-center mx-auto mb-1">
-                    <span>15</span>
+                  <div className="text-center">
+                    <div className="bg-orange-500 text-white rounded-full w-10 h-10 flex items-center justify-center mx-auto mb-1">
+                      <span>{activityStats.fullAreas}</span>
+                    </div>
+                    <p className="text-xs">
+                      Khu vực
+                      <br />
+                      Đầy
+                    </p>
                   </div>
-                  <p className="text-xs">Sản phẩm</p>
+                  <div className="text-center">
+                    <div className="bg-green-500 text-white rounded-full w-10 h-10 flex items-center justify-center mx-auto mb-1">
+                      <span>{activityStats.products}</span>
+                    </div>
+                    <p className="text-xs">Sản phẩm</p>
+                  </div>
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
+
         </div>
 
         {/* Charts */}
