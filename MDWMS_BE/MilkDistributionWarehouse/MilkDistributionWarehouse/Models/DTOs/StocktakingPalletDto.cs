@@ -18,12 +18,15 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
     public class StocktakingPalletCreate
     {
+        [Required(ErrorMessage = "Mã kiểm kê vị trí là bắt buộc.")]
         public Guid StocktakingLocationId { get; set; }
+        [Required(ErrorMessage = "Mã vị trí là bắt buộc.")]
         public int LocationId { get; set; }
     }
 
     public class StocktakingPalletUpdateStatus
     {
+        [Required(ErrorMessage = "Mã kiểm kê kệ kê hàng là bắt buộc.")]
         public Guid StocktakingPalletId { get; set; }
     }
 
@@ -48,12 +51,16 @@ namespace MilkDistributionWarehouse.Models.DTOs
     public class StocktakingPalletSurplusStatus : StocktakingPalletUpdateStatus
     {
         public string Note { get; set; }
+        [Required(ErrorMessage = "Số lượng thực tế trong kệ kê hàng là bắt buộc.")]
+        [Range(0, int.MaxValue, ErrorMessage = "Số lượng thực tế phải lớn hơn hoặc bằng 0.")]
         public int ActualPackageQuantity { get; set; }
     }
 
     public class StocktakingPalletScanner
     {
+        [Required(ErrorMessage = "Mã kiểm kê vị trí là bắt buộc")]
         public Guid StocktakingLocationId { get; set; }
+        [Required(ErrorMessage = "Mã kệ kê hàng là bắt buộc")]
         public string PalletId { get; set; }
     }
 

@@ -200,7 +200,7 @@ namespace MilkDistributionWarehouse.Services
                 {
                     StocktakingSheetAssignStatus assignStatus => await HandleAssignStatus(stocktakingSheetExist, assignStatus, userId),
                     StocktakingSheetReAssignStatus reAssingStatus => await HandleReAssignStatus(stocktakingSheetExist, reAssingStatus, userId),
-                    StocktakingSheetCancelStatus => HandleCancelStatus(stocktakingSheetExist, userId),
+                    StocktakingSheetCancelStatus => await HandleCancelStatus(stocktakingSheetExist, userId),
                     StocktakingSheetInProgressStatus => await HandleInProgressStatus(stocktakingSheetExist, userId),
                     //StocktakingSheetApprovalStatus => 
                     StocktakingSheetCompletedStatus completedStatus => HandleCompletedStatus(stocktakingSheetExist, completedStatus.Note),
@@ -312,7 +312,7 @@ namespace MilkDistributionWarehouse.Services
             return string.Empty;
         }
 
-        private string HandleCancelStatus(StocktakingSheet sheet, int? userId)
+        private async Task<string> HandleCancelStatus(StocktakingSheet sheet, int? userId)
         {
             if (!IsWarehouseManager(sheet, userId))
                 return "Bạn không có quyền thực hiện chức năng cập nhật trạng thái trong phiếu kiểm kê.".ToMessageForUser();
@@ -322,6 +322,11 @@ namespace MilkDistributionWarehouse.Services
 
             if (!IsBeforeEditDeadline(sheet.StartTime))
                 return $"Chỉ được chuyển sang trạng thái Huỷ khi phiếu kiểm kê trước thời gian bắt đầu {_hoursBeforeStartTime} giờ".ToMessageForUser();
+
+            var hasAnyStockArea = await _stocktakingAreaRepository.HasAnyPendingStocktakingArea(sheet.StocktakingSheetId);
+
+            if (hasAnyStockArea)
+                return "Không thể huỷ đơn kiểm kê khi nhân viên đã bắt đầu kiểm kê.".ToMessageForUser();
 
             sheet.Status = StocktakingStatus.Cancelled;
             return string.Empty;

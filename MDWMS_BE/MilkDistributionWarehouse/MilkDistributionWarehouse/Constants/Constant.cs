@@ -209,6 +209,7 @@
         public const int Matched = 2;       //Đúng pallet
         public const int Missing = 3;       //Thiếu pallet
         public const int Surplus = 4;       //Thừa pallet
+        public const int Mislocated = 5;    //Sai vị trí
     }
 
     /// <summary>
@@ -233,5 +234,15 @@
     public static class StocktakingSettings
     {
         public const int HoursBeforeStartToAllowEdit = 6;
+    }
+
+    /// <summary>
+    /// Các trạng thái của InventoryLedger (TypeChange)
+    /// </summary>
+    public static class InventoryLegerTypeChange
+    {
+        public const int Receipt = 1;
+        public const int Issue = 2;
+        public const int Disposal = 3;
     }
 }
