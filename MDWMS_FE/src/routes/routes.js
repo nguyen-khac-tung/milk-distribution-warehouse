@@ -46,6 +46,7 @@ import DisposalList from "../pages/DisposalPage/DisposalList";
 import DisposalDetail from "../pages/DisposalPage/DisposalDetail";
 import CreateDisposal from "../pages/DisposalPage/CreateDisposal";
 import UpdateDisposal from "../pages/DisposalPage/UpdateDisposal";
+import DisposalNoteDetail from "../pages/DisposalNotePage/DisposalNoteDetail";
 
 export const routes = [
     {
@@ -401,14 +402,14 @@ export const routes = [
         ),
         isShowHeader: true,
     },
-    // {
-    //     path: "/goods-issue-note-detail/:id",
-    //     page: () => (
-    //         <ProtectedRoute requiredPermission={PERMISSIONS.SALES_ORDER_VIEW_DELIVERY_SLIP}>
-    //             <GoodsIssueNoteDetail />
-    //         </ProtectedRoute>
-    //     ),
-    //     isShowHeader: true,
-    // },
+    {
+        path: "/disposal-note-detail/:id",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.DISPOSAL_REQUEST_VIEW_DETAILS}>
+                <DisposalNoteDetail />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
     { path: "*", page: NotFoundPage },
 ];
