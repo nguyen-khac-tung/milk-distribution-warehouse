@@ -19,10 +19,11 @@ import { usePermissions } from "../../hooks/usePermissions";
 import PermissionWrapper from "../../components/Common/PermissionWrapper";
 import DisposalTable from "../../components/DisposalComponents/DisposalTable";
 import SaleOrderFilterToggle from "../../components/SaleOrderCompoents/SaleOrderFilterToggle";
+import DisposalFilterToggle from "../../components/DisposalComponents/DisposalFilterToggle";
 
 const DisposalList = () => {
     const navigate = useNavigate();
-    const { hasPermission, userRoles } = usePermissions();
+    const { hasPermission, userRoles, isWarehouseManager, isWarehouseStaff } = usePermissions();
     const [sortField, setSortField] = useState("");
     const [sortAscending, setSortAscending] = useState(true);
     const [loading, setLoading] = useState(true);
@@ -206,6 +207,10 @@ const DisposalList = () => {
     const handleDeleteClick = (request) => {
         setSelectedDisposalRequest(request);
         setShowDeleteModal(true);
+    };
+
+    const handleViewDisposalNoteClick = (request) => {
+        navigate(`/disposal-note-detail/${request.disposalRequestId}`);
     };
 
     const handleDeleteConfirm = async () => {
@@ -510,7 +515,7 @@ const DisposalList = () => {
 
                 {/* Search and Table Combined */}
                 <Card className="shadow-sm border border-slate-200 overflow-visible bg-gray-50">
-                    <SaleOrderFilterToggle
+                    <DisposalFilterToggle
                         searchQuery={searchQuery}
                         setSearchQuery={setSearchQuery}
                         searchPlaceholder="Tìm kiếm theo mã yêu cầu, người duyệt, người tạo..."
@@ -605,8 +610,11 @@ const DisposalList = () => {
                         onView={handleViewClick}
                         onEdit={handleEditClick}
                         onDelete={handleDeleteClick}
+                        onViewDisposalNote={handleViewDisposalNoteClick}
                         onClearFilters={clearAllFilters}
                         loading={loading}
+                        isWarehouseManager={isWarehouseManager}
+                        isWarehouseStaff={isWarehouseStaff}
                     />
                 </Card>
 

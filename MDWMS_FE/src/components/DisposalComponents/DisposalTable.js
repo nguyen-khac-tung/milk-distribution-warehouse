@@ -1,9 +1,9 @@
 import React from "react";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "../ui/table";
-import { ArrowUp, ArrowDown, ArrowUpDown, Eye, Edit, Trash2 } from "lucide-react";
+import { ArrowUp, ArrowDown, ArrowUpDown, Eye, Edit, Trash2, FileText } from "lucide-react";
 import EmptyState from "../Common/EmptyState";
 import { Package } from "lucide-react";
-import { PERMISSIONS } from "../../utils/permissions";
+import { PERMISSIONS, DISPOSAL_REQUEST_STATUS } from "../../utils/permissions";
 import PermissionWrapper from "../Common/PermissionWrapper";
 import StatusDisplayDisposalRequest from "./StatusDisplayDisposalRequest";
 
@@ -16,8 +16,11 @@ const DisposalTable = ({
     onView,
     onEdit,
     onDelete,
+    onViewDisposalNote,
     onClearFilters,
     loading,
+    isWarehouseManager,
+    isWarehouseStaff,
 }) => {
     // Xác định cột nào tồn tại trong dữ liệu (tự động theo role)
     const availableFields = React.useMemo(() => {
@@ -51,6 +54,12 @@ const DisposalTable = ({
 
     const handleEditClick = (request) => {
         onEdit(request);
+    };
+
+    const handleViewDisposalNoteClick = (request) => {
+        if (onViewDisposalNote) {
+            onViewDisposalNote(request);
+        }
     };
 
     return (
@@ -261,6 +270,19 @@ const DisposalTable = ({
                                                         <Eye className="h-4 w-4 text-orange-500" />
                                                     </button>
                                                 </PermissionWrapper>
+
+                                                {/* View Disposal Note Button - Warehouse Manager and Warehouse Staff - Only show when disposal note exists (status >= Picking, because disposal note is created when warehouse staff clicks "Tạo phiếu xuất hủy") */}
+                                                {(isWarehouseManager || isWarehouseStaff) && 
+                                                 request.status && 
+                                                 request.status >= DISPOSAL_REQUEST_STATUS.Picking && (
+                                                    <button
+                                                        className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                        title="Xem phiếu xuất hủy"
+                                                        onClick={() => handleViewDisposalNoteClick(request)}
+                                                    >
+                                                        <FileText className="h-4 w-4 text-green-600" />
+                                                    </button>
+                                                )}
 
                                                 {/* Edit Button - Warehouse Manager for Draft/Rejected */}
                                                 {(request.status === 1 || request.status === 3) && (
