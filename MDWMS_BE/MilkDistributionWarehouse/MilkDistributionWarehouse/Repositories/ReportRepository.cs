@@ -8,6 +8,8 @@ using AutoMapper;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
+using static MilkDistributionWarehouse.Models.DTOs.PalletDto;
+using static MilkDistributionWarehouse.Models.DTOs.LocationDto;
 
 namespace MilkDistributionWarehouse.Repositories
 {
@@ -35,9 +37,14 @@ namespace MilkDistributionWarehouse.Repositories
         {
             var query = _context.Batchs
                 .Include(b => b.Goods)
-                    .ThenInclude(g => g.UnitMeasure) // <- ensure UnitMeasure is loaded
+                    .ThenInclude(g => g.UnitMeasure)
+                .Include(b => b.Goods)
+                    .ThenInclude(g => g.Supplier)
                 .Include(b => b.Pallets)
                     .ThenInclude(p => p.Location)
+                        .ThenInclude(l => l.Area)
+                .Include(b => b.Pallets)
+                    .ThenInclude(p => p.GoodsPacking)
                 .Where(b => b.Status == CommonStatus.Active && b.Pallets.Any(p => p.Status == CommonStatus.Active));
 
             if (areaId.HasValue)
@@ -45,7 +52,6 @@ namespace MilkDistributionWarehouse.Repositories
                 query = query.Where(b => b.Pallets.Any(p => p.Location != null && p.Location.AreaId == areaId.Value));
             }
 
-            // Apply filters from request.Filters (if any)
             if (request.Filters != null && request.Filters.Count > 0)
             {
                 if (request.Filters.TryGetValue("batchCode", out var batchCode) && !string.IsNullOrWhiteSpace(batchCode))
@@ -65,9 +71,17 @@ namespace MilkDistributionWarehouse.Repositories
                     var v = goodsName.Trim().ToLower();
                     query = query.Where(b => b.Goods != null && b.Goods.GoodsName.ToLower().Contains(v));
                 }
+
+                // New: filter by supplierId when provided in filters
+                if (request.Filters.TryGetValue("supplierId", out var supplierId) && !string.IsNullOrWhiteSpace(supplierId))
+                {
+                    if (int.TryParse(supplierId.Trim(), out var sid))
+                    {
+                        query = query.Where(b => b.Goods != null && b.Goods.Supplier != null && b.Goods.Supplier.SupplierId == sid);
+                    }
+                }
             }
 
-            // Search filter (global)
             if (!string.IsNullOrEmpty(request.Search))
             {
                 var search = request.Search.ToLower();
@@ -78,10 +92,8 @@ namespace MilkDistributionWarehouse.Repositories
 
             var totalCount = await query.CountAsync(cancellationToken);
 
-            // Sorting
             if (!string.IsNullOrEmpty(request.SortField))
             {
-                // Only support a few fields for demo, can expand as needed
                 switch (request.SortField)
                 {
                     case "BatchCode":
@@ -111,39 +123,139 @@ namespace MilkDistributionWarehouse.Repositories
                     b.BatchCode,
                     b.ManufacturingDate,
                     b.ExpiryDate,
+                    GoodsId = b.Goods != null ? b.Goods.GoodsId : 0,
                     GoodCode = b.Goods != null ? b.Goods.GoodsCode : null,
                     GoodName = b.Goods != null ? b.Goods.GoodsName : null,
                     UnitMeasureName = b.Goods != null && b.Goods.UnitMeasure != null ? b.Goods.UnitMeasure.Name : null,
+                    SupplierId = b.Goods != null && b.Goods.Supplier != null ? b.Goods.Supplier.SupplierId : 0,
+                    CompanyName = b.Goods != null && b.Goods.Supplier != null ? b.Goods.Supplier.CompanyName : null,
                     Pallets = b.Pallets
                         .Where(p => p.Status == CommonStatus.Active
                             && (!areaId.HasValue || (p.Location != null && p.Location.AreaId == areaId.Value)))
                         .Select(p => new
                         {
                             p.PalletId,
+                            p.GoodsReceiptNoteId,
+                            GoodsPackingId = p.GoodsPacking != null ? (int?)p.GoodsPacking.GoodsPackingId : null,
+                            UnitPerPackage = p.GoodsPacking != null ? p.GoodsPacking.UnitPerPackage : (int?)null,
                             PackageQuantity = p.PackageQuantity ?? 0,
-                            LocationCode = p.Location != null ? p.Location.LocationCode : null
+                            CreateBy = p.CreateBy,
+                            CreateByName = p.CreateByNavigation != null ? p.CreateByNavigation.FullName : null,
+                            BatchId = p.BatchId,
+                            BatchCode = b.BatchCode,
+                            GoodsId = p.Batch != null && p.Batch.Goods != null ? p.Batch.Goods.GoodsId : (int?)null,
+                            GoodsCode = p.Batch != null && p.Batch.Goods != null ? p.Batch.Goods.GoodsCode : null,
+                            GoodsName = p.Batch != null && p.Batch.Goods != null ? p.Batch.Goods.GoodsName : null,
+                            LocationId = p.Location != null ? (int?)p.Location.LocationId : null,
+                            LocationCode = p.Location != null ? p.Location.LocationCode : null,
+                            AreaId = p.Location != null && p.Location.Area != null ? (int?)p.Location.Area.AreaId : null,
+                            AreaName = p.Location != null && p.Location.Area != null ? p.Location.Area.AreaName : null,
+                            AreaCode = p.Location != null && p.Location.Area != null ? p.Location.Area.AreaCode : null,
+                            Rack = p.Location != null ? p.Location.Rack : null,
+                            Row = p.Location != null && p.Location.Row.HasValue ? p.Location.Row : (int?)null,
+                            Column = p.Location != null && p.Location.Column.HasValue ? p.Location.Column : (int?)null,
+                            IsAvailable = p.Location != null && p.Location.IsAvailable.HasValue ? p.Location.IsAvailable : (bool?)null,
+                            LocationStatus = p.Location != null ? p.Location.Status : (int?)null,
+                            LocationCreatedAt = p.Location != null ? p.Location.CreatedAt : (DateTime?)null,
+                            LocationUpdateAt = p.Location != null ? p.Location.UpdateAt : (DateTime?)null,
+                            PalletStatus = p.Status
                         })
                 })
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
 
-            var items = raw.Select(b => new ReportDto.InventoryReportDto
-            {
-                BatchId = b.BatchId,
-                BatchCode = b.BatchCode,
-                ManufacturingDate = b.ManufacturingDate,
-                ExpiryDate = b.ExpiryDate,
-                GoodsCode = b.GoodCode,
-                GoodName = b.GoodName,
-                UnitOfMeasure = b.UnitMeasureName,
-                PalletIds = b.Pallets.Select(p => p.PalletId.ToString()).Where(id => id != null).ToList(),
-                TotalPackageQuantity = b.Pallets.Sum(p => p.PackageQuantity),
-                LocationCodes = b.Pallets.Select(p => p.LocationCode).Where(l => l != null).Distinct().ToList()
-            }).ToList();
+            var expanded = raw
+                .SelectMany(b => b.Pallets.Select(p => new
+                {
+                    b.BatchId,
+                    b.BatchCode,
+                    b.ManufacturingDate,
+                    b.ExpiryDate,
+                    b.GoodsId,
+                    b.GoodCode,
+                    b.GoodName,
+                    b.UnitMeasureName,
+                    b.SupplierId,
+                    b.CompanyName,
+                    PalletId = p.PalletId,
+                    p.GoodsReceiptNoteId,
+                    GoodsPackingId = p.GoodsPackingId ?? 0,
+                    UnitPerPackage = p.UnitPerPackage,
+                    p.PackageQuantity,
+                    CreateBy = p.CreateBy ?? 0,
+                    CreateByName = p.CreateByName,
+                    GoodsCode = p.GoodsCode,
+                    GoodsName = p.GoodsName,
+                    LocationId = p.LocationId ?? 0,
+                    LocationCode = p.LocationCode,
+                    AreaId = p.AreaId ?? 0,
+                    AreaName = p.AreaName,
+                    AreaCode = p.AreaCode,
+                    Rack = p.Rack,
+                    Row = p.Row ?? 0,
+                    Column = p.Column ?? 0,
+                    IsAvailable = p.IsAvailable ?? false,
+                    LocationStatus = p.LocationStatus ?? 0,
+                    LocationCreatedAt = p.LocationCreatedAt,
+                    LocationUpdateAt = p.LocationUpdateAt,
+                    PalletStatus = p.PalletStatus
+                }))
+                .ToList();
+
+            var grouped = expanded
+                .GroupBy(x => new { x.BatchId, x.GoodsPackingId })
+                .Select(g => new ReportDto.InventoryReportDto
+                {
+                    BatchId = g.Key.BatchId,
+                    BatchCode = g.Select(x => x.BatchCode).FirstOrDefault(),
+                    ManufacturingDate = g.Select(x => x.ManufacturingDate).FirstOrDefault(),
+                    ExpiryDate = g.Select(x => x.ExpiryDate).FirstOrDefault(),
+                    GoodsCode = g.Select(x => x.GoodCode).FirstOrDefault(),
+                    GoodName = g.Select(x => x.GoodName).FirstOrDefault(),
+                    UnitOfMeasure = g.Select(x => x.UnitMeasureName).FirstOrDefault(),
+                    GoodsPackingId = g.Key.GoodsPackingId,
+                    UnitPerPackage = g.Select(x => x.UnitPerPackage.HasValue ? x.UnitPerPackage.ToString() : null).FirstOrDefault(u => u != null),
+                    SupplierId = g.Select(x => x.SupplierId).FirstOrDefault(),
+                    CompanyName = g.Select(x => x.CompanyName).FirstOrDefault(),
+                    Pallets = g.Select(p => new PalletResponseDto
+                    {
+                        PalletId = p.PalletId,
+                        GoodsReceiptNoteId = p.GoodsReceiptNoteId,
+                        GoodsPackingId = p.GoodsPackingId,
+                        UnitPerPackage = p.UnitPerPackage,
+                        PackageQuantity = p.PackageQuantity,
+                        CreateBy = p.CreateBy,
+                        CreateByName = p.CreateByName,
+                        BatchId = p.BatchId,
+                        BatchCode = p.BatchCode,
+                        GoodId = p.GoodsId,
+                        GoodName = p.GoodsName,
+                        GoodCode = p.GoodsCode,
+                        LocationId = p.LocationId,
+                        LocationCode = p.LocationCode,
+                    }).ToList(),
+                    TotalPackageQuantity = g.Sum(x => x.PackageQuantity),
+                    Locations = g.Select(x => new LocationResponseDto
+                    {
+                        LocationId = x.LocationId,
+                        LocationCode = x.LocationCode,
+                        AreaId = x.AreaId,
+                        AreaName = x.AreaName,
+                        AreaCode = x.AreaCode,
+                        Rack = x.Rack,
+                        Row = x.Row,
+                        Column = x.Column,
+                        IsAvailable = x.IsAvailable,
+                        Status = x.LocationStatus,
+                        CreatedAt = x.LocationCreatedAt,
+                        UpdateAt = x.LocationUpdateAt
+                    }).Where(l => !string.IsNullOrEmpty(l.LocationCode)).GroupBy(l => l.LocationCode).Select(gl => gl.First()).ToList()
+                })
+                .ToList();
 
             return new PageResult<ReportDto.InventoryReportDto>
             {
-                Items = items,
+                Items = grouped,
                 TotalCount = totalCount,
                 PageNumber = request.PageNumber,
                 PageSize = request.PageSize
@@ -152,7 +264,6 @@ namespace MilkDistributionWarehouse.Repositories
 
         public async Task<ReportDto.LocationReportSummaryDto> GetLocationReportAsync(int? areaId = null, CancellationToken cancellationToken = default)
         {
-            // If areaId provided, compute only for that area
             if (areaId.HasValue)
             {
                 var area = await _context.Areas
@@ -178,7 +289,6 @@ namespace MilkDistributionWarehouse.Repositories
                 return area ?? new ReportDto.LocationReportSummaryDto();
             }
 
-            // Otherwise compute summary across all active areas
             var areas = await _context.Areas
                 .Where(a => a.Status == CommonStatus.Active)
                 .Select(a => new ReportDto.LocationReportDto
@@ -257,15 +367,13 @@ namespace MilkDistributionWarehouse.Repositories
 
             return result;
         }
-            
-        // NEW: Goods receipt report with paging, filtering & sorting support
+
         public async Task<PageResult<ReportDto.GoodsReceiptReportDto>> GetGoodsReceiptReportAsync(PagedRequest request, DateTime? fromDate, DateTime? toDate, CancellationToken cancellationToken = default)
         {
-            // Build base query
             var query = _context.GoodsReceiptNoteDetails
                 .AsNoTracking()
                 .Include(d => d.Goods)
-                    .ThenInclude(g => g.UnitMeasure) // <- ensure UnitMeasure is loaded for mapping
+                    .ThenInclude(g => g.UnitMeasure)
                 .Include(d => d.GoodsPacking)
                 .Include(d => d.GoodsReceiptNote)
                     .ThenInclude(grn => grn.PurchaseOder)
@@ -290,6 +398,25 @@ namespace MilkDistributionWarehouse.Repositories
 
             var mapped = _mapper.Map<List<ReportDto.GoodsReceiptReportDto>>(details);
 
+            // Ensure PurchaseOderId is populated from related entities when AutoMapper didn't map it
+            if (mapped != null && mapped.Count > 0 && details != null && details.Count == mapped.Count)
+            {
+                for (int i = 0; i < mapped.Count; i++)
+                {
+                    if (string.IsNullOrEmpty(mapped[i].PurchaseOderId))
+                    {
+                        mapped[i].PurchaseOderId = details[i].GoodsReceiptNote?.PurchaseOder?.PurchaseOderId;
+                    }
+
+                    // Also ensure SupplierId/SupplierName are populated when possible
+                    if ((mapped[i].SupplierId == 0 || string.IsNullOrEmpty(mapped[i].SupplierName)) && details[i].GoodsReceiptNote?.PurchaseOder?.Supplier != null)
+                    {
+                        mapped[i].SupplierId = details[i].GoodsReceiptNote.PurchaseOder.Supplier.SupplierId;
+                        mapped[i].SupplierName = details[i].GoodsReceiptNote.PurchaseOder.Supplier.CompanyName;
+                    }
+                }
+            }
+
             if (mapped == null || mapped.Count == 0)
                 return new PageResult<ReportDto.GoodsReceiptReportDto>
                 {
@@ -299,13 +426,13 @@ namespace MilkDistributionWarehouse.Repositories
                     PageSize = request.PageSize
                 };
 
-            // group by Supplier + Goods + Packing + ReceiptDate.Date
             var grouped = mapped
                 .GroupBy(d => new { d.SupplierId, d.GoodsId, d.GoodsPackingId, ReceiptDate = d.ReceiptDate?.Date })
                 .Select(g => new ReportDto.GoodsReceiptReportDto
                 {
                     SupplierId = g.Key.SupplierId,
                     SupplierName = g.Select(x => x.SupplierName).FirstOrDefault(s => !string.IsNullOrEmpty(s)),
+                    PurchaseOderId = g.Select(x => x.PurchaseOderId).FirstOrDefault(s => !string.IsNullOrEmpty(s)),
                     GoodsId = g.Key.GoodsId,
                     GoodsCode = g.Select(x => x.GoodsCode).FirstOrDefault(s => !string.IsNullOrEmpty(s)),
                     GoodsName = g.Select(x => x.GoodsName).FirstOrDefault(s => !string.IsNullOrEmpty(s)),
@@ -368,7 +495,6 @@ namespace MilkDistributionWarehouse.Repositories
                 }
             }
 
-            // Global search
             if (!string.IsNullOrEmpty(request.Search))
             {
                 var s = request.Search.Trim();
@@ -379,7 +505,6 @@ namespace MilkDistributionWarehouse.Repositories
                 ).ToList();
             }
 
-            // Sorting - support common fields
             if (!string.IsNullOrEmpty(request.SortField))
             {
                 var sf = request.SortField.Trim();
@@ -413,7 +538,6 @@ namespace MilkDistributionWarehouse.Repositories
             };
         }
 
-        // NEW: Goods Issue report implementation
         public async Task<PageResult<ReportDto.GoodIssueReportDto>> GetGoodsIssueReportAsync(PagedRequest request, DateTime? fromDate, DateTime? toDate, CancellationToken cancellationToken = default)
         {
             var query = _context.GoodsIssueNoteDetails
@@ -421,14 +545,13 @@ namespace MilkDistributionWarehouse.Repositories
                 .Include(d => d.Goods)
                     .ThenInclude(g => g.Supplier)
                 .Include(d => d.Goods)
-                    .ThenInclude(g => g.UnitMeasure) // <- ensure UnitMeasure is loaded for issue report
+                    .ThenInclude(g => g.UnitMeasure)
                 .Include(d => d.GoodsPacking)
                 .Include(d => d.GoodsIssueNote)
                     .ThenInclude(gin => gin.SalesOder)
                         .ThenInclude(so => so.Retailer)
                 .AsQueryable();
 
-            // Only completed issue notes
             query = query.Where(d => d.GoodsIssueNote != null && d.GoodsIssueNote.Status == GoodsIssueNoteStatus.Completed);
 
             if (fromDate.HasValue)
@@ -456,13 +579,11 @@ namespace MilkDistributionWarehouse.Repositories
                 };
             }
 
-            // Map to DTO list
             var mapped = details.Select(d =>
             {
                 var unitPerPackage = d.GoodsPacking?.UnitPerPackage;
                 var issuedPackageQty = 0;
 
-                // prefer IssuedQuantity if present; fallback to PackageQuantity or 0
                 var prop = d.GetType().GetProperty("IssuedQuantity");
                 if (prop != null)
                 {
@@ -485,7 +606,6 @@ namespace MilkDistributionWarehouse.Repositories
                 }
                 else
                 {
-                    // fallback: try PackageQuantity if model has it
                     var pprop = d.GetType().GetProperty("PackageQuantity");
                     if (pprop != null)
                     {
@@ -512,6 +632,8 @@ namespace MilkDistributionWarehouse.Repositories
 
                 return new ReportDto.GoodIssueReportDto
                 {
+                    // include SalesOderId so grouping can pick it up
+                    SalesOderId = d.GoodsIssueNote?.SalesOder?.SalesOrderId,
                     SupplierId = d.Goods?.SupplierId ?? 0,
                     SupplierName = d.Goods?.Supplier?.CompanyName,
                     RetailerId = d.GoodsIssueNote?.SalesOder?.RetailerId ?? 0,
@@ -528,13 +650,13 @@ namespace MilkDistributionWarehouse.Repositories
                 };
             }).ToList();
 
-            // Group by Retailer + Supplier + Goods + Packing + IssueDate.Date
             var grouped = mapped
                 .GroupBy(d => new { d.RetailerId, d.SupplierId, d.GoodsId, d.GoodsPackingId, IssueDate = d.IssueDate?.Date })
                 .Select(g => new ReportDto.GoodIssueReportDto
                 {
                     RetailerId = g.Key.RetailerId,
                     RetailerName = g.Select(x => x.RetailerName).FirstOrDefault(s => !string.IsNullOrEmpty(s)),
+                    SalesOderId = g.Select(x => x.SalesOderId).FirstOrDefault(s => !string.IsNullOrEmpty(s)),
                     SupplierId = g.Key.SupplierId,
                     SupplierName = g.Select(x => x.SupplierName).FirstOrDefault(s => !string.IsNullOrEmpty(s)),
                     GoodsId = g.Key.GoodsId,
@@ -549,7 +671,6 @@ namespace MilkDistributionWarehouse.Repositories
                 })
                 .ToList();
 
-            // Apply filters (supports retailerid, supplierid, goodsid, goodscode, goodsname, goodspackingid, issuedate range)
             if (request.Filters != null && request.Filters.Count > 0)
             {
                 foreach (var f in request.Filters)
@@ -604,7 +725,6 @@ namespace MilkDistributionWarehouse.Repositories
                 }
             }
 
-            // Global search
             if (!string.IsNullOrEmpty(request.Search))
             {
                 var s = request.Search.Trim();
@@ -616,7 +736,6 @@ namespace MilkDistributionWarehouse.Repositories
                 ).ToList();
             }
 
-            // Sorting support (IssueDate, RetailerName, SupplierName, GoodsCode, TotalPackageQuantity)
             if (!string.IsNullOrEmpty(request.SortField))
             {
                 var sf = request.SortField.Trim();

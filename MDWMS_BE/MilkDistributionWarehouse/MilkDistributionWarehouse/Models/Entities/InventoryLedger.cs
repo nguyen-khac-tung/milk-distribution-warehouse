@@ -21,7 +21,7 @@ public partial class InventoryLedger
 
     public int? BalanceAfter { get; set; }
 
-    public string Note { get; set; }
+    public int? TypeChange { get; set; }
 
     public virtual GoodsPacking GoodPacking { get; set; }
 
