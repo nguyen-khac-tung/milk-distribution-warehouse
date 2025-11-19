@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, Calendar, User, X, MapPin, Clock, Thermometer, Droplets, Sun, RotateCcw, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, Calendar, User, MapPin, Clock, Thermometer, Droplets, Sun, RotateCcw, CheckCircle2, AlertTriangle } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
 import { getStocktakingAreaDetailForOtherRoleBySheetId, getStocktakingDetail, getStocktakingPalletDetail, rejectStocktakingLocationRecords, approveStocktakingArea, completeStocktaking } from '../../services/StocktakingService';
@@ -928,9 +928,6 @@ const StocktakingAreaDetailForOther = () => {
                                                                                             <TableHead className="font-semibold text-slate-900 px-4 py-3 text-center">
                                                                                                 Trạng thái
                                                                                             </TableHead>
-                                                                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-center">
-                                                                                                Hoạt động
-                                                                                            </TableHead>
                                                                                         </TableRow>
                                                                                     </TableHeader>
                                                                                     <TableBody>
@@ -968,15 +965,6 @@ const StocktakingAreaDetailForOther = () => {
                                                                                                     </TableCell>
                                                                                                     <TableCell className="px-4 py-3 text-center">
                                                                                                         <PalletStatusDisplay status={status} />
-                                                                                                    </TableCell>
-                                                                                                    <TableCell className="px-4 py-3 text-center">
-                                                                                                        <button
-                                                                                                            onClick={() => handleDeletePackage(pkgId)}
-                                                                                                            className="text-red-500 hover:text-red-700 transition-colors"
-                                                                                                            title="Xóa"
-                                                                                                        >
-                                                                                                            <X className="h-4 w-4" />
-                                                                                                        </button>
                                                                                                     </TableCell>
                                                                                                 </TableRow>
                                                                                             );
