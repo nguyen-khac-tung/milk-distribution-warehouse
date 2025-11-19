@@ -235,4 +235,14 @@
     {
         public const int HoursBeforeStartToAllowEdit = 6;
     }
+
+    /// <summary>
+    /// Các trạng thái của InventoryLedger (TypeChange)
+    /// </summary>
+    public static class InventoryLegerTypeChange
+    {
+        public const int Receipt = 1;
+        public const int Issue = 2;
+        public const int Disposal = 3;
+    }
 }
