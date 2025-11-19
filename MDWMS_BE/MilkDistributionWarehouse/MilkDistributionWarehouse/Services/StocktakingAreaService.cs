@@ -29,9 +29,10 @@ namespace MilkDistributionWarehouse.Services
         private readonly IStocktakingLocationRepository _stocktakingLocationRepository;
         private readonly IStocktakingPalletRepository _stocktakingPalletRepository;
         private readonly IStocktakingSheetRepository _stocktakingSheetRepository;
+        private readonly IUnitOfWork _unitOfWork;
         public StocktakingAreaService(IStocktakingAreaRepository stocktakingAreaRepository, IAreaRepository areaRepository, IMapper mapper,
             IStocktakingLocationRepository stocktakingLocationRepository, IStocktakingPalletRepository stocktakingPalletRepository,
-            IStocktakingSheetRepository stocktakingSheetRepository)
+            IStocktakingSheetRepository stocktakingSheetRepository, IUnitOfWork unitOfWork)
         {
             _stocktakingAreaRepository = stocktakingAreaRepository;
             _areaRepository = areaRepository;
@@ -39,6 +40,7 @@ namespace MilkDistributionWarehouse.Services
             _stocktakingLocationRepository = stocktakingLocationRepository;
             _stocktakingPalletRepository = stocktakingPalletRepository;
             _stocktakingSheetRepository = stocktakingSheetRepository;
+            _unitOfWork = unitOfWork;
         }
 
         public async Task<(string, List<StocktakingAreaDetailDto>?)> GetStocktakingAreaByStocktakingSheetId(string stoctakingSheetId, int? userId)
@@ -154,6 +156,7 @@ namespace MilkDistributionWarehouse.Services
 
             try
             {
+                await _unitOfWork.BeginTransactionAsync();
                 var hasNoPendingApprovalLocations = await _stocktakingLocationRepository.HasLocationsNotPendingApprovalAsync(stocktakingArea.StocktakingAreaId);
 
                 if (stocktakingArea.Status != StockAreaStatus.PendingApproval)
@@ -178,12 +181,14 @@ namespace MilkDistributionWarehouse.Services
                 var updateResult = await _stocktakingAreaRepository.UpdateStocktakingArea(stocktakingArea);
                 if (updateResult == 0) return ("Cập nhật kiểm kê khu vực thất bại.".ToMessageForUser(), default);
 
-                await HandleUpdateStockSheetApproval(stocktakingArea.StocktakingSheetId);
+                await HandleUpdateStockSheetApproval(update.StocktakingAreaId ,stocktakingArea.StocktakingSheetId);
 
+                await _unitOfWork.CommitTransactionAsync();
                 return ("", new StocktakingAreaApprovalResponse { StocktakingLocationWarmings = new List<StocktakingLocationWarming>() });
             }
             catch (Exception ex)
             {
+                await _unitOfWork.RollbackTransactionAsync();
                 return ($"{ex.Message}", default);
             }
         }
@@ -197,9 +202,9 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
-        private async Task HandleUpdateStockSheetApproval(string stocktakingSheetId)
+        private async Task HandleUpdateStockSheetApproval(Guid stocktakingAreaId, string stocktakingSheetId)
         {
-            var checkAllStockAreaCompleted = await _stocktakingAreaRepository.IsCheckStockAreasCompleted(stocktakingSheetId);
+            var checkAllStockAreaCompleted = await _stocktakingAreaRepository.IsCheckStockAreasCompleted(stocktakingAreaId, stocktakingSheetId);
             if (!checkAllStockAreaCompleted)
                 return;
 
@@ -416,6 +421,19 @@ namespace MilkDistributionWarehouse.Services
                 return message;
 
             stocktakingArea.Status = StockAreaStatus.PendingApproval;
+
+            var stockSheet = await _stocktakingSheetRepository.GetStocktakingSheetById(stocktakingArea.StocktakingSheetId);
+            if (stockSheet == null) return "Dữ liệu phiếu kiểm kê không tồn tại.";
+
+            //if (stockSheet.Status != StocktakingStatus.InProgress)
+            //    return "Chỉ cập nhật sang trạng thái Chờ duyệt khi phiếu kiêm kê đang ở trạng thái Đang kiểm kê.";
+
+            stockSheet.Status = StocktakingStatus.PendingApproval;
+            stockSheet.UpdateAt = DateTime.Now;
+
+            var updateStockSheet = await _stocktakingSheetRepository.UpdateStockingtakingSheet(stockSheet);
+
+            var updateResult = await _stocktakingSheetRepository.UpdateStockingtakingSheet(stockSheet);
             return "";
         }
 

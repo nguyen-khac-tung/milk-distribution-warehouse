@@ -18,7 +18,8 @@ namespace MilkDistributionWarehouse.Repositories
         Task<int?> UpdateStocktakingAreaBulk(List<StocktakingArea> updates);
         Task<bool> IsStocktakingAreaAssignTo(int? areaId, string stocktakingSheetId, int assignTo);
         Task<bool> IsCheckStocktakingAreaExist(string stocktakingSheetId);
-        Task<bool> IsCheckStockAreasCompleted(string stocktakingSheetId);
+        Task<bool> IsCheckStockAreasCompleted(Guid stocktakingAreaId, string stocktakingSheetId);
+        Task<bool> AllStockAreaPending(string stocktakingSheetId);
     }
     public class StocktakingAreaRepository : IStocktakingAreaRepository
     {
@@ -119,12 +120,20 @@ namespace MilkDistributionWarehouse.Repositories
             return await _context.StocktakingAreas.AnyAsync(sa => sa.StocktakingSheetId.Equals(stocktakingSheetId));
         }
 
-        public async Task<bool> IsCheckStockAreasCompleted(string stocktakingSheetId)
+        public async Task<bool> IsCheckStockAreasCompleted(Guid stocktakingAreaId, string stocktakingSheetId)
+        {
+            return await _context.StocktakingAreas
+                .Where(sa => sa.StocktakingSheetId == stocktakingSheetId &&
+                             sa.StocktakingAreaId != stocktakingAreaId)
+                .AllAsync(sa => sa.Status == StockAreaStatus.Completed);
+        }
+
+        public async Task<bool> AllStockAreaPending(string stocktakingSheetId)
         {
             return await _context.StocktakingAreas
                 .AllAsync(sa => 
                 sa.StocktakingSheetId.Equals(stocktakingSheetId) && 
-                sa.Status == StockAreaStatus.Completed);
+                sa.Status == StockAreaStatus.Pending);
         }
     }
 }
