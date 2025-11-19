@@ -92,5 +92,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int ProcessingPurchaseOrders { get; set; }
         public int PendingSalesOrders { get; set; }
         public int ProcessingSalesOrders { get; set; }
+        public int PendingDisposalRequests { get; set; }
+        public int ProcessingDisposalRequests { get; set; }
     }
 }

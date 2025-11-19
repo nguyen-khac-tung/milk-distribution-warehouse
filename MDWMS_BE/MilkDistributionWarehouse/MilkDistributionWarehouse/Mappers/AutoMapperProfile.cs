@@ -501,7 +501,9 @@ namespace MilkDistributionWarehouse.Mappers
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => DisposalNoteStatus.Picking))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now))
                 .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
-                .ForMember(dest => dest.ApprovalBy, opt => opt.Ignore());
+                .ForMember(dest => dest.ApprovalBy, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedByNavigation, opt => opt.Ignore())
+                .ForMember(dest => dest.ApprovalByNavigation, opt => opt.Ignore());
             CreateMap<DisposalRequestDetail, DisposalNoteDetail>()
                 .ForMember(dest => dest.DisposalNoteDetailId, opt => opt.MapFrom(_ => Guid.NewGuid()))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => DisposalNoteItemStatus.Picking))
