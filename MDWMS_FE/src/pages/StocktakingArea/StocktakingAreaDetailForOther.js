@@ -5,11 +5,11 @@ import { Button } from '../../components/ui/button';
 import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, Calendar, User, X, MapPin, Clock, Thermometer, Droplets, Sun, RotateCcw, CheckCircle2, AlertTriangle } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
-import { getStocktakingAreaDetailForOtherRoleBySheetId, getStocktakingDetail, getStocktakingPalletDetail, rejectStocktakingLocationRecords, approveStocktakingArea } from '../../services/StocktakingService';
+import { getStocktakingAreaDetailForOtherRoleBySheetId, getStocktakingDetail, getStocktakingPalletDetail, rejectStocktakingLocationRecords, approveStocktakingArea, completeStocktaking } from '../../services/StocktakingService';
 import { usePermissions } from '../../hooks/usePermissions';
 import { extractErrorMessage } from '../../utils/Validation';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
-import StatusDisplay from '../../components/StocktakingComponents/StatusDisplay';
+import StatusDisplay, { STOCKTAKING_STATUS } from '../../components/StocktakingComponents/StatusDisplay';
 import LocationStatusDisplay, { STOCK_LOCATION_STATUS } from './LocationStatusDisplay';
 import AreaStatusDisplay, { STOCK_AREA_STATUS } from './AreaStatusDisplay';
 import PalletStatusDisplay from './PalletStatusDisplay';
@@ -36,7 +36,9 @@ const StocktakingAreaDetailForOther = () => {
     const [approvingAreas, setApprovingAreas] = useState(new Set());
     const [locationWarnings, setLocationWarnings] = useState({}); // Map locationId -> warnings array
     const isFetchingRef = useRef(false);
-    const { isWarehouseManager } = usePermissions();
+    const { isWarehouseManager, isSaleManager } = usePermissions();
+    const [completingStocktaking, setCompletingStocktaking] = useState(false);
+    const [completeNote, setCompleteNote] = useState('');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -378,10 +380,10 @@ const StocktakingAreaDetailForOther = () => {
         try {
             setApprovingAreas(prev => new Set(prev).add(areaId));
             const response = await approveStocktakingArea(areaId);
-            
+
             // Lấy warnings từ response
             const warnings = response?.data?.stocktakingLocationWarmings || response?.stocktakingLocationWarmings || [];
-            
+
             // Tạo map locationId -> warnings
             const warningsMap = {};
             warnings.forEach(warning => {
@@ -391,7 +393,7 @@ const StocktakingAreaDetailForOther = () => {
                 }
                 warningsMap[locationId].push(warning);
             });
-            
+
             // Cập nhật state warnings
             setLocationWarnings(prev => ({
                 ...prev,
@@ -422,6 +424,41 @@ const StocktakingAreaDetailForOther = () => {
                 newSet.delete(areaId);
                 return newSet;
             });
+        }
+    };
+
+    const handleCompleteStocktaking = async () => {
+        if (!id) {
+            if (window.showToast) {
+                window.showToast('Không tìm thấy mã phiếu kiểm kê', 'error');
+            }
+            return;
+        }
+
+        try {
+            setCompletingStocktaking(true);
+            await completeStocktaking({
+                stocktakingSheetId: id,
+                note: completeNote
+            });
+
+            if (window.showToast) {
+                window.showToast('Hoàn thành phiếu kiểm kê thành công', 'success');
+            }
+
+            // Clear note
+            setCompleteNote('');
+
+            // Refresh data
+            await handleRefresh();
+        } catch (error) {
+            console.error('Error completing stocktaking:', error);
+            const errorMessage = extractErrorMessage(error);
+            if (window.showToast) {
+                window.showToast(errorMessage || 'Không thể hoàn thành phiếu kiểm kê', 'error');
+            }
+        } finally {
+            setCompletingStocktaking(false);
         }
     };
 
@@ -990,6 +1027,42 @@ const StocktakingAreaDetailForOther = () => {
                                     </div>
                                 );
                             })}
+
+                            {/* Nút Hoàn thành cho quản lý kinh doanh khi trạng thái là Đã duyệt */}
+                            {isSaleManager &&
+                                stocktakingDetail?.status === STOCKTAKING_STATUS.Approved && (
+                                    <div className="pt-6 mt-6 border-t border-gray-200">
+                                        <div className="flex flex-col gap-3">
+                                            <textarea
+                                                value={completeNote}
+                                                onChange={(e) => setCompleteNote(e.target.value)}
+                                                placeholder="Ghi chú (tùy chọn)..."
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                                                rows={2}
+                                                disabled={completingStocktaking}
+                                            />
+                                            <div className="flex justify-end">
+                                                <Button
+                                                    onClick={handleCompleteStocktaking}
+                                                    disabled={completingStocktaking}
+                                                    className="flex items-center space-x-2 px-4 py-2 h-[38px] bg-green-600 hover:bg-green-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    {completingStocktaking ? (
+                                                        <>
+                                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                            <span className="text-sm font-medium">Đang xử lý...</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <CheckCircle2 className="h-4 w-4" />
+                                                            <span className="text-sm font-medium">Hoàn thành</span>
+                                                        </>
+                                                    )}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                         </div>
                     </CardContent>
                 </Card>
@@ -1004,6 +1077,7 @@ const StocktakingAreaDetailForOther = () => {
                 stocktakingAreas={stocktakingAreas}
                 loading={isRejecting}
             />
+
         </div>
     );
 };
