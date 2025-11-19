@@ -1,5 +1,6 @@
 import React, { memo } from "react";
 import { NotificationStatus, NotificationCategory } from "../../hooks/useNotifications";
+import { RefreshCw } from "lucide-react";
 
 const CONNECTION_META = {
     connected: {
@@ -79,42 +80,48 @@ const NotificationDropdown = ({
 
     return (
         <div className="fixed top-[75px] right-0 w-[440px] bg-white border border-gray-100 rounded-2xl shadow-2xl z-[9999] overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white">
-                <div>
+            <div className="px-4 py-3 border-b border-gray-100 bg-white">
+                <div className="flex items-center gap-2">
                     <p className="text-base font-semibold text-slate-900">Thông báo</p>
+                    <span className="text-slate-400 mb-4">•</span>
                     <p className="text-xs text-gray-500">
                         {unreadCount > 0
                             ? `${unreadCount} thông báo chưa đọc`
                             : "Bạn đã đọc tất cả thông báo"}
                     </p>
                 </div>
+
+                {/* Dòng 3: thanh chức năng */}
                 <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2 rounded-full bg-slate-50 px-3 py-1">
                         <span className={`w-2 h-2 rounded-full ${connectionBadge.dot}`} />
-                        <div className="flex flex-col leading-tight">
+                        <div className="leading-tight">
                             <span className="text-[11px] font-semibold text-slate-500">
                                 {connectionBadge.label}
                             </span>
-                            <span className={`text-[11px] font-medium ${connectionBadge.color}`}>
+                            <span className={`block text-[11px] font-medium ${connectionBadge.color}`}>
                                 {connectionBadge.description}
                             </span>
                         </div>
                     </div>
+
                     <button
                         type="button"
-                        className="text-xs font-semibold text-slate-600 hover:text-slate-900"
+                        className="flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-900"
                         onClick={onRefresh}
                     >
+                        <RefreshCw className="w-3 h-3" />
                         Làm mới
                     </button>
-                    <span className="text-slate-200">|</span>
+
+                    <span className="text-slate-200 mb-1">|</span>
+
                     <button
                         type="button"
-                        className={`text-xs font-semibold ${
-                            unreadCount === 0
+                        className={`text-xs font-semibold ${unreadCount === 0
                                 ? "text-slate-300 cursor-not-allowed"
                                 : "text-orange-600 hover:text-orange-700"
-                        }`}
+                            }`}
                         onClick={unreadCount > 0 ? onMarkAllAsRead : undefined}
                         disabled={unreadCount === 0}
                     >
@@ -177,7 +184,7 @@ const NotificationDropdown = ({
                                     >
                                         <div className="flex items-start gap-3">
                                             <span
-                                                className={`mt-1 w-2 h-2 rounded-full ${meta.dot}`}
+                                                className={`mt-2 w-2 h-2 rounded-full ${meta.dot}`}
                                                 aria-hidden="true"
                                             />
                                             <div className="flex-1">
@@ -190,7 +197,7 @@ const NotificationDropdown = ({
                                                         {notification.title}
                                                     </p>
                                                     <span
-                                                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${meta.pill}`}
+                                                        className={`text-[10px] font-semibold px-2 py-0.5 mb-3 rounded-full ${meta.pill}`}
                                                     >
                                                         {meta.label}
                                                     </span>
