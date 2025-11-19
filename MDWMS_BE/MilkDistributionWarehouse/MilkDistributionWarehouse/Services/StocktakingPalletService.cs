@@ -70,16 +70,29 @@ namespace MilkDistributionWarehouse.Services
             var stocktakingPalletExist = await _stocktakingPalletRepository.GetStocktakingPalletByStockLocationIdAndPalletId(scanner.StocktakingLocationId, scanner.PalletId);
             if (stocktakingPalletExist == null)
             {
+                var stocktakingLocation = await _stocktakingLocationRepository.GetStocktakingLocationById(scanner.StocktakingLocationId);
+                if (stocktakingLocation == null)
+                    return ("Dữ liệu kiểm kê vị trí trống.", default);
+
+                var palletInOther = await _stocktakingPalletRepository.GetScannedPalletInOtherLocationAsync(scanner.PalletId, scanner.StocktakingLocationId, (Guid)stocktakingLocation.StocktakingAreaId);
+                if (palletInOther != null)
+                    return ($"Kệ kê hàng đã được quét ở vị trí có mã vị trí [{palletInOther.StocktakingLocation.Location.LocationCode.ToString()}]".ToMessageForUser(), default);
+
                 var palletExist = await _palletRepository.GetPalletById(scanner.PalletId);
                 if (palletExist == null)
                     return ($"Không tìm thấy kệ kê hàng với mã kệ kê hàng [{scanner.PalletId}]", default);
 
                 if (palletExist.Status != CommonStatus.Active)
                     return ($"Kệ kê hàng có mã [{scanner.PalletId}] hiện đang không sử dụng.", default);
-
+                
                 var stocktakingPalletCreate = _mapper.Map<StocktakingPallet>(palletExist);
                 stocktakingPalletCreate.StocktakingLocationId = scanner.StocktakingLocationId;
-                stocktakingPalletCreate.Status = StockPalletStatus.Surplus;
+
+                var hasUnscannedPalletInOtherLocationAsync = await _stocktakingPalletRepository.HasUnscannedPalletInOtherLocationAsync(scanner.PalletId, scanner.StocktakingLocationId);
+                if(hasUnscannedPalletInOtherLocationAsync) 
+                    stocktakingPalletCreate.Status = StockPalletStatus.Mislocated;
+                else
+                    stocktakingPalletCreate.Status = StockPalletStatus.Surplus;
 
                 var createResult = await _stocktakingPalletRepository.CreateStocktakingPallet(stocktakingPalletCreate);
                 if (createResult == null) return ("Tạo kệ kê hàng thất bại.", default);

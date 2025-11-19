@@ -209,6 +209,7 @@
         public const int Matched = 2;       //Đúng pallet
         public const int Missing = 3;       //Thiếu pallet
         public const int Surplus = 4;       //Thừa pallet
+        public const int Mislocated = 5;    //Sai vị trí
     }
 
     /// <summary>
