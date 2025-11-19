@@ -503,8 +503,8 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                   <h3 className="text-2xl font-bold mr-2">{purchaseOrdersStats.current}</h3>
                   {purchaseOrdersStats.change !== 0 && (
                     <span className={`text-xs px-1.5 py-0.5 rounded ${purchaseOrdersStats.change > 0
-                        ? 'bg-green-100 text-green-600'
-                        : 'bg-red-100 text-red-600'
+                      ? 'bg-green-100 text-green-600'
+                      : 'bg-red-100 text-red-600'
                       }`}>
                       {purchaseOrdersStats.change > 0 ? '+' : ''}{purchaseOrdersStats.change}%
                     </span>
@@ -542,8 +542,8 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                   <h3 className="text-2xl font-bold mr-2">{salesOrdersStats.current}</h3>
                   {salesOrdersStats.change !== 0 && (
                     <span className={`text-xs px-1.5 py-0.5 rounded ${salesOrdersStats.change > 0
-                        ? 'bg-green-100 text-green-600'
-                        : 'bg-red-100 text-red-600'
+                      ? 'bg-green-100 text-green-600'
+                      : 'bg-red-100 text-red-600'
                       }`}>
                       {salesOrdersStats.change > 0 ? '+' : ''}{salesOrdersStats.change}%
                     </span>
@@ -590,8 +590,8 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                       <h3 className="text-2xl font-bold mr-2">{inventoryStats.current}(thùng)</h3>
                       {inventoryStats.change !== 0 && (
                         <span className={`text-xs px-1.5 py-0.5 rounded ${inventoryStats.change > 0
-                            ? 'bg-green-100 text-green-600'
-                            : 'bg-red-100 text-red-600'
+                          ? 'bg-green-100 text-green-600'
+                          : 'bg-red-100 text-red-600'
                           }`}>
                           {inventoryStats.change > 0 ? '+' : ''}{inventoryStats.change}%
                         </span>
@@ -1009,71 +1009,11 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {invoices.map((invoice) => (
-                  <TableRow key={invoice.id}>
-                    <TableCell className="font-medium">{invoice.id}</TableCell>
-                    <TableCell>{invoice.guest}</TableCell>
-                    <TableCell>{invoice.date}</TableCell>
-                    <TableCell>{invoice.amount}</TableCell>
-                    <TableCell>
-                      <Badge variant={invoice.status === "Paid" ? "success" : "warning"}>{invoice.status}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => {
-                              toast({
-                                title: "Invoice details",
-                                description: `Viewing details for invoice ${invoice.id}`,
-                              })
-                            }}
-                          >
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              toast({
-                                title: "Invoice printed",
-                                description: `Invoice ${invoice.id} sent to printer`,
-                              })
-                            }}
-                          >
-                            <Printer className="h-4 w-4 mr-2" />
-                            Print
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              toast({
-                                title: "Invoice downloaded",
-                                description: `Invoice ${invoice.id} downloaded as PDF`,
-                              })
-                            }}
-                          >
-                            <Download className="h-4 w-4 mr-2" />
-                            Download
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => {
-                              toast({
-                                title: "Payment reminder sent",
-                                description: `Reminder sent to ${invoice.guest}`,
-                              })
-                            }}
-                          >
-                            Send Reminder
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-gray-500 py-8">
+                    Không có dữ liệu
+                  </TableCell>
+                </TableRow>
               </TableBody>
             </Table>
           </div>
@@ -1245,79 +1185,11 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {foodOrders.map((order) => (
-                      <TableRow key={order.id}>
-                        <TableCell className="font-medium">{order.id}</TableCell>
-                        <TableCell>{order.guest}</TableCell>
-                        <TableCell>{order.room}</TableCell>
-                        <TableCell>
-                          <div className="flex flex-col">
-                            {order.items.map((item, index) => (
-                              <span key={index} className="text-xs">
-                                {item}
-                              </span>
-                            ))}
-                          </div>
-                        </TableCell>
-                        <TableCell>{order.total}</TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              order.status === "Delivered"
-                                ? "success"
-                                : order.status === "Preparing"
-                                  ? "warning"
-                                  : "default"
-                            }
-                          >
-                            {order.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  toast({
-                                    title: "Order details",
-                                    description: `Viewing details for order ${order.id}`,
-                                  })
-                                }}
-                              >
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  toast({
-                                    title: "Order status updated",
-                                    description: `Order ${order.id} marked as delivered`,
-                                  })
-                                }}
-                              >
-                                Mark as Delivered
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  toast({
-                                    title: "Order cancelled",
-                                    description: `Order ${order.id} has been cancelled`,
-                                    variant: "destructive",
-                                  })
-                                }}
-                              >
-                                Cancel Order
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center text-gray-500 py-8">
+                        Không có dữ liệu
+                      </TableCell>
+                    </TableRow>
                   </TableBody>
                 </Table>
               </div>
@@ -1330,39 +1202,8 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
               <CardTitle className="text-base font-medium">Phân bố sản phẩm</CardTitle>
             </CardHeader>
             <CardContent className="p-4">
-              <div className="h-[250px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={categoryData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {categoryData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="flex flex-wrap justify-center gap-4 mt-4">
-                {categoryData.map((entry, index) => (
-                  <div key={index} className="flex items-center">
-                    <div
-                      className="w-3 h-3 rounded-full mr-1"
-                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                    ></div>
-                    <span className="text-xs">
-                      {entry.name}: {entry.value}
-                    </span>
-                  </div>
-                ))}
+              <div className="h-[250px] flex items-center justify-center">
+                <p className="text-gray-500 text-sm">Không có dữ liệu</p>
               </div>
             </CardContent>
           </Card>
