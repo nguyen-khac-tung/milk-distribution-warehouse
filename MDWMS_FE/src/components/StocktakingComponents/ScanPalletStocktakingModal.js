@@ -61,7 +61,7 @@ export default function ScanPalletStocktakingModal({
             const response = await getStocktakingPalletDetailByLocationCode(stocktakingLocationId, locationCode);
             const pallets = response?.data || response || [];
 
-            // Phân loại pallet: expected (status = Unscanned hoặc Missing) và unexpected (status = Surplus)
+            // Phân loại pallet: expected (status = Unscanned hoặc Missing) và unexpected (status = Surplus hoặc Mislocated)
             const expected = pallets.filter(p =>
                 !p.status ||
                 p.status === STOCK_PALLET_STATUS.Unscanned ||
@@ -69,7 +69,8 @@ export default function ScanPalletStocktakingModal({
                 p.status === STOCK_PALLET_STATUS.Matched
             );
             const unexpected = pallets.filter(p =>
-                p.status === STOCK_PALLET_STATUS.Surplus
+                p.status === STOCK_PALLET_STATUS.Surplus ||
+                p.status === STOCK_PALLET_STATUS.Mislocated
             );
 
             setExpectedPallets(expected);
@@ -468,21 +469,58 @@ export default function ScanPalletStocktakingModal({
                 }
             }
 
-            // Lưu tất cả pallet không mong đợi (đã được quét vào) - gọi surplusStocktakingPallet
-            const surplusPromises = unexpectedPallets
-                .map(pallet => {
-                    // Sử dụng số lượng thực tế nếu có, nếu không thì dùng số lượng dự kiến, mặc định là 0
-                    const actualQuantity = pallet.actualPackageQuantity !== null &&
-                        pallet.actualPackageQuantity !== undefined
-                        ? pallet.actualPackageQuantity
-                        : (pallet.expectedPackageQuantity ?? 0);
+            // Validate: Kiểm tra tất cả pallet không mong đợi (Surplus và Mislocated) phải có số lượng thực tế >= 0
+            const invalidUnexpectedPallets = unexpectedPallets.filter(pallet => {
+                const actualQuantity = pallet.actualPackageQuantity;
+                // Kiểm tra: phải là số và >= 0, không được null, undefined, empty string, hoặc số âm
+                if (actualQuantity === null || actualQuantity === undefined || actualQuantity === '') {
+                    return true; // Invalid: thiếu số lượng
+                }
+                const numQuantity = Number(actualQuantity);
+                if (isNaN(numQuantity) || numQuantity < 0) {
+                    return true; // Invalid: không phải số hoặc số âm
+                }
+                return false; // Valid
+            });
 
-                    return surplusStocktakingPallet({
-                        stocktakingPalletId: pallet.stocktakingPalletId,
-                        actualPackageQuantity: actualQuantity,
-                        note: pallet.note || ""
-                    });
+            if (invalidUnexpectedPallets.length > 0) {
+                window.showToast?.("Vui lòng nhập số lượng thực tế (>= 0) cho pallet không mong đợi!", "error");
+                setLoading(false);
+                return;
+            }
+
+            // Validate: Kiểm tra tất cả pallet dự kiến (không phải Missing) phải có số lượng thực tế >= 0
+            const expectedPalletsNeedQuantity = expectedPallets.filter(p =>
+                p.status !== STOCK_PALLET_STATUS.Missing &&
+                p.status !== STOCK_PALLET_STATUS.Unscanned &&
+                !(!p.status) // Có status nhưng không phải Unscanned hoặc Missing
+            );
+
+            const invalidExpectedPallets = expectedPalletsNeedQuantity.filter(pallet => {
+                const actualQuantity = pallet.actualPackageQuantity;
+                return actualQuantity === null || actualQuantity === undefined || actualQuantity === '' || actualQuantity < 0;
+            });
+
+            if (invalidExpectedPallets.length > 0) {
+                window.showToast?.("Vui lòng nhập số lượng thực tế (>= 0) cho pallet dự kiến đã được quét!", "error");
+                setLoading(false);
+                return;
+            }
+
+            // Lưu tất cả pallet không mong đợi (Surplus và Mislocated) - gọi surplusStocktakingPallet
+            const surplusPromises = unexpectedPallets.map(pallet => {
+                // Sử dụng số lượng thực tế (đã validate ở trên)
+                const actualQuantity = pallet.actualPackageQuantity !== null &&
+                    pallet.actualPackageQuantity !== undefined
+                    ? pallet.actualPackageQuantity
+                    : (pallet.expectedPackageQuantity ?? 0);
+
+                return surplusStocktakingPallet({
+                    stocktakingPalletId: pallet.stocktakingPalletId,
+                    actualPackageQuantity: actualQuantity,
+                    note: pallet.note || ""
                 });
+            });
 
             // Lưu tất cả pallet dự kiến có số lượng thực tế (match)
             const matchPromises = expectedPallets
@@ -539,10 +577,11 @@ export default function ScanPalletStocktakingModal({
 
     if (!isOpen) return null;
 
-    // Kiểm tra xem vị trí đã được quyết định chưa (có pallet Matched hoặc có pallet không mong đợi)
+    // Kiểm tra xem vị trí đã được quyết định chưa (có pallet Matched hoặc có pallet không mong đợi hoặc có pallet Mislocated)
     const isLocationDecided =
         expectedPallets.some(p => p.status === STOCK_PALLET_STATUS.Matched) ||
-        unexpectedPallets.length > 0;
+        unexpectedPallets.length > 0 ||
+        expectedPallets.some(p => p.status === STOCK_PALLET_STATUS.Mislocated);
 
     return createPortal(
         <div
