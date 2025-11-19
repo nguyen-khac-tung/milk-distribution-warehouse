@@ -20,6 +20,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> IsCheckStocktakingAreaExist(string stocktakingSheetId);
         Task<bool> IsCheckStockAreasCompleted(Guid stocktakingAreaId, string stocktakingSheetId);
         Task<bool> AllStockAreaPending(string stocktakingSheetId);
+        Task<bool> HasAnyPendingStocktakingArea(string stocktakingSheetId);
     }
     public class StocktakingAreaRepository : IStocktakingAreaRepository
     {
@@ -133,6 +134,14 @@ namespace MilkDistributionWarehouse.Repositories
             return await _context.StocktakingAreas
                 .AllAsync(sa => 
                 sa.StocktakingSheetId.Equals(stocktakingSheetId) && 
+                sa.Status == StockAreaStatus.Pending);
+        }
+
+        public async Task<bool> HasAnyPendingStocktakingArea(string stocktakingSheetId)
+        {
+            return await _context.StocktakingAreas
+                .AnyAsync(sa =>
+                sa.StocktakingSheetId.Equals(stocktakingSheetId) &&
                 sa.Status == StockAreaStatus.Pending);
         }
     }
