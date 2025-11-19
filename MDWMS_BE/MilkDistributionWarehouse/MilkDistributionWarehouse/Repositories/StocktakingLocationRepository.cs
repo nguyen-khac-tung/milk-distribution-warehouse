@@ -18,6 +18,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> AnyStocktakingLocationSameStockSheetAsync(string stockSheetId, Guid stockAreaId, int assignTo);
         Task<bool> IsExistStocktakingLocationByStockLocationIdAndLocationCode(Guid stocktakingLocationId, string locationCode);
         Task<bool> AnyStocktakingLocationPendingStatus(Guid stocktakingAreaId);
+        Task<bool> HasLocationsNotPendingApprovalAsync(Guid stocktakingAreaId);
     }
     public class StocktakingLocationRepository : IStocktakingLocationRepository
     {
@@ -139,8 +140,17 @@ namespace MilkDistributionWarehouse.Repositories
             return await _context.StocktakingLocations
                 .AnyAsync(sl =>
                             sl.StocktakingAreaId == stocktakingAreaId &&
-                            sl.Status == StockLocationStatus.Pending
-                            );
+                            sl.Status == StockLocationStatus.Pending);
         }
+
+        public Task<bool> HasLocationsNotPendingApprovalAsync(Guid stocktakingAreaId)
+        {
+            return _context.StocktakingLocations
+                .AsNoTracking()
+                .AnyAsync(sl =>
+                    sl.StocktakingAreaId == stocktakingAreaId &&
+                    sl.Status != StockLocationStatus.PendingApproval);
+        }
+
     }
 }

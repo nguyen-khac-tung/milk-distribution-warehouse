@@ -359,7 +359,7 @@ export const routes = [
     {
         path: "/stocktaking-area-detail-other/:id",
         page: () => (
-            <ProtectedRoute requiredPermission={PERMISSIONS.STOCKTAKING_AREA_VIEW_DETAILS_FOR_OTHER}>
+            <ProtectedRoute requiredPermission={[PERMISSIONS.STOCKTAKING_AREA_VIEW_DETAILS_FOR_OTHER, PERMISSIONS.STOCKTAKING_AREA_VIEW_DETAILS]} requireAll={false}>
                 <StocktakingAreaDetailForOther />
             </ProtectedRoute>
         ),

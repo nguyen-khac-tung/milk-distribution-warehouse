@@ -3,7 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using MilkDistributionWarehouse.Configurations;
-using MilkDistributionWarehouse.Mapper;
+using MilkDistributionWarehouse.Hubs;
+using MilkDistributionWarehouse.Mappers;
 using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Utilities;
 using System.Text;
@@ -82,13 +83,18 @@ namespace MilkDistributionWarehouse
                     }
                 });
             });
-            builder.Services.AddCors();
 
             // Add dependency injection configuration
             builder.Services.AddDependencyInjection();
             
             // Add cache
             builder.Services.AddMemoryCache();
+
+            //Add CORS
+            builder.Services.AddCors();
+
+            //Add SignalR
+            builder.Services.AddSignalR();
             #endregion
 
 
@@ -114,6 +120,8 @@ namespace MilkDistributionWarehouse
             app.UseAuthorization();
 
             app.MapControllers();
+
+            app.MapHub<NotificationHub>("/notificationHub");
 
             app.Run();
         }

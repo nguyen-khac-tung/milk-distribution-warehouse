@@ -58,5 +58,14 @@ namespace MilkDistributionWarehouse.Controllers
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<StocktakingAreaResponse>.ToResultOk(stocktakingArea);
         }
+
+        [HttpPut("Approval")]
+        public async Task<IActionResult> ApprovalStocktakingArea([FromBody] StocktakingAreaApprovalStatus update)
+        {
+            var (msg, stocktakingArea) = await _stocktakingAreaService.UpdateStocktakingAreaApprovalStatus(update);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<StocktakingAreaApprovalResponse>.ToResultOk(stocktakingArea);
+        }
     }
 }

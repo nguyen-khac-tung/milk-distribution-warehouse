@@ -5,7 +5,7 @@ using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Utilities;
 using static MilkDistributionWarehouse.Models.DTOs.PalletDto;
 
-namespace MilkDistributionWarehouse.Mapper
+namespace MilkDistributionWarehouse.Mappers
 {
     public class AutoMapperProfile : Profile
     {
@@ -583,6 +583,7 @@ namespace MilkDistributionWarehouse.Mapper
                 .ForMember(dest => dest.IsAvailable, opt => opt.MapFrom(src => src.Location.IsAvailable));
             CreateMap<StocktakingLocationRejectStatus, StocktakingLocation>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => StockLocationStatus.Pending))
+                .ForMember(dest => dest.RejectReason, opt => opt.MapFrom(src => src.RejectReason))
                 .ForMember(dest => dest.UpdateAt, opt => opt.MapFrom(_ => DateTime.Now));
 
             //Map StocktakingPallet
@@ -635,6 +636,9 @@ namespace MilkDistributionWarehouse.Mapper
                                              * (src.GoodsPacking.UnitPerPackage ?? 0)))
                 .ForMember(dest => dest.UnitOfMeasure,
                     opt => opt.MapFrom(src => src.Goods != null && src.Goods.UnitMeasure != null ? src.Goods.UnitMeasure.Name : null));
+
+            // Map Notification
+            CreateMap<Notification, NotificationDto>();
         }
     }
 }

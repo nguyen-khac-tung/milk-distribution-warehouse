@@ -9,6 +9,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int? LocationId { get; set; }
         public string LocationCode { get; set; }
         public string Note { get; set; }
+        public string RejectReason { get; set; }
         public int? Status { get; set; }
         public DateTime? CreatedAt { get; set; }
         public bool IsAvailable { get; set; }
@@ -39,14 +40,23 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
     public class StocktakingLocationRejectStatus : StocktakingLocationUpdateStatus
     {
-        [Required (ErrorMessage = "Lý do từ chối là bắt buộc")]
+        [Required(ErrorMessage = "Lý do từ chối là bắt buộc")]
         public string RejectReason { get; set; }
-        [Required (ErrorMessage = "Mã vị trí là bắt buộc.")]
-        public int LocationId { get; set; }
-    }
-
-    public class StocktakingLocationCancelStatus : StocktakingLocationUpdateStatus {
         [Required(ErrorMessage = "Mã vị trí là bắt buộc.")]
         public int LocationId { get; set; }
     }
+
+    public class StocktakingLocationCancelStatus : StocktakingLocationUpdateStatus
+    {
+        [Required(ErrorMessage = "Mã vị trí là bắt buộc.")]
+        public int LocationId { get; set; }
+    }
+
+    public class StocktakingLocationWarming
+    {
+        public Guid StocktakingLocationId { get; set; }
+        public string PalletId { get; set; }
+        public string Message { get; set; }
+    }
+
 }

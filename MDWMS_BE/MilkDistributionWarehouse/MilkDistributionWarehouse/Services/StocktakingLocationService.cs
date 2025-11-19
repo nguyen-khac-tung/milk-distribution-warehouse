@@ -26,9 +26,11 @@ namespace MilkDistributionWarehouse.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IStocktakingPalletRepository _stocktakingPalletRepository;
         private readonly IStocktakingAreaRepository _stocktakingAreaRepository;
+        private readonly IStocktakingSheetRepository _stocktakingSheetRepository;
         public StocktakingLocationService(IStocktakingLocationRepository stocktakingLocationRepository, IMapper mapper,
             ILocationRepository locationRepository, IStocktakingPalletService stocktakingPalletService, IUnitOfWork unitOfWork,
-            IStocktakingPalletRepository stocktakingPalletRepository, IStocktakingAreaRepository stocktakingAreaRepository)
+            IStocktakingPalletRepository stocktakingPalletRepository, IStocktakingAreaRepository stocktakingAreaRepository,
+            IStocktakingSheetRepository stocktakingSheetRepository)
         {
             _stocktakingLocationRepository = stocktakingLocationRepository;
             _mapper = mapper;
@@ -37,6 +39,7 @@ namespace MilkDistributionWarehouse.Services
             _unitOfWork = unitOfWork;
             _stocktakingPalletRepository = stocktakingPalletRepository;
             _stocktakingAreaRepository = stocktakingAreaRepository;
+            _stocktakingSheetRepository = stocktakingSheetRepository;
         }
 
         public async Task<(string, StocktakingLocationCreate?)> CreateStocktakingLocationBulk(StocktakingLocationCreate create)
@@ -118,12 +121,12 @@ namespace MilkDistributionWarehouse.Services
             {
                 await _unitOfWork.BeginTransactionAsync();
 
-                var(msg, stocktakingLocations) = await ValidationStocktakingLocationUpdateBulk(update, StockLocationStatus.PendingApproval);
-                if(!string.IsNullOrEmpty(msg))
+                var (msg, stocktakingLocations) = await ValidationStocktakingLocationUpdateBulk(update, StockLocationStatus.PendingApproval);
+                if (!string.IsNullOrEmpty(msg))
                     throw new Exception(msg);
 
                 (msg, _) = await DeleteStocktakingPalletBulk(update);
-                if(!string.IsNullOrEmpty(msg))
+                if (!string.IsNullOrEmpty(msg))
                     throw new Exception(msg);
 
                 var stocktakingPalletCreates = update.Select(sl => new StocktakingPalletCreate
@@ -136,6 +139,16 @@ namespace MilkDistributionWarehouse.Services
                 if (!string.IsNullOrEmpty(msg))
                     throw new Exception(msg);
 
+                var rejectMap = update.ToDictionary(x => x.StocktakingLocationId, x => x.RejectReason);
+
+                foreach (var itemLocation in stocktakingLocations)
+                {
+                    if (rejectMap.TryGetValue(itemLocation.StocktakingLocationId, out var reason))
+                    {
+                        itemLocation.RejectReason = reason;
+                    }
+                }
+
                 var updateStocktakingLocationBulksResult = await _stocktakingLocationRepository.UpdateStocktakingLocationBulk(stocktakingLocations);
 
                 if (updateStocktakingLocationBulksResult == 0)
@@ -144,7 +157,7 @@ namespace MilkDistributionWarehouse.Services
                 var stocktakingAreaId = stocktakingLocations.FirstOrDefault().StocktakingAreaId;
 
                 msg = await UpdateStocktakingAreaStatus((Guid)stocktakingAreaId, StockAreaStatus.Pending);
-                if(!string.IsNullOrEmpty(msg))
+                if (!string.IsNullOrEmpty(msg))
                     throw new Exception(msg);
 
                 await _unitOfWork.CommitTransactionAsync();
@@ -164,12 +177,33 @@ namespace MilkDistributionWarehouse.Services
                 return "Kiểm kê khu vực trống.";
 
             stocktakingArea.Status = statusChange;
-            stocktakingArea.UpdateAt =DateTime.Now;
-            
+            stocktakingArea.UpdateAt = DateTime.Now;
+
             var updateResult = await _stocktakingAreaRepository.UpdateStocktakingArea(stocktakingArea);
             if (updateResult == 0) return "Cập nhật trạng thái của kiểm kê khu vực thất bại.";
 
+            await HandleUpdateStockSheet(stocktakingArea.StocktakingSheetId);
+
             return "";
+        }
+
+        private async Task HandleUpdateStockSheet(string stocktakingSheetId)
+        {
+            if (string.IsNullOrEmpty(stocktakingSheetId))
+                return;
+
+            var stockSheet = await _stocktakingSheetRepository.GetStocktakingSheetById(stocktakingSheetId);
+            if (stockSheet == null) return;
+
+            var checkAllStockAreaInProgress = await _stocktakingAreaRepository.AllStockAreaPending(stocktakingSheetId);
+
+            if (!checkAllStockAreaInProgress)
+                return;
+
+            stockSheet.Status = StocktakingStatus.InProgress;
+            stockSheet.UpdateAt = DateTime.Now;
+
+            var updateResult = await _stocktakingSheetRepository.UpdateStockingtakingSheet(stockSheet);
         }
 
         public async Task<(string, List<StocktakingLocationCancelStatus>?)> CancelStocktakingLocationBulk(List<StocktakingLocationCancelStatus> update)
@@ -214,10 +248,10 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
-        private async Task<(string, int?)> DeleteStocktakingPalletBulk <T> (List<T> rejectStatuses) where T : StocktakingLocationUpdateStatus
+        private async Task<(string, int?)> DeleteStocktakingPalletBulk<T>(List<T> rejectStatuses) where T : StocktakingLocationUpdateStatus
         {
             var stocktakingLocationIds = rejectStatuses.Select(sl => sl.StocktakingLocationId).ToList();
-            
+
             var stocktakingPallets = await _stocktakingPalletRepository.GetStocktakingPalletsByStocktakingLocationIds(stocktakingLocationIds);
 
             if (!stocktakingPallets.Any())
@@ -227,10 +261,10 @@ namespace MilkDistributionWarehouse.Services
             if (deleteStocktakingPalletBulkResult == 0)
                 return ("Xoá danh sách kiểm kê kệ kê hàng thất bại.", default);
 
-            return ("",  deleteStocktakingPalletBulkResult);
+            return ("", deleteStocktakingPalletBulkResult);
         }
 
-        private async Task<(string, List<StocktakingLocation>?)> ValidationStocktakingLocationUpdateBulk <T> (List<T> rejectStatuses, int statusCheck) where T : StocktakingLocationUpdateStatus
+        private async Task<(string, List<StocktakingLocation>?)> ValidationStocktakingLocationUpdateBulk<T>(List<T> rejectStatuses, int statusCheck) where T : StocktakingLocationUpdateStatus
         {
             var stocktakingLocations = new List<StocktakingLocation>();
 

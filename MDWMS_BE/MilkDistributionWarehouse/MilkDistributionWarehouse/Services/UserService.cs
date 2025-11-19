@@ -267,10 +267,10 @@ namespace MilkDistributionWarehouse.Services
             var roleRestricted = new List<int?>() { RoleType.WarehouseManager, RoleType.SaleManager, RoleType.BusinessOwner, RoleType.Administrator };
             if (roleRestricted.All(roleReStricted => roleReStricted != role?.RoleId)) return "";
 
-            var users = await _userRepository.GetUsersByRoleId(role.RoleId);
-            var otherActiveUserExists = users.Any(u => u.UserId != userId && u.Status == CommonStatus.Active);
-            if (otherActiveUserExists)
-                return $"Vai trò {role.Description} đã được gán cho một tài khoản khác đang hoạt động.".ToMessageForUser();
+            var users = await _userRepository.GetUsersByRoleId(role?.RoleId);
+            var otherActiveUserExists = users?.Any(u => u.UserId != userId);
+            if (otherActiveUserExists == true)
+                return $"Vai trò {role?.Description} đã được gán cho một tài khoản khác đang hoạt động.".ToMessageForUser();
             return "";
         }
 

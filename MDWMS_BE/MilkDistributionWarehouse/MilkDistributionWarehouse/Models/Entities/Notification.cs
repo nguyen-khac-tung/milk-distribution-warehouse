@@ -9,23 +9,17 @@ public partial class Notification
 {
     public Guid NotificationId { get; set; }
 
-    public int? SendBy { get; set; }
-
-    public int? ReceivedBy { get; set; }
-
     public string Title { get; set; }
 
     public string Content { get; set; }
 
-    public int? Type { get; set; }
+    public int? UserId { get; set; }
 
-    public int? Priority { get; set; }
+    public int? Category { get; set; }
 
     public int? Status { get; set; }
 
     public DateTime? CreatedAt { get; set; }
 
-    public virtual User ReceivedByNavigation { get; set; }
-
-    public virtual User SendByNavigation { get; set; }
+    public virtual User User { get; set; }
 }

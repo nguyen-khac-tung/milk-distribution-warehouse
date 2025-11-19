@@ -657,78 +657,90 @@ const StocktakingArea = () => {
                                     const locationId = location.stocktakingLocationId || location.locationId || index;
                                     const isSelected = selectedLocations.has(locationId);
                                     const canSelect = location.status === STOCK_LOCATION_STATUS.Counted;
+                                    const colSpanForRejectReason = isUnchecked ? (hasConfirmableLocation ? 4 : 3) : 4;
 
                                     return (
-                                        <TableRow
-                                            key={locationId}
-                                            className={`hover:bg-slate-50 border-b border-slate-200 ${isSelected ? 'bg-orange-50' : ''}`}
-                                        >
-                                            {!isUnchecked && (
-                                                <TableCell className="px-6 py-4">
-                                                    {canSelect ? (
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={isSelected}
-                                                            onChange={(e) => handleLocationSelect(locationId, e)}
-                                                            className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded cursor-pointer"
-                                                        />
+                                        <>
+                                            <TableRow
+                                                key={locationId}
+                                                className={`hover:bg-slate-50 border-b border-slate-200 ${isSelected ? 'bg-orange-50' : ''}`}
+                                            >
+                                                {!isUnchecked && (
+                                                    <TableCell className="px-6 py-4">
+                                                        {canSelect ? (
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={isSelected}
+                                                                onChange={(e) => handleLocationSelect(locationId, e)}
+                                                                className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded cursor-pointer"
+                                                            />
+                                                        ) : (
+                                                            <span className="text-gray-400">-</span>
+                                                        )}
+                                                    </TableCell>
+                                                )}
+                                                <TableCell className="px-6 py-4 text-slate-700">
+                                                    {location.locationCode || '-'}
+                                                </TableCell>
+                                                <TableCell className="px-6 py-4 text-center">
+                                                    <LocationStatusDisplay status={location.status} />
+                                                </TableCell>
+                                                <TableCell className="px-6 py-4 text-center">
+                                                    {isUnchecked ? (
+                                                        <Button
+                                                            onClick={() => handleProceedLocation(location)}
+                                                            className="bg-blue-500 hover:bg-blue-600 text-white text-sm px-4 py-2 h-8"
+                                                        >
+                                                            Tiến Hành
+                                                        </Button>
+                                                    ) : location.status === STOCK_LOCATION_STATUS.Counted ? (
+                                                        <Button
+                                                            onClick={() => handleRecheckLocation(location)}
+                                                            disabled={cancelingLocationId === location.stocktakingLocationId}
+                                                            className="bg-orange-300 hover:bg-orange-400 text-white text-sm px-4 py-2 h-8 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        >
+                                                            {cancelingLocationId === location.stocktakingLocationId ? (
+                                                                <div className="flex items-center gap-2">
+                                                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                                                    <span>Đang hủy...</span>
+                                                                </div>
+                                                            ) : (
+                                                                'Kiểm kê lại'
+                                                            )}
+                                                        </Button>
                                                     ) : (
-                                                        <span className="text-gray-400">-</span>
+                                                        <span className="text-gray-400 text-sm">-</span>
                                                     )}
                                                 </TableCell>
-                                            )}
-                                            <TableCell className="px-6 py-4 text-slate-700">
-                                                {location.locationCode || '-'}
-                                            </TableCell>
-                                            <TableCell className="px-6 py-4 text-center">
-                                                <LocationStatusDisplay status={location.status} />
-                                            </TableCell>
-                                            <TableCell className="px-6 py-4 text-center">
-                                                {isUnchecked ? (
-                                                    <Button
-                                                        onClick={() => handleProceedLocation(location)}
-                                                        className="bg-blue-500 hover:bg-blue-600 text-white text-sm px-4 py-2 h-8"
-                                                    >
-                                                        Tiến Hành
-                                                    </Button>
-                                                ) : location.status === STOCK_LOCATION_STATUS.Counted ? (
-                                                    <Button
-                                                        onClick={() => handleRecheckLocation(location)}
-                                                        disabled={cancelingLocationId === location.stocktakingLocationId}
-                                                        className="bg-orange-300 hover:bg-orange-400 text-white text-sm px-4 py-2 h-8 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    >
-                                                        {cancelingLocationId === location.stocktakingLocationId ? (
-                                                            <div className="flex items-center gap-2">
-                                                                <RefreshCw className="h-4 w-4 animate-spin" />
-                                                                <span>Đang hủy...</span>
-                                                            </div>
-                                                        ) : (
-                                                            'Kiểm kê lại'
-                                                        )}
-                                                    </Button>
-                                                ) : (
-                                                    <span className="text-gray-400 text-sm">-</span>
+                                                {isUnchecked && hasConfirmableLocation && (
+                                                    <TableCell className="px-6 py-4 text-center">
+                                                        {location.isAvailable === true && location.status === STOCK_LOCATION_STATUS.Pending ? (
+                                                            <button
+                                                                onClick={() => handleConfirmCounted(location.stocktakingLocationId)}
+                                                                disabled={confirmingLocationId === location.stocktakingLocationId}
+                                                                className="flex items-center justify-center w-10 h-10 rounded-full bg-green-500 hover:bg-green-600 text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-green-500"
+                                                                title="Xác nhận trong hệ thống không có pallet và bên ngoài không có pallet"
+                                                            >
+                                                                {confirmingLocationId === location.stocktakingLocationId ? (
+                                                                    <RefreshCw className="h-5 w-5 animate-spin" />
+                                                                ) : (
+                                                                    <CheckCircle2 className="h-5 w-5" />
+                                                                )}
+                                                            </button>
+                                                        ) : null}
+                                                    </TableCell>
                                                 )}
-                                            </TableCell>
-                                            {isUnchecked && hasConfirmableLocation && (
-                                                <TableCell className="px-6 py-4 text-center">
-                                                    {location.isAvailable === true && location.status === STOCK_LOCATION_STATUS.Pending ? (
-                                                        <button
-                                                            onClick={() => handleConfirmCounted(location.stocktakingLocationId)}
-                                                            disabled={confirmingLocationId === location.stocktakingLocationId}
-                                                            className="flex items-center justify-center w-10 h-10 rounded-full bg-green-500 hover:bg-green-600 text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-green-500"
-                                                            title="Xác nhận trong hệ thống không có pallet và bên ngoài không có pallet"
-                                                        >
-                                                            {confirmingLocationId === location.stocktakingLocationId ? (
-                                                                <RefreshCw className="h-5 w-5 animate-spin" />
-                                                            ) : (
-                                                                <CheckCircle2 className="h-5 w-5" />
-                                                            )}
-                                                        </button>
-                                                    ) : null}
-                                                </TableCell>
+                                            </TableRow>
+                                            {isUnchecked && location.rejectReason && (
+                                                <TableRow key={`${locationId}-reject`} className="bg-red-50">
+                                                    <TableCell colSpan={colSpanForRejectReason} className="px-6 py-2">
+                                                        <span className="text-xs text-red-600 italic font-medium">
+                                                            Lý do từ chối: {location.rejectReason}
+                                                        </span>
+                                                    </TableCell>
+                                                </TableRow>
                                             )}
-                                        </TableRow>
+                                        </>
                                     );
                                 };
 

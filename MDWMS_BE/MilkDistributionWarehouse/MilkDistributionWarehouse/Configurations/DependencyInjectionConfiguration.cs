@@ -152,6 +152,10 @@ namespace MilkDistributionWarehouse.Configurations
             //Report
             services.AddScoped<IReportRepository, ReportRepository>();
             services.AddScoped<IReportService, ReportService>();
+
+            //Notification
+            services.AddScoped<INotificationRepository, NotificationRepository>();
+            services.AddScoped<INotificationService, NotificationService>();
         }
     }
 }

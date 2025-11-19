@@ -4,8 +4,15 @@ import { useState, useEffect, useRef } from "react"
 import {
   Download,
   Eye,
+  ChevronDown,
 } from "lucide-react"
 import { Button } from "../../components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../../components/ui/dropdown-menu"
 import {
   Table,
   TableBody,
@@ -20,6 +27,364 @@ import Loading from "../../components/Common/Loading"
 import Pagination from "../../components/Common/Pagination"
 import { Badge } from "../../components/ui/badge"
 import InventorySearchFilter from "../../components/Common/InventorySearchFilter"
+
+// Donut Chart Component for Status Distribution
+const StatusPieChart = ({ data }) => {
+  const { expired, expiringSoon, valid } = data
+  const total = expired + expiringSoon + valid
+
+  if (total === 0) {
+    return (
+      <div className="text-center text-gray-500 py-8">
+        Không có dữ liệu
+      </div>
+    )
+  }
+
+  const size = 240
+  const outerRadius = 90
+  const innerRadius = 60
+  const centerX = size / 2
+  const centerY = size / 2
+
+  // Calculate angles
+  const expiredAngle = (expired / total) * 360
+  const expiringSoonAngle = (expiringSoon / total) * 360
+  const validAngle = (valid / total) * 360
+
+  const statusItems = [
+    { angle: expiredAngle, color: "#ef4444", label: "Hết hạn", value: expired },
+    { angle: expiringSoonAngle, color: "#f97316", label: "Sắp hết hạn", value: expiringSoon },
+    { angle: validAngle, color: "#22c55e", label: "Còn hạn", value: valid }
+  ]
+
+  const createDonutArc = (startAngle, angle, color, index) => {
+    if (angle === 0) return null
+
+    const endAngle = startAngle + angle
+    const startRad = (startAngle * Math.PI) / 180
+    const endRad = (endAngle * Math.PI) / 180
+
+    const x1 = centerX + outerRadius * Math.cos(startRad)
+    const y1 = centerY + outerRadius * Math.sin(startRad)
+    const x2 = centerX + outerRadius * Math.cos(endRad)
+    const y2 = centerY + outerRadius * Math.sin(endRad)
+
+    const x3 = centerX + innerRadius * Math.cos(endRad)
+    const y3 = centerY + innerRadius * Math.sin(endRad)
+    const x4 = centerX + innerRadius * Math.cos(startRad)
+    const y4 = centerY + innerRadius * Math.sin(startRad)
+
+    const largeArcFlag = angle > 180 ? 1 : 0
+
+    return (
+      <path
+        key={index}
+        d={`M ${x1} ${y1} A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 1 ${x2} ${y2} L ${x3} ${y3} A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${x4} ${y4} Z`}
+        fill={color}
+        stroke="white"
+        strokeWidth="3"
+        className="transition-all duration-500 ease-out hover:opacity-80"
+      />
+    )
+  }
+
+  return (
+    <div className="flex flex-col items-center">
+      <div className="relative">
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="transform -rotate-90">
+          <defs>
+            <filter id="shadow">
+              <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.2" />
+            </filter>
+          </defs>
+          {statusItems.map((item, index) => {
+            const startAngle = index === 0
+              ? -90
+              : statusItems.slice(0, index).reduce((sum, i) => sum + i.angle, -90)
+            return createDonutArc(startAngle, item.angle, item.color, index)
+          })}
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-slate-700">{total}</div>
+            <div className="text-sm text-slate-500 mt-1">Tổng số lô</div>
+          </div>
+        </div>
+      </div>
+      <div className="mt-6 flex items-center justify-center gap-4 w-full flex-wrap">
+        {statusItems.map((item, index) => (
+          <div key={index} className="flex flex-col items-center p-4 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors min-w-[120px]">
+            <div className="flex items-center gap-2 mb-2">
+              <div
+                className="w-4 h-4 rounded-full shadow-sm"
+                style={{ backgroundColor: item.color }}
+              ></div>
+              <span className="text-sm font-medium text-slate-700">{item.label}</span>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-slate-700">{item.value}</div>
+              <div className="text-xs text-slate-500">
+                {total > 0 ? ((item.value / total) * 100).toFixed(1) : 0}%
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Time Series Chart Component for Inventory Trend
+const InventoryTrendChart = ({ data, timeRange }) => {
+  if (!data || data.length === 0) {
+    return (
+      <div className="text-center text-gray-500 py-8">
+        Không có dữ liệu
+      </div>
+    )
+  }
+
+  // Group data by time period
+  const groupDataByTime = () => {
+    const grouped = new Map()
+
+    data.forEach(item => {
+      if (!item.expiryDate) return
+
+      const date = new Date(item.expiryDate)
+      let key = ""
+
+      if (timeRange === "week") {
+        // Group by day of week
+        const dayOfWeek = date.getDay()
+        const dayNames = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"]
+        key = dayNames[dayOfWeek]
+      } else if (timeRange === "month") {
+        // Group by week of month
+        const weekOfMonth = Math.ceil(date.getDate() / 7)
+        key = `Tuần ${weekOfMonth}`
+      } else {
+        // Group by month
+        const month = date.getMonth() + 1
+        key = `Tháng ${month}`
+      }
+
+      const quantity = item.totalPackageQuantity || 0
+      if (grouped.has(key)) {
+        grouped.set(key, grouped.get(key) + quantity)
+      } else {
+        grouped.set(key, quantity)
+      }
+    })
+
+    // Create all periods for proper display
+    let allPeriods = []
+    if (timeRange === "week") {
+      allPeriods = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"]
+    } else if (timeRange === "month") {
+      allPeriods = ["Tuần 1", "Tuần 2", "Tuần 3", "Tuần 4"]
+    } else {
+      allPeriods = Array.from({ length: 12 }, (_, i) => `Tháng ${i + 1}`)
+    }
+
+    return allPeriods.map(label => ({
+      label,
+      quantity: grouped.get(label) || 0
+    }))
+  }
+
+  const chartData = groupDataByTime()
+  const maxQuantity = Math.max(...chartData.map(item => item.quantity), 1)
+  const chartHeight = 250
+  const chartWidth = 1000
+  const padding = 60
+  const barSpacing = 12
+
+  return (
+    <div className="w-full overflow-x-auto">
+      <div className="relative" style={{ height: `${chartHeight}px`, minWidth: `${chartWidth}px` }}>
+        <svg width={chartWidth} height={chartHeight} className="overflow-visible">
+          <defs>
+            {/* Gradient for bars */}
+            <linearGradient id="barGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#f97316" stopOpacity="1" />
+              <stop offset="100%" stopColor="#ea580c" stopOpacity="1" />
+            </linearGradient>
+            {/* Shadow filter */}
+            <filter id="barShadow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur in="SourceAlpha" stdDeviation="3" />
+              <feOffset dx="0" dy="2" result="offsetblur" />
+              <feComponentTransfer>
+                <feFuncA type="linear" slope="0.3" />
+              </feComponentTransfer>
+              <feMerge>
+                <feMergeNode />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          {/* Grid lines */}
+          {[0, 1, 2, 3, 4].map(i => {
+            const yPos = padding + (chartHeight - padding * 2) / 4 * i
+            return (
+              <g key={i}>
+                <line
+                  x1={padding}
+                  y1={yPos}
+                  x2={chartWidth - padding}
+                  y2={yPos}
+                  stroke="#e5e7eb"
+                  strokeWidth="1"
+                  strokeDasharray="4 4"
+                />
+                {/* Y-axis labels */}
+                <text
+                  x={padding - 10}
+                  y={yPos + 4}
+                  textAnchor="end"
+                  className="text-xs fill-slate-500"
+                >
+                  {Math.round(maxQuantity - (maxQuantity / 4) * i).toLocaleString("vi-VN")}
+                </text>
+              </g>
+            )
+          })}
+
+          {/* Bars */}
+          {chartData.map((item, index) => {
+            const availableWidth = chartWidth - padding * 2
+            const barWidth = (availableWidth / chartData.length) - barSpacing
+            const barHeight = ((item.quantity / maxQuantity) * (chartHeight - padding * 2 - 30))
+            const xPosition = padding + (index * (availableWidth / chartData.length)) + barSpacing / 2
+            const yPosition = chartHeight - padding - barHeight - 10
+
+            return (
+              <g key={index}>
+                <rect
+                  x={xPosition}
+                  y={chartHeight - padding - 10}
+                  width={barWidth}
+                  height="0"
+                  fill="url(#barGradient)"
+                  rx="6"
+                  filter="url(#barShadow)"
+                  className="transition-all duration-500 ease-out hover:opacity-90 cursor-pointer"
+                >
+                  <animate
+                    attributeName="height"
+                    from="0"
+                    to={barHeight}
+                    dur="0.6s"
+                    begin={`${index * 0.1}s`}
+                    fill="freeze"
+                  />
+                  <animate
+                    attributeName="y"
+                    from={chartHeight - padding - 10}
+                    to={yPosition}
+                    dur="0.6s"
+                    begin={`${index * 0.1}s`}
+                    fill="freeze"
+                  />
+                </rect>
+                {/* Value label on top */}
+                {item.quantity > 0 && (
+                  <text
+                    x={xPosition + barWidth / 2}
+                    y={yPosition - 8}
+                    textAnchor="middle"
+                    className="text-xs font-bold fill-slate-700"
+                  >
+                    {item.quantity >= 1000 ? (item.quantity / 1000).toFixed(1) + "k" : item.quantity.toLocaleString("vi-VN")}
+                  </text>
+                )}
+              </g>
+            )
+          })}
+        </svg>
+      </div>
+
+      {/* X-axis labels */}
+      <div className="flex justify-start mt-4" style={{ minWidth: `${chartWidth}px`, paddingLeft: `${padding}px`, paddingRight: `${padding}px` }}>
+        {chartData.map((item, index) => {
+          const availableWidth = chartWidth - padding * 2
+          const labelWidth = availableWidth / chartData.length
+          return (
+            <div
+              key={index}
+              className="text-xs font-medium text-slate-600 text-center"
+              style={{ width: `${labelWidth}px` }}
+            >
+              {item.label}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Legend and Summary */}
+      <div className="mt-6 flex items-center justify-between px-2">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-gradient-to-b from-orange-500 to-orange-600"></div>
+            <span className="text-sm text-slate-600">Số lượng tồn kho (thùng)</span>
+          </div>
+        </div>
+        <div className="text-sm text-slate-500">
+          Tổng: <span className="font-semibold text-slate-700">
+            {chartData.reduce((sum, item) => sum + item.quantity, 0).toLocaleString("vi-VN")} thùng
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Bar Chart Component for Top Products
+const TopProductsChart = ({ data }) => {
+  if (!data || data.length === 0) {
+    return (
+      <div className="text-center text-gray-500 py-8">
+        Không có dữ liệu
+      </div>
+    )
+  }
+
+  const maxQuantity = Math.max(...data.map(item => item.quantity))
+
+  return (
+    <div className="space-y-4">
+      {data.map((item, index) => {
+        const percentage = maxQuantity > 0 ? (item.quantity / maxQuantity) * 100 : 0
+        const colors = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981"]
+        const color = colors[index % colors.length]
+
+        return (
+          <div key={index} className="space-y-1">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-700 font-medium truncate flex-1 mr-2">
+                {item.name.length > 30 ? `${item.name.substring(0, 30)}...` : item.name}
+              </span>
+              <span className="text-slate-600 font-semibold whitespace-nowrap">
+                {item.quantity.toLocaleString("vi-VN")} thùng
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-500 ease-out"
+                style={{
+                  width: `${percentage}%`,
+                  backgroundColor: color
+                }}
+              />
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
 export default function InventoryReport({ onClose }) {
   const [inventoryData, setInventoryData] = useState([])
@@ -207,6 +572,61 @@ export default function InventoryReport({ onClose }) {
     setPagination(prev => ({ ...prev, current: 1 }))
   }
 
+  // Calculate chart data from inventory data
+  const calculateChartData = () => {
+    if (!inventoryData || inventoryData.length === 0) {
+      return {
+        statusData: { expired: 0, expiringSoon: 0, valid: 0 },
+        topProducts: [],
+        totalQuantity: 0
+      }
+    }
+
+    // Status distribution
+    let expired = 0
+    let expiringSoon = 0
+    let valid = 0
+
+    // Product quantity aggregation
+    const productMap = new Map()
+
+    inventoryData.forEach(item => {
+      // Count status
+      if (isExpired(item.expiryDate)) {
+        expired++
+      } else if (isExpiringSoon(item.expiryDate, 30)) {
+        expiringSoon++
+      } else {
+        valid++
+      }
+
+      // Aggregate by product
+      const productKey = item.goodName || item.goodsCode || "Unknown"
+      const quantity = item.totalPackageQuantity || 0
+      if (productMap.has(productKey)) {
+        productMap.set(productKey, productMap.get(productKey) + quantity)
+      } else {
+        productMap.set(productKey, quantity)
+      }
+    })
+
+    // Get top 5 products
+    const topProducts = Array.from(productMap.entries())
+      .map(([name, quantity]) => ({ name, quantity }))
+      .sort((a, b) => b.quantity - a.quantity)
+      .slice(0, 5)
+
+    const totalQuantity = Array.from(productMap.values()).reduce((sum, qty) => sum + qty, 0)
+
+    return {
+      statusData: { expired, expiringSoon, valid },
+      topProducts,
+      totalQuantity
+    }
+  }
+
+  const chartData = calculateChartData()
+
   return (
     <div className="min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -235,6 +655,56 @@ export default function InventoryReport({ onClose }) {
             )}
           </div>
         </div>
+
+        {/* Charts Section */}
+        {!loading && inventoryData.length > 0 && (
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Status Distribution Pie Chart */}
+              <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-slate-700 mb-4">Phân bố trạng thái</h3>
+                <div className="flex items-center justify-center">
+                  <StatusPieChart data={chartData.statusData} />
+                </div>
+              </div>
+
+              {/* Top Products Bar Chart */}
+              <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-slate-700 mb-4">Top 5 sản phẩm tồn kho</h3>
+                <TopProductsChart data={chartData.topProducts} />
+              </div>
+            </div>
+
+            {/* Inventory Trend Chart */}
+            <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-slate-700">
+                  Xu hướng tồn kho
+                </h3>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8 text-xs">
+                      {timeRange === "week" ? "Theo tuần" : timeRange === "month" ? "Theo tháng" : "Theo năm"}
+                      <ChevronDown className="ml-1 h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setTimeRange("week")}>
+                      Theo tuần
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTimeRange("month")}>
+                      Theo tháng
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTimeRange("year")}>
+                      Theo năm
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <InventoryTrendChart data={inventoryData} timeRange={timeRange} />
+            </div>
+          </>
+        )}
 
         {/* Inventory Table */}
         <div className="w-full bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
