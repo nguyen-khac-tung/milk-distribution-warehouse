@@ -5,12 +5,14 @@ import { Button } from '../../components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { ArrowLeft, Package, User, Calendar, CheckCircle, XCircle, Clock, Truck, CheckSquare, FileText, Hash, Shield, Pencil, Eye } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
-import { 
-    getDisposalRequestDetail, 
-    updateDisposalRequestStatusPendingApproval, 
-    approveDisposalRequest, 
-    rejectDisposalRequest, 
-    assignDisposalRequestForPicking 
+import {
+    getDisposalRequestDetail,
+    updateDisposalRequestStatusPendingApproval,
+    approveDisposalRequest,
+    rejectDisposalRequest,
+    assignDisposalRequestForPicking,
+    createDisposalNote,
+    getDetailDisposalNote
 } from '../../services/DisposalService';
 import { DISPOSAL_REQUEST_STATUS, canPerformDisposalRequestDetailAction } from '../../utils/permissions';
 import { STATUS_LABELS } from '../../components/DisposalComponents/StatusDisplayDisposalRequest';
@@ -19,6 +21,7 @@ import SubmitDraftModal from '../../components/DisposalComponents/SubmitDraftMod
 import ApprovalConfirmationModal from '../../components/DisposalComponents/ApprovalConfirmationModal';
 import RejectionConfirmationModal from '../../components/DisposalComponents/RejectionConfirmationModal';
 import AssignPickingModal from '../../components/DisposalComponents/AssignPickingModal';
+import CreateDisposalNoteModal from '../../components/DisposalComponents/CreateDisposalNoteModal';
 import { usePermissions } from '../../hooks/usePermissions';
 import { extractErrorMessage } from '../../utils/Validation';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
@@ -29,14 +32,17 @@ const DisposalDetail = () => {
     const [loading, setLoading] = useState(true);
     const [disposalRequest, setDisposalRequest] = useState(null);
     const [error, setError] = useState(null);
+    const [hasDisposalNote, setHasDisposalNote] = useState(false);
     const [showSubmitDraftModal, setShowSubmitDraftModal] = useState(false);
     const [showApprovalModal, setShowApprovalModal] = useState(false);
     const [showRejectionModal, setShowRejectionModal] = useState(false);
     const [showAssignPickingModal, setShowAssignPickingModal] = useState(false);
+    const [showCreateDisposalNoteModal, setShowCreateDisposalNoteModal] = useState(false);
     const [submitLoading, setSubmitLoading] = useState(false);
     const [approvalLoading, setApprovalLoading] = useState(false);
     const [rejectionLoading, setRejectionLoading] = useState(false);
     const [assignPickingLoading, setAssignPickingLoading] = useState(false);
+    const [createDisposalNoteLoading, setCreateDisposalNoteLoading] = useState(false);
     const { hasPermission, isWarehouseManager, isWarehouseStaff } = usePermissions();
     const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
 
@@ -45,8 +51,21 @@ const DisposalDetail = () => {
             try {
                 setLoading(true);
                 const response = await getDisposalRequestDetail(id);
+                console.log("22222;", response)
                 if (response && response.success) {
                     setDisposalRequest(response.data);
+                    // Check if disposal note exists
+                    try {
+                        const disposalNoteResponse = await getDetailDisposalNote(id);
+                        if (disposalNoteResponse && disposalNoteResponse.success && disposalNoteResponse.data) {
+                            setHasDisposalNote(true);
+                        } else {
+                            setHasDisposalNote(false);
+                        }
+                    } catch (err) {
+                        // If error, means disposal note doesn't exist yet
+                        setHasDisposalNote(false);
+                    }
                 } else {
                     setError('Không thể tải thông tin yêu cầu xuất hủy');
                 }
@@ -102,6 +121,42 @@ const DisposalDetail = () => {
     const canSubmitDraft = () => canPerformDisposalRequestDetailAction('submit_pending_approval', disposalRequest, hasPermission, userInfo);
     const canAssignForPicking = () => canPerformDisposalRequestDetailAction('assign_for_picking', disposalRequest, hasPermission, userInfo);
     const canEdit = () => canPerformDisposalRequestDetailAction('edit', disposalRequest, hasPermission, userInfo);
+
+    // Check if can create disposal note (Warehouse Staff only, when assigned and status is AssignedForPicking or Picking)
+    const canCreateDisposalNote = () => {
+        if (!disposalRequest) return false;
+        if (!isWarehouseStaff) return false;
+
+        const currentUserId = userInfo?.userId;
+        const currentFullName = userInfo?.fullName || '';
+        const currentUserName = userInfo?.userName || '';
+
+        // Check by userId first
+        const isAssignedToSelfById =
+            disposalRequest?.assignTo?.userId === currentUserId ||
+            disposalRequest?.assignTo?.id === currentUserId ||
+            disposalRequest?.assignTo === currentUserId ||
+            disposalRequest?.assignToId === currentUserId ||
+            disposalRequest?.assignToUserId === currentUserId;
+
+        // Check by name as fallback (in case backend doesn't return assignTo object)
+        const assignToName = disposalRequest?.assignTo?.fullName || disposalRequest?.assignToName || '';
+        const isAssignedToSelfByName = assignToName && (
+            assignToName.toLowerCase().trim() === currentFullName.toLowerCase().trim() ||
+            assignToName.toLowerCase().trim() === currentUserName.toLowerCase().trim()
+        );
+
+        const isAssignedToSelf = isAssignedToSelfById || isAssignedToSelfByName;
+
+        const status = disposalRequest?.status;
+        const canCreate = isAssignedToSelf &&
+            (status === DISPOSAL_REQUEST_STATUS.AssignedForPicking ||
+                status === DISPOSAL_REQUEST_STATUS.Picking ||
+                status === 5 || status === "5" ||
+                status === 6 || status === "6");
+
+        return canCreate && !hasDisposalNote;
+    };
 
     const handleSubmitDraftConfirm = async () => {
         setSubmitLoading(true);
@@ -219,6 +274,35 @@ const DisposalDetail = () => {
         }
     };
 
+    const handleCreateDisposalNote = async () => {
+        setCreateDisposalNoteLoading(true);
+        try {
+            await createDisposalNote({
+                disposalRequestId: disposalRequest.disposalRequestId
+            });
+
+            if (window.showToast) {
+                window.showToast("Tạo phiếu xuất hủy thành công!", "success");
+            }
+            setShowCreateDisposalNoteModal(false);
+            // Set hasDisposalNote to true after successful creation
+            setHasDisposalNote(true);
+            const response = await getDisposalRequestDetail(id);
+            if (response && response.success) {
+                setDisposalRequest(response.data);
+            }
+        } catch (error) {
+            console.error("Error creating disposal note:", error);
+            const message = extractErrorMessage(error, "Có lỗi xảy ra khi tạo phiếu xuất hủy")
+
+            if (window.showToast) {
+                window.showToast(message, "error");
+            }
+        } finally {
+            setCreateDisposalNoteLoading(false);
+        }
+    };
+
     if (loading) {
         return <Loading />;
     }
@@ -287,9 +371,9 @@ const DisposalDetail = () => {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
+                <div className="grid grid-cols-1 lg:grid-cols-[2.2fr_0.8fr] gap-6 mt-4">
                     {/* Main Content - Left Side */}
-                    <div className="lg:col-span-2">
+                    <div>
                         <div className="bg-white border-2 border-gray-400 rounded-lg p-6 h-full flex flex-col">
                             {/* Title */}
                             <div className="text-center mb-6">
@@ -346,7 +430,8 @@ const DisposalDetail = () => {
                                         <TableRow className="bg-gray-100">
                                             <TableHead className="w-16 text-center font-semibold">STT</TableHead>
                                             <TableHead className="font-semibold">Tên hàng hóa</TableHead>
-                                            <TableHead className="font-semibold">Mã hàng</TableHead>
+                                            <TableHead className="font-semibold">Mã hàng hóa</TableHead>
+                                            <TableHead className="font-semibold">Nhà cung cấp</TableHead>
                                             <TableHead className="text-center font-semibold leading-tight">
                                                 <div className="flex flex-col items-center">
                                                     <span className="whitespace-nowrap">Đơn vị</span>
@@ -365,6 +450,7 @@ const DisposalDetail = () => {
                                                     <TableCell className="text-center font-medium">{index + 1}</TableCell>
                                                     <TableCell className="font-medium">{item.goods?.goodsName || '-'}</TableCell>
                                                     <TableCell className="text-gray-600">{item.goods?.goodsCode || '-'}</TableCell>
+                                                    <TableCell className="text-gray-600">{item.goods?.companyName || 'Sữa tươi thanh trùng Vinamilk không'}</TableCell>
                                                     <TableCell className="text-center font-semibold">{item.goodsPacking?.unitPerPackage || '-'}</TableCell>
                                                     <TableCell className="text-center font-semibold">{item.packageQuantity || '-'}</TableCell>
                                                     <TableCell className="text-center font-semibold">
@@ -383,7 +469,7 @@ const DisposalDetail = () => {
                                         {/* Total Row */}
                                         {disposalRequest.disposalRequestDetails && disposalRequest.disposalRequestDetails.length > 0 && (
                                             <TableRow className="bg-gray-100 font-bold border-t border-gray-300">
-                                                <TableCell colSpan={4} className="text-right pr-2 bg-gray-100">Tổng:</TableCell>
+                                                <TableCell colSpan={5} className="text-right pr-2 bg-gray-100">Tổng:</TableCell>
                                                 <TableCell className="text-center font-bold bg-gray-100">
                                                     {disposalRequest.disposalRequestDetails.reduce(
                                                         (sum, item) => sum + (item.packageQuantity || 0),
@@ -462,6 +548,25 @@ const DisposalDetail = () => {
                                     >
                                         <Truck className="h-4 w-4 mr-2" />
                                         {disposalRequest?.status === DISPOSAL_REQUEST_STATUS.AssignedForPicking ? 'Phân công lại' : 'Phân công lấy hàng'}
+                                    </Button>
+                                )}
+
+                                {canCreateDisposalNote() && (
+                                    <Button
+                                        onClick={() => setShowCreateDisposalNoteModal(true)}
+                                        className="bg-indigo-600 hover:bg-indigo-700 text-white h-[38px] px-8"
+                                    >
+                                        <Package className="h-4 w-4 mr-2" />
+                                        Tạo phiếu xuất hủy
+                                    </Button>
+                                )}
+                                {(isWarehouseManager || isWarehouseStaff) && hasDisposalNote && (
+                                    <Button
+                                        onClick={() => navigate(`/disposal-note-detail/${disposalRequest.disposalRequestId}`)}
+                                        className="h-[38px] px-8 bg-green-700 hover:bg-green-900 text-white"
+                                    >
+                                        <Eye className="h-4 w-4 mr-2" />
+                                        Xem phiếu xuất hủy
                                     </Button>
                                 )}
                             </div>
@@ -545,6 +650,15 @@ const DisposalDetail = () => {
                 onConfirm={handleAssignPicking}
                 disposalRequest={disposalRequest}
                 loading={assignPickingLoading}
+            />
+
+            {/* Create Disposal Note Modal */}
+            <CreateDisposalNoteModal
+                isOpen={showCreateDisposalNoteModal}
+                onClose={() => setShowCreateDisposalNoteModal(false)}
+                onConfirm={handleCreateDisposalNote}
+                disposalRequest={disposalRequest}
+                loading={createDisposalNoteLoading}
             />
 
         </div>
