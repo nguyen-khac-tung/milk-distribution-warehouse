@@ -4,26 +4,27 @@ import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { ArrowLeft, Printer, CheckCircle, Clock, AlertCircle, ChevronDown, ChevronUp, RefreshCw, Barcode, Package, Send, ShieldCheck } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
-import { getDetailGoodsIssueNote, submitGoodsIssueNote, approveGoodsIssueNote, rePickGoodsIssueNoteDetail, rePickGoodsIssueNoteDetailList } from '../../services/GoodsIssueNoteService';
+import { getDetailDisposalNote, submitDisposalNote, approveDisposalNote, rePickDisposalNoteDetail, rePickDisposalNoteDetailList } from '../../services/DisposalService';
 import { getPickAllocationDetail, confirmPickAllocation } from '../../services/PickAllocationService';
-import { getGoodsIssueNoteStatusMeta, getIssueItemStatusMeta, ISSUE_ITEM_STATUS, GOODS_ISSUE_NOTE_STATUS } from './goodsIssueNoteStatus';
+import { getDisposalNoteStatusMeta, getDisposalItemStatusMeta, DISPOSAL_ITEM_STATUS, DISPOSAL_NOTE_STATUS } from './DisposalNoteStatus';
 import { extractErrorMessage } from '../../utils/Validation';
 import ScanPalletModal from '../../components/GoodsIssueNoteComponents/ScanPalletModal';
 import { usePermissions } from '../../hooks/usePermissions';
 import RePickModal from '../../components/GoodsIssueNoteComponents/RePickModal';
 import RePickMultipleModal from '../../components/GoodsIssueNoteComponents/RePickMultipleModal';
-import PickAllocationsTableStaff from '../../components/GoodsIssueNoteComponents/PickAllocationsTableStaff';
-import PickAllocationsTableManager from '../../components/GoodsIssueNoteComponents/PickAllocationsTableManager';
+import PickAllocationsTableStaff from '../../components/DisposalNoteComponents/PickAllocationsTableStaff';
+import PickAllocationsTableManager from '../../components/DisposalNoteComponents/PickAllocationsTableManager';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
 
-const GoodsIssueNoteDetail = () => {
-    const { id } = useParams();
+const DisposalNoteDetail = () => {
+    const { id } = useParams(); // id là disposalRequestId
     const navigate = useNavigate();
     const { isWarehouseStaff, isWarehouseManager } = usePermissions();
     const [loading, setLoading] = useState(true);
-    const [goodsIssueNote, setGoodsIssueNote] = useState(null);
+    const [disposalNote, setDisposalNote] = useState(null);
     const [error, setError] = useState(null);
 
+    console.log("====:", disposalNote)
     // Get current user info from localStorage - useMemo to recalculate when needed
     const currentUserInfo = useMemo(() => {
         try {
@@ -38,14 +39,17 @@ const GoodsIssueNoteDetail = () => {
         }
     }, []);
 
-    // Check if current user is assigned to this order (AssignTo) - compare by name since backend doesn't return AssignTo ID
+    // Check if current user is assigned to this disposal request (AssignTo) - compare by name since backend doesn't return AssignTo ID
     const isAssigned = useMemo(() => {
-        if (!goodsIssueNote || !currentUserInfo) {
+        if (!disposalNote || !currentUserInfo) {
             return false;
         }
 
-        // Check AssignToName (người được phân công) 
-        const assignToName = goodsIssueNote.assignToName || '';
+        // Check AssignToName (người được phân công) - DisposalNote có thể không có assignToName
+        // Nếu không có assignToName, thì tất cả Warehouse Staff đều có thể xem
+        const assignToName = disposalNote.assignToName || '';
+        if (!assignToName) return true; // Nếu không có assignToName, cho phép tất cả staff
+
         const currentFullName = currentUserInfo.fullName || '';
         const currentUserName = currentUserInfo.userName || '';
 
@@ -54,7 +58,8 @@ const GoodsIssueNoteDetail = () => {
             assignToName.toLowerCase().trim() === currentUserName.toLowerCase().trim();
 
         return isMatch;
-    }, [goodsIssueNote, currentUserInfo]);
+    }, [disposalNote, currentUserInfo]);
+    
     const [expandedItems, setExpandedItems] = useState({});
     const [expandedGroups, setExpandedGroups] = useState({});
     const [confirmingPickId, setConfirmingPickId] = useState(null);
@@ -74,33 +79,33 @@ const GoodsIssueNoteDetail = () => {
 
 
     useEffect(() => {
-        fetchGoodsIssueNoteDetail();
+        fetchDisposalNoteDetail();
     }, [id]);
 
-    const fetchGoodsIssueNoteDetail = async (preserveExpandedState = false) => {
+    const fetchDisposalNoteDetail = async (preserveExpandedState = false) => {
         setLoading(true);
         try {
-            const response = await getDetailGoodsIssueNote(id);
+            const response = await getDetailDisposalNote(id);
 
             if (response && response.success && response.data) {
                 // Nếu cần giữ lại trạng thái mở, lưu lại danh sách các detailId đang mở
                 let expandedDetailIds = new Set();
-                if (preserveExpandedState && goodsIssueNote?.goodsIssueNoteDetails) {
-                    goodsIssueNote.goodsIssueNoteDetails.forEach((detail, idx) => {
+                if (preserveExpandedState && disposalNote?.disposalNoteDetails) {
+                    disposalNote.disposalNoteDetails.forEach((detail, idx) => {
                         if (expandedItems[idx]) {
-                            expandedDetailIds.add(detail.goodsIssueNoteDetailId);
+                            expandedDetailIds.add(detail.disposalNoteDetailId);
                         }
                     });
                 }
 
-                setGoodsIssueNote(response.data);
+                setDisposalNote(response.data);
                 
                 // Nếu cần giữ lại trạng thái, khôi phục lại các item đã mở dựa trên detailId
                 if (preserveExpandedState && expandedDetailIds.size > 0) {
                     setExpandedItems(prev => {
                         const newExpanded = {};
-                        response.data.goodsIssueNoteDetails?.forEach((detail, idx) => {
-                            if (expandedDetailIds.has(detail.goodsIssueNoteDetailId)) {
+                        response.data.disposalNoteDetails?.forEach((detail, idx) => {
+                            if (expandedDetailIds.has(detail.disposalNoteDetailId)) {
                                 newExpanded[idx] = true;
                             }
                         });
@@ -111,11 +116,11 @@ const GoodsIssueNoteDetail = () => {
                     setExpandedItems({});
                 }
             } else {
-                setError('Không tìm thấy phiếu xuất kho cho đơn hàng này');
+                setError('Không tìm thấy phiếu xuất hủy cho yêu cầu này');
             }
         } catch (err) {
-            console.error('Error fetching goods issue note detail:', err);
-            setError(`Có lỗi xảy ra: ${err.response?.data?.message || err.message || 'Không tìm thấy phiếu xuất kho'}`);
+            console.error('Error fetching disposal note detail:', err);
+            setError(`Có lỗi xảy ra: ${err.response?.data?.message || err.message || 'Không tìm thấy phiếu xuất hủy'}`);
         } finally {
             setLoading(false);
         }
@@ -172,8 +177,8 @@ const GoodsIssueNoteDetail = () => {
             setShowScanModal(false);
             setPickDetailData(null);
 
-            // Refresh the goods issue note to get updated status, nhưng giữ lại trạng thái mở của các card
-            await fetchGoodsIssueNoteDetail(true);
+            // Refresh the disposal note to get updated status, nhưng giữ lại trạng thái mở của các card
+            await fetchDisposalNoteDetail(true);
         } catch (error) {
             console.error('Error confirming pick:', error);
             const errorMessage = extractErrorMessage(error);
@@ -192,7 +197,7 @@ const GoodsIssueNoteDetail = () => {
 
     // Helper function to add icons to status info
     const getStatusInfoWithIcon = (status) => {
-        const statusInfo = getGoodsIssueNoteStatusMeta(status);
+        const statusInfo = getDisposalNoteStatusMeta(status);
         let icon;
         switch (status) {
             case 1:
@@ -227,63 +232,63 @@ const GoodsIssueNoteDetail = () => {
     };
 
     const handleRefresh = async () => {
-        await fetchGoodsIssueNoteDetail();
+        await fetchDisposalNoteDetail();
         if (window.showToast) {
             window.showToast('Đã làm mới dữ liệu', 'success');
         }
     };
 
-    // Handle Submit
+    // Handle Submit - Chỉ Warehouse Staff
     const handleSubmit = async () => {
-        if (!goodsIssueNote) return;
+        if (!disposalNote) return;
 
         try {
             setSubmitLoading(true);
-            const response = await submitGoodsIssueNote(goodsIssueNote.goodsIssueNoteId);
+            const response = await submitDisposalNote(disposalNote.disposalNoteId);
 
             if (response && response.success) {
                 if (window.showToast) {
-                    window.showToast('Nộp phiếu xuất kho thành công!', 'success');
+                    window.showToast('Nộp phiếu xuất hủy thành công!', 'success');
                 }
-                await fetchGoodsIssueNoteDetail();
+                await fetchDisposalNoteDetail();
             }
         } catch (error) {
-            console.error('Error submitting goods issue note:', error);
+            console.error('Error submitting disposal note:', error);
             const errorMessage = extractErrorMessage(error);
             if (window.showToast) {
-                window.showToast(errorMessage || 'Có lỗi xảy ra khi nộp phiếu xuất kho', 'error');
+                window.showToast(errorMessage || 'Có lỗi xảy ra khi nộp phiếu xuất hủy', 'error');
             }
         } finally {
             setSubmitLoading(false);
         }
     };
 
-    // Handle Approve
+    // Handle Approve - Chỉ Warehouse Manager
     const handleApprove = async () => {
-        if (!goodsIssueNote) return;
+        if (!disposalNote) return;
 
         try {
             setApproveLoading(true);
-            const response = await approveGoodsIssueNote(goodsIssueNote.goodsIssueNoteId);
+            const response = await approveDisposalNote(disposalNote.disposalNoteId);
 
             if (response && response.success) {
                 if (window.showToast) {
-                    window.showToast('Duyệt phiếu xuất kho thành công!', 'success');
+                    window.showToast('Duyệt phiếu xuất hủy thành công!', 'success');
                 }
-                await fetchGoodsIssueNoteDetail();
+                await fetchDisposalNoteDetail();
             }
         } catch (error) {
-            console.error('Error approving goods issue note:', error);
+            console.error('Error approving disposal note:', error);
             const errorMessage = extractErrorMessage(error);
             if (window.showToast) {
-                window.showToast(errorMessage || 'Có lỗi xảy ra khi duyệt phiếu xuất kho', 'error');
+                window.showToast(errorMessage || 'Có lỗi xảy ra khi duyệt phiếu xuất hủy', 'error');
             }
         } finally {
             setApproveLoading(false);
         }
     };
 
-    // Handle RePick
+    // Handle RePick - Warehouse Staff dùng single endpoint
     const handleRePick = (detail) => {
         setSelectedItemForRePick(detail);
         setShowRePickModal(true);
@@ -294,22 +299,11 @@ const GoodsIssueNoteDetail = () => {
 
         try {
             setRePickLoading(true);
-            let response;
-            if (isWarehouseManager) {
-                // Manager: use list endpoint (even for single item)
-                response = await rePickGoodsIssueNoteDetailList([
-                    {
-                        goodsIssueNoteDetailId: selectedItemForRePick.goodsIssueNoteDetailId,
-                        rejectionReason: rejectionReason || ''
-                    }
-                ]);
-            } else {
-                // Staff: single item endpoint
-                response = await rePickGoodsIssueNoteDetail({
-                    goodsIssueNoteDetailId: selectedItemForRePick.goodsIssueNoteDetailId,
-                    rejectionReason: rejectionReason || ''
-                });
-            }
+            // Warehouse Staff: single item endpoint
+            const response = await rePickDisposalNoteDetail({
+                disposalNoteDetailId: selectedItemForRePick.disposalNoteDetailId,
+                rejectionReason: rejectionReason || ''
+            });
 
             if (response && response.success) {
                 if (window.showToast) {
@@ -318,7 +312,7 @@ const GoodsIssueNoteDetail = () => {
                 setShowRePickModal(false);
                 setSelectedItemForRePick(null);
                 // Giữ lại trạng thái mở của các card sau khi lấy lại
-                await fetchGoodsIssueNoteDetail(true);
+                await fetchDisposalNoteDetail(true);
             }
         } catch (error) {
             console.error('Error re-picking:', error);
@@ -341,11 +335,11 @@ const GoodsIssueNoteDetail = () => {
         if (checked) {
             setSelectedDetailsForRePick(prev => [...prev, detail]);
         } else {
-            setSelectedDetailsForRePick(prev => prev.filter(d => d.goodsIssueNoteDetailId !== detail.goodsIssueNoteDetailId));
+            setSelectedDetailsForRePick(prev => prev.filter(d => d.disposalNoteDetailId !== detail.disposalNoteDetailId));
             // Xóa lý do khi bỏ chọn
             setRejectReasons(prev => {
                 const newReasons = { ...prev };
-                delete newReasons[detail.goodsIssueNoteDetailId];
+                delete newReasons[detail.disposalNoteDetailId];
                 return newReasons;
             });
         }
@@ -353,18 +347,18 @@ const GoodsIssueNoteDetail = () => {
 
     // Kiểm tra xem detail có được chọn không
     const isDetailSelectedForRePick = (detailId) => {
-        return selectedDetailsForRePick.some(d => d.goodsIssueNoteDetailId === detailId);
+        return selectedDetailsForRePick.some(d => d.disposalNoteDetailId === detailId);
     };
 
     // Xử lý chọn tất cả details để lấy lại (chỉ áp dụng cho quản lý kho)
     const handleSelectAllForRePick = (checked, items) => {
         if (checked) {
             // Chỉ chọn các details có status PendingApproval
-            const rejectableDetails = items.filter(d => d.status === ISSUE_ITEM_STATUS.PendingApproval);
+            const rejectableDetails = items.filter(d => d.status === DISPOSAL_ITEM_STATUS.PendingApproval);
             setSelectedDetailsForRePick(rejectableDetails);
             const initialReasons = {};
             rejectableDetails.forEach(detail => {
-                initialReasons[detail.goodsIssueNoteDetailId] = "";
+                initialReasons[detail.disposalNoteDetailId] = "";
             });
             setRejectReasons(initialReasons);
         } else {
@@ -384,20 +378,20 @@ const GoodsIssueNoteDetail = () => {
         // Khởi tạo rejectReasons cho các details đã chọn
         const initialReasons = {};
         selectedDetailsForRePick.forEach(detail => {
-            initialReasons[detail.goodsIssueNoteDetailId] = "";
+            initialReasons[detail.disposalNoteDetailId] = "";
         });
         setRejectReasons(initialReasons);
         setShowRePickMultipleModal(true);
     };
 
-    // Xử lý lấy lại nhiều items
+    // Xử lý lấy lại nhiều items - Chỉ Warehouse Manager
     const handleConfirmRePickMultiple = async () => {
         if (selectedDetailsForRePick.length === 0) return;
 
         // Validate: Manager phải có lý do cho tất cả items
         const missingReasons = selectedDetailsForRePick.filter(detail =>
-            !rejectReasons[detail.goodsIssueNoteDetailId] ||
-            rejectReasons[detail.goodsIssueNoteDetailId].trim() === ""
+            !rejectReasons[detail.disposalNoteDetailId] ||
+            rejectReasons[detail.disposalNoteDetailId].trim() === ""
         );
 
         if (missingReasons.length > 0) {
@@ -411,11 +405,11 @@ const GoodsIssueNoteDetail = () => {
             setRePickLoading(true);
             // Tạo danh sách re-pick từ selectedDetailsForRePick và rejectReasons
             const rePickList = selectedDetailsForRePick.map(detail => ({
-                goodsIssueNoteDetailId: detail.goodsIssueNoteDetailId,
-                rejectionReason: rejectReasons[detail.goodsIssueNoteDetailId] || ""
+                disposalNoteDetailId: detail.disposalNoteDetailId,
+                rejectionReason: rejectReasons[detail.disposalNoteDetailId] || ""
             }));
 
-            const response = await rePickGoodsIssueNoteDetailList(rePickList);
+            const response = await rePickDisposalNoteDetailList(rePickList);
 
             if (response && response.success) {
                 if (window.showToast) {
@@ -425,7 +419,7 @@ const GoodsIssueNoteDetail = () => {
                 setSelectedDetailsForRePick([]);
                 setRejectReasons({});
                 // Giữ lại trạng thái mở của các card sau khi lấy lại nhiều items
-                await fetchGoodsIssueNoteDetail(true);
+                await fetchDisposalNoteDetail(true);
             }
         } catch (error) {
             console.error('Error re-picking multiple:', error);
@@ -476,8 +470,8 @@ const GoodsIssueNoteDetail = () => {
                         </div>
                         {/* Nút "Lấy lại" nhiều - chỉ hiển thị cho quản lý kho, nhóm "Chờ duyệt" và khi phiếu KHÔNG ở trạng thái "Đang lấy hàng" */}
                         {isWarehouseManager &&
-                            statusCode === ISSUE_ITEM_STATUS.PendingApproval &&
-                            goodsIssueNote.status !== GOODS_ISSUE_NOTE_STATUS.Picking && (
+                            statusCode === DISPOSAL_ITEM_STATUS.PendingApproval &&
+                            disposalNote.status !== DISPOSAL_NOTE_STATUS.Picking && (
                                 <div className="flex items-center gap-2 ml-4" onClick={(e) => e.stopPropagation()}>
                                     <Button
                                         onClick={openRePickMultipleModal}
@@ -496,28 +490,28 @@ const GoodsIssueNoteDetail = () => {
                         <div className="mt-4 space-y-4">
                             {/* Checkbox "Chọn tất cả" - chỉ cho Manager, nhóm "Chờ duyệt" và khi phiếu KHÔNG ở trạng thái "Đang lấy hàng" */}
                             {isWarehouseManager &&
-                                statusCode === ISSUE_ITEM_STATUS.PendingApproval &&
-                                goodsIssueNote.status !== GOODS_ISSUE_NOTE_STATUS.Picking &&
+                                statusCode === DISPOSAL_ITEM_STATUS.PendingApproval &&
+                                disposalNote.status !== DISPOSAL_NOTE_STATUS.Picking &&
                                 items.length > 0 && (
                                     <div className="flex items-center gap-2 mb-2 px-2">
                                         <input
                                             type="checkbox"
-                                            checked={items.filter(d => d.status === ISSUE_ITEM_STATUS.PendingApproval).length > 0 &&
-                                                selectedDetailsForRePick.length === items.filter(d => d.status === ISSUE_ITEM_STATUS.PendingApproval).length}
+                                            checked={items.filter(d => d.status === DISPOSAL_ITEM_STATUS.PendingApproval).length > 0 &&
+                                                selectedDetailsForRePick.length === items.filter(d => d.status === DISPOSAL_ITEM_STATUS.PendingApproval).length}
                                             onChange={(e) => handleSelectAllForRePick(e.target.checked, items)}
                                             className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
                                         />
                                         <label className="text-sm text-gray-700 cursor-pointer">
-                                            Chọn tất cả ({items.filter(d => d.status === ISSUE_ITEM_STATUS.PendingApproval).length} mặt hàng)
+                                            Chọn tất cả ({items.filter(d => d.status === DISPOSAL_ITEM_STATUS.PendingApproval).length} mặt hàng)
                                         </label>
                                     </div>
                                 )}
                             {items.map((detail, index) => {
-                                const detailStatusInfo = getIssueItemStatusMeta(detail.status);
+                                const detailStatusInfo = getDisposalItemStatusMeta(detail.status);
                                 const progress = calculateItemProgress(detail);
-                                const globalIndex = goodsIssueNote.goodsIssueNoteDetails.indexOf(detail);
+                                const globalIndex = disposalNote.disposalNoteDetails.indexOf(detail);
                                 const isExpanded = expandedItems[globalIndex];
-                                const isSelected = isDetailSelectedForRePick(detail.goodsIssueNoteDetailId);
+                                const isSelected = isDetailSelectedForRePick(detail.disposalNoteDetailId);
 
                                 // Tính toán thông tin pick allocations cho Manager
                                 const pickAllocations = detail.pickAllocations || [];
@@ -530,7 +524,7 @@ const GoodsIssueNoteDetail = () => {
                                 } : null;
 
                                 return (
-                                    <div key={detail.goodsIssueNoteDetailId} className="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow">
+                                    <div key={detail.disposalNoteDetailId} className="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow">
                                         {/* Header sản phẩm - Compact và tích hợp thông tin pick allocations */}
                                         <div
                                             className="bg-white px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-100"
@@ -540,8 +534,8 @@ const GoodsIssueNoteDetail = () => {
                                                 <div className="flex items-center gap-3 flex-1 min-w-0">
                                                     {/* Checkbox - chỉ cho Manager, nhóm "Chờ duyệt" và khi phiếu KHÔNG ở trạng thái "Đang lấy hàng" */}
                                                     {isWarehouseManager &&
-                                                        statusCode === ISSUE_ITEM_STATUS.PendingApproval &&
-                                                        goodsIssueNote.status !== GOODS_ISSUE_NOTE_STATUS.Picking && (
+                                                        statusCode === DISPOSAL_ITEM_STATUS.PendingApproval &&
+                                                        disposalNote.status !== DISPOSAL_NOTE_STATUS.Picking && (
                                                             <div onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
                                                                 <input
                                                                     type="checkbox"
@@ -624,7 +618,7 @@ const GoodsIssueNoteDetail = () => {
 
                                                     {/* RePick Button - Chỉ cho Warehouse Staff */}
                                                     {isWarehouseStaff &&
-                                                        detail.status === ISSUE_ITEM_STATUS.Picked &&
+                                                        detail.status === DISPOSAL_ITEM_STATUS.Picked &&
                                                         isAssigned && (
                                                             <Button
                                                                 onClick={(e) => {
@@ -663,6 +657,7 @@ const GoodsIssueNoteDetail = () => {
                                                         onProceedPick={handleProceedPick}
                                                         confirmingPickId={confirmingPickId}
                                                         isWarehouseStaff={isWarehouseStaff}
+                                                        disposalNoteStatus={disposalNote.status}
                                                     />
                                                 ) : (
                                                     /* Warehouse Manager: Hiển thị bảng chi tiết (đã compact) */
@@ -687,15 +682,15 @@ const GoodsIssueNoteDetail = () => {
         return <Loading />;
     }
 
-    if (error || !goodsIssueNote) {
+    if (error || !disposalNote) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <Card className="w-full max-w-md">
                     <CardContent className="p-6 text-center">
                         <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">Lỗi</h3>
-                        <p className="text-gray-600 mb-4">{error || 'Không tìm thấy phiếu xuất kho'}</p>
-                        <Button onClick={() => navigate('/sales-orders')} variant="outline">
+                        <p className="text-gray-600 mb-4">{error || 'Không tìm thấy phiếu xuất hủy'}</p>
+                        <Button onClick={() => navigate('/disposal')} variant="outline">
                             <ComponentIcon name="arrowBackCircleOutline" size={28} />
                         </Button>
                     </CardContent>
@@ -704,15 +699,12 @@ const GoodsIssueNoteDetail = () => {
         );
     }
 
-    const statusInfo = getStatusInfoWithIcon(goodsIssueNote.status);
-    const totalItems = goodsIssueNote.goodsIssueNoteDetails?.length || 0;
+    const statusInfo = getStatusInfoWithIcon(disposalNote.status);
+    const totalItems = disposalNote.disposalNoteDetails?.length || 0;
 
     return (
         <div className="min-h-screen">
             {/* Header */}
-            {/* <p className="text-gray-600 text-sm mt-1">
-                Mã phiếu: {goodsIssueNote.goodsIssueNoteId}
-            </p> */}
             <div>
                 <div className="max-w-7xl mx-auto px-6 py-4 bg-white border border-gray-200 rounded-lg shadow-sm">
                     <div className="flex items-center justify-between">
@@ -721,15 +713,14 @@ const GoodsIssueNoteDetail = () => {
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => navigate('/sales-orders')}
+                                onClick={() => navigate('/disposal')}
                                 className="text-slate-600 hover:bg-slate-50"
                             >
                                 <ComponentIcon name="arrowBackCircleOutline" size={28} />
-                                {/* Quay lại */}
                             </Button>
 
-                            <div className="flex items-center gap-3"> {/* Đã thay đổi items-baseline thành items-center */}
-                                <h1 className="text-2xl font-bold text-gray-900 m-0">PHIẾU XUẤT KHO</h1>
+                            <div className="flex items-center gap-3">
+                                <h1 className="text-2xl font-bold text-gray-900 m-0">PHIẾU XUẤT HỦY</h1>
                                 <span
                                     className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-sm font-medium ${statusInfo.color}`}
                                 >
@@ -740,7 +731,7 @@ const GoodsIssueNoteDetail = () => {
                         </div>
 
                         {/* Bên phải: Các nút hành động */}
-                        <div className="flex items-center gap-3"> {/* Đã loại bỏ py-1 */}
+                        <div className="flex items-center gap-3">
                             {/* Nút làm mới */}
                             <Button
                                 variant="outline"
@@ -774,7 +765,7 @@ const GoodsIssueNoteDetail = () => {
                                 <div className="p-2 bg-blue-100 rounded-lg">
                                     <Package className="w-5 h-5 text-blue-600" />
                                 </div>
-                                <h2 className="text-lg font-semibold text-gray-900">Thông tin phiếu xuất kho</h2>
+                                <h2 className="text-lg font-semibold text-gray-900">Thông tin phiếu xuất hủy</h2>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -787,20 +778,20 @@ const GoodsIssueNoteDetail = () => {
                                         <div>
                                             <div className="text-xs text-gray-500">Người tạo</div>
                                             <div className="text-base font-medium text-gray-900">
-                                                {goodsIssueNote.createdByName || "N/A"}
+                                                {disposalNote.createdByName || "N/A"}
                                             </div>
                                         </div>
                                         <div>
                                             <div className="text-xs text-gray-500">Người duyệt</div>
                                             <div className="text-base font-medium text-gray-900">
-                                                {goodsIssueNote.approvalByName || "Chưa có"}
+                                                {disposalNote.approvalByName || "Chưa có"}
                                             </div>
                                         </div>
                                         <div>
                                             <div className="text-xs text-gray-500">Ngày tạo</div>
                                             <div className="text-base font-medium text-gray-900">
-                                                {goodsIssueNote.createdAt
-                                                    ? new Date(goodsIssueNote.createdAt).toLocaleString("vi-VN", {
+                                                {disposalNote.createdAt
+                                                    ? new Date(disposalNote.createdAt).toLocaleString("vi-VN", {
                                                         day: "2-digit",
                                                         month: "2-digit",
                                                         year: "numeric",
@@ -811,11 +802,11 @@ const GoodsIssueNoteDetail = () => {
                                             </div>
                                         </div>
                                         <div>
-                                            <div className="text-xs text-gray-500">Ngày dự kiến giao</div>
+                                            <div className="text-xs text-gray-500">Ngày dự kiến xuất hủy</div>
                                             <div className="text-base font-medium text-gray-900">
-                                                {goodsIssueNote.estimatedTimeDeparture
+                                                {disposalNote.estimatedTimeDeparture
                                                     ? new Date(
-                                                        goodsIssueNote.estimatedTimeDeparture
+                                                        disposalNote.estimatedTimeDeparture
                                                     ).toLocaleDateString("vi-VN", {
                                                         day: "2-digit",
                                                         month: "2-digit",
@@ -827,28 +818,16 @@ const GoodsIssueNoteDetail = () => {
                                     </div>
                                 </div>
 
-                                {/* Nhóm thông tin nhà bán lẻ */}
+                                {/* Nhóm thông tin yêu cầu xuất hủy */}
                                 <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
                                     <h3 className="text-sm font-semibold text-slate-700 mb-3 border-b border-gray-100 pb-2">
-                                        Thông tin nhà bán lẻ
+                                        Thông tin yêu cầu xuất hủy
                                     </h3>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
-                                        <div>
-                                            <div className="text-xs text-gray-500">Tên nhà bán lẻ</div>
-                                            <div className="text-base font-medium text-gray-900">
-                                                {goodsIssueNote.retailerName || "N/A"}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <div className="text-xs text-gray-500">Số điện thoại</div>
-                                            <div className="text-base font-medium text-gray-900">
-                                                {goodsIssueNote.retailerPhone || "N/A"}
-                                            </div>
-                                        </div>
                                         <div className="sm:col-span-2">
-                                            <div className="text-xs text-gray-500">Địa chỉ</div>
+                                            <div className="text-xs text-gray-500">Mã yêu cầu xuất hủy</div>
                                             <div className="text-base font-medium text-gray-900">
-                                                {goodsIssueNote.retailerAddress || "N/A"}
+                                                {disposalNote.disposalRequestId || "N/A"}
                                             </div>
                                         </div>
                                     </div>
@@ -858,57 +837,59 @@ const GoodsIssueNoteDetail = () => {
                     </Card>
 
                     {/* Status Groups */}
-                    {goodsIssueNote.goodsIssueNoteDetails && goodsIssueNote.goodsIssueNoteDetails.length > 0 && (
+                    {disposalNote.disposalNoteDetails && disposalNote.disposalNoteDetails.length > 0 && (
                         <>
                             {/* Picking - Status 1 */}
                             {renderStatusGroupCard(
-                                ISSUE_ITEM_STATUS.Picking,
+                                DISPOSAL_ITEM_STATUS.Picking,
                                 'Đang lấy hàng',
                                 <Barcode className="w-5 h-5 text-orange-600" />,
                                 'bg-orange-100',
-                                goodsIssueNote.goodsIssueNoteDetails.filter(d => d.status === ISSUE_ITEM_STATUS.Picking)
+                                disposalNote.disposalNoteDetails.filter(d => d.status === DISPOSAL_ITEM_STATUS.Picking)
                             )}
 
                             {/* Picked - Status 2 */}
                             {renderStatusGroupCard(
-                                ISSUE_ITEM_STATUS.Picked,
+                                DISPOSAL_ITEM_STATUS.Picked,
                                 'Đã lấy hàng',
                                 <CheckCircle className="w-5 h-5 text-blue-600" />,
                                 'bg-blue-100',
-                                goodsIssueNote.goodsIssueNoteDetails.filter(d => d.status === ISSUE_ITEM_STATUS.Picked)
+                                disposalNote.disposalNoteDetails.filter(d => d.status === DISPOSAL_ITEM_STATUS.Picked)
                             )}
 
                             {/* Pending Approval - Status 3 */}
                             {renderStatusGroupCard(
-                                ISSUE_ITEM_STATUS.PendingApproval,
+                                DISPOSAL_ITEM_STATUS.PendingApproval,
                                 'Chờ duyệt',
                                 <AlertCircle className="w-5 h-5 text-yellow-600" />,
                                 'bg-yellow-100',
-                                goodsIssueNote.goodsIssueNoteDetails.filter(d => d.status === ISSUE_ITEM_STATUS.PendingApproval)
+                                disposalNote.disposalNoteDetails.filter(d => d.status === DISPOSAL_ITEM_STATUS.PendingApproval)
                             )}
 
                             {/* Completed - Status 4 */}
                             {renderStatusGroupCard(
-                                ISSUE_ITEM_STATUS.Completed,
+                                DISPOSAL_ITEM_STATUS.Completed,
                                 'Hoàn thành',
                                 <CheckCircle className="w-5 h-5 text-green-600" />,
                                 'bg-green-100',
-                                goodsIssueNote.goodsIssueNoteDetails.filter(d => d.status === ISSUE_ITEM_STATUS.Completed)
+                                disposalNote.disposalNoteDetails.filter(d => d.status === DISPOSAL_ITEM_STATUS.Completed)
                             )}
                         </>
                     )}
 
                     {/* Actions Card - Nộp phiếu và Duyệt phiếu */}
                     {(() => {
+                        // Submit: Warehouse Staff, status Picking, không còn items đang picking, và phải là người được phân công
                         const canShowSubmitButton = isWarehouseStaff &&
-                            goodsIssueNote.status === GOODS_ISSUE_NOTE_STATUS.Picking &&
-                            !goodsIssueNote.goodsIssueNoteDetails.some(
-                                (d) => d.status === ISSUE_ITEM_STATUS.Picking
+                            disposalNote.status === DISPOSAL_NOTE_STATUS.Picking &&
+                            !disposalNote.disposalNoteDetails.some(
+                                (d) => d.status === DISPOSAL_ITEM_STATUS.Picking
                             ) &&
                             isAssigned;
 
+                        // Approve: Warehouse Manager, status PendingApproval
                         const canShowApproveButton = isWarehouseManager &&
-                            goodsIssueNote.status === GOODS_ISSUE_NOTE_STATUS.PendingApproval;
+                            disposalNote.status === DISPOSAL_NOTE_STATUS.PendingApproval;
 
                         if (!canShowSubmitButton && !canShowApproveButton) {
                             return null;
@@ -918,7 +899,7 @@ const GoodsIssueNoteDetail = () => {
                             <Card className="bg-white border border-gray-200 shadow-sm">
                                 <div className="p-6">
                                     <div className="flex justify-end gap-3">
-                                        {/* Nút Nộp phiếu (kho xuất) - Chỉ Warehouse Staff và phải là người được phân công */}
+                                        {/* Nút Nộp phiếu - Chỉ Warehouse Staff và phải là người được phân công */}
                                         {canShowSubmitButton && (
                                             <Button
                                                 onClick={handleSubmit}
@@ -934,7 +915,7 @@ const GoodsIssueNoteDetail = () => {
                                             </Button>
                                         )}
 
-                                        {/* Nút Duyệt phiếu (quản lý) */}
+                                        {/* Nút Duyệt phiếu - Chỉ Warehouse Manager */}
                                         {canShowApproveButton && (
                                             <Button
                                                 onClick={handleApprove}
@@ -993,4 +974,4 @@ const GoodsIssueNoteDetail = () => {
     );
 };
 
-export default GoodsIssueNoteDetail;
+export default DisposalNoteDetail;
