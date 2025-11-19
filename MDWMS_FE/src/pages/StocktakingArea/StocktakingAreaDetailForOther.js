@@ -1063,6 +1063,7 @@ const StocktakingAreaDetailForOther = () => {
                 onConfirm={handleRejectConfirm}
                 selectedLocations={Array.from(selectedLocations)}
                 stocktakingAreas={stocktakingAreas}
+                locationWarnings={locationWarnings}
                 loading={isRejecting}
             />
 

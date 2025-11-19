@@ -9,20 +9,11 @@ export default function RejectStocktakingLocationModal({
     onConfirm,
     selectedLocations,
     stocktakingAreas,
+    locationWarnings = {}, // Map locationId -> warnings array
     loading = false
 }) {
     const [rejectReasons, setRejectReasons] = useState({});
     const [errors, setErrors] = useState({});
-
-    // Reset state when modal opens/closes
-    useEffect(() => {
-        if (isOpen) {
-            setRejectReasons({});
-            setErrors({});
-        }
-    }, [isOpen]);
-
-    if (!isOpen) return null;
 
     // Get location details from stocktakingAreas
     const getLocationDetails = () => {
@@ -54,6 +45,56 @@ export default function RejectStocktakingLocationModal({
         });
         return locations;
     };
+
+    // Reset state when modal opens/closes and auto-fill warnings
+    useEffect(() => {
+        if (isOpen) {
+            const initialReasons = {};
+            
+            // Get location details
+            const locationDetails = [];
+            selectedLocations.forEach((selectedLocationId) => {
+                for (const area of stocktakingAreas) {
+                    const location = (area.stocktakingLocations || []).find(
+                        loc => {
+                            const locId = loc.stocktakingLocationId || loc.locationId;
+                            return locId === selectedLocationId;
+                        }
+                    );
+                    if (location) {
+                        const stocktakingLocationId = location.stocktakingLocationId || location.locationId;
+                        locationDetails.push({
+                            stocktakingLocationId: stocktakingLocationId,
+                            locationId: location.location?.locationId || location.locationId,
+                            locationCode: location.locationCode || location.location?.locationCode || location.locationName || '-',
+                            status: location.status,
+                            areaName: area.areaDetail?.areaName || 'N/A'
+                        });
+                        break;
+                    }
+                }
+            });
+            
+            // Auto-fill warnings for each location
+            locationDetails.forEach((location) => {
+                const locationId = location.stocktakingLocationId;
+                const warnings = locationWarnings[locationId] || [];
+                
+                if (warnings.length > 0) {
+                    // Join all warning messages with newline
+                    const warningMessages = warnings.map(w => w.message).join('\n');
+                    initialReasons[locationId] = warningMessages;
+                } else {
+                    initialReasons[locationId] = '';
+                }
+            });
+            
+            setRejectReasons(initialReasons);
+            setErrors({});
+        }
+    }, [isOpen, selectedLocations, locationWarnings, stocktakingAreas]);
+
+    if (!isOpen) return null;
 
     const locationDetails = getLocationDetails();
     const isMultiple = locationDetails.length > 1;
