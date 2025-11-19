@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using static MilkDistributionWarehouse.Models.DTOs.LocationDto;
+using static MilkDistributionWarehouse.Models.DTOs.PalletDto;
 
 namespace MilkDistributionWarehouse.Models.DTOs
 {
@@ -13,10 +15,14 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public DateOnly? ExpiryDate { get; set; }
             public string GoodsCode { get; set; }
             public string GoodName { get; set; }
+            public int SupplierId { get; set; }
+            public string CompanyName { get; set; }
+            public int GoodsPackingId { get; set; }
+            public string UnitPerPackage { get; set; }
             public string UnitOfMeasure { get; set; }
-            public List<string> PalletIds { get; set; } = new();
+            public List<PalletResponseDto> Pallets { get; set; } = new();
             public int TotalPackageQuantity { get; set; }
-            public List<string> LocationCodes { get; set; } = new();
+            public List<LocationResponseDto> Locations { get; set; } = new();
         }
 
         public class LocationReportDto
@@ -76,6 +82,20 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public DateTime? IssueDate { get; set; }
             public int TotalPackageQuantity { get; set; }
             public int TotalUnitQuantity { get; set; }  
+        }
+
+        public class InventoryLedgerReportDto
+        {
+            public int GoodsId { get; set; }
+            public string GoodsCode { get; set; }
+            public string GoodsName { get; set; }
+            public string UnitOfMeasure { get; set; }
+            public int GoodPackingId { get; set; }
+            public int? UnitPerPackage { get; set; }
+            public int BeginningInventoryPackages { get; set; }
+            public int InQuantityPackages { get; set; }
+            public int OutQuantityPackages { get; set; }
+            public int EndingInventoryPackages { get; set; }
         }
     }
 }
