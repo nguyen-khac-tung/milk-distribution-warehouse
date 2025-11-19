@@ -9,6 +9,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int? LocationId { get; set; }
         public string LocationCode { get; set; }
         public string Note { get; set; }
+        public string RejectReason { get; set; }
         public int? Status { get; set; }
         public DateTime? CreatedAt { get; set; }
         public bool IsAvailable { get; set; }
