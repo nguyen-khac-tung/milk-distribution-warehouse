@@ -17,7 +17,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<int> UpdateStocktakingPallet(StocktakingPallet update);
         Task<int> DeleteStockPallet(StocktakingPallet stocktakingPallet);
         Task<int> DeleteStocktakingPalletBulk(List<StocktakingPallet> deletes);
-        Task<bool> HasUnscannedPalletInOtherLocationAsync(string palletId, Guid stocktakingLocationId);
+        Task<bool> HasUnscannedPalletInOtherLocationAsync(string palletId, Guid stocktakingLocationId, Guid stocktakingAreaId);
     }
 
     public class StocktakingPalletRepository : IStocktakingPalletRepository
@@ -122,7 +122,7 @@ namespace MilkDistributionWarehouse.Repositories
             try
             {
                 _context.StocktakingPallets.RemoveRange(deletes);
-                await _context.SaveChangesAsync();  
+                await _context.SaveChangesAsync();
                 return deletes.Count;
             }
             catch
@@ -131,11 +131,14 @@ namespace MilkDistributionWarehouse.Repositories
             }
         }
 
-        public async Task<bool> HasUnscannedPalletInOtherLocationAsync(string palletId, Guid stocktakingLocationId)
+        public async Task<bool> HasUnscannedPalletInOtherLocationAsync(string palletId, Guid stocktakingLocationId, Guid stocktakingAreaId)
         {
             return await _context.StocktakingPallets
+                        .Include(sp => sp.StocktakingLocation)
+                            .ThenInclude(sl => sl.Location)
                 .AsNoTracking()
                 .AnyAsync(sp =>
+                    sp.StocktakingLocation.StocktakingAreaId == stocktakingAreaId &&
                     sp.PalletId.Equals(palletId) &&
                     sp.StocktakingLocationId != stocktakingLocationId &&
                     sp.Status == StockPalletStatus.Unscanned);
@@ -144,15 +147,23 @@ namespace MilkDistributionWarehouse.Repositories
         public async Task<StocktakingPallet?> GetScannedPalletInOtherLocationAsync(
             string palletId, Guid stocktakingLocationId, Guid stocktakingAreaId)
         {
+            var scannedStatuses = new[]
+            {
+            StockPalletStatus.Matched,
+            StockPalletStatus.Surplus,
+            StockPalletStatus.Mislocated
+            };
+
             return await _context.StocktakingPallets
                 .Include(sp => sp.StocktakingLocation)
-                .ThenInclude(sl => sl.Location)
+                    .ThenInclude(sl => sl.Location)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(sp =>
                     sp.StocktakingLocation.StocktakingAreaId == stocktakingAreaId &&
                     sp.PalletId == palletId &&
                     sp.StocktakingLocationId != stocktakingLocationId &&
-                    sp.Status != StockPalletStatus.Unscanned);
+                    scannedStatuses.Contains((int)sp.Status));
         }
+
     }
 }

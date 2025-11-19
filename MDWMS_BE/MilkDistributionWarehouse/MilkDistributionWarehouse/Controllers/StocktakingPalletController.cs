@@ -90,6 +90,16 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<StocktakingPalletUpdateStatus>.ToResultOk(stoctakingPallet);
         }
 
+        [HttpPut("MislocatedStocktakingPallet")]
+        [Authorize(Roles = RoleNames.WarehouseStaff)]
+        public async Task<IActionResult> MislocatedStocktakingPalletSuplusStatus([FromBody] StocktakingPalletMislocatedStatus update)
+        {
+            var (msg, stoctakingPallet) = await _stocktakingPalletService.UpdateStocktakingPalletStauts(update);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<StocktakingPalletUpdateStatus>.ToResultOk(stoctakingPallet);
+        }
+
         [HttpDelete("Delete/{stocktakingPalletId}")]
         public async Task<IActionResult> DeleteStocktakingPallet(Guid stocktakingPalletId)
         {

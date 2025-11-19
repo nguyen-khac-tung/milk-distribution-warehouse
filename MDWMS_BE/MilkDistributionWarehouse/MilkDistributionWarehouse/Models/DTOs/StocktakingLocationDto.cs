@@ -52,11 +52,26 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int LocationId { get; set; }
     }
 
+    public class StocktakingLocationFail
+    {
+        public Guid StocktakingLocationId { get; set; }
+        public string PalletId { get; set; }
+        public string Message { get; set; }
+    }
+
     public class StocktakingLocationWarming
     {
         public Guid StocktakingLocationId { get; set; }
         public string PalletId { get; set; }
         public string Message { get; set; }
     }
+
+    public class StocktakingLocationUpdate
+    {
+        [Required(ErrorMessage = "Mã kiểm kê vị trí là bắt buộc.")]
+        public Guid StocktakingLocationId { get; set; }
+        public string Note { get;set; }
+    }
+
 
 }
