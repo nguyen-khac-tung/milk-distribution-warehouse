@@ -944,6 +944,9 @@ const StocktakingAreaDetailForOther = () => {
                                                                                             <TableHead className="font-semibold text-slate-900 px-4 py-3 text-center">
                                                                                                 Trạng thái
                                                                                             </TableHead>
+                                                                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
+                                                                                                Ghi chú
+                                                                                            </TableHead>
                                                                                         </TableRow>
                                                                                     </TableHeader>
                                                                                     <TableBody>
@@ -955,6 +958,7 @@ const StocktakingAreaDetailForOther = () => {
                                                                                             const expected = pkg.expectedPackageQuantity ?? pkg.expectedQuantity ?? 0;
                                                                                             const actual = pkg.actualPackageQuantity ?? pkg.actualQuantity ?? null;
                                                                                             const status = pkg.status || 1;
+                                                                                            const note = pkg.note || pkg.notes || pkg.description || pkg.remark || pkg.pallet?.note || pkg.pallet?.notes || '';
 
                                                                                             return (
                                                                                                 <TableRow
@@ -981,6 +985,9 @@ const StocktakingAreaDetailForOther = () => {
                                                                                                     </TableCell>
                                                                                                     <TableCell className="px-4 py-3 text-center">
                                                                                                         <PalletStatusDisplay status={status} />
+                                                                                                    </TableCell>
+                                                                                                    <TableCell className="px-4 py-3 text-slate-700">
+                                                                                                        {note || '-'}
                                                                                                     </TableCell>
                                                                                                 </TableRow>
                                                                                             );
