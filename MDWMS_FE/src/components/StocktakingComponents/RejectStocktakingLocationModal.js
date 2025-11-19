@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Button } from "../ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { X, AlertCircle } from "lucide-react";
@@ -16,9 +16,10 @@ export default function RejectStocktakingLocationModal({
     const [rejectReasons, setRejectReasons] = useState({});
     const [errors, setErrors] = useState({});
     const isInitializedRef = useRef(false);
+    const prevDepsRef = useRef({});
 
-    // Get location details from stocktakingAreas
-    const getLocationDetails = () => {
+    // Memoize location details to avoid recalculating on every render
+    const locationDetails = useMemo(() => {
         const locations = [];
         selectedLocations.forEach((selectedLocationId) => {
             for (const area of stocktakingAreas) {
@@ -46,15 +47,26 @@ export default function RejectStocktakingLocationModal({
             }
         });
         return locations;
-    };
+    }, [selectedLocations, stocktakingAreas]);
+
+    // Create stable dependency keys to avoid infinite loops
+    const selectedLocationsKey = useMemo(() => JSON.stringify(selectedLocations), [selectedLocations]);
+    const locationWarningsKey = useMemo(() => JSON.stringify(locationWarnings), [locationWarnings]);
+    const locationFailsKey = useMemo(() => JSON.stringify(locationFails), [locationFails]);
+    const stocktakingAreasKey = useMemo(() => JSON.stringify(stocktakingAreas), [stocktakingAreas]);
 
     // Reset state when modal opens/closes and auto-fill warnings
     useEffect(() => {
-        if (isOpen && !isInitializedRef.current) {
+        // Create a stable key for current dependencies
+        const currentDepsKey = `${isOpen}-${selectedLocationsKey}-${locationWarningsKey}-${locationFailsKey}-${stocktakingAreasKey}`;
+        const prevDepsKey = prevDepsRef.current.key;
+
+        // Only initialize if modal is open, not already initialized, and dependencies actually changed
+        if (isOpen && (!isInitializedRef.current || currentDepsKey !== prevDepsKey)) {
             const initialReasons = {};
 
-            // Get location details
-            const locationDetails = [];
+            // Calculate location details inside effect to avoid dependency issues
+            const locationDetailsInEffect = [];
             selectedLocations.forEach((selectedLocationId) => {
                 for (const area of stocktakingAreas) {
                     const location = (area.stocktakingLocations || []).find(
@@ -65,7 +77,7 @@ export default function RejectStocktakingLocationModal({
                     );
                     if (location) {
                         const stocktakingLocationId = location.stocktakingLocationId || location.locationId;
-                        locationDetails.push({
+                        locationDetailsInEffect.push({
                             stocktakingLocationId: stocktakingLocationId,
                             locationId: location.location?.locationId || location.locationId,
                             locationCode: location.locationCode || location.location?.locationCode || location.locationName || '-',
@@ -78,7 +90,7 @@ export default function RejectStocktakingLocationModal({
             });
 
             // Auto-fill fails and warnings for each location
-            locationDetails.forEach((location) => {
+            locationDetailsInEffect.forEach((location) => {
                 const locationId = location.stocktakingLocationId;
                 const fails = locationFails[locationId] || [];
                 const warnings = locationWarnings[locationId] || [];
@@ -89,7 +101,7 @@ export default function RejectStocktakingLocationModal({
                 if (fails.length > 0) {
                     fails.forEach(fail => {
                         if (fail.palletId) {
-                            messages.push(`[Lỗi] Pallet ${fail.palletId}: ${fail.message}`);
+                            messages.push(`[Lỗi]${fail.message}`);
                         } else {
                             messages.push(`[Lỗi] ${fail.message}`);
                         }
@@ -100,7 +112,7 @@ export default function RejectStocktakingLocationModal({
                 if (warnings.length > 0) {
                     warnings.forEach(warning => {
                         if (warning.palletId) {
-                            messages.push(`[Cảnh báo] Pallet ${warning.palletId}: ${warning.message}`);
+                            messages.push(`[Cảnh báo]${warning.message}`);
                         } else {
                             messages.push(`[Cảnh báo] ${warning.message}`);
                         }
@@ -117,17 +129,18 @@ export default function RejectStocktakingLocationModal({
             setRejectReasons(initialReasons);
             setErrors({});
             isInitializedRef.current = true;
+            prevDepsRef.current.key = currentDepsKey;
         } else if (!isOpen) {
             // Reset when modal closes
             isInitializedRef.current = false;
+            prevDepsRef.current.key = '';
             setRejectReasons({});
             setErrors({});
         }
-    }, [isOpen, selectedLocations, locationWarnings, locationFails, stocktakingAreas]);
+    }, [isOpen, selectedLocationsKey, locationWarningsKey, locationFailsKey, stocktakingAreasKey, selectedLocations, stocktakingAreas]);
 
     if (!isOpen) return null;
 
-    const locationDetails = getLocationDetails();
     const isMultiple = locationDetails.length > 1;
 
     const handleReasonChange = (locationId, value) => {
