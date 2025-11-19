@@ -139,7 +139,8 @@ namespace MilkDistributionWarehouse.Services
                 if (!string.IsNullOrEmpty(msg))
                     throw new Exception(msg);
 
-                var updateStocktakingLocationBulksResult = await _stocktakingLocationRepository.UpdateStocktakingLocationBulk(stocktakingLocations);
+                var stocktakingLocationUpdate = _mapper.Map<List<StocktakingLocation>>(update);
+                var updateStocktakingLocationBulksResult = await _stocktakingLocationRepository.UpdateStocktakingLocationBulk(stocktakingLocationUpdate);
 
                 if (updateStocktakingLocationBulksResult == 0)
                     throw new Exception("Cập nhật trạng thái của kiểm kể vị trí thất bại.");
