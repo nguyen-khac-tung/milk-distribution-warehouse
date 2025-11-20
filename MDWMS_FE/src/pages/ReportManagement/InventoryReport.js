@@ -5,6 +5,7 @@ import {
   Download,
   Eye,
   ChevronDown,
+  X,
 } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import {
@@ -27,6 +28,7 @@ import Loading from "../../components/Common/Loading"
 import Pagination from "../../components/Common/Pagination"
 import { Badge } from "../../components/ui/badge"
 import InventorySearchFilter from "../../components/Common/InventorySearchFilter"
+import InventoryDetailModal from "../../components/InventoryComponents/InventoryDetailModal"
 
 // Donut Chart Component for Status Distribution
 const StatusPieChart = ({ data }) => {
@@ -398,6 +400,8 @@ export default function InventoryReport({ onClose }) {
     total: 0
   })
   const [timeRange, setTimeRange] = useState("week") // week, month, year
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
+  const [selectedItem, setSelectedItem] = useState(null)
   const searchTimeoutRef = useRef(null)
 
   // Fetch areas for dropdown
@@ -560,9 +564,13 @@ export default function InventoryReport({ onClose }) {
   }
 
   const handleViewClick = (item) => {
-    // TODO: Implement view detail functionality
-    console.log("View inventory detail:", item)
-    // Could navigate to batch detail page or show modal
+    setSelectedItem(item)
+    setIsDetailModalOpen(true)
+  }
+
+  const handleCloseModal = () => {
+    setIsDetailModalOpen(false)
+    setSelectedItem(null)
   }
 
   const handleClearAllFilters = () => {
@@ -747,6 +755,12 @@ export default function InventoryReport({ onClose }) {
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                         Tên sản phẩm
                       </TableHead>
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                        Đơn vị/thùng
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                        Đơn vị
+                      </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                         Mã lô
                       </TableHead>
@@ -770,7 +784,7 @@ export default function InventoryReport({ onClose }) {
                   <TableBody>
                     {inventoryData.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={11} className="text-center text-gray-500 py-8">
+                        <TableCell colSpan={13} className="text-center text-gray-500 py-8">
                           Không có dữ liệu tồn kho
                         </TableCell>
                       </TableRow>
@@ -793,6 +807,12 @@ export default function InventoryReport({ onClose }) {
                             </TableCell>
                             <TableCell className="px-6 py-4 text-slate-700">
                               {item.goodName || "-"}
+                            </TableCell>
+                            <TableCell className="px-6 py-4 text-slate-700 text-center font-medium">
+                              {item.unitPerPackage || "-"}
+                            </TableCell>
+                            <TableCell className="px-6 py-4 text-slate-700 text-center font-medium">
+                              {item.unitOfMeasure || "-"}
                             </TableCell>
                             <TableCell className="px-6 py-4 text-slate-700 font-medium">
                               {item.batchCode || "-"}
@@ -856,6 +876,13 @@ export default function InventoryReport({ onClose }) {
           )}
         </div>
       </div>
+
+      {/* Inventory Detail Modal */}
+      <InventoryDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={handleCloseModal}
+        item={selectedItem}
+      />
     </div>
   )
 }
