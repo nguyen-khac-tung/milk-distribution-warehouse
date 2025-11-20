@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react"
 import {
-  Download,
   Eye,
   ChevronDown,
   X,
@@ -32,6 +31,7 @@ import Pagination from "../../components/Common/Pagination"
 import { Badge } from "../../components/ui/badge"
 import InventorySearchFilter from "../../components/Common/InventorySearchFilter"
 import InventoryDetailModal from "../../components/InventoryComponents/InventoryDetailModal"
+import ExportInventoryReport from "../../components/InventoryComponents/ExportInventoryReport"
 
 // Donut Chart Component for Status Distribution
 const StatusPieChart = ({ data }) => {
@@ -570,11 +570,6 @@ export default function InventoryReport({ onClose }) {
     return diffDays >= 0 && diffDays <= daysThreshold
   }
 
-  const handleExport = () => {
-    // TODO: Implement export functionality
-    console.log("Export inventory report")
-  }
-
   const handleViewClick = (item) => {
     setSelectedItem(item)
     setIsDetailModalOpen(true)
@@ -670,13 +665,13 @@ export default function InventoryReport({ onClose }) {
             <p className="text-slate-600 mt-1">Theo dõi tồn kho chi tiết hiện tại</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
-              onClick={handleExport}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Xuất báo cáo
-            </Button>
+            <ExportInventoryReport
+              searchQuery={searchQuery}
+              areaId={areaId}
+              timeRange={timeRange}
+              sortField={sortField}
+              sortAscending={sortAscending}
+            />
             {onClose && (
               <Button
                 variant="outline"

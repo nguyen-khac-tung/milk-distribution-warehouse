@@ -9,7 +9,6 @@ import {
   ShoppingCart,
   Package,
   Eye,
-  Download,
   ArrowUp,
   ArrowDown,
   ArrowUpDown,
@@ -27,6 +26,8 @@ import { DatePicker, ConfigProvider } from 'antd'
 import locale from 'antd/locale/vi_VN'
 import Loading from "../../components/Common/Loading"
 import Pagination from "../../components/Common/Pagination"
+import ExportPurchaseOrdersReport from "../../components/PurchaseOrderComponents/ExportPurchaseOrdersReport"
+import ExportSalesOrdersReport from "../../components/SaleOrderCompoents/ExportSalesOrdersReport"
 
 export default function OrdersPage({ onClose }) {
   const navigate = useNavigate()
@@ -416,10 +417,6 @@ export default function OrdersPage({ onClose }) {
     )
   }
 
-  const handleExport = () => {
-    // TODO: Implement export functionality
-    console.log("Export orders report", { activeOrderType, dateRange })
-  }
 
   return (
     <div className="min-h-screen">
@@ -431,13 +428,23 @@ export default function OrdersPage({ onClose }) {
             <p className="text-slate-600 mt-1">Quản lý đơn mua hàng và đơn bán hàng</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
-              onClick={handleExport}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Xuất báo cáo
-            </Button>
+            {activeOrderType === "purchase" ? (
+              <ExportPurchaseOrdersReport
+                searchQuery={searchQuery}
+                supplierFilter={supplierFilter}
+                dateRange={dateRange}
+                sortField={sortField}
+                sortAscending={sortAscending}
+              />
+            ) : (
+              <ExportSalesOrdersReport
+                searchQuery={searchQuery}
+                retailerFilter={retailerFilter}
+                dateRange={dateRange}
+                sortField={sortField}
+                sortAscending={sortAscending}
+              />
+            )}
             <Button
               className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
               onClick={() => {
@@ -550,8 +557,8 @@ export default function OrdersPage({ onClose }) {
                                 setPagination(prev => ({ ...prev, current: 1 }))
                               }}
                               className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${supplierFilter === supplier.supplierId.toString()
-                                  ? 'bg-orange-500 text-white hover:bg-orange-600'
-                                  : 'text-slate-700'
+                                ? 'bg-orange-500 text-white hover:bg-orange-600'
+                                : 'text-slate-700'
                                 }`}
                             >
                               {supplier.companyName}
@@ -622,11 +629,10 @@ export default function OrdersPage({ onClose }) {
                                 setRetailerSearchTerm("")
                                 setPagination(prev => ({ ...prev, current: 1 }))
                               }}
-                              className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${
-                                retailerFilter === retailer.retailerId.toString() 
-                                  ? 'bg-orange-500 text-white hover:bg-orange-600' 
-                                  : 'text-slate-700'
-                              }`}
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${retailerFilter === retailer.retailerId.toString()
+                                ? 'bg-orange-500 text-white hover:bg-orange-600'
+                                : 'text-slate-700'
+                                }`}
                             >
                               {retailer.retailerName}
                             </button>
