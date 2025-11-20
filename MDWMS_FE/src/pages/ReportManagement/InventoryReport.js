@@ -6,6 +6,9 @@ import {
   Eye,
   ChevronDown,
   X,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
 } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import {
@@ -403,6 +406,8 @@ export default function InventoryReport({ onClose }) {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState(null)
   const searchTimeoutRef = useRef(null)
+  const [sortField, setSortField] = useState("batchCode")
+  const [sortAscending, setSortAscending] = useState(true)
 
   // Fetch areas for dropdown
   useEffect(() => {
@@ -468,6 +473,13 @@ export default function InventoryReport({ onClose }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagination.current, pagination.pageSize])
 
+  // Fetch data when sort changes
+  useEffect(() => {
+    setPagination(prev => ({ ...prev, current: 1 }))
+    fetchInventoryData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortField, sortAscending])
+
   const fetchInventoryData = async () => {
     try {
       setLoading(true)
@@ -483,8 +495,8 @@ export default function InventoryReport({ onClose }) {
         pageNumber: pagination.current,
         pageSize: pagination.pageSize,
         search: searchQuery || "",
-        sortField: "batchCode",
-        sortAscending: true,
+        sortField: sortField,
+        sortAscending: sortAscending,
         filters
       }
 
@@ -573,10 +585,23 @@ export default function InventoryReport({ onClose }) {
     setSelectedItem(null)
   }
 
+  const handleSort = (field) => {
+    if (sortField === field) {
+      // Toggle ascending/descending if same field
+      setSortAscending(!sortAscending)
+    } else {
+      // Set new field and default to ascending
+      setSortField(field)
+      setSortAscending(true)
+    }
+  }
+
   const handleClearAllFilters = () => {
     setSearchQuery("")
     setTimeRange("week")
     setAreaId("")
+    setSortField("batchCode")
+    setSortAscending(true)
     setPagination(prev => ({ ...prev, current: 1 }))
   }
 
@@ -765,13 +790,46 @@ export default function InventoryReport({ onClose }) {
                         Mã lô
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                        Ngày sản xuất
+                        <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("manufacturingDate")}>
+                          <span>Ngày sản xuất</span>
+                          {sortField === "manufacturingDate" ? (
+                            sortAscending ? (
+                              <ArrowUp className="h-4 w-4 text-orange-500" />
+                            ) : (
+                              <ArrowDown className="h-4 w-4 text-orange-500" />
+                            )
+                          ) : (
+                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                          )}
+                        </div>
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                        Ngày hết hạn
+                        <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("expiryDate")}>
+                          <span>Ngày hết hạn</span>
+                          {sortField === "expiryDate" ? (
+                            sortAscending ? (
+                              <ArrowUp className="h-4 w-4 text-orange-500" />
+                            ) : (
+                              <ArrowDown className="h-4 w-4 text-orange-500" />
+                            )
+                          ) : (
+                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                          )}
+                        </div>
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-right">
-                        Số lượng thùng
+                        <div className="flex items-center justify-end space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("totalPackageQuantity")}>
+                          <span>Số lượng thùng</span>
+                          {sortField === "totalPackageQuantity" ? (
+                            sortAscending ? (
+                              <ArrowUp className="h-4 w-4 text-orange-500" />
+                            ) : (
+                              <ArrowDown className="h-4 w-4 text-orange-500" />
+                            )
+                          ) : (
+                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                          )}
+                        </div>
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
                         Trạng thái
