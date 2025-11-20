@@ -1,12 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "../ui/button";
 import { X } from "lucide-react";
 
-export default function CancelStocktakingModal({ isOpen, onClose, onConfirm, stocktakingSheetId }) {
+const CancelStocktakingModal = ({ isOpen, onClose, onConfirm, stocktakingSheetId }) => {
     const [loading, setLoading] = useState(false);
 
-    const handleConfirm = async () => {
+    const handleConfirm = useCallback(async () => {
         try {
             setLoading(true);
             await onConfirm();
@@ -15,12 +15,19 @@ export default function CancelStocktakingModal({ isOpen, onClose, onConfirm, sto
         } finally {
             setLoading(false);
         }
-    };
+    }, [onConfirm]);
+
+    // Reset loading when modal closes
+    useEffect(() => {
+        if (!isOpen) {
+            setLoading(false);
+        }
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm" style={{ top: 0, left: 0, right: 0, bottom: 0 }}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
             <div className="w-full max-w-lg mx-4 bg-white rounded-xl shadow-2xl border border-gray-100">
                 {/* Header */}
                 <div className="p-8 text-center">
@@ -66,5 +73,6 @@ export default function CancelStocktakingModal({ isOpen, onClose, onConfirm, sto
         </div>,
         document.body
     );
-}
+};
 
+export default React.memo(CancelStocktakingModal);

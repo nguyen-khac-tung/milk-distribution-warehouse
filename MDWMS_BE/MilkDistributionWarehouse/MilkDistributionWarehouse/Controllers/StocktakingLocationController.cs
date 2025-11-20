@@ -27,6 +27,15 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<StocktakingLocationResponse>.ToResultOk(stocktakingLocation);
         }
 
+        [HttpPut("UpdateRecords")]
+        public async Task<IActionResult> UpdatteStocktakingLocation([FromBody] StocktakingLocationUpdate update)
+        {
+            var (msg, stocktakingLocation) = await _stocktakingLocationService.UpdateStocktakingLocation(update);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<StocktakingLocationResponse>.ToResultOk(stocktakingLocation);
+        }
+
         [HttpPut("RejectRecords")]
         public async Task<IActionResult> RejectStocktakingLocationBulk([FromBody] List<StocktakingLocationRejectStatus> update)
         {

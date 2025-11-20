@@ -612,6 +612,9 @@ namespace MilkDistributionWarehouse.Mappers
             CreateMap<StocktakingPalletSurplusStatus, StocktakingPallet>()
                 .IncludeBase<StocktakingPalletUpdateStatus, StocktakingPallet>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => StockPalletStatus.Surplus));
+            CreateMap<StocktakingPalletMislocatedStatus, StocktakingPallet>()
+                .IncludeBase<StocktakingPalletUpdateStatus, StocktakingPallet>()
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => StockPalletStatus.Mislocated));                                    
 
             //Map GoodsReceiptNoteDetail -> GoodsReceiptReportDto (per-detail projection)
             CreateMap<GoodsReceiptNoteDetail, ReportDto.GoodsReceiptReportDto>()

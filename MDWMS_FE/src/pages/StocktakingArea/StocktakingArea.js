@@ -12,6 +12,7 @@ import StatusDisplay from '../../components/StocktakingComponents/StatusDisplay'
 import LocationStatusDisplay, { STOCK_LOCATION_STATUS } from './LocationStatusDisplay';
 import ScanLocationStocktakingModal from '../../components/StocktakingComponents/ScanLocationStocktakingModal';
 import ScanPalletStocktakingModal from '../../components/StocktakingComponents/ScanPalletStocktakingModal';
+import ConfirmCountedModal from '../../components/StocktakingComponents/ConfirmCountedModal';
 import dayjs from 'dayjs';
 
 const StocktakingArea = () => {
@@ -35,6 +36,8 @@ const StocktakingArea = () => {
     const [cancelingLocationId, setCancelingLocationId] = useState(null);
     const [selectedLocations, setSelectedLocations] = useState(new Set());
     const [recheckingLocations, setRecheckingLocations] = useState(false);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [locationToConfirm, setLocationToConfirm] = useState(null);
     const isFetchingRef = useRef(false);
 
     useEffect(() => {
@@ -299,17 +302,23 @@ const StocktakingArea = () => {
         handleRefresh();
     };
 
-    const handleConfirmCounted = async (stocktakingLocationId) => {
-        if (!stocktakingLocationId || confirmingLocationId === stocktakingLocationId) {
+    const handleConfirmCountedClick = (stocktakingLocationId) => {
+        setLocationToConfirm(stocktakingLocationId);
+        setShowConfirmModal(true);
+    };
+
+    const handleConfirmCounted = async () => {
+        if (!locationToConfirm || confirmingLocationId === locationToConfirm) {
             return;
         }
 
-        setConfirmingLocationId(stocktakingLocationId);
+        setConfirmingLocationId(locationToConfirm);
+        setShowConfirmModal(false);
         try {
-            await confirmStocktakingLocationCounted(stocktakingLocationId);
+            await confirmStocktakingLocationCounted(locationToConfirm);
 
             if (window.showToast) {
-                window.showToast('Xác nhận đã đếm thành công!', 'success');
+                window.showToast('Xác nhận vị trí kiểm kê thành công!', 'success');
             }
 
             // Refresh data sau khi confirm
@@ -322,6 +331,7 @@ const StocktakingArea = () => {
             }
         } finally {
             setConfirmingLocationId(null);
+            setLocationToConfirm(null);
         }
     };
 
@@ -716,7 +726,7 @@ const StocktakingArea = () => {
                                                     <TableCell className="px-6 py-4 text-center">
                                                         {location.isAvailable === true && location.status === STOCK_LOCATION_STATUS.Pending ? (
                                                             <button
-                                                                onClick={() => handleConfirmCounted(location.stocktakingLocationId)}
+                                                                onClick={() => handleConfirmCountedClick(location.stocktakingLocationId)}
                                                                 disabled={confirmingLocationId === location.stocktakingLocationId}
                                                                 className="flex items-center justify-center w-10 h-10 rounded-full bg-green-500 hover:bg-green-600 text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-green-500"
                                                                 title="Xác nhận trong hệ thống không có pallet và bên ngoài không có pallet"
@@ -979,6 +989,17 @@ const StocktakingArea = () => {
                     onClose={handlePalletModalClose}
                     stocktakingLocationId={validatedLocationData?.stocktakingLocationId}
                     locationCode={validatedLocationData?.locationCode}
+                />
+
+                {/* Confirm Counted Modal */}
+                <ConfirmCountedModal
+                    isOpen={showConfirmModal}
+                    onClose={() => {
+                        setShowConfirmModal(false);
+                        setLocationToConfirm(null);
+                    }}
+                    onConfirm={handleConfirmCounted}
+                    loading={confirmingLocationId === locationToConfirm}
                 />
             </div>
         </div >

@@ -170,8 +170,8 @@ namespace MilkDistributionWarehouse.Services
                     return ("Danh sách kiểm kê vị trí trống.", default);
 
                 var validationStocktakingLocationsToApproval = await ValidationListStocktakingLocationToApproval(stocktakingLocations);
-                if (validationStocktakingLocationsToApproval.Any())
-                    return ("", new StocktakingAreaApprovalResponse { StocktakingLocationWarmings = validationStocktakingLocationsToApproval });
+                if (validationStocktakingLocationsToApproval.StocktakingLocationFails.Any())
+                    return ("", validationStocktakingLocationsToApproval);
 
                 stocktakingArea.Status = StockAreaStatus.Completed;
                 stocktakingArea.UpdateAt = DateTime.Now;
@@ -181,10 +181,10 @@ namespace MilkDistributionWarehouse.Services
                 var updateResult = await _stocktakingAreaRepository.UpdateStocktakingArea(stocktakingArea);
                 if (updateResult == 0) return ("Cập nhật kiểm kê khu vực thất bại.".ToMessageForUser(), default);
 
-                await HandleUpdateStockSheetApproval(update.StocktakingAreaId ,stocktakingArea.StocktakingSheetId);
+                await HandleUpdateStockSheetApproval(update.StocktakingAreaId, stocktakingArea.StocktakingSheetId);
 
                 await _unitOfWork.CommitTransactionAsync();
-                return ("", new StocktakingAreaApprovalResponse { StocktakingLocationWarmings = new List<StocktakingLocationWarming>() });
+                return ("", validationStocktakingLocationsToApproval);
             }
             catch (Exception ex)
             {
@@ -195,7 +195,7 @@ namespace MilkDistributionWarehouse.Services
 
         private void HandleUpdateStockLocation(ICollection<StocktakingLocation> stocktakingLocations)
         {
-            foreach(var location in stocktakingLocations)
+            foreach (var location in stocktakingLocations)
             {
                 location.Status = StockLocationStatus.Completed;
                 location.UpdateAt = DateTime.Now;
@@ -211,7 +211,7 @@ namespace MilkDistributionWarehouse.Services
             var stockSheet = await _stocktakingSheetRepository.GetStocktakingSheetById(stocktakingSheetId);
             if (stockSheet == null) return;
 
-            if(stockSheet.Status != StocktakingStatus.PendingApproval)
+            if (stockSheet.Status != StocktakingStatus.PendingApproval)
                 return;
 
             stockSheet.Status = StocktakingStatus.Approved;
@@ -283,96 +283,113 @@ namespace MilkDistributionWarehouse.Services
             return string.Empty;
         }
 
-        private async Task<List<StocktakingLocationWarming>> ValidationListStocktakingLocationToApproval(List<StocktakingLocation> stocktakingLocations)
+        private async Task<StocktakingAreaApprovalResponse> ValidationListStocktakingLocationToApproval(
+            List<StocktakingLocation> stocktakingLocations)
         {
             var stockPalletMap = new Dictionary<string, List<StocktakingPallet>>();
+            var stockLocationFail = new List<StocktakingLocationFail>();
+            var stockLocationWarning = new List<StocktakingLocationWarming>();
 
-            var stockLocationWarming = new List<StocktakingLocationWarming>();
-
-            foreach (var stockLocation in stocktakingLocations)
+            foreach (var location in stocktakingLocations)
             {
-                var stockPallets = await _stocktakingPalletRepository
-                    .GetStocktakingPalletByStocktakingLocationId(stockLocation.StocktakingLocationId);
+                var pallets = await _stocktakingPalletRepository
+                    .GetStocktakingPalletByStocktakingLocationId(location.StocktakingLocationId);
 
-                if (stockPallets == null || stockPallets.Count == 0)
+                if (pallets == null || pallets.Count == 0)
                     continue;
 
-                foreach (var stockPallet in stockPallets)
+                foreach (var sp in pallets)
                 {
-                    if (!stockPalletMap.ContainsKey(stockPallet.PalletId))
-                        stockPalletMap[stockPallet.PalletId] = new List<StocktakingPallet>();
+                    if (!stockPalletMap.ContainsKey(sp.PalletId))
+                        stockPalletMap[sp.PalletId] = new List<StocktakingPallet>();
 
-                    stockPalletMap[stockPallet.PalletId].Add(stockPallet);
+                    stockPalletMap[sp.PalletId].Add(sp);
                 }
             }
 
-            foreach (var group in stockPalletMap)
+            foreach (var kv in stockPalletMap)
             {
-                var palletId = group.Key;
-                var stockPallets = group.Value;
+                var palletId = kv.Key;
+                var pallets = kv.Value;
 
-                var missingStockPallet = stockPallets.FirstOrDefault(sp => sp.Status == StockPalletStatus.Missing);
-                var surplusStockPallet = stockPallets.FirstOrDefault(sp => sp.Status == StockPalletStatus.Surplus);
+                var matched = pallets.FirstOrDefault(p => p.Status == StockPalletStatus.Matched);
+                var missing = pallets.FirstOrDefault(p => p.Status == StockPalletStatus.Missing);
+                var surplus = pallets.FirstOrDefault(p => p.Status == StockPalletStatus.Surplus);
+                var mislocated = pallets.FirstOrDefault(p => p.Status == StockPalletStatus.Mislocated);
 
-                if (missingStockPallet != null && surplusStockPallet == null)
+                if (matched != null)
                 {
-                    stockLocationWarming.Add(new StocktakingLocationWarming
+                    if (matched.ActualPackageQuantity != matched.ExpectedPackageQuantity)
                     {
-                        StocktakingLocationId = (Guid)missingStockPallet.StocktakingLocationId,
-                        PalletId = palletId,
-                        Message = "Tồn tại kệ kê hàng thiếu nhưng không tồn tại kệ kê hàng thừa tương ứng."
-                    });
-                }
-
-                if (surplusStockPallet != null && missingStockPallet == null)
-                {
-                    stockLocationWarming.Add(new StocktakingLocationWarming
-                    {
-                        StocktakingLocationId = (Guid)surplusStockPallet.StocktakingLocationId,
-                        PalletId = palletId,
-                        Message = "Tồn tại kệ kê hàng thừa nhưng không tồn tại kệ kê hàng thiếu tương ứng."
-                    });
-                }
-
-                if (missingStockPallet != null && surplusStockPallet != null)
-                {
-                    if (surplusStockPallet.ActualPackageQuantity != surplusStockPallet.ExpectedPackageQuantity)
-                    {
-                        stockLocationWarming.Add(new StocktakingLocationWarming
+                        stockLocationWarning.Add(new StocktakingLocationWarming
                         {
-                            StocktakingLocationId = (Guid)surplusStockPallet.StocktakingLocationId,
+                            StocktakingLocationId = (Guid)matched.StocktakingLocationId,
                             PalletId = palletId,
-                            Message = "Tồn tại kệ kê hàng thừa nhưng số lượng thực tế khác với số lượng kỳ vọng."
-                        });
-                    }
-
-                    if (missingStockPallet.ActualPackageQuantity != 0)
-                    {
-                        stockLocationWarming.Add(new StocktakingLocationWarming
-                        {
-                            StocktakingLocationId = (Guid)missingStockPallet.StocktakingLocationId,
-                            PalletId = palletId,
-                            Message = "Tồn tại kệ kê hàng thiếu nhưng số lượng thực tế phải bằng 0."
+                            Message = "Pallet đúng vị trí nhưng số lượng thực tế không khớp số lượng kỳ vọng."
                         });
                     }
                 }
 
-                var matchedStockPallet = stockPallets.FirstOrDefault(x => x.Status == StockPalletStatus.Matched);
-
-                if (matchedStockPallet != null && matchedStockPallet.ExpectedPackageQuantity != matchedStockPallet.ActualPackageQuantity)
+                if (mislocated != null)
                 {
-                    stockLocationWarming.Add(new StocktakingLocationWarming
-                    {
-                        StocktakingLocationId = (Guid)matchedStockPallet.StocktakingLocationId,
-                        PalletId = palletId,
-                        Message = "Số lượng thực tế khác với số lượng kỳ vọng."
-                    });
+                    surplus = mislocated;
                 }
 
+                if (missing != null && surplus == null)
+                {
+                    stockLocationFail.Add(new StocktakingLocationFail
+                    {
+                        StocktakingLocationId = (Guid)missing.StocktakingLocationId,
+                        PalletId = palletId,
+                        Message = "Tồn tại pallet thiếu nhưng không có pallet thừa tương ứng trong khu vực."
+                    });
+
+                    continue;
+                }
+
+                if (surplus != null && missing == null)
+                {
+                    stockLocationFail.Add(new StocktakingLocationFail
+                    {
+                        StocktakingLocationId = (Guid)surplus.StocktakingLocationId,
+                        PalletId = palletId,
+                        Message = "Tồn tại pallet thừa nhưng không có pallet thiếu tương ứng trong khu vực."
+                    });
+
+                    continue;
+                }
+
+                if (missing != null && surplus != null)
+                {
+                    if (surplus.ActualPackageQuantity != surplus.ExpectedPackageQuantity)
+                    {
+                        stockLocationWarning.Add(new StocktakingLocationWarming
+                        {
+                            StocktakingLocationId = (Guid)surplus.StocktakingLocationId,
+                            PalletId = palletId,
+                            Message = "Pallet thừa có số lượng thực tế khác số lượng kỳ vọng."
+                        });
+                    }
+
+                    if (missing.ActualPackageQuantity != 0)
+                    {
+                        stockLocationWarning.Add(new StocktakingLocationWarming
+                        {
+                            StocktakingLocationId = (Guid)missing.StocktakingLocationId,
+                            PalletId = palletId,
+                            Message = "Pallet thiếu có số lượng thực tế phải bằng 0."
+                        });
+                    }
+                }
             }
 
-            return stockLocationWarming;
+            return new StocktakingAreaApprovalResponse
+            {
+                StocktakingLocationFails = stockLocationFail,
+                StocktakingLocationWarmings = stockLocationWarning
+            };
         }
+
 
         private async Task<string> ValidationListStocktakingAreas<T>(List<T> areas)
             where T : StocktakingAreaCreate

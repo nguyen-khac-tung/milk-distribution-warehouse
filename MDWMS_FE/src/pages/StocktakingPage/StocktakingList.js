@@ -148,15 +148,13 @@ export default function StocktakingList() {
     useEffect(() => {
         if (!hasInitialLoad) return;
 
-        if (searchQuery.trim() || searchQuery === "") {
-            // Reset về trang 1 khi search
-            setPagination(prev => ({ ...prev, current: 1 }));
-            const requestParams = createRequestParams({
-                pageNumber: 1
-            });
-            fetchDataWithParams(requestParams);
-        }
-    }, [searchQuery]);
+        // Reset về trang 1 khi search và fetch data
+        const requestParams = createRequestParams({
+            pageNumber: 1
+        });
+        fetchDataWithParams(requestParams);
+        setPagination(prev => ({ ...prev, current: 1 }));
+    }, [searchQuery, hasInitialLoad]);
 
     // Sort được xử lý ở backend
     const sortedStocktakings = stocktakings;

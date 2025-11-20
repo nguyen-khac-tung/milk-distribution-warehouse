@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Button } from "../ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { X, AlertCircle } from "lucide-react";
@@ -9,23 +9,17 @@ export default function RejectStocktakingLocationModal({
     onConfirm,
     selectedLocations,
     stocktakingAreas,
+    locationWarnings = {}, // Map locationId -> warnings array
+    locationFails = {}, // Map locationId -> fails array
     loading = false
 }) {
     const [rejectReasons, setRejectReasons] = useState({});
     const [errors, setErrors] = useState({});
+    const isInitializedRef = useRef(false);
+    const prevDepsRef = useRef({});
 
-    // Reset state when modal opens/closes
-    useEffect(() => {
-        if (isOpen) {
-            setRejectReasons({});
-            setErrors({});
-        }
-    }, [isOpen]);
-
-    if (!isOpen) return null;
-
-    // Get location details from stocktakingAreas
-    const getLocationDetails = () => {
+    // Memoize location details to avoid recalculating on every render
+    const locationDetails = useMemo(() => {
         const locations = [];
         selectedLocations.forEach((selectedLocationId) => {
             for (const area of stocktakingAreas) {
@@ -53,9 +47,100 @@ export default function RejectStocktakingLocationModal({
             }
         });
         return locations;
-    };
+    }, [selectedLocations, stocktakingAreas]);
 
-    const locationDetails = getLocationDetails();
+    // Create stable dependency keys to avoid infinite loops
+    const selectedLocationsKey = useMemo(() => JSON.stringify(selectedLocations), [selectedLocations]);
+    const locationWarningsKey = useMemo(() => JSON.stringify(locationWarnings), [locationWarnings]);
+    const locationFailsKey = useMemo(() => JSON.stringify(locationFails), [locationFails]);
+    const stocktakingAreasKey = useMemo(() => JSON.stringify(stocktakingAreas), [stocktakingAreas]);
+
+    // Reset state when modal opens/closes and auto-fill warnings
+    useEffect(() => {
+        // Create a stable key for current dependencies
+        const currentDepsKey = `${isOpen}-${selectedLocationsKey}-${locationWarningsKey}-${locationFailsKey}-${stocktakingAreasKey}`;
+        const prevDepsKey = prevDepsRef.current.key;
+
+        // Only initialize if modal is open, not already initialized, and dependencies actually changed
+        if (isOpen && (!isInitializedRef.current || currentDepsKey !== prevDepsKey)) {
+            const initialReasons = {};
+
+            // Calculate location details inside effect to avoid dependency issues
+            const locationDetailsInEffect = [];
+            selectedLocations.forEach((selectedLocationId) => {
+                for (const area of stocktakingAreas) {
+                    const location = (area.stocktakingLocations || []).find(
+                        loc => {
+                            const locId = loc.stocktakingLocationId || loc.locationId;
+                            return locId === selectedLocationId;
+                        }
+                    );
+                    if (location) {
+                        const stocktakingLocationId = location.stocktakingLocationId || location.locationId;
+                        locationDetailsInEffect.push({
+                            stocktakingLocationId: stocktakingLocationId,
+                            locationId: location.location?.locationId || location.locationId,
+                            locationCode: location.locationCode || location.location?.locationCode || location.locationName || '-',
+                            status: location.status,
+                            areaName: area.areaDetail?.areaName || 'N/A'
+                        });
+                        break;
+                    }
+                }
+            });
+
+            // Auto-fill fails and warnings for each location
+            locationDetailsInEffect.forEach((location) => {
+                const locationId = location.stocktakingLocationId;
+                const fails = locationFails[locationId] || [];
+                const warnings = locationWarnings[locationId] || [];
+
+                const messages = [];
+
+                // Add fails first (errors)
+                if (fails.length > 0) {
+                    fails.forEach(fail => {
+                        if (fail.palletId) {
+                            messages.push(`[Lỗi]${fail.message}`);
+                        } else {
+                            messages.push(`[Lỗi] ${fail.message}`);
+                        }
+                    });
+                }
+
+                // Add warnings
+                if (warnings.length > 0) {
+                    warnings.forEach(warning => {
+                        if (warning.palletId) {
+                            messages.push(`[Cảnh báo]${warning.message}`);
+                        } else {
+                            messages.push(`[Cảnh báo] ${warning.message}`);
+                        }
+                    });
+                }
+
+                if (messages.length > 0) {
+                    initialReasons[locationId] = messages.join('\n');
+                } else {
+                    initialReasons[locationId] = '';
+                }
+            });
+
+            setRejectReasons(initialReasons);
+            setErrors({});
+            isInitializedRef.current = true;
+            prevDepsRef.current.key = currentDepsKey;
+        } else if (!isOpen) {
+            // Reset when modal closes
+            isInitializedRef.current = false;
+            prevDepsRef.current.key = '';
+            setRejectReasons({});
+            setErrors({});
+        }
+    }, [isOpen, selectedLocationsKey, locationWarningsKey, locationFailsKey, stocktakingAreasKey, selectedLocations, stocktakingAreas]);
+
+    if (!isOpen) return null;
+
     const isMultiple = locationDetails.length > 1;
 
     const handleReasonChange = (locationId, value) => {
@@ -63,13 +148,31 @@ export default function RejectStocktakingLocationModal({
             ...prev,
             [locationId]: value
         }));
-        // Clear error when user starts typing
-        if (errors[locationId]) {
-            setErrors(prev => {
-                const newErrors = { ...prev };
-                delete newErrors[locationId];
-                return newErrors;
-            });
+        // Validate and update error in real-time
+        if (!value.trim()) {
+            setErrors(prev => ({
+                ...prev,
+                [locationId]: "Vui lòng nhập lý do từ chối"
+            }));
+        } else {
+            // Clear error when user enters valid text
+            if (errors[locationId]) {
+                setErrors(prev => {
+                    const newErrors = { ...prev };
+                    delete newErrors[locationId];
+                    return newErrors;
+                });
+            }
+        }
+    };
+
+    const handleReasonBlur = (locationId) => {
+        const reason = rejectReasons[locationId] || "";
+        if (!reason.trim()) {
+            setErrors(prev => ({
+                ...prev,
+                [locationId]: "Vui lòng nhập lý do từ chối"
+            }));
         }
     };
 
@@ -86,13 +189,27 @@ export default function RejectStocktakingLocationModal({
         });
 
         setErrors(newErrors);
-        return isValid;
+        return { isValid, errors: newErrors };
     };
 
     const handleConfirm = () => {
-        if (!validateReasons()) {
+        // Validate all fields and show errors
+        const { isValid, errors: validationErrors } = validateReasons();
+
+        if (!isValid) {
             if (window.showToast) {
                 window.showToast("Vui lòng nhập lý do từ chối cho tất cả các vị trí", "error");
+            }
+            // Scroll to first error field
+            const firstErrorLocationId = Object.keys(validationErrors)[0];
+            if (firstErrorLocationId) {
+                setTimeout(() => {
+                    const textarea = document.querySelector(`textarea[data-location-id="${firstErrorLocationId}"]`);
+                    if (textarea) {
+                        textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        textarea.focus();
+                    }
+                }, 100);
             }
             return;
         }
@@ -143,7 +260,7 @@ export default function RejectStocktakingLocationModal({
                                     <AlertCircle className="h-5 w-5 text-orange-500 mt-0.5 flex-shrink-0" />
                                     <div className="text-sm text-orange-800">
                                         <p className="font-medium mb-1">Lưu ý:</p>
-                                        <p>Bạn cần nhập lý do từ chối cho từng vị trí. Sau khi từ chối, các vị trí này sẽ được chuyển về trạng thái "Chờ kiểm kê" và cần được kiểm kê lại.</p>
+                                        <p>Bạn cần nhập lý do từ chối cho từng vị trí. Lý do đã được tự động điền từ cảnh báo/lỗi (nếu có), bạn có thể chỉnh sửa hoặc thêm vào. Sau khi từ chối, các vị trí này sẽ được chuyển về trạng thái "Chờ kiểm kê" và cần được kiểm kê lại.</p>
                                     </div>
                                 </div>
                             </div>
@@ -175,21 +292,23 @@ export default function RejectStocktakingLocationModal({
                                                     <TableCell>
                                                         <div>
                                                             <textarea
-                                                                className={`w-full h-20 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm resize-none ${hasError ? 'border-red-500' : 'border-gray-300'
+                                                                data-location-id={locationId}
+                                                                className={`w-full h-32 px-3 py-2 border-2 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm resize-y ${hasError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300'
                                                                     }`}
-                                                                placeholder="Nhập lý do từ chối (bắt buộc)"
+                                                                placeholder="Nhập lý do từ chối (bắt buộc). Bạn có thể chỉnh sửa hoặc thêm vào lý do đã được tự động điền."
                                                                 maxLength={500}
                                                                 value={rejectReasons[locationId] || ""}
                                                                 onChange={(e) => handleReasonChange(locationId, e.target.value)}
+                                                                onBlur={() => handleReasonBlur(locationId)}
                                                                 disabled={loading}
                                                                 required
                                                             />
-                                                            <div className="flex justify-between items-center mt-1">
+                                                            <div className="flex justify-between items-start mt-1">
                                                                 <span className="text-xs text-gray-500">
                                                                     {(rejectReasons[locationId] || "").length}/500 ký tự
                                                                 </span>
                                                                 {hasError && (
-                                                                    <span className="text-xs text-red-500">
+                                                                    <span className="text-xs text-red-500 font-medium flex-1 text-right ml-2">
                                                                         {errors[locationId]}
                                                                     </span>
                                                                 )}
@@ -212,7 +331,7 @@ export default function RejectStocktakingLocationModal({
                                             <AlertCircle className="h-5 w-5 text-orange-500 mt-0.5 flex-shrink-0" />
                                             <div className="text-sm text-orange-800">
                                                 <p className="font-medium mb-1">Lưu ý:</p>
-                                                <p>Sau khi từ chối, vị trí này sẽ được chuyển về trạng thái "Chờ kiểm kê" và cần được kiểm kê lại.</p>
+                                                <p>Lý do đã được tự động điền từ cảnh báo/lỗi (nếu có), bạn có thể chỉnh sửa hoặc thêm vào. Sau khi từ chối, vị trí này sẽ được chuyển về trạng thái "Chờ kiểm kê" và cần được kiểm kê lại.</p>
                                             </div>
                                         </div>
                                     </div>
@@ -238,21 +357,23 @@ export default function RejectStocktakingLocationModal({
                                                 Lý do từ chối <span className="text-red-500">*</span>
                                             </label>
                                             <textarea
-                                                className={`w-full h-24 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none ${errors[locationDetails[0].stocktakingLocationId] ? 'border-red-500' : 'border-gray-300'
+                                                data-location-id={locationDetails[0].stocktakingLocationId}
+                                                className={`w-full h-32 px-3 py-2 border-2 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-y ${errors[locationDetails[0].stocktakingLocationId] ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300'
                                                     }`}
-                                                placeholder="Nhập lý do từ chối (bắt buộc)"
+                                                placeholder="Nhập lý do từ chối (bắt buộc). Bạn có thể chỉnh sửa hoặc thêm vào lý do đã được tự động điền."
                                                 maxLength={500}
                                                 value={rejectReasons[locationDetails[0].stocktakingLocationId] || ""}
                                                 onChange={(e) => handleReasonChange(locationDetails[0].stocktakingLocationId, e.target.value)}
+                                                onBlur={() => handleReasonBlur(locationDetails[0].stocktakingLocationId)}
                                                 disabled={loading}
                                                 required
                                             />
-                                            <div className="flex justify-between items-center mt-1">
+                                            <div className="flex justify-between items-start mt-1">
                                                 <span className="text-xs text-gray-500">
                                                     {(rejectReasons[locationDetails[0].stocktakingLocationId] || "").length}/500 ký tự
                                                 </span>
                                                 {errors[locationDetails[0].stocktakingLocationId] && (
-                                                    <span className="text-xs text-red-500">
+                                                    <span className="text-xs text-red-500 font-medium flex-1 text-right ml-2">
                                                         {errors[locationDetails[0].stocktakingLocationId]}
                                                     </span>
                                                 )}
