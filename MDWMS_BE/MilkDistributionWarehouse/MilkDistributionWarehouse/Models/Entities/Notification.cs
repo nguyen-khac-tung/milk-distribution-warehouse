@@ -13,6 +13,10 @@ public partial class Notification
 
     public string Content { get; set; }
 
+    public int? EntityType { get; set; }
+
+    public string EntityId { get; set; }
+
     public int? UserId { get; set; }
 
     public int? Category { get; set; }

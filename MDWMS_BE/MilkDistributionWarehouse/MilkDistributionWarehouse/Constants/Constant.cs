@@ -231,6 +231,20 @@
         public const int Important = 2;
     }
 
+    /// <summary>
+    /// Định nghĩa các loại thực thể có thể được gắn vào một thông báo.
+    /// </summary>
+    public static class NotificationEntityType
+    {
+        public const int PurchaseOrder = 1;
+        public const int SaleOrder = 2;
+        public const int GoodsReceiptNote = 3;
+        public const int GoodsIssueNote = 4;
+        public const int DisposalRequest = 5;
+        public const int DisposalNote = 6;
+        public const int StocktakingSheet = 7;
+    }
+
     public static class StocktakingSettings
     {
         public const int HoursBeforeStartToAllowEdit = 6;
