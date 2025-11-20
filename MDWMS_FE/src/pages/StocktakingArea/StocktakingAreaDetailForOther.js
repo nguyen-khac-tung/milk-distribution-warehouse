@@ -666,51 +666,57 @@ const StocktakingAreaDetailForOther = () => {
                             {/* Điều kiện bảo quản */}
                             <div>
                                 <h3 className="text-xs font-medium text-gray-500 mb-3">Điều kiện bảo quản</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {/* Nhiệt độ */}
-                                    <div>
-                                        <div className="text-xs text-gray-500 mb-0.5 flex items-center gap-1.5">
-                                            <Thermometer className="h-4 w-4 text-red-600" />
-                                            Nhiệt độ
-                                        </div>
-                                        <div className="text-base font-semibold text-gray-900">
-                                            {stocktakingAreas.map(area => {
-                                                const temp = area.areaDetail;
-                                                if (temp?.temperatureMin !== undefined && temp?.temperatureMax !== undefined) {
-                                                    return `${temp.temperatureMin}°C - ${temp.temperatureMax}°C`;
-                                                }
-                                                return null;
-                                            }).filter(Boolean).join(' / ') || '-'}
-                                        </div>
-                                    </div>
+                                <div className="space-y-4">
+                                    {stocktakingAreas.map((area, areaIndex) => {
+                                        const areaDetail = area.areaDetail;
+                                        const areaName = areaDetail?.areaName || `Khu vực ${areaIndex + 1}`;
 
-                                    {/* Độ ẩm */}
-                                    <div>
-                                        <div className="text-xs text-gray-500 mb-0.5 flex items-center gap-1.5">
-                                            <Droplets className="h-4 w-4 text-blue-600" />
-                                            Độ ẩm
-                                        </div>
-                                        <div className="text-base font-semibold text-gray-900">
-                                            {stocktakingAreas.map(area => {
-                                                const temp = area.areaDetail;
-                                                if (temp?.humidityMin !== undefined && temp?.humidityMax !== undefined) {
-                                                    return `${temp.humidityMin}% - ${temp.humidityMax}%`;
-                                                }
-                                                return null;
-                                            }).filter(Boolean).join(' / ') || '-'}
-                                        </div>
-                                    </div>
+                                        return (
+                                            <div key={area.stocktakingAreaId || areaIndex} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                                                <div className="text-sm font-semibold text-gray-700 mb-3">
+                                                    {areaName}
+                                                </div>
+                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                    {/* Nhiệt độ */}
+                                                    <div>
+                                                        <div className="text-xs text-gray-500 mb-0.5 flex items-center gap-1.5">
+                                                            <Thermometer className="h-4 w-4 text-red-600" />
+                                                            Nhiệt độ
+                                                        </div>
+                                                        <div className="text-base font-semibold text-gray-900">
+                                                            {areaDetail?.temperatureMin !== undefined && areaDetail?.temperatureMax !== undefined
+                                                                ? `${areaDetail.temperatureMin}°C - ${areaDetail.temperatureMax}°C`
+                                                                : '-'}
+                                                        </div>
+                                                    </div>
 
-                                    {/* Mức ánh sáng */}
-                                    <div>
-                                        <div className="text-xs text-gray-500 mb-0.5 flex items-center gap-1.5">
-                                            <Sun className="h-4 w-4 text-yellow-500" />
-                                            Mức ánh sáng
-                                        </div>
-                                        <div className="text-base font-semibold text-gray-900">
-                                            {stocktakingAreas.map(area => area.areaDetail?.lightLevel).filter(Boolean).join(' / ') || '-'}
-                                        </div>
-                                    </div>
+                                                    {/* Độ ẩm */}
+                                                    <div>
+                                                        <div className="text-xs text-gray-500 mb-0.5 flex items-center gap-1.5">
+                                                            <Droplets className="h-4 w-4 text-blue-600" />
+                                                            Độ ẩm
+                                                        </div>
+                                                        <div className="text-base font-semibold text-gray-900">
+                                                            {areaDetail?.humidityMin !== undefined && areaDetail?.humidityMax !== undefined
+                                                                ? `${areaDetail.humidityMin}% - ${areaDetail.humidityMax}%`
+                                                                : '-'}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Mức ánh sáng */}
+                                                    <div>
+                                                        <div className="text-xs text-gray-500 mb-0.5 flex items-center gap-1.5">
+                                                            <Sun className="h-4 w-4 text-yellow-500" />
+                                                            Mức ánh sáng
+                                                        </div>
+                                                        <div className="text-base font-semibold text-gray-900">
+                                                            {areaDetail?.lightLevel || '-'}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         </CardContent>
@@ -766,6 +772,11 @@ const StocktakingAreaDetailForOther = () => {
                                             onClick={() => toggleArea(areaId)}
                                         >
                                             <div className="flex items-center gap-3 flex-1">
+                                                <div className="flex-shrink-0 w-8 text-center">
+                                                    <div className="text-sm font-bold text-gray-600">
+                                                        {areaIndex + 1}
+                                                    </div>
+                                                </div>
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2 mb-1">
                                                         <div className="text-sm font-semibold text-gray-900">
@@ -836,13 +847,12 @@ const StocktakingAreaDetailForOther = () => {
                                                         return (
                                                             <div
                                                                 key={locationId}
-                                                                className={`border rounded-lg ${
-                                                                    hasFails 
-                                                                        ? 'border-red-500 border-2' 
-                                                                        : hasOnlyWarnings 
-                                                                        ? 'border-yellow-500 border-2' 
-                                                                        : 'border-gray-200'
-                                                                } ${isExpanded ? 'bg-gray-50' : 'bg-white'} ${isSelected ? 'ring-2 ring-orange-500' : ''} transition-colors`}
+                                                                className={`border rounded-lg ${hasFails
+                                                                        ? 'border-red-500 border-2'
+                                                                        : hasOnlyWarnings
+                                                                            ? 'border-yellow-500 border-2'
+                                                                            : 'border-gray-200'
+                                                                    } ${isExpanded ? 'bg-gray-50' : 'bg-white'} ${isSelected ? 'ring-2 ring-orange-500' : ''} transition-colors`}
                                                             >
                                                                 {/* Location Header */}
                                                                 <div
@@ -850,6 +860,11 @@ const StocktakingAreaDetailForOther = () => {
                                                                     onClick={() => toggleSheet(location)}
                                                                 >
                                                                     <div className="flex items-center gap-3 flex-1">
+                                                                        <div className="flex-shrink-0 w-6 text-center">
+                                                                            <div className="text-xs font-bold text-gray-600">
+                                                                                {index + 1}
+                                                                            </div>
+                                                                        </div>
                                                                         {isAreaPendingApproval ? (
                                                                             <input
                                                                                 type="checkbox"
