@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { Activity, ShoppingCart, Package } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
@@ -9,14 +10,14 @@ import dayjs from "dayjs"
 // Helper function to get time ago in Vietnamese
 const getTimeAgo = (date) => {
   if (!date) return "Không xác định"
-  
+
   const now = dayjs()
   const targetDate = dayjs(date)
   const diffInSeconds = now.diff(targetDate, "second")
   const diffInMinutes = now.diff(targetDate, "minute")
   const diffInHours = now.diff(targetDate, "hour")
   const diffInDays = now.diff(targetDate, "day")
-  
+
   if (diffInSeconds < 60) {
     return "Vừa xong"
   } else if (diffInMinutes < 60) {
@@ -31,6 +32,7 @@ const getTimeAgo = (date) => {
 }
 
 export default function RecentActivities({ onShowAllClick }) {
+  const navigate = useNavigate()
   const [recentActivities, setRecentActivities] = useState([])
   const [recentActivitiesLoading, setRecentActivitiesLoading] = useState(false)
 
@@ -39,17 +41,17 @@ export default function RecentActivities({ onShowAllClick }) {
     const fetchRecentActivities = async () => {
       try {
         setRecentActivitiesLoading(true)
-        
+
         // Get date range for last 7 days
         const toDate = dayjs().format('YYYY-MM-DD')
         const fromDate = dayjs().subtract(7, 'day').format('YYYY-MM-DD')
-        
+
         // Fetch recent receipts and issues
         const [receipts, issues] = await Promise.all([
           getGoodsReceiptReport({ fromDate, toDate }).catch(() => []),
           getGoodsIssueReport({ fromDate, toDate }).catch(() => [])
         ])
-        
+
         // Handle response structure
         const normalizeData = (response) => {
           if (Array.isArray(response)) return response
@@ -58,12 +60,12 @@ export default function RecentActivities({ onShowAllClick }) {
           if (response?.data?.items && Array.isArray(response.data.items)) return response.data.items
           return []
         }
-        
+
         const receiptsList = normalizeData(receipts)
         const issuesList = normalizeData(issues)
-        
+
         const activities = []
-        
+
         // Add receipts (purchase orders)
         receiptsList.forEach(receipt => {
           activities.push({
@@ -73,9 +75,10 @@ export default function RecentActivities({ onShowAllClick }) {
             goodsName: receipt.goodsName || "",
             date: receipt.receiptDate || receipt.createdAt,
             supplierName: receipt.supplierName || "",
+            purchaseOrderId: receipt.purchaseOderId || receipt.purchaseOrderId,
           })
         })
-        
+
         // Add issues (sales orders)
         issuesList.forEach(issue => {
           activities.push({
@@ -85,16 +88,17 @@ export default function RecentActivities({ onShowAllClick }) {
             goodsName: issue.goodsName || "",
             date: issue.issueDate || issue.createdAt,
             retailerName: issue.retailerName || "",
+            salesOrderId: issue.salesOderId || issue.salesOrderId,
           })
         })
-        
+
         // Sort by date (newest first) and take top 5
         activities.sort((a, b) => {
           const dateA = dayjs(a.date)
           const dateB = dayjs(b.date)
           return dateB.diff(dateA)
         })
-        
+
         setRecentActivities(activities.slice(0, 5))
       } catch (error) {
         console.error("Error fetching recent activities:", error)
@@ -139,9 +143,21 @@ export default function RecentActivities({ onShowAllClick }) {
             {recentActivities.map((activity, index) => {
               const isPurchase = activity.type === "purchase"
               const timeAgo = getTimeAgo(activity.date)
-              
+
+              const handleClick = () => {
+                if (isPurchase && activity.purchaseOrderId) {
+                  navigate(`/goods-receipt-notes/${activity.purchaseOrderId}`)
+                } else if (!isPurchase && activity.salesOrderId) {
+                  navigate(`/goods-issue-note-detail/${activity.salesOrderId}`)
+                }
+              }
+
               return (
-                <div key={index} className="flex items-start gap-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+                <div
+                  key={index}
+                  className="flex items-start gap-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={handleClick}
+                >
                   <div className={`p-2 rounded-full ${isPurchase ? "bg-blue-100" : "bg-green-100"}`}>
                     {isPurchase ? (
                       <ShoppingCart className={`h-4 w-4 ${isPurchase ? "text-blue-600" : "text-green-600"}`} />
@@ -150,6 +166,16 @@ export default function RecentActivities({ onShowAllClick }) {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
+                    {isPurchase && activity.purchaseOrderId && (
+                      <p className="text-xs font-semibold text-gray-800 mb-1">
+                        Mã đơn mua: {activity.purchaseOrderId}
+                      </p>
+                    )}
+                    {!isPurchase && activity.salesOrderId && (
+                      <p className="text-xs font-semibold text-gray-800 mb-1">
+                        Mã đơn bán: {activity.salesOrderId}
+                      </p>
+                    )}
                     {activity.goodsName && (
                       <p className="text-xs text-gray-600 mt-0.5 truncate">
                         {activity.goodsName}
@@ -159,7 +185,7 @@ export default function RecentActivities({ onShowAllClick }) {
                       {timeAgo} • {dayjs(activity.date).format("DD/MM/YYYY HH:mm")}
                     </p>
                   </div>
-                  <Badge 
+                  <Badge
                     variant={isPurchase ? "default" : "secondary"}
                     className="text-xs"
                   >
