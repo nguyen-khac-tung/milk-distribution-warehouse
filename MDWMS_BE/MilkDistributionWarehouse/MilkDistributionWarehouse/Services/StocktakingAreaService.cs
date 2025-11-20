@@ -170,7 +170,7 @@ namespace MilkDistributionWarehouse.Services
                     return ("Danh sách kiểm kê vị trí trống.", default);
 
                 var validationStocktakingLocationsToApproval = await ValidationListStocktakingLocationToApproval(stocktakingLocations);
-                if (validationStocktakingLocationsToApproval != null)
+                if (validationStocktakingLocationsToApproval.StocktakingLocationFails.Any())
                     return ("", validationStocktakingLocationsToApproval);
 
                 stocktakingArea.Status = StockAreaStatus.Completed;
@@ -184,7 +184,7 @@ namespace MilkDistributionWarehouse.Services
                 await HandleUpdateStockSheetApproval(update.StocktakingAreaId, stocktakingArea.StocktakingSheetId);
 
                 await _unitOfWork.CommitTransactionAsync();
-                return ("", default);
+                return ("", validationStocktakingLocationsToApproval);
             }
             catch (Exception ex)
             {
