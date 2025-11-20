@@ -174,6 +174,37 @@ const UpdateDisposal = () => {
         fetchExpiredGoods();
     }, []);
 
+    // Đồng bộ maxQuantity của các item đã chọn mỗi khi danh sách hàng hết hạn hoặc lựa chọn thay đổi
+    useEffect(() => {
+        if (expiredGoods.length === 0 || selectedItems.size === 0) return;
+
+        setSelectedItems(prev => {
+            let hasChange = false;
+            const newMap = new Map(prev);
+
+            prev.forEach((selectedItem, key) => {
+                const matchedExpiredItem = expiredGoods.find(item =>
+                    item.goods?.goodsId === selectedItem.goodsId &&
+                    item.goodsPacking?.goodsPackingId === selectedItem.goodsPackingId
+                );
+
+                if (matchedExpiredItem) {
+                    const newMax = matchedExpiredItem.totalExpiredPackageQuantity || 0;
+                    if (selectedItem.maxQuantity !== newMax) {
+                        hasChange = true;
+                        newMap.set(key, {
+                            ...selectedItem,
+                            maxQuantity: newMax,
+                            // Nếu packageQuantity hiện tại lớn hơn max mới, giữ nguyên để user điều chỉnh, validation sẽ cảnh báo
+                        });
+                    }
+                }
+            });
+
+            return hasChange ? newMap : prev;
+        });
+    }, [expiredGoods, selectedItems]);
+
     // Filter suppliers by search term
     const filteredSuppliers = useMemo(() => {
         if (!supplierSearchTerm.trim()) {
@@ -264,11 +295,11 @@ const UpdateDisposal = () => {
         setSelectedItems(prev => {
             const newMap = new Map(prev);
             if (checked) {
-                // Khi check, thêm item với packageQuantity mặc định là 1
+                // Khi check, thêm item với packageQuantity mặc định là số thùng hết hạn
                 newMap.set(key, {
                     goodsId: item.goods.goodsId,
                     goodsPackingId: item.goodsPacking.goodsPackingId,
-                    packageQuantity: 1, // Mặc định 1 thùng
+                    packageQuantity: item.totalExpiredPackageQuantity || 0,
                     maxQuantity: item.totalExpiredPackageQuantity,
                     goods: item.goods,
                     goodsPacking: item.goodsPacking
@@ -300,7 +331,7 @@ const UpdateDisposal = () => {
                     newMap.set(key, {
                         goodsId: item.goods.goodsId,
                         goodsPackingId: item.goodsPacking.goodsPackingId,
-                        packageQuantity: 1,
+                        packageQuantity: item.totalExpiredPackageQuantity || 0,
                         maxQuantity: item.totalExpiredPackageQuantity,
                         goods: item.goods,
                         goodsPacking: item.goodsPacking
@@ -375,6 +406,16 @@ const UpdateDisposal = () => {
         const quantity = parseInt(item.packageQuantity);
         if (isNaN(quantity) || quantity <= 0) return 0;
         return quantity * (item.goodsPacking.unitPerPackage || 0);
+    };
+
+    // Calculate total units for any item (selected or not)
+    const calculateTotalUnitsForItem = (item, isSelected, selectedItem) => {
+        if (isSelected && selectedItem) {
+            return calculateTotalUnits(selectedItem);
+        }
+        const quantity = item.totalExpiredPackageQuantity || 0;
+        const unitPerPackage = item.goodsPacking?.unitPerPackage || 0;
+        return quantity * unitPerPackage;
     };
 
     // Validate form before submit
@@ -807,8 +848,8 @@ const UpdateDisposal = () => {
 
                                                                 {/* 7. SỐ THÙNG CẦN XUẤT HỦY (INPUT)*/}
                                                                 <TableCell className="w-[120px] lg:w-[12%] min-w-[140px] relative text-center align-top pb-6">
-                                                                    {isSelected ? (
-                                                                        <div className="relative">
+                                                                    <div className="relative">
+                                                                        {isSelected ? (
                                                                             <Input
                                                                                 type="number"
                                                                                 min="1"
@@ -818,26 +859,28 @@ const UpdateDisposal = () => {
                                                                                 className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${fieldErrors[key] ? 'border-red-500' : ''}`}
                                                                                 disabled={updateLoading || submitApprovalLoading}
                                                                             />
-                                                                            {fieldErrors[key] && (
-                                                                                <p className="absolute left-0 top-full mt-1 text-red-500 text-xs whitespace-nowrap">
-                                                                                    {fieldErrors[key]}
-                                                                                </p>
-                                                                            )}
-                                                                        </div>
-                                                                    ) : (
-                                                                        <span className="text-gray-400">—</span>
-                                                                    )}
+                                                                        ) : (
+                                                                            <Input
+                                                                                type="number"
+                                                                                value={item.totalExpiredPackageQuantity || 0}
+                                                                                className="h-[38px] border-slate-300 bg-gray-50 text-slate-600 rounded-lg cursor-not-allowed"
+                                                                                disabled
+                                                                                readOnly
+                                                                            />
+                                                                        )}
+                                                                        {fieldErrors[key] && (
+                                                                            <p className="absolute left-0 top-full mt-1 text-red-500 text-xs whitespace-nowrap">
+                                                                                {fieldErrors[key]}
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
                                                                 </TableCell>
 
                                                                 {/* 8. Tổng Số Đơn Vị */}
                                                                 <TableCell className="w-[100px] min-w-[100px] text-center align-top pb-6">
-                                                                    {isSelected ? (
-                                                                        <div className="h-[38px] flex items-center justify-center px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600 font-medium">
-                                                                            {calculateTotalUnits(selectedItem) || "0"}
-                                                                        </div>
-                                                                    ) : (
-                                                                        <span className="text-gray-400">—</span>
-                                                                    )}
+                                                                    <div className="h-[38px] flex items-center justify-center px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-slate-600 font-medium">
+                                                                        {calculateTotalUnitsForItem(item, isSelected, selectedItem) || "0"}
+                                                                    </div>
                                                                 </TableCell>
                                                                 {/* 9. Đơn Vị */}
                                                                 <TableCell className="w-[80px] min-w-[80px] text-center align-top pb-6">

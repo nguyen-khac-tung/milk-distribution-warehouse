@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { X, UserPlus, AlertCircle } from "lucide-react";
 import { Button } from "../ui/button";
-import { getUserDropDownByRoleName } from "../../services/AccountService";
+import { GetAvailableDisposalPickersDropDown } from "../../services/AccountService";
 
 const AssignPickingModal = ({
   isOpen,
@@ -21,7 +21,7 @@ const AssignPickingModal = ({
   const fetchWarehouseStaff = async () => {
     setLoadingStaff(true);
     try {
-      const response = await getUserDropDownByRoleName("Warehouse Staff");
+      const response = await GetAvailableDisposalPickersDropDown(disposalRequest.disposalRequestId);
       if (response?.data) setWarehouseStaff(response.data);
     } catch (err) {
       console.error("Error fetching staff:", err);
@@ -174,6 +174,12 @@ const AssignPickingModal = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[386px] overflow-y-auto pr-1">
                   {warehouseStaff.map((staff) => {
                     const isSelected = assignTo === staff.userId;
+                    const pendingPO = staff.pendingPurchaseOrders ?? 0;
+                    const processingPO = staff.processingPurchaseOrders ?? 0;
+                    const pendingSO = staff.pendingSalesOrders ?? 0;
+                    const processingSO = staff.processingSalesOrders ?? 0;
+                    const pendingDR = staff.pendingDisposalRequests ?? 0;
+                    const processingDR = staff.processingDisposalRequests ?? 0;
 
                     return (
                       <div
@@ -187,6 +193,32 @@ const AssignPickingModal = ({
                         <div className="mb-1">
                           <h4 className="font-semibold text-gray-800">{staff.fullName}</h4>
                           <p className="text-sm text-gray-500">{staff.phone}</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-sm mt-2">
+                          <div>
+                            <span className="text-gray-500">Đơn mua đang chờ:</span>
+                            <span className="font-medium ml-1">{pendingPO}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Đơn mua đang xử lý:</span>
+                            <span className="font-medium ml-1">{processingPO}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Đơn bán đang chờ:</span>
+                            <span className="font-medium ml-1">{pendingSO}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Đơn bán đang xử lý:</span>
+                            <span className="font-medium ml-1">{processingSO}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Đơn hủy đang chờ:</span>
+                            <span className="font-medium ml-1">{pendingDR}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Đơn hủy đang xử lý:</span>
+                            <span className="font-medium ml-1">{processingDR}</span>
+                          </div>
                         </div>
                       </div>
                     );

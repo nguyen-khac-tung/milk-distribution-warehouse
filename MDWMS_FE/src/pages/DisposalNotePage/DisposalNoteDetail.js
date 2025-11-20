@@ -768,13 +768,19 @@ const DisposalNoteDetail = () => {
                                 <h2 className="text-lg font-semibold text-gray-900">Thông tin phiếu xuất hủy</h2>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 gap-6">
                                 {/* Nhóm thông tin xử lý */}
                                 <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
                                     <h3 className="text-sm font-semibold text-slate-700 mb-3 border-b border-gray-100 pb-2">
                                         Thông tin xử lý
                                     </h3>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3">
+                                        <div>
+                                            <div className="text-xs text-gray-500">Mã yêu cầu xuất hủy</div>
+                                            <div className="text-base font-medium text-gray-900">
+                                                {disposalNote.disposalRequestId || "N/A"}
+                                            </div>
+                                        </div>
                                         <div>
                                             <div className="text-xs text-gray-500">Người tạo</div>
                                             <div className="text-base font-medium text-gray-900">
@@ -785,20 +791,6 @@ const DisposalNoteDetail = () => {
                                             <div className="text-xs text-gray-500">Người duyệt</div>
                                             <div className="text-base font-medium text-gray-900">
                                                 {disposalNote.approvalByName || "Chưa có"}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <div className="text-xs text-gray-500">Ngày tạo</div>
-                                            <div className="text-base font-medium text-gray-900">
-                                                {disposalNote.createdAt
-                                                    ? new Date(disposalNote.createdAt).toLocaleString("vi-VN", {
-                                                        day: "2-digit",
-                                                        month: "2-digit",
-                                                        year: "numeric",
-                                                        hour: "2-digit",
-                                                        minute: "2-digit",
-                                                    })
-                                                    : "N/A"}
                                             </div>
                                         </div>
                                         <div>
@@ -815,11 +807,25 @@ const DisposalNoteDetail = () => {
                                                     : "N/A"}
                                             </div>
                                         </div>
+                                        <div>
+                                            <div className="text-xs text-gray-500">Ngày tạo</div>
+                                            <div className="text-base font-medium text-gray-900">
+                                                {disposalNote.createdAt
+                                                    ? new Date(disposalNote.createdAt).toLocaleString("vi-VN", {
+                                                        day: "2-digit",
+                                                        month: "2-digit",
+                                                        year: "numeric",
+                                                        hour: "2-digit",
+                                                        minute: "2-digit",
+                                                    })
+                                                    : "N/A"}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
                                 {/* Nhóm thông tin yêu cầu xuất hủy */}
-                                <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
+                                {/* <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
                                     <h3 className="text-sm font-semibold text-slate-700 mb-3 border-b border-gray-100 pb-2">
                                         Thông tin yêu cầu xuất hủy
                                     </h3>
@@ -831,7 +837,7 @@ const DisposalNoteDetail = () => {
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                </div> */}
                             </div>
                         </div>
                     </Card>
