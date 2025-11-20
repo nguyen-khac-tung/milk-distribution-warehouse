@@ -17,7 +17,7 @@ namespace MilkDistributionWarehouse
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            #region Add services to the container
+            #region Add services
             builder.Services.AddDbContext<WarehouseContext>(option =>
                 option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
             );
@@ -54,20 +54,43 @@ namespace MilkDistributionWarehouse
                     ValidAudience = builder.Configuration["Jwt:Audience"],
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
                 };
+
+                option.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+                        var path = context.HttpContext.Request.Path;
+
+                        if (!string.IsNullOrEmpty(accessToken) &&
+                            path.StartsWithSegments("/notificationHub"))
+                        {
+                            context.Token = accessToken;
+                        }
+
+                        return Task.CompletedTask;
+                    }
+                };
             });
 
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(options =>
             {
-                options.SwaggerDoc("v1", new OpenApiInfo { Title = "JwtAuthApi", Version = "v1" });
+                options.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Title = "JwtAuthApi",
+                    Version = "v1"
+                });
+
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     In = ParameterLocation.Header,
-                    Description = "Please enter JWT with Bearer into field, e.g., 'Bearer {token}'",
+                    Description = "Enter 'Bearer {token}'",
                     Name = "Authorization",
                     Type = SecuritySchemeType.ApiKey,
                     Scheme = "Bearer"
                 });
+
                 options.AddSecurityRequirement(new OpenApiSecurityRequirement
                 {
                     {
@@ -79,24 +102,32 @@ namespace MilkDistributionWarehouse
                                 Id = "Bearer"
                             }
                         },
-                        new string[] {}
+                        new string[]{}
                     }
                 });
             });
 
-            // Add dependency injection configuration
             builder.Services.AddDependencyInjection();
-            
-            // Add cache
+
             builder.Services.AddMemoryCache();
 
-            //Add CORS
-            builder.Services.AddCors();
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("CorsPolicy", corsBuilder =>
+                {
+                    corsBuilder.WithOrigins("http://localhost:3000", "https://localhost:3000")
+                               .AllowAnyHeader()
+                               .AllowAnyMethod()
+                               .AllowCredentials();
+                });
+            });
 
-            //Add SignalR
             builder.Services.AddSignalR();
+
             #endregion
 
+
+            #region Build App
 
             var app = builder.Build();
 
@@ -106,17 +137,11 @@ namespace MilkDistributionWarehouse
                 app.UseSwaggerUI();
             }
 
-            app.UseCors(policy =>
-            {
-                policy.AllowAnyOrigin();
-                policy.AllowAnyHeader();
-                policy.AllowAnyMethod();
-            });
-
             app.UseHttpsRedirection();
 
-            app.UseAuthentication();
+            app.UseCors("CorsPolicy");
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.MapControllers();
@@ -124,6 +149,8 @@ namespace MilkDistributionWarehouse
             app.MapHub<NotificationHub>("/notificationHub");
 
             app.Run();
+
+            #endregion
         }
     }
 }

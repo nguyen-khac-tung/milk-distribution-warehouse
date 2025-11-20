@@ -4,6 +4,7 @@ using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
+using MilkDistributionWarehouse.Services;
 using MilkDistributionWarehouse.Utilities;
 
 namespace MilkDistributionWarehouse.Services
@@ -22,6 +23,7 @@ namespace MilkDistributionWarehouse.Services
         private readonly IDisposalRequestRepository _disposalRequestRepository;
         private readonly IPalletRepository _palletRepository;
         private readonly IPickAllocationRepository _pickAllocationRepository;
+        private readonly INotificationService _notificationService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
@@ -29,6 +31,7 @@ namespace MilkDistributionWarehouse.Services
                                    IDisposalRequestRepository disposalRequestRepository,
                                    IPalletRepository palletRepository,
                                    IPickAllocationRepository pickAllocationRepository,
+                                   INotificationService notificationService,
                                    IUnitOfWork unitOfWork,
                                    IMapper mapper)
         {
@@ -36,6 +39,7 @@ namespace MilkDistributionWarehouse.Services
             _disposalRequestRepository = disposalRequestRepository;
             _palletRepository = palletRepository;
             _pickAllocationRepository = pickAllocationRepository;
+            _notificationService = notificationService;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
         }
@@ -85,7 +89,7 @@ namespace MilkDistributionWarehouse.Services
                     })
                     .Where(p => p.AvailableQuantity > 0)
                     .OrderBy(p => p.Pallet.Batch.ExpiryDate)
-                    .ThenBy(p => p.AvailableQuantity)     
+                    .ThenBy(p => p.AvailableQuantity)
                     .ToList();
 
                     if (availablePallets.IsNullOrEmpty())
@@ -123,6 +127,7 @@ namespace MilkDistributionWarehouse.Services
 
                 await _unitOfWork.CommitTransactionAsync();
 
+                await HandleDisposalRequestStatusChangeNotification(disposalRequest);
                 return "";
             }
             catch (Exception ex)
@@ -180,6 +185,7 @@ namespace MilkDistributionWarehouse.Services
                 await _disposalNoteRepository.UpdateDisposalNote(disposalNote);
                 await _unitOfWork.CommitTransactionAsync();
 
+                await HandleDNStatusChangeNotification(disposalNote);
                 return "";
             }
             catch
@@ -238,6 +244,7 @@ namespace MilkDistributionWarehouse.Services
                 await _disposalNoteRepository.UpdateDisposalNote(disposalNote);
                 await _unitOfWork.CommitTransactionAsync();
 
+                await HandleDisposalRequestStatusChangeNotification(disposalNote.DisposalRequest);
                 return "";
             }
             catch (Exception ex)
@@ -246,6 +253,63 @@ namespace MilkDistributionWarehouse.Services
                 if (ex.Message.Contains("[User]")) return ex.Message;
                 return "Đã xảy ra lỗi hệ thống khi duyệt phiếu xuất hủy.".ToMessageForUser();
             }
+        }
+
+        private async Task HandleDisposalRequestStatusChangeNotification(DisposalRequest disposalRequest)
+        {
+            var notificationsToCreate = new List<NotificationCreateDto>();
+
+            switch (disposalRequest.Status)
+            {
+                case DisposalRequestStatus.Picking:
+                    notificationsToCreate.Add(new NotificationCreateDto()
+                    {
+                        UserId = disposalRequest.CreatedBy,
+                        Title = "Yêu cầu xuất hủy đang được lấy hàng",
+                        Content = $"Yêu cầu xuất hủy '{disposalRequest.DisposalRequestId}' đang được nhân viên kho tiến hành lấy hàng.",
+                        EntityType = NotificationEntityType.DisposalRequest,
+                        EntityId = disposalRequest.DisposalRequestId
+                    });
+                    break;
+
+                case DisposalRequestStatus.Completed:
+                    notificationsToCreate.Add(new NotificationCreateDto()
+                    {
+                        UserId = disposalRequest.AssignTo,
+                        Title = "Yêu cầu xuất hủy đã hoàn thành",
+                        Content = $"Yêu cầu xuất hủy '{disposalRequest.DisposalRequestId}' đã hoàn thành.",
+                        EntityType = NotificationEntityType.DisposalRequest,
+                        EntityId = disposalRequest.DisposalRequestId
+                    });
+                    notificationsToCreate.Add(new NotificationCreateDto()
+                    {
+                        UserId = disposalRequest.ApprovalBy,
+                        Title = "Yêu cầu xuất hủy đã hoàn thành",
+                        Content = $"Yêu cầu xuất hủy '{disposalRequest.DisposalRequestId}' đã hoàn thành.",
+                        EntityType = NotificationEntityType.DisposalRequest,
+                        EntityId = disposalRequest.DisposalRequestId
+                    });
+                    break;
+
+                default: break;
+            }
+
+            if (notificationsToCreate.Count > 0)
+                await _notificationService.CreateNotificationBulk(notificationsToCreate);
+        }
+
+        private async Task HandleDNStatusChangeNotification(DisposalNote disposalNote)
+        {
+            var notificationToCreate = new NotificationCreateDto()
+            {
+                UserId = disposalNote.DisposalRequest.CreatedBy,
+                Title = "Phiếu xuất hủy mới chờ duyệt",
+                Content = $"Phiếu xuất hủy '{disposalNote.DisposalNoteId}' vừa được gửi và đang chờ bạn duyệt.",
+                EntityType = NotificationEntityType.DisposalNote,
+                EntityId = disposalNote.DisposalNoteId
+            };
+
+            await _notificationService.CreateNotification(notificationToCreate);
         }
     }
 }

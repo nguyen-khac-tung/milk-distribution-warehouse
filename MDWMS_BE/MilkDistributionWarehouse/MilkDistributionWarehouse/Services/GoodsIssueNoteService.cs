@@ -23,6 +23,7 @@ namespace MilkDistributionWarehouse.Services
         private readonly ISalesOrderRepository _salesOrderRepository;
         private readonly IPalletRepository _palletRepository;
         private readonly IPickAllocationRepository _pickAllocationRepository;
+        private readonly INotificationService _notificationService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
@@ -30,6 +31,7 @@ namespace MilkDistributionWarehouse.Services
                                  ISalesOrderRepository salesOrderRepository,
                                  IPalletRepository palletRepository,
                                  IPickAllocationRepository pickAllocationRepository,
+                                 INotificationService notificationService,
                                  IUnitOfWork unitOfWork,
                                  IMapper mapper)
         {
@@ -37,6 +39,7 @@ namespace MilkDistributionWarehouse.Services
             _salesOrderRepository = salesOrderRepository;
             _palletRepository = palletRepository;
             _pickAllocationRepository = pickAllocationRepository;
+            _notificationService = notificationService;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
         }
@@ -121,6 +124,7 @@ namespace MilkDistributionWarehouse.Services
 
                 await _unitOfWork.CommitTransactionAsync();
 
+                await HandleSaleOrderStatusChangeNotification(salesOrder);
                 return "";
             }
             catch (Exception ex)
@@ -177,6 +181,7 @@ namespace MilkDistributionWarehouse.Services
                 await _goodsIssueNoteRepository.UpdateGoodsIssueNote(goodsIssueNote);
                 await _unitOfWork.CommitTransactionAsync();
 
+                await HandleGINStatusChangeNotification(goodsIssueNote);
                 return "";
             }
             catch
@@ -234,6 +239,7 @@ namespace MilkDistributionWarehouse.Services
                 await _goodsIssueNoteRepository.UpdateGoodsIssueNote(goodsIssueNote);
                 await _unitOfWork.CommitTransactionAsync();
 
+                await HandleSaleOrderStatusChangeNotification(goodsIssueNote.SalesOder);
                 return "";
             }
             catch (Exception ex)
@@ -242,6 +248,63 @@ namespace MilkDistributionWarehouse.Services
                 if (ex.Message.Contains("[User]")) return ex.Message;
                 return "Đã xảy ra lỗi hệ thống khi duyệt phiếu xuất kho.".ToMessageForUser();
             }
+        }
+
+        private async Task HandleSaleOrderStatusChangeNotification(SalesOrder salesOrder)
+        {
+            var notificationsToCreate = new List<NotificationCreateDto>();
+
+            switch (salesOrder.Status)
+            {
+                case SalesOrderStatus.Picking:
+                    notificationsToCreate.Add(new NotificationCreateDto()
+                    {
+                        UserId = salesOrder.AcknowledgedBy,
+                        Title = "Đơn bán hàng đang được lấy hàng",
+                        Content = $"Đơn bán hàng '{salesOrder.SalesOrderId}' đang được nhân viên kho tiến hành lấy hàng.",
+                        EntityType = NotificationEntityType.SaleOrder,
+                        EntityId = salesOrder.SalesOrderId
+                    });
+                    break;
+
+                case SalesOrderStatus.Completed:
+                    notificationsToCreate.Add(new NotificationCreateDto()
+                    {
+                        UserId = salesOrder.AssignTo,
+                        Title = "Đơn bán hàng đã hoàn thành",
+                        Content = $"Đơn bán hàng '{salesOrder.SalesOrderId}' đã hoàn thành.",
+                        EntityType = NotificationEntityType.SaleOrder,
+                        EntityId = salesOrder.SalesOrderId
+                    });
+                    notificationsToCreate.Add(new NotificationCreateDto()
+                    {
+                        UserId = salesOrder.ApprovalBy,
+                        Title = "Đơn bán hàng đã hoàn thành",
+                        Content = $"Đơn bán hàng '{salesOrder.SalesOrderId}' đã hoàn thành.",
+                        EntityType = NotificationEntityType.SaleOrder,
+                        EntityId = salesOrder.SalesOrderId
+                    });
+                    break;
+
+                default: break;
+            }
+
+            if (notificationsToCreate.Count > 0)
+                await _notificationService.CreateNotificationBulk(notificationsToCreate);
+        }
+
+        private async Task HandleGINStatusChangeNotification(GoodsIssueNote goodsIssueNote)
+        {
+            var notificationsToCreate = new NotificationCreateDto()
+            {
+                UserId = goodsIssueNote.SalesOder.AcknowledgedBy,
+                Title = "Đơn xuất kho mới chờ duyệt",
+                Content = $"Đơn xuất kho '{goodsIssueNote.GoodsIssueNoteId}' vừa được gửi và đang chờ bạn duyệt.",
+                EntityType = NotificationEntityType.GoodsIssueNote,
+                EntityId = goodsIssueNote.GoodsIssueNoteId
+            };
+
+            await _notificationService.CreateNotification(notificationsToCreate);
         }
     }
 }
