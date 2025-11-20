@@ -9,11 +9,11 @@ export default function InventorySearchFilter({
   searchPlaceholder = "Tìm kiếm theo mã lô, tên sản phẩm...",
   timeRange,
   setTimeRange,
-  timeRangeOptions = [
-    { value: "week", label: "Tuần này" },
-    { value: "month", label: "Tháng này" },
-    { value: "year", label: "Năm nay" }
-  ],
+  // timeRangeOptions = [
+  //   { value: "week", label: "Tuần này" },
+  //   { value: "month", label: "Tháng này" },
+  //   { value: "year", label: "Năm nay" }
+  // ],
   areaId,
   setAreaId,
   areas = [],
@@ -60,7 +60,7 @@ export default function InventorySearchFilter({
 
   const hasActiveFilters = searchQuery || (timeRange && timeRange !== "week") || areaId;
 
-  const currentTimeRangeLabel = timeRangeOptions.find(opt => opt.value === timeRange)?.label || timeRangeOptions[0].label;
+  // const currentTimeRangeLabel = timeRangeOptions.find(opt => opt.value === timeRange)?.label || timeRangeOptions[0].label;
 
   return (
     <>
@@ -127,7 +127,7 @@ export default function InventorySearchFilter({
               </div>
 
               {/* Time Range Filter */}
-              <div className="relative time-range-filter-dropdown">
+              {/* <div className="relative time-range-filter-dropdown">
                 <button
                   onClick={() => setShowTimeRangeFilter(!showTimeRangeFilter)}
                   className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors min-w-0 max-w-48
@@ -168,7 +168,7 @@ export default function InventorySearchFilter({
                     </div>
                   </div>
                 )}
-              </div>
+              </div> */}
 
               {/* Area Filter */}
               {areas && areas.length > 0 && (

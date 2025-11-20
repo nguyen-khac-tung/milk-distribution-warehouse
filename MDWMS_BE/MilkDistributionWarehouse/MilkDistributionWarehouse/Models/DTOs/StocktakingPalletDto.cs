@@ -26,7 +26,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
     public class StocktakingPalletUpdateStatus
     {
-        [Required(ErrorMessage = "Mã kiểm kê kệ kê hàng là bắt buộc.")]
+        //[Required(ErrorMessage = "Mã kiểm kê kệ kê hàng là bắt buộc.")]
         public Guid StocktakingPalletId { get; set; }
     }
 
@@ -51,8 +51,8 @@ namespace MilkDistributionWarehouse.Models.DTOs
     public class StocktakingPalletSurplusStatus : StocktakingPalletUpdateStatus
     {
         public string Note { get; set; }
-        [Required(ErrorMessage = "Số lượng thực tế trong kệ kê hàng là bắt buộc.")]
-        [Range(0, int.MaxValue, ErrorMessage = "Số lượng thực tế phải lớn hơn hoặc bằng 0.")]
+        //[Required(ErrorMessage = "Số lượng thực tế trong kệ kê hàng là bắt buộc.")]
+        //[Range(0, int.MaxValue, ErrorMessage = "Số lượng thực tế phải lớn hơn hoặc bằng 0.")]
         public int ActualPackageQuantity { get; set; }
     }
 

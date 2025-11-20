@@ -341,7 +341,7 @@ const StocktakingDetail = () => {
                                                 </CardHeader>
                                                 <CardContent className="p-5 space-y-4">
                                                     {/* Người được phân công */}
-                                                    <div className="flex items-start gap-3">
+                                                    <div className="flex items-start gap-3 pt-5">
                                                         <div className="p-2 rounded-lg bg-slate-100">
                                                             <User className="h-5 w-5 text-slate-600" />
                                                         </div>
