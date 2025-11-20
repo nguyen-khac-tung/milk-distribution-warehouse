@@ -388,8 +388,11 @@ const StocktakingAreaDetailForOther = () => {
             const warnings = responseData?.stocktakingLocationWarmings || [];
             const fails = responseData?.stocktakingLocationFails || [];
 
-            // Gộp cả warnings và fails lại để hiển thị (cả hai đều có cấu trúc tương tự)
-            const allAlerts = [...warnings, ...fails];
+            // Gộp cả warnings và fails lại, thêm type để phân biệt
+            const allAlerts = [
+                ...warnings.map(w => ({ ...w, alertType: 'warning' })),
+                ...fails.map(f => ({ ...f, alertType: 'fail' }))
+            ];
 
             // Tạo map locationId -> alerts (warnings + fails)
             const alertsMap = {};
@@ -827,11 +830,19 @@ const StocktakingAreaDetailForOther = () => {
                                                         const isAreaPendingApproval = areaStatus === STOCK_AREA_STATUS.PendingApproval;
                                                         const warnings = locationWarnings[locationId] || [];
                                                         const hasWarnings = warnings.length > 0;
+                                                        const hasFails = warnings.some(w => w.alertType === 'fail');
+                                                        const hasOnlyWarnings = hasWarnings && !hasFails;
 
                                                         return (
                                                             <div
                                                                 key={locationId}
-                                                                className={`border rounded-lg ${hasWarnings ? 'border-red-500 border-2 bg-red-50' : 'border-gray-200'} ${isExpanded ? 'bg-gray-50' : 'bg-white'} ${isSelected ? 'ring-2 ring-orange-500' : ''} transition-colors`}
+                                                                className={`border rounded-lg ${
+                                                                    hasFails 
+                                                                        ? 'border-red-500 border-2' 
+                                                                        : hasOnlyWarnings 
+                                                                        ? 'border-yellow-500 border-2' 
+                                                                        : 'border-gray-200'
+                                                                } ${isExpanded ? 'bg-gray-50' : 'bg-white'} ${isSelected ? 'ring-2 ring-orange-500' : ''} transition-colors`}
                                                             >
                                                                 {/* Location Header */}
                                                                 <div
@@ -851,7 +862,7 @@ const StocktakingAreaDetailForOther = () => {
                                                                             <div className="w-4 h-4"></div>
                                                                         )}
                                                                         {hasWarnings && (
-                                                                            <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0" />
+                                                                            <AlertTriangle className={`h-5 w-5 flex-shrink-0 ${hasFails ? 'text-red-500' : 'text-yellow-500'}`} />
                                                                         )}
                                                                         <div className="flex-1 grid grid-cols-3 gap-4">
                                                                             <div>
@@ -888,25 +899,49 @@ const StocktakingAreaDetailForOther = () => {
                                                                 </div>
 
                                                                 {/* Warnings Display */}
-                                                                {hasWarnings && (
-                                                                    <div className="px-4 pb-3 border-b border-red-200">
-                                                                        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                                                                            <div className="flex items-start gap-2 mb-2">
-                                                                                <AlertTriangle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
-                                                                                <div className="text-xs font-semibold text-red-800">
-                                                                                    Cảnh báo ({warnings.length})
-                                                                                </div>
-                                                                            </div>
-                                                                            <div className="space-y-1.5">
-                                                                                {warnings.map((warning, warningIndex) => (
-                                                                                    <div key={warningIndex} className="text-xs text-red-700 pl-6">
-                                                                                        <span className="font-medium">Pallet </span> {warning.message}
+                                                                {hasWarnings && (() => {
+                                                                    const fails = warnings.filter(w => w.alertType === 'fail');
+                                                                    const warningsOnly = warnings.filter(w => w.alertType === 'warning');
+
+                                                                    return (
+                                                                        <div className={`px-4 pb-3 border-b ${fails.length > 0 ? 'border-red-200' : 'border-yellow-200'}`}>
+                                                                            {fails.length > 0 && (
+                                                                                <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-2">
+                                                                                    <div className="flex items-start gap-2 mb-2">
+                                                                                        <AlertTriangle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
+                                                                                        <div className="text-xs font-semibold text-red-800">
+                                                                                            Lỗi ({fails.length})
+                                                                                        </div>
                                                                                     </div>
-                                                                                ))}
-                                                                            </div>
+                                                                                    <div className="space-y-1.5">
+                                                                                        {fails.map((fail, failIndex) => (
+                                                                                            <div key={failIndex} className="text-xs text-red-700 pl-6">
+                                                                                                <span className="font-medium">Pallet </span> {fail.message}
+                                                                                            </div>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
+                                                                            {warningsOnly.length > 0 && (
+                                                                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                                                                    <div className="flex items-start gap-2 mb-2">
+                                                                                        <AlertTriangle className="h-4 w-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+                                                                                        <div className="text-xs font-semibold text-yellow-800">
+                                                                                            Cảnh báo ({warningsOnly.length})
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="space-y-1.5">
+                                                                                        {warningsOnly.map((warning, warningIndex) => (
+                                                                                            <div key={warningIndex} className="text-xs text-yellow-700 pl-6">
+                                                                                                <span className="font-medium">Pallet </span> {warning.message}
+                                                                                            </div>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
                                                                         </div>
-                                                                    </div>
-                                                                )}
+                                                                    );
+                                                                })()}
 
                                                                 {/* Packages Table */}
                                                                 {isExpanded && (
