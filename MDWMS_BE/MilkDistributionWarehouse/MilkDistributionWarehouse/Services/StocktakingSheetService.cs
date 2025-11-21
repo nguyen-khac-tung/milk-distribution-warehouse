@@ -104,11 +104,12 @@ namespace MilkDistributionWarehouse.Services
                     ),
 
                 StockAreaStarted =
-                    (ss.StocktakingAreas.Any(sa => sa.AssignTo == userId && sa.StocktakingLocations.Any() == false))
+                    (ss.StocktakingAreas.Count(sa => sa.AssignTo == userId) == 1 
+                    && ss.StocktakingAreas.Any(sa => sa.AssignTo == userId && sa.StocktakingLocations.Any() == false))
                         ? StockAreaStarted.NotStarted
 
-                    : (ss.StocktakingAreas
-                        .Any(sa => sa.AssignTo == userId && sa.StocktakingLocations.Any()))
+                    : (ss.StocktakingAreas.Count(sa => sa.AssignTo == userId) == 1 &&
+                    ss.StocktakingAreas.Any(sa => sa.AssignTo == userId && sa.StocktakingLocations.Any()))
                         ? StockAreaStarted.Started
 
                     : StockAreaStarted.HasSomeAreas
@@ -218,7 +219,7 @@ namespace MilkDistributionWarehouse.Services
                     StocktakingSheetAssignStatus assignStatus => await HandleAssignStatus(stocktakingSheetExist, assignStatus, userId),
                     StocktakingSheetReAssignStatus reAssingStatus => await HandleReAssignStatus(stocktakingSheetExist, reAssingStatus, userId),
                     StocktakingSheetCancelStatus => await HandleCancelStatus(stocktakingSheetExist, userId),
-                    StocktakingSheetInProgressStatus => await HandleInProgressStatus(stocktakingSheetExist, userId),
+                    StocktakingSheetInProgressStatus inProgress => await HandleInProgressStatus(stocktakingSheetExist, inProgress, userId),
                     StocktakingSheetCompletedStatus completedStatus => await HandleCompletedStatus(stocktakingSheetExist, completedStatus.Note),
                     _ => "Loại cập nhật trạng thái không hợp lệ.".ToMessageForUser()
                 };
@@ -349,7 +350,7 @@ namespace MilkDistributionWarehouse.Services
             return string.Empty;
         }
 
-        private async Task<string> HandleInProgressStatus(StocktakingSheet sheet, int? userId)
+        private async Task<string> HandleInProgressStatus(StocktakingSheet sheet, StocktakingSheetInProgressStatus inProgressStatus, int? userId)
         {
             if (!IsWarehouseStaff(sheet, userId))
                 return "Bạn không có quyền thực hiện chức năng cập nhật trạng thái trong phiếu kiểm kê.".ToMessageForUser();
@@ -360,7 +361,11 @@ namespace MilkDistributionWarehouse.Services
             //    return $"Còn {remaining.Hours} giờ {remaining.Minutes} phút nữa đến thời gian bắt đầu kiểm kê.".ToMessageForUser();
             //}
 
-            var stocktakingAreaOfAssignedStaff = sheet.StocktakingAreas.FirstOrDefault(sa => sa.AssignTo == userId);
+            var stocktakingAreaOfAssignedStaff = sheet.StocktakingAreas
+                .FirstOrDefault(sa => 
+                                    sa.AssignTo == userId && 
+                                    (inProgressStatus.StocktakingAreaId == null 
+                                    || inProgressStatus.StocktakingAreaId != sa.StocktakingAreaId));
             if (stocktakingAreaOfAssignedStaff == null)
                 return "Không tìm thấy khu vực được phân công cho nhân viên này.".ToMessageForUser();
 
