@@ -153,8 +153,14 @@ export const assignStocktakingAreas = async (data) => {
 
 export const inProgressStocktaking = async (data) => {
     try {
+        if (!data.stocktakingSheetId) {
+            throw new Error("stocktakingSheetId is required");
+        }
+        // stocktakingAreaId có thể là null khi stockAreaStarted === 1
+        // stocktakingAreaId là bắt buộc khi stockAreaStarted === 3
         const body = {
-            stocktakingSheetId: data.stocktakingSheetId
+            stocktakingSheetId: data.stocktakingSheetId,
+            stocktakingAreaId: data.stocktakingAreaId || null
         };
 
         const res = await api.put("/StocktakingSheet/InProgress", body);

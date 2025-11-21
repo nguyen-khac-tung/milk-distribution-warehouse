@@ -192,7 +192,7 @@ const StocktakingTable = ({
                                         <TableCell className="px-6 py-4 text-center">
                                             <div className="flex items-center justify-center space-x-1">
                                                 {/* Icon bắt đầu / xem lại kiểm kê dựa trên stockAreaStarted
-                                                    stockAreaStarted === 1: Chưa bắt đầu -> icon xanh lá "Bắt đầu kiểm kê" (cần gọi API)
+                                                    stockAreaStarted === 1 hoặc === 3: Chưa bắt đầu -> icon xanh lá "Bắt đầu kiểm kê" (cần gọi API)
                                                     stockAreaStarted === 2: Đã bắt đầu -> icon xanh dương "Xem chi tiết kiểm kê" (chỉ xem)
                                                 */}
                                                 {(() => {
@@ -200,14 +200,16 @@ const StocktakingTable = ({
                                                     const status = stocktaking.status;
                                                     
                                                     let shouldShowIcon = false;
-                                                    let isNotStarted = false; // true = chưa bắt đầu (1), false = đã bắt đầu (2)
+                                                    let isNotStarted = false; // true = chưa bắt đầu (1 hoặc 3), false = đã bắt đầu (2)
 
                                                     if (stockAreaStarted !== undefined && stockAreaStarted !== null) {
                                                         // Có giá trị từ API
-                                                        // 1 = chưa bắt đầu -> icon xanh lá "Bắt đầu kiểm kê"
+                                                        // 1 hoặc 3 = chưa bắt đầu -> icon xanh lá "Bắt đầu kiểm kê"
                                                         // 2 = đã bắt đầu -> icon xanh dương "Xem chi tiết kiểm kê"
-                                                        shouldShowIcon = stockAreaStarted === 1 || stockAreaStarted === 2 || stockAreaStarted === '1' || stockAreaStarted === '2';
-                                                        isNotStarted = stockAreaStarted === 1 || stockAreaStarted === '1'; // 1 = chưa bắt đầu
+                                                        shouldShowIcon = stockAreaStarted === 1 || stockAreaStarted === 2 || stockAreaStarted === 3 || 
+                                                                          stockAreaStarted === '1' || stockAreaStarted === '2' || stockAreaStarted === '3';
+                                                        isNotStarted = stockAreaStarted === 1 || stockAreaStarted === 3 || 
+                                                                       stockAreaStarted === '1' || stockAreaStarted === '3'; // 1 hoặc 3 = chưa bắt đầu
                                                     } else {
                                                         // Fallback dựa trên status nếu không có giá trị từ API
                                                         // Status Assigned (2) = chưa bắt đầu
