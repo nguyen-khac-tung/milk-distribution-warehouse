@@ -96,7 +96,9 @@ namespace MilkDistributionWarehouse.Services
                 CreateByName = ss.CreatedByNavigation.FullName,
                 CanViewStocktakingArea = roleName == RoleNames.WarehouseManager || roleName == RoleNames.SalesManager
             ? ss.StocktakingAreas.Any(sa => sa.StocktakingLocations.Any())
-            : ss.StocktakingAreas.Any(sa => sa.AssignTo == userId && sa.StocktakingLocations.Any())
+            : ss.StocktakingAreas.Any(sa => sa.AssignTo == userId && sa.StocktakingLocations.Any()),
+                IsStocktakingStarted = ss.StocktakingAreas
+                    .Any(sa => sa.AssignTo == userId && sa.StocktakingLocations.Any())
             });
 
             var items = await queryDto.ToPagedResultAsync(request);
