@@ -9,17 +9,25 @@ import {
   ShoppingCart,
   Package,
   Eye,
-  Download,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
+  Building2,
+  RotateCcw,
 } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
 import { getGoodsReceiptReport, getGoodsIssueReport } from "../../services/DashboardService"
+import { getSuppliersDropdown } from "../../services/SupplierService"
+import { getAllRetailersDropdown } from "../../services/RetailerService"
 import dayjs from "dayjs"
 import { DatePicker, ConfigProvider } from 'antd'
 import locale from 'antd/locale/vi_VN'
 import Loading from "../../components/Common/Loading"
 import Pagination from "../../components/Common/Pagination"
+import ExportPurchaseOrdersReport from "../../components/PurchaseOrderComponents/ExportPurchaseOrdersReport"
+import ExportSalesOrdersReport from "../../components/SaleOrderCompoents/ExportSalesOrdersReport"
 
 export default function OrdersPage({ onClose }) {
   const navigate = useNavigate()
@@ -38,6 +46,18 @@ export default function OrdersPage({ onClose }) {
     fromDate: dayjs().startOf('month').format('YYYY-MM-DD'),
     toDate: dayjs().endOf('month').format('YYYY-MM-DD')
   })
+  const [sortField, setSortField] = useState("")
+  const [sortAscending, setSortAscending] = useState(true)
+  // Supplier filter (only for purchase orders)
+  const [supplierFilter, setSupplierFilter] = useState("")
+  const [showSupplierFilter, setShowSupplierFilter] = useState(false)
+  const [supplierSearchTerm, setSupplierSearchTerm] = useState("")
+  const [suppliers, setSuppliers] = useState([])
+  // Retailer filter (only for sales orders)
+  const [retailerFilter, setRetailerFilter] = useState("")
+  const [showRetailerFilter, setShowRetailerFilter] = useState(false)
+  const [retailerSearchTerm, setRetailerSearchTerm] = useState("")
+  const [retailers, setRetailers] = useState([])
 
   // Fetch purchase orders
   const fetchPurchaseOrders = async () => {
@@ -77,6 +97,33 @@ export default function OrdersPage({ onClose }) {
         })
       }
 
+      // Apply supplier filter client-side
+      if (supplierFilter) {
+        filteredOrders = filteredOrders.filter(order => {
+          return order.supplierId && order.supplierId.toString() === supplierFilter
+        })
+      }
+
+      // Apply sorting client-side
+      if (sortField) {
+        filteredOrders = [...filteredOrders].sort((a, b) => {
+          let aValue, bValue
+
+          if (sortField === "goodsName") {
+            aValue = (a.goodsName || '').toLowerCase()
+            bValue = (b.goodsName || '').toLowerCase()
+          } else if (sortField === "totalPackageQuantity") {
+            aValue = a.totalPackageQuantity || 0
+            bValue = b.totalPackageQuantity || 0
+          } else {
+            return 0
+          }
+
+          if (aValue < bValue) return sortAscending ? -1 : 1
+          if (aValue > bValue) return sortAscending ? 1 : -1
+          return 0
+        })
+      }
 
       // Apply pagination client-side
       const startIndex = (pagination.current - 1) * pagination.pageSize
@@ -135,6 +182,33 @@ export default function OrdersPage({ onClose }) {
         })
       }
 
+      // Apply retailer filter client-side
+      if (retailerFilter) {
+        filteredOrders = filteredOrders.filter(order => {
+          return order.retailerId && order.retailerId.toString() === retailerFilter
+        })
+      }
+
+      // Apply sorting client-side
+      if (sortField) {
+        filteredOrders = [...filteredOrders].sort((a, b) => {
+          let aValue, bValue
+
+          if (sortField === "goodsName") {
+            aValue = (a.goodsName || '').toLowerCase()
+            bValue = (b.goodsName || '').toLowerCase()
+          } else if (sortField === "totalPackageQuantity") {
+            aValue = a.totalPackageQuantity || 0
+            bValue = b.totalPackageQuantity || 0
+          } else {
+            return 0
+          }
+
+          if (aValue < bValue) return sortAscending ? -1 : 1
+          if (aValue > bValue) return sortAscending ? 1 : -1
+          return 0
+        })
+      }
 
       // Apply pagination client-side
       const startIndex = (pagination.current - 1) * pagination.pageSize
@@ -155,10 +229,100 @@ export default function OrdersPage({ onClose }) {
     }
   }
 
+  // Fetch suppliers dropdown
+  useEffect(() => {
+    const fetchSuppliers = async () => {
+      try {
+        const response = await getSuppliersDropdown()
+        let suppliersList = []
+        if (Array.isArray(response)) {
+          suppliersList = response
+        } else if (response?.data && Array.isArray(response.data)) {
+          suppliersList = response.data
+        } else if (response?.items && Array.isArray(response.items)) {
+          suppliersList = response.items
+        }
+        setSuppliers(suppliersList)
+      } catch (error) {
+        console.error("Error fetching suppliers:", error)
+        setSuppliers([])
+      }
+    }
+    fetchSuppliers()
+  }, [])
+
+  // Fetch retailers dropdown
+  useEffect(() => {
+    const fetchRetailers = async () => {
+      try {
+        const response = await getAllRetailersDropdown()
+        let retailersList = []
+        if (Array.isArray(response)) {
+          retailersList = response
+        } else if (response?.data && Array.isArray(response.data)) {
+          retailersList = response.data
+        } else if (response?.items && Array.isArray(response.items)) {
+          retailersList = response.items
+        }
+        setRetailers(retailersList)
+      } catch (error) {
+        console.error("Error fetching retailers:", error)
+        setRetailers([])
+      }
+    }
+    fetchRetailers()
+  }, [])
+
+  // Filter suppliers based on search term
+  const filteredSuppliers = useMemo(() => {
+    if (!supplierSearchTerm.trim()) {
+      return suppliers
+    }
+    const query = supplierSearchTerm.toLowerCase().trim()
+    return suppliers.filter(supplier =>
+      (supplier.companyName || '').toLowerCase().includes(query)
+    )
+  }, [suppliers, supplierSearchTerm])
+
+  // Filter retailers based on search term
+  const filteredRetailers = useMemo(() => {
+    if (!retailerSearchTerm.trim()) {
+      return retailers
+    }
+    const query = retailerSearchTerm.toLowerCase().trim()
+    return retailers.filter(retailer =>
+      (retailer.retailerName || '').toLowerCase().includes(query)
+    )
+  }, [retailers, retailerSearchTerm])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showSupplierFilter && !event.target.closest('.supplier-filter-dropdown')) {
+        setShowSupplierFilter(false)
+        setSupplierSearchTerm("")
+      }
+      if (showRetailerFilter && !event.target.closest('.retailer-filter-dropdown')) {
+        setShowRetailerFilter(false)
+        setRetailerSearchTerm("")
+      }
+    }
+
+    if (showSupplierFilter || showRetailerFilter) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showSupplierFilter, showRetailerFilter])
+
   // Fetch data based on active order type
   useEffect(() => {
-    // Reset pagination when changing order type
+    // Reset pagination and filters when changing order type
     setPagination(prev => ({ ...prev, current: 1 }))
+    setSupplierFilter("")
+    setRetailerFilter("")
   }, [activeOrderType])
 
   useEffect(() => {
@@ -168,7 +332,7 @@ export default function OrdersPage({ onClose }) {
       fetchSalesOrders()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeOrderType, searchQuery, pagination.current, pagination.pageSize, dateRange])
+  }, [activeOrderType, searchQuery, pagination.current, pagination.pageSize, dateRange, sortField, sortAscending, supplierFilter, retailerFilter])
 
   // Get current orders based on active type
   const currentOrders = useMemo(() => {
@@ -212,14 +376,47 @@ export default function OrdersPage({ onClose }) {
     })
   }, [currentOrders, activeOrderType])
 
+  const handleSort = (field) => {
+    if (sortField === field) {
+      // Toggle ascending/descending if same field
+      setSortAscending(!sortAscending)
+    } else {
+      // Set new field and default to ascending
+      setSortField(field)
+      setSortAscending(true)
+    }
+    // Reset to page 1 when sorting
+    setPagination(prev => ({ ...prev, current: 1 }))
+  }
+
   const handlePageChange = (page) => {
     setPagination(prev => ({ ...prev, current: page }))
   }
 
-  const handleExport = () => {
-    // TODO: Implement export functionality
-    console.log("Export orders report", { activeOrderType, dateRange })
+  const handleClearAllFilters = () => {
+    setSearchQuery("")
+    setSupplierFilter("")
+    setRetailerFilter("")
+    setSortField("")
+    setSortAscending(true)
+    setDateRange({
+      fromDate: dayjs().startOf('month').format('YYYY-MM-DD'),
+      toDate: dayjs().endOf('month').format('YYYY-MM-DD')
+    })
+    setPagination(prev => ({ ...prev, current: 1 }))
   }
+
+  const hasActiveFilters = () => {
+    return !!(
+      searchQuery ||
+      supplierFilter ||
+      retailerFilter ||
+      sortField ||
+      dateRange.fromDate !== dayjs().startOf('month').format('YYYY-MM-DD') ||
+      dateRange.toDate !== dayjs().endOf('month').format('YYYY-MM-DD')
+    )
+  }
+
 
   return (
     <div className="min-h-screen">
@@ -231,13 +428,23 @@ export default function OrdersPage({ onClose }) {
             <p className="text-slate-600 mt-1">Quản lý đơn mua hàng và đơn bán hàng</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
-              onClick={handleExport}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Xuất báo cáo
-            </Button>
+            {activeOrderType === "purchase" ? (
+              <ExportPurchaseOrdersReport
+                searchQuery={searchQuery}
+                supplierFilter={supplierFilter}
+                dateRange={dateRange}
+                sortField={sortField}
+                sortAscending={sortAscending}
+              />
+            ) : (
+              <ExportSalesOrdersReport
+                searchQuery={searchQuery}
+                retailerFilter={retailerFilter}
+                dateRange={dateRange}
+                sortField={sortField}
+                sortAscending={sortAscending}
+              />
+            )}
             <Button
               className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
               onClick={() => {
@@ -282,15 +489,163 @@ export default function OrdersPage({ onClose }) {
           <div className="p-4">
             {/* Search and Date Pickers */}
             <div className="flex flex-col md:flex-row justify-between mb-4 gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm theo nhà cung cấp, mã sản phẩm, tên sản phẩm..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-full md:w-[400px] text-sm"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
+              <div className="flex items-center gap-3 flex-1">
+                <div className="relative flex-1 max-w-[400px]">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Tìm kiếm theo nhà cung cấp, mã sản phẩm, tên sản phẩm..."
+                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-full text-sm"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+                {/* Supplier Filter - Only show for purchase orders */}
+                {activeOrderType === "purchase" && suppliers.length > 0 && (
+                  <div className="relative supplier-filter-dropdown">
+                    <button
+                      onClick={() => {
+                        setShowSupplierFilter(!showSupplierFilter)
+                      }}
+                      className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-md transition-colors
+                        focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500
+                        ${supplierFilter ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
+                    >
+                      <Building2 className="h-4 w-4 flex-shrink-0" />
+                      <span className="text-sm font-medium truncate max-w-[150px]">
+                        {supplierFilter ? suppliers.find(s => s.supplierId.toString() === supplierFilter)?.companyName || "Chọn nhà cung cấp" : "Tất cả nhà cung cấp"}
+                      </span>
+                      <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                    </button>
+
+                    {showSupplierFilter && (
+                      <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-50 max-h-64 overflow-hidden flex flex-col">
+                        {/* Search Input */}
+                        <div className="p-2 border-b border-slate-200 sticky top-0 bg-white z-10">
+                          <div className="relative">
+                            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                            <input
+                              type="text"
+                              placeholder="Tìm kiếm nhà cung cấp..."
+                              value={supplierSearchTerm}
+                              onChange={(e) => setSupplierSearchTerm(e.target.value)}
+                              className="w-full pl-8 pr-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          </div>
+                        </div>
+                        {/* Dropdown List */}
+                        <div className="py-1 overflow-y-auto max-h-48">
+                          <button
+                            onClick={() => {
+                              setSupplierFilter("")
+                              setShowSupplierFilter(false)
+                              setSupplierSearchTerm("")
+                              setPagination(prev => ({ ...prev, current: 1 }))
+                            }}
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 text-slate-700"
+                          >
+                            Tất cả nhà cung cấp
+                          </button>
+                          {filteredSuppliers.length > 0 ? filteredSuppliers.map((supplier) => (
+                            <button
+                              key={supplier.supplierId}
+                              onClick={() => {
+                                setSupplierFilter(supplier.supplierId.toString())
+                                setShowSupplierFilter(false)
+                                setSupplierSearchTerm("")
+                                setPagination(prev => ({ ...prev, current: 1 }))
+                              }}
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${supplierFilter === supplier.supplierId.toString()
+                                ? 'bg-orange-500 text-white hover:bg-orange-600'
+                                : 'text-slate-700'
+                                }`}
+                            >
+                              {supplier.companyName}
+                            </button>
+                          )) : (
+                            <div className="px-3 py-2 text-sm text-slate-500">
+                              {suppliers.length > 0 ? "Không tìm thấy kết quả" : "Không có dữ liệu"}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {/* Retailer Filter - Only show for sales orders */}
+                {activeOrderType === "sales" && retailers.length > 0 && (
+                  <div className="relative retailer-filter-dropdown">
+                    <button
+                      onClick={() => {
+                        setShowRetailerFilter(!showRetailerFilter)
+                      }}
+                      className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-md transition-colors
+                        focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500
+                        ${retailerFilter ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
+                    >
+                      <Building2 className="h-4 w-4 flex-shrink-0" />
+                      <span className="text-sm font-medium truncate max-w-[150px]">
+                        {retailerFilter ? retailers.find(r => r.retailerId.toString() === retailerFilter)?.retailerName || "Chọn nhà bán lẻ" : "Tất cả nhà bán lẻ"}
+                      </span>
+                      <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                    </button>
+
+                    {showRetailerFilter && (
+                      <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border z-50 max-h-64 overflow-hidden flex flex-col">
+                        {/* Search Input */}
+                        <div className="p-2 border-b border-slate-200 sticky top-0 bg-white z-10">
+                          <div className="relative">
+                            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                            <input
+                              type="text"
+                              placeholder="Tìm kiếm nhà bán lẻ..."
+                              value={retailerSearchTerm}
+                              onChange={(e) => setRetailerSearchTerm(e.target.value)}
+                              className="w-full pl-8 pr-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          </div>
+                        </div>
+                        {/* Dropdown List */}
+                        <div className="py-1 overflow-y-auto max-h-48">
+                          <button
+                            onClick={() => {
+                              setRetailerFilter("")
+                              setShowRetailerFilter(false)
+                              setRetailerSearchTerm("")
+                              setPagination(prev => ({ ...prev, current: 1 }))
+                            }}
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 text-slate-700"
+                          >
+                            Tất cả nhà bán lẻ
+                          </button>
+                          {filteredRetailers.length > 0 ? filteredRetailers.map((retailer) => (
+                            <button
+                              key={retailer.retailerId}
+                              onClick={() => {
+                                setRetailerFilter(retailer.retailerId.toString())
+                                setShowRetailerFilter(false)
+                                setRetailerSearchTerm("")
+                                setPagination(prev => ({ ...prev, current: 1 }))
+                              }}
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${retailerFilter === retailer.retailerId.toString()
+                                ? 'bg-orange-500 text-white hover:bg-orange-600'
+                                : 'text-slate-700'
+                                }`}
+                            >
+                              {retailer.retailerName}
+                            </button>
+                          )) : (
+                            <div className="px-3 py-2 text-sm text-slate-500">
+                              {retailers.length > 0 ? "Không tìm thấy kết quả" : "Không có dữ liệu"}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-3">
                 <ConfigProvider locale={locale}>
@@ -325,6 +680,16 @@ export default function OrdersPage({ onClose }) {
                     />
                   </div>
                 </ConfigProvider>
+                {/* Clear Filters Button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClearAllFilters}
+                  className="h-[38px] px-3 text-sm text-slate-600 hover:text-orange-500 hover:border-orange-500 hover:bg-orange-50 transition-colors flex items-center gap-1.5"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Bỏ lọc
+                </Button>
               </div>
             </div>
           </div>
@@ -349,10 +714,32 @@ export default function OrdersPage({ onClose }) {
                         Mã sản phẩm
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                        Tên sản phẩm
+                        <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("goodsName")}>
+                          <span>Tên sản phẩm</span>
+                          {sortField === "goodsName" ? (
+                            sortAscending ? (
+                              <ArrowUp className="h-4 w-4 text-orange-500" />
+                            ) : (
+                              <ArrowDown className="h-4 w-4 text-orange-500" />
+                            )
+                          ) : (
+                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                          )}
+                        </div>
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                        Số thùng
+                        <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("totalPackageQuantity")}>
+                          <span>Số thùng</span>
+                          {sortField === "totalPackageQuantity" ? (
+                            sortAscending ? (
+                              <ArrowUp className="h-4 w-4 text-orange-500" />
+                            ) : (
+                              <ArrowDown className="h-4 w-4 text-orange-500" />
+                            )
+                          ) : (
+                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                          )}
+                        </div>
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
                         Tổng số đơn vị

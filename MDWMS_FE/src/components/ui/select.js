@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { cn } from '../../utils/cn';
 
 const SelectContext = React.createContext({});
@@ -6,12 +6,35 @@ const SelectContext = React.createContext({});
 const Select = ({ children, value, onValueChange, ...props }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [selectedValue, setSelectedValue] = React.useState(value);
+  const selectRef = useRef(null);
+  
+  // Sync selectedValue when value prop changes
+  useEffect(() => {
+    setSelectedValue(value);
+  }, [value]);
   
   const handleValueChange = (newValue) => {
     setSelectedValue(newValue);
     onValueChange?.(newValue);
     setIsOpen(false);
   };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (selectRef.current && !selectRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
   
   return (
     <SelectContext.Provider value={{ 
@@ -20,7 +43,7 @@ const Select = ({ children, value, onValueChange, ...props }) => {
       isOpen, 
       setIsOpen 
     }}>
-      <div className="relative" {...props}>
+      <div className="relative" ref={selectRef} {...props}>
         {children}
       </div>
     </SelectContext.Provider>

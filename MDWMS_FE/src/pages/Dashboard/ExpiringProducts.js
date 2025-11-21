@@ -1,71 +1,78 @@
 import { useState, useEffect } from "react"
-import { AlertTriangle } from "lucide-react"
+import { AlertTriangle, ChevronDown } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
-import { Badge } from "../../components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
 import { getInventoryReport } from "../../services/DashboardService"
 import dayjs from "dayjs"
 
 export default function ExpiringProducts() {
   const [expiringProducts, setExpiringProducts] = useState([])
   const [expiringProductsLoading, setExpiringProductsLoading] = useState(false)
+  const [selectedDays, setSelectedDays] = useState("30")
 
-  // Fetch expiring products (within 30 days)
+  // Mapping for display text
+  const daysOptions = {
+    "30": "Trong 30 ngày",
+    "40": "Trong 40 ngày",
+    "50": "Trong 50 ngày"
+  }
+
+  // Fetch expiring products based on selected days
   useEffect(() => {
     const fetchExpiringProducts = async () => {
       try {
         setExpiringProductsLoading(true)
-        // Get inventory report and filter by expiry date
-        const thirtyDaysFromNow = dayjs().add(30, "day").format("YYYY-MM-DD")
+        const days = parseInt(selectedDays)
+        const targetDate = dayjs().add(days, "day").format("YYYY-MM-DD")
         const today = dayjs().format("YYYY-MM-DD")
-        
+
         const params = {
           pageNumber: 1,
-          pageSize: 5, // Top 5 expiring products
+          pageSize: 100, // Get more items to filter client-side
           search: "",
           filters: {
             expiryDateFrom: today,
-            expiryDateTo: thirtyDaysFromNow
+            expiryDateTo: targetDate
           }
         }
-        
+
         const data = await getInventoryReport(params)
-        
-        // Filter and sort by expiry date
+
+        // Filter and sort by expiry date - only show products that expire within selected days range
         if (data?.items && Array.isArray(data.items)) {
+          const todayDate = dayjs().startOf("day")
+          const targetDateObj = dayjs().add(days, "day").endOf("day")
+
           const expiring = data.items
-            .filter(item => item.expiryDate)
+            .filter(item => {
+              if (!item.expiryDate) return false
+              const expiryDate = dayjs(item.expiryDate).startOf("day")
+              // Only include products that expire within the selected days range
+              // expiryDate should be >= today and <= today + selectedDays
+              return (expiryDate.isAfter(todayDate) || expiryDate.isSame(todayDate, "day")) &&
+                (expiryDate.isBefore(targetDateObj) || expiryDate.isSame(targetDateObj, "day"))
+            })
             .sort((a, b) => {
               const dateA = dayjs(a.expiryDate)
               const dateB = dayjs(b.expiryDate)
               return dateA.diff(dateB)
             })
             .slice(0, 5)
-          
+
           setExpiringProducts(expiring)
         } else {
-          // Mock data if no API data
-          setExpiringProducts([
-            { goodsName: "Sữa tươi nguyên chất", batchCode: "BATCH001", expiryDate: dayjs().add(5, "day").format("YYYY-MM-DD"), quantity: 120 },
-            { goodsName: "Sữa chua Hy Lạp", batchCode: "BATCH002", expiryDate: dayjs().add(10, "day").format("YYYY-MM-DD"), quantity: 85 },
-            { goodsName: "Phô mai Mozzarella", batchCode: "BATCH003", expiryDate: dayjs().add(15, "day").format("YYYY-MM-DD"), quantity: 200 },
-            { goodsName: "Bơ thực vật", batchCode: "BATCH004", expiryDate: dayjs().add(20, "day").format("YYYY-MM-DD"), quantity: 150 },
-            { goodsName: "Sữa đặc có đường", batchCode: "BATCH005", expiryDate: dayjs().add(25, "day").format("YYYY-MM-DD"), quantity: 300 },
-          ])
+          setExpiringProducts([])
         }
       } catch (error) {
         console.error("Error fetching expiring products:", error)
-        // Mock data on error
-        setExpiringProducts([
-          { goodsName: "Sữa tươi nguyên chất", batchCode: "BATCH001", expiryDate: dayjs().add(5, "day").format("YYYY-MM-DD"), quantity: 120 },
-          { goodsName: "Sữa chua Hy Lạp", batchCode: "BATCH002", expiryDate: dayjs().add(10, "day").format("YYYY-MM-DD"), quantity: 85 },
-        ])
+        setExpiringProducts([])
       } finally {
         setExpiringProductsLoading(false)
       }
     }
 
     fetchExpiringProducts()
-  }, [])
+  }, [selectedDays])
 
   return (
     <Card className="h-full">
@@ -74,9 +81,19 @@ export default function ExpiringProducts() {
           <AlertTriangle className="h-5 w-5 text-amber-500" />
           Sản phẩm sắp hết hạn
         </CardTitle>
-        <Badge variant="outline" className="text-xs">
-          Trong 30 ngày
-        </Badge>
+        <Select value={selectedDays} onValueChange={setSelectedDays}>
+          <SelectTrigger className="h-8 w-[140px] text-xs">
+            <span className="flex-1 text-left">
+              {daysOptions[selectedDays] || "Trong 30 ngày"}
+            </span>
+            <ChevronDown className="h-3 w-3 opacity-50" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="30">Trong 30 ngày</SelectItem>
+            <SelectItem value="40">Trong 40 ngày</SelectItem>
+            <SelectItem value="50">Trong 50 ngày</SelectItem>
+          </SelectContent>
+        </Select>
       </CardHeader>
       <CardContent className="p-4">
         {expiringProductsLoading ? (
@@ -89,7 +106,7 @@ export default function ExpiringProducts() {
               const daysUntilExpiry = dayjs(product.expiryDate).diff(dayjs(), "day")
               const isUrgent = daysUntilExpiry <= 7
               const isWarning = daysUntilExpiry <= 14
-              
+
               return (
                 <div key={index} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors">
                   <div className="flex-1">
