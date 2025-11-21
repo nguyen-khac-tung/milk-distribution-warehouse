@@ -15,7 +15,7 @@ namespace MilkDistributionWarehouse.Services
     public interface IStocktakingAreaService
     {
         Task<(string, List<StocktakingAreaDetail>?)> GetStocktakingAreaByStocktakingSheetIdSync(string stoctakingSheetId, int? userId);
-        Task<(string, List<StocktakingAreaDetailDto>?)> GetStocktakingAreaByStocktakingSheetId(string stoctakingSheetId, int? userId);
+        Task<(string, List<StocktakingAreaDetailDto>?)> GetStocktakingAreaByStocktakingSheetId(string stoctakingSheetId, Guid? stocktakingAreaId, int? userId);
         Task<(string, StocktakingSheeteResponse?)> CreateStocktakingAreaBulk(string stocktakingSheetId, List<StocktakingAreaCreate> creates);
         Task<(string, StocktakingSheeteResponse?)> UpdateStocktakingAreaBulk(string stocktakingSheetId, List<StocktakingAreaUpdate> updates);
         Task<(string, StocktakingAreaReAssignStatus?)> UpdateStocktakingReAssignTo(StocktakingAreaReAssignStatus update);
@@ -47,17 +47,17 @@ namespace MilkDistributionWarehouse.Services
             _stocktakingStatusDomainService = stocktakingStatusDomainService;
         }
 
-        public async Task<(string, List<StocktakingAreaDetailDto>?)> GetStocktakingAreaByStocktakingSheetId(string stoctakingSheetId, int? userId)
+        public async Task<(string, List<StocktakingAreaDetailDto>?)> GetStocktakingAreaByStocktakingSheetId(string stoctakingSheetId, Guid? stocktakingAreaId, int? userId)
         {
             if (string.IsNullOrEmpty(stoctakingSheetId))
                 return ("Mã phiếu kiểm kê không hợp lệ.", default);
 
             var stocktakingArea = new List<StocktakingArea>();
 
-            if (userId.HasValue)
-                stocktakingArea = await _stocktakingAreaRepository.GetStocktakingAreaByStocktakingSheetIdAndAssignTo(stoctakingSheetId, userId.Value);
+            if (userId.HasValue && stocktakingAreaId != Guid.NewGuid())
+                stocktakingArea = await _stocktakingAreaRepository.GetStocktakingAreaByStocktakingSheetIdAndAssignTo(stoctakingSheetId, stocktakingAreaId, userId.Value);
             else
-                stocktakingArea = await _stocktakingAreaRepository.GetStocktakingAreaByStocktakingSheetIdAndAssignTo(stoctakingSheetId, null);
+                stocktakingArea = await _stocktakingAreaRepository.GetStocktakingAreaByStocktakingSheetIdAndAssignTo(stoctakingSheetId, null, null);
 
             if (stocktakingArea == null)
                 return ("Phiếu kiểm kê khu vực không tồn tại.", default);
@@ -73,7 +73,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Mã phiếu kiểm kê không hợp lệ.", default);
             var stocktakingArea = new List<StocktakingArea>();
             if (userId.HasValue)
-                stocktakingArea = await _stocktakingAreaRepository.GetStocktakingAreaByStocktakingSheetIdAndAssignTo(stoctakingSheetId, userId.Value);
+                stocktakingArea = await _stocktakingAreaRepository.GetStocktakingAreaByStocktakingSheetIdAndAssignTo(stoctakingSheetId, null, userId.Value);
             else
                 return ("Mã nhân viên không hợp lệ.", default);
 
