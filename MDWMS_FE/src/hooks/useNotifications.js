@@ -202,7 +202,12 @@ const useNotifications = () => {
     };
 };
 
-export { NotificationStatus, NotificationCategory } from "../services/NotificationService";
+export { 
+    NotificationStatus, 
+    NotificationCategory,
+    NotificationEntityType,
+    getEntityRoute
+} from "../services/NotificationService";
 
 export default useNotifications;
 

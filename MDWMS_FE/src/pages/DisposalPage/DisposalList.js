@@ -637,7 +637,7 @@ const DisposalList = () => {
                     isOpen={showDeleteModal}
                     onClose={handleDeleteCancel}
                     onConfirm={handleDeleteConfirm}
-                    itemName="yêu cầu xuất hủy này"
+                    itemName="đơn yêu cầu xuất hủy này"
                 />
             </div>
         </div>
