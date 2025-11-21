@@ -337,7 +337,7 @@ namespace MilkDistributionWarehouse.Services
                     {
                         notificationsToCreate.Add(new NotificationCreateDto()
                         {
-                            UserId = disposalRequest.ApprovalBy,
+                            UserId = manager.UserId,
                             Title = "Yêu cầu xuất hủy mới chờ duyệt",
                             Content = $"Yêu cầu xuất hủy '{disposalRequest.DisposalRequestId}' vừa được gửi và đang chờ bạn duyệt.",
                             EntityType = NotificationEntityType.DisposalRequest,
