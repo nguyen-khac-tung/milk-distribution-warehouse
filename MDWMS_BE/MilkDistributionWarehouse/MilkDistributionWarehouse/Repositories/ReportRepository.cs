@@ -20,6 +20,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<List<ReportDto.SaleBySupplierReportDto>> GetSaleBySupplierReportAsync(int? supplierId, CancellationToken cancellationToken = default);
         Task<PageResult<ReportDto.GoodsReceiptReportDto>> GetGoodsReceiptReportAsync(PagedRequest request, DateTime? fromDate, DateTime? toDate, CancellationToken cancellationToken = default);
         Task<PageResult<ReportDto.GoodIssueReportDto>> GetGoodsIssueReportAsync(PagedRequest request, DateTime? fromDate, DateTime? toDate, CancellationToken cancellationToken = default);
+        Task<PageResult<ReportDto.InventoryLedgerReportDto>> GetInventoryLedgerReportAsync(PagedRequest request, DateTime? fromDate, DateTime? toDate, CancellationToken cancellationToken = default);
     }
 
     public class ReportRepository : IReportRepository
@@ -765,6 +766,143 @@ namespace MilkDistributionWarehouse.Repositories
             {
                 Items = items,
                 TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+        }
+
+        public async Task<PageResult<ReportDto.InventoryLedgerReportDto>> GetInventoryLedgerReportAsync(PagedRequest request, DateTime? fromDate, DateTime? toDate, CancellationToken cancellationToken = default)
+        {
+            // normalize dates
+            if (!fromDate.HasValue && !toDate.HasValue)
+            {
+                var now = DateTime.Now;
+                fromDate = new DateTime(now.Year, now.Month, 1);
+                toDate = now;
+            }
+
+            var from = fromDate.Value.Date;
+            var to = toDate.Value.Date.AddDays(1).AddTicks(-1);
+
+            // load relevant ledger records (including related goods and packing for labels)
+            var ledgers = await _context.InventoryLedgers
+                .AsNoTracking()
+                .Include(l => l.Goods)
+                    .ThenInclude(g => g.UnitMeasure)
+                .Include(l => l.GoodPacking)
+                .ToListAsync(cancellationToken);
+
+            var grouped = ledgers
+                .GroupBy(l => new { l.GoodsId, l.GoodPackingId })
+                .Select(g =>
+                {
+                    var goods = g.Select(x => x.Goods).FirstOrDefault();
+                    var packing = g.Select(x => x.GoodPacking).FirstOrDefault();
+
+                    var before = g.Where(x => x.EventDate.HasValue && x.EventDate.Value < from)
+                                  .OrderByDescending(x => x.EventDate)
+                                  .FirstOrDefault();
+                    var beginning = before?.BalanceAfter ?? 0;
+
+                    var inSum = g.Where(x => x.EventDate.HasValue && x.EventDate.Value >= from && x.EventDate.Value <= to)
+                                 .Sum(x => x.InQty ?? 0);
+
+                    var outSum = g.Where(x => x.EventDate.HasValue && x.EventDate.Value >= from && x.EventDate.Value <= to)
+                                  .Sum(x => x.OutQty ?? 0);
+
+                    var endingRec = g.Where(x => x.EventDate.HasValue && x.EventDate.Value <= to)
+                                     .OrderByDescending(x => x.EventDate)
+                                     .FirstOrDefault();
+                    var ending = endingRec?.BalanceAfter ?? (beginning + inSum - outSum);
+
+                    return new ReportDto.InventoryLedgerReportDto
+                    {
+                        GoodsId = g.Key.GoodsId,
+                        GoodsCode = goods?.GoodsCode,
+                        GoodsName = goods?.GoodsName,
+                        UnitOfMeasure = goods?.UnitMeasure?.Name,
+                        GoodPackingId = g.Key.GoodPackingId,
+                        UnitPerPackage = packing?.UnitPerPackage,
+                        BeginningInventoryPackages = beginning,
+                        InQuantityPackages = inSum,
+                        OutQuantityPackages = outSum,
+                        EndingInventoryPackages = ending
+                    };
+                })
+                .ToList();
+
+            // Apply filters from request
+            if (request.Filters != null && request.Filters.Count > 0)
+            {
+                foreach (var f in request.Filters)
+                {
+                    var key = f.Key?.Trim();
+                    var val = f.Value?.Trim();
+                    if (string.IsNullOrEmpty(key) || string.IsNullOrEmpty(val))
+                        continue;
+
+                    switch (key.ToLowerInvariant())
+                    {
+                        case "supplierid":
+                            if (int.TryParse(val, out var sid))
+                                grouped = grouped.Where(r => r != null && r.GoodsId != 0 && (_context.Goods.Any(g => g.GoodsId == r.GoodsId && g.SupplierId == sid))).ToList();
+                            break;
+                        case "goodsid":
+                            if (int.TryParse(val, out var gid))
+                                grouped = grouped.Where(r => r.GoodsId == gid).ToList();
+                            break;
+                        case "goodscode":
+                            grouped = grouped.Where(r => !string.IsNullOrEmpty(r.GoodsCode) && r.GoodsCode.IndexOf(val, StringComparison.OrdinalIgnoreCase) >= 0).ToList();
+                            break;
+                        case "goodsname":
+                            grouped = grouped.Where(r => !string.IsNullOrEmpty(r.GoodsName) && r.GoodsName.IndexOf(val, StringComparison.OrdinalIgnoreCase) >= 0).ToList();
+                            break;
+                        case "goodspackingid":
+                            if (int.TryParse(val, out var packId))
+                                grouped = grouped.Where(r => r.GoodPackingId == packId).ToList();
+                            break;
+                    }
+                }
+            }
+
+            if (!string.IsNullOrEmpty(request.Search))
+            {
+                var s = request.Search.Trim();
+                grouped = grouped.Where(r => (!string.IsNullOrEmpty(r.GoodsCode) && r.GoodsCode.IndexOf(s, StringComparison.OrdinalIgnoreCase) >= 0)
+                                             || (!string.IsNullOrEmpty(r.GoodsName) && r.GoodsName.IndexOf(s, StringComparison.OrdinalIgnoreCase) >= 0)).ToList();
+            }
+
+            // Sorting
+            if (!string.IsNullOrEmpty(request.SortField))
+            {
+                var sf = request.SortField.Trim();
+                var asc = request.SortAscending;
+                grouped = sf switch
+                {
+                    "GoodsCode" => asc ? grouped.OrderBy(r => r.GoodsCode).ToList() : grouped.OrderByDescending(r => r.GoodsCode).ToList(),
+                    "GoodsName" => asc ? grouped.OrderBy(r => r.GoodsName).ToList() : grouped.OrderByDescending(r => r.GoodsName).ToList(),
+                    "BeginningInventoryPackages" => asc ? grouped.OrderBy(r => r.BeginningInventoryPackages).ToList() : grouped.OrderByDescending(r => r.BeginningInventoryPackages).ToList(),
+                    "InQuantityPackages" => asc ? grouped.OrderBy(r => r.InQuantityPackages).ToList() : grouped.OrderByDescending(r => r.InQuantityPackages).ToList(),
+                    "OutQuantityPackages" => asc ? grouped.OrderBy(r => r.OutQuantityPackages).ToList() : grouped.OrderByDescending(r => r.OutQuantityPackages).ToList(),
+                    "EndingInventoryPackages" => asc ? grouped.OrderBy(r => r.EndingInventoryPackages).ToList() : grouped.OrderByDescending(r => r.EndingInventoryPackages).ToList(),
+                    _ => grouped.OrderBy(r => r.GoodsId).ToList()
+                };
+            }
+            else
+            {
+                grouped = grouped.OrderBy(r => r.GoodsId).ToList();
+            }
+
+            var total = grouped.Count;
+            var pageNumber = Math.Max(1, request.PageNumber);
+            var pageSize = Math.Max(1, request.PageSize);
+            var skip2 = (pageNumber - 1) * pageSize;
+            var items = grouped.Skip(skip2).Take(pageSize).ToList();
+
+            return new PageResult<ReportDto.InventoryLedgerReportDto>
+            {
+                Items = items,
+                TotalCount = total,
                 PageNumber = pageNumber,
                 PageSize = pageSize
             };
