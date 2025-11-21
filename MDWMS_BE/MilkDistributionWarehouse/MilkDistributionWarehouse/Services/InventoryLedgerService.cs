@@ -58,7 +58,7 @@ namespace MilkDistributionWarehouse.Services
             try
             {
                 var details = await _inventoryLedgerRepository.GetDisposalNoteDetailsByDisposalNoteId(DisposalNoteId);
-                if (details == null || !details.Any()) return ("No disposal note details found.", default);
+                if (details == null || !details.Any()) return ("No disposal note details found or not compleate!", default);
 
                 InventoryLedgerResponseDto lastDto = null;
 
@@ -102,7 +102,7 @@ namespace MilkDistributionWarehouse.Services
             try
             {
                 var details = await _inventoryLedgerRepository.GetGoodsIssueNoteDetailsByGoodsIssueNoteId(GoodsIssueNoteId);
-                if (details == null || !details.Any()) return ("No goods issue note details found.", default);
+                if (details == null || !details.Any()) return ("No goods issue note details found or not compleate!", default);
 
                 InventoryLedgerResponseDto lastDto = null;
 
@@ -146,7 +146,7 @@ namespace MilkDistributionWarehouse.Services
             try
             {
                 var details = await _inventoryLedgerRepository.GetGoodsReceiptNoteDetailsByGoodsReceiptNoteId(GoodsReceiptNoteId);
-                if (details == null || !details.Any()) return ("No goods receipt note details found.", default);
+                if (details == null || !details.Any()) return ("No goods receipt note details found or not compleate!", default);
 
                 InventoryLedgerResponseDto lastDto = null;
 

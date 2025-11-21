@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 
@@ -42,7 +43,7 @@ namespace MilkDistributionWarehouse.Repositories
             if (string.IsNullOrEmpty(disposalNoteId)) return new List<DisposalNoteDetail>();
             return await _context.DisposalNoteDetails
                 .AsNoTracking()
-                .Where(d => d.DisposalNoteId == disposalNoteId)
+                .Where(d => d.DisposalNoteId == disposalNoteId && d.Status == DisposalNoteStatus.Completed)
                 .ToListAsync();
         }
 
@@ -51,7 +52,7 @@ namespace MilkDistributionWarehouse.Repositories
             if (string.IsNullOrEmpty(goodsIssueNoteId)) return new List<GoodsIssueNoteDetail>();
             return await _context.GoodsIssueNoteDetails
                 .AsNoTracking()
-                .Where(d => d.GoodsIssueNoteId == goodsIssueNoteId)
+                .Where(d => d.GoodsIssueNoteId == goodsIssueNoteId && d.Status == GoodsIssueNoteStatus.Completed)
                 .ToListAsync();
         }
 
@@ -60,7 +61,7 @@ namespace MilkDistributionWarehouse.Repositories
             if (string.IsNullOrEmpty(goodsReceiptNoteId)) return new List<GoodsReceiptNoteDetail>();
             return await _context.GoodsReceiptNoteDetails
                 .AsNoTracking()
-                .Where(d => d.GoodsReceiptNoteId == goodsReceiptNoteId)
+                .Where(d => d.GoodsReceiptNoteId == goodsReceiptNoteId && d.Status == GoodsReceiptNoteStatus.Completed)
                 .ToListAsync();
         }
 

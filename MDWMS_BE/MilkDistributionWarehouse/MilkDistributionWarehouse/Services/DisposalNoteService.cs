@@ -26,6 +26,7 @@ namespace MilkDistributionWarehouse.Services
         private readonly INotificationService _notificationService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
+        private readonly IInventoryLedgerService _inventoryLedgerService;
 
         public DisposalNoteService(IDisposalNoteRepository disposalNoteRepository,
                                    IDisposalRequestRepository disposalRequestRepository,
@@ -33,7 +34,8 @@ namespace MilkDistributionWarehouse.Services
                                    IPickAllocationRepository pickAllocationRepository,
                                    INotificationService notificationService,
                                    IUnitOfWork unitOfWork,
-                                   IMapper mapper)
+                                   IMapper mapper,
+                                   IInventoryLedgerService inventoryLedgerService)
         {
             _disposalNoteRepository = disposalNoteRepository;
             _disposalRequestRepository = disposalRequestRepository;
@@ -42,6 +44,7 @@ namespace MilkDistributionWarehouse.Services
             _notificationService = notificationService;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
+            _inventoryLedgerService = inventoryLedgerService;
         }
 
         public async Task<string> CreateDisposalNote(DisposalNoteCreateDto createDto, int? userId)
@@ -243,6 +246,12 @@ namespace MilkDistributionWarehouse.Services
 
                 await _disposalNoteRepository.UpdateDisposalNote(disposalNote);
                 await _unitOfWork.CommitTransactionAsync();
+
+                var (invErr, _) = await _inventoryLedgerService.CreateInventoryLedgerByDPNID(disposalNote.DisposalNoteId);
+                if (!string.IsNullOrEmpty(invErr))
+                {
+                    return invErr;
+                }
 
                 await HandleDisposalRequestStatusChangeNotification(disposalNote.DisposalRequest);
                 return "";
