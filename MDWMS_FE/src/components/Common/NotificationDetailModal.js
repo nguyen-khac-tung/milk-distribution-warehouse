@@ -78,7 +78,7 @@ const NotificationDetailModal = ({ notificationId, open, onClose }) => {
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                     <div>
                         <p className="text-lg font-semibold text-slate-800">Chi tiết thông báo</p>
-                        <p className="text-xs text-gray-500">Thông tin chi tiết từ hệ thống</p>
+                        <p className="text-sm text-gray-500">Thông tin chi tiết từ hệ thống</p>
                     </div>
                     <button
                         type="button"
@@ -94,12 +94,12 @@ const NotificationDetailModal = ({ notificationId, open, onClose }) => {
                     {loading && <Loading size="medium" text="Đang tải thông báo..." />}
 
                     {!loading && error && (
-                        <div className="text-center text-sm text-rose-500">
+                        <div className="text-center text-base text-rose-500">
                             {error}
                             <div className="mt-4">
                                 <button
                                     type="button"
-                                    className="px-4 py-2 text-sm font-semibold text-white bg-orange-500 rounded-lg"
+                                    className="px-4 py-2 text-base font-semibold text-white bg-orange-500 rounded-lg"
                                     onClick={onClose}
                                 >
                                     Đóng
