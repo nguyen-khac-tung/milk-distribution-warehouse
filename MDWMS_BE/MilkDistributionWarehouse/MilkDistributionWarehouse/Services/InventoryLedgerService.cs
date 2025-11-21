@@ -9,6 +9,7 @@ namespace MilkDistributionWarehouse.Services
     public interface IInventoryLedgerService
     {
         Task<(string, InventoryLedgerRequestDto)> CreateInventoryLedger(InventoryLedgerRequestDto dto);
+        Task<(string, List<InventoryLedgerResponseDto>?)> CreateInventoryLedgerBulk(List<InventoryLedgerRequestDto> dtos);
         Task<(string, InventoryLedgerResponseDto)> CreateInventoryLedgerByGINID(string GoodsIssueNoteId);
         Task<(string, InventoryLedgerResponseDto)> CreateInventoryLedgerByGRNID(string GoodsReceiptNoteId);
         Task<(string, InventoryLedgerResponseDto)> CreateInventoryLedgerByDPNID(string DisposalNoteId);
@@ -34,10 +35,10 @@ namespace MilkDistributionWarehouse.Services
                     GoodsId = dto.GoodsId,
                     GoodPackingId = dto.GoodPackingId,
                     EventDate = dto.EventDate ?? DateTime.Now,
-                    InQty = 0,
-                    OutQty = 0,
-                    BalanceAfter = 0,
-                    TypeChange = null
+                    InQty = dto.InQty ?? 0,
+                    OutQty = dto.OutQty ?? 0,
+                    BalanceAfter = dto.BalanceAfter ?? 0,
+                    TypeChange = dto.TypeChange
                 };
 
                 var result = await _inventoryLedgerRepository.CreateInventoryLedger(entity);
@@ -51,6 +52,61 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
+        public async Task<(string, List<InventoryLedgerResponseDto>?)> CreateInventoryLedgerBulk(List<InventoryLedgerRequestDto> dtos)
+        {
+            if (dtos == null || !dtos.Any()) return ("Inventory ledger dtos is invalid or empty.", default);
+
+            try
+            {
+                var createdDtos = new List<InventoryLedgerResponseDto>();
+                var errors = new List<string>();
+
+                foreach (var dto in dtos)
+                {
+                    try
+                    {
+                        var entity = new InventoryLedger
+                        {
+                            GoodsId = dto.GoodsId,
+                            GoodPackingId = dto.GoodPackingId,
+                            EventDate = dto.EventDate ?? DateTime.Now,
+                            InQty = dto.InQty ?? 0,
+                            OutQty = dto.OutQty ?? 0,
+                            BalanceAfter = dto.BalanceAfter ?? 0,
+                            TypeChange = dto.TypeChange
+                        };
+
+                        var created = await _inventoryLedgerRepository.CreateInventoryLedger(entity);
+                        if (created == null)
+                        {
+                            errors.Add($"Failed to create ledger for GoodsId={dto.GoodsId}, GoodPackingId={dto.GoodPackingId}");
+                            continue;
+                        }
+
+                        createdDtos.Add(_mapper.Map<InventoryLedgerResponseDto>(created));
+                    }
+                    catch (Exception ex)
+                    {
+                        errors.Add($"Exception for GoodsId={dto.GoodsId}, GoodPackingId={dto.GoodPackingId}: {ex.Message}");
+                        // continue to next dto
+                    }
+                }
+
+                if (errors.Any())
+                {
+                    var msg = $"Created {createdDtos.Count} ledger(s), failed {errors.Count}.";
+                    msg += " " + string.Join(" | ", errors.Take(10));
+                    return (msg, createdDtos);
+                }
+
+                return ("", createdDtos);
+            }
+            catch (Exception ex)
+            {
+                return ($"{ex.Message}", default);
+            }
+        }
+
         public async Task<(string, InventoryLedgerResponseDto)> CreateInventoryLedgerByDPNID(string DisposalNoteId)
         {
             if (string.IsNullOrEmpty(DisposalNoteId)) return ("DisposalNoteId is invalid.", default);
@@ -58,7 +114,7 @@ namespace MilkDistributionWarehouse.Services
             try
             {
                 var details = await _inventoryLedgerRepository.GetDisposalNoteDetailsByDisposalNoteId(DisposalNoteId);
-                if (details == null || !details.Any()) return ("No disposal note details found or not compleate!", default);
+                if (details == null || !details.Any()) return ("No disposal note details found.", default);
 
                 InventoryLedgerResponseDto lastDto = null;
 
@@ -84,7 +140,7 @@ namespace MilkDistributionWarehouse.Services
                     var created = await _inventoryLedgerRepository.CreateInventoryLedger(entity);
                     if (created == null) return ("Failed to create inventory ledger for disposal detail.", default);
 
-                    lastDto = _mapper.Map<InventoryLedgerResponseDto>(created);
+                    lastDto = _mapper.Map<InventoryLedger, InventoryLedgerResponseDto>(created);
                 }
 
                 return ("", lastDto);
@@ -102,7 +158,7 @@ namespace MilkDistributionWarehouse.Services
             try
             {
                 var details = await _inventoryLedgerRepository.GetGoodsIssueNoteDetailsByGoodsIssueNoteId(GoodsIssueNoteId);
-                if (details == null || !details.Any()) return ("No goods issue note details found or not compleate!", default);
+                if (details == null || !details.Any()) return ("No goods issue note details found.", default);
 
                 InventoryLedgerResponseDto lastDto = null;
 
@@ -128,7 +184,7 @@ namespace MilkDistributionWarehouse.Services
                     var created = await _inventoryLedgerRepository.CreateInventoryLedger(entity);
                     if (created == null) return ("Failed to create inventory ledger for goods issue detail.", default);
 
-                    lastDto = _mapper.Map<InventoryLedgerResponseDto>(created);
+                    lastDto = _mapper.Map<InventoryLedger, InventoryLedgerResponseDto>(created);
                 }
 
                 return ("", lastDto);
@@ -146,7 +202,7 @@ namespace MilkDistributionWarehouse.Services
             try
             {
                 var details = await _inventoryLedgerRepository.GetGoodsReceiptNoteDetailsByGoodsReceiptNoteId(GoodsReceiptNoteId);
-                if (details == null || !details.Any()) return ("No goods receipt note details found or not compleate!", default);
+                if (details == null || !details.Any()) return ("No goods receipt note details found.", default);
 
                 InventoryLedgerResponseDto lastDto = null;
 
@@ -172,7 +228,7 @@ namespace MilkDistributionWarehouse.Services
                     var created = await _inventoryLedgerRepository.CreateInventoryLedger(entity);
                     if (created == null) return ("Failed to create inventory ledger for goods receipt detail.", default);
 
-                    lastDto = _mapper.Map<InventoryLedgerResponseDto>(created);
+                    lastDto = _mapper.Map<InventoryLedger, InventoryLedgerResponseDto>(created);
                 }
 
                 return ("", lastDto);

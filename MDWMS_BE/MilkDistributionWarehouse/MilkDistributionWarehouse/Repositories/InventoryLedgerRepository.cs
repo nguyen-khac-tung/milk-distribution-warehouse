@@ -43,7 +43,7 @@ namespace MilkDistributionWarehouse.Repositories
             if (string.IsNullOrEmpty(disposalNoteId)) return new List<DisposalNoteDetail>();
             return await _context.DisposalNoteDetails
                 .AsNoTracking()
-                .Where(d => d.DisposalNoteId == disposalNoteId && d.Status == DisposalNoteStatus.Completed)
+                .Where(d => d.DisposalNoteId == disposalNoteId)
                 .ToListAsync();
         }
 
@@ -52,7 +52,7 @@ namespace MilkDistributionWarehouse.Repositories
             if (string.IsNullOrEmpty(goodsIssueNoteId)) return new List<GoodsIssueNoteDetail>();
             return await _context.GoodsIssueNoteDetails
                 .AsNoTracking()
-                .Where(d => d.GoodsIssueNoteId == goodsIssueNoteId && d.Status == GoodsIssueNoteStatus.Completed)
+                .Where(d => d.GoodsIssueNoteId == goodsIssueNoteId)
                 .ToListAsync();
         }
 
@@ -61,7 +61,7 @@ namespace MilkDistributionWarehouse.Repositories
             if (string.IsNullOrEmpty(goodsReceiptNoteId)) return new List<GoodsReceiptNoteDetail>();
             return await _context.GoodsReceiptNoteDetails
                 .AsNoTracking()
-                .Where(d => d.GoodsReceiptNoteId == goodsReceiptNoteId && d.Status == GoodsReceiptNoteStatus.Completed)
+                .Where(d => d.GoodsReceiptNoteId == goodsReceiptNoteId)
                 .ToListAsync();
         }
 
