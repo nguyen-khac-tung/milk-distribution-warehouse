@@ -306,7 +306,7 @@ namespace MilkDistributionWarehouse.Services
                 Title = "Phiếu xuất hủy mới chờ duyệt",
                 Content = $"Phiếu xuất hủy '{disposalNote.DisposalNoteId}' vừa được gửi và đang chờ bạn duyệt.",
                 EntityType = NotificationEntityType.DisposalNote,
-                EntityId = disposalNote.DisposalNoteId
+                EntityId = disposalNote.DisposalRequestId
             };
 
             await _notificationService.CreateNotification(notificationToCreate);
