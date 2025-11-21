@@ -8,6 +8,7 @@ namespace MilkDistributionWarehouse.Repositories
     {
         IQueryable<GoodsReceiptNote?> GetGRN();
         Task<GoodsReceiptNote?> GetGoodsReceiptNoteById(string grnId);
+        Task<GoodsReceiptNote?> GetGRNByPurchaseOrderId(string purchaseOrderId);
         Task<GoodsReceiptNote?> CreateGoodsReceiptNote(GoodsReceiptNote create);
         Task<GoodsReceiptNote?> UpdateGoodsReceiptNote(GoodsReceiptNote update);
     }
@@ -30,6 +31,11 @@ namespace MilkDistributionWarehouse.Repositories
             return await _context.GoodsReceiptNotes.Include(grn => grn.GoodsReceiptNoteDetails)
                 .Include(grn => grn.PurchaseOder)
                 .FirstOrDefaultAsync(grn => grn.GoodsReceiptNoteId.Equals(grnId));
+        }
+
+        public async Task<GoodsReceiptNote?> GetGRNByPurchaseOrderId(string purchaseOrderId)
+        {
+            return await _context.GoodsReceiptNotes.FirstOrDefaultAsync(g => g.PurchaseOderId == purchaseOrderId);
         }
 
         public async Task<GoodsReceiptNote?> CreateGoodsReceiptNote(GoodsReceiptNote create)
