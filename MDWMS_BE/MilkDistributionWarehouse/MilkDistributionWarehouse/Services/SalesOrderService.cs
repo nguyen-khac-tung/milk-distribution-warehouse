@@ -345,14 +345,18 @@ namespace MilkDistributionWarehouse.Services
             switch (salesOrder.Status)
             {
                 case SalesOrderStatus.PendingApproval:
-                    notificationsToCreate.Add(new NotificationCreateDto()
+                    var saleManagers = await _userRepository.GetUsersByRoleId(RoleType.SaleManager);
+                    foreach (var manager in saleManagers ?? new List<User>())
                     {
-                        UserId = salesOrder.ApprovalBy,
-                        Title = "Đơn bán hàng mới chờ duyệt",
-                        Content = $"Đơn bán hàng bán '{salesOrder.SalesOrderId}' vừa được gửi và đang chờ bạn duyệt.",
-                        EntityType = NotificationEntityType.SaleOrder,
-                        EntityId = salesOrder.SalesOrderId
-                    });
+                        notificationsToCreate.Add(new NotificationCreateDto()
+                        {
+                            UserId = manager.UserId,
+                            Title = "Đơn bán hàng mới chờ duyệt",
+                            Content = $"Đơn bán hàng bán '{salesOrder.SalesOrderId}' vừa được gửi và đang chờ bạn duyệt.",
+                            EntityType = NotificationEntityType.SaleOrder,
+                            EntityId = salesOrder.SalesOrderId
+                        });
+                    }
                     break;
 
                 case SalesOrderStatus.Approved:
