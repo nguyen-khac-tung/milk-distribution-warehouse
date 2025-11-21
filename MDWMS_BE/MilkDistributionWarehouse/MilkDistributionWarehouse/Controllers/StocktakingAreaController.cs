@@ -22,9 +22,9 @@ namespace MilkDistributionWarehouse.Controllers
 
         [HttpGet("GetDetailForWarehouseStaffByStocktakingSheetId/{stoctakingSheetId}")]
         [Authorize(Roles = RoleNames.WarehouseStaff)]
-        public async Task<IActionResult> GetDetailStocktakingAreaByStocktakingSheetId(string stoctakingSheetId)
+        public async Task<IActionResult> GetDetailStocktakingAreaByStocktakingSheetId(string stoctakingSheetId,[FromQuery] Guid? stocktakingAreaId)
         {
-            var (msg, stocktakingAreaDetail) = await _stocktakingAreaService.GetStocktakingAreaByStocktakingSheetId(stoctakingSheetId, User.GetUserId());
+            var (msg, stocktakingAreaDetail) = await _stocktakingAreaService.GetStocktakingAreaByStocktakingSheetId(stoctakingSheetId, stocktakingAreaId, User.GetUserId());
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<List<StocktakingAreaDetailDto>>.ToResultOk(stocktakingAreaDetail);
@@ -34,7 +34,7 @@ namespace MilkDistributionWarehouse.Controllers
         [Authorize(Roles = $"{RoleNames.WarehouseManager}, {RoleNames.SalesManager}")]
         public async Task<IActionResult> GetDetailOtherRoleStocktakingAreaByStocktakingSheetId(string stoctakingSheetId)
         {
-            var (msg, stocktakingAreaDetail) = await _stocktakingAreaService.GetStocktakingAreaByStocktakingSheetId(stoctakingSheetId, null);
+            var (msg, stocktakingAreaDetail) = await _stocktakingAreaService.GetStocktakingAreaByStocktakingSheetId(stoctakingSheetId, null, null);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<List<StocktakingAreaDetailDto>>.ToResultOk(stocktakingAreaDetail);
