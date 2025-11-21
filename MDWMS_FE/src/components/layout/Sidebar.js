@@ -164,18 +164,6 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                 ],
             },
             {
-                key: "/backorder",
-                icon: <ComponentIcon name="backorder" size={16} collapsed={collapsed} />,
-                label: "Quản lý đơn bổ sung",
-                permission: PERMISSIONS.BACKORDER_VIEW
-            },
-            {
-                key: "/goods",
-                icon: <ComponentIcon name="milk" size={16} collapsed={collapsed} />,
-                label: "Quản lý hàng hóa",
-                permission: PERMISSIONS.GOODS_VIEW
-            },
-            {
                 key: "disposal-management",
                 icon: <ComponentIcon name="disposal" size={16} collapsed={collapsed} />,
                 label: "Quản lý đơn xuất hủy",
@@ -199,6 +187,18 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                         permission: PERMISSIONS.DISPOSAL_REQUEST_CREATE,
                     }
                 ],
+            },
+            {
+                key: "/backorder",
+                icon: <ComponentIcon name="backorder" size={16} collapsed={collapsed} />,
+                label: "Quản lý đơn bổ sung",
+                permission: PERMISSIONS.BACKORDER_VIEW
+            },
+            {
+                key: "/goods",
+                icon: <ComponentIcon name="milk" size={16} collapsed={collapsed} />,
+                label: "Quản lý hàng hóa",
+                permission: PERMISSIONS.GOODS_VIEW
             },
             {
                 key: "/categories",

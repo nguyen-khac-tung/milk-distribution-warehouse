@@ -644,6 +644,12 @@ namespace MilkDistributionWarehouse.Mappers
 
             // Map Notification
             CreateMap<Notification, NotificationDto>();
+            CreateMap<Notification, NotificationDetailDto>();
+            CreateMap<NotificationCreateDto, Notification>()
+                .ForMember(dest => dest.NotificationId, opt => opt.MapFrom(_ => Guid.NewGuid()))
+                .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category ?? NotificationCategory.Normal))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => NotificationStatus.Unread))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now));
         }
     }
 }

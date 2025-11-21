@@ -35,7 +35,7 @@ namespace MilkDistributionWarehouse.Controllers
             var (msg, notification) = await _notificationService.GetNotificationDetail(notificationId, User.GetUserId());
             if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
 
-            return ApiResponse<NotificationDto>.ToResultOk(notification);
+            return ApiResponse<NotificationDetailDto>.ToResultOk(notification);
         }
 
         [Authorize]

@@ -323,3 +323,16 @@ input:focus,
   border: none !important;
   box-shadow: none !important;
 }
+.bell-shake {
+    animation: bell-shake 0.7s ease-in-out infinite;
+}
+
+@keyframes bell-shake {
+    0% { transform: rotate(0deg); }
+    15% { transform: rotate(10deg); }
+    30% { transform: rotate(-10deg); }
+    45% { transform: rotate(8deg); }
+    60% { transform: rotate(-8deg); }
+    75% { transform: rotate(4deg); }
+    100% { transform: rotate(0deg); }
+}
