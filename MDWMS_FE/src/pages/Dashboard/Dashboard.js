@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom"
 import {
   BarChart,
   Search,
-  Plus,
   Trash,
   ChevronDown,
   Bell,
@@ -14,14 +13,6 @@ import {
   MessageSquare,
   Star,
   Award,
-  CreditCard,
-  Utensils,
-  ShoppingBag,
-  Truck,
-  Clock,
-  DollarSign,
-  Filter,
-  Download,
   Printer,
   MoreHorizontal,
   Menu,
@@ -44,22 +35,8 @@ import { Badge } from "../../components/ui/badge"
 import { Input } from "../../components/ui/input"
 import { Label } from "../../components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "../../components/ui/dialog"
-import { Checkbox } from "../../components/ui/checkbox"
-import { Textarea } from "../../components/ui/textarea"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
 // import { useToast } from "@/components/ui/use-toast"
 import {
-  Bar,
-  BarChart as RechartsBarChart,
   Line,
   LineChart as RechartsLineChart,
   XAxis,
@@ -70,6 +47,7 @@ import {
   PieChart,
   Pie,
   Cell,
+  Legend,
 } from "recharts"
 
 import { getLocationReport, getGoodsReceiptReport, getGoodsIssueReport, getInventoryReport } from "../../services/DashboardService"
@@ -82,8 +60,6 @@ import dayjs from "dayjs"
 
 export default function Dashboard({ activeSection = "dashboard", onSectionChange }) {
   const navigate = useNavigate()
-  const [showInvoiceDialog, setShowInvoiceDialog] = useState(false)
-  const [showOrderDialog, setShowOrderDialog] = useState(false)
   const [locationReport, setLocationReport] = useState({
     totalLocations: 0,
     availableLocationCount: 0,
@@ -93,8 +69,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
   const [selectedAreaId, setSelectedAreaId] = useState(null)
   const [areas, setAreas] = useState([])
   const [areasLoading, setAreasLoading] = useState(false)
-  const [purchaseOrdersData, setPurchaseOrdersData] = useState([])
-  const [salesOrdersData, setSalesOrdersData] = useState([])
+  const [ordersChartData, setOrdersChartData] = useState([])
   const [purchaseOrdersStats, setPurchaseOrdersStats] = useState({ current: 0, previous: 0, change: 0 })
   const [salesOrdersStats, setSalesOrdersStats] = useState({ current: 0, previous: 0, change: 0 })
   const [chartLoading, setChartLoading] = useState(false)
@@ -123,18 +98,19 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
     return dayNames[dayOfWeek] || ""
   }
 
-  // Get current week days (Sunday to Saturday)
+  // Get current week days (Monday to Sunday)
   const getCurrentWeekDays = () => {
     const today = dayjs()
     const currentDayOfWeek = today.day() // 0 = Sunday, 6 = Saturday
 
-    // Get Sunday of current week
-    const sunday = today.subtract(currentDayOfWeek, "day")
+    // Determine how many days to subtract to reach Monday
+    const daysFromMonday = currentDayOfWeek === 0 ? 6 : currentDayOfWeek - 1
+    const monday = today.subtract(daysFromMonday, "day")
 
-    // Generate 7 days starting from Sunday
+    // Generate 7 days starting from Monday
     const weekDays = []
     for (let i = 0; i < 7; i++) {
-      const day = sunday.add(i, "day")
+      const day = monday.add(i, "day")
       weekDays.push({
         date: day,
         dayName: getDayNameVietnamese(day.day()),
@@ -152,17 +128,17 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
         setChartLoading(true)
         const weekDays = getCurrentWeekDays()
 
-        // Get current week date range (Sunday to Saturday)
-        const sunday = weekDays[0].date
-        const saturday = weekDays[6].date
-        const fromDate = sunday.format('YYYY-MM-DD')
-        const toDate = saturday.format('YYYY-MM-DD')
+        // Get current week date range (Monday to Sunday)
+        const startOfWeek = weekDays[0].date
+        const endOfWeek = weekDays[6].date
+        const fromDate = startOfWeek.format('YYYY-MM-DD')
+        const toDate = endOfWeek.format('YYYY-MM-DD')
 
         // Get previous week date range for comparison
-        const prevSunday = sunday.subtract(7, 'day')
-        const prevSaturday = saturday.subtract(7, 'day')
-        const prevFromDate = prevSunday.format('YYYY-MM-DD')
-        const prevToDate = prevSaturday.format('YYYY-MM-DD')
+        const prevStartOfWeek = startOfWeek.subtract(7, 'day')
+        const prevEndOfWeek = endOfWeek.subtract(7, 'day')
+        const prevFromDate = prevStartOfWeek.format('YYYY-MM-DD')
+        const prevToDate = prevEndOfWeek.format('YYYY-MM-DD')
 
         // Fetch current week data
         const [currentReceipts, currentIssues, previousReceipts, previousIssues] = await Promise.all([
@@ -211,10 +187,12 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
           change: parseFloat(salesChange)
         })
 
-        // Group receipts by day of week
+        // Group receipts and issues by day of week (Monday to Sunday)
         const purchaseDataByDay = {}
+        const salesDataByDay = {}
         weekDays.forEach(day => {
           purchaseDataByDay[day.dayOfWeek] = 0
+          salesDataByDay[day.dayOfWeek] = 0
         })
 
         currentReceiptsList.forEach(receipt => {
@@ -227,18 +205,6 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
           }
         })
 
-        const purchaseData = weekDays.map(day => ({
-          name: day.dayName,
-          value: purchaseDataByDay[day.dayOfWeek] || 0
-        }))
-        setPurchaseOrdersData(purchaseData)
-
-        // Group issues by day of week (excluding Saturday)
-        const salesDataByDay = {}
-        weekDays.slice(0, 6).forEach(day => {
-          salesDataByDay[day.dayOfWeek] = 0
-        })
-
         currentIssuesList.forEach(issue => {
           if (issue.issueDate) {
             const issueDate = dayjs(issue.issueDate)
@@ -249,18 +215,22 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
           }
         })
 
-        const salesData = weekDays.slice(0, 6).map(day => ({
+        const combinedOrdersData = weekDays.map(day => ({
           name: day.dayName,
-          value: salesDataByDay[day.dayOfWeek] || 0
+          sales: salesDataByDay[day.dayOfWeek] || 0,
+          purchase: purchaseDataByDay[day.dayOfWeek] || 0
         }))
-        setSalesOrdersData(salesData)
+        setOrdersChartData(combinedOrdersData)
 
       } catch (error) {
         console.error("Error fetching orders data:", error)
         // Fallback to empty data
         const weekDays = getCurrentWeekDays()
-        setPurchaseOrdersData(weekDays.map(day => ({ name: day.dayName, value: 0 })))
-        setSalesOrdersData(weekDays.slice(0, 6).map(day => ({ name: day.dayName, value: 0 })))
+        setOrdersChartData(weekDays.map(day => ({
+          name: day.dayName,
+          sales: 0,
+          purchase: 0
+        })))
       } finally {
         setChartLoading(false)
       }
@@ -496,8 +466,8 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                 </svg>
               </div>
               <div>
-                <p className="text-sm text-gray-500">
-                  Đơn mua hàng <span className="text-xs">(Tuần này)</span>
+                <p className="text-sm text-gray-500 mt-5">
+                  Đơn mua hàng <span className="text-xs">(Hiện tại)</span>
                 </p>
                 <div className="flex items-center">
                   <h3 className="text-2xl font-bold mr-2">{purchaseOrdersStats.current}</h3>
@@ -510,7 +480,6 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500">Tuần trước: {purchaseOrdersStats.previous}</p>
               </div>
             </CardContent>
           </Card>
@@ -535,8 +504,8 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                 </svg>
               </div>
               <div>
-                <p className="text-sm text-gray-500">
-                  Đơn bán hàng <span className="text-xs">(Tuần này)</span>
+                <p className="text-sm text-gray-500 mt-5">
+                  Đơn bán hàng <span className="text-xs">(Hiện tại)</span>
                 </p>
                 <div className="flex items-center">
                   <h3 className="text-2xl font-bold mr-2">{salesOrdersStats.current}</h3>
@@ -549,7 +518,6 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500">Tuần trước: {salesOrdersStats.previous}</p>
               </div>
             </CardContent>
           </Card>
@@ -576,8 +544,8 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                 </svg>
               </div>
               <div>
-                <p className="text-sm text-gray-500">
-                  Tồn kho <span className="text-xs">(Tuần này)</span>
+                <p className="text-sm text-gray-500 mt-5">
+                  Tồn kho <span className="text-xs">(Hiện tại)</span>
                 </p>
                 {inventoryLoading ? (
                   <div className="flex items-center">
@@ -597,7 +565,6 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500">Tuần trước: {inventoryStats.previous}</p>
                   </>
                 )}
               </div>
@@ -605,7 +572,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
           </Card>
           <Card>
             <CardContent className="p-4">
-              <p className="text-sm text-gray-500 mb-2">Hoạt động hôm nay</p>
+              <p className="text-sm text-gray-500 mb-2 mt-5">Hoạt động hôm nay</p>
               {activityLoading ? (
                 <div className="flex items-center justify-center h-20">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500"></div>
@@ -619,7 +586,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                     <p className="text-xs">
                       Khu vực
                       <br />
-                      Trống
+                      Chưa đầy
                     </p>
                   </div>
                   <div className="text-center">
@@ -646,10 +613,10 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
         </div>
 
         {/* Charts */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6">
-          <Card>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-6">
+          <Card className="lg:col-span-2">
             <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
-              <CardTitle className="text-base font-medium">Đơn mua hàng</CardTitle>
+              <CardTitle className="text-base font-medium">Đơn mua & bán hàng</CardTitle>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-8 text-xs">
@@ -663,82 +630,62 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
               </DropdownMenu>
             </CardHeader>
             <CardContent className="p-4 pt-0">
-              <div className="h-[200px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RechartsBarChart data={purchaseOrdersData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                    <YAxis hide={true} />
-                    <Tooltip
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          return (
-                            <div className="bg-white p-2 border rounded shadow-sm">
-                              <p className="text-xs">{`${payload[0].value} đơn`}</p>
-                            </div>
-                          )
-                        }
-                        return null
-                      }}
-                    />
-                    <Bar dataKey="value" fill="#F59E0B" radius={[4, 4, 0, 0]} />
-                  </RechartsBarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
-              <CardTitle className="text-base font-medium">Đơn bán hàng</CardTitle>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 text-xs">
-                    tuần này <ChevronDown className="ml-1 h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem>Tháng này</DropdownMenuItem>
-                  <DropdownMenuItem>Năm nay</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </CardHeader>
-            <CardContent className="p-4 pt-0">
-              <div className="h-[200px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RechartsLineChart data={salesOrdersData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                    <YAxis hide={true} />
-                    <Tooltip
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          return (
-                            <div className="bg-white p-2 border rounded shadow-sm">
-                              <p className="text-xs">{`${payload[0].value} đơn`}</p>
-                            </div>
-                          )
-                        }
-                        return null
-                      }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="value"
-                      stroke="#3B82F6"
-                      strokeWidth={2}
-                      dot={{ r: 4, fill: "white", stroke: "#3B82F6", strokeWidth: 2 }}
-                      activeDot={{ r: 6 }}
-                      fill="url(#colorUv)"
-                    />
-                    <defs>
-                      <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.2} />
-                        <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                  </RechartsLineChart>
-                </ResponsiveContainer>
+              <div className="h-[240px] w-full">
+                {chartLoading ? (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RechartsLineChart data={ordersChartData} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} />
+                      <YAxis allowDecimals={false} />
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            return (
+                              <div className="bg-white p-2 border rounded shadow-sm text-xs space-y-1">
+                                <p className="font-medium">{payload[0].payload.name}</p>
+                                {payload.map(item => (
+                                  <p key={item.dataKey} className="flex justify-between gap-4">
+                                    <span>{item.name}</span>
+                                    <span>{item.value} đơn</span>
+                                  </p>
+                                ))}
+                              </div>
+                            )
+                          }
+                          return null
+                        }}
+                      />
+                      <Legend
+                        formatter={(value) => value}
+                        wrapperStyle={{ fontSize: "12px" }}
+                        verticalAlign="top"
+                        align="right"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="sales"
+                        name="Đơn bán hàng"
+                        stroke="#3B82F6"
+                        strokeWidth={2}
+                        dot={{ r: 4, fill: "white", stroke: "#3B82F6", strokeWidth: 2 }}
+                        activeDot={{ r: 6 }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="purchase"
+                        name="Đơn mua hàng"
+                        stroke="#EF4444"
+                        strokeWidth={2}
+                        dot={{ r: 4, fill: "white", stroke: "#EF4444", strokeWidth: 2 }}
+                        activeDot={{ r: 6 }}
+                      />
+                    </RechartsLineChart>
+                  </ResponsiveContainer>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -856,59 +803,54 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
           </Card>
         </div>
 
-        {/* Inventory Report Section */}
-        <Card className="mb-6">
-          <CardHeader className="p-4 pb-2">
-            <CardTitle className="text-base font-medium">Thống kê tồn kho</CardTitle>
-          </CardHeader>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="bg-orange-50 p-3 rounded-full">
-                  <Package className="h-6 w-6 text-orange-500" />
+        {/* Quick Navigation Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {[
+            {
+              id: "inventory",
+              badge: "Thống kê tồn kho",
+              title: "Báo cáo tồn kho",
+              description: "Xem chi tiết báo cáo tồn kho và thống kê",
+              icon: <Package className="h-5 w-5 text-orange-500" />,
+              iconBg: "bg-orange-50",
+              action: () => navigate("/reports/inventory"),
+              actionLabel: "Xem báo cáo"
+            },
+            {
+              id: "orders",
+              badge: "Đơn hàng",
+              title: "Quản lý đơn mua/bán",
+              description: "Xem danh sách đơn mua hàng và đơn bán hàng",
+              icon: <ShoppingCart className="h-5 w-5 text-blue-500" />,
+              iconBg: "bg-blue-50",
+              action: () => navigate("/reports/orders"),
+              actionLabel: "Xem đơn hàng"
+            }
+          ].map(link => (
+            <Card key={link.id} className="border border-dashed shadow-none">
+              <CardContent className="p-6 flex items-center justify-between gap-6 min-h-[110px]">
+                <div className="flex items-center gap-4 mt-4">
+                  <div className={`${link.iconBg} p-2.5 rounded-full flex-shrink-0`}>
+                    {link.icon}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs uppercase tracking-wide text-gray-400 font-medium mb-1">
+                      {link.badge}
+                    </p>
+                    <h3 className="text-base font-semibold text-gray-900 mb-1">{link.title}</h3>
+                    <p className="text-sm text-gray-500">{link.description}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold">Báo cáo tồn kho</h3>
-                  <p className="text-sm text-gray-500">Xem chi tiết báo cáo tồn kho và thống kê</p>
-                </div>
-              </div>
-              <Button
-                onClick={() => navigate("/reports/inventory")}
-                className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
-              >
-                Xem báo cáo tồn kho
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Recent Orders Section */}
-        <Card className="mb-6">
-          <CardHeader className="p-4 pb-2">
-            <CardTitle className="text-base font-medium">
-              Đơn hàng <span className="text-xs font-normal text-gray-500">(Quản lý đơn mua hàng và đơn bán hàng)</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="bg-blue-50 p-3 rounded-full">
-                  <ShoppingCart className="h-6 w-6 text-blue-500" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold">Đơn hàng</h3>
-                  <p className="text-sm text-gray-500">Xem danh sách đơn mua hàng và đơn bán hàng</p>
-                </div>
-              </div>
-              <Button
-                onClick={() => navigate("/reports/orders")}
-                className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
-              >
-                Xem đơn hàng
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+                <Button
+                  onClick={link.action}
+                  className="whitespace-nowrap bg-orange-500 hover:bg-orange-600 h-[38px] px-5 flex-shrink-0"
+                >
+                  {link.actionLabel}
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
         {/* Calendar and Warehouse Statistics */}
         <div className="grid grid-cols-2 gap-6 items-stretch">
@@ -929,392 +871,11 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
     )
   }
 
-  const renderBillingSystem = () => (
-    <>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold">Billing System</h2>
-        <div className="flex gap-2">
-          <Button variant="outline" className="h-[38px] px-4 flex items-center gap-1">
-            <Filter className="h-4 w-4" />
-            Filter
-          </Button>
-          <Button variant="outline" className="h-[38px] px-4 flex items-center gap-1">
-            <Download className="h-4 w-4" />
-            Export
-          </Button>
-          <Button
-            className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white flex items-center gap-1"
-            onClick={() => setShowInvoiceDialog(true)}
-          >
-            <Plus className="h-4 w-4" />
-            New Invoice
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card>
-          <CardContent className="p-4 flex items-center">
-            <div className="bg-blue-50 p-3 rounded-full mr-4">
-              <CreditCard className="h-6 w-6 text-blue-500" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Total Revenue</p>
-              <h3 className="text-2xl font-bold">Rs.125,000</h3>
-              <p className="text-xs text-green-600">+12% from last month</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center">
-            <div className="bg-green-50 p-3 rounded-full mr-4">
-              <DollarSign className="h-6 w-6 text-green-500" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Paid Invoices</p>
-              <h3 className="text-2xl font-bold">Rs.98,500</h3>
-              <p className="text-xs text-green-600">78% of total</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center">
-            <div className="bg-amber-50 p-3 rounded-full mr-4">
-              <Clock className="h-6 w-6 text-amber-500" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Pending Payments</p>
-              <h3 className="text-2xl font-bold">Rs.26,500</h3>
-              <p className="text-xs text-amber-600">22% of total</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card className="mb-6">
-        <CardHeader className="p-4 pb-0">
-          <CardTitle className="text-base font-medium">Recent Invoices</CardTitle>
-        </CardHeader>
-        <CardContent className="p-4">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Invoice ID</TableHead>
-                  <TableHead>Guest</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center text-gray-500 py-8">
-                    Không có dữ liệu
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Dialog open={showInvoiceDialog} onOpenChange={setShowInvoiceDialog}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Create New Invoice</DialogTitle>
-            <DialogDescription>Create a new invoice for a guest. Fill in all the required details.</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="guest" className="text-right">
-                Guest
-              </Label>
-              <Select>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select guest" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ram">Ram Kailash</SelectItem>
-                  <SelectItem value="samira">Samira Karki</SelectItem>
-                  <SelectItem value="jeevan">Jeevan Rai</SelectItem>
-                  <SelectItem value="bindu">Bindu Sharma</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="room" className="text-right">
-                Room
-              </Label>
-              <Select>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select room" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="101">101 - King Room</SelectItem>
-                  <SelectItem value="102">102 - Queen Room</SelectItem>
-                  <SelectItem value="201">201 - Deluxe Room</SelectItem>
-                  <SelectItem value="301">301 - Suite</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="date" className="text-right">
-                Date
-              </Label>
-              <Input id="date" type="date" className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="amount" className="text-right">
-                Amount
-              </Label>
-              <Input id="amount" type="number" placeholder="0.00" className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="description" className="text-right">
-                Description
-              </Label>
-              <Textarea id="description" placeholder="Invoice description" className="col-span-3" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowInvoiceDialog(false)}
-              className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white"
-            >
-              Hủy
-            </Button>
-            <Button
-              type="submit"
-              onClick={() => {
-                toast({
-                  title: "Invoice created",
-                  description: "New invoice has been created successfully",
-                })
-                setShowInvoiceDialog(false)
-              }}
-              className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
-            >
-              Create Invoice
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
-  )
-
-  const renderFoodDelivery = () => (
-    <>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold">Food Delivery System</h2>
-        <div className="flex gap-2">
-          <Button variant="outline" className="h-[38px] px-4 flex items-center gap-1">
-            <Filter className="h-4 w-4" />
-            Filter
-          </Button>
-          <Button
-            className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white flex items-center gap-1"
-            onClick={() => setShowOrderDialog(true)}
-          >
-            <Plus className="h-4 w-4" />
-            New Order
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card>
-          <CardContent className="p-4 flex items-center">
-            <div className="bg-blue-50 p-3 rounded-full mr-4">
-              <Utensils className="h-6 w-6 text-blue-500" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Total Orders</p>
-              <h3 className="text-2xl font-bold">42</h3>
-              <p className="text-xs text-green-600">+8% from yesterday</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center">
-            <div className="bg-green-50 p-3 rounded-full mr-4">
-              <ShoppingBag className="h-6 w-6 text-green-500" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Completed</p>
-              <h3 className="text-2xl font-bold">35</h3>
-              <p className="text-xs text-green-600">83% of total</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center">
-            <div className="bg-amber-50 p-3 rounded-full mr-4">
-              <Truck className="h-6 w-6 text-amber-500" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">In Progress</p>
-              <h3 className="text-2xl font-bold">7</h3>
-              <p className="text-xs text-amber-600">17% of total</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div className="md:col-span-2">
-          <Card>
-            <CardHeader className="p-4 pb-0">
-              <CardTitle className="text-base font-medium">Active Orders</CardTitle>
-            </CardHeader>
-            <CardContent className="p-4">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Order ID</TableHead>
-                      <TableHead>Guest</TableHead>
-                      <TableHead>Room</TableHead>
-                      <TableHead>Items</TableHead>
-                      <TableHead>Total</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center text-gray-500 py-8">
-                        Không có dữ liệu
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        <div>
-          <Card>
-            <CardHeader className="p-4 pb-0">
-              <CardTitle className="text-base font-medium">Phân bố sản phẩm</CardTitle>
-            </CardHeader>
-            <CardContent className="p-4">
-              <div className="h-[250px] flex items-center justify-center">
-                <p className="text-gray-500 text-sm">Không có dữ liệu</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      <Dialog open={showOrderDialog} onOpenChange={setShowOrderDialog}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Place New Food Order</DialogTitle>
-            <DialogDescription>Create a new food order for a guest. Select items from the menu.</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="guest" className="text-right">
-                Guest
-              </Label>
-              <Select>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select guest" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ram">Ram Kailash - Room 101</SelectItem>
-                  <SelectItem value="samira">Samira Karki - Room 205</SelectItem>
-                  <SelectItem value="jeevan">Jeevan Rai - Room 310</SelectItem>
-                  <SelectItem value="bindu">Bindu Sharma - Room 402</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right">Menu Items</Label>
-              <div className="col-span-3 border rounded-md p-3 space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="item1" />
-                  <Label htmlFor="item1" className="flex justify-between w-full">
-                    <span>Chicken Curry</span>
-                    <span>Rs.450</span>
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="item2" />
-                  <Label htmlFor="item2" className="flex justify-between w-full">
-                    <span>Vegetable Pasta</span>
-                    <span>Rs.350</span>
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="item3" />
-                  <Label htmlFor="item3" className="flex justify-between w-full">
-                    <span>Club Sandwich</span>
-                    <span>Rs.250</span>
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="item4" />
-                  <Label htmlFor="item4" className="flex justify-between w-full">
-                    <span>Naan Bread</span>
-                    <span>Rs.50</span>
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="item5" />
-                  <Label htmlFor="item5" className="flex justify-between w-full">
-                    <span>Rice</span>
-                    <span>Rs.100</span>
-                  </Label>
-                </div>
-              </div>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="special" className="text-right">
-                Special Instructions
-              </Label>
-              <Textarea id="special" placeholder="Any special requests" className="col-span-3" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowOrderDialog(false)}
-              className="h-[38px] px-6 bg-slate-800 hover:bg-slate-900 text-white"
-            >
-              Hủy
-            </Button>
-            <Button
-              type="submit"
-              onClick={() => {
-                toast({
-                  title: "Order placed",
-                  description: "Food order has been placed successfully",
-                })
-                setShowOrderDialog(false)
-              }}
-              className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
-            >
-              Place Order
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
-  )
-
   return (
     <div className="min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
         {activeSection === "dashboard" && renderDashboard()}
-        {activeSection === "billing" && renderBillingSystem()}
-        {activeSection === "food-delivery" && renderFoodDelivery()}
-        {activeSection !== "dashboard" && activeSection !== "billing" && activeSection !== "food-delivery" && (
+        {activeSection !== "dashboard" && (
           <div className="flex items-center justify-center h-full">
             <Card className="w-full max-w-md">
               <CardHeader>

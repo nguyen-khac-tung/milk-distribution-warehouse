@@ -261,24 +261,14 @@ export default function StocktakingList() {
 
     const handleStartStocktaking = async (stocktaking) => {
         try {
-            // Kiểm tra canViewStocktakingArea
-            // Nếu canViewStocktakingArea = false → cần gọi API inProgressStocktaking (bắt đầu kiểm kê)
-            // Nếu canViewStocktakingArea = true → chỉ view, không gọi API nữa
-            if (stocktaking.canViewStocktakingArea === false || stocktaking.canViewStocktakingArea === undefined) {
-                // Chỉ gọi API khi chưa bắt đầu kiểm kê (canViewStocktakingArea = false)
-                if (stocktaking.status === STOCKTAKING_STATUS.Assigned || 
-                    stocktaking.status === 2 || 
-                    stocktaking.status === '2') {
-                    await inProgressStocktaking({ stocktakingSheetId: stocktaking.stocktakingSheetId });
-                    
-                    if (window.showToast) {
-                        window.showToast("Bắt đầu kiểm kê thành công!", "success");
-                    }
+            if (stocktaking.isStocktakingStarted === false) {
+                await inProgressStocktaking({ stocktakingSheetId: stocktaking.stocktakingSheetId });
+
+                if (window.showToast) {
+                    window.showToast("Bắt đầu kiểm kê thành công!", "success");
                 }
             }
-            // Nếu canViewStocktakingArea = true, chỉ navigate, không gọi API
-            
-            // Navigate đến màn hình StocktakingArea
+
             navigate(`/stocktaking-area/${stocktaking.stocktakingSheetId}`);
         } catch (error) {
             console.error("Error starting stocktaking:", error);

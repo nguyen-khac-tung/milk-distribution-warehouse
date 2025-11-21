@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, MapPin, Clock, Calendar, User, Thermometer, Droplets, Sun, CheckCircle2, RotateCcw } from 'lucide-react';
+import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, MapPin, Clock, Calendar, User, Thermometer, Droplets, Sun, Check, RotateCcw } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
 import { getStocktakingAreaDetailBySheetId, getStocktakingDetail, confirmStocktakingLocationCounted, submitStocktakingArea, cancelStocktakingLocationRecord } from '../../services/StocktakingService';
@@ -667,7 +667,7 @@ const StocktakingArea = () => {
                                     const locationId = location.stocktakingLocationId || location.locationId || index;
                                     const isSelected = selectedLocations.has(locationId);
                                     const canSelect = location.status === STOCK_LOCATION_STATUS.Counted;
-                                    const colSpanForRejectReason = isUnchecked ? (hasConfirmableLocation ? 4 : 3) : 4;
+                                    const colSpanForRejectReason = isUnchecked ? (hasConfirmableLocation ? 5 : 4) : 5;
 
                                     return (
                                         <>
@@ -675,6 +675,9 @@ const StocktakingArea = () => {
                                                 key={locationId}
                                                 className={`hover:bg-slate-50 border-b border-slate-200 ${isSelected ? 'bg-orange-50' : ''}`}
                                             >
+                                                <TableCell className="px-6 py-4 text-center text-slate-700 font-medium">
+                                                    {index + 1}
+                                                </TableCell>
                                                 {!isUnchecked && (
                                                     <TableCell className="px-6 py-4">
                                                         {canSelect ? (
@@ -728,13 +731,13 @@ const StocktakingArea = () => {
                                                             <button
                                                                 onClick={() => handleConfirmCountedClick(location.stocktakingLocationId)}
                                                                 disabled={confirmingLocationId === location.stocktakingLocationId}
-                                                                className="flex items-center justify-center w-10 h-10 rounded-full bg-green-500 hover:bg-green-600 text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-green-500"
+                                                                className="flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110"
                                                                 title="Xác nhận trong hệ thống không có pallet và bên ngoài không có pallet"
                                                             >
                                                                 {confirmingLocationId === location.stocktakingLocationId ? (
-                                                                    <RefreshCw className="h-5 w-5 animate-spin" />
+                                                                    <RefreshCw className="h-5 w-5 animate-spin text-green-600" strokeWidth={2.5} />
                                                                 ) : (
-                                                                    <CheckCircle2 className="h-5 w-5" />
+                                                                    <Check className="h-5 w-5 text-green-600 font-bold" strokeWidth={3} />
                                                                 )}
                                                             </button>
                                                         ) : null}
@@ -754,8 +757,8 @@ const StocktakingArea = () => {
                                     );
                                 };
 
-                                const colSpanUnchecked = hasConfirmableLocation ? 4 : 3;
-                                const colSpanChecked = 4; // Thêm 1 cột cho checkbox
+                                const colSpanUnchecked = hasConfirmableLocation ? 5 : 4; // Thêm 1 cột cho STT
+                                const colSpanChecked = 5; // Thêm 1 cột cho STT và 1 cột cho checkbox
 
                                 return (
                                     <div key={areaId || areaIndex} className="border border-gray-200 rounded-lg bg-white">
@@ -800,6 +803,9 @@ const StocktakingArea = () => {
                                                             <Table className="w-full">
                                                                 <TableHeader>
                                                                     <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
+                                                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-16">
+                                                                            STT
+                                                                        </TableHead>
                                                                         <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                                                                             Vị Trí
                                                                         </TableHead>
@@ -891,6 +897,9 @@ const StocktakingArea = () => {
                                                             <Table className="w-full">
                                                                 <TableHeader>
                                                                     <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
+                                                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-16">
+                                                                            STT
+                                                                        </TableHead>
                                                                         <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
                                                                             Chọn
                                                                         </TableHead>
