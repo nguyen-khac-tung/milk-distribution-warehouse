@@ -191,46 +191,17 @@ const StocktakingTable = ({
                                         )}
                                         <TableCell className="px-6 py-4 text-center">
                                             <div className="flex items-center justify-center space-x-1">
-                                                {/* Icon bắt đầu kiểm kê - chỉ hiển thị khi status = Assigned hoặc InProgress */}
-                                                {(stocktaking.status === STOCKTAKING_STATUS.Assigned ||
-                                                    stocktaking.status === 2 ||
-                                                    stocktaking.status === '2' ||
-                                                    stocktaking.status === STOCKTAKING_STATUS.InProgress ||
-                                                    stocktaking.status === 4 ||
-                                                    stocktaking.status === '4') && (
-                                                        <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_IN_PROGRESS}>
-                                                            <button
-                                                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                                title={stocktaking.canViewStocktakingArea === true
-                                                                    ? "Xem chi tiết kiểm kê"
-                                                                    : "Bắt đầu kiểm kê"}
-                                                                onClick={() => handleStartStocktakingClick(stocktaking)}
-                                                            >
-                                                                <PlayCircle className={`h-4 w-4 ${stocktaking.canViewStocktakingArea === true
-                                                                    ? 'text-blue-500'
-                                                                    : 'text-green-500'
-                                                                    }`} />
-                                                            </button>
-                                                        </PermissionWrapper>
-                                                    )}
-                                                {/* Icon xem lại phiếu kiểm kê - logic riêng cho nhân viên kho ở trạng thái Chờ duyệt, Đã duyệt, Đã hoàn thành */}
-                                                {isWarehouseStaff &&
-                                                    ((stocktaking.status === STOCKTAKING_STATUS.PendingApproval ||
-                                                        stocktaking.status === 5 ||
-                                                        stocktaking.status === '5') ||
-                                                     (stocktaking.status === STOCKTAKING_STATUS.Approved ||
-                                                        stocktaking.status === 6 ||
-                                                        stocktaking.status === '6') ||
-                                                     (stocktaking.status === STOCKTAKING_STATUS.Completed ||
-                                                        stocktaking.status === 7 ||
-                                                        stocktaking.status === '7')) && (
-                                                    <button
-                                                        className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                        title="Xem chi tiết kiểm kê"
-                                                        onClick={() => handleStartStocktakingClick(stocktaking)}
-                                                    >
-                                                        <PlayCircle className="h-4 w-4 text-blue-500" />
-                                                    </button>
+                                                {/* Icon bắt đầu / xem lại kiểm kê dựa trên isStocktakingStarted */}
+                                                {typeof stocktaking.isStocktakingStarted === 'boolean' && (
+                                                    <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_IN_PROGRESS}>
+                                                        <button
+                                                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                            title={stocktaking.isStocktakingStarted === false ? "Bắt đầu kiểm kê" : "Xem chi tiết kiểm kê"}
+                                                            onClick={() => handleStartStocktakingClick(stocktaking)}
+                                                        >
+                                                            <PlayCircle className={`h-4 w-4 ${stocktaking.isStocktakingStarted === false ? 'text-green-500' : 'text-blue-500'}`} />
+                                                        </button>
+                                                    </PermissionWrapper>
                                                 )}
                                                 <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_VIEW_DETAILS}>
                                                     <button
