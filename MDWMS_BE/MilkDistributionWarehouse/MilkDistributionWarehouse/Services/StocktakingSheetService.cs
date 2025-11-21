@@ -361,11 +361,25 @@ namespace MilkDistributionWarehouse.Services
             //    return $"Còn {remaining.Hours} giờ {remaining.Minutes} phút nữa đến thời gian bắt đầu kiểm kê.".ToMessageForUser();
             //}
 
+            if (inProgressStatus.StocktakingAreaId != Guid.Empty)
+            {
+                bool hasOtherActiveArea = sheet.StocktakingAreas.Any(sa =>
+                    sa.AssignTo == userId &&
+                    sa.StocktakingAreaId != inProgressStatus.StocktakingAreaId &&
+                    (sa.Status == StockAreaStatus.Pending ||
+                     sa.Status == StockAreaStatus.PendingApproval));
+
+                if (hasOtherActiveArea)
+                    return "Nhân viên chỉ được phép kiểm kê một khu vực tại một thời điểm."
+                            .ToMessageForUser();
+            }
+
             var stocktakingAreaOfAssignedStaff = sheet.StocktakingAreas
                 .FirstOrDefault(sa => 
                                     sa.AssignTo == userId && 
-                                    (inProgressStatus.StocktakingAreaId == null 
-                                    || inProgressStatus.StocktakingAreaId != sa.StocktakingAreaId));
+                                    (inProgressStatus.StocktakingAreaId == null ||
+                                    inProgressStatus.StocktakingAreaId == sa.StocktakingAreaId));
+
             if (stocktakingAreaOfAssignedStaff == null)
                 return "Không tìm thấy khu vực được phân công cho nhân viên này.".ToMessageForUser();
 
