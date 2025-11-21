@@ -33,12 +33,13 @@ namespace MilkDistributionWarehouse.Services
         private readonly int _hoursBeforeStartTime = StocktakingSettings.HoursBeforeStartToAllowEdit;
         private readonly IStocktakingLocationService _stocktakingLocationService;
         private readonly IStocktakingLocationRepository _stocktakingLocationRepository;
+        private readonly IStocktakingStatusDomainService _stocktakingStatusDomainService;
 
         public StocktakingSheetService(IMapper mapper, IStocktakingSheetRepository stocktakingSheetRepository,
             IStocktakingAreaRepository stocktakingAreaRepository,
             IUnitOfWork unitOfWork, IAreaRepository areaRepository,
             IStocktakingAreaService stocktakingAreaService, IStocktakingLocationService stocktakingLocationService,
-            IStocktakingLocationRepository stocktakingLocationRepository)
+            IStocktakingLocationRepository stocktakingLocationRepository, IStocktakingStatusDomainService stocktakingStatusDomainService)
         {
             _mapper = mapper;
             _stocktakingSheetRepository = stocktakingSheetRepository;
@@ -48,6 +49,7 @@ namespace MilkDistributionWarehouse.Services
             _stocktakingAreaService = stocktakingAreaService;
             _stocktakingLocationService = stocktakingLocationService;
             _stocktakingLocationRepository = stocktakingLocationRepository;
+            _stocktakingStatusDomainService = stocktakingStatusDomainService;
         }
 
         public async Task<(string, PageResult<StocktakingSheetDto>?)> GetStocktakingSheets(PagedRequest request, string roleName, int? userId)
@@ -202,8 +204,7 @@ namespace MilkDistributionWarehouse.Services
                     StocktakingSheetReAssignStatus reAssingStatus => await HandleReAssignStatus(stocktakingSheetExist, reAssingStatus, userId),
                     StocktakingSheetCancelStatus => await HandleCancelStatus(stocktakingSheetExist, userId),
                     StocktakingSheetInProgressStatus => await HandleInProgressStatus(stocktakingSheetExist, userId),
-                    //StocktakingSheetApprovalStatus => 
-                    StocktakingSheetCompletedStatus completedStatus => HandleCompletedStatus(stocktakingSheetExist, completedStatus.Note),
+                    StocktakingSheetCompletedStatus completedStatus => await HandleCompletedStatus(stocktakingSheetExist, completedStatus.Note),
                     _ => "Loại cập nhật trạng thái không hợp lệ.".ToMessageForUser()
                 };
 
@@ -211,13 +212,6 @@ namespace MilkDistributionWarehouse.Services
                 {
                     await _unitOfWork.RollbackTransactionAsync();
                     return (errorMessage, default);
-                }
-
-                var updateResult = await _stocktakingSheetRepository.UpdateStockingtakingSheet(stocktakingSheetExist);
-                if (updateResult == 0)
-                {
-                    await _unitOfWork.RollbackTransactionAsync();
-                    return ("Cập nhật trạng thái phiếu kiểm kê thất bại.".ToMessageForUser(), default);
                 }
 
                 await _unitOfWork.CommitTransactionAsync();
@@ -230,14 +224,14 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
-        private string HandleCompletedStatus(StocktakingSheet sheet, string noteUpdate)
+        private async Task<string> HandleCompletedStatus(StocktakingSheet sheet, string noteUpdate)
         {
             if (sheet.Status != StocktakingStatus.Approved)
                 return "Chỉ đươc chuyển sang trạng thái Hoàn thành khi phiếu kiểm kê ở trạng thái Đã duyệt.".ToMessageForUser();
 
-            sheet.Status = StocktakingStatus.Completed;
-            if (!string.IsNullOrEmpty(noteUpdate))
-                sheet.Note = noteUpdate;
+            var updateMessage = await _stocktakingStatusDomainService.UpdateSheetStatusAsync(sheet, StocktakingStatus.Completed, noteUpdate);
+            if (!string.IsNullOrEmpty(updateMessage))
+                return updateMessage;
 
             return string.Empty;
         }
@@ -292,7 +286,9 @@ namespace MilkDistributionWarehouse.Services
             if (!string.IsNullOrEmpty(msg))
                 return msg;
 
-            sheet.Status = StocktakingStatus.Assigned;
+            var updateMessage = await _stocktakingStatusDomainService.UpdateSheetStatusAsync(sheet, StocktakingStatus.Assigned);
+            if (!string.IsNullOrEmpty(updateMessage))
+                return updateMessage;
 
             return string.Empty;
         }
@@ -328,7 +324,10 @@ namespace MilkDistributionWarehouse.Services
             if (hasAnyStockArea)
                 return "Không thể huỷ đơn kiểm kê khi nhân viên đã bắt đầu kiểm kê.".ToMessageForUser();
 
-            sheet.Status = StocktakingStatus.Cancelled;
+            var updateMessage = await _stocktakingStatusDomainService.UpdateSheetStatusAsync(sheet, StocktakingStatus.Cancelled);
+            if (!string.IsNullOrEmpty(updateMessage))
+                return updateMessage;
+
             return string.Empty;
         }
 
@@ -369,23 +368,12 @@ namespace MilkDistributionWarehouse.Services
                 return "Phiếu kiểm kê chưa có khu vực nào được phân công.".ToMessageForUser();
 
             var hasAllStarted = await _stocktakingLocationRepository.AreExistStocklocationByAllStockAreaIdsAsync(stockAreaIds);
-            sheet.Status = hasAllStarted ? StocktakingStatus.InProgress : StocktakingStatus.Assigned;
-            sheet.UpdateAt = DateTime.Now;
+            var targetStatus = hasAllStarted ? StocktakingStatus.InProgress : StocktakingStatus.Assigned;
+            var updateMessage = await _stocktakingStatusDomainService.UpdateSheetStatusAsync(sheet, targetStatus);
+            if (!string.IsNullOrEmpty(updateMessage))
+                return updateMessage;
 
             return string.Empty;
         }
-
-        //private string HandleApprovalStatus(StocktakingSheet sheet, int? userId)
-        //{
-        //    if (!IsWarehouseStaff(sheet, userId))
-        //        return "Bạn không có quyền thực hiện chức năng cập nhật trạng thái trong phiếu kiểm kê.".ToMessageForUser();
-
-        //    if (sheet.Status != StocktakingStatus.PendingApproval)
-        //        return "Chỉ được chuyển sang trạng thái Duyệt khi phiếu kiểm kê ở trạng thái Chờ duyệt.".ToMessageForUser();
-
-        //    var hasNoApprovalStocktakingArea = sheet.StocktakingAreas.Any(sa => sa.Status == StockAreaStatus.Completed);
-        //    if (hasNoApprovalStocktakingArea)
-        //        return "Chỉ được chuyển sang trạng thái Duyệt khi tất cả các khu vực kiểm kê được Duyệt.".ToMessageForUser();
-        //}
     }
 }

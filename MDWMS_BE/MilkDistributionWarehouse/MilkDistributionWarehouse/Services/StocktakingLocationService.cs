@@ -27,11 +27,11 @@ namespace MilkDistributionWarehouse.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IStocktakingPalletRepository _stocktakingPalletRepository;
         private readonly IStocktakingAreaRepository _stocktakingAreaRepository;
-        private readonly IStocktakingSheetRepository _stocktakingSheetRepository;
+        private readonly IStocktakingStatusDomainService _stocktakingStatusDomainService;
         public StocktakingLocationService(IStocktakingLocationRepository stocktakingLocationRepository, IMapper mapper,
             ILocationRepository locationRepository, IStocktakingPalletService stocktakingPalletService, IUnitOfWork unitOfWork,
             IStocktakingPalletRepository stocktakingPalletRepository, IStocktakingAreaRepository stocktakingAreaRepository,
-            IStocktakingSheetRepository stocktakingSheetRepository)
+            IStocktakingStatusDomainService stocktakingStatusDomainService)
         {
             _stocktakingLocationRepository = stocktakingLocationRepository;
             _mapper = mapper;
@@ -40,7 +40,7 @@ namespace MilkDistributionWarehouse.Services
             _unitOfWork = unitOfWork;
             _stocktakingPalletRepository = stocktakingPalletRepository;
             _stocktakingAreaRepository = stocktakingAreaRepository;
-            _stocktakingSheetRepository = stocktakingSheetRepository;
+            _stocktakingStatusDomainService = stocktakingStatusDomainService;
         }
 
         public async Task<(string, StocktakingLocationCreate?)> CreateStocktakingLocationBulk(StocktakingLocationCreate create)
@@ -190,40 +190,9 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
-        private async Task<string> UpdateStocktakingAreaStatus(Guid stocktakingAreaId, int statusChange)
+        private Task<string> UpdateStocktakingAreaStatus(Guid stocktakingAreaId, int statusChange)
         {
-            var stocktakingArea = await _stocktakingAreaRepository.GetStocktakingAreaByStocktakingAreaId(stocktakingAreaId);
-            if (stocktakingArea == null)
-                return "Kiểm kê khu vực trống.";
-
-            stocktakingArea.Status = statusChange;
-            stocktakingArea.UpdateAt = DateTime.Now;
-
-            var updateResult = await _stocktakingAreaRepository.UpdateStocktakingArea(stocktakingArea);
-            if (updateResult == 0) return "Cập nhật trạng thái của kiểm kê khu vực thất bại.";
-
-            await HandleUpdateStockSheet(stocktakingArea.StocktakingSheetId);
-
-            return "";
-        }
-
-        private async Task HandleUpdateStockSheet(string stocktakingSheetId)
-        {
-            if (string.IsNullOrEmpty(stocktakingSheetId))
-                return;
-
-            var stockSheet = await _stocktakingSheetRepository.GetStocktakingSheetById(stocktakingSheetId);
-            if (stockSheet == null) return;
-
-            var checkAllStockAreaInProgress = await _stocktakingAreaRepository.AllStockAreaPending(stocktakingSheetId);
-
-            if (!checkAllStockAreaInProgress)
-                return;
-
-            stockSheet.Status = StocktakingStatus.InProgress;
-            stockSheet.UpdateAt = DateTime.Now;
-
-            var updateResult = await _stocktakingSheetRepository.UpdateStockingtakingSheet(stockSheet);
+            return _stocktakingStatusDomainService.UpdateAreaStatusAsync(stocktakingAreaId, statusChange);
         }
 
         public async Task<(string, List<StocktakingLocationCancelStatus>?)> CancelStocktakingLocationBulk(List<StocktakingLocationCancelStatus> update)

@@ -144,6 +144,7 @@ namespace MilkDistributionWarehouse.Configurations
             //StocktakingLocation
             services.AddScoped<IStocktakingLocationRepository, StocktakingLocationRepository>();
             services.AddScoped<IStocktakingLocationService, StocktakingLocationService>();
+            services.AddScoped<IStocktakingStatusDomainService, StocktakingStatusDomainService>();
 
             //StocktakingPallet
             services.AddScoped<IStocktakingPalletRepository, StocktakingPalletRepository>();
