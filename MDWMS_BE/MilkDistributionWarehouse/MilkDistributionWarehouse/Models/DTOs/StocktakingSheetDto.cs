@@ -60,7 +60,10 @@ namespace MilkDistributionWarehouse.Models.DTOs
     }
 
     public class StocktakingSheetCancelStatus : StocktakingSheetStatusUpdate { }
-    public class StocktakingSheetInProgressStatus : StocktakingSheetStatusUpdate { }
+    public class StocktakingSheetInProgressStatus : StocktakingSheetStatusUpdate
+    {
+        public Guid? StocktakingAreaId { get; set; }
+    }
 
     public class StocktakingSheetApprovalStatus : StocktakingSheetStatusUpdate { }
 
