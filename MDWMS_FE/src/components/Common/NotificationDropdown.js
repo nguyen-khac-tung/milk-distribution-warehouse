@@ -77,7 +77,7 @@ const NotificationDropdown = ({
             <div className="px-4 py-4 border-b border-gray-100 bg-white">
                 <div className="flex items-center gap-3 mb-2">
                     <p className="text-lg font-semibold text-slate-900">Thông báo</p>
-                    <span className="text-slate-400 mb-5">•</span>
+                    <span className="text-slate-400 mb-4">•</span>
                     <p className="text-sm text-gray-500">
                         {unreadCount > 0
                             ? `${unreadCount} thông báo chưa đọc`
