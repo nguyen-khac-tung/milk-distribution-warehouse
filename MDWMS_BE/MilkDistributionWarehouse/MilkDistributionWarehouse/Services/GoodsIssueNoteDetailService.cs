@@ -16,14 +16,17 @@ namespace MilkDistributionWarehouse.Services
     public class GoodsIssueNoteDetailService : IGoodsIssueNoteDetailService
     {
         private readonly IGoodsIssueNoteDetailRepository _goodsIssueNoteDetailRepository;
+        private readonly INotificationService _notificationService;
         private readonly IUserRepository _userRepository;
         private readonly IUnitOfWork _unitOfWork;
 
         public GoodsIssueNoteDetailService(IGoodsIssueNoteDetailRepository goodsIssueNoteDetailRepository,
+                                           INotificationService notificationService,
                                            IUserRepository userRepository,
                                            IUnitOfWork unitOfWork)
         {
             _goodsIssueNoteDetailRepository = goodsIssueNoteDetailRepository;
+            _notificationService = notificationService;
             _userRepository = userRepository;
             _unitOfWork = unitOfWork;
         }
@@ -109,6 +112,7 @@ namespace MilkDistributionWarehouse.Services
                 await _goodsIssueNoteDetailRepository.UpdateGoodsIssueNoteDetailList(issueNoteDetails);
                 await _unitOfWork.CommitTransactionAsync();
 
+                await HandleGINStatusChangeNotification(goodsIssueNote);
                 return "";
             }
             catch
@@ -116,6 +120,20 @@ namespace MilkDistributionWarehouse.Services
                 await _unitOfWork.RollbackTransactionAsync();
                 return "Đã xảy ra lỗi hệ thống khi xử lý yêu cầu.".ToMessageForUser();
             }
+        }
+
+        private async Task HandleGINStatusChangeNotification(GoodsIssueNote goodsIssueNote)
+        {
+            var notificationsToCreate = new NotificationCreateDto()
+            {
+                UserId = goodsIssueNote.CreatedBy,
+                Title = "Yêu cầu lấy lại hàng đơn xuất kho",
+                Content = $"Đơn xuất kho '{goodsIssueNote.GoodsIssueNoteId}' có hàng hóa mà quản lý kho yêu cầu bạn lấy lại hàng",
+                EntityType = NotificationEntityType.GoodsIssueNote,
+                EntityId = goodsIssueNote.SalesOderId
+            };
+
+            await _notificationService.CreateNotification(notificationsToCreate);
         }
     }
 }
