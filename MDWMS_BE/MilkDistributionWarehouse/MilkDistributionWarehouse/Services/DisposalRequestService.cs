@@ -332,14 +332,18 @@ namespace MilkDistributionWarehouse.Services
             switch (disposalRequest.Status)
             {
                 case DisposalRequestStatus.PendingApproval:
-                    notificationsToCreate.Add(new NotificationCreateDto()
+                    var saleManagers = await _userRepository.GetUsersByRoleId(RoleType.SaleManager);
+                    foreach (var manager in saleManagers ?? new List<User>())
                     {
-                        UserId = disposalRequest.ApprovalBy,
-                        Title = "Yêu cầu xuất hủy mới chờ duyệt",
-                        Content = $"Yêu cầu xuất hủy '{disposalRequest.DisposalRequestId}' vừa được gửi và đang chờ bạn duyệt.",
-                        EntityType = NotificationEntityType.DisposalRequest,
-                        EntityId = disposalRequest.DisposalRequestId
-                    });
+                        notificationsToCreate.Add(new NotificationCreateDto()
+                        {
+                            UserId = manager.UserId,
+                            Title = "Yêu cầu xuất hủy mới chờ duyệt",
+                            Content = $"Yêu cầu xuất hủy '{disposalRequest.DisposalRequestId}' vừa được gửi và đang chờ bạn duyệt.",
+                            EntityType = NotificationEntityType.DisposalRequest,
+                            EntityId = disposalRequest.DisposalRequestId
+                        });
+                    }
                     break;
 
                 case DisposalRequestStatus.Approved:

@@ -133,9 +133,6 @@ const InventoryDetailModal = ({ isOpen, onClose, item }) => {
                                                 <TableHead className="font-semibold text-slate-900 px-4 py-3 text-right">
                                                     Số lượng
                                                 </TableHead>
-                                                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-center">
-                                                    Trạng thái
-                                                </TableHead>
                                                 <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
                                                     Người tạo
                                                 </TableHead>
@@ -158,18 +155,6 @@ const InventoryDetailModal = ({ isOpen, onClose, item }) => {
                                                     </TableCell>
                                                     <TableCell className="px-4 py-3 text-slate-700 text-right font-medium">
                                                         {pallet.packageQuantity?.toLocaleString("vi-VN") || 0}
-                                                    </TableCell>
-                                                    <TableCell className="px-4 py-3 text-center">
-                                                        <Badge
-                                                            variant={pallet.status === 0 ? "outline" : "destructive"}
-                                                            className={
-                                                                pallet.status === 0
-                                                                    ? "bg-green-50 text-green-700 border-green-300"
-                                                                    : "bg-red-500 text-white"
-                                                            }
-                                                        >
-                                                            {pallet.status === 0 ? "Hoạt động" : "Không hoạt động"}
-                                                        </Badge>
                                                     </TableCell>
                                                     <TableCell className="px-4 py-3 text-slate-700">
                                                         {pallet.createByName || pallet.createBy || '-'}
@@ -214,12 +199,6 @@ const InventoryDetailModal = ({ isOpen, onClose, item }) => {
                                                 <TableHead className="font-semibold text-slate-900 px-4 py-3 text-center">
                                                     Cột
                                                 </TableHead>
-                                                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-center">
-                                                    Trạng thái
-                                                </TableHead>
-                                                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-center">
-                                                    Khả dụng
-                                                </TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -245,30 +224,6 @@ const InventoryDetailModal = ({ isOpen, onClose, item }) => {
                                                     </TableCell>
                                                     <TableCell className="px-4 py-3 text-slate-700 text-center">
                                                         {location.column || '-'}
-                                                    </TableCell>
-                                                    <TableCell className="px-4 py-3 text-center">
-                                                        <Badge
-                                                            variant={location.status === 1 ? "outline" : "destructive"}
-                                                            className={
-                                                                location.status === 1
-                                                                    ? "bg-green-50 text-green-700 border-green-300"
-                                                                    : "bg-red-500 text-white"
-                                                            }
-                                                        >
-                                                            {location.status === 1 ? "Hoạt động" : "Không hoạt động"}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell className="px-4 py-3 text-center">
-                                                        <Badge
-                                                            variant={location.isAvailable ? "outline" : "destructive"}
-                                                            className={
-                                                                location.isAvailable
-                                                                    ? "bg-blue-50 text-blue-700 border-blue-300"
-                                                                    : "bg-gray-100 text-gray-700 border-gray-300"
-                                                            }
-                                                        >
-                                                            {location.isAvailable ? "Có sẵn" : "Không có sẵn"}
-                                                        </Badge>
                                                     </TableCell>
                                                 </TableRow>
                                             ))}

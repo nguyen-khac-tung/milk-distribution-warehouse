@@ -1,6 +1,7 @@
 ﻿using Microsoft.IdentityModel.Tokens;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
+using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
 using MilkDistributionWarehouse.Utilities;
 
@@ -15,14 +16,17 @@ namespace MilkDistributionWarehouse.Services
     public class DisposalNoteDetailService : IDisposalNoteDetailService
     {
         private readonly IDisposalNoteDetailRepository _disposalNoteDetailRepository;
+        private readonly INotificationService _notificationService;
         private readonly IUserRepository _userRepository;
         private readonly IUnitOfWork _unitOfWork;
 
         public DisposalNoteDetailService(IDisposalNoteDetailRepository disposalNoteDetailRepository,
+                                         INotificationService notificationService,
                                          IUserRepository userRepository,
                                          IUnitOfWork unitOfWork)
         {
             _disposalNoteDetailRepository = disposalNoteDetailRepository;
+            _notificationService = notificationService;
             _userRepository = userRepository;
             _unitOfWork = unitOfWork;
         }
@@ -109,6 +113,7 @@ namespace MilkDistributionWarehouse.Services
                 await _disposalNoteDetailRepository.UpdateDisposalNoteDetailList(noteDetails);
                 await _unitOfWork.CommitTransactionAsync();
 
+                await HandleDNStatusChangeNotification(disposalNote);
                 return "";
             }
             catch
@@ -116,6 +121,20 @@ namespace MilkDistributionWarehouse.Services
                 await _unitOfWork.RollbackTransactionAsync();
                 return "Đã xảy ra lỗi hệ thống khi xử lý yêu cầu.".ToMessageForUser();
             }
+        }
+
+        private async Task HandleDNStatusChangeNotification(DisposalNote disposalNote)
+        {
+            var notificationToCreate = new NotificationCreateDto()
+            {
+                UserId = disposalNote.CreatedBy,
+                Title = "Yêu cầu lấy lại hàng đơn xuất hủy",
+                Content = $"Đơn xuất hủy '{disposalNote.DisposalNoteId}' có hàng hóa mà quản lý kho yêu cầu bạn lấy lại hàng",
+                EntityType = NotificationEntityType.DisposalNote,
+                EntityId = disposalNote.DisposalRequestId
+            };
+
+            await _notificationService.CreateNotification(notificationToCreate);
         }
     }
 }

@@ -1,38 +1,13 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Loading from "./Loading";
 import {
     getNotificationDetail,
-    NotificationCategory,
-    NotificationStatus,
+    getEntityRoute,
 } from "../../services/NotificationService";
 
-const CATEGORY_LABELS = {
-    [NotificationCategory.IMPORTANT]: { label: "Quan trọng", color: "text-rose-600" },
-    [NotificationCategory.NORMAL]: { label: "Thông thường", color: "text-slate-500" },
-};
-
-const STATUS_LABELS = {
-    [NotificationStatus.UNREAD]: { label: "Chưa đọc", color: "text-orange-600" },
-    [NotificationStatus.READ]: { label: "Đã đọc", color: "text-emerald-600" },
-};
-
-const formatFullDate = (value) => {
-    if (!value) return "Không rõ thời gian";
-    try {
-        return new Date(value).toLocaleString("vi-VN", {
-            hour: "2-digit",
-            minute: "2-digit",
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-        });
-    } catch {
-        return "Không rõ thời gian";
-    }
-};
-
 const NotificationDetailModal = ({ notificationId, open, onClose }) => {
-    const [notification, setNotification] = useState(null);
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -47,14 +22,41 @@ const NotificationDetailModal = ({ notificationId, open, onClose }) => {
 
         getNotificationDetail(notificationId)
             .then((data) => {
-                if (isMounted) {
-                    setNotification(data || null);
+                if (!isMounted) return;
+                
+                // Auto-navigate if entity exists
+                if (data?.entityType && data?.entityId) {
+                    const route = getEntityRoute(data.entityType, data.entityId);
+                    if (route) {
+                        onClose();
+                        navigate(route);
+                        return;
+                    }
                 }
+                
+                // If no entity or invalid route, show error
+                setError("Không thể xác định trang chi tiết cho thông báo này.");
             })
             .catch((err) => {
-                if (isMounted) {
-                    console.error("Không thể tải chi tiết thông báo:", err);
-                    setError(err.message || "Không thể tải chi tiết thông báo");
+                if (!isMounted) return;
+                
+                console.error("Không thể tải chi tiết thông báo:", err);
+                
+                // Extract error message
+                const errorMessage = err.message || 
+                                    err.originalError?.response?.data?.message ||
+                                    err.originalError?.response?.data?.data?.message ||
+                                    "Không thể tải chi tiết thông báo";
+                
+                // Check if error is about entity not found (400 Bad Request from BE)
+                const lowerMessage = errorMessage.toLowerCase();
+                if (lowerMessage.includes("không tìm thấy") || 
+                    lowerMessage.includes("trang này hiện tại không tìm thấy") ||
+                    lowerMessage.includes("notification id is null") ||
+                    err.status === 400) {
+                    setError("Trang này hiện tại không tìm thấy.");
+                } else {
+                    setError(errorMessage);
                 }
             })
             .finally(() => {
@@ -106,57 +108,6 @@ const NotificationDetailModal = ({ notificationId, open, onClose }) => {
                         </div>
                     )}
 
-                    {!loading && !error && !notification && (
-                        <div className="text-center text-sm text-slate-500">
-                            Không tìm thấy thông báo tương ứng.
-                        </div>
-                    )}
-
-                    {!loading && !error && notification && (
-                        <div className="space-y-4">
-                            <div>
-                                <p className="text-sm text-gray-400 uppercase tracking-wide">Tiêu đề</p>
-                                <p className="text-lg font-semibold text-slate-900 mt-1">{notification.title}</p>
-                            </div>
-
-                            <div>
-                                <p className="text-sm text-gray-400 uppercase tracking-wide">Nội dung</p>
-                                <p className="text-sm text-slate-700 mt-1 whitespace-pre-line">
-                                    {notification.content}
-                                </p>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1">
-                                    <p className="text-xs text-gray-400 uppercase tracking-wide">Thể loại</p>
-                                    <p className={`text-sm font-semibold ${CATEGORY_LABELS[notification.category]?.color || "text-slate-600"}`}>
-                                        {CATEGORY_LABELS[notification.category]?.label || "Không xác định"}
-                                    </p>
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-xs text-gray-400 uppercase tracking-wide">Trạng thái</p>
-                                    <p className={`text-sm font-semibold ${STATUS_LABELS[notification.status]?.color || "text-slate-600"}`}>
-                                        {STATUS_LABELS[notification.status]?.label || "Không xác định"}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="space-y-1">
-                                <p className="text-xs text-gray-400 uppercase tracking-wide">Thời gian</p>
-                                <p className="text-sm text-slate-600">{formatFullDate(notification.createdAt)}</p>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                <div className="px-6 py-4 border-t border-gray-100 flex justify-end">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="px-5 py-2 text-sm font-semibold text-white bg-slate-800 rounded-lg hover:bg-slate-900 transition-colors"
-                    >
-                        Đóng
-                    </button>
                 </div>
             </div>
         </div>

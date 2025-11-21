@@ -220,17 +220,17 @@ namespace MilkDistributionWarehouse.Services
                     break;
 
                 case NotificationEntityType.GoodsReceiptNote:
-                    var goodsReceiptNote = await _goodsReceiptNoteRepository.GetGoodsReceiptNoteById(notification.EntityId);
+                    var goodsReceiptNote = await _goodsReceiptNoteRepository.GetGRNByPurchaseOrderId(notification.EntityId);
                     if (goodsReceiptNote == null) return errorMessage;
                     break;
 
                 case NotificationEntityType.GoodsIssueNote:
-                    var goodsIssueNote = await _goodsIssueNoteRepository.GetGINByGoodsIssueNoteId(notification.EntityId);
+                    var goodsIssueNote = await _goodsIssueNoteRepository.GetGINBySalesOrderId(notification.EntityId);
                     if (goodsIssueNote == null) return errorMessage;
                     break;
 
                 case NotificationEntityType.DisposalNote:
-                    var disposalNote = await _disposalNoteRepository.GetDNByDisposalNoteId(notification.EntityId);
+                    var disposalNote = await _disposalNoteRepository.GetDNByDisposalRequestId(notification.EntityId);
                     if (disposalNote == null) return errorMessage;
                     break;
 

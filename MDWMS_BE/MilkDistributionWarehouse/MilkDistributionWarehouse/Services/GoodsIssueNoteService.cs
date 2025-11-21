@@ -310,7 +310,7 @@ namespace MilkDistributionWarehouse.Services
                 Title = "Đơn xuất kho mới chờ duyệt",
                 Content = $"Đơn xuất kho '{goodsIssueNote.GoodsIssueNoteId}' vừa được gửi và đang chờ bạn duyệt.",
                 EntityType = NotificationEntityType.GoodsIssueNote,
-                EntityId = goodsIssueNote.GoodsIssueNoteId
+                EntityId = goodsIssueNote.SalesOderId
             };
 
             await _notificationService.CreateNotification(notificationsToCreate);
