@@ -261,7 +261,22 @@ export default function StocktakingList() {
 
     const handleStartStocktaking = async (stocktaking) => {
         try {
-            if (stocktaking.isStocktakingStarted === false) {
+            const stockAreaStarted = stocktaking.stockAreaStarted;
+            const status = stocktaking.status;
+            
+            // stockAreaStarted === 1: Chưa bắt đầu -> cần gọi API
+            // stockAreaStarted === 2: Đã bắt đầu -> chỉ navigate, không gọi API
+            let shouldCallAPI = false;
+            
+            if (stockAreaStarted !== undefined && stockAreaStarted !== null) {
+                // 1 = chưa bắt đầu -> cần gọi API
+                shouldCallAPI = stockAreaStarted === 1 || stockAreaStarted === '1';
+            } else {
+                // Fallback: nếu status là Assigned (2) = chưa bắt đầu -> cần gọi API
+                shouldCallAPI = status === 2 || status === '2' || status === STOCKTAKING_STATUS.Assigned;
+            }
+            
+            if (shouldCallAPI) {
                 await inProgressStocktaking({ stocktakingSheetId: stocktaking.stocktakingSheetId });
 
                 if (window.showToast) {
