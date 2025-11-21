@@ -230,7 +230,7 @@ namespace MilkDistributionWarehouse.Services
                     break;
 
                 case NotificationEntityType.DisposalNote:
-                    var disposalNote = await _disposalNoteRepository.GetDNByDisposalNoteId(notification.EntityId);
+                    var disposalNote = await _disposalNoteRepository.GetDNByDisposalRequestId(notification.EntityId);
                     if (disposalNote == null) return errorMessage;
                     break;
 
