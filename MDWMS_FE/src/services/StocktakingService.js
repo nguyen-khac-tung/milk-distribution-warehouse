@@ -315,6 +315,28 @@ export const surplusStocktakingPallet = async (data) => {
     }
 };
 
+// Đánh dấu pallet đặt sai vị trí trong kiểm kê
+export const mislocatedStocktakingPallet = async (data) => {
+    try {
+        if (!data.stocktakingPalletId) {
+            throw new Error("stocktakingPalletId is required");
+        }
+        if (data.actualPackageQuantity === undefined || data.actualPackageQuantity === null) {
+            throw new Error("actualPackageQuantity is required");
+        }
+        const body = {
+            stocktakingPalletId: data.stocktakingPalletId,
+            actualPackageQuantity: data.actualPackageQuantity,
+            note: data.note || ""
+        };
+        const res = await api.put("/StocktakingPallet/MislocatedStocktakingPallet", body);
+        return res.data;
+    } catch (error) {
+        console.error("Error marking stocktaking pallet as mislocated:", error);
+        throw error;
+    }
+};
+
 // Hoàn tác pallet trong kiểm kê
 export const undoStocktakingPallet = async (stocktakingPalletId) => {
     try {
