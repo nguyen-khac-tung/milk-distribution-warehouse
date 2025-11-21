@@ -37,7 +37,7 @@ namespace MilkDistributionWarehouse.Repositories
         public async Task<List<Notification>?> GetUnreadNotificationsByUserId(int? userId)
         {
             return await _context.Notifications
-                .Where(n => n.UserId == userId && n.Status != NotificationStatus.Unread)
+                .Where(n => n.UserId == userId && n.Status == NotificationStatus.Unread)
                 .ToListAsync();
         }
 
