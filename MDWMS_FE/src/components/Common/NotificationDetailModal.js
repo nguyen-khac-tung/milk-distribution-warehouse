@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Loading from "./Loading";
+import { createPortal } from "react-dom";
+import { Button } from "../ui/button";
 import {
     getNotificationDetail,
     getEntityRoute,
@@ -24,31 +25,28 @@ const NotificationDetailModal = ({ notificationId, open, onClose }) => {
             .then((data) => {
                 if (!isMounted) return;
                 
-                // Auto-navigate if entity exists
                 if (data?.entityType && data?.entityId) {
                     const route = getEntityRoute(data.entityType, data.entityId);
                     if (route) {
                         onClose();
                         navigate(route);
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 100);
                         return;
                     }
                 }
                 
-                // If no entity or invalid route, show error
-                setError("Không thể xác định trang chi tiết cho thông báo này.");
+                setError("Trang này hiện tại không tìm thấy.");
             })
             .catch((err) => {
                 if (!isMounted) return;
                 
-                console.error("Không thể tải chi tiết thông báo:", err);
-                
-                // Extract error message
                 const errorMessage = err.message || 
                                     err.originalError?.response?.data?.message ||
                                     err.originalError?.response?.data?.data?.message ||
                                     "Không thể tải chi tiết thông báo";
                 
-                // Check if error is about entity not found (400 Bad Request from BE)
                 const lowerMessage = errorMessage.toLowerCase();
                 if (lowerMessage.includes("không tìm thấy") || 
                     lowerMessage.includes("trang này hiện tại không tìm thấy") ||
@@ -68,51 +66,60 @@ const NotificationDetailModal = ({ notificationId, open, onClose }) => {
         return () => {
             isMounted = false;
         };
-    }, [notificationId, open]);
+    }, [notificationId, open, navigate, onClose]);
 
     if (!open) return null;
 
-    return (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm px-4">
-            <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                    <div>
-                        <p className="text-lg font-semibold text-slate-800">Chi tiết thông báo</p>
-                        <p className="text-sm text-gray-500">Thông tin chi tiết từ hệ thống</p>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="text-slate-500 hover:text-slate-900 transition-colors"
-                        aria-label="Đóng"
-                    >
-                        ✕
-                    </button>
-                </div>
-
-                <div className="px-6 py-5 min-h-[200px]">
-                    {loading && <Loading size="medium" text="Đang tải thông báo..." />}
-
-                    {!loading && error && (
-                        <div className="text-center text-base text-rose-500">
-                            {error}
-                            <div className="mt-4">
-                                <button
-                                    type="button"
-                                    className="px-4 py-2 text-base font-semibold text-white bg-orange-500 rounded-lg"
-                                    onClick={onClose}
-                                >
-                                    Đóng
-                                </button>
+    return createPortal(
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 backdrop-blur-sm" style={{ top: 0, left: 0, right: 0, bottom: 0 }}>
+            <div className="w-full max-w-lg mx-4 bg-white rounded-xl shadow-2xl border border-gray-100">
+                {/* Header */}
+                <div className="p-8 text-center">
+                    {loading ? (
+                        <>
+                            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-orange-50 border-2 border-orange-100">
+                                <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
                             </div>
-                        </div>
-                    )}
-
+                            <h2 className="text-2xl font-bold text-gray-900 mb-3">Đang tải...</h2>
+                            <p className="text-gray-600 text-lg">Đang xử lý thông báo của bạn</p>
+                        </>
+                    ) : error ? (
+                        <>
+                            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-red-50 border-2 border-red-100">
+                                <svg className="h-8 w-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                                    />
+                                </svg>
+                            </div>
+                            <h2 className="text-2xl font-bold text-gray-900 mb-3">Lỗi</h2>
+                            <p className="text-gray-600 text-lg leading-relaxed">
+                                {error}
+                            </p>
+                        </>
+                    ) : null}
                 </div>
+
+                {/* Footer */}
+                {!loading && error && (
+                    <div className="flex gap-4 p-8 pt-0 justify-center">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={onClose}
+                            className="h-[38px] px-8 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all"
+                        >
+                            Đóng
+                        </Button>
+                    </div>
+                )}
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 
 export default NotificationDetailModal;
-

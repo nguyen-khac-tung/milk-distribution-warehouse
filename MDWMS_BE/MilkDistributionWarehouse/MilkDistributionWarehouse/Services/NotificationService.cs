@@ -98,7 +98,7 @@ namespace MilkDistributionWarehouse.Services
                 {
                     await _hubContext.Clients
                         .Group(notification.UserId.ToString() ?? "")
-                        .SendAsync("ReceiveNotification", notificationDtos);
+                        .SendAsync("ReceiveNotification", notification);
                 }
             }
             catch

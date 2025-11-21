@@ -1,4 +1,4 @@
-import React, { memo, useMemo } from "react";
+import React, { memo, useMemo, useState } from "react";
 import { NotificationStatus, NotificationCategory } from "../../hooks/useNotifications";
 import { RefreshCw, AlertCircle } from "lucide-react";
 
@@ -69,7 +69,25 @@ const NotificationDropdown = ({
     onMarkAllAsRead,
     onNotificationClick,
 }) => {
+    const [filterType, setFilterType] = useState("all"); // "all" or "important"
     const connectionBadge = CONNECTION_META[connectionState] || CONNECTION_META.idle;
+
+    // Filter notifications based on filterType
+    const filteredNotifications = useMemo(() => {
+        if (filterType === "important") {
+            return notifications.filter(
+                (n) => n.category === NotificationCategory.IMPORTANT
+            );
+        }
+        return notifications;
+    }, [notifications, filterType]);
+
+    // Calculate unread count for filtered notifications
+    const filteredUnreadCount = useMemo(() => {
+        return filteredNotifications.filter(
+            (n) => n.status === NotificationStatus.UNREAD
+        ).length;
+    }, [filteredNotifications]);
 
     return (
         <div className="fixed top-[75px] right-6 w-[430px] bg-white border border-gray-100 rounded-2xl shadow-2xl z-[9999] overflow-hidden">
@@ -79,8 +97,8 @@ const NotificationDropdown = ({
                     <p className="text-lg font-semibold text-slate-900">Thông báo</p>
                     <span className="text-slate-400 mb-4">•</span>
                     <p className="text-sm text-gray-500">
-                        {unreadCount > 0
-                            ? `${unreadCount} thông báo chưa đọc`
+                        {filteredUnreadCount > 0
+                            ? `${filteredUnreadCount} thông báo chưa đọc`
                             : "Bạn đã đọc tất cả thông báo"}
                     </p>
                 </div>
@@ -89,22 +107,45 @@ const NotificationDropdown = ({
                 <div className="flex items-center gap-4">
                     <button
                         type="button"
-                        className="flex items-center gap-1 text-sm font-semibold text-slate-700 hover:text-slate-900"
+                        onClick={() => setFilterType("all")}
+                        className={`text-sm font-semibold transition-colors ${
+                            filterType === "all"
+                                ? "text-orange-600 border-b-2 border-orange-600 pb-1"
+                                : "text-slate-700 hover:text-slate-900"
+                        }`}
+                    >
+                        Tất cả
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setFilterType("important")}
+                        className={`text-sm font-semibold transition-colors ${
+                            filterType === "important"
+                                ? "text-rose-600 border-b-2 border-rose-600 pb-1"
+                                : "text-slate-700 hover:text-slate-900"
+                        }`}
+                    >
+                        Quan trọng
+                    </button>
+                    <button
+                        type="button"
                         onClick={onRefresh}
+                        className="flex items-center gap-1 text-sm font-semibold text-slate-700 hover:text-slate-900"
                     >
                         <RefreshCw className="w-4 h-4" /> Làm mới
                     </button>
+                    
 
                     <span className="text-slate-200">|</span>
 
                     <button
                         type="button"
-                        className={`text-sm font-semibold ${unreadCount === 0
+                        className={`text-sm font-semibold ${filteredUnreadCount === 0
                                 ? "text-slate-300 cursor-not-allowed"
                                 : "text-orange-600 hover:text-orange-700"
                             }`}
-                        onClick={unreadCount > 0 ? onMarkAllAsRead : undefined}
-                        disabled={unreadCount === 0}
+                        onClick={filteredUnreadCount > 0 ? onMarkAllAsRead : undefined}
+                        disabled={filteredUnreadCount === 0}
                     >
                         Đánh dấu đã đọc
                     </button>
@@ -130,16 +171,20 @@ const NotificationDropdown = ({
                 )}
 
                 {/* Empty */}
-                {!loading && !error && notifications.length === 0 && (
+                {!loading && !error && filteredNotifications.length === 0 && (
                     <div className="px-4 py-10 text-center">
-                        <p className="text-base text-slate-500">Chưa có thông báo nào</p>
+                        <p className="text-base text-slate-500">
+                            {filterType === "important" 
+                                ? "Chưa có thông báo quan trọng nào" 
+                                : "Chưa có thông báo nào"}
+                        </p>
                     </div>
                 )}
 
                 {/* List */}
-                {!loading && !error && notifications.length > 0 && (
+                {!loading && !error && filteredNotifications.length > 0 && (
                     <ul className="divide-y divide-gray-100">
-                        {notifications.map((notification) => {
+                        {filteredNotifications.map((notification) => {
                             const isUnread = notification.status === NotificationStatus.UNREAD;
                             const meta =
                                 CATEGORY_META[notification.category] || CATEGORY_META[NotificationCategory.NORMAL];

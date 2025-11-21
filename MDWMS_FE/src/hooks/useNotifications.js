@@ -40,41 +40,98 @@ const useNotifications = () => {
     const normalizeNotification = useCallback((payload) => {
         if (!payload) return null;
 
+        // Extract title and content - handle both camelCase and PascalCase
+        const title = payload.title?.trim() || payload.Title?.trim() || "";
+        const content = payload.content || payload.Content || "";
+
+        // Only use DEFAULT_TITLE if title is truly empty (shouldn't happen from BE)
+        // But we still need to ensure we have a valid notification
+        if (!title && !content) {
+            return null;
+        }
+
         return {
-            notificationId: payload.notificationId || generateFallbackId(),
-            title: payload.title?.trim() || DEFAULT_TITLE,
-            content: payload.content || "",
-            category: payload.category ?? NotificationCategory.NORMAL,
-            status: payload.status ?? NotificationStatus.UNREAD,
-            userId: payload.userId,
-            createdAt: payload.createdAt || new Date().toISOString(),
+            notificationId: payload.notificationId || payload.NotificationId || generateFallbackId(),
+            title: title || DEFAULT_TITLE, // Use actual title, fallback only if empty
+            content: content,
+            category: payload.category ?? payload.Category ?? NotificationCategory.NORMAL,
+            status: payload.status ?? payload.Status ?? NotificationStatus.UNREAD,
+            userId: payload.userId ?? payload.UserId,
+            createdAt: payload.createdAt || payload.CreatedAt || new Date().toISOString(),
         };
     }, []);
 
     const handleIncomingNotification = useCallback(
         (payload) => {
-            const normalized = normalizeNotification(payload);
-            if (!normalized) return;
+            // Handle both array and single object payloads
+            const notificationsToProcess = Array.isArray(payload) ? payload : [payload];
+            
+            if (notificationsToProcess.length === 0) {
+                return;
+            }
 
-            setNotifications((prev) => {
-                const existsIndex = prev.findIndex(
-                    (item) => item.notificationId === normalized.notificationId
-                );
-
-                if (existsIndex !== -1) {
-                    const clone = [...prev];
-                    clone[existsIndex] = { ...clone[existsIndex], ...normalized };
-                    return clone;
+            // Normalize all notifications first
+            const normalizedList = [];
+            notificationsToProcess.forEach((rawNotification) => {
+                const normalized = normalizeNotification(rawNotification);
+                if (normalized) {
+                    normalizedList.push(normalized);
                 }
-
-                return [normalized, ...prev];
             });
 
-            if (typeof window !== "undefined" && window.showToast) {
-                window.showToast(
-                    normalized.title || DEFAULT_TITLE,
-                    normalized.category === NotificationCategory.IMPORTANT ? "warning" : "info"
-                );
+            if (normalizedList.length === 0) {
+                return;
+            }
+
+            setNotifications((prev) => {
+                const updated = [...prev];
+                const seenIds = new Set(updated.map(n => n.notificationId));
+                
+                normalizedList.forEach((normalized) => {
+                    // Skip if already in current list
+                    if (seenIds.has(normalized.notificationId)) {
+                        // Update existing notification
+                        const existsIndex = updated.findIndex(
+                            (item) => item.notificationId === normalized.notificationId
+                        );
+                        if (existsIndex !== -1) {
+                            updated[existsIndex] = { ...updated[existsIndex], ...normalized };
+                        }
+                    } else {
+                        // Add new notification at the beginning
+                        updated.unshift(normalized);
+                        seenIds.add(normalized.notificationId);
+                    }
+                });
+
+                // Remove duplicates (in case of same notificationId appearing multiple times)
+                const uniqueNotifications = [];
+                const uniqueIds = new Set();
+                updated.forEach((notification) => {
+                    if (!uniqueIds.has(notification.notificationId)) {
+                        uniqueNotifications.push(notification);
+                        uniqueIds.add(notification.notificationId);
+                    }
+                });
+
+                return uniqueNotifications;
+            });
+
+            // Show toast for new notifications
+            if (normalizedList.length > 0) {
+                const firstNormalized = normalizedList[0];
+                
+                // Show toast immediately
+                if (typeof window !== "undefined" && window.showToast) {
+                    try {
+                        window.showToast(
+                            DEFAULT_TITLE,
+                            firstNormalized.category === NotificationCategory.IMPORTANT ? "warning" : "info"
+                        );
+                    } catch (err) {
+                        // Silent fail
+                    }
+                }
             }
         },
         [normalizeNotification]
@@ -93,9 +150,21 @@ const useNotifications = () => {
 
         try {
             const data = await getNotifications();
-            setNotifications(Array.isArray(data) ? data : []);
+            const notificationsList = Array.isArray(data) ? data : [];
+            
+            // Remove duplicates based on notificationId
+            const uniqueNotifications = [];
+            const seenIds = new Set();
+            notificationsList.forEach((notification) => {
+                const id = notification.notificationId || notification.NotificationId;
+                if (id && !seenIds.has(id)) {
+                    uniqueNotifications.push(notification);
+                    seenIds.add(id);
+                }
+            });
+            
+            setNotifications(uniqueNotifications);
         } catch (err) {
-            console.error("Không thể tải danh sách thông báo:", err);
             setError(err.message || "Không thể tải danh sách thông báo");
         } finally {
             setLoading(false);
@@ -126,9 +195,10 @@ const useNotifications = () => {
 
         connection
             .start()
-            .then(() => setConnectionState("connected"))
+            .then(() => {
+                setConnectionState("connected");
+            })
             .catch((err) => {
-                console.error("Không thể kết nối NotificationHub:", err);
                 setConnectionState("error");
             });
 
@@ -156,7 +226,6 @@ const useNotifications = () => {
                 )
             );
         } catch (err) {
-            console.error("Không thể cập nhật trạng thái thông báo:", err);
             if (typeof window !== "undefined" && window.showToast) {
                 window.showToast(err.message || "Không thể cập nhật thông báo", "error");
             }
@@ -175,10 +244,9 @@ const useNotifications = () => {
             );
 
             if (typeof window !== "undefined" && window.showToast) {
-                window.showToast("Đã đánh dấu tất cả thông báo là đã đọc", "success");
+                // window.showToast("Đã đánh dấu tất cả thông báo là đã đọc", "success");
             }
         } catch (err) {
-            console.error("Không thể đánh dấu tất cả thông báo:", err);
             if (typeof window !== "undefined" && window.showToast) {
                 window.showToast(err.message || "Không thể cập nhật thông báo", "error");
             }
