@@ -26,11 +26,14 @@ namespace MilkDistributionWarehouse.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IGoodsReceiptNoteDetailService _goodsReceiptNoteDetailService;
         private readonly IPurchaseOrderRepositoy _purchaseOrderRepository;
+        private readonly IInventoryLedgerService _inventoryLedgerService;
+
         public GoodsReceiptNoteService(IGoodsReceiptNoteRepository goodsReceiptNoteRepository,
             IMapper mapper, IPurchaseOrderDetailRepository purchaseOrderDetailRepository,
             IGoodsReceiptNoteDetailRepository goodsReceiptNoteDetailRepository, IUnitOfWork unitOfWork,
             IGoodsReceiptNoteDetailService goodsReceiptNoteDetailService,
-            IPurchaseOrderRepositoy purchaseOrderRepository)
+            IPurchaseOrderRepositoy purchaseOrderRepository,
+            IInventoryLedgerService inventoryLedgerService)
         {
             _goodsReceiptNoteRepository = goodsReceiptNoteRepository;
             _mapper = mapper;
@@ -39,6 +42,7 @@ namespace MilkDistributionWarehouse.Services
             _unitOfWork = unitOfWork;
             _goodsReceiptNoteDetailService = goodsReceiptNoteDetailService;
             _purchaseOrderRepository = purchaseOrderRepository;
+            _inventoryLedgerService = inventoryLedgerService;
         }
 
         public async Task<(string, GoodsReceiptNoteDto?)> CreateGoodsReceiptNote(GoodsReceiptNoteCreate create, int? userId)
@@ -153,6 +157,16 @@ namespace MilkDistributionWarehouse.Services
                     throw new Exception("Cập nhật trạng thái phiếu nhập kho thất bại.".ToMessageForUser());
 
                 await _unitOfWork.CommitTransactionAsync();
+
+                if (update is GoodsReceiptNoteCompletedDto)
+                {
+                    var (invErr, _) = await _inventoryLedgerService.CreateInventoryLedgerByGRNID(grn.GoodsReceiptNoteId);
+                    if (!string.IsNullOrEmpty(invErr))
+                    {
+                        return (invErr, default);
+                    }
+                }
+
                 return ("", update);
             }
             catch (Exception ex)

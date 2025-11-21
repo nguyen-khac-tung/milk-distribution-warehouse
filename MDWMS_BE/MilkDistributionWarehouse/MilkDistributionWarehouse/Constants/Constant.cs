@@ -189,6 +189,13 @@
         public const int Completed = 4;           //Đã hoàn thành
     }
 
+    public static class StockAreaStarted
+    {
+        public const int NotStarted = 1;     //Chưa bắt đầu
+        public const int Started = 2;        //Đã bắt đầu   
+        public const int HasSomeAreas = 3;   //Có một hoặc nhiều khu vực
+    }
+
     /// <summary>
     /// Trạng thái của những vị trí (trong phiếu kiểm kê tổng)
     /// </summary>
@@ -259,4 +266,6 @@
         public const int Issue = 2;
         public const int Disposal = 3;
     }
+
+
 }

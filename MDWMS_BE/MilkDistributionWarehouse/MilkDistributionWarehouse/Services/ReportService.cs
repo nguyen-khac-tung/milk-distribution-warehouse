@@ -11,6 +11,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, List<ReportDto.SaleBySupplierReportDto>)> GetSaleBySupplierReportAsync(int? supplierId, CancellationToken cancellationToken = default);
         Task<(string, PageResult<ReportDto.GoodsReceiptReportDto>)> GetGoodsReceiptReportAsync(PagedRequest request, DateTime? fromDate, DateTime? toDate, CancellationToken cancellationToken = default);
         Task<(string, PageResult<ReportDto.GoodIssueReportDto>)> GetGoodsIssueReportAsync(PagedRequest request, DateTime? fromDate, DateTime? toDate, CancellationToken cancellationToken = default);
+        Task<(string, PageResult<ReportDto.InventoryLedgerReportDto>)> GetInventoryLedgerReportAsync(PagedRequest request, DateTime? fromDate, DateTime? toDate, CancellationToken cancellationToken = default);
     }
 
     public class ReportService : IReportService
@@ -80,6 +81,23 @@ namespace MilkDistributionWarehouse.Services
 
             if (data == null || data.Items == null || data.Items.Count == 0)
                 return ("No goods issue data found.".ToMessageForUser(), new PageResult<ReportDto.GoodIssueReportDto> { Items = new(), TotalCount = 0, PageNumber = request.PageNumber, PageSize = request.PageSize });
+
+            return ("", data);
+        }
+
+        public async Task<(string, PageResult<ReportDto.InventoryLedgerReportDto>)> GetInventoryLedgerReportAsync(PagedRequest request, DateTime? fromDate, DateTime? toDate, CancellationToken cancellationToken = default)
+        {
+            if (!fromDate.HasValue && !toDate.HasValue)
+            {
+                var now = DateTime.Now;
+                fromDate = new DateTime(now.Year, now.Month, 1);
+                toDate = now;
+            }
+
+            var data = await _reportRepository.GetInventoryLedgerReportAsync(request, fromDate, toDate, cancellationToken);
+
+            if (data == null || data.Items == null || data.Items.Count == 0)
+                return ("No inventory ledger data found.".ToMessageForUser(), new PageResult<ReportDto.InventoryLedgerReportDto> { Items = new(), TotalCount = 0, PageNumber = request.PageNumber, PageSize = request.PageSize });
 
             return ("", data);
         }
