@@ -698,7 +698,7 @@ export default function InventoryReport({ onClose }) {
 
               {/* Top Products Bar Chart */}
               <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-slate-700 mb-4">Top 5 sản phẩm tồn kho</h3>
+                <h3 className="text-lg font-semibold text-slate-700 mb-4">5 sản phẩm tồn kho</h3>
                 <TopProductsChart data={chartData.topProducts} />
               </div>
             </div>

@@ -466,8 +466,8 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                 </svg>
               </div>
               <div>
-                <p className="text-sm text-gray-500">
-                  Đơn mua hàng <span className="text-xs">(Tuần này)</span>
+                <p className="text-sm text-gray-500 mt-5">
+                  Đơn mua hàng <span className="text-xs">(Hiện tại)</span>
                 </p>
                 <div className="flex items-center">
                   <h3 className="text-2xl font-bold mr-2">{purchaseOrdersStats.current}</h3>
@@ -480,7 +480,6 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500">Tuần trước: {purchaseOrdersStats.previous}</p>
               </div>
             </CardContent>
           </Card>
@@ -505,8 +504,8 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                 </svg>
               </div>
               <div>
-                <p className="text-sm text-gray-500">
-                  Đơn bán hàng <span className="text-xs">(Tuần này)</span>
+                <p className="text-sm text-gray-500 mt-5">
+                  Đơn bán hàng <span className="text-xs">(Hiện tại)</span>
                 </p>
                 <div className="flex items-center">
                   <h3 className="text-2xl font-bold mr-2">{salesOrdersStats.current}</h3>
@@ -519,7 +518,6 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500">Tuần trước: {salesOrdersStats.previous}</p>
               </div>
             </CardContent>
           </Card>
@@ -546,8 +544,8 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                 </svg>
               </div>
               <div>
-                <p className="text-sm text-gray-500">
-                  Tồn kho <span className="text-xs">(Tuần này)</span>
+                <p className="text-sm text-gray-500 mt-5">
+                  Tồn kho <span className="text-xs">(Hiện tại)</span>
                 </p>
                 {inventoryLoading ? (
                   <div className="flex items-center">
@@ -567,7 +565,6 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500">Tuần trước: {inventoryStats.previous}</p>
                   </>
                 )}
               </div>
@@ -575,7 +572,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
           </Card>
           <Card>
             <CardContent className="p-4">
-              <p className="text-sm text-gray-500 mb-2">Hoạt động hôm nay</p>
+              <p className="text-sm text-gray-500 mb-2 mt-5">Hoạt động hôm nay</p>
               {activityLoading ? (
                 <div className="flex items-center justify-center h-20">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500"></div>
@@ -589,7 +586,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                     <p className="text-xs">
                       Khu vực
                       <br />
-                      Trống
+                      Chưa đầy
                     </p>
                   </div>
                   <div className="text-center">
