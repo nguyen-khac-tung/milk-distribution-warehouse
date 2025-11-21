@@ -2,8 +2,9 @@ import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "../ui/button";
 import { X, MapPin, RefreshCw, AlertCircle, Thermometer, Droplets, Sun, User } from "lucide-react";
-import { getStocktakingAreaById } from "../../services/StocktakingService";
+import { getStocktakingAreaById, getStocktakingAreaDetailBySheetId } from "../../services/StocktakingService";
 import { extractErrorMessage } from "../../utils/Validation";
+import AreaStatusDisplay, { STOCK_AREA_STATUS } from "../../pages/StocktakingArea/AreaStatusDisplay";
 
 export default function SelectAreaModal({
     isOpen,
@@ -15,6 +16,7 @@ export default function SelectAreaModal({
     const [areas, setAreas] = useState([]);
     const [selectedAreaId, setSelectedAreaId] = useState(null);
     const [loadingAreas, setLoadingAreas] = useState(false);
+    const [loadingDetail, setLoadingDetail] = useState(false);
 
     useEffect(() => {
         if (isOpen && stocktakingSheetId) {
@@ -54,11 +56,11 @@ export default function SelectAreaModal({
         }
 
         // Tìm area được chọn để log thông tin
-        const selectedArea = areas.find(area => 
-            area.stocktakingAreaId === selectedAreaId || 
+        const selectedArea = areas.find(area =>
+            area.stocktakingAreaId === selectedAreaId ||
             String(area.stocktakingAreaId) === String(selectedAreaId)
         );
-        
+
         if (selectedArea) {
             const areaName = selectedArea.areaDetail?.areaName || "Unknown";
             console.log("Confirming area selection:", {
@@ -70,6 +72,37 @@ export default function SelectAreaModal({
 
         if (onConfirm) {
             onConfirm(selectedAreaId);
+        }
+    };
+
+    const handleViewDetail = async () => {
+        if (!selectedAreaId || !stocktakingSheetId) {
+            if (window.showToast) {
+                window.showToast("Vui lòng chọn một khu vực", "warning");
+            }
+            return;
+        }
+
+        try {
+            setLoadingDetail(true);
+            const response = await getStocktakingAreaDetailBySheetId(stocktakingSheetId);
+            console.log("Stocktaking area detail:", response);
+
+            if (window.showToast) {
+                window.showToast("Đã tải chi tiết phiếu kiểm kê", "success");
+            }
+
+            // Có thể mở modal chi tiết hoặc navigate đến trang chi tiết
+            // Tùy vào yêu cầu, tạm thời log ra console
+            // Nếu cần navigate, có thể thêm prop onViewDetail callback
+        } catch (error) {
+            console.error("Error fetching stocktaking area detail:", error);
+            const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi tải chi tiết phiếu kiểm kê");
+            if (window.showToast) {
+                window.showToast(errorMessage, "error");
+            }
+        } finally {
+            setLoadingDetail(false);
         }
     };
 
@@ -184,12 +217,7 @@ export default function SelectAreaModal({
                                                     <MapPin className="h-5 w-5 text-green-500 flex-shrink-0" />
                                                     <h3 className="font-bold text-lg text-gray-900">{areaName}</h3>
                                                     {status !== undefined && status !== null && (
-                                                        <span className={`font-medium px-2 py-1 rounded text-sm ${status === 1 ? "bg-blue-100 text-blue-700" :
-                                                            status === 2 ? "bg-green-100 text-green-700" :
-                                                                "bg-gray-100 text-gray-700"
-                                                            }`}>
-                                                            {status === 1 ? "Chưa bắt đầu" : status === 2 ? "Đang kiểm kê" : "Khác"}
-                                                        </span>
+                                                        <AreaStatusDisplay status={status} />
                                                     )}
                                                 </div>
 
@@ -257,26 +285,61 @@ export default function SelectAreaModal({
                         type="button"
                         variant="outline"
                         onClick={handleClose}
-                        disabled={loading || loadingAreas}
+                        disabled={loading || loadingAreas || loadingDetail}
                         className="h-[38px] px-8 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50"
                     >
                         Hủy
                     </Button>
-                    <Button
-                        type="button"
-                        onClick={handleConfirm}
-                        disabled={loading || loadingAreas || !selectedAreaId}
-                        className="h-[38px] px-8 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {loading ? (
-                            <div className="flex items-center gap-2">
-                                <RefreshCw className="h-4 w-4 animate-spin" />
-                                Đang xử lý...
-                            </div>
-                        ) : (
-                            "Bắt đầu kiểm kê"
-                        )}
-                    </Button>
+                    {(() => {
+                        // Tìm area được chọn để kiểm tra trạng thái
+                        const selectedArea = selectedAreaId ? areas.find(area =>
+                            area.stocktakingAreaId === selectedAreaId ||
+                            String(area.stocktakingAreaId) === String(selectedAreaId)
+                        ) : null;
+
+                        const areaStatus = selectedArea?.status;
+                        const isPending = areaStatus === STOCK_AREA_STATUS.Pending || areaStatus === 2;
+
+                        // Nếu status là "Đang kiểm kê" (Pending = 2) -> hiển thị "Bắt đầu kiểm kê"
+                        // Nếu status khác -> hiển thị "Chi tiết phiếu kiểm kê"
+                        if (isPending) {
+                            return (
+                                <Button
+                                    type="button"
+                                    onClick={handleConfirm}
+                                    disabled={loading || loadingAreas || loadingDetail || !selectedAreaId}
+                                    className="h-[38px] px-8 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {loading ? (
+                                        <div className="flex items-center gap-2">
+                                            <RefreshCw className="h-4 w-4 animate-spin" />
+                                            Đang xử lý...
+                                        </div>
+                                    ) : (
+                                        "Bắt đầu kiểm kê"
+                                    )}
+                                </Button>
+                            );
+                        } else {
+                            return (
+                                <Button
+                                    type="button"
+                                    onClick={handleViewDetail}
+                                    disabled={loading || loadingAreas || loadingDetail || !selectedAreaId}
+                                    className="h-[38px] px-8 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {loadingDetail ? (
+                                        <div className="flex items-center gap-2">
+                                            <RefreshCw className="h-4 w-4 animate-spin" />
+                                            Đang tải...
+                                        </div>
+                                    ) : (
+                                        "Chi tiết phiếu kiểm kê"
+                                    )}
+                                </Button>
+                            );
+                        }
+                    })()}
                 </div>
             </div>
         </div>,
