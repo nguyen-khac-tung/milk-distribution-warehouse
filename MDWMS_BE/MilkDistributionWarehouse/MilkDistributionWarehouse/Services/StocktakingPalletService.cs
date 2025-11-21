@@ -5,6 +5,7 @@ using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
 using MilkDistributionWarehouse.Utilities;
+using System;
 using System.Threading.Tasks;
 
 namespace MilkDistributionWarehouse.Services
@@ -25,13 +26,16 @@ namespace MilkDistributionWarehouse.Services
         private readonly IStocktakingPalletRepository _stocktakingPalletRepository;
         private readonly IPalletRepository _palletRepository;
         private readonly IStocktakingLocationRepository _stocktakingLocationRepository;
+        private readonly IStocktakingStatusDomainService _stocktakingStatusDomainService;
         public StocktakingPalletService(IMapper mapper, IStocktakingPalletRepository stocktakingPalletRepository,
-            IPalletRepository palletRepository, IStocktakingLocationRepository stocktakingLocationRepository)
+            IPalletRepository palletRepository, IStocktakingLocationRepository stocktakingLocationRepository,
+            IStocktakingStatusDomainService stocktakingStatusDomainService)
         {
             _mapper = mapper;
             _stocktakingPalletRepository = stocktakingPalletRepository;
             _palletRepository = palletRepository;
             _stocktakingLocationRepository = stocktakingLocationRepository;
+            _stocktakingStatusDomainService = stocktakingStatusDomainService;
         }
 
         public async Task<(string, List<StocktakingPalletDto>?)> GetStocktakingPalletByStocktakingLocationId(Guid stocktakingLocationId)
@@ -207,7 +211,7 @@ namespace MilkDistributionWarehouse.Services
             if (stocktakingPalletExist.StocktakingLocationId == Guid.Empty)
                 return ("Mã kiểm kê vị trí không hợp lệ.", default);
 
-            var msg = await UpdateStocktakingLocationStatus((Guid)stocktakingPalletExist.StocktakingLocationId, StockLocationStatus.Pending);
+            var msg = await _stocktakingStatusDomainService.UpdateLocationStatusAsync((Guid)stocktakingPalletExist.StocktakingLocationId, StockLocationStatus.Pending);
             if (!string.IsNullOrEmpty(msg))
                 return (msg, default);
 
@@ -231,7 +235,7 @@ namespace MilkDistributionWarehouse.Services
             if (stocktakingPalletExist.StocktakingLocationId == Guid.Empty)
                 return ("Mã kiểm kê vị trí không hợp lệ.", default);
 
-            var msg = await UpdateStocktakingLocationStatus((Guid)stocktakingPalletExist.StocktakingLocationId, StockLocationStatus.Pending);
+            var msg = await _stocktakingStatusDomainService.UpdateLocationStatusAsync((Guid)stocktakingPalletExist.StocktakingLocationId, StockLocationStatus.Pending);
             if (!string.IsNullOrEmpty(msg))
                 return (msg, default);
 
@@ -245,15 +249,9 @@ namespace MilkDistributionWarehouse.Services
                 return "Số lượng thực tế hàng hoá trong kệ kê hàng không được nhỏ hơn 0.";
 
             _mapper.Map(mislocatedStatus, stocktakingPalletExist);
+            stocktakingPalletExist.UpdateAt = DateTime.Now;
 
-            if (stocktakingPalletExist.StocktakingLocationId == Guid.Empty)
-                return "Mã kiểm kê vị trí không hợp lệ.";
-
-            var msg = await UpdateStocktakingLocationStatus((Guid)stocktakingPalletExist.StocktakingLocationId, StockLocationStatus.Counted);
-            if (!string.IsNullOrEmpty(msg))
-                return msg;
-
-            return "";
+            return await MarkLocationAsCounted(stocktakingPalletExist);
         }
 
         private async Task<string> HandleStocktakingPalletSuplus(StocktakingPallet stocktakingPalletExist, StocktakingPalletSurplusStatus suplusStatus)
@@ -262,15 +260,9 @@ namespace MilkDistributionWarehouse.Services
                 return "Số lượng thực tế hàng hoá trong kệ kê hàng không được nhỏ hơn 0.";
 
             _mapper.Map(suplusStatus, stocktakingPalletExist);
+            stocktakingPalletExist.UpdateAt = DateTime.Now;
 
-            if (stocktakingPalletExist.StocktakingLocationId == Guid.Empty)
-                return "Mã kiểm kê vị trí không hợp lệ.";
-
-            var msg = await UpdateStocktakingLocationStatus((Guid)stocktakingPalletExist.StocktakingLocationId, StockLocationStatus.Counted);
-            if (!string.IsNullOrEmpty(msg))
-                return msg;
-
-            return "";
+            return await MarkLocationAsCounted(stocktakingPalletExist);
         }
 
         private async Task<string> HandleStocktakingPalletMathch(StocktakingPallet stocktakingPalletExist, StocktakingPalletMatchStatus matchStatus)
@@ -279,29 +271,17 @@ namespace MilkDistributionWarehouse.Services
                 return "Số lượng thực tế hàng hoá trong kệ kê hàng không được nhỏ hơn 0.";
 
             _mapper.Map(matchStatus, stocktakingPalletExist);
+            stocktakingPalletExist.UpdateAt = DateTime.Now;
 
-            if (stocktakingPalletExist.StocktakingLocationId == Guid.Empty)
-                return "Mã kiểm kê vị trí không hợp lệ.";
-
-            var msg = await UpdateStocktakingLocationStatus((Guid)stocktakingPalletExist.StocktakingLocationId, StockLocationStatus.Counted);
-            if (!string.IsNullOrEmpty(msg))
-                return msg;
-
-            return "";
+            return await MarkLocationAsCounted(stocktakingPalletExist);
         }
 
         private async Task<string> HandleStocktakingPalletMissing(StocktakingPallet stocktakingPalletExist, StocktakingPalletMissingStatus missingStatus)
         {
             _mapper.Map(missingStatus, stocktakingPalletExist);
+            stocktakingPalletExist.UpdateAt = DateTime.Now;
 
-            if (stocktakingPalletExist.StocktakingLocationId == Guid.Empty)
-                return "Mã kiểm kê vị trí không hợp lệ.";
-
-            var msg = await UpdateStocktakingLocationStatus((Guid)stocktakingPalletExist.StocktakingLocationId, StockLocationStatus.Counted);
-            if (!string.IsNullOrEmpty(msg))
-                return msg;
-
-            return "";
+            return await MarkLocationAsCounted(stocktakingPalletExist);
         }
 
         private async Task<(string, List<StocktakingPalletDto>?)> GetStockPalletByStocktakingLocationId(Guid stocktakingLocationId)
@@ -314,21 +294,14 @@ namespace MilkDistributionWarehouse.Services
             return ("", stocktakingPalletMap);
         }
 
-        private async Task<string> UpdateStocktakingLocationStatus(Guid stocktakingLocationId, int status)
+        private async Task<string> MarkLocationAsCounted(StocktakingPallet stocktakingPalletExist)
         {
-            if (stocktakingLocationId == Guid.Empty)
+            if (stocktakingPalletExist.StocktakingLocationId == Guid.Empty)
                 return "Mã kiểm kê vị trí không hợp lệ.";
 
-            var stocktakingLocationExist = await _stocktakingLocationRepository.GetStocktakingLocationById(stocktakingLocationId);
-            if (stocktakingLocationExist == null)
-                return "Kiểm kê vị trí không tồn tại trong hệ thống.";
-
-            stocktakingLocationExist.Status = status;
-            var updateResult = await _stocktakingLocationRepository.UpdateStocktakingLocation(stocktakingLocationExist);
-            if (updateResult == 0)
-                return "Cập nhật trạng thái kiểm kê vị trí thất bại.";
-
-            return "";
+            return await _stocktakingStatusDomainService.UpdateLocationStatusAsync(
+                (Guid)stocktakingPalletExist.StocktakingLocationId,
+                StockLocationStatus.Counted);
         }
     }
 }

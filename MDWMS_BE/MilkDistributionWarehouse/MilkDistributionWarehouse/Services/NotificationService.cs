@@ -13,10 +13,10 @@ namespace MilkDistributionWarehouse.Services
 {
     public interface INotificationService
     {
-        Task CreateNotification(int userId, string title, string content, int? category);
-        Task CreateNotificationBulk(IEnumerable<NotificationDto> notificationList);
+        Task CreateNotification(NotificationCreateDto notificationCreateDto);
+        Task CreateNotificationBulk(IEnumerable<NotificationCreateDto> notificationList);
         Task<(string, List<NotificationDto>?)> GetNotifications(int? userId);
-        Task<(string, NotificationDto?)> GetNotificationDetail(Guid notificationId, int? userId);
+        Task<(string, NotificationDetailDto?)> GetNotificationDetail(Guid notificationId, int? userId);
         Task<string> MarkAsRead(NotificationMarkAsReadDto dto, int? userId);
         Task<string> MarkAllAsRead(int? userId);
     }
@@ -24,34 +24,47 @@ namespace MilkDistributionWarehouse.Services
     public class NotificationService : INotificationService
     {
         private readonly INotificationRepository _notificationRepository;
+        private readonly IPurchaseOrderRepositoy _purchaseOrderRepositoy;
+        private readonly ISalesOrderRepository _salesOrderRepository;
+        private readonly IGoodsReceiptNoteRepository _goodsReceiptNoteRepository;
+        private readonly IGoodsIssueNoteRepository _goodsIssueNoteRepository;
+        private readonly IDisposalRequestRepository _disposalRequestRepository;
+        private readonly IDisposalNoteRepository _disposalNoteRepository;
+        private readonly IStocktakingSheetRepository _stocktakingSheetRepository;
         private readonly IHubContext<NotificationHub> _hubContext;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
-        public NotificationService(INotificationRepository notificationRepository, 
+        public NotificationService(INotificationRepository notificationRepository,
+                                   IPurchaseOrderRepositoy purchaseOrderRepositoy,
+                                   ISalesOrderRepository salesOrderRepository,
+                                   IGoodsReceiptNoteRepository goodsReceiptNoteRepository,
+                                   IGoodsIssueNoteRepository goodsIssueNoteRepository,
+                                   IDisposalRequestRepository disposalRequestRepository,
+                                   IDisposalNoteRepository disposalNoteRepository,
+                                   IStocktakingSheetRepository stocktakingSheetRepository,
                                    IHubContext<NotificationHub> hubContext,
-                                   IUnitOfWork unitOfWork, 
+                                   IUnitOfWork unitOfWork,
                                    IMapper mapper)
         {
             _notificationRepository = notificationRepository;
+            _purchaseOrderRepositoy = purchaseOrderRepositoy;
+            _salesOrderRepository = salesOrderRepository;
+            _goodsReceiptNoteRepository = goodsReceiptNoteRepository;
+            _goodsIssueNoteRepository = goodsIssueNoteRepository;
+            _disposalRequestRepository = disposalRequestRepository;
+            _disposalNoteRepository = disposalNoteRepository;
+            _stocktakingSheetRepository = stocktakingSheetRepository;
             _hubContext = hubContext;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
         }
 
-        public async Task CreateNotification(int userId, string title, string content, int? category)
+        public async Task CreateNotification(NotificationCreateDto notificationCreateDto)
         {
-            var notification = new Notification
-            {
-                NotificationId = Guid.NewGuid(),
-                UserId = userId,
-                Title = title,
-                Content = content,
-                Category = category ?? NotificationCategory.Normal,
-                Status = NotificationStatus.Unread,
-                CreatedAt = DateTime.Now
-            };
+            if (notificationCreateDto == null) return;
 
+            var notification = _mapper.Map<Notification>(notificationCreateDto);
             try
             {
                 await _unitOfWork.BeginTransactionAsync();
@@ -60,7 +73,7 @@ namespace MilkDistributionWarehouse.Services
                 await _unitOfWork.CommitTransactionAsync();
                 
                 await _hubContext.Clients
-                    .Group(userId.ToString())
+                    .Group(notification.UserId.ToString() ?? "")
                     .SendAsync("ReceiveNotification", notificationDto);
             }
             catch
@@ -69,36 +82,23 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
-        public async Task CreateNotificationBulk(IEnumerable<NotificationDto> notificationList)
+        public async Task CreateNotificationBulk(IEnumerable<NotificationCreateDto> notificationList)
         {
             if (notificationList.IsNullOrEmpty()) return;
 
-            var notificationEntities = new List<Notification>();
-            foreach (var data in notificationList)
-            {
-                notificationEntities.Add(new Notification
-                {
-                    NotificationId = Guid.NewGuid(),
-                    UserId = data.UserId,
-                    Title = data.Title,
-                    Content = data.Content,
-                    Category = data.Category ?? NotificationCategory.Normal,
-                    Status = NotificationStatus.Unread,
-                    CreatedAt = DateTime.Now
-                });
-            }
-
+            var notificationEntities = _mapper.Map<List<Notification>>(notificationList);
             try
             {
                 await _unitOfWork.BeginTransactionAsync();
                 await _notificationRepository.CreateNotifications(notificationEntities);
                 await _unitOfWork.CommitTransactionAsync();
 
-                foreach (var notification in notificationList)
+                var notificationDtos = _mapper.Map<List<NotificationDto>>(notificationEntities);
+                foreach (var notification in notificationDtos)
                 {
                     await _hubContext.Clients
                         .Group(notification.UserId.ToString() ?? "")
-                        .SendAsync("ReceiveNotification", notification);
+                        .SendAsync("ReceiveNotification", notificationDtos);
                 }
             }
             catch
@@ -117,7 +117,7 @@ namespace MilkDistributionWarehouse.Services
             return ("", result);
         }
 
-        public async Task<(string, NotificationDto?)> GetNotificationDetail(Guid notificationId, int? userId)
+        public async Task<(string, NotificationDetailDto?)> GetNotificationDetail(Guid notificationId, int? userId)
         {
             if (notificationId == Guid.Empty) return ("Notification id is null", null);
 
@@ -136,7 +136,10 @@ namespace MilkDistributionWarehouse.Services
                 await _unitOfWork.RollbackTransactionAsync();
             }
 
-            return ("", _mapper.Map<NotificationDto>(notification));
+            var message = await ValidationNotificationEntityId(notification);
+            if(message.Length > 0) return (message, null);
+
+            return ("", _mapper.Map<NotificationDetailDto>(notification));
         }
 
         public async Task<string> MarkAllAsRead(int? userId)
@@ -190,6 +193,56 @@ namespace MilkDistributionWarehouse.Services
                 await _unitOfWork.RollbackTransactionAsync();
                 return "Đã xảy ra lỗi khi cập nhật thông báo.".ToMessageForUser();
             }
+        }
+
+        private async Task<string> ValidationNotificationEntityId(Notification notification)
+        {
+            var errorMessage = "Trang này hiện tại không tìm thấy.".ToMessageForUser();
+
+            if (notification.EntityId.IsNullOrEmpty() || notification.EntityType == null)
+                return errorMessage;
+
+            switch (notification.EntityType)
+            {
+                case NotificationEntityType.PurchaseOrder:
+                    var purchaseOrder = await _purchaseOrderRepositoy.GetPurchaseOrderByPurchaseOrderId(notification.EntityId);
+                    if (purchaseOrder == null) return errorMessage;
+                    break;
+
+                case NotificationEntityType.SaleOrder:
+                    var saleOrder = await _salesOrderRepository.GetSalesOrderById(notification.EntityId);
+                    if (saleOrder == null) return errorMessage;
+                    break;
+
+                case NotificationEntityType.DisposalRequest:
+                    var disposalRequest = await _disposalRequestRepository.GetDisposalRequestById(notification.EntityId);
+                    if (disposalRequest == null) return errorMessage;
+                    break;
+
+                case NotificationEntityType.GoodsReceiptNote:
+                    var goodsReceiptNote = await _goodsReceiptNoteRepository.GetGoodsReceiptNoteById(notification.EntityId);
+                    if (goodsReceiptNote == null) return errorMessage;
+                    break;
+
+                case NotificationEntityType.GoodsIssueNote:
+                    var goodsIssueNote = await _goodsIssueNoteRepository.GetGINByGoodsIssueNoteId(notification.EntityId);
+                    if (goodsIssueNote == null) return errorMessage;
+                    break;
+
+                case NotificationEntityType.DisposalNote:
+                    var disposalNote = await _disposalNoteRepository.GetDNByDisposalNoteId(notification.EntityId);
+                    if (disposalNote == null) return errorMessage;
+                    break;
+
+                case NotificationEntityType.StocktakingSheet:
+                    var stocktakingSheet = await _stocktakingSheetRepository.GetStocktakingSheetById(notification.EntityId);
+                    if (stocktakingSheet == null) return errorMessage;
+                    break;
+
+                default: return errorMessage;
+            }
+
+            return "";
         }
     }
 }

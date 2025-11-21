@@ -26,6 +26,7 @@ namespace MilkDistributionWarehouse.Services
         private readonly IDisposalRequestDetailRepository _disposalRequestDetailRepository;
         private readonly IUserRepository _userRepository;
         private readonly IGoodsRepository _goodsRepository;
+        private readonly INotificationService _notificationService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
@@ -33,6 +34,7 @@ namespace MilkDistributionWarehouse.Services
                                       IDisposalRequestDetailRepository disposalRequestDetailRepository,
                                       IUserRepository userRepository,
                                       IGoodsRepository goodsRepository,
+                                      INotificationService notificationService,
                                       IUnitOfWork unitOfWork,
                                       IMapper mapper)
         {
@@ -40,6 +42,7 @@ namespace MilkDistributionWarehouse.Services
             _disposalRequestDetailRepository = disposalRequestDetailRepository;
             _userRepository = userRepository;
             _goodsRepository = goodsRepository;
+            _notificationService = notificationService;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
         }
@@ -260,7 +263,7 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
-        public async Task<(string, T?)> UpdateStatusDisposalRequest<T>(T updateStatusDto, int? userId) 
+        public async Task<(string, T?)> UpdateStatusDisposalRequest<T>(T updateStatusDto, int? userId)
             where T : DisposalRequestUpdateStatusDto
         {
             var disposalRequest = await _disposalRequestRepository.GetDisposalRequestById(updateStatusDto.DisposalRequestId);
@@ -312,6 +315,7 @@ namespace MilkDistributionWarehouse.Services
                 await _disposalRequestRepository.UpdateDisposalRequest(disposalRequest);
                 await _unitOfWork.CommitTransactionAsync();
 
+                await HandleStatusChangeNotification(disposalRequest);
                 return ("", updateStatusDto);
             }
             catch
@@ -319,6 +323,69 @@ namespace MilkDistributionWarehouse.Services
                 await _unitOfWork.RollbackTransactionAsync();
                 return ("Cập nhật trạng thái yêu cầu xuất hủy thất bại.".ToMessageForUser(), null);
             }
+        }
+
+        private async Task HandleStatusChangeNotification(DisposalRequest disposalRequest)
+        {
+            var notificationsToCreate = new List<NotificationCreateDto>();
+
+            switch (disposalRequest.Status)
+            {
+                case DisposalRequestStatus.PendingApproval:
+                    var saleManagers = await _userRepository.GetUsersByRoleId(RoleType.SaleManager);
+                    foreach (var manager in saleManagers ?? new List<User>())
+                    {
+                        notificationsToCreate.Add(new NotificationCreateDto()
+                        {
+                            UserId = disposalRequest.ApprovalBy,
+                            Title = "Yêu cầu xuất hủy mới chờ duyệt",
+                            Content = $"Yêu cầu xuất hủy '{disposalRequest.DisposalRequestId}' vừa được gửi và đang chờ bạn duyệt.",
+                            EntityType = NotificationEntityType.DisposalRequest,
+                            EntityId = disposalRequest.DisposalRequestId
+                        });
+                    }
+                    break;
+
+                case DisposalRequestStatus.Approved:
+                    notificationsToCreate.Add(new NotificationCreateDto()
+                    {
+                        UserId = disposalRequest.CreatedBy,
+                        Title = "Yêu cầu xuất hủy đã được duyệt",
+                        Content = $"Yêu cầu xuất hủy '{disposalRequest.DisposalRequestId}' của bạn đã được duyệt.",
+                        EntityType = NotificationEntityType.DisposalRequest,
+                        EntityId = disposalRequest.DisposalRequestId
+                    });
+                    break;
+
+                case DisposalRequestStatus.Rejected:
+                    notificationsToCreate.Add(new NotificationCreateDto()
+                    {
+                        UserId = disposalRequest.CreatedBy,
+                        Title = "Yêu cầu xuất hủy của bạn bị từ chối",
+                        Content = $"Yêu cầu xuất hủy '{disposalRequest.DisposalRequestId}' đã bị từ chối. Lý do: {disposalRequest.RejectionReason}",
+                        EntityType = NotificationEntityType.DisposalRequest,
+                        EntityId = disposalRequest.DisposalRequestId,
+                        Category = NotificationCategory.Important
+                    });
+                    break;
+
+                case DisposalRequestStatus.AssignedForPicking:
+                    notificationsToCreate.Add(new NotificationCreateDto()
+                    {
+                        UserId = disposalRequest.AssignTo,
+                        Title = "Bạn được phân công một yêu cầu xuất hủy mới",
+                        Content = $"Bạn vừa được phân công để soạn hàng cho yêu cầu xuất hủy '{disposalRequest.DisposalRequestId}'.",
+                        EntityType = NotificationEntityType.DisposalRequest,
+                        EntityId = disposalRequest.DisposalRequestId,
+                        Category = NotificationCategory.Important
+                    });
+                    break;
+
+                default: break;
+            }
+
+            if (notificationsToCreate.Count > 0)
+                await _notificationService.CreateNotificationBulk(notificationsToCreate);
         }
     }
 }

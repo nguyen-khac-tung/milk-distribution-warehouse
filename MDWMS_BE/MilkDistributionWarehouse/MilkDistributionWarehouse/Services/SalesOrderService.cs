@@ -340,7 +340,7 @@ namespace MilkDistributionWarehouse.Services
 
         private async Task HandleStatusChangeNotification(SalesOrder salesOrder)
         {
-            var notificationsToCreate = new List<NotificationDto>();
+            var notificationsToCreate = new List<NotificationCreateDto>();
 
             switch (salesOrder.Status)
             {
@@ -348,66 +348,64 @@ namespace MilkDistributionWarehouse.Services
                     var saleManagers = await _userRepository.GetUsersByRoleId(RoleType.SaleManager);
                     foreach (var manager in saleManagers ?? new List<User>())
                     {
-                        notificationsToCreate.Add(new NotificationDto() {
-                            UserId =  manager.UserId,
-                            Title = "Đơn hàng mới chờ duyệt",
-                            Content = $"Đơn hàng bán '{salesOrder.SalesOrderId}' vừa được gửi và đang chờ bạn duyệt."
+                        notificationsToCreate.Add(new NotificationCreateDto()
+                        {
+                            UserId = manager.UserId,
+                            Title = "Đơn bán hàng mới chờ duyệt",
+                            Content = $"Đơn bán hàng bán '{salesOrder.SalesOrderId}' vừa được gửi và đang chờ bạn duyệt.",
+                            EntityType = NotificationEntityType.SaleOrder,
+                            EntityId = salesOrder.SalesOrderId
                         });
                     }
                     break;
 
                 case SalesOrderStatus.Approved:
-                    var warehouseManagers = await _userRepository.GetUsersByRoleId(RoleType.WarehouseManager);
-                    foreach (var manager in warehouseManagers ?? new List<User>())
+                    notificationsToCreate.Add(new NotificationCreateDto()
                     {
-                        notificationsToCreate.Add(new NotificationDto()
-                        {
-                            UserId = manager.UserId,
-                            Title = "Đơn hàng đã được duyệt",
-                            Content = $"Đơn hàng '{salesOrder.SalesOrderId}' đã được duyệt và sẵn sàng để phân công soạn hàng."
-                        });
-                    }
-                    if (salesOrder.CreatedBy.HasValue)
+                        UserId = salesOrder.ApprovalBy,
+                        Title = "Đơn bán hàng đã được duyệt",
+                        Content = $"Đơn bán hàng '{salesOrder.SalesOrderId}' đã được duyệt và sẵn sàng để phân công soạn hàng.",
+                        EntityType = NotificationEntityType.SaleOrder,
+                        EntityId = salesOrder.SalesOrderId
+                    });
+                    notificationsToCreate.Add(new NotificationCreateDto()
                     {
-                        notificationsToCreate.Add(new NotificationDto()
-                        {
-                            UserId = salesOrder.CreatedBy,
-                            Title = "Đơn hàng đã được duyệt",
-                            Content = $"Đơn hàng '{salesOrder.SalesOrderId}' đã được duyệt."
-                        });
-                    }
+                        UserId = salesOrder.CreatedBy,
+                        Title = "Đơn bán hàng đã được duyệt",
+                        Content = $"Đơn bán hàng '{salesOrder.SalesOrderId}' đã được duyệt.",
+                        EntityType = NotificationEntityType.SaleOrder,
+                        EntityId = salesOrder.SalesOrderId
+                    });
                     break;
 
                 case SalesOrderStatus.Rejected:
-                    if (salesOrder.CreatedBy.HasValue)
+                    notificationsToCreate.Add(new NotificationCreateDto()
                     {
-                        notificationsToCreate.Add(new NotificationDto()
-                        {
-                            UserId = salesOrder.CreatedBy.Value,
-                            Title = "Đơn hàng của bạn bị từ chối",
-                            Content = $"Đơn hàng '{salesOrder.SalesOrderId}' đã bị từ chối. Lý do: {salesOrder.RejectionReason}",
-                            Category = NotificationCategory.Important
-                        });
-                    }
+                        UserId = salesOrder.CreatedBy,
+                        Title = "Đơn bán hàng của bạn bị từ chối",
+                        Content = $"Đơn bán hàng '{salesOrder.SalesOrderId}' đã bị từ chối. Lý do: {salesOrder.RejectionReason}",
+                        EntityType = NotificationEntityType.SaleOrder,
+                        EntityId = salesOrder.SalesOrderId,
+                        Category = NotificationCategory.Important
+                    });
                     break;
 
                 case SalesOrderStatus.AssignedForPicking:
-                    if (salesOrder.AssignTo.HasValue)
+                    notificationsToCreate.Add(new NotificationCreateDto()
                     {
-                        notificationsToCreate.Add(new NotificationDto()
-                        {
-                            UserId = salesOrder.AssignTo.Value,
-                            Title = "Bạn được phân công một đơn hàng mới",
-                            Content = $"Bạn vừa được phân công để soạn hàng cho đơn hàng '{salesOrder.SalesOrderId}'.",
-                            Category = NotificationCategory.Important
-                        });
-                    }
+                        UserId = salesOrder.AssignTo,
+                        Title = "Bạn được phân công một đơn hàng mới",
+                        Content = $"Bạn vừa được phân công để soạn hàng cho đơn bán hàng '{salesOrder.SalesOrderId}'.",
+                        EntityType = NotificationEntityType.SaleOrder,
+                        EntityId = salesOrder.SalesOrderId,
+                        Category = NotificationCategory.Important
+                    });
                     break;
 
                 default: break;
             }
 
-            if(notificationsToCreate.Count > 0) 
+            if (notificationsToCreate.Count > 0)
                 await _notificationService.CreateNotificationBulk(notificationsToCreate);
         }
     }
