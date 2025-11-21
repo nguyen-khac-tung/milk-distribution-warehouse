@@ -30,9 +30,11 @@ namespace MilkDistributionWarehouse.Services
         private readonly IStocktakingPalletRepository _stocktakingPalletRepository;
         private readonly IStocktakingSheetRepository _stocktakingSheetRepository;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IStocktakingStatusDomainService _stocktakingStatusDomainService;
         public StocktakingAreaService(IStocktakingAreaRepository stocktakingAreaRepository, IAreaRepository areaRepository, IMapper mapper,
             IStocktakingLocationRepository stocktakingLocationRepository, IStocktakingPalletRepository stocktakingPalletRepository,
-            IStocktakingSheetRepository stocktakingSheetRepository, IUnitOfWork unitOfWork)
+            IStocktakingSheetRepository stocktakingSheetRepository, IUnitOfWork unitOfWork,
+            IStocktakingStatusDomainService stocktakingStatusDomainService)
         {
             _stocktakingAreaRepository = stocktakingAreaRepository;
             _areaRepository = areaRepository;
@@ -41,6 +43,7 @@ namespace MilkDistributionWarehouse.Services
             _stocktakingPalletRepository = stocktakingPalletRepository;
             _stocktakingSheetRepository = stocktakingSheetRepository;
             _unitOfWork = unitOfWork;
+            _stocktakingStatusDomainService = stocktakingStatusDomainService;
         }
 
         public async Task<(string, List<StocktakingAreaDetailDto>?)> GetStocktakingAreaByStocktakingSheetId(string stoctakingSheetId, int? userId)
@@ -136,10 +139,9 @@ namespace MilkDistributionWarehouse.Services
                 if (!string.IsNullOrEmpty(errorMessage))
                     throw new Exception(errorMessage);
 
-                stocktakingArea.UpdateAt = DateTime.Now;
-
-                var updateResult = await _stocktakingAreaRepository.UpdateStocktakingArea(stocktakingArea);
-                if (updateResult == 0) return ("Cập nhật kiểm kê khu vực thất bại.", default);
+                var targetStatus = stocktakingArea.Status;
+                var msg = await _stocktakingStatusDomainService.UpdateAreaStatusAsync(stocktakingArea.StocktakingAreaId, (int)targetStatus);
+                if (!string.IsNullOrEmpty(msg)) return (msg, default);
 
                 return ("", new StocktakingAreaResponse { StocktakingAreaId = update.StocktakingAreaId });
             }
@@ -154,43 +156,36 @@ namespace MilkDistributionWarehouse.Services
             var stocktakingArea = await _stocktakingAreaRepository.GetStocktakingAreaByStocktakingAreaId(update.StocktakingAreaId);
             if (stocktakingArea == null) return ("Kiểm kê khu vực không tồn tại.", default);
 
-            try
+            return await ExecuteInTransactionAsync(async () =>
             {
-                await _unitOfWork.BeginTransactionAsync();
                 var hasNoPendingApprovalLocations = await _stocktakingLocationRepository.HasLocationsNotPendingApprovalAsync(stocktakingArea.StocktakingAreaId);
 
                 if (stocktakingArea.Status != StockAreaStatus.PendingApproval)
-                    return ("Chỉ có thể chuyển trạng thái sang Đã duyệt khi kiểm kê khu vực ở trạng thái Chờ duyệt.".ToMessageForUser(), default);
+                    return ("Chỉ có thể chuyển trạng thái sang Đã duyệt khi kiểm kê khu vực ở trạng thái Chờ duyệt.".ToMessageForUser(), default(StocktakingAreaApprovalResponse?));
 
                 if (hasNoPendingApprovalLocations)
-                    return ("Chỉ có thể chuyển trạng thái sang Đã duyệt khi kiểm kê vị trí ở trạng thái Chờ duyệt.".ToMessageForUser(), default);
+                    return ("Chỉ có thể chuyển trạng thái sang Đã duyệt khi kiểm kê vị trí ở trạng thái Chờ duyệt.".ToMessageForUser(), default(StocktakingAreaApprovalResponse?));
 
                 var stocktakingLocations = await _stocktakingLocationRepository.GetLocationsByStockSheetIdAreaIdsAsync(stocktakingArea.StocktakingSheetId, new List<int> { (int)stocktakingArea.AreaId });
                 if (!stocktakingLocations.Any())
-                    return ("Danh sách kiểm kê vị trí trống.", default);
+                    return ("Danh sách kiểm kê vị trí trống.", default(StocktakingAreaApprovalResponse?));
 
                 var validationStocktakingLocationsToApproval = await ValidationListStocktakingLocationToApproval(stocktakingLocations);
                 if (validationStocktakingLocationsToApproval.StocktakingLocationFails.Any())
                     return ("", validationStocktakingLocationsToApproval);
 
                 stocktakingArea.Status = StockAreaStatus.Completed;
-                stocktakingArea.UpdateAt = DateTime.Now;
 
                 HandleUpdateStockLocation(stocktakingArea.StocktakingLocations);
 
-                var updateResult = await _stocktakingAreaRepository.UpdateStocktakingArea(stocktakingArea);
-                if (updateResult == 0) return ("Cập nhật kiểm kê khu vực thất bại.".ToMessageForUser(), default);
+                var msg = await _stocktakingStatusDomainService.UpdateAreaStatusAsync(stocktakingArea, StockAreaStatus.Completed);
+                if (!string.IsNullOrEmpty(msg))
+                    return (msg, default(StocktakingAreaApprovalResponse?));
 
                 await HandleUpdateStockSheetApproval(update.StocktakingAreaId, stocktakingArea.StocktakingSheetId);
 
-                await _unitOfWork.CommitTransactionAsync();
                 return ("", validationStocktakingLocationsToApproval);
-            }
-            catch (Exception ex)
-            {
-                await _unitOfWork.RollbackTransactionAsync();
-                return ($"{ex.Message}", default);
-            }
+            });
         }
 
         private void HandleUpdateStockLocation(ICollection<StocktakingLocation> stocktakingLocations)
@@ -214,10 +209,7 @@ namespace MilkDistributionWarehouse.Services
             if (stockSheet.Status != StocktakingStatus.PendingApproval)
                 return;
 
-            stockSheet.Status = StocktakingStatus.Approved;
-            stockSheet.UpdateAt = DateTime.Now;
-
-            var updateResult = await _stocktakingSheetRepository.UpdateStockingtakingSheet(stockSheet);
+            await _stocktakingStatusDomainService.UpdateSheetStatusAsync(stockSheet, StocktakingStatus.Approved);
         }
 
         public async Task<(string, StocktakingAreaReAssignStatus?)> UpdateStocktakingReAssignTo(StocktakingAreaReAssignStatus update)
@@ -445,12 +437,10 @@ namespace MilkDistributionWarehouse.Services
             //if (stockSheet.Status != StocktakingStatus.InProgress)
             //    return "Chỉ cập nhật sang trạng thái Chờ duyệt khi phiếu kiêm kê đang ở trạng thái Đang kiểm kê.";
 
-            stockSheet.Status = StocktakingStatus.PendingApproval;
-            stockSheet.UpdateAt = DateTime.Now;
+            var updateMessage = await _stocktakingStatusDomainService.UpdateSheetStatusAsync(stockSheet, StocktakingStatus.PendingApproval);
+            if (!string.IsNullOrEmpty(updateMessage))
+                return updateMessage;
 
-            var updateStockSheet = await _stocktakingSheetRepository.UpdateStockingtakingSheet(stockSheet);
-
-            var updateResult = await _stocktakingSheetRepository.UpdateStockingtakingSheet(stockSheet);
             return "";
         }
 
@@ -476,6 +466,29 @@ namespace MilkDistributionWarehouse.Services
             }
 
             return message;
+        }
+
+        private async Task<(string, TResult?)> ExecuteInTransactionAsync<TResult>(Func<Task<(string, TResult?)>> action)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                var (msg, result) = await action();
+                if (!string.IsNullOrEmpty(msg))
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return (msg, default);
+                }
+
+                await _unitOfWork.CommitTransactionAsync();
+                return ("", result);
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return (ex.Message, default);
+            }
         }
     }
 }
