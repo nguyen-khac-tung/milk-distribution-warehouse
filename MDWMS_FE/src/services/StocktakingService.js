@@ -189,6 +189,8 @@ export const getStocktakingAreaDetailForOtherRoleBySheetId = async (stocktakingS
     }
 };
 
+
+
 // Phân công lại nhân viên theo khu vực
 export const reAssignAreaConfirm = async (data) => {
     try {
@@ -516,6 +518,19 @@ export const completeStocktaking = async (data) => {
         return res.data;
     } catch (error) {
         console.error("Error completing stocktaking:", error);
+        throw error;
+    }
+};
+// Lấy chi tiết StocktakingArea theo stocktakingSheetId
+export const getStocktakingAreaById = async (stocktakingSheetId) => {
+    try {
+        if (!stocktakingSheetId) {
+            throw new Error("stocktakingSheetId is required");
+        }
+        const res = await api.get(`/StocktakingArea/GetStocktakingAreaById/${stocktakingSheetId}`);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching stocktaking area by id:", error);
         throw error;
     }
 };
