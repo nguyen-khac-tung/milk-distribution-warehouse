@@ -40,6 +40,16 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<List<StocktakingAreaDetailDto>>.ToResultOk(stocktakingAreaDetail);
         }
 
+        [HttpGet("GetStocktakingAreaById/{stocktakingSheetId}")]
+        [Authorize(Roles = RoleNames.WarehouseStaff)]
+        public async Task<IActionResult> GetStocktakingAreaById(string stocktakingSheetId)
+        {
+            var (msg, stocktakingArea) = await _stocktakingAreaService.GetStocktakingAreaByStocktakingSheetIdSync(stocktakingSheetId, User.GetUserId());
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<List<StocktakingAreaDetail>>.ToResultOk(stocktakingArea);
+        }
+
         [HttpPut("ReAssignStocktakingArea")]
         [Authorize(Roles = RoleNames.WarehouseManager)]
         public async Task<IActionResult> UpdateStocktakingAreaReAssignStatus([FromBody] StocktakingAreaReAssignStatus update)
