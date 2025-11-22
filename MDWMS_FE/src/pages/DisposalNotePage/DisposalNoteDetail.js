@@ -302,7 +302,7 @@ const DisposalNoteDetail = () => {
             );
 
             if (!foundDetail) {
-                setSearchError('Không tìm thấy sản phẩm chứa vị trí/pallet này');
+                setSearchError('Không tìm thấy hàng hóa chứa vị trí/pallet này');
                 setHighlightedPickAllocationId(null);
                 setHighlightedDetailId(null);
                 return;
@@ -615,7 +615,7 @@ const DisposalNoteDetail = () => {
                             </div>
                             <div className="flex items-baseline gap-2">
                                 <h2 className="text-lg font-semibold text-gray-900 leading-none">{title}</h2>
-                                <span className="text-sm text-gray-500 leading-none">({items.length} sản phẩm)</span>
+                                <span className="text-sm text-gray-500 leading-none">({items.length} hàng hóa)</span>
                             </div>
                             <div className="text-gray-500 ml-auto">
                                 {isGroupExpanded ? (
@@ -770,7 +770,7 @@ const DisposalNoteDetail = () => {
                                             : 'border-gray-200'
                                             }`}
                                     >
-                                        {/* Header sản phẩm - Compact và tích hợp thông tin pick allocations */}
+                                        {/* Header hàng hóa - Compact và tích hợp thông tin pick allocations */}
                                         <div
                                             className="bg-white px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-100"
                                             onClick={() => toggleItemExpanded(globalIndex)}
@@ -807,7 +807,7 @@ const DisposalNoteDetail = () => {
                                                         )}
                                                     </div>
 
-                                                    {/* Thông tin sản phẩm */}
+                                                    {/* Thông tin hàng hóa */}
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center gap-2 flex-wrap">
                                                             <div className="text-base font-semibold text-gray-900 truncate">
@@ -1076,21 +1076,6 @@ const DisposalNoteDetail = () => {
                                         </div>
                                     </div>
                                 </div>
-
-                                {/* Nhóm thông tin yêu cầu xuất hủy */}
-                                {/* <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
-                                    <h3 className="text-sm font-semibold text-slate-700 mb-3 border-b border-gray-100 pb-2">
-                                        Thông tin yêu cầu xuất hủy
-                                    </h3>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
-                                        <div className="sm:col-span-2">
-                                            <div className="text-xs text-gray-500">Mã yêu cầu xuất hủy</div>
-                                            <div className="text-base font-medium text-gray-900">
-                                                {disposalNote.disposalRequestId || "N/A"}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div> */}
                             </div>
                         </div>
                     </Card>

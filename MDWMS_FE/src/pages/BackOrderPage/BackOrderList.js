@@ -271,12 +271,12 @@ export default function BackOrderList() {
     // Filter backOrders by statusDinamic if statusFilter is set
     const filteredBackOrders = useMemo(() => {
         if (!Array.isArray(backOrders)) return []
-        
+
         // If statusFilter is set, filter by statusDinamic
         if (statusFilter && statusFilter !== "") {
             return backOrders.filter(bo => bo.statusDinamic === statusFilter)
         }
-        
+
         return backOrders
     }, [backOrders, statusFilter])
 
@@ -326,7 +326,7 @@ export default function BackOrderList() {
         try {
             console.log("Deleting backOrder:", itemToDelete)
             const deletedBackOrderId = itemToDelete?.backOrderId
-            
+
             await deleteBackOrder(deletedBackOrderId)
             window.showToast(`Đã xóa đơn đặt hàng: ${itemToDelete?.retailerName || ''}`, "success")
             setShowDeleteModal(false)
@@ -447,7 +447,7 @@ export default function BackOrderList() {
         ]
         if (!statusSearchQuery) return statusOptions
         const query = statusSearchQuery.toLowerCase()
-        return statusOptions.filter(option => 
+        return statusOptions.filter(option =>
             option.label.toLowerCase().includes(query)
         )
     }, [statusSearchQuery])
@@ -568,7 +568,7 @@ export default function BackOrderList() {
 
         try {
             // Lấy thông tin các đơn đã chọn từ selectedBackOrdersData (chứa tất cả items đã chọn, kể cả không còn trong danh sách hiện tại)
-            const selectedOrders = Array.from(selectedBackOrdersData.values()).filter(order => 
+            const selectedOrders = Array.from(selectedBackOrdersData.values()).filter(order =>
                 order.statusDinamic === 'Available' // Chỉ lấy các items có sẵn
             );
 
@@ -670,7 +670,7 @@ export default function BackOrderList() {
                     <SearchFilterToggle
                         searchQuery={searchQuery}
                         setSearchQuery={setSearchQuery}
-                        searchPlaceholder="Tìm kiếm theo tên nhà bán lẻ hoặc sản phẩm..."
+                        searchPlaceholder="Tìm kiếm theo tên nhà bán lẻ, hàng hóa"
                         statusFilter={statusFilter}
                         setStatusFilter={setStatusFilter}
                         showStatusFilter={showStatusFilter}
@@ -712,229 +712,229 @@ export default function BackOrderList() {
                             <Loading size="medium" text="Đang tìm kiếm..." />
                         ) : (
                             <div className="overflow-x-auto">
-                                        <Table className="w-full table-auto md:table-fixed">
-                                            <TableHeader>
-                                                <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
+                                <Table className="w-full table-auto md:table-fixed">
+                                    <TableHeader>
+                                        <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
 
-                                                    {/* Checkbox - luôn hiển thị */}
-                                                    <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left w-12">
-                                                        <Checkbox
-                                                            checked={allAvailableSelected}
-                                                            onChange={(e) => handleSelectAll(e.target.checked)}
-                                                            disabled={availableBackOrders.length === 0}
-                                                        />
-                                                    </TableHead>
+                                            {/* Checkbox - luôn hiển thị */}
+                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left w-12">
+                                                <Checkbox
+                                                    checked={allAvailableSelected}
+                                                    onChange={(e) => handleSelectAll(e.target.checked)}
+                                                    disabled={availableBackOrders.length === 0}
+                                                />
+                                            </TableHead>
 
-                                                    {/* STT - luôn hiển thị */}
-                                                    <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left w-16">
-                                                        STT
-                                                    </TableHead>
+                                            {/* STT - luôn hiển thị */}
+                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left w-16">
+                                                STT
+                                            </TableHead>
 
-                                                    {/* Tên nhà bán lẻ - rất quan trọng */}
-                                                    <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left min-w-[220px]">
-                                                        <div
-                                                            className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
-                                                            onClick={() => handleSort("retailerName")}
-                                                        >
-                                                            <span >Tên nhà bán lẻ</span>
-                                                            {sortField === "retailerName" ? (
-                                                                sortAscending ? (
-                                                                    <ArrowUp className="h-4 w-4 text-orange-500" />
-                                                                ) : (
-                                                                    <ArrowDown className="h-4 w-4 text-orange-500" />
-                                                                )
-                                                            ) : (
-                                                                <ArrowUpDown className="h-4 w-4 text-slate-400" />
-                                                            )}
-                                                        </div>
-                                                    </TableHead>
+                                            {/* Tên nhà bán lẻ - rất quan trọng */}
+                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left min-w-[220px]">
+                                                <div
+                                                    className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                                    onClick={() => handleSort("retailerName")}
+                                                >
+                                                    <span >Tên nhà bán lẻ</span>
+                                                    {sortField === "retailerName" ? (
+                                                        sortAscending ? (
+                                                            <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                        ) : (
+                                                            <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                        )
+                                                    ) : (
+                                                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                    )}
+                                                </div>
+                                            </TableHead>
 
-                                                    {/* Tên hàng hóa - quan trọng */}
-                                                    <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left min-w-[260px]">
-                                                        <span className="truncate">Tên hàng hóa</span>
-                                                    </TableHead>
+                                            {/* Tên hàng hóa - quan trọng */}
+                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left min-w-[260px]">
+                                                <span className="truncate">Tên hàng hóa</span>
+                                            </TableHead>
+
+                                            {/* Quy cách đóng gói */}
+                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left hidden md:table-cell min-w-[150px]">
+                                                Quy cách đóng gói
+                                            </TableHead>
+
+                                            {/* Số thùng */}
+                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left hidden md:table-cell w-[90px]">
+                                                Số thùng
+                                            </TableHead>
+
+                                            {/* Tổng đơn vị */}
+                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left hidden md:table-cell w-[110px]">
+                                                Tổng đơn vị
+                                            </TableHead>
+
+                                            {/* Đơn vị */}
+                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left hidden md:table-cell w-[90px]">
+                                                Đơn vị
+                                            </TableHead>
+
+                                            {/* Người tạo - ẩn mobile */}
+                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left hidden lg:table-cell w-[120px]">
+                                                <div
+                                                    className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                                    onClick={() => handleSort("createdByName")}
+                                                >
+                                                    <span>Người tạo</span>
+                                                    {sortField === "createdByName" ? (
+                                                        sortAscending ? (
+                                                            <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                        ) : (
+                                                            <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                        )
+                                                    ) : (
+                                                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                    )}
+                                                </div>
+                                            </TableHead>
+
+                                            {/* Trạng thái kho - ẩn mobile */}
+                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left hidden lg:table-cell w-[140px]">
+                                                Trạng thái kho
+                                            </TableHead>
+
+                                            {/* Hoạt động - ẩn mobile */}
+                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-center hidden lg:table-cell w-[120px]">
+                                                Hoạt động
+                                            </TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+
+                                    <TableBody>
+                                        {filteredBackOrders.length > 0 ? (
+                                            filteredBackOrders.map((backOrder, index) => (
+                                                <TableRow
+                                                    key={index}
+                                                    className="hover:bg-slate-50 border-b border-slate-200"
+                                                >
+                                                    {/* Checkbox */}
+                                                    <TableCell className="px-4 py-4">
+                                                        {backOrder.statusDinamic === 'Available' ? (
+                                                            <Checkbox
+                                                                checked={selectedBackOrders.has(backOrder.backOrderId)}
+                                                                onChange={(e) =>
+                                                                    handleCheckboxChange(backOrder.backOrderId, e.target.checked)
+                                                                }
+                                                            />
+                                                        ) : (
+                                                            <div className="w-4"></div>
+                                                        )}
+                                                    </TableCell>
+
+                                                    {/* STT */}
+                                                    <TableCell className="px-4 py-4 text-slate-600 font-medium">
+                                                        {(pagination.pageNumber - 1) * pagination.pageSize + (index + 1)}
+                                                    </TableCell>
+
+                                                    {/* Tên nhà bán lẻ */}
+                                                    <TableCell className="px-4 py-4 text-slate-700 font-medium min-w-[220px] ">
+                                                        {backOrder?.retailerName || ''}
+                                                    </TableCell>
+
+                                                    {/* Tên hàng hóa */}
+                                                    <TableCell className="px-4 py-4 text-slate-700 min-w-[260px] ">
+                                                        {backOrder?.goodsName || ''}
+                                                    </TableCell>
 
                                                     {/* Quy cách đóng gói */}
-                                                    <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left hidden md:table-cell min-w-[150px]">
-                                                        Quy cách đóng gói
-                                                    </TableHead>
+                                                    <TableCell className="px-4 py-4 text-slate-700 hidden md:table-cell">
+                                                        {backOrder?.unitPerPackage ?? ''}
+                                                        {backOrder?.unitMeasureName ? ' ' + backOrder.unitMeasureName : ''}/thùng
+                                                    </TableCell>
 
                                                     {/* Số thùng */}
-                                                    <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left hidden md:table-cell w-[90px]">
-                                                        Số thùng
-                                                    </TableHead>
+                                                    <TableCell className="px-4 py-4 text-slate-700 hidden md:table-cell">
+                                                        {backOrder?.packageQuantity ?? ''}
+                                                    </TableCell>
 
                                                     {/* Tổng đơn vị */}
-                                                    <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left hidden md:table-cell w-[110px]">
-                                                        Tổng đơn vị
-                                                    </TableHead>
+                                                    <TableCell className="px-4 py-4 text-slate-700 hidden md:table-cell">
+                                                        {(() => {
+                                                            const up = parseInt(backOrder?.unitPerPackage ?? 0);
+                                                            const pq = parseInt(backOrder?.packageQuantity ?? 0);
+                                                            if (isNaN(up) || isNaN(pq)) return '';
+                                                            return up * pq;
+                                                        })()}
+                                                    </TableCell>
 
                                                     {/* Đơn vị */}
-                                                    <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left hidden md:table-cell w-[90px]">
-                                                        Đơn vị
-                                                    </TableHead>
+                                                    <TableCell className="px-4 py-4 text-slate-700 hidden md:table-cell">
+                                                        {backOrder?.unitMeasureName || ''}
+                                                    </TableCell>
 
-                                                    {/* Người tạo - ẩn mobile */}
-                                                    <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left hidden lg:table-cell w-[120px]">
-                                                        <div
-                                                            className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
-                                                            onClick={() => handleSort("createdByName")}
+                                                    {/* Người tạo */}
+                                                    <TableCell className="px-4 py-4 text-slate-700 hidden lg:table-cell">
+                                                        {backOrder?.createdByName || backOrder?.createdBy || ''}
+                                                    </TableCell>
+
+                                                    {/* Trạng thái kho */}
+                                                    <TableCell className="px-4 py-4 hidden lg:table-cell">
+                                                        <span
+                                                            className={`px-2 py-1 rounded-full text-xs font-medium ${backOrder?.statusDinamic === 'Available'
+                                                                ? 'bg-green-100 text-green-800'
+                                                                : 'bg-red-100 text-red-800'
+                                                                }`}
                                                         >
-                                                            <span>Người tạo</span>
-                                                            {sortField === "createdByName" ? (
-                                                                sortAscending ? (
-                                                                    <ArrowUp className="h-4 w-4 text-orange-500" />
-                                                                ) : (
-                                                                    <ArrowDown className="h-4 w-4 text-orange-500" />
-                                                                )
-                                                            ) : (
-                                                                <ArrowUpDown className="h-4 w-4 text-slate-400" />
-                                                            )}
-                                                        </div>
-                                                    </TableHead>
+                                                            {getStatusDynamicLabel(backOrder?.statusDinamic)}
+                                                        </span>
+                                                    </TableCell>
 
-                                                    {/* Trạng thái kho - ẩn mobile */}
-                                                    <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left hidden lg:table-cell w-[140px]">
-                                                        Trạng thái kho
-                                                    </TableHead>
+                                                    {/* Hoạt động */}
+                                                    <TableCell className="px-4 py-4 text-center hidden lg:table-cell">
+                                                        <div className="flex items-center justify-center space-x-1">
 
-                                                    {/* Hoạt động - ẩn mobile */}
-                                                    <TableHead className="font-semibold text-slate-900 px-4 py-3 text-center hidden lg:table-cell w-[120px]">
-                                                        Hoạt động
-                                                    </TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-
-                                            <TableBody>
-                                                {filteredBackOrders.length > 0 ? (
-                                                    filteredBackOrders.map((backOrder, index) => (
-                                                        <TableRow
-                                                            key={index}
-                                                            className="hover:bg-slate-50 border-b border-slate-200"
-                                                        >
-                                                            {/* Checkbox */}
-                                                            <TableCell className="px-4 py-4">
-                                                                {backOrder.statusDinamic === 'Available' ? (
-                                                                    <Checkbox
-                                                                        checked={selectedBackOrders.has(backOrder.backOrderId)}
-                                                                        onChange={(e) =>
-                                                                            handleCheckboxChange(backOrder.backOrderId, e.target.checked)
-                                                                        }
-                                                                    />
-                                                                ) : (
-                                                                    <div className="w-4"></div>
-                                                                )}
-                                                            </TableCell>
-
-                                                            {/* STT */}
-                                                            <TableCell className="px-4 py-4 text-slate-600 font-medium">
-                                                                {(pagination.pageNumber - 1) * pagination.pageSize + (index + 1)}
-                                                            </TableCell>
-
-                                                            {/* Tên nhà bán lẻ */}
-                                                            <TableCell className="px-4 py-4 text-slate-700 font-medium min-w-[220px] ">
-                                                                {backOrder?.retailerName || ''}
-                                                            </TableCell>
-
-                                                            {/* Tên hàng hóa */}
-                                                            <TableCell className="px-4 py-4 text-slate-700 min-w-[260px] ">
-                                                                {backOrder?.goodsName || ''}
-                                                            </TableCell>
-
-                                                            {/* Quy cách đóng gói */}
-                                                            <TableCell className="px-4 py-4 text-slate-700 hidden md:table-cell">
-                                                                {backOrder?.unitPerPackage ?? ''}
-                                                                {backOrder?.unitMeasureName ? ' ' + backOrder.unitMeasureName : ''}/thùng
-                                                            </TableCell>
-
-                                                            {/* Số thùng */}
-                                                            <TableCell className="px-4 py-4 text-slate-700 hidden md:table-cell">
-                                                                {backOrder?.packageQuantity ?? ''}
-                                                            </TableCell>
-
-                                                            {/* Tổng đơn vị */}
-                                                            <TableCell className="px-4 py-4 text-slate-700 hidden md:table-cell">
-                                                                {(() => {
-                                                                    const up = parseInt(backOrder?.unitPerPackage ?? 0);
-                                                                    const pq = parseInt(backOrder?.packageQuantity ?? 0);
-                                                                    if (isNaN(up) || isNaN(pq)) return '';
-                                                                    return up * pq;
-                                                                })()}
-                                                            </TableCell>
-
-                                                            {/* Đơn vị */}
-                                                            <TableCell className="px-4 py-4 text-slate-700 hidden md:table-cell">
-                                                                {backOrder?.unitMeasureName || ''}
-                                                            </TableCell>
-
-                                                            {/* Người tạo */}
-                                                            <TableCell className="px-4 py-4 text-slate-700 hidden lg:table-cell">
-                                                                {backOrder?.createdByName || backOrder?.createdBy || ''}
-                                                            </TableCell>
-
-                                                            {/* Trạng thái kho */}
-                                                            <TableCell className="px-4 py-4 hidden lg:table-cell">
-                                                                <span
-                                                                    className={`px-2 py-1 rounded-full text-xs font-medium ${backOrder?.statusDinamic === 'Available'
-                                                                            ? 'bg-green-100 text-green-800'
-                                                                            : 'bg-red-100 text-red-800'
-                                                                        }`}
+                                                            <PermissionWrapper requiredPermission={PERMISSIONS.BACKORDER_VIEW}>
+                                                                <button
+                                                                    className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                                    onClick={() => handleViewClick(backOrder)}
                                                                 >
-                                                                    {getStatusDynamicLabel(backOrder?.statusDinamic)}
-                                                                </span>
-                                                            </TableCell>
+                                                                    <Eye className="h-4 w-4 text-orange-500" />
+                                                                </button>
+                                                            </PermissionWrapper>
 
-                                                            {/* Hoạt động */}
-                                                            <TableCell className="px-4 py-4 text-center hidden lg:table-cell">
-                                                                <div className="flex items-center justify-center space-x-1">
+                                                            <PermissionWrapper requiredPermission={PERMISSIONS.BACKORDER_UPDATE}>
+                                                                <button
+                                                                    className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                                    onClick={() => handleUpdateClick(backOrder)}
+                                                                >
+                                                                    <Edit className="h-4 w-4 text-orange-500" />
+                                                                </button>
+                                                            </PermissionWrapper>
 
-                                                                    <PermissionWrapper requiredPermission={PERMISSIONS.BACKORDER_VIEW}>
-                                                                        <button
-                                                                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                                            onClick={() => handleViewClick(backOrder)}
-                                                                        >
-                                                                            <Eye className="h-4 w-4 text-orange-500" />
-                                                                        </button>
-                                                                    </PermissionWrapper>
-
-                                                                    <PermissionWrapper requiredPermission={PERMISSIONS.BACKORDER_UPDATE}>
-                                                                        <button
-                                                                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                                            onClick={() => handleUpdateClick(backOrder)}
-                                                                        >
-                                                                            <Edit className="h-4 w-4 text-orange-500" />
-                                                                        </button>
-                                                                    </PermissionWrapper>
-
-                                                                    <PermissionWrapper requiredPermission={PERMISSIONS.BACKORDER_DELETE}>
-                                                                        <button
-                                                                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                                            onClick={() => handleDeleteClick(backOrder)}
-                                                                        >
-                                                                            <Trash2 className="h-4 w-4 text-red-500" />
-                                                                        </button>
-                                                                    </PermissionWrapper>
-                                                                </div>
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ))
-                                                ) : (
-                                                    <EmptyState
-                                                        icon={Building2}
-                                                        title="Không tìm thấy đơn đặt hàng nào"
-                                                        description={
-                                                            searchQuery || statusFilter || retailerFilter
-                                                                ? 'Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm'
-                                                                : 'Chưa có đơn đặt hàng nào trong hệ thống'
-                                                        }
-                                                        actionText="Xóa bộ lọc"
-                                                        onAction={clearAllFilters}
-                                                        showAction={!!(searchQuery || statusFilter || retailerFilter)}
-                                                        colSpan={11}
-                                                    />
-                                                )}
-                                            </TableBody>
-                                        </Table>
+                                                            <PermissionWrapper requiredPermission={PERMISSIONS.BACKORDER_DELETE}>
+                                                                <button
+                                                                    className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                                    onClick={() => handleDeleteClick(backOrder)}
+                                                                >
+                                                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                                                </button>
+                                                            </PermissionWrapper>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        ) : (
+                                            <EmptyState
+                                                icon={Building2}
+                                                title="Không tìm thấy đơn đặt hàng nào"
+                                                description={
+                                                    searchQuery || statusFilter || retailerFilter
+                                                        ? 'Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm'
+                                                        : 'Chưa có đơn đặt hàng nào trong hệ thống'
+                                                }
+                                                actionText="Xóa bộ lọc"
+                                                onAction={clearAllFilters}
+                                                showAction={!!(searchQuery || statusFilter || retailerFilter)}
+                                                colSpan={11}
+                                            />
+                                        )}
+                                    </TableBody>
+                                </Table>
                             </div>
                         )}
                     </div>

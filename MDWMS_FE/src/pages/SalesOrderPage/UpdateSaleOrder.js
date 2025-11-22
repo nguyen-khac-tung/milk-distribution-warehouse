@@ -222,7 +222,7 @@ function UpdateSaleOrder() {
             setItems(updatedItems);
             return;
         } else if (field === "goodsName") {
-            // Kiểm tra xem sản phẩm đã được chọn ở hàng khác chưa
+            // Kiểm tra xem hàng hóa đã được chọn ở hàng khác chưa
             const isDuplicate = items.some(item => item.id !== id && item.goodsName === value && value !== "");
             if (isDuplicate) {
                 window.showToast("Mặt hàng này đã được thêm vào danh sách!", "error");
@@ -761,8 +761,8 @@ function UpdateSaleOrder() {
             // Hiển thị thông báo lỗi và CHẶN submit
             const firstItem = insufficientItems[0];
             const message = insufficientItems.length === 1
-                ? `Sản phẩm "${firstItem.goodsName}" vượt quá tồn kho. Vui lòng điều chỉnh số lượng.`
-                : `Có ${insufficientItems.length} sản phẩm vượt quá tồn kho. Vui lòng điều chỉnh số lượng.`;
+                ? `Hàng hóa "${firstItem.goodsName}" vượt quá tồn kho. Vui lòng điều chỉnh số lượng.`
+                : `Có ${insufficientItems.length} hàng hóa vượt quá tồn kho. Vui lòng điều chỉnh số lượng.`;
 
             // Đảm bảo toast được hiển thị và CHẶN submit
             if (typeof window !== 'undefined' && window.showToast) {
@@ -934,8 +934,8 @@ function UpdateSaleOrder() {
 
             const firstItem = insufficientItems[0];
             const message = insufficientItems.length === 1
-                ? `Sản phẩm "${firstItem.goodsName}" vượt quá tồn kho. Vui lòng kiểm tra lại số lượng.`
-                : `Có ${insufficientItems.length} sản phẩm vượt quá tồn kho. Vui lòng kiểm tra lại số lượng.`;
+                ? `Hàng hóa "${firstItem.goodsName}" vượt quá tồn kho. Vui lòng kiểm tra lại số lượng.`
+                : `Có ${insufficientItems.length} hàng hóa vượt quá tồn kho. Vui lòng kiểm tra lại số lượng.`;
 
             // Đảm bảo toast được hiển thị
             if (typeof window !== 'undefined' && window.showToast) {
@@ -1430,7 +1430,7 @@ function UpdateSaleOrder() {
                                                 </div>
 
                                                 <div className="text-sm text-slate-600 mb-2">
-                                                    Mã sản phẩm: <span className="font-medium">{goods.goodsCode}</span>
+                                                    Mã hàng hóa: <span className="font-medium">{goods.goodsCode}</span>
                                                 </div>
 
                                                 <div className="space-y-1">

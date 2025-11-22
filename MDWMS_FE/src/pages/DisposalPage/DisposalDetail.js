@@ -462,7 +462,7 @@ const DisposalDetail = () => {
                                         ) : (
                                             <TableRow>
                                                 <TableCell colSpan={7} className="text-center text-gray-500 py-8">
-                                                    Không có sản phẩm nào
+                                                    Không có hàng hóa nào
                                                 </TableCell>
                                             </TableRow>
                                         )}
