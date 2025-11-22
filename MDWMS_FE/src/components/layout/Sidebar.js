@@ -222,7 +222,7 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
             {
                 key: "/pallets",
                 icon: <ComponentIcon name="pallet" size={16} collapsed={collapsed} />,
-                label: "Quản lý kệ kê hàng",
+                label: "Quản lý pallet",
                 permission: PERMISSIONS.PALLET_VIEW
             },
 

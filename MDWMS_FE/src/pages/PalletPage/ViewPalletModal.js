@@ -22,11 +22,11 @@ export function PalletDetail({ palletId, onClose }) {
                 if (response && response.success !== false && response.data) {
                     setPallet(response.data);
                 } else {
-                    setError(response?.message || "Không thể tải thông tin kệ kê hàng");
+                    setError(response?.message || "Không thể tải thông tin pallet");
                 }
             } catch (err) {
                 console.error("Error fetching pallet detail:", err);
-                setError("Có lỗi xảy ra khi tải thông tin kệ kê hàng");
+                setError("Có lỗi xảy ra khi tải thông tin pallet");
             } finally {
                 setLoading(false);
             }
@@ -97,7 +97,7 @@ export function PalletDetail({ palletId, onClose }) {
         return (
             <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
                 <div className="w-full max-w-4xl mx-4 max-h-[75vh] overflow-y-auto bg-white rounded-lg shadow-2xl relative">
-                    <Loading size="large" text="Đang tải chi tiết kệ kê hàng..." />
+                    <Loading size="large" text="Đang tải chi tiết pallet..." />
                 </div>
             </div>
         );
@@ -132,7 +132,7 @@ export function PalletDetail({ palletId, onClose }) {
             <div className="w-full max-w-4xl mx-4 max-h-[75vh] overflow-y-auto bg-white rounded-lg shadow-2xl relative">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                    <h1 className="text-2xl font-bold text-slate-800">Chi tiết kệ kê hàng</h1>
+                    <h1 className="text-2xl font-bold text-slate-800">Chi tiết pallet</h1>
                     <button
                         onClick={onClose}
                         className="p-1 hover:bg-gray-100 rounded-full transition-colors"
@@ -151,8 +151,8 @@ export function PalletDetail({ palletId, onClose }) {
                                     <ComponentIcon name="pallet" size={24} color="#3b82f6" />
                                 </div>
                                 <div>
-                                    <h2 className="text-2xl font-bold text-slate-800">Kệ kê hàng</h2>
-                                    <p className="text-slate-600 mt-1">Thông tin chi tiết kệ kê hàng</p>
+                                    <h2 className="text-2xl font-bold text-slate-800">Pallet</h2>
+                                    <p className="text-slate-600 mt-1">Thông tin chi tiết pallet</p>
                                 </div>
                             </div>
                             <div className="flex items-center">
@@ -171,7 +171,7 @@ export function PalletDetail({ palletId, onClose }) {
                                 <div className="flex items-center gap-3">
                                     <ComponentIcon name="qrcode" size={20} color="#3b82f6" />
                                     <div>
-                                        <p className="text-sm text-blue-600 font-medium">Mã kệ</p>
+                                        <p className="text-sm text-blue-600 font-medium">Mã pallet</p>
                                         <p className="text-sm text-blue-800 font-semibold truncate">{truncateUuid(pallet.palletId)}</p>
                                     </div>
                                 </div>

@@ -118,7 +118,7 @@ export default function GoodsReceiptDetail() {
   // Xử lý in pallet
   const handlePrint = useReactToPrint({
     contentRef: printRef,
-    documentTitle: "Phiếu dán mã kệ kê hàng",
+    documentTitle: "Phiếu dán mã pallet",
     pageStyle: `
       @page { 
         size: A4; 
@@ -181,7 +181,7 @@ export default function GoodsReceiptDetail() {
   // In nhiều pallet đã chọn
   const handlePrintSelected = () => {
     if (selectedPallets.length === 0) {
-      window.showToast?.("Vui lòng chọn ít nhất một kệ kê hàng để in", "warning");
+      window.showToast?.("Vui lòng chọn ít nhất một pallet để in", "warning");
       return;
     }
     // Hiển thị modal preview trước khi in
@@ -322,7 +322,7 @@ export default function GoodsReceiptDetail() {
     // Chỉ cho mở cart pallet và arranging khi status là Completed
     if (section === 'pallet' || section === 'arranging') {
       if (goodsReceiptNote?.status !== GOODS_RECEIPT_NOTE_STATUS.Completed) {
-        window.showToast?.("Phiếu phải được Quản lý kho duyệt thì mới được đưa vào kệ kê hàng", "warning");
+        window.showToast?.("Phiếu phải được Quản lý kho duyệt thì mới được đưa vào pallet", "warning");
         return;
       }
     }
@@ -1310,8 +1310,8 @@ export default function GoodsReceiptDetail() {
                     <Plus className="w-5 h-5 text-orange-600" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-900">Kệ kê hàng</h2>
-                    <p className="text-sm text-gray-500">Quản lý kệ kê hàng và lô hàng</p>
+                    <h2 className="text-lg font-semibold text-gray-900">Pallet</h2>
+                    <p className="text-sm text-gray-500">Quản lý pallet và lô hàng</p>
                   </div>
                 </div>
                 {expandedSections.pallet ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
@@ -1349,10 +1349,10 @@ export default function GoodsReceiptDetail() {
                       {isSubmittingPallet ? (
                         <>
                           <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                          Đang tạo kệ kê hàng...
+                          Đang tạo pallet...
                         </>
                       ) : (
-                        "Tạo kệ kê hàng"
+                        "Tạo pallet"
                       )}
                     </Button>
                   )}
@@ -1670,7 +1670,7 @@ export default function GoodsReceiptDetail() {
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between p-4 border-b">
               <h3 className="text-lg font-semibold text-gray-900">
-                Xem trước barcode ({selectedPallets.length} kệ kê hàng)
+                Xem trước barcode ({selectedPallets.length} pallet)
               </h3>
               <button
                 onClick={() => setShowPrintPreview(false)}

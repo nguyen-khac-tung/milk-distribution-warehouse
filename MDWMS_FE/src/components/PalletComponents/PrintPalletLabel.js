@@ -5,7 +5,7 @@ import Barcode from "react-barcode";
 export const PrintablePalletLabel = React.forwardRef(({ pallet }, ref) => (
     <div ref={ref} className="p-6 w-[600px] h-[400px] text-center border border-gray-200 rounded-md bg-white flex flex-col items-center justify-center">
         <h2 className="text-3xl font-bold text-gray-800 mb-0 leading-tight">
-            MÃ KỆ KÊ HÀNG
+            MÃ PALLET
         </h2>
         <div className="flex flex-col items-center w-full mt-[20px]">
             <Barcode
@@ -46,7 +46,7 @@ export const PrintableMultiplePalletLabels = React.forwardRef(({ pallets }, ref)
                         }}
                     >
                         <h2 className="text-3xl font-bold text-gray-800 mb-0 leading-tight">
-                            MÃ KỆ KÊ HÀNG
+                            MÃ PALLET
                         </h2>
                         <div className="flex flex-col items-center w-full mt-[20px]">
                             <Barcode
