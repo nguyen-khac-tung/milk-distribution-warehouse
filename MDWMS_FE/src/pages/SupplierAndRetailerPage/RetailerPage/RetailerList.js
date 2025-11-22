@@ -532,7 +532,7 @@ export default function RetailersPage() {
                           className="hover:bg-slate-50 border-b border-slate-200"
                         >
                           <TableCell className="px-6 py-4 text-slate-600 font-medium">
-                            {index + 1}
+                            {(pagination.pageNumber - 1) * pagination.pageSize + (index + 1)}
                           </TableCell>
                           <TableCell className="px-6 py-4 text-slate-700 font-medium">{retailer?.retailerName || ''}</TableCell>
                           <TableCell className="px-6 py-4 text-slate-700">{retailer?.phone || ''}</TableCell>
