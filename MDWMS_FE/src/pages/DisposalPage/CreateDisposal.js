@@ -90,7 +90,7 @@ const CreateDisposal = () => {
                 setExpiredGoods(Array.isArray(goodsData) ? goodsData : []);
             } catch (error) {
                 console.error("Error fetching expired goods:", error);
-                const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi tải danh sách sản phẩm hết hạn");
+                const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi tải danh sách hàng hóa hết hạn");
                 if (window.showToast) {
                     window.showToast(errorMessage, "error");
                 }
@@ -340,7 +340,7 @@ const CreateDisposal = () => {
 
         // Validate selected items
         if (selectedItems.size === 0) {
-            errors.selectedItems = "Vui lòng chọn ít nhất một sản phẩm";
+            errors.selectedItems = "Vui lòng chọn ít nhất một hàng hóa";
         }
 
         // Validate each selected item has valid quantity
@@ -480,7 +480,7 @@ const CreateDisposal = () => {
     };
 
     if (loading) {
-        return <Loading size="large" text="Đang tải danh sách sản phẩm hết hạn..." />;
+        return <Loading size="large" text="Đang tải danh sách hàng hóa hết hạn..." />;
     }
 
     return (
@@ -682,12 +682,12 @@ const CreateDisposal = () => {
                                         <div className="text-center py-12">
                                             <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                                             <p className="text-gray-600">
-                                                {searchQuery ? 'Không tìm thấy sản phẩm nào' : 'Không có sản phẩm hết hạn nào khả dụng để xuất hủy'}
+                                                {searchQuery ? 'Không tìm thấy hàng hóa nào' : 'Không có hàng hóa hết hạn nào khả dụng để xuất hủy'}
                                             </p>
                                         </div>
                                     ) : (
                                         <>
-                                            <Table className="min-w-full"> {/* Thay min-w-[1000px] thành min-w-full hoặc giữ nguyên tùy theo yêu cầu tối thiểu */}
+                                            <Table className="min-w-full">
                                                 <TableHeader>
                                                     <TableRow className="border-b border-gray-200 hover:bg-transparent">
                                                         {/* 1. CHECKBOX: Giảm độ rộng tối thiểu, căn giữa */}
@@ -704,7 +704,7 @@ const CreateDisposal = () => {
                                                         {/* 3. Tên nhà cung cấp*/}
                                                         <TableHead className="text-slate-600 font-semibold w-[13%]">Tên nhà cung cấp</TableHead>
 
-                                                        {/* 4. Tên Sản Phẩm */}
+                                                        {/* 4. Tên hàng hóa */}
                                                         <TableHead className="text-slate-600 font-semibold w-[17%]">Tên hàng hóa</TableHead>
 
                                                         {/* 5. Mã Hàng*/}
@@ -754,7 +754,7 @@ const CreateDisposal = () => {
                                                                 <TableCell className="text-slate-700 font-medium align-top pb-6 w-[13%]">
                                                                     {item.goods?.companyName || '-'}
                                                                 </TableCell>
-                                                                {/* 4. Tên Sản Phẩm*/}
+                                                                {/* 4. Tên hàng hóa*/}
                                                                 <TableCell className="text-slate-700 font-medium align-top pb-6 w-[17%]">
                                                                     {item.goods?.goodsName || '-'}
                                                                 </TableCell>
@@ -864,7 +864,7 @@ const CreateDisposal = () => {
                                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                     <h3 className="text-sm font-semibold text-blue-900 mb-2">Tóm Tắt</h3>
                                     <div className="space-y-1 text-sm text-blue-800">
-                                        <p>Số sản phẩm đã chọn: <span className="font-semibold">{selectedItems.size}</span></p>
+                                        <p>Số hàng hóa đã chọn: <span className="font-semibold">{selectedItems.size}</span></p>
                                         <p>Tổng số thùng: <span className="font-semibold">
                                             {Array.from(selectedItems.values()).reduce((sum, item) => {
                                                 const qty = parseInt(item.packageQuantity) || 0;

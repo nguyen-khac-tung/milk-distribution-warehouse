@@ -35,7 +35,7 @@ namespace MilkDistributionWarehouse.Controllers
             var (msg, backOrder) = await _backOrderService.GetBackOrderById(id);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
-            return ApiResponse<BackOrderResponseDto>.ToResultOk(backOrder);
+            return ApiResponse<BackOrderDetailDto>.ToResultOk(backOrder);
         }
 
         [Authorize(Roles = "Sales Representative")]

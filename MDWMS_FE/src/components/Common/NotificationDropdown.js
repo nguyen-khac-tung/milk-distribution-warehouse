@@ -17,7 +17,7 @@ const CONNECTION_META = {
         description: "Đã ngắt kết nối",
         dot: "bg-rose-500",
         color: "text-rose-600",
-        hint: "Không nhận được realtime. Hãy thử bấm “Làm mới”.",
+        hint: "Không nhận được realtime. Hãy load lại trang.",
     },
     error: {
         description: "Lỗi kết nối",
@@ -108,22 +108,20 @@ const NotificationDropdown = ({
                     <button
                         type="button"
                         onClick={() => setFilterType("all")}
-                        className={`text-sm font-semibold transition-colors ${
-                            filterType === "all"
+                        className={`text-sm font-semibold transition-colors ${filterType === "all"
                                 ? "text-orange-600 border-b-2 border-orange-600 pb-1"
                                 : "text-slate-700 hover:text-slate-900"
-                        }`}
+                            }`}
                     >
                         Tất cả
                     </button>
                     <button
                         type="button"
                         onClick={() => setFilterType("important")}
-                        className={`text-sm font-semibold transition-colors ${
-                            filterType === "important"
+                        className={`text-sm font-semibold transition-colors ${filterType === "important"
                                 ? "text-rose-600 border-b-2 border-rose-600 pb-1"
                                 : "text-slate-700 hover:text-slate-900"
-                        }`}
+                            }`}
                     >
                         Quan trọng
                     </button>
@@ -134,15 +132,15 @@ const NotificationDropdown = ({
                     >
                         <RefreshCw className="w-4 h-4" /> Làm mới
                     </button>
-                    
+
 
                     <span className="text-slate-200">|</span>
 
                     <button
                         type="button"
                         className={`text-sm font-semibold ${filteredUnreadCount === 0
-                                ? "text-slate-300 cursor-not-allowed"
-                                : "text-orange-600 hover:text-orange-700"
+                            ? "text-slate-300 cursor-not-allowed"
+                            : "text-orange-600 hover:text-orange-700"
                             }`}
                         onClick={filteredUnreadCount > 0 ? onMarkAllAsRead : undefined}
                         disabled={filteredUnreadCount === 0}
@@ -174,8 +172,8 @@ const NotificationDropdown = ({
                 {!loading && !error && filteredNotifications.length === 0 && (
                     <div className="px-4 py-10 text-center">
                         <p className="text-base text-slate-500">
-                            {filterType === "important" 
-                                ? "Chưa có thông báo quan trọng nào" 
+                            {filterType === "important"
+                                ? "Chưa có thông báo quan trọng nào"
                                 : "Chưa có thông báo nào"}
                         </p>
                     </div>
@@ -194,8 +192,8 @@ const NotificationDropdown = ({
                                     <button
                                         type="button"
                                         className={`w-full text-left px-4 py-4 transition-colors ${isUnread
-                                                ? "bg-orange-100 hover:bg-orange-200"
-                                                : "hover:bg-slate-50"
+                                            ? "bg-orange-100 hover:bg-orange-200"
+                                            : "hover:bg-slate-50"
                                             }`}
                                         onClick={() => onNotificationClick?.(notification)}
                                     >
@@ -205,10 +203,10 @@ const NotificationDropdown = ({
                                                 <div className="flex items-center justify-between gap-3">
                                                     <p
                                                         className={`text-base font-semibold ${notification.category === NotificationCategory.IMPORTANT
-                                                                ? "text-rose-600"
-                                                                : isUnread
-                                                                    ? "text-slate-900"
-                                                                    : "text-slate-700"
+                                                            ? "text-rose-600"
+                                                            : isUnread
+                                                                ? "text-slate-900"
+                                                                : "text-slate-700"
                                                             }`}
                                                     >
                                                         {notification.title}

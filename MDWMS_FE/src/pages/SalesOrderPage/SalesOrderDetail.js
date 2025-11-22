@@ -368,7 +368,7 @@ const SalesOrderDetail = () => {
                                             </div>
                                             <span className="font-semibold text-gray-900">{salesOrder.retailerName || '—'}</span>
                                         </div>
-                                        
+
                                         <div className="grid grid-cols-[auto_1fr] gap-x-2">
                                             <div className="flex items-center space-x-1">
                                                 <Calendar className="h-4 w-4 text-blue-600" />
@@ -444,7 +444,7 @@ const SalesOrderDetail = () => {
                                         ) : (
                                             <TableRow>
                                                 <TableCell colSpan={6} className="text-center text-gray-500 py-8">
-                                                    Không có sản phẩm nào
+                                                    Không có hàng hóa nào
                                                 </TableCell>
                                             </TableRow>
                                         )}
