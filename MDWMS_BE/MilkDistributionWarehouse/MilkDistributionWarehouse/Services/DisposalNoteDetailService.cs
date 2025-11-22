@@ -127,7 +127,7 @@ namespace MilkDistributionWarehouse.Services
         {
             var notificationToCreate = new NotificationCreateDto()
             {
-                UserId = disposalNote.CreatedBy,
+                UserId = disposalNote.DisposalRequest.CreatedBy,
                 Title = "Yêu cầu lấy lại hàng đơn xuất hủy",
                 Content = $"Đơn xuất hủy '{disposalNote.DisposalNoteId}' có hàng hóa mà quản lý kho yêu cầu bạn lấy lại hàng",
                 EntityType = NotificationEntityType.DisposalNote,
