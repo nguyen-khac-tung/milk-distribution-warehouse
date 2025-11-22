@@ -139,8 +139,8 @@ export default function ExportPurchaseOrdersReport({
                     "STT": index + 1,
                     "Nhà cung cấp": item.supplierName || "-",
                     "Mã đơn mua hàng": item.purchaseOderId || "-",
-                    "Mã sản phẩm": item.goodsCode || "-",
-                    "Tên sản phẩm": item.goodsName || "-",
+                    "Mã hàng hóa": item.goodsCode || "-",
+                    "Tên hàng hóa": item.goodsName || "-",
                     "Số thùng": item.totalPackageQuantity || 0,
                     "Tổng số đơn vị": item.totalUnitQuantity || 0,
                     "Đơn vị tính": item.unitOfMeasure || "-",
@@ -159,8 +159,8 @@ export default function ExportPurchaseOrdersReport({
                 { wch: 5 },   // STT
                 { wch: 25 },  // Nhà cung cấp
                 { wch: 18 },  // Mã đơn mua hàng
-                { wch: 15 },  // Mã sản phẩm
-                { wch: 30 },  // Tên sản phẩm
+                { wch: 15 },  // Mã hàng hóa
+                { wch: 30 },  // Tên hàng hóa
                 { wch: 12 },  // Số thùng
                 { wch: 15 },  // Tổng số đơn vị
                 { wch: 12 },  // Đơn vị tính

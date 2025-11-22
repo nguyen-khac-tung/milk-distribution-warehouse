@@ -471,7 +471,7 @@ export default function OrdersPage({ onClose }) {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Tìm kiếm theo nhà cung cấp, mã sản phẩm, tên sản phẩm..."
+                    placeholder="Tìm kiếm theo nhà cung cấp, mã hàng hóa, tên hàng hóa..."
                     className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-full text-sm"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -688,11 +688,11 @@ export default function OrdersPage({ onClose }) {
                         {activeOrderType === "purchase" ? "Nhà cung cấp" : "Khách hàng"}
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                        Mã sản phẩm
+                        Mã hàng hóa
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                         <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("goodsName")}>
-                          <span>Tên sản phẩm</span>
+                          <span>Tên hàng hóa</span>
                           {sortField === "goodsName" ? (
                             sortAscending ? (
                               <ArrowUp className="h-4 w-4 text-orange-500" />

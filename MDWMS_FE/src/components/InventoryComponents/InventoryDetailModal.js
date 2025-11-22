@@ -66,11 +66,11 @@ const InventoryDetailModal = ({ isOpen, onClose, item }) => {
                                 <div className="text-sm font-semibold text-gray-900">{item.batchCode || '-'}</div>
                             </div>
                             <div>
-                                <div className="text-xs text-gray-500 mb-1">Mã sản phẩm</div>
+                                <div className="text-xs text-gray-500 mb-1">Mã hàng hóa</div>
                                 <div className="text-sm font-semibold text-gray-900">{item.goodsCode || '-'}</div>
                             </div>
                             <div>
-                                <div className="text-xs text-gray-500 mb-1">Tên sản phẩm</div>
+                                <div className="text-xs text-gray-500 mb-1">Tên hàng hóa</div>
                                 <div className="text-sm font-semibold text-gray-900">{item.goodName || '-'}</div>
                             </div>
                             <div>

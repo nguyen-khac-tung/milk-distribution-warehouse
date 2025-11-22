@@ -140,8 +140,8 @@ export default function ExportSalesOrdersReport({
                     "Nhà bán lẻ": item.retailerName || "-",
                     "Nhà cung cấp": item.supplierName || "-",
                     "Mã đơn bán hàng": item.salesOderId || item.salesOrderId || "-",
-                    "Mã sản phẩm": item.goodsCode || "-",
-                    "Tên sản phẩm": item.goodsName || "-",
+                    "Mã hàng hóa": item.goodsCode || "-",
+                    "Tên hàng hóa": item.goodsName || "-",
                     "Số thùng": item.totalPackageQuantity || 0,
                     "Tổng số đơn vị": item.totalUnitQuantity || 0,
                     "Đơn vị tính": item.unitOfMeasure || "-",
@@ -161,8 +161,8 @@ export default function ExportSalesOrdersReport({
                 { wch: 25 },  // Nhà bán lẻ
                 { wch: 25 },  // Nhà cung cấp
                 { wch: 18 },  // Mã đơn bán hàng
-                { wch: 15 },  // Mã sản phẩm
-                { wch: 30 },  // Tên sản phẩm
+                { wch: 15 },  // Mã hàng hóa
+                { wch: 30 },  // Tên hàng hóa
                 { wch: 12 },  // Số thùng
                 { wch: 15 },  // Tổng số đơn vị
                 { wch: 12 },  // Đơn vị tính

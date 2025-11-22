@@ -603,7 +603,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                     <div className="bg-green-500 text-white rounded-full w-10 h-10 flex items-center justify-center mx-auto mb-1">
                       <span>{activityStats.products}</span>
                     </div>
-                    <p className="text-xs">Sản phẩm</p>
+                    <p className="text-xs">Hàng hóa</p>
                   </div>
                 </div>
               )}

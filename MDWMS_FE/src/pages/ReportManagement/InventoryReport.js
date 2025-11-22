@@ -920,18 +920,18 @@ export default function InventoryReport({ onClose }) {
 
               {/* Top Products Bar Chart */}
               <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-slate-700 mb-4">5 sản phẩm tồn kho</h3>
+                <h3 className="text-lg font-semibold text-slate-700 mb-4">5 hàng hóa tồn kho</h3>
                 <TopProductsChart data={chartData.topProducts} />
                 {/* Total Products Summary - At bottom of chart card */}
                 <div className="mt-6 pt-6 border-t border-slate-200">
                   <div className="text-center">
                     <p className="text-sm text-slate-600 mb-2">
-                      Tổng số sản phẩm tồn kho hiện tại
+                      Tổng số hàng hóa tồn kho hiện tại
                     </p>
                     <p className="text-3xl font-bold text-orange-500">
                       {pagination.total.toLocaleString("vi-VN")}
                     </p>
-                    <p className="text-xs text-slate-500 mt-1">sản phẩm</p>
+                    <p className="text-xs text-slate-500 mt-1">hàng hóa</p>
                   </div>
                 </div>
               </div>
@@ -973,7 +973,7 @@ export default function InventoryReport({ onClose }) {
           <InventorySearchFilter
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            searchPlaceholder={reportType === "current" ? "Tìm kiếm theo mã lô, tên sản phẩm..." : "Tìm kiếm theo mã sản phẩm, tên sản phẩm..."}
+            searchPlaceholder={reportType === "current" ? "Tìm kiếm theo mã lô, tên hàng hóa..." : "Tìm kiếm theo mã hàng hóa, tên hàng hóa..."}
             timeRange={reportType === "current" ? timeRange : undefined}
             setTimeRange={reportType === "current" ? setTimeRange : undefined}
             areaId={areaId}
@@ -1000,7 +1000,7 @@ export default function InventoryReport({ onClose }) {
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                         <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("goodsCode")}>
-                          <span>Mã sản phẩm</span>
+                          <span>Mã hàng hóa</span>
                           {sortField === "goodsCode" ? (
                             sortAscending ? (
                               <ArrowUp className="h-4 w-4 text-orange-500" />
@@ -1014,7 +1014,7 @@ export default function InventoryReport({ onClose }) {
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                         <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("goodsName")}>
-                          <span>Tên sản phẩm</span>
+                          <span>Tên hàng hóa</span>
                           {sortField === "goodsName" ? (
                             sortAscending ? (
                               <ArrowUp className="h-4 w-4 text-orange-500" />

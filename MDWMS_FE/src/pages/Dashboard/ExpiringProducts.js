@@ -79,7 +79,7 @@ export default function ExpiringProducts() {
       <CardHeader className="flex flex-row items-center justify-between p-4 pb-0">
         <CardTitle className="text-base font-medium flex items-center gap-2">
           <AlertTriangle className="h-5 w-5 text-amber-500" />
-          Sản phẩm sắp hết hạn
+          Hàng hóa sắp hết hạn
         </CardTitle>
         <Select value={selectedDays} onValueChange={setSelectedDays}>
           <SelectTrigger className="h-8 w-[140px] text-xs">
@@ -111,7 +111,7 @@ export default function ExpiringProducts() {
                 <div key={index} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors">
                   <div className="flex-1">
                     <p className="text-sm font-medium text-slate-700">
-                      {product.goodsName || product.goodName || product.productName || "Sản phẩm"}
+                      {product.goodsName || product.goodName || product.productName || "Hàng hóa"}
                     </p>
                     <div className="flex items-center gap-3 mt-1">
                       {product.goodsCode && (
@@ -138,7 +138,7 @@ export default function ExpiringProducts() {
           </div>
         ) : (
           <div className="flex items-center justify-center h-48 text-gray-500 text-sm">
-            Không có sản phẩm sắp hết hạn
+            Không có hàng hóa sắp hết hạn
           </div>
         )}
       </CardContent>

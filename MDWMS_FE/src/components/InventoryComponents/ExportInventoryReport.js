@@ -208,8 +208,8 @@ export default function ExportInventoryReport({
 
           return {
             "STT": index + 1,
-            "Mã sản phẩm": item.goodsCode || "-",
-            "Tên sản phẩm": item.goodName || "-",
+            "Mã hàng hóa": item.goodsCode || "-",
+            "Tên hàng hóa": item.goodName || "-",
             "Đơn vị/thùng": item.unitPerPackage || "-",
             "Đơn vị": item.unitOfMeasure || "-",
             "Mã lô": item.batchCode || "-",
@@ -224,8 +224,8 @@ export default function ExportInventoryReport({
         excelData = allData.map((item, index) => {
           return {
             "STT": index + 1,
-            "Mã sản phẩm": item.goodsCode || "-",
-            "Tên sản phẩm": item.goodsName || "-",
+            "Mã hàng hóa": item.goodsCode || "-",
+            "Tên hàng hóa": item.goodsName || "-",
             "Đơn vị/thùng": item.unitPerPackage || "-",
             "Đơn vị": item.unitOfMeasure || "-",
             "Tồn đầu kỳ": item.beginningInventoryPackages || 0,
@@ -247,8 +247,8 @@ export default function ExportInventoryReport({
       if (reportType === "current") {
         columnWidths = [
           { wch: 5 },   // STT
-          { wch: 15 },  // Mã sản phẩm
-          { wch: 30 },  // Tên sản phẩm
+          { wch: 15 },  // Mã hàng hóa
+          { wch: 30 },  // Tên hàng hóa
           { wch: 12 },  // Đơn vị/thùng
           { wch: 10 },  // Đơn vị
           { wch: 15 },  // Mã lô
@@ -260,8 +260,8 @@ export default function ExportInventoryReport({
       } else {
         columnWidths = [
           { wch: 5 },   // STT
-          { wch: 15 },  // Mã sản phẩm
-          { wch: 30 },  // Tên sản phẩm
+          { wch: 15 },  // Mã hàng hóa
+          { wch: 30 },  // Tên hàng hóa
           { wch: 12 },  // Đơn vị/thùng
           { wch: 10 },  // Đơn vị
           { wch: 15 },  // Tồn đầu kỳ
