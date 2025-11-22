@@ -548,7 +548,7 @@ export default function InventoryReport({ onClose }) {
       if (response && response.items) {
         // Handle response with items array (even if empty)
         let itemsArray = Array.isArray(response.items) ? response.items : []
-        
+
         // Ensure we only display items up to pageSize (in case backend returns more)
         // This is a safety check to prevent displaying more items than expected
         if (itemsArray.length > pagination.pageSize) {
@@ -558,7 +558,7 @@ export default function InventoryReport({ onClose }) {
           }
           itemsArray = itemsArray.slice(0, pagination.pageSize)
         }
-        
+
         setInventoryData(itemsArray)
         setPagination(prev => ({
           ...prev,
@@ -922,6 +922,18 @@ export default function InventoryReport({ onClose }) {
               <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
                 <h3 className="text-lg font-semibold text-slate-700 mb-4">5 sản phẩm tồn kho</h3>
                 <TopProductsChart data={chartData.topProducts} />
+                {/* Total Products Summary - At bottom of chart card */}
+                <div className="mt-6 pt-6 border-t border-slate-200">
+                  <div className="text-center">
+                    <p className="text-sm text-slate-600 mb-2">
+                      Tổng số sản phẩm tồn kho hiện tại
+                    </p>
+                    <p className="text-3xl font-bold text-orange-500">
+                      {pagination.total.toLocaleString("vi-VN")}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">sản phẩm</p>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1156,12 +1168,12 @@ export default function InventoryReport({ onClose }) {
                           const uniqueKey = item.batchId && item.goodsId && item.manufacturingDate && item.expiryDate
                             ? `current-${item.batchId}-${item.goodsId}-${item.manufacturingDate}-${item.expiryDate}-${index}`
                             : item.batchId && item.goodsId
-                            ? `current-${item.batchId}-${item.goodsId}-${index}`
-                            : item.batchId
-                            ? `current-${item.batchId}-${index}`
-                            : item.goodsId
-                            ? `current-${item.goodsId}-${rowNumber}-${index}`
-                            : `current-${rowNumber}-${index}`
+                              ? `current-${item.batchId}-${item.goodsId}-${index}`
+                              : item.batchId
+                                ? `current-${item.batchId}-${index}`
+                                : item.goodsId
+                                  ? `current-${item.goodsId}-${rowNumber}-${index}`
+                                  : `current-${rowNumber}-${index}`
 
                           return (
                             <TableRow
@@ -1226,14 +1238,14 @@ export default function InventoryReport({ onClose }) {
                         } else {
                           // Period report row
                           // Create unique key by combining goodsId, goodPackingId, and index
-                          const uniqueKey = item.goodsId && item.goodPackingId 
+                          const uniqueKey = item.goodsId && item.goodPackingId
                             ? `period-${item.goodsId}-${item.goodPackingId}-${index}`
-                            : item.goodsId 
-                            ? `period-${item.goodsId}-${index}`
-                            : item.goodPackingId
-                            ? `period-${item.goodPackingId}-${index}`
-                            : `period-${rowNumber}-${index}`
-                          
+                            : item.goodsId
+                              ? `period-${item.goodsId}-${index}`
+                              : item.goodPackingId
+                                ? `period-${item.goodPackingId}-${index}`
+                                : `period-${rowNumber}-${index}`
+
                           return (
                             <TableRow
                               key={uniqueKey}
