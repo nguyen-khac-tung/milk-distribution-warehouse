@@ -21,7 +21,7 @@ const processQueue = (error, token = null) => {
             prom.resolve(token);
         }
     });
-    
+
     failedQueue = [];
 };
 
@@ -60,16 +60,27 @@ api.interceptors.response.use(
                 // Retry request gốc với token mới
                 return api(originalRequest);
             } catch (refreshError) {
-                // Nếu refresh token cũng thất bại, đăng xuất user
                 console.error("Token refresh failed:", refreshError);
-                processQueue(refreshError, null);
-                
-                localStorage.removeItem("accessToken");
-                localStorage.removeItem("refreshToken");
-                localStorage.removeItem("userInfo");
 
-                // Redirect về trang login
-                window.location.href = "/login";
+                // Lỗi token: 400 (refresh token hết hạn), 401 (unauthorized), 403 (forbidden)
+                const isTokenError = refreshError.response?.status === 400 ||
+                    refreshError.response?.status === 401 ||
+                    refreshError.response?.status === 403;
+
+                if (isTokenError) {
+                    // Token không hợp lệ, đăng xuất user
+                    processQueue(refreshError, null);
+
+                    localStorage.removeItem("accessToken");
+                    localStorage.removeItem("refreshToken");
+                    localStorage.removeItem("userInfo");
+
+                    window.location.href = "/login";
+                } else {
+                    // Lỗi network tạm thời, reject request nhưng không đăng xuất
+                    processQueue(refreshError, null);
+                }
+
                 return Promise.reject(refreshError);
             } finally {
                 isRefreshing = false;
