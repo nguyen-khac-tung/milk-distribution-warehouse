@@ -64,29 +64,26 @@ export function BackOrderDetail({ backOrder, onClose }) {
         <div className="p-5 space-y-3 border-b border-gray-100 bg-gray-50/40">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="space-y-1">
-              <p className="text-xs text-gray-500 font-medium">Mã đơn bổ sung</p>
-              <div className="text-xl font-bold text-blue-600">#{backOrderData?.backOrderId || "N/A"}</div>
+              <p className="text-xs text-gray-500 font-medium">Trạng thái</p>
             </div>
             {getStatusBadge(backOrderData?.statusDinamic)}
           </div>
-          <p className="text-sm text-gray-600">
-            <span className="font-medium">Nhà bán lẻ:</span> {backOrderData?.retailerName || "N/A"}
-          </p>
         </div>
 
         {/* Content Grid */}
-        <div className="p-5 grid gap-6 lg:grid-cols-[7fr_4fr]">
+        <div className="p-5 grid gap-6 lg:grid-cols-[6.5fr_5.5fr]">
 
           {/* Left */}
           <div className="space-y-6">
 
             {/* Product */}
-            <SimpleCard title="Thông tin sản phẩm" icon="package" color="blue">
+            <SimpleCard title="Thông tin hàng hóa" icon="package" color="blue">
               <InfoRow label="Tên hàng hóa" value={backOrderData?.goodsName} />
+              <InfoRow label="Tên danh mục" value={backOrderData?.categoryName} />
             </SimpleCard>
 
             {/* Quantity */}
-            <SimpleCard title="Thông tin số lượng" icon="hash" color="green">
+            <SimpleCard title="Thông tin số lượng" icon="batch" color="green">
               <InfoRow label="Số thùng" value={backOrderData?.packageQuantity} />
               <InfoRow label="Quy cách" value={backOrderData?.unitPerPackage ? `${backOrderData.unitPerPackage} ${backOrderData.unitMeasureName || ""}/thùng` : "N/A"} />
               <InfoRow label="Đơn vị" value={backOrderData?.unitMeasureName} />
@@ -98,8 +95,17 @@ export function BackOrderDetail({ backOrder, onClose }) {
 
           {/* Right */}
           <div className="space-y-6">
-            {/* Retailer card removed to avoid duplication */}
+            {/* Supplier */}
+            <SimpleCard title="Thông tin nhà cung cấp" icon="supplier" color="purple">
+              <InfoRow label="Tên công ty" value={backOrderData?.companyName} />
+            </SimpleCard>
 
+            {/* Retailer */}
+            <SimpleCard title="Thông tin nhà bán lẻ" icon="retailer" color="blue">
+              <InfoRow label="Tên nhà bán lẻ" value={backOrderData?.retailerName} />
+            </SimpleCard>
+
+            {/* Creator */}
             <SimpleCard title="Người tạo" icon="user" color="amber">
               <InfoRow label="Tên người tạo" value={backOrderData?.createdByName} />
             </SimpleCard>

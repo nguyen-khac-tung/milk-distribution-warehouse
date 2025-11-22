@@ -138,7 +138,7 @@ export default function UpdateBackOrderModal({ isOpen, onClose, onSuccess, backO
       }
     } catch (error) {
       console.error("Error loading goods:", error)
-      window.showToast("Lỗi khi tải danh sách sản phẩm", "error")
+      window.showToast("Lỗi khi tải danh sách hàng hóa", "error")
     } finally {
       setLoadingGoods(false)
     }
@@ -290,7 +290,7 @@ export default function UpdateBackOrderModal({ isOpen, onClose, onSuccess, backO
                         {/* Goods Selection */}
                         <div className="space-y-2">
                           <Label htmlFor="goodsId" className="text-sm font-medium text-slate-700">
-                            Sản phẩm <span className="text-red-500">*</span>
+                            Hàng hóa <span className="text-red-500">*</span>
                           </Label>
                           <FloatingDropdown
                             value={formData.goodsId}
@@ -298,7 +298,7 @@ export default function UpdateBackOrderModal({ isOpen, onClose, onSuccess, backO
                             loading={loadingGoods || loadingData}
                             disabled={loadingGoods || loadingData}
                             placeholder={
-                              loadingGoods || loadingData ? "Đang tải..." : "Chọn sản phẩm..."
+                              loadingGoods || loadingData ? "Đang tải..." : "Chọn hàng hóa..."
                             }
                             options={goods.map((good) => ({
                               value: good.goodsId.toString(),

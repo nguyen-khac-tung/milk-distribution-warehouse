@@ -87,7 +87,7 @@ export default function CreateBackOrderModal({ isOpen, onClose, onSuccess, selec
       }
     } catch (error) {
       console.error("Error loading goods:", error)
-      window.showToast("Lỗi khi tải danh sách sản phẩm", "error")
+      window.showToast("Lỗi khi tải danh sách hàng hóa", "error")
     } finally {
       setLoadingGoods(false)
     }
@@ -288,7 +288,7 @@ export default function CreateBackOrderModal({ isOpen, onClose, onSuccess, selec
                             <div className="flex-1 pt-1">
                               <h4 className="font-semibold text-slate-800 mb-2">{item.goodsName}</h4>
                               <div className="text-sm text-slate-600 mb-3">
-                                Mã sản phẩm: <span className="font-medium text-slate-700">{item.goodsCode || "-"}</span>
+                                Mã hàng hóa: <span className="font-medium text-slate-700">{item.goodsCode || "-"}</span>
                               </div>
                               <div className="space-y-1">
                                 <div className="text-sm">
@@ -320,7 +320,7 @@ export default function CreateBackOrderModal({ isOpen, onClose, onSuccess, selec
                 {/* Goods Selection */}
                 <div className="space-y-2">
                   <Label htmlFor="goodsId" className="text-sm font-medium text-slate-700">
-                    Sản phẩm <span className="text-red-500">*</span>
+                    Hàng hóa <span className="text-red-500">*</span>
                   </Label>
                   <Select
                     value={formData.goodsId}
@@ -328,7 +328,7 @@ export default function CreateBackOrderModal({ isOpen, onClose, onSuccess, selec
                     disabled={loadingGoods}
                   >
                     <SelectTrigger className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500">
-                      <SelectValue placeholder={loadingGoods ? "Đang tải..." : "Chọn sản phẩm..."} />
+                      <SelectValue placeholder={loadingGoods ? "Đang tải..." : "Chọn hàng hóa..."} />
                     </SelectTrigger>
                     <SelectContent>
                       {goods.map((good) => (

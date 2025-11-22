@@ -8,9 +8,9 @@ import { Textarea } from '../../components/ui/textarea';
 import { Checkbox } from '../../components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { Save, FileText, AlertCircle, Calendar, Search, Building2, ChevronDown, X } from 'lucide-react';
-import { 
-    getExpiredGoodsForDisposal, 
-    updateDisposalRequest, 
+import {
+    getExpiredGoodsForDisposal,
+    updateDisposalRequest,
     updateDisposalRequestStatusPendingApproval,
     getDisposalRequestDetail
 } from '../../services/DisposalService';
@@ -53,9 +53,9 @@ const UpdateDisposal = () => {
                 const response = await getDisposalRequestDetail(id);
                 if (response && response.success && response.data) {
                     const disposalRequest = response.data;
-                    
+
                     // Set form data
-                    const estimatedDate = disposalRequest.estimatedTimeDeparture 
+                    const estimatedDate = disposalRequest.estimatedTimeDeparture
                         ? new Date(disposalRequest.estimatedTimeDeparture).toISOString().split('T')[0]
                         : '';
                     setFormData({
@@ -163,7 +163,7 @@ const UpdateDisposal = () => {
                 });
             } catch (error) {
                 console.error("Error fetching expired goods:", error);
-                const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi tải danh sách sản phẩm hết hạn");
+                const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi tải danh sách hàng hóa hết hạn");
                 if (window.showToast) {
                     window.showToast(errorMessage, "error");
                 }
@@ -439,7 +439,7 @@ const UpdateDisposal = () => {
 
         // Validate selected items
         if (selectedItems.size === 0) {
-            errors.selectedItems = "Vui lòng chọn ít nhất một sản phẩm";
+            errors.selectedItems = "Vui lòng chọn ít nhất một hàng hóa";
         }
 
         // Validate each selected item has valid quantity
@@ -761,7 +761,7 @@ const UpdateDisposal = () => {
                                         <div className="text-center py-12">
                                             <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                                             <p className="text-gray-600">
-                                                {searchQuery ? 'Không tìm thấy sản phẩm nào' : 'Không có sản phẩm hết hạn nào khả dụng để xuất hủy'}
+                                                {searchQuery ? 'Không tìm thấy hàng hóa nào' : 'Không có hàng hóa hết hạn nào khả dụng để xuất hủy'}
                                             </p>
                                         </div>
                                     ) : (
@@ -783,7 +783,7 @@ const UpdateDisposal = () => {
                                                         {/* 3. Tên nhà cung cấp*/}
                                                         <TableHead className="text-slate-600 font-semibold w-[10%]">Tên nhà cung cấp</TableHead>
 
-                                                        {/* 4. Tên Sản Phẩm */}
+                                                        {/* 4. Tên hàng hóa */}
                                                         <TableHead className="text-slate-600 font-semibold w-[20%]">Tên hàng hóa</TableHead>
 
                                                         {/* 5. Mã Hàng*/}
@@ -833,7 +833,7 @@ const UpdateDisposal = () => {
                                                                 <TableCell className="text-slate-700 font-medium align-top pb-6 w-[10%]">
                                                                     {item.goods?.companyName || '-'}
                                                                 </TableCell>
-                                                                {/* 4. Tên Sản Phẩm*/}
+                                                                {/* 4. Tên hàng hóa*/}
                                                                 <TableCell className="text-slate-700 font-medium align-top pb-6 w-[20%]">
                                                                     {item.goods?.goodsName || '-'}
                                                                 </TableCell>
