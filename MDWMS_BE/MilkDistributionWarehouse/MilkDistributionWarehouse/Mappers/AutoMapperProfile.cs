@@ -416,6 +416,17 @@ namespace MilkDistributionWarehouse.Mappers
                 .ForMember(dest => dest.UnitMeasureName, opt => opt.MapFrom(src => src.Goods.UnitMeasure != null ? src.Goods.UnitMeasure.Name : null))
                 .ForMember(dest => dest.UnitPerPackage, opt => opt.MapFrom(src => src.GoodsPacking != null ? src.GoodsPacking.UnitPerPackage : null))
                 .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => src.CreatedByNavigation != null ? src.CreatedByNavigation.FullName : null));
+            CreateMap<BackOrder, BackOrderDto.BackOrderDetailDto>()
+                .ForMember(dest => dest.RetailerName, opt => opt.MapFrom(src => src.Retailer != null ? src.Retailer.RetailerName : null))
+                .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Goods != null ? src.Goods.GoodsName : null))
+                .ForMember(dest => dest.UnitMeasureId, opt => opt.MapFrom(src => src.Goods != null ? (src.Goods.UnitMeasureId ?? 0) : 0))
+                .ForMember(dest => dest.UnitMeasureName, opt => opt.MapFrom(src => src.Goods != null && src.Goods.UnitMeasure != null ? src.Goods.UnitMeasure.Name : null))
+                .ForMember(dest => dest.CategoryId, opt => opt.MapFrom(src => src.Goods != null ? src.Goods.CategoryId : 0))
+                .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Goods != null && src.Goods.Category != null ? src.Goods.Category.CategoryName : null))
+                .ForMember(dest => dest.SupplierId, opt => opt.MapFrom(src => src.Goods != null ? (src.Goods.SupplierId ?? 0) : 0))
+                .ForMember(dest => dest.CompanyName, opt => opt.MapFrom(src => src.Goods != null && src.Goods.Supplier != null ? src.Goods.Supplier.CompanyName : null))
+                .ForMember(dest => dest.UnitPerPackage, opt => opt.MapFrom(src => src.GoodsPacking != null ? (src.GoodsPacking.UnitPerPackage ?? 0) : 0))
+                .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => src.CreatedByNavigation != null ? src.CreatedByNavigation.FullName : null));
             CreateMap<BackOrder, BackOrderDto.BackOrderResponseCreateDto>()
                 .ForMember(dest => dest.RetailerName, opt => opt.MapFrom(src => src.Retailer != null ? src.Retailer.RetailerName : null))
                 .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Goods != null ? src.Goods.GoodsName : null))
