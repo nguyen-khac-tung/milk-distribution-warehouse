@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, MapPin, Clock, Calendar, User, Thermometer, Droplets, Sun, Check, RotateCcw } from 'lucide-react';
+import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, MapPin, Clock, Calendar, User, Thermometer, Droplets, Sun, Check, RotateCcw, Search } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
 import { getStocktakingAreaDetailBySheetId, getStocktakingDetail, confirmStocktakingLocationCounted, submitStocktakingArea, cancelStocktakingLocationRecord } from '../../services/StocktakingService';
@@ -39,6 +39,9 @@ const StocktakingArea = () => {
     const [recheckingLocations, setRecheckingLocations] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [locationToConfirm, setLocationToConfirm] = useState(null);
+    const [searchTerms, setSearchTerms] = useState({}); // Lưu search term đang active (đã tìm) cho mỗi area
+    const [searchInputs, setSearchInputs] = useState({}); // Lưu giá trị input cho mỗi area
+    const locationRefs = useRef({}); // Refs để scroll đến location được tìm thấy
     const isFetchingRef = useRef(false);
 
     useEffect(() => {
@@ -134,10 +137,10 @@ const StocktakingArea = () => {
         try {
             isFetchingRef.current = true;
             setLoading(true);
-            
+
             // Lấy stocktakingAreaId từ query parameter nếu có
             const stocktakingAreaId = searchParams.get('stocktakingAreaId');
-            
+
             const [areaResponse, detailResponse] = await Promise.all([
                 getStocktakingAreaDetailBySheetId(id, stocktakingAreaId),
                 getStocktakingDetail(id)
@@ -399,6 +402,80 @@ const StocktakingArea = () => {
                 [areaId]: !prev.areas[areaId]
             }
         }));
+    };
+
+    const handleSearchLocation = (areaId, searchTerm) => {
+        if (!searchTerm || !searchTerm.trim()) {
+            setSearchTerms(prev => {
+                const newTerms = { ...prev };
+                delete newTerms[areaId];
+                return newTerms;
+            });
+            return;
+        }
+
+        const trimmedTerm = searchTerm.trim().toLowerCase();
+        setSearchTerms(prev => ({
+            ...prev,
+            [areaId]: trimmedTerm
+        }));
+
+        // Tìm location trong area này
+        const area = stocktakingAreas.find(a => a.stocktakingAreaId === areaId);
+        if (!area) return;
+
+        const allLocations = area.stocktakingLocations || [];
+        const foundLocation = allLocations.find(loc =>
+            loc.locationCode && loc.locationCode.toLowerCase().includes(trimmedTerm)
+        );
+
+        if (foundLocation) {
+            // Đảm bảo area được expand
+            setExpandedSections(prev => ({
+                ...prev,
+                areas: {
+                    ...prev.areas,
+                    [areaId]: true
+                }
+            }));
+
+            // Scroll đến location sau một chút delay để đảm bảo DOM đã render
+            setTimeout(() => {
+                const locationId = foundLocation.stocktakingLocationId || foundLocation.locationId;
+                const refKey = `${areaId}-${locationId}`;
+                if (locationRefs.current[refKey]) {
+                    locationRefs.current[refKey].scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                }
+            }, 100);
+        } else {
+            if (window.showToast) {
+                window.showToast('Không tìm thấy vị trí với mã này', 'warning');
+            }
+            // Vẫn set search term để highlight (nếu có match một phần)
+        }
+    };
+
+    const handleSearchInputChange = (areaId, value) => {
+        setSearchInputs(prev => ({
+            ...prev,
+            [areaId]: value
+        }));
+    };
+
+    const clearSearch = (areaId) => {
+        setSearchTerms(prev => {
+            const newTerms = { ...prev };
+            delete newTerms[areaId];
+            return newTerms;
+        });
+        setSearchInputs(prev => {
+            const newInputs = { ...prev };
+            delete newInputs[areaId];
+            return newInputs;
+        });
     };
 
     if (loading) {
@@ -677,11 +754,27 @@ const StocktakingArea = () => {
                                     const canSelect = location.status === STOCK_LOCATION_STATUS.Counted;
                                     const colSpanForRejectReason = isUnchecked ? (hasConfirmableLocation ? 5 : 4) : 5;
 
+                                    // Check if location matches search term
+                                    const locationCode = location.locationCode || '';
+                                    const isHighlighted = currentSearchTerm &&
+                                        locationCode.toLowerCase().includes(currentSearchTerm);
+                                    const refKey = `${areaId}-${locationId}`;
+
                                     return (
                                         <>
                                             <TableRow
                                                 key={locationId}
-                                                className={`hover:bg-slate-50 border-b border-slate-200 ${isSelected ? 'bg-orange-50' : ''}`}
+                                                ref={(el) => {
+                                                    if (el) {
+                                                        locationRefs.current[refKey] = el;
+                                                    }
+                                                }}
+                                                className={`border-b border-slate-200 transition-colors ${isHighlighted
+                                                        ? 'bg-orange-300 hover:bg-orange-400 border-l-4 border-l-orange-500'
+                                                        : isSelected
+                                                            ? 'bg-orange-50 hover:bg-orange-100'
+                                                            : 'hover:bg-slate-50'
+                                                    }`}
                                             >
                                                 <TableCell className="px-6 py-4 text-center text-slate-700 font-medium">
                                                     {index + 1}
@@ -768,31 +861,79 @@ const StocktakingArea = () => {
                                 const colSpanUnchecked = hasConfirmableLocation ? 5 : 4; // Thêm 1 cột cho STT
                                 const colSpanChecked = 5; // Thêm 1 cột cho STT và 1 cột cho checkbox
 
+                                const currentSearchTerm = searchTerms[areaId] || '';
+                                const currentSearchInput = searchInputs[areaId] || '';
+
                                 return (
                                     <div key={areaId || areaIndex} className="border border-gray-200 rounded-lg bg-white">
                                         {/* Area Header */}
-                                        <div
-                                            className="p-4 cursor-pointer flex items-center justify-between hover:bg-gray-50 transition-colors border-b border-gray-200"
-                                            onClick={() => toggleArea(areaId)}
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className="flex-1">
-                                                    <div className="text-sm font-semibold text-gray-900 mb-1">
-                                                        {area.areaDetail?.areaName || `Khu vực ${areaIndex + 1}`}
-                                                    </div>
-                                                    <div className="text-xs text-gray-500">
-                                                        {area.assignToName && `Người tiếp nhận: ${area.assignToName}`}
-                                                        {(unCheckedLocations.length > 0 || checkedLocations.length > 0) &&
-                                                            ` • ${unCheckedLocations.length + checkedLocations.length} vị trí`}
+                                        <div className="p-4 border-b border-gray-200">
+                                            <div
+                                                className="flex items-center justify-between hover:bg-gray-50 transition-colors cursor-pointer -mx-4 -mt-4 px-4 pt-4 pb-4"
+                                                onClick={(e) => {
+                                                    // Chỉ toggle khi click vào phần không phải search
+                                                    if (!e.target.closest('.search-container')) {
+                                                        toggleArea(areaId);
+                                                    }
+                                                }}
+                                            >
+                                                <div className="flex items-center gap-3 flex-1">
+                                                    <div className="flex-1">
+                                                        <div className="text-sm font-semibold text-gray-900 mb-1">
+                                                            {area.areaDetail?.areaName || `Khu vực ${areaIndex + 1}`}
+                                                        </div>
+                                                        <div className="text-xs text-gray-500">
+                                                            {area.assignToName && `Người tiếp nhận: ${area.assignToName}`}
+                                                            {(unCheckedLocations.length > 0 || checkedLocations.length > 0) &&
+                                                                ` • ${unCheckedLocations.length + checkedLocations.length} vị trí`}
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                            <div className="ml-4">
-                                                {isAreaExpanded ? (
-                                                    <ChevronUp className="w-5 h-5 text-gray-400" />
-                                                ) : (
-                                                    <ChevronDown className="w-5 h-5 text-gray-400" />
-                                                )}
+                                                {/* Search Bar - cùng dòng */}
+                                                <div
+                                                    className="search-container flex items-center gap-2 ml-4"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <div className="relative w-64">
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Nhập mã vị trí..."
+                                                            value={currentSearchInput}
+                                                            onChange={(e) => handleSearchInputChange(areaId, e.target.value)}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter') {
+                                                                    handleSearchLocation(areaId, currentSearchInput);
+                                                                }
+                                                            }}
+                                                            className="w-full px-3 py-2 pr-20 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
+                                                        />
+                                                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                                            {(currentSearchInput || currentSearchTerm) && (
+                                                                <button
+                                                                    onClick={() => clearSearch(areaId)}
+                                                                    className="text-gray-400 hover:text-gray-600 text-xl leading-none w-5 h-5 flex items-center justify-center"
+                                                                    title="Xóa tìm kiếm"
+                                                                >
+                                                                    ×
+                                                                </button>
+                                                            )}
+                                                            <button
+                                                                onClick={() => handleSearchLocation(areaId, currentSearchInput)}
+                                                                className="text-orange-500 hover:text-orange-600 p-1 flex items-center justify-center"
+                                                                title="Tìm kiếm"
+                                                            >
+                                                                <Search className="h-4 w-4" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="ml-4">
+                                                    {isAreaExpanded ? (
+                                                        <ChevronUp className="w-5 h-5 text-gray-400" />
+                                                    ) : (
+                                                        <ChevronDown className="w-5 h-5 text-gray-400" />
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
 

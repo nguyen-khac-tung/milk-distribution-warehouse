@@ -268,11 +268,11 @@ export default function StocktakingList() {
         try {
             const stockAreaStarted = stocktaking.stockAreaStarted;
             const status = stocktaking.status;
-            
+
             // stockAreaStarted === 1: Chưa bắt đầu (1 khu vực) -> gọi API trực tiếp
             // stockAreaStarted === 3: Chưa bắt đầu (nhiều khu vực) -> hiển thị modal chọn khu vực
             // stockAreaStarted === 2: Đã bắt đầu -> chỉ navigate, không gọi API
-            
+
             if (stockAreaStarted !== undefined && stockAreaStarted !== null) {
                 if (stockAreaStarted === 3 || stockAreaStarted === '3') {
                     // Nhiều khu vực -> hiển thị modal để chọn
@@ -281,7 +281,7 @@ export default function StocktakingList() {
                     return;
                 } else if (stockAreaStarted === 1 || stockAreaStarted === '1') {
                     // stockAreaStarted === 1: Chỉ truyền stocktakingSheetId, stocktakingAreaId = null
-                    await inProgressStocktaking({ 
+                    await inProgressStocktaking({
                         stocktakingSheetId: stocktaking.stocktakingSheetId,
                         stocktakingAreaId: null
                     });
@@ -297,10 +297,10 @@ export default function StocktakingList() {
                     return;
                 }
             }
-            
+
             // Fallback: nếu status là Assigned (2) = chưa bắt đầu -> cần gọi API
             if (status === 2 || status === '2' || status === STOCKTAKING_STATUS.Assigned) {
-                await inProgressStocktaking({ 
+                await inProgressStocktaking({
                     stocktakingSheetId: stocktaking.stocktakingSheetId,
                     stocktakingAreaId: null
                 });
@@ -339,7 +339,7 @@ export default function StocktakingList() {
             setShowSelectAreaModal(false);
             setStocktakingForAreaSelection(null);
 
-            navigate(`/stocktaking-area/${stocktakingForAreaSelection.stocktakingSheetId}`);
+            navigate(`/stocktaking-area/${stocktakingForAreaSelection.stocktakingSheetId}?stocktakingAreaId=${stocktakingAreaId}`);
         } catch (error) {
             console.error("Error starting stocktaking with selected area:", error);
             const errorMessage = extractErrorMessage(error);

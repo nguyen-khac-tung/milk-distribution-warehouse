@@ -401,7 +401,7 @@ export default function OrdersPage({ onClose }) {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-600">Đơn hàng</h1>
+            <h1 className="text-2xl font-bold text-slate-600"> Báo cáo đơn hàng</h1>
             <p className="text-slate-600 mt-1">Quản lý đơn mua hàng và đơn bán hàng</p>
           </div>
           <div className="flex items-center gap-2">
