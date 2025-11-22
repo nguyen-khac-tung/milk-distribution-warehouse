@@ -9,7 +9,7 @@ namespace MilkDistributionWarehouse.Repositories
 {
     public interface IStocktakingAreaRepository
     {
-        Task<List<StocktakingArea>?> GetStocktakingAreaByStocktakingSheetIdAndAssignTo(string stocktakingSheetId, int? assignTo);
+        Task<List<StocktakingArea>?> GetStocktakingAreaByStocktakingSheetIdAndAssignTo(string stocktakingSheetId, Guid? stocktakingAreaId, int? assignTo);
         Task<List<Guid>> GetAreaIdsBySheetId(string stocktakingSheetId);
         Task<List<StocktakingArea>> GetStocktakingAreasByStocktakingSheetId(string stocktakingSheetId);
         Task<StocktakingArea?> GetStocktakingAreaByStocktakingAreaId(Guid stocktakingAreaId);
@@ -45,7 +45,7 @@ namespace MilkDistributionWarehouse.Repositories
                 .ToListAsync();
         }
 
-        public async Task<List<StocktakingArea>?> GetStocktakingAreaByStocktakingSheetIdAndAssignTo(string stocktakingSheetId, int? assignTo)
+        public async Task<List<StocktakingArea>?> GetStocktakingAreaByStocktakingSheetIdAndAssignTo(string stocktakingSheetId, Guid? stocktakingAreaId, int? assignTo)
         {
             return await _context.StocktakingAreas
                 .Include(sa => sa.Area)
@@ -55,6 +55,7 @@ namespace MilkDistributionWarehouse.Repositories
                     .ThenInclude(sl => sl.Location)
                 .Where(sa => 
                                 sa.StocktakingSheetId.Equals(stocktakingSheetId) &&
+                                (stocktakingAreaId == null || sa.StocktakingAreaId == stocktakingAreaId) &&
                                 (assignTo == null || sa.AssignTo == assignTo))
                 .ToListAsync();
         }

@@ -650,6 +650,15 @@ namespace MilkDistributionWarehouse.Mappers
                 .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category ?? NotificationCategory.Normal))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => NotificationStatus.Unread))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.Now));
+
+            // Map InventoryLedger
+            CreateMap<InventoryLedger, InventoryLedgerResponseDto>();
+            CreateMap<InventoryLedgerRequestDto, InventoryLedger>()
+                .ForMember(dest => dest.LedgerId, opt => opt.Ignore())
+                .ForMember(dest => dest.EventDate, opt => opt.MapFrom(src => src.EventDate ?? DateTime.Now))
+                .ForMember(dest => dest.InQty, opt => opt.MapFrom(src => src.InQty ?? 0))
+                .ForMember(dest => dest.OutQty, opt => opt.MapFrom(src => src.OutQty ?? 0))
+                .ForMember(dest => dest.BalanceAfter, opt => opt.MapFrom(src => src.BalanceAfter ?? 0));
         }
     }
 }

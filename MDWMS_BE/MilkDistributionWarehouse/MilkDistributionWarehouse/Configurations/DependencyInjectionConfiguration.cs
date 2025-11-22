@@ -157,6 +157,10 @@ namespace MilkDistributionWarehouse.Configurations
             //Notification
             services.AddScoped<INotificationRepository, NotificationRepository>();
             services.AddScoped<INotificationService, NotificationService>();
+
+            //InventoryLedger
+            services.AddScoped<IInventoryLedgerRepository, InventoryLedgerRepository>();
+            services.AddScoped<IInventoryLedgerService, InventoryLedgerService>();
         }
     }
 }

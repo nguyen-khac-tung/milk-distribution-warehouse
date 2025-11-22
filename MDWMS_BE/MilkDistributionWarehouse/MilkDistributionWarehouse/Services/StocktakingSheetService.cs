@@ -94,11 +94,25 @@ namespace MilkDistributionWarehouse.Services
                 CreatedAt = ss.CreatedAt,
                 CreatedBy = ss.CreatedBy,
                 CreateByName = ss.CreatedByNavigation.FullName,
-                CanViewStocktakingArea = roleName == RoleNames.WarehouseManager || roleName == RoleNames.SalesManager
-            ? ss.StocktakingAreas.Any(sa => sa.StocktakingLocations.Any())
-            : ss.StocktakingAreas.Any(sa => sa.AssignTo == userId && sa.StocktakingLocations.Any()),
-                IsStocktakingStarted = ss.StocktakingAreas
-                    .Any(sa => sa.AssignTo == userId && sa.StocktakingLocations.Any())
+
+                CanViewStocktakingArea =
+                    roleName == RoleNames.WarehouseManager || roleName == RoleNames.SalesManager
+                    ? ss.StocktakingAreas.Any(sa => sa.StocktakingLocations.Any())
+                    : ss.StocktakingAreas.Any(sa =>
+                        sa.AssignTo == userId &&
+                        sa.StocktakingLocations.Any()
+                    ),
+
+                StockAreaStarted =
+                    (ss.StocktakingAreas.Count(sa => sa.AssignTo == userId) == 1 
+                    && ss.StocktakingAreas.Any(sa => sa.AssignTo == userId && sa.StocktakingLocations.Any() == false))
+                        ? StockAreaStarted.NotStarted
+
+                    : (ss.StocktakingAreas.Count(sa => sa.AssignTo == userId) == 1 &&
+                    ss.StocktakingAreas.Any(sa => sa.AssignTo == userId && sa.StocktakingLocations.Any()))
+                        ? StockAreaStarted.Started
+
+                    : StockAreaStarted.HasSomeAreas
             });
 
             var items = await queryDto.ToPagedResultAsync(request);
@@ -205,7 +219,7 @@ namespace MilkDistributionWarehouse.Services
                     StocktakingSheetAssignStatus assignStatus => await HandleAssignStatus(stocktakingSheetExist, assignStatus, userId),
                     StocktakingSheetReAssignStatus reAssingStatus => await HandleReAssignStatus(stocktakingSheetExist, reAssingStatus, userId),
                     StocktakingSheetCancelStatus => await HandleCancelStatus(stocktakingSheetExist, userId),
-                    StocktakingSheetInProgressStatus => await HandleInProgressStatus(stocktakingSheetExist, userId),
+                    StocktakingSheetInProgressStatus inProgress => await HandleInProgressStatus(stocktakingSheetExist, inProgress, userId),
                     StocktakingSheetCompletedStatus completedStatus => await HandleCompletedStatus(stocktakingSheetExist, completedStatus.Note),
                     _ => "Loại cập nhật trạng thái không hợp lệ.".ToMessageForUser()
                 };
@@ -315,11 +329,14 @@ namespace MilkDistributionWarehouse.Services
             if (!IsWarehouseManager(sheet, userId))
                 return "Bạn không có quyền thực hiện chức năng cập nhật trạng thái trong phiếu kiểm kê.".ToMessageForUser();
 
-            if (sheet.Status != StocktakingStatus.Assigned)
-                return "Chỉ được chuyển sang trạng thái Huỷ khi phiếu kiểm kê ở trạng thái Đã phân công.".ToMessageForUser();
+            //if (sheet.Status == StocktakingStatus.Approved)
+            //    return "Không thể Huỷ phiếu kiểm kê khi phiếu kiểm kê Đã được duyệt.".ToMessageForUser();
 
-            if (!IsBeforeEditDeadline(sheet.StartTime))
-                return $"Chỉ được chuyển sang trạng thái Huỷ khi phiếu kiểm kê trước thời gian bắt đầu {_hoursBeforeStartTime} giờ".ToMessageForUser();
+            if (sheet.Status == StocktakingStatus.Completed)
+                return "Không thể Huỷ phiếu kiểm kê khi phiếu kiểm kê Đã hoàn thành.".ToMessageForUser();
+
+            //if (!IsBeforeEditDeadline(sheet.StartTime))
+            //    return $"Chỉ được chuyển sang trạng thái Huỷ khi phiếu kiểm kê trước thời gian bắt đầu {_hoursBeforeStartTime} giờ".ToMessageForUser();
 
             var hasAnyStockArea = await _stocktakingAreaRepository.HasAnyPendingStocktakingArea(sheet.StocktakingSheetId);
 
@@ -333,13 +350,10 @@ namespace MilkDistributionWarehouse.Services
             return string.Empty;
         }
 
-        private async Task<string> HandleInProgressStatus(StocktakingSheet sheet, int? userId)
+        private async Task<string> HandleInProgressStatus(StocktakingSheet sheet, StocktakingSheetInProgressStatus inProgressStatus, int? userId)
         {
             if (!IsWarehouseStaff(sheet, userId))
                 return "Bạn không có quyền thực hiện chức năng cập nhật trạng thái trong phiếu kiểm kê.".ToMessageForUser();
-
-            if (sheet.Status != StocktakingStatus.Assigned)
-                return "Chỉ được chuyển sang trạng thái Đang kiểm kê khi phiếu kiểm kê ở trạng thái Đã phân công.".ToMessageForUser();
 
             //if (sheet.StartTime.HasValue && DateTime.Now < sheet.StartTime.Value)
             //{
@@ -347,7 +361,25 @@ namespace MilkDistributionWarehouse.Services
             //    return $"Còn {remaining.Hours} giờ {remaining.Minutes} phút nữa đến thời gian bắt đầu kiểm kê.".ToMessageForUser();
             //}
 
-            var stocktakingAreaOfAssignedStaff = sheet.StocktakingAreas.FirstOrDefault(sa => sa.AssignTo == userId);
+            if (inProgressStatus.StocktakingAreaId != Guid.Empty)
+            {
+                bool hasOtherActiveArea = sheet.StocktakingAreas.Any(sa =>
+                    sa.AssignTo == userId &&
+                    sa.StocktakingAreaId != inProgressStatus.StocktakingAreaId &&
+                    (sa.Status == StockAreaStatus.Pending ||
+                     sa.Status == StockAreaStatus.PendingApproval));
+
+                if (hasOtherActiveArea)
+                    return "Nhân viên chỉ được phép kiểm kê một khu vực tại một thời điểm."
+                            .ToMessageForUser();
+            }
+
+            var stocktakingAreaOfAssignedStaff = sheet.StocktakingAreas
+                .FirstOrDefault(sa => 
+                                    sa.AssignTo == userId && 
+                                    (inProgressStatus.StocktakingAreaId == null ||
+                                    inProgressStatus.StocktakingAreaId == sa.StocktakingAreaId));
+
             if (stocktakingAreaOfAssignedStaff == null)
                 return "Không tìm thấy khu vực được phân công cho nhân viên này.".ToMessageForUser();
 
@@ -374,6 +406,8 @@ namespace MilkDistributionWarehouse.Services
             var updateMessage = await _stocktakingStatusDomainService.UpdateSheetStatusAsync(sheet, targetStatus);
             if (!string.IsNullOrEmpty(updateMessage))
                 return updateMessage;
+
+            //Check dừng các hoạt động nhập, xuất
 
             return string.Empty;
         }

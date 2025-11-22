@@ -61,5 +61,14 @@ namespace MilkDistributionWarehouse.Controllers
                 return ApiResponse<string>.ToResultError(message);
             return ApiResponse<PageResult<ReportDto.GoodIssueReportDto>>.ToResultOk(data);
         }
+
+        [HttpPost("InventoryLedgerReport")]
+        public async Task<IActionResult> GetInventoryLedgerReport([FromBody] PagedRequest request, [FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate)
+        {
+            var (message, data) = await _reportService.GetInventoryLedgerReportAsync(request, fromDate, toDate);
+            if (!string.IsNullOrEmpty(message))
+                return ApiResponse<string>.ToResultError(message);
+            return ApiResponse<PageResult<ReportDto.InventoryLedgerReportDto>>.ToResultOk(data);
+        }
     }
 }
