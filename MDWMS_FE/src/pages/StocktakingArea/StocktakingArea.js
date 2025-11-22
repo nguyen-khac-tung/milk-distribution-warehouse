@@ -134,8 +134,12 @@ const StocktakingArea = () => {
         try {
             isFetchingRef.current = true;
             setLoading(true);
+            
+            // Lấy stocktakingAreaId từ query parameter nếu có
+            const stocktakingAreaId = searchParams.get('stocktakingAreaId');
+            
             const [areaResponse, detailResponse] = await Promise.all([
-                getStocktakingAreaDetailBySheetId(id),
+                getStocktakingAreaDetailBySheetId(id, stocktakingAreaId),
                 getStocktakingDetail(id)
             ]);
 

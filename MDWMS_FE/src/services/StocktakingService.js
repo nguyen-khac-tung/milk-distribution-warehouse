@@ -179,12 +179,12 @@ export const inProgressStocktaking = async (data) => {
 export const getStocktakingAreaDetailBySheetId = async (stocktakingSheetId, stocktakingAreaId = null) => {
     try {
         let url = `/StocktakingArea/GetDetailForWarehouseStaffByStocktakingSheetId/${stocktakingSheetId}`;
-        
+
         // Thêm stocktakingAreaId như query parameter nếu có
         if (stocktakingAreaId) {
             url += `?stocktakingAreaId=${stocktakingAreaId}`;
         }
-        
+
         const res = await api.get(url);
         return res.data;
     } catch (error) {
@@ -443,7 +443,7 @@ export const rejectStocktakingLocationRecords = async (records) => {
         if (!records || !Array.isArray(records) || records.length === 0) {
             throw new Error("records is required and must be a non-empty array");
         }
-        
+
         // Validate each record
         records.forEach((record, index) => {
             if (!record.stocktakingLocationId) {
@@ -477,7 +477,7 @@ export const cancelStocktakingLocationRecord = async (records) => {
         if (!records || !Array.isArray(records) || records.length === 0) {
             throw new Error("records is required and must be a non-empty array");
         }
-        
+
         // Validate each record
         records.forEach((record, index) => {
             if (!record.stocktakingLocationId) {
@@ -500,6 +500,8 @@ export const cancelStocktakingLocationRecord = async (records) => {
         throw error;
     }
 };
+
+
 
 // Duyệt khu vực kiểm kê (Approval stocktaking area)
 export const approveStocktakingArea = async (stocktakingAreaId) => {
@@ -546,6 +548,24 @@ export const getStocktakingAreaById = async (stocktakingSheetId) => {
         return res.data;
     } catch (error) {
         console.error("Error fetching stocktaking area by id:", error);
+        throw error;
+    }
+};
+
+// Cập nhật bản ghi kiểm kê (Update stocktaking location records)
+export const updateStocktakingLocationRecords = async (data) => {
+    try {
+        if (!data.stocktakingLocationId) {
+            throw new Error("stocktakingLocationId is required");
+        }
+        const body = {
+            stocktakingLocationId: data.stocktakingLocationId,
+            note: data.note || ""
+        };
+        const res = await api.put("/StocktakingLocation/UpdateRecords", body);
+        return res.data;
+    } catch (error) {
+        console.error("Error updating stocktaking location records:", error);
         throw error;
     }
 };
