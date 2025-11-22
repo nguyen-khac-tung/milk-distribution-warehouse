@@ -91,6 +91,8 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public int GoodsId { get; set; }
             public string GoodsCode { get; set; }
             public string GoodsName { get; set; }
+            public int SupplierId { get; set; }
+            public string CompanyName { get; set; }
             public string UnitOfMeasure { get; set; }
             public int GoodPackingId { get; set; }
             public int? UnitPerPackage { get; set; }

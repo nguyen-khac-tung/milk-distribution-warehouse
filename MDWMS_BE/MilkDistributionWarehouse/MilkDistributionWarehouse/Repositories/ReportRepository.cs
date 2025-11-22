@@ -788,11 +788,12 @@ namespace MilkDistributionWarehouse.Repositories
             var from = fromDate.Value.Date;
             var to = toDate.Value.Date.AddDays(1).AddTicks(-1);
 
-            // load relevant ledger records (including related goods and packing for labels)
             var ledgers = await _context.InventoryLedgers
                 .AsNoTracking()
                 .Include(l => l.Goods)
                     .ThenInclude(g => g.UnitMeasure)
+                .Include(l => l.Goods)
+                    .ThenInclude(s => s.Supplier)
                 .Include(l => l.GoodPacking)
                 .ToListAsync(cancellationToken);
 
@@ -825,6 +826,8 @@ namespace MilkDistributionWarehouse.Repositories
                         GoodsCode = goods?.GoodsCode,
                         GoodsName = goods?.GoodsName,
                         UnitOfMeasure = goods?.UnitMeasure?.Name,
+                        SupplierId = goods?.SupplierId ?? 0,
+                        CompanyName = goods?.Supplier?.CompanyName,
                         GoodPackingId = g.Key.GoodPackingId,
                         UnitPerPackage = packing?.UnitPerPackage,
                         BeginningInventoryPackages = beginning,
