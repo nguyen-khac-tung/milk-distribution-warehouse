@@ -92,11 +92,6 @@ export default function WarehouseEventCalendar() {
         const fromDate = dayjs().subtract(1, "year").format("YYYY-MM-DD")
         const toDate = dayjs().add(1, "year").format("YYYY-MM-DD")
 
-        const [receiptsResponse, issuesResponse] = await Promise.all([
-          getGoodsReceiptReport({ fromDate, toDate }).catch(() => []),
-          getGoodsIssueReport({ fromDate, toDate }).catch(() => [])
-        ])
-
         // Handle response structure - normalize data
         const normalizeData = (response) => {
           if (Array.isArray(response)) return response
@@ -106,24 +101,87 @@ export default function WarehouseEventCalendar() {
           return []
         }
 
-        const receiptsList = normalizeData(receiptsResponse)
-        const issuesList = normalizeData(issuesResponse)
+        // Fetch all receipts and issues with pagination
+        let allReceipts = []
+        let allIssues = []
+
+        // Fetch receipts with pagination
+        let receiptsPage = 1
+        let hasMoreReceipts = true
+        while (hasMoreReceipts) {
+          const receiptsResponse = await getGoodsReceiptReport({
+            fromDate,
+            toDate,
+            pageNumber: receiptsPage,
+            pageSize: 1000
+          }).catch(() => ({ items: [], totalCount: 0 }))
+
+          const receiptsList = normalizeData(receiptsResponse)
+          allReceipts = [...allReceipts, ...receiptsList]
+
+          const totalCount = receiptsResponse?.totalCount || receiptsResponse?.data?.totalCount || 0
+          if (receiptsList.length === 0 || receiptsList.length < 1000) {
+            hasMoreReceipts = false
+          } else if (totalCount > 0) {
+            hasMoreReceipts = (receiptsPage * 1000) < totalCount
+          } else {
+            hasMoreReceipts = receiptsList.length >= 1000
+          }
+          receiptsPage++
+        }
+
+        // Fetch issues with pagination
+        let issuesPage = 1
+        let hasMoreIssues = true
+        while (hasMoreIssues) {
+          const issuesResponse = await getGoodsIssueReport({
+            fromDate,
+            toDate,
+            pageNumber: issuesPage,
+            pageSize: 1000
+          }).catch(() => ({ items: [], totalCount: 0 }))
+
+          const issuesList = normalizeData(issuesResponse)
+          allIssues = [...allIssues, ...issuesList]
+
+          const totalCount = issuesResponse?.totalCount || issuesResponse?.data?.totalCount || 0
+          if (issuesList.length === 0 || issuesList.length < 1000) {
+            hasMoreIssues = false
+          } else if (totalCount > 0) {
+            hasMoreIssues = (issuesPage * 1000) < totalCount
+          } else {
+            hasMoreIssues = issuesList.length >= 1000
+          }
+          issuesPage++
+        }
+
+        const receiptsList = allReceipts
+        const issuesList = allIssues
+
+        console.log("Fetched receipts count:", receiptsList.length)
+        console.log("Fetched issues count:", issuesList.length)
 
         // Add purchase order events (goods receipts) - based on receiptDate
         receiptsList.forEach(receipt => {
           if (receipt.receiptDate) {
             try {
-              const eventDate = dayjs(receipt.receiptDate).startOf("day")
+              // Try multiple date field formats
+              const receiptDateStr = receipt.receiptDate || receipt.receiptDate || receipt.date
+              if (!receiptDateStr) return
+
+              const eventDate = dayjs(receiptDateStr).startOf("day")
               if (eventDate.isValid()) {
                 events.push({
                   date: eventDate.date(),
                   type: "purchase",
-                  title: `Nhập: ${receipt.goodsCode || receipt.goodsId || "N/A"}`,
-                  description: receipt.supplierName || receipt.goodsName || "Đơn mua hàng",
+                  title: `Nhập: ${receipt.goodsCode || receipt.goodsId || receipt.id || "N/A"}`,
+                  description: receipt.supplierName || receipt.goodsName || receipt.supplier || "Đơn mua hàng",
                   fullDate: eventDate.format("YYYY-MM-DD"),
-                  orderId: receipt.goodsId || receipt.id,
+                  orderId: receipt.goodsId || receipt.id || receipt.goodsReceiptId,
                   eventDate: eventDate
                 })
+              } else {
+                console.warn("Invalid receipt date:", receiptDateStr, receipt)
               }
             } catch (error) {
               console.error("Error parsing receipt date:", error, receipt)
@@ -135,23 +193,31 @@ export default function WarehouseEventCalendar() {
         issuesList.forEach(issue => {
           if (issue.issueDate) {
             try {
-              const eventDate = dayjs(issue.issueDate).startOf("day")
+              // Try multiple date field formats
+              const issueDateStr = issue.issueDate || issue.date
+              if (!issueDateStr) return
+
+              const eventDate = dayjs(issueDateStr).startOf("day")
               if (eventDate.isValid()) {
                 events.push({
                   date: eventDate.date(),
                   type: "sales",
-                  title: `Xuất: ${issue.goodsCode || issue.goodsId || "N/A"}`,
-                  description: issue.retailerName || issue.goodsName || "Đơn bán hàng",
+                  title: `Xuất: ${issue.goodsCode || issue.goodsId || issue.id || "N/A"}`,
+                  description: issue.retailerName || issue.goodsName || issue.retailer || "Đơn bán hàng",
                   fullDate: eventDate.format("YYYY-MM-DD"),
-                  orderId: issue.goodsId || issue.id,
+                  orderId: issue.goodsId || issue.id || issue.goodsIssueId,
                   eventDate: eventDate
                 })
+              } else {
+                console.warn("Invalid issue date:", issueDateStr, issue)
               }
             } catch (error) {
               console.error("Error parsing issue date:", error, issue)
             }
           }
         })
+
+        console.log("Total events created:", events.length)
 
         // Sort events by date
         events.sort((a, b) => {
@@ -530,13 +596,10 @@ export default function WarehouseEventCalendar() {
 
                   // Add days of month
                   for (let day = 1; day <= daysInMonth; day++) {
-                    const currentDayDate = currentMonth.date(day)
+                    const currentDayDate = currentMonth.date(day).startOf("day")
                     const currentDayDateStr = currentDayDate.format("YYYY-MM-DD")
-                    // Filter events by full date string for accurate matching
-                    const dayEvents = calendarEvents.filter(e => {
-                      if (!e.fullDate) return false
-                      return e.fullDate === currentDayDateStr
-                    })
+                    // Use getEventsForDate to get all events for this date (from allEvents, not filtered calendarEvents)
+                    const dayEvents = getEventsForDate(currentDayDate)
                     const isToday = currentDayDate.isSame(dayjs(), "day")
 
                     // Count event types for this day
