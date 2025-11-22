@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import {
   Eye,
   ChevronDown,
@@ -8,6 +8,8 @@ import {
   ArrowUp,
   ArrowDown,
   ArrowUpDown,
+  Search,
+  Building2,
 } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import {
@@ -26,6 +28,7 @@ import {
 } from "../../components/ui/table"
 import { getInventoryReport, getInventoryLedgerReport } from "../../services/DashboardService"
 import { getAreaDropdown } from "../../services/AreaServices"
+import { getSuppliersDropdown } from "../../services/SupplierService"
 import Loading from "../../components/Common/Loading"
 import Pagination from "../../components/Common/Pagination"
 import { Badge } from "../../components/ui/badge"
@@ -395,7 +398,10 @@ export default function InventoryReport({ onClose }) {
   // Report type: "current" (tồn kho hiện tại) or "period" (tồn kho theo kỳ)
   const [reportType, setReportType] = useState("current")
 
-  // Data states
+  // Data states - store all raw data from API
+  const [allInventoryData, setAllInventoryData] = useState([])
+  const [allLedgerData, setAllLedgerData] = useState([])
+  // Filtered and sorted data for display
   const [inventoryData, setInventoryData] = useState([])
   const [ledgerData, setLedgerData] = useState([])
 
@@ -403,6 +409,11 @@ export default function InventoryReport({ onClose }) {
   const [searchQuery, setSearchQuery] = useState("")
   const [areaId, setAreaId] = useState("")
   const [areas, setAreas] = useState([])
+  // Supplier filter
+  const [supplierFilter, setSupplierFilter] = useState("")
+  const [showSupplierFilter, setShowSupplierFilter] = useState(false)
+  const [supplierSearchTerm, setSupplierSearchTerm] = useState("")
+  const [suppliers, setSuppliers] = useState([])
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -443,6 +454,28 @@ export default function InventoryReport({ onClose }) {
     fetchAreas()
   }, [])
 
+  // Fetch suppliers for dropdown
+  useEffect(() => {
+    const fetchSuppliers = async () => {
+      try {
+        const response = await getSuppliersDropdown()
+        let suppliersList = []
+        if (Array.isArray(response)) {
+          suppliersList = response
+        } else if (response?.data && Array.isArray(response.data)) {
+          suppliersList = response.data
+        } else if (response?.items && Array.isArray(response.items)) {
+          suppliersList = response.items
+        }
+        setSuppliers(suppliersList)
+      } catch (error) {
+        console.error("Error fetching suppliers:", error)
+        setSuppliers([])
+      }
+    }
+    fetchSuppliers()
+  }, [])
+
   // Initial load on component mount
   useEffect(() => {
     if (reportType === "current") {
@@ -453,74 +486,16 @@ export default function InventoryReport({ onClose }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Fetch data when search or filters change (with debounce for search)
+  // Fetch data when report type, timeRange, areaId, or date range changes (refetch from backend)
   useEffect(() => {
-    // Clear existing timeout
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current)
-    }
-
-    // Reset to page 1 when search or filters change
     setPagination(prev => ({ ...prev, current: 1 }))
-
-    const fetchData = () => {
-      if (reportType === "current") {
-        fetchInventoryData()
-      } else {
-        // Always fetch from server when filters change (search, area)
-        fetchLedgerData(true)
-      }
-    }
-
-    // Debounce search queries (500ms), immediate for other changes
-    if (searchQuery && searchQuery.trim() !== "") {
-      searchTimeoutRef.current = setTimeout(fetchData, 500)
-    } else {
-      // Immediate fetch for empty search, timeRange, areaId changes
-      fetchData()
-    }
-
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current)
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, timeRange, areaId, reportType])
-
-  // Fetch ledger data when date range changes
-  useEffect(() => {
-    if (reportType === "period") {
-      setPagination(prev => ({ ...prev, current: 1 }))
-      // Fetch with new date range and pagination
-      fetchLedgerData(true)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateRange.fromDate, dateRange.toDate])
-
-  // Fetch data when pagination changes
-  useEffect(() => {
     if (reportType === "current") {
       fetchInventoryData()
     } else {
-      // Fetch from server with new pagination
-      fetchLedgerData(true)
+      fetchLedgerData()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination.current, pagination.pageSize, reportType])
-
-  // Fetch data when sort changes
-  useEffect(() => {
-    if (reportType === "current") {
-      setPagination(prev => ({ ...prev, current: 1 }))
-      fetchInventoryData()
-    } else {
-      // Reset pagination and fetch from server with new sort
-      setPagination(prev => ({ ...prev, current: 1 }))
-      fetchLedgerData(true)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortField, sortAscending, reportType])
+  }, [reportType, timeRange, areaId, dateRange.fromDate, dateRange.toDate])
 
   const fetchInventoryData = async () => {
     try {
@@ -532,132 +507,116 @@ export default function InventoryReport({ onClose }) {
         filters.timeRange = timeRange
       }
 
-      const requestParams = {
-        areaId: areaId ? parseInt(areaId) : undefined, // Convert to integer for query parameter
-        pageNumber: pagination.current,
-        pageSize: pagination.pageSize,
-        search: searchQuery || "",
-        sortField: sortField || "", // Only send sortField if it's not empty
-        sortAscending: sortAscending,
-        filters
-      }
+      // Fetch all data with pagination to get all pages
+      let allItems = []
+      let page = 1
+      let hasMore = true
+      const pageSize = 1000
 
-
-      const response = await getInventoryReport(requestParams)
-
-      if (response && response.items) {
-        // Handle response with items array (even if empty)
-        let itemsArray = Array.isArray(response.items) ? response.items : []
-
-        // Ensure we only display items up to pageSize (in case backend returns more)
-        // This is a safety check to prevent displaying more items than expected
-        if (itemsArray.length > pagination.pageSize) {
-          // Only log warning in development mode to reduce console noise
-          if (process.env.NODE_ENV === 'development') {
-            console.warn(`Backend returned ${itemsArray.length} items but pageSize is ${pagination.pageSize}. Limiting display.`)
-          }
-          itemsArray = itemsArray.slice(0, pagination.pageSize)
+      while (hasMore) {
+        const requestParams = {
+          areaId: areaId ? parseInt(areaId) : undefined,
+          pageNumber: page,
+          pageSize: pageSize,
+          filters
         }
 
-        setInventoryData(itemsArray)
-        setPagination(prev => ({
-          ...prev,
-          total: response.totalCount || 0 // Use totalCount from backend, not itemsArray.length
-        }))
-      } else if (response && Array.isArray(response)) {
-        // Handle case where response is directly an array
-        setInventoryData(response)
-        setPagination(prev => ({
-          ...prev,
-          total: response.length || 0
-        }))
-      } else {
-        setInventoryData([])
-        setPagination(prev => ({ ...prev, total: 0 }))
+        const response = await getInventoryReport(requestParams)
+
+        let itemsArray = []
+        if (response && response.items) {
+          itemsArray = Array.isArray(response.items) ? response.items : []
+        } else if (response && Array.isArray(response)) {
+          itemsArray = response
+        }
+
+        allItems = [...allItems, ...itemsArray]
+
+        // Check if there are more pages
+        const totalCount = response?.totalCount || 0
+        if (itemsArray.length === 0 || itemsArray.length < pageSize) {
+          hasMore = false
+        } else if (totalCount > 0) {
+          hasMore = (page * pageSize) < totalCount
+        } else {
+          hasMore = itemsArray.length >= pageSize
+        }
+        page++
       }
+
+      setAllInventoryData(allItems)
     } catch (error) {
       console.error("Error details:", {
         message: error.message,
         response: error.response?.data,
         status: error.response?.status
       })
-      setInventoryData([])
-      setPagination(prev => ({ ...prev, total: 0 }))
+      setAllInventoryData([])
     } finally {
       setLoading(false)
     }
   }
 
-  const fetchLedgerData = async (forceFetch = false) => {
+  const fetchLedgerData = async () => {
     try {
       setLoading(true)
 
-      // Format dates for API (ISO 8601 format) - optional
+      // Format dates for API (ISO 8601 format) - required for period report
       const fromDate = dateRange.fromDate ? new Date(dateRange.fromDate).toISOString() : ""
       const toDate = dateRange.toDate ? new Date(dateRange.toDate + "T23:59:59").toISOString() : ""
 
-      // Build filters - backend supports search via search parameter
-      // Area filter might need to be client-side if backend doesn't support it
+      // Build filters - areaId filter
       const filters = {}
       if (areaId) {
         filters.areaId = areaId.toString()
       }
 
-      const requestParams = {
-        fromDate: fromDate,
-        toDate: toDate,
-        pageNumber: pagination.current,
-        pageSize: pagination.pageSize,
-        search: searchQuery || "",
-        sortField: sortField || "",
-        sortAscending: sortAscending,
-        filters: filters
-      }
+      // Fetch all data with pagination to get all pages
+      let allItems = []
+      let page = 1
+      let hasMore = true
+      const pageSize = 1000
 
-      const response = await getInventoryLedgerReport(requestParams)
-
-      // Handle response structure - backend returns PageResult
-      let itemsArray = []
-      let totalCount = 0
-
-      if (response && response.items) {
-        itemsArray = Array.isArray(response.items) ? response.items : []
-        totalCount = response.totalCount || 0 // Use totalCount from backend, not itemsArray.length
-      } else if (response && Array.isArray(response)) {
-        // Fallback: response is array directly
-        itemsArray = response
-        totalCount = response.length || 0
-      }
-
-      // Apply client-side area filter if backend doesn't support it via filters
-      // Note: If backend supports areaId in filters, this won't filter anything
-      let filteredData = itemsArray
-      if (areaId && itemsArray.length > 0) {
-        // Check if backend already filtered by areaId
-        const allMatchArea = itemsArray.every(item => item.areaId === parseInt(areaId))
-        if (!allMatchArea) {
-          // Backend didn't filter, do client-side filtering
-          filteredData = itemsArray.filter(item => item.areaId === parseInt(areaId))
-          // Recalculate totalCount for client-side filtered data
-          // This is approximate - ideally backend should support areaId filter
-          totalCount = Math.ceil((totalCount * filteredData.length) / itemsArray.length) || filteredData.length
+      while (hasMore) {
+        const requestParams = {
+          fromDate: fromDate,
+          toDate: toDate,
+          pageNumber: page,
+          pageSize: pageSize,
+          filters: filters
         }
+
+        const response = await getInventoryLedgerReport(requestParams)
+
+        let itemsArray = []
+        if (response && response.items) {
+          itemsArray = Array.isArray(response.items) ? response.items : []
+        } else if (response && Array.isArray(response)) {
+          itemsArray = response
+        }
+
+        allItems = [...allItems, ...itemsArray]
+
+        // Check if there are more pages
+        const totalCount = response?.totalCount || 0
+        if (itemsArray.length === 0 || itemsArray.length < pageSize) {
+          hasMore = false
+        } else if (totalCount > 0) {
+          hasMore = (page * pageSize) < totalCount
+        } else {
+          hasMore = itemsArray.length >= pageSize
+        }
+        page++
       }
 
-      // Store data
-      setLedgerData(filteredData)
-      setPagination(prev => ({
-        ...prev,
-        total: totalCount
-      }))
+      setAllLedgerData(allItems)
     } catch (error) {
       console.error("Error fetching ledger data:", {
         message: error.message,
         response: error.response?.data,
         status: error.response?.status
       })
-      setLedgerData([])
-      setPagination(prev => ({ ...prev, total: 0 }))
+      setAllLedgerData([])
     } finally {
       setLoading(false)
     }
@@ -720,10 +679,153 @@ export default function InventoryReport({ onClose }) {
     }
   }
 
+  // Filter and sort data on frontend
+  useEffect(() => {
+    const sourceData = reportType === "current" ? allInventoryData : allLedgerData
+
+    let filtered = [...sourceData]
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim()
+      filtered = filtered.filter(item => {
+        const goodsCode = (item.goodsCode || "").toLowerCase()
+        const goodsName = (item.goodName || item.goodsName || "").toLowerCase()
+        const batchCode = (item.batchCode || "").toLowerCase()
+        return goodsCode.includes(query) ||
+          goodsName.includes(query) ||
+          batchCode.includes(query)
+      })
+    }
+
+    // Filter by area
+    if (areaId) {
+      filtered = filtered.filter(item =>
+        item.areaId && item.areaId.toString() === areaId.toString()
+      )
+    }
+
+    // Filter by supplier (if supplierId exists in data)
+    if (supplierFilter) {
+      filtered = filtered.filter(item =>
+        item.supplierId && item.supplierId.toString() === supplierFilter.toString()
+      )
+    }
+
+    // Sort data
+    if (sortField) {
+      filtered.sort((a, b) => {
+        let aValue, bValue
+
+        if (sortField === "goodsCode") {
+          aValue = (a.goodsCode || "").toLowerCase()
+          bValue = (b.goodsCode || "").toLowerCase()
+        } else if (sortField === "goodsName") {
+          aValue = (a.goodName || a.goodsName || "").toLowerCase()
+          bValue = (b.goodName || b.goodsName || "").toLowerCase()
+        } else if (sortField === "totalPackageQuantity") {
+          aValue = a.totalPackageQuantity || 0
+          bValue = b.totalPackageQuantity || 0
+        } else if (sortField === "manufacturingDate") {
+          aValue = a.manufacturingDate ? new Date(a.manufacturingDate).getTime() : 0
+          bValue = b.manufacturingDate ? new Date(b.manufacturingDate).getTime() : 0
+        } else if (sortField === "expiryDate") {
+          aValue = a.expiryDate ? new Date(a.expiryDate).getTime() : 0
+          bValue = b.expiryDate ? new Date(b.expiryDate).getTime() : 0
+        } else if (sortField === "beginningInventoryPackages") {
+          aValue = a.beginningInventoryPackages || 0
+          bValue = b.beginningInventoryPackages || 0
+        } else if (sortField === "inQuantityPackages") {
+          aValue = a.inQuantityPackages || 0
+          bValue = b.inQuantityPackages || 0
+        } else if (sortField === "outQuantityPackages") {
+          aValue = a.outQuantityPackages || 0
+          bValue = b.outQuantityPackages || 0
+        } else if (sortField === "endingInventoryPackages") {
+          aValue = a.endingInventoryPackages || 0
+          bValue = b.endingInventoryPackages || 0
+        } else {
+          aValue = a[sortField] || ""
+          bValue = b[sortField] || ""
+        }
+
+        if (typeof aValue === "string" && typeof bValue === "string") {
+          return sortAscending
+            ? aValue.localeCompare(bValue)
+            : bValue.localeCompare(aValue)
+        } else {
+          return sortAscending
+            ? (aValue > bValue ? 1 : aValue < bValue ? -1 : 0)
+            : (aValue < bValue ? 1 : aValue > bValue ? -1 : 0)
+        }
+      })
+    }
+
+    // Update total count
+    setPagination(prev => ({ ...prev, total: filtered.length }))
+
+    // Apply pagination
+    const startIndex = (pagination.current - 1) * pagination.pageSize
+    const endIndex = startIndex + pagination.pageSize
+    const paginatedData = filtered.slice(startIndex, endIndex)
+
+    if (reportType === "current") {
+      setInventoryData(paginatedData)
+    } else {
+      setLedgerData(paginatedData)
+    }
+  }, [
+    reportType,
+    allInventoryData,
+    allLedgerData,
+    searchQuery,
+    areaId,
+    supplierFilter,
+    sortField,
+    sortAscending,
+    pagination.current,
+    pagination.pageSize
+  ])
+
+  // Reset pagination to page 1 when filters or sort change
+  useEffect(() => {
+    setPagination(prev => ({ ...prev, current: 1 }))
+  }, [searchQuery, areaId, supplierFilter, sortField])
+
+  // Close supplier filter dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showSupplierFilter && !event.target.closest('.supplier-filter-dropdown')) {
+        setShowSupplierFilter(false)
+        setSupplierSearchTerm("")
+      }
+    }
+
+    if (showSupplierFilter) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showSupplierFilter])
+
+  // Filter suppliers based on search term
+  const filteredSuppliers = useMemo(() => {
+    if (!supplierSearchTerm.trim()) {
+      return suppliers
+    }
+    const query = supplierSearchTerm.toLowerCase().trim()
+    return suppliers.filter(supplier =>
+      (supplier.companyName || '').toLowerCase().includes(query)
+    )
+  }, [suppliers, supplierSearchTerm])
+
   const handleClearAllFilters = () => {
     setSearchQuery("")
     setTimeRange("week")
     setAreaId("")
+    setSupplierFilter("")
     setSortField("") // Reset to no sort
     setSortAscending(true)
     setDateRange({ fromDate: "", toDate: "" })
@@ -738,11 +840,13 @@ export default function InventoryReport({ onClose }) {
       setDateRange({ fromDate: "", toDate: "" })
     } else {
       // Clear ledger data when switching to period report to force fresh fetch
+      setAllLedgerData([])
       setLedgerData([])
     }
-    // Reset sort to no sort when switching report type
+    // Reset sort and filters when switching report type
     setSortField("")
     setSortAscending(true)
+    setSupplierFilter("")
   }
 
   // Calculate chart data from inventory data
@@ -984,6 +1088,15 @@ export default function InventoryReport({ onClose }) {
             showToggle={true}
             defaultOpen={true}
             searchWidth="w-80"
+            supplierFilter={supplierFilter}
+            setSupplierFilter={setSupplierFilter}
+            showSupplierFilter={showSupplierFilter}
+            setShowSupplierFilter={setShowSupplierFilter}
+            supplierSearchTerm={supplierSearchTerm}
+            setSupplierSearchTerm={setSupplierSearchTerm}
+            suppliers={suppliers}
+            filteredSuppliers={filteredSuppliers}
+            reportType={reportType}
           />
           <div className="w-full">
             {loading ? (

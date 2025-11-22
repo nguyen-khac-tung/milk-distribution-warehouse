@@ -34,6 +34,10 @@ export default function OrdersPage({ onClose }) {
   const [activeOrderType, setActiveOrderType] = useState("purchase") // "purchase" or "sales"
   const [searchQuery, setSearchQuery] = useState("")
   const [loading, setLoading] = useState(false)
+  // Store all raw data from API (no filtering/sorting)
+  const [allPurchaseOrders, setAllPurchaseOrders] = useState([])
+  const [allSalesOrders, setAllSalesOrders] = useState([])
+  // Store filtered and sorted data for display
   const [purchaseOrders, setPurchaseOrders] = useState([])
   const [salesOrders, setSalesOrders] = useState([])
   const [pagination, setPagination] = useState({
@@ -59,7 +63,7 @@ export default function OrdersPage({ onClose }) {
   const [retailerSearchTerm, setRetailerSearchTerm] = useState("")
   const [retailers, setRetailers] = useState([])
 
-  // Fetch purchase orders
+  // Fetch all purchase orders (only date filter on backend, search/sort on frontend)
   const fetchPurchaseOrders = async () => {
     try {
       setLoading(true)
@@ -68,56 +72,52 @@ export default function OrdersPage({ onClose }) {
       const fromDate = dateRange.fromDate ? dayjs(dateRange.fromDate).format('YYYY-MM-DD') : null
       const toDate = dateRange.toDate ? dayjs(dateRange.toDate).format('YYYY-MM-DD') : null
 
-      // Build filters for backend
-      const filters = {}
-      if (supplierFilter) {
-        filters.supplierId = supplierFilter.toString()
+      // Fetch with date range filter on backend, use pagination to get all pages
+      let allOrders = []
+      let page = 1
+      let hasMore = true
+      const pageSize = 1000
+
+      while (hasMore) {
+        const response = await getGoodsReceiptReport({
+          fromDate: fromDate,
+          toDate: toDate,
+          pageNumber: page,
+          pageSize: pageSize
+        })
+
+        // Handle response structure
+        let orders = []
+        if (response && response.items) {
+          orders = Array.isArray(response.items) ? response.items : []
+        } else if (response && Array.isArray(response)) {
+          orders = response
+        }
+
+        allOrders = [...allOrders, ...orders]
+
+        // Check if there are more pages
+        const totalCount = response?.totalCount || 0
+        if (orders.length === 0 || orders.length < pageSize) {
+          hasMore = false
+        } else if (totalCount > 0) {
+          hasMore = (page * pageSize) < totalCount
+        } else {
+          hasMore = orders.length >= pageSize
+        }
+        page++
       }
 
-      const response = await getGoodsReceiptReport({
-        fromDate: fromDate,
-        toDate: toDate,
-        pageNumber: pagination.current,
-        pageSize: pagination.pageSize,
-        search: searchQuery || "",
-        sortField: sortField || "",
-        sortAscending: sortAscending,
-        filters: filters
-      })
-
-      // Handle response structure - API returns PageResult
-      let orders = []
-      let totalCount = 0
-
-      if (response && response.items) {
-        orders = Array.isArray(response.items) ? response.items : []
-        totalCount = response.totalCount || orders.length || 0
-      } else if (response && Array.isArray(response)) {
-        orders = response
-        totalCount = response.length || 0
-      }
-
-      // Validate: ensure we don't show more items than pageSize
-      if (orders.length > pagination.pageSize) {
-        console.warn(`Backend returned ${orders.length} items but pageSize is ${pagination.pageSize}. Slicing to match pageSize.`)
-        orders = orders.slice(0, pagination.pageSize)
-      }
-
-      setPurchaseOrders(orders)
-      setPagination(prev => ({
-        ...prev,
-        total: totalCount
-      }))
+      setAllPurchaseOrders(allOrders)
     } catch (error) {
       console.error("Error fetching purchase orders:", error)
-      setPurchaseOrders([])
-      setPagination(prev => ({ ...prev, total: 0 }))
+      setAllPurchaseOrders([])
     } finally {
       setLoading(false)
     }
   }
 
-  // Fetch sales orders
+  // Fetch all sales orders (only date filter on backend, search/sort on frontend)
   const fetchSalesOrders = async () => {
     try {
       setLoading(true)
@@ -126,50 +126,46 @@ export default function OrdersPage({ onClose }) {
       const fromDate = dateRange.fromDate ? dayjs(dateRange.fromDate).format('YYYY-MM-DD') : null
       const toDate = dateRange.toDate ? dayjs(dateRange.toDate).format('YYYY-MM-DD') : null
 
-      // Build filters for backend
-      const filters = {}
-      if (retailerFilter) {
-        filters.retailerId = retailerFilter.toString()
+      // Fetch with date range filter on backend, use pagination to get all pages
+      let allOrders = []
+      let page = 1
+      let hasMore = true
+      const pageSize = 1000
+
+      while (hasMore) {
+        const response = await getGoodsIssueReport({
+          fromDate: fromDate,
+          toDate: toDate,
+          pageNumber: page,
+          pageSize: pageSize
+        })
+
+        // Handle response structure
+        let orders = []
+        if (response && response.items) {
+          orders = Array.isArray(response.items) ? response.items : []
+        } else if (response && Array.isArray(response)) {
+          orders = response
+        }
+
+        allOrders = [...allOrders, ...orders]
+
+        // Check if there are more pages
+        const totalCount = response?.totalCount || 0
+        if (orders.length === 0 || orders.length < pageSize) {
+          hasMore = false
+        } else if (totalCount > 0) {
+          hasMore = (page * pageSize) < totalCount
+        } else {
+          hasMore = orders.length >= pageSize
+        }
+        page++
       }
 
-      const response = await getGoodsIssueReport({
-        fromDate: fromDate,
-        toDate: toDate,
-        pageNumber: pagination.current,
-        pageSize: pagination.pageSize,
-        search: searchQuery || "",
-        sortField: sortField || "",
-        sortAscending: sortAscending,
-        filters: filters
-      })
-
-      // Handle response structure - API returns PageResult
-      let orders = []
-      let totalCount = 0
-
-      if (response && response.items) {
-        orders = Array.isArray(response.items) ? response.items : []
-        totalCount = response.totalCount || orders.length || 0
-      } else if (response && Array.isArray(response)) {
-        orders = response
-        totalCount = response.length || 0
-      }
-
-      // Validate: ensure we don't show more items than pageSize
-      if (orders.length > pagination.pageSize) {
-        console.warn(`Backend returned ${orders.length} items but pageSize is ${pagination.pageSize}. Slicing to match pageSize.`)
-        orders = orders.slice(0, pagination.pageSize)
-      }
-
-      setSalesOrders(orders)
-      setPagination(prev => ({
-        ...prev,
-        total: totalCount
-      }))
+      setAllSalesOrders(allOrders)
     } catch (error) {
       console.error("Error fetching sales orders:", error)
-      setSalesOrders([])
-      setPagination(prev => ({ ...prev, total: 0 }))
+      setAllSalesOrders([])
     } finally {
       setLoading(false)
     }
@@ -268,22 +264,119 @@ export default function OrdersPage({ onClose }) {
     setPagination(prev => ({ ...prev, current: 1 }))
   }, [searchQuery, supplierFilter, retailerFilter, dateRange.fromDate, dateRange.toDate, sortField])
 
-  // Fetch data based on active order type
+  // Fetch data based on active order type and date range (refetch when date range changes)
   useEffect(() => {
     // Reset pagination and filters when changing order type
     setPagination(prev => ({ ...prev, current: 1 }))
     setSupplierFilter("")
     setRetailerFilter("")
-  }, [activeOrderType])
-
-  useEffect(() => {
     if (activeOrderType === "purchase") {
       fetchPurchaseOrders()
     } else {
       fetchSalesOrders()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeOrderType, searchQuery, pagination.current, pagination.pageSize, dateRange, sortField, sortAscending, supplierFilter, retailerFilter])
+  }, [activeOrderType, dateRange.fromDate, dateRange.toDate])
+
+  // Filter and sort data on frontend
+  useEffect(() => {
+    const sourceData = activeOrderType === "purchase" ? allPurchaseOrders : allSalesOrders
+
+    let filtered = [...sourceData]
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim()
+      filtered = filtered.filter(order => {
+        const supplierName = (order.supplierName || "").toLowerCase()
+        const retailerName = (order.retailerName || "").toLowerCase()
+        const goodsCode = (order.goodsCode || "").toLowerCase()
+        const goodsName = (order.goodsName || "").toLowerCase()
+        return supplierName.includes(query) ||
+          retailerName.includes(query) ||
+          goodsCode.includes(query) ||
+          goodsName.includes(query)
+      })
+    }
+
+    // Filter by supplier (for purchase orders)
+    if (activeOrderType === "purchase" && supplierFilter) {
+      filtered = filtered.filter(order =>
+        order.supplierId && order.supplierId.toString() === supplierFilter.toString()
+      )
+    }
+
+    // Filter by retailer (for sales orders)
+    if (activeOrderType === "sales" && retailerFilter) {
+      filtered = filtered.filter(order =>
+        order.retailerId && order.retailerId.toString() === retailerFilter.toString()
+      )
+    }
+
+    // Note: Date range filtering is done on backend, so we don't filter by date here
+
+    // Sort data
+    if (sortField) {
+      filtered.sort((a, b) => {
+        let aValue, bValue
+
+        if (sortField === "goodsName") {
+          aValue = (a.goodsName || "").toLowerCase()
+          bValue = (b.goodsName || "").toLowerCase()
+        } else if (sortField === "goodsCode") {
+          aValue = (a.goodsCode || "").toLowerCase()
+          bValue = (b.goodsCode || "").toLowerCase()
+        } else if (sortField === "supplierName") {
+          aValue = (a.supplierName || "").toLowerCase()
+          bValue = (b.supplierName || "").toLowerCase()
+        } else if (sortField === "retailerName") {
+          aValue = (a.retailerName || "").toLowerCase()
+          bValue = (b.retailerName || "").toLowerCase()
+        } else if (sortField === "totalPackageQuantity") {
+          aValue = a.totalPackageQuantity || 0
+          bValue = b.totalPackageQuantity || 0
+        } else {
+          aValue = a[sortField] || ""
+          bValue = b[sortField] || ""
+        }
+
+        if (typeof aValue === "string" && typeof bValue === "string") {
+          return sortAscending
+            ? aValue.localeCompare(bValue)
+            : bValue.localeCompare(aValue)
+        } else {
+          return sortAscending
+            ? (aValue > bValue ? 1 : aValue < bValue ? -1 : 0)
+            : (aValue < bValue ? 1 : aValue > bValue ? -1 : 0)
+        }
+      })
+    }
+
+    // Update total count
+    setPagination(prev => ({ ...prev, total: filtered.length }))
+
+    // Apply pagination
+    const startIndex = (pagination.current - 1) * pagination.pageSize
+    const endIndex = startIndex + pagination.pageSize
+    const paginatedData = filtered.slice(startIndex, endIndex)
+
+    if (activeOrderType === "purchase") {
+      setPurchaseOrders(paginatedData)
+    } else {
+      setSalesOrders(paginatedData)
+    }
+  }, [
+    activeOrderType,
+    allPurchaseOrders,
+    allSalesOrders,
+    searchQuery,
+    supplierFilter,
+    retailerFilter,
+    sortField,
+    sortAscending,
+    pagination.current,
+    pagination.pageSize
+  ])
 
   // Get current orders based on active type
   const currentOrders = useMemo(() => {
@@ -685,10 +778,32 @@ export default function OrdersPage({ onClose }) {
                         STT
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                        {activeOrderType === "purchase" ? "Nhà cung cấp" : "Khách hàng"}
+                        <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort(activeOrderType === "purchase" ? "supplierName" : "retailerName")}>
+                          <span>{activeOrderType === "purchase" ? "Nhà cung cấp" : "Khách hàng"}</span>
+                          {sortField === (activeOrderType === "purchase" ? "supplierName" : "retailerName") ? (
+                            sortAscending ? (
+                              <ArrowUp className="h-4 w-4 text-orange-500" />
+                            ) : (
+                              <ArrowDown className="h-4 w-4 text-orange-500" />
+                            )
+                          ) : (
+                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                          )}
+                        </div>
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                        Mã hàng hóa
+                        <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("goodsCode")}>
+                          <span>Mã hàng hóa</span>
+                          {sortField === "goodsCode" ? (
+                            sortAscending ? (
+                              <ArrowUp className="h-4 w-4 text-orange-500" />
+                            ) : (
+                              <ArrowDown className="h-4 w-4 text-orange-500" />
+                            )
+                          ) : (
+                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                          )}
+                        </div>
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                         <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("goodsName")}>
