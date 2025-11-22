@@ -15,7 +15,7 @@ namespace MilkDistributionWarehouse.Services
     public interface IBackOrderService
     {
         Task<(string, PageResult<BackOrderDto.BackOrderResponseDto>)> GetBackOrders(PagedRequest request);
-        Task<(string, BackOrderDto.BackOrderResponseDto)> GetBackOrderById(Guid backOrderId);
+        Task<(string, BackOrderDto.BackOrderDetailDto)> GetBackOrderById(Guid backOrderId);
         Task<(string, BackOrderDto.BackOrderResponseCreateDto)> CreateBackOrder(BackOrderDto.BackOrderRequestDto dto, int? userId);
         Task<(string, BackOrderDto.BackOrderResponseDto)> UpdateBackOrder(Guid backOrderId, BackOrderDto.BackOrderRequestDto dto);
         Task<(string, BackOrderDto.BackOrderResponseDto)> DeleteBackOrder(Guid backOrderId);
@@ -237,13 +237,13 @@ namespace MilkDistributionWarehouse.Services
 
 
 
-        public async Task<(string, BackOrderDto.BackOrderResponseDto)> GetBackOrderById(Guid backOrderId)
+        public async Task<(string, BackOrderDto.BackOrderDetailDto)> GetBackOrderById(Guid backOrderId)
         {
             var backOrder = await _backOrderRepository.GetBackOrderById(backOrderId);
             if (backOrder == null)
-                return ("Không tìm thấy back order.".ToMessageForUser(), new BackOrderDto.BackOrderResponseDto());
+                return ("Không tìm thấy back order.".ToMessageForUser(), new BackOrderDto.BackOrderDetailDto());
 
-            var response = _mapper.Map<BackOrderDto.BackOrderResponseDto>(backOrder);
+            var response = _mapper.Map<BackOrderDto.BackOrderDetailDto>(backOrder);
 
             var availableQuantity = await _backOrderRepository.GetAvailableQuantity(backOrder.GoodsId, backOrder.GoodsPackingId);
             response.StatusDinamic = availableQuantity >= backOrder.PackageQuantity

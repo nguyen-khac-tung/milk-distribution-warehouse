@@ -42,18 +42,19 @@ namespace MilkDistributionWarehouse.Repositories
 
         public async Task<BackOrder?> GetBackOrderById(Guid backOrderId)
         {
-            var query = from bo in _context.BackOrders
-                       .Include(bo => bo.Goods)
-                            .ThenInclude(g => g.UnitMeasure)
-                       .Include(bo => bo.Retailer)
-                       .Include(bo => bo.GoodsPacking)
-                       .Include(bo => bo.CreatedByNavigation)
-                       .AsSplitQuery()
-                       .AsNoTracking()
-                       where bo.BackOrderId == backOrderId
-                       select bo;
-
-            return await query.FirstOrDefaultAsync();
+            return await _context.BackOrders
+                .Include(bo => bo.Goods)
+                    .ThenInclude(g => g.UnitMeasure)
+                .Include(bo => bo.Goods)
+                    .ThenInclude(g => g.Category)
+                .Include(bo => bo.Goods)
+                    .ThenInclude(g => g.Supplier)
+                .Include(bo => bo.Retailer)
+                .Include(bo => bo.GoodsPacking)
+                .Include(bo => bo.CreatedByNavigation)
+                .AsSplitQuery()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(bo => bo.BackOrderId == backOrderId);
         }
 
         public async Task<int> GetAvailableQuantity(int? goodsId, int? goodsPackingId)
