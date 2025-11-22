@@ -92,6 +92,7 @@ namespace MilkDistributionWarehouse.Services
             // Apply sorting at database level
             if (!string.IsNullOrWhiteSpace(request.SortField))
             {
+                // Try to find a direct property on BackOrder first
                 var property = typeof(BackOrder).GetProperty(request.SortField, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
                 if (property != null)
                 {
@@ -105,6 +106,52 @@ namespace MilkDistributionWarehouse.Services
                         .MakeGenericMethod(typeof(BackOrder), property.PropertyType);
 
                     backOrders = (IQueryable<BackOrder>)method.Invoke(null, new object[] { backOrders, keySelector })!;
+                }
+                else
+                {
+                    // Map common DTO/consumer sort fields to entity navigation properties
+                    var sort = request.SortField.Trim().ToLowerInvariant();
+                    var methodName = request.SortAscending ? "OrderBy" : "OrderByDescending";
+
+                    ParameterExpression param = Expression.Parameter(typeof(BackOrder), "x");
+                    Expression? member = null;
+                    Type? memberType = null;
+
+                    switch (sort)
+                    {
+                        case "retailername":
+                            member = Expression.Property(Expression.Property(param, "Retailer"), "RetailerName");
+                            memberType = typeof(string);
+                            break;
+                        case "goodsname":
+                            member = Expression.Property(Expression.Property(param, "Goods"), "GoodsName");
+                            memberType = typeof(string);
+                            break;
+                        case "unitmeasurename":
+                        case "unitmeasure":
+                            // Goods.UnitMeasure.Name
+                            member = Expression.Property(Expression.Property(Expression.Property(param, "Goods"), "UnitMeasure"), "Name");
+                            memberType = typeof(string);
+                            break;
+                        case "createdbyname":
+                        case "createdby":
+                            member = Expression.Property(Expression.Property(param, "CreatedByNavigation"), "FullName");
+                            memberType = typeof(string);
+                            break;
+                        default:
+                            member = null;
+                            break;
+                    }
+
+                    if (member != null && memberType != null)
+                    {
+                        var keySelector = Expression.Lambda(member, param);
+                        var method = typeof(Queryable).GetMethods()
+                            .First(m => m.Name == methodName && m.GetParameters().Length == 2)
+                            .MakeGenericMethod(typeof(BackOrder), memberType);
+
+                        backOrders = (IQueryable<BackOrder>)method.Invoke(null, new object[] { backOrders, keySelector })!;
+                    }
                 }
             }
 

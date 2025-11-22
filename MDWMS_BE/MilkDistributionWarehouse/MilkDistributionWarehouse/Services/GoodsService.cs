@@ -36,9 +36,12 @@ namespace MilkDistributionWarehouse.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICacheService _cacheService;
         private readonly IGoodsPackingService _goodsPackingService;
+        private readonly IInventoryLedgerService _inventoryLedgerService;
+
         public GoodsService(IGoodsRepository goodRepository, IMapper mapper, ICategoryRepository categoryRepository, ISalesOrderRepository salesOrderRepository,
             IUnitMeasureRepository unitMeasureRepository, IStorageConditionRepository storageConditionRepository,
-            IUnitOfWork unitOfWork, ICacheService cacheService, IGoodsPackingService goodsPackingService)
+            IUnitOfWork unitOfWork, ICacheService cacheService, IGoodsPackingService goodsPackingService,
+            IInventoryLedgerService inventoryLedgerService)
         {
             _goodRepository = goodRepository;
             _mapper = mapper;
@@ -49,6 +52,7 @@ namespace MilkDistributionWarehouse.Services
             _unitOfWork = unitOfWork;
             _cacheService = cacheService;
             _goodsPackingService = goodsPackingService;
+            _inventoryLedgerService = inventoryLedgerService;
         }
 
         public async Task<(string, PageResult<GoodsDto>?)> GetGoods(PagedRequest request)
@@ -189,8 +193,34 @@ namespace MilkDistributionWarehouse.Services
 
             _cacheService.InvalidateDropdownCache("Goods", "Supplier", createResult.SupplierId);
 
+            try
+            {
+                if (createResult.GoodsPackings != null && createResult.GoodsPackings.Any())
+                {
+                    var ledgerDtos = createResult.GoodsPackings.Select(p => new InventoryLedgerRequestDto
+                    {
+                        GoodsId = createResult.GoodsId,
+                        GoodPackingId = p.GoodsPackingId,
+                        EventDate = DateTime.Now,
+                        InQty = 0,
+                        OutQty = 0,
+                        BalanceAfter = 0,
+                        TypeChange = null
+                    }).ToList();
+
+                    if (ledgerDtos.Any())
+                  {
+                        var (invErr, _) = await _inventoryLedgerService.CreateInventoryLedgerBulk(ledgerDtos);
+                    }
+                }
+            }
+            catch
+            {
+                return ("Tạo sổ cái thất bại!".ToMessageForUser(), default);
+            }
+
             return ("", _mapper.Map<GoodsDto>(createResult));
-        }
+        }  
 
         public async Task<(string, GoodsBulkdResponse)> CreateGoodsBulk(GoodsBulkCreate create)
         {
@@ -241,6 +271,45 @@ namespace MilkDistributionWarehouse.Services
                     result.TotalInserted = validGoods.Count;
                 }
                 await _unitOfWork.CommitTransactionAsync();
+
+                try
+                {
+                    if (result.TotalInserted > 0)
+                    {
+                        var createdGoods = await _goodRepository.GetGoods()
+                            .Where(g => goodsCodeCreate.Contains(g.GoodsCode))
+                            .Include(g => g.GoodsPackings)
+                            .ToListAsync();
+
+                        var ledgerDtos = new List<InventoryLedgerRequestDto>();
+                        foreach (var g in createdGoods)
+                        {
+                            if (g.GoodsPackings == null) continue;
+                            foreach (var p in g.GoodsPackings)
+                            {
+                                ledgerDtos.Add(new InventoryLedgerRequestDto
+                                {
+                                    GoodsId = g.GoodsId,
+                                    GoodPackingId = p.GoodsPackingId,
+                                    EventDate = DateTime.Now,
+                                    InQty = 0,
+                                    OutQty = 0,
+                                    BalanceAfter = 0,
+                                    TypeChange = null
+                                });
+                            }
+                        }
+
+                        if (ledgerDtos.Any())
+                        {
+                            var (invErr, _) = await _inventoryLedgerService.CreateInventoryLedgerBulk(ledgerDtos);
+                        }
+                    }
+                }
+                catch
+                {
+                    return ("Tạo sổ cái thất bại!".ToMessageForUser(), default);
+                }
 
                 return ("", result);
             }

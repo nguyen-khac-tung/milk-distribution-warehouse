@@ -191,18 +191,52 @@ const StocktakingTable = ({
                                         )}
                                         <TableCell className="px-6 py-4 text-center">
                                             <div className="flex items-center justify-center space-x-1">
-                                                {/* Icon bắt đầu / xem lại kiểm kê dựa trên isStocktakingStarted */}
-                                                {typeof stocktaking.isStocktakingStarted === 'boolean' && (
-                                                    <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_IN_PROGRESS}>
-                                                        <button
-                                                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                            title={stocktaking.isStocktakingStarted === false ? "Bắt đầu kiểm kê" : "Xem chi tiết kiểm kê"}
-                                                            onClick={() => handleStartStocktakingClick(stocktaking)}
-                                                        >
-                                                            <PlayCircle className={`h-4 w-4 ${stocktaking.isStocktakingStarted === false ? 'text-green-500' : 'text-blue-500'}`} />
-                                                        </button>
-                                                    </PermissionWrapper>
-                                                )}
+                                                {/* Icon bắt đầu / xem lại kiểm kê dựa trên stockAreaStarted
+                                                    stockAreaStarted === 1 hoặc === 3: Chưa bắt đầu -> icon xanh lá "Bắt đầu kiểm kê" (cần gọi API)
+                                                    stockAreaStarted === 2: Đã bắt đầu -> icon xanh dương "Xem chi tiết kiểm kê" (chỉ xem)
+                                                */}
+                                                {(() => {
+                                                    const stockAreaStarted = stocktaking.stockAreaStarted;
+                                                    const status = stocktaking.status;
+                                                    
+                                                    let shouldShowIcon = false;
+                                                    let isNotStarted = false; // true = chưa bắt đầu (1 hoặc 3), false = đã bắt đầu (2)
+
+                                                    if (stockAreaStarted !== undefined && stockAreaStarted !== null) {
+                                                        // Có giá trị từ API
+                                                        // 1 hoặc 3 = chưa bắt đầu -> icon xanh lá "Bắt đầu kiểm kê"
+                                                        // 2 = đã bắt đầu -> icon xanh dương "Xem chi tiết kiểm kê"
+                                                        shouldShowIcon = stockAreaStarted === 1 || stockAreaStarted === 2 || stockAreaStarted === 3 || 
+                                                                          stockAreaStarted === '1' || stockAreaStarted === '2' || stockAreaStarted === '3';
+                                                        isNotStarted = stockAreaStarted === 1 || stockAreaStarted === 3 || 
+                                                                       stockAreaStarted === '1' || stockAreaStarted === '3'; // 1 hoặc 3 = chưa bắt đầu
+                                                    } else {
+                                                        // Fallback dựa trên status nếu không có giá trị từ API
+                                                        // Status Assigned (2) = chưa bắt đầu
+                                                        if (status === STOCKTAKING_STATUS.Assigned || status === 2 || status === '2') {
+                                                            shouldShowIcon = true;
+                                                            isNotStarted = true; // Chưa bắt đầu, cần gọi API
+                                                        } else if (status === STOCKTAKING_STATUS.InProgress || status === 4 || status === '4' ||
+                                                            status === STOCKTAKING_STATUS.PendingApproval || status === 5 || status === '5' ||
+                                                            status === STOCKTAKING_STATUS.Approved || status === 6 || status === '6' ||
+                                                            status === STOCKTAKING_STATUS.Completed || status === 7 || status === '7') {
+                                                            shouldShowIcon = true;
+                                                            isNotStarted = false; // Đã bắt đầu, chỉ xem
+                                                        }
+                                                    }
+                                                    
+                                                    return shouldShowIcon && (
+                                                        <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_IN_PROGRESS}>
+                                                            <button
+                                                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                                title={isNotStarted ? "Bắt đầu kiểm kê" : "Xem chi tiết kiểm kê"}
+                                                                onClick={() => handleStartStocktakingClick(stocktaking)}
+                                                            >
+                                                                <PlayCircle className={`h-4 w-4 ${isNotStarted ? 'text-green-500' : 'text-blue-500'}`} />
+                                                            </button>
+                                                        </PermissionWrapper>
+                                                    );
+                                                })()}
                                                 <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_VIEW_DETAILS}>
                                                     <button
                                                         className="p-1.5 hover:bg-slate-100 rounded transition-colors"
@@ -213,38 +247,38 @@ const StocktakingTable = ({
                                                     </button>
                                                 </PermissionWrapper>
                                                 {/* Icon xem chi tiết đơn kiểm kê kho - hiển thị cho các trạng thái khác (có permission, trừ nhân viên kho ở các trạng thái đã xử lý riêng) */}
-                                                {(!isWarehouseStaff || 
-                                                  (stocktaking.status !== STOCKTAKING_STATUS.PendingApproval &&
-                                                   stocktaking.status !== 5 &&
-                                                   stocktaking.status !== '5' &&
-                                                   stocktaking.status !== STOCKTAKING_STATUS.Approved &&
-                                                   stocktaking.status !== 6 &&
-                                                   stocktaking.status !== '6' &&
-                                                   stocktaking.status !== STOCKTAKING_STATUS.Completed &&
-                                                   stocktaking.status !== 7 &&
-                                                   stocktaking.status !== '7')) &&
-                                                 (stocktaking.status === STOCKTAKING_STATUS.InProgress ||
-                                                  stocktaking.status === 4 ||
-                                                  stocktaking.status === '4' ||
-                                                  stocktaking.status === STOCKTAKING_STATUS.PendingApproval ||
-                                                  stocktaking.status === 5 ||
-                                                  stocktaking.status === '5' ||
-                                                  stocktaking.status === STOCKTAKING_STATUS.Approved ||
-                                                  stocktaking.status === 6 ||
-                                                  stocktaking.status === '6' ||
-                                                  stocktaking.status === STOCKTAKING_STATUS.Completed ||
-                                                  stocktaking.status === 7 ||
-                                                  stocktaking.status === '7') && (
-                                                    <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_AREA_VIEW_DETAILS_FOR_OTHER}>
-                                                        <button
-                                                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                            title="Xem chi tiết đơn kiểm kê kho"
-                                                            onClick={() => handleViewDetailForOtherClick(stocktaking)}
-                                                        >
-                                                            <FileText className="h-4 w-4 text-blue-500" />
-                                                        </button>
-                                                    </PermissionWrapper>
-                                                )}
+                                                {(!isWarehouseStaff ||
+                                                    (stocktaking.status !== STOCKTAKING_STATUS.PendingApproval &&
+                                                        stocktaking.status !== 5 &&
+                                                        stocktaking.status !== '5' &&
+                                                        stocktaking.status !== STOCKTAKING_STATUS.Approved &&
+                                                        stocktaking.status !== 6 &&
+                                                        stocktaking.status !== '6' &&
+                                                        stocktaking.status !== STOCKTAKING_STATUS.Completed &&
+                                                        stocktaking.status !== 7 &&
+                                                        stocktaking.status !== '7')) &&
+                                                    (stocktaking.status === STOCKTAKING_STATUS.InProgress ||
+                                                        stocktaking.status === 4 ||
+                                                        stocktaking.status === '4' ||
+                                                        stocktaking.status === STOCKTAKING_STATUS.PendingApproval ||
+                                                        stocktaking.status === 5 ||
+                                                        stocktaking.status === '5' ||
+                                                        stocktaking.status === STOCKTAKING_STATUS.Approved ||
+                                                        stocktaking.status === 6 ||
+                                                        stocktaking.status === '6' ||
+                                                        stocktaking.status === STOCKTAKING_STATUS.Completed ||
+                                                        stocktaking.status === 7 ||
+                                                        stocktaking.status === '7') && (
+                                                        <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_AREA_VIEW_DETAILS_FOR_OTHER}>
+                                                            <button
+                                                                className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                                title="Xem chi tiết đơn kiểm kê kho"
+                                                                onClick={() => handleViewDetailForOtherClick(stocktaking)}
+                                                            >
+                                                                <FileText className="h-4 w-4 text-blue-500" />
+                                                            </button>
+                                                        </PermissionWrapper>
+                                                    )}
                                                 {isWarehouseManager && (stocktaking.status === STOCKTAKING_STATUS.Draft || stocktaking.status === 1 || stocktaking.status === '1') && (
                                                     <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_UPDATE}>
                                                         <button

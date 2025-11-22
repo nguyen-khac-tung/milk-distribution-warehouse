@@ -22,6 +22,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
       supplierId: "",
       storageConditionId: "",
       unitMeasureId: "",
+      goodsPackingCreates: [{ unitPerPackage: "" }]
     }
   ])
   const [loading, setLoading] = useState(false)
@@ -150,6 +151,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
       supplierId: (useDefaults && defaultFields.supplier) ? defaultValues.supplierId : "",
       storageConditionId: (useDefaults && defaultFields.storageCondition) ? defaultValues.storageConditionId : "",
       unitMeasureId: (useDefaults && defaultFields.unitMeasure) ? defaultValues.unitMeasureId : "",
+      goodsPackingCreates: [{ unitPerPackage: "" }]
     }
     const newGoodsList = [...goodsList, newGoods]
     setGoodsList(newGoodsList)
@@ -255,6 +257,43 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
     }
   }
 
+  const addPackingRow = (goodsIndex) => {
+    const newList = [...goodsList]
+    if (!newList[goodsIndex].goodsPackingCreates) {
+      newList[goodsIndex].goodsPackingCreates = []
+    }
+    newList[goodsIndex].goodsPackingCreates.push({ unitPerPackage: "" })
+    setGoodsList(newList)
+  }
+
+  const removePackingRow = (goodsIndex, packingIndex) => {
+    const newList = [...goodsList]
+    if (newList[goodsIndex].goodsPackingCreates && newList[goodsIndex].goodsPackingCreates.length > 1) {
+      newList[goodsIndex].goodsPackingCreates = newList[goodsIndex].goodsPackingCreates.filter((_, i) => i !== packingIndex)
+      setGoodsList(newList)
+    }
+  }
+
+  const updatePackingRow = (goodsIndex, packingIndex, field, value) => {
+    const newList = [...goodsList]
+    if (!newList[goodsIndex].goodsPackingCreates) {
+      newList[goodsIndex].goodsPackingCreates = []
+    }
+    if (!newList[goodsIndex].goodsPackingCreates[packingIndex]) {
+      newList[goodsIndex].goodsPackingCreates[packingIndex] = {}
+    }
+    newList[goodsIndex].goodsPackingCreates[packingIndex][field] = value
+    setGoodsList(newList)
+
+    // Clear error for this field
+    const errorKey = `${goodsIndex}-packing-${packingIndex}-${field}`
+    if (errors[errorKey]) {
+      const newErrors = { ...errors }
+      delete newErrors[errorKey]
+      setErrors(newErrors)
+    }
+  }
+
   const validateForm = () => {
     const newErrors = {}
     let isValid = true
@@ -274,6 +313,19 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
       if (duplicateIndex !== -1 && goods.goodsCode) {
         newErrors[`${index}-goodsCode`] = "Mã mặt hàng đã tồn tại trong danh sách"
         isValid = false
+      }
+
+      // Validate packing - at least one packing is required and must have unitPerPackage
+      if (!goods.goodsPackingCreates || goods.goodsPackingCreates.length === 0) {
+        newErrors[`${index}-packing`] = "Vui lòng thêm ít nhất một quy cách đóng gói"
+        isValid = false
+      } else {
+        goods.goodsPackingCreates.forEach((packing, packingIndex) => {
+          if (!packing.unitPerPackage || packing.unitPerPackage === "" || Number(packing.unitPerPackage) <= 0) {
+            newErrors[`${index}-packing-${packingIndex}-unitPerPackage`] = "Số đơn vị/bao phải lớn hơn 0"
+            isValid = false
+          }
+        })
       }
     })
 
@@ -306,7 +358,20 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
         }
 
         try {
-          const response = await createGood(goodsList[i])
+          // Format data for API - convert to proper types and structure
+          const goodsData = {
+            goodsCode: goodsList[i].goodsCode,
+            goodsName: goodsList[i].goodsName,
+            categoryId: Number(goodsList[i].categoryId),
+            supplierId: Number(goodsList[i].supplierId),
+            storageConditionId: Number(goodsList[i].storageConditionId),
+            unitMeasureId: Number(goodsList[i].unitMeasureId),
+            goodsPackingCreates: (goodsList[i].goodsPackingCreates || []).map(packing => ({
+              unitPerPackage: Number(packing.unitPerPackage) || 0
+            })).filter(packing => packing.unitPerPackage > 0)
+          }
+
+          const response = await createGood(goodsData)
           results.push({ index: i, success: true, data: response })
         } catch (error) {
           console.error(`Error creating good ${i + 1}:`, error)
@@ -446,6 +511,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
       supplierId: (useDefaults && defaultFields.supplier) ? defaultValues.supplierId : "",
       storageConditionId: (useDefaults && defaultFields.storageCondition) ? defaultValues.storageConditionId : "",
       unitMeasureId: (useDefaults && defaultFields.unitMeasure) ? defaultValues.unitMeasureId : "",
+      goodsPackingCreates: [{ unitPerPackage: "" }]
     }])
     setErrors({})
     setHasBackendErrors(false)
@@ -679,7 +745,14 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
             <div className="space-y-6">
               {goodsList.map((goods, index) => {
                 const isSuccessful = successfulGoods.has(index)
-                console.log(`Rendering goods ${index + 1}:`, goods, 'isSuccessful:', isSuccessful)
+                // Ensure goods has packing array (use local variable, don't mutate)
+                const goodsWithPacking = {
+                  ...goods,
+                  goodsPackingCreates: goods.goodsPackingCreates && goods.goodsPackingCreates.length > 0 
+                    ? goods.goodsPackingCreates 
+                    : [{ unitPerPackage: "" }]
+                }
+                console.log(`Rendering goods ${index + 1}:`, goodsWithPacking, 'isSuccessful:', isSuccessful)
                 return (
                   <Card key={index} className={`p-6 border ${isSuccessful ? 'border-green-200 bg-green-50' : 'border-slate-200'}`}>
                     <div className="flex items-center justify-between mb-4">
@@ -888,6 +961,83 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                             }
                           </p>
                         )}
+                      </div>
+                    </div>
+
+                    {/* Quy cách đóng gói */}
+                    <div className="mt-6 pt-6 border-t border-gray-200">
+                      <div className="flex items-center justify-between mb-4">
+                        <Label className="text-sm font-semibold text-slate-700">
+                          Quy cách đóng gói <span className="text-red-500">*</span>
+                        </Label>
+                        {!isSuccessful && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => addPackingRow(index)}
+                            className="h-8 px-3 text-xs border-orange-500 text-orange-500 hover:bg-orange-50"
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Thêm quy cách
+                          </Button>
+                        )}
+                      </div>
+                      {errors[`${index}-packing`] && (
+                        <p className="text-sm text-red-500 mb-2">
+                          {errors[`${index}-packing`]}
+                        </p>
+                      )}
+                      <div className="space-y-3">
+                        {goodsWithPacking.goodsPackingCreates.map((packing, packingIndex) => (
+                          <div key={packingIndex} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                            <div className="flex-1">
+                              <Label className="text-xs font-medium text-slate-600 mb-1 block">
+                                Số đơn vị/bao <span className="text-red-500">*</span>
+                              </Label>
+                              <Input
+                                type="number"
+                                placeholder="Nhập số đơn vị/bao..."
+                                value={packing.unitPerPackage || ""}
+                                onChange={(e) => {
+                                  const value = e.target.value
+                                  if (value === '' || value === '-') {
+                                    updatePackingRow(index, packingIndex, 'unitPerPackage', '')
+                                    return
+                                  }
+                                  const numValue = parseInt(value)
+                                  if (!isNaN(numValue) && numValue > 0) {
+                                    updatePackingRow(index, packingIndex, 'unitPerPackage', numValue)
+                                  }
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === '-' || e.key === '+' || e.key === 'e' || e.key === 'E' || e.key === '.') {
+                                    e.preventDefault()
+                                  }
+                                }}
+                                disabled={isSuccessful}
+                                min="1"
+                                className={`h-9 border-slate-300 focus:border-orange-500 focus:ring-orange-500 ${errors[`${index}-packing-${packingIndex}-unitPerPackage`] ? 'border-red-500' : ''} ${isSuccessful ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                              />
+                              {errors[`${index}-packing-${packingIndex}-unitPerPackage`] && (
+                                <p className="text-xs text-red-500 mt-1">
+                                  {errors[`${index}-packing-${packingIndex}-unitPerPackage`]}
+                                </p>
+                              )}
+                            </div>
+                            {!isSuccessful && goodsWithPacking.goodsPackingCreates.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => removePackingRow(index, packingIndex)}
+                                className="h-9 px-3 mt-6 text-red-500 hover:text-red-700 hover:bg-red-50 border-red-300"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </Card>

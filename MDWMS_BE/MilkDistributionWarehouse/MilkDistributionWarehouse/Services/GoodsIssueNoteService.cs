@@ -26,6 +26,7 @@ namespace MilkDistributionWarehouse.Services
         private readonly INotificationService _notificationService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
+        private readonly IInventoryLedgerService _inventoryLedgerService;
 
         public GoodsIssueNoteService(IGoodsIssueNoteRepository goodsIssueNoteRepository,
                                  ISalesOrderRepository salesOrderRepository,
@@ -33,7 +34,8 @@ namespace MilkDistributionWarehouse.Services
                                  IPickAllocationRepository pickAllocationRepository,
                                  INotificationService notificationService,
                                  IUnitOfWork unitOfWork,
-                                 IMapper mapper)
+                                 IMapper mapper,
+                                 IInventoryLedgerService inventoryLedgerService)
         {
             _goodsIssueNoteRepository = goodsIssueNoteRepository;
             _salesOrderRepository = salesOrderRepository;
@@ -42,6 +44,7 @@ namespace MilkDistributionWarehouse.Services
             _notificationService = notificationService;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
+            _inventoryLedgerService = inventoryLedgerService;
         }
 
         public async Task<string> CreateGoodsIssueNote(GoodsIssueNoteCreateDto goodsIssueNoteCreate, int? userId)
@@ -238,6 +241,12 @@ namespace MilkDistributionWarehouse.Services
 
                 await _goodsIssueNoteRepository.UpdateGoodsIssueNote(goodsIssueNote);
                 await _unitOfWork.CommitTransactionAsync();
+
+                var (invErr, _) = await _inventoryLedgerService.CreateInventoryLedgerByGINID(goodsIssueNote.GoodsIssueNoteId);
+                if (!string.IsNullOrEmpty(invErr))
+                {
+                    return invErr;
+                }
 
                 await HandleSaleOrderStatusChangeNotification(goodsIssueNote.SalesOder);
                 return "";
