@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, MapPin, Clock, Calendar, User, Thermometer, Droplets, Sun, Check, RotateCcw } from 'lucide-react';
@@ -18,6 +18,7 @@ import dayjs from 'dayjs';
 const StocktakingArea = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const [loading, setLoading] = useState(true);
     const [stocktakingAreas, setStocktakingAreas] = useState([]);
     const [stocktakingDetail, setStocktakingDetail] = useState(null);
@@ -57,9 +58,12 @@ const StocktakingArea = () => {
                 isFetchingRef.current = true;
                 setLoading(true);
 
+                // Lấy stocktakingAreaId từ query parameter nếu có
+                const stocktakingAreaId = searchParams.get('stocktakingAreaId');
+
                 // Fetch cả hai API song song
                 const [areaResponse, detailResponse] = await Promise.all([
-                    getStocktakingAreaDetailBySheetId(id),
+                    getStocktakingAreaDetailBySheetId(id, stocktakingAreaId),
                     getStocktakingDetail(id)
                 ]);
 
@@ -96,7 +100,7 @@ const StocktakingArea = () => {
         };
 
         fetchData();
-    }, [id]);
+    }, [id, searchParams]);
 
     const toggleSection = (section) => {
         setExpandedSections(prev => ({

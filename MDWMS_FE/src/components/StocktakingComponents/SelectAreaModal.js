@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "../ui/button";
 import { X, MapPin, RefreshCw, AlertCircle, Thermometer, Droplets, Sun, User } from "lucide-react";
 import { getStocktakingAreaById, getStocktakingAreaDetailBySheetId } from "../../services/StocktakingService";
@@ -13,6 +14,7 @@ export default function SelectAreaModal({
     stocktakingSheetId,
     loading = false
 }) {
+    const navigate = useNavigate();
     const [areas, setAreas] = useState([]);
     const [selectedAreaId, setSelectedAreaId] = useState(null);
     const [loadingAreas, setLoadingAreas] = useState(false);
@@ -85,16 +87,17 @@ export default function SelectAreaModal({
 
         try {
             setLoadingDetail(true);
-            const response = await getStocktakingAreaDetailBySheetId(stocktakingSheetId);
+            // Truyền stocktakingAreaId như query parameter
+            const response = await getStocktakingAreaDetailBySheetId(stocktakingSheetId, selectedAreaId);
             console.log("Stocktaking area detail:", response);
 
             if (window.showToast) {
-                window.showToast("Đã tải chi tiết phiếu kiểm kê", "success");
+                window.showToast("Xem chi tiết phiếu kiểm kê thành công", "success");
             }
 
-            // Có thể mở modal chi tiết hoặc navigate đến trang chi tiết
-            // Tùy vào yêu cầu, tạm thời log ra console
-            // Nếu cần navigate, có thể thêm prop onViewDetail callback
+            // Đóng modal và navigate đến trang chi tiết với stocktakingAreaId như query parameter
+            onClose();
+            navigate(`/stocktaking-area/${stocktakingSheetId}?stocktakingAreaId=${selectedAreaId}`);
         } catch (error) {
             console.error("Error fetching stocktaking area detail:", error);
             const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi tải chi tiết phiếu kiểm kê");
@@ -298,11 +301,11 @@ export default function SelectAreaModal({
                         ) : null;
 
                         const areaStatus = selectedArea?.status;
-                        const isPending = areaStatus === STOCK_AREA_STATUS.Pending || areaStatus === 2;
+                        // Chỉ khi status = 1 (Đã Phân Công) -> hiển thị "Bắt đầu kiểm kê"
+                        // Tất cả các trạng thái khác (2, 3, 4) -> hiển thị "Chi tiết phiếu kiểm kê"
+                        const isAssigned = areaStatus === STOCK_AREA_STATUS.Assigned || areaStatus === 1;
 
-                        // Nếu status là "Đang kiểm kê" (Pending = 2) -> hiển thị "Bắt đầu kiểm kê"
-                        // Nếu status khác -> hiển thị "Chi tiết phiếu kiểm kê"
-                        if (isPending) {
+                        if (isAssigned) {
                             return (
                                 <Button
                                     type="button"

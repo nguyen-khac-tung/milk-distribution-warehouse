@@ -174,9 +174,18 @@ export const inProgressStocktaking = async (data) => {
 
 
 // Lấy chi tiết StocktakingArea theo stocktakingSheetId
-export const getStocktakingAreaDetailBySheetId = async (stocktakingSheetId) => {
+// stocktakingSheetId: path parameter (required)
+// stocktakingAreaId: query parameter (optional, UUID)
+export const getStocktakingAreaDetailBySheetId = async (stocktakingSheetId, stocktakingAreaId = null) => {
     try {
-        const res = await api.get(`/StocktakingArea/GetDetailForWarehouseStaffByStocktakingSheetId/${stocktakingSheetId}`);
+        let url = `/StocktakingArea/GetDetailForWarehouseStaffByStocktakingSheetId/${stocktakingSheetId}`;
+        
+        // Thêm stocktakingAreaId như query parameter nếu có
+        if (stocktakingAreaId) {
+            url += `?stocktakingAreaId=${stocktakingAreaId}`;
+        }
+        
+        const res = await api.get(url);
         return res.data;
     } catch (error) {
         console.error("Error fetching stocktaking area detail:", error);
