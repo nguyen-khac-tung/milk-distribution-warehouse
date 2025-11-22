@@ -1,14 +1,16 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { ArrowLeft, Printer, CheckCircle, Clock, AlertCircle, ChevronDown, ChevronUp, RefreshCw, Barcode, Package, Send, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Printer, CheckCircle, Clock, AlertCircle, ChevronDown, ChevronUp, RefreshCw, Barcode, Package, Send, ShieldCheck, MapPin } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { getDetailGoodsIssueNote, submitGoodsIssueNote, approveGoodsIssueNote, rePickGoodsIssueNoteDetail, rePickGoodsIssueNoteDetailList } from '../../services/GoodsIssueNoteService';
 import { getPickAllocationDetail, confirmPickAllocation } from '../../services/PickAllocationService';
 import { getGoodsIssueNoteStatusMeta, getIssueItemStatusMeta, ISSUE_ITEM_STATUS, GOODS_ISSUE_NOTE_STATUS } from './goodsIssueNoteStatus';
 import { extractErrorMessage } from '../../utils/Validation';
 import ScanPalletModal from '../../components/GoodsIssueNoteComponents/ScanPalletModal';
+import ScanLocationModal from '../../components/GoodsIssueNoteComponents/ScanLocationModal';
+import ScanPalletSearchModal from '../../components/GoodsIssueNoteComponents/ScanPalletSearchModal';
 import { usePermissions } from '../../hooks/usePermissions';
 import RePickModal from '../../components/GoodsIssueNoteComponents/RePickModal';
 import RePickMultipleModal from '../../components/GoodsIssueNoteComponents/RePickMultipleModal';
@@ -58,9 +60,16 @@ const GoodsIssueNoteDetail = () => {
     const [expandedItems, setExpandedItems] = useState({});
     const [expandedGroups, setExpandedGroups] = useState({});
     const [confirmingPickId, setConfirmingPickId] = useState(null);
+    const detailCardRefs = useRef({});
     const [showScanModal, setShowScanModal] = useState(false);
     const [pickDetailData, setPickDetailData] = useState(null);
     const [isConfirming, setIsConfirming] = useState(false);
+    const [showScanLocationModal, setShowScanLocationModal] = useState(false);
+    const [showScanPalletSearchModal, setShowScanPalletSearchModal] = useState(false);
+    const [highlightedPickAllocationId, setHighlightedPickAllocationId] = useState(null);
+    const [highlightedDetailId, setHighlightedDetailId] = useState(null); // Detail ID được highlight
+    const [currentItemsForLocationScan, setCurrentItemsForLocationScan] = useState([]); // Items trong nhóm đang được scan location
+    const [currentItemsForPalletScan, setCurrentItemsForPalletScan] = useState([]); // Items trong nhóm đang được scan pallet
 
     // Modals for actions
     const [showRePickModal, setShowRePickModal] = useState(false);
@@ -171,6 +180,9 @@ const GoodsIssueNoteDetail = () => {
 
             setShowScanModal(false);
             setPickDetailData(null);
+            // Bỏ highlight sau khi quét thành công
+            setHighlightedPickAllocationId(null);
+            setHighlightedDetailId(null);
 
             // Refresh the goods issue note to get updated status, nhưng giữ lại trạng thái mở của các card
             await fetchGoodsIssueNoteDetail(true);
@@ -188,6 +200,179 @@ const GoodsIssueNoteDetail = () => {
     const handleCloseModal = () => {
         setShowScanModal(false);
         setPickDetailData(null);
+    };
+
+    // Xử lý mở modal quét vị trí cho nhóm items
+    const handleOpenScanLocationModal = (items) => {
+        setCurrentItemsForLocationScan(items);
+        setShowScanLocationModal(true);
+        setHighlightedPickAllocationId(null);
+        setHighlightedDetailId(null);
+    };
+
+    // Xử lý khi tìm thấy vị trí từ modal quét
+    const handleLocationFound = async (foundPickAllocation) => {
+        if (!foundPickAllocation || !currentItemsForLocationScan || currentItemsForLocationScan.length === 0) return;
+
+        // Tìm detail chứa pick allocation này
+        const foundDetail = currentItemsForLocationScan.find(detail => 
+            detail.pickAllocations && 
+            detail.pickAllocations.some(p => p.pickAllocationId === foundPickAllocation.pickAllocationId)
+        );
+
+        if (!foundDetail) {
+            if (window.showToast) {
+                window.showToast('Không tìm thấy sản phẩm chứa vị trí này', 'error');
+            }
+            return;
+        }
+
+        // Highlight detail card và row
+        setHighlightedPickAllocationId(foundPickAllocation.pickAllocationId);
+        setHighlightedDetailId(foundDetail.goodsIssueNoteDetailId);
+
+        // Tự động mở card detail nếu chưa mở
+        const globalIndex = goodsIssueNote.goodsIssueNoteDetails.indexOf(foundDetail);
+        if (globalIndex !== -1 && !expandedItems[globalIndex]) {
+            setExpandedItems(prev => ({
+                ...prev,
+                [globalIndex]: true
+            }));
+        }
+
+        // Scroll đến card detail sau khi mở (setTimeout để đợi DOM update)
+        setTimeout(() => {
+            const cardElement = detailCardRefs.current[foundDetail.goodsIssueNoteDetailId];
+            if (cardElement) {
+                cardElement.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+            }
+        }, 300);
+
+        // Nếu pick allocation chưa được quét (status !== 2), tự động mở modal quét pallet
+        if (foundPickAllocation.status !== 2) {
+            try {
+                // Get pick allocation detail
+                const pickDetailResponse = await getPickAllocationDetail(foundPickAllocation.pickAllocationId);
+                if (pickDetailResponse && pickDetailResponse.success && pickDetailResponse.data) {
+                    setPickDetailData(pickDetailResponse.data);
+                    setShowScanModal(true);
+                } else {
+                    if (window.showToast) {
+                        window.showToast('Không thể lấy thông tin phân bổ lấy hàng', 'error');
+                    }
+                }
+            } catch (error) {
+                console.error('Error getting pick allocation detail:', error);
+                const errorMessage = extractErrorMessage(error);
+                if (window.showToast) {
+                    window.showToast(errorMessage || 'Có lỗi xảy ra khi lấy thông tin phân bổ lấy hàng', 'error');
+                }
+            }
+        } else {
+            // Nếu đã quét rồi, chỉ highlight và hiển thị thông báo
+            if (window.showToast) {
+                window.showToast('Vị trí này đã được quét rồi', 'info');
+            }
+        }
+
+        // Tự động bỏ highlight sau 5 giây (tăng thời gian để người dùng thấy rõ)
+        setTimeout(() => {
+            setHighlightedPickAllocationId(null);
+            setHighlightedDetailId(null);
+        }, 5000);
+    };
+
+    // Xử lý đóng modal quét vị trí
+    const handleCloseScanLocationModal = () => {
+        setShowScanLocationModal(false);
+        setCurrentItemsForLocationScan([]);
+    };
+
+    // Xử lý mở modal quét pallet cho nhóm items
+    const handleOpenScanPalletSearchModal = (items) => {
+        setCurrentItemsForPalletScan(items);
+        setShowScanPalletSearchModal(true);
+        setHighlightedPickAllocationId(null);
+        setHighlightedDetailId(null);
+    };
+
+    // Xử lý khi tìm thấy pallet từ modal quét
+    const handlePalletFound = async (foundPickAllocation) => {
+        if (!foundPickAllocation || !currentItemsForPalletScan || currentItemsForPalletScan.length === 0) return;
+
+        // Tìm detail chứa pick allocation này
+        const foundDetail = currentItemsForPalletScan.find(detail => 
+            detail.pickAllocations && 
+            detail.pickAllocations.some(p => p.pickAllocationId === foundPickAllocation.pickAllocationId)
+        );
+
+        if (!foundDetail) {
+            if (window.showToast) {
+                window.showToast('Không tìm thấy sản phẩm chứa pallet này', 'error');
+            }
+            return;
+        }
+
+        // Highlight detail card và row
+        setHighlightedPickAllocationId(foundPickAllocation.pickAllocationId);
+        setHighlightedDetailId(foundDetail.goodsIssueNoteDetailId);
+
+        // Tự động mở card detail nếu chưa mở
+        const globalIndex = goodsIssueNote.goodsIssueNoteDetails.indexOf(foundDetail);
+        if (globalIndex !== -1 && !expandedItems[globalIndex]) {
+            setExpandedItems(prev => ({
+                ...prev,
+                [globalIndex]: true
+            }));
+        }
+
+        // Scroll đến card detail sau khi mở (setTimeout để đợi DOM update)
+        setTimeout(() => {
+            const cardElement = detailCardRefs.current[foundDetail.goodsIssueNoteDetailId];
+            if (cardElement) {
+                cardElement.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+            }
+        }, 300);
+
+        // Nếu pick allocation chưa được quét (status !== 2), tự động mở modal quét pallet để xác nhận
+        if (foundPickAllocation.status !== 2 && foundPickAllocation.pickDetailData) {
+            setPickDetailData(foundPickAllocation.pickDetailData);
+            setShowScanModal(true);
+        } else {
+            // Nếu đã quét rồi, chỉ highlight và hiển thị thông báo
+            if (window.showToast) {
+                window.showToast('Pallet này đã được quét rồi', 'info');
+            }
+        }
+
+        // Tự động bỏ highlight sau 5 giây
+        setTimeout(() => {
+            setHighlightedPickAllocationId(null);
+            setHighlightedDetailId(null);
+        }, 5000);
+    };
+
+    // Xử lý đóng modal quét pallet
+    const handleCloseScanPalletSearchModal = () => {
+        setShowScanPalletSearchModal(false);
+        setCurrentItemsForPalletScan([]);
+    };
+
+    // Thu thập tất cả pick allocations từ nhóm items
+    const getAllPickAllocationsFromItems = (items) => {
+        const allPickAllocations = [];
+        items.forEach(detail => {
+            if (detail.pickAllocations && detail.pickAllocations.length > 0) {
+                allPickAllocations.push(...detail.pickAllocations);
+            }
+        });
+        return allPickAllocations;
     };
 
     // Helper function to add icons to status info
@@ -474,11 +659,34 @@ const GoodsIssueNoteDetail = () => {
                                 )}
                             </div>
                         </div>
-                        {/* Nút "Lấy lại" nhiều - chỉ hiển thị cho quản lý kho, nhóm "Chờ duyệt" và khi phiếu KHÔNG ở trạng thái "Đang lấy hàng" */}
-                        {isWarehouseManager &&
-                            statusCode === ISSUE_ITEM_STATUS.PendingApproval &&
-                            goodsIssueNote.status !== GOODS_ISSUE_NOTE_STATUS.Picking && (
-                                <div className="flex items-center gap-2 ml-4" onClick={(e) => e.stopPropagation()}>
+                        {/* Các nút hành động ở header nhóm */}
+                        <div className="flex items-center gap-2 ml-4" onClick={(e) => e.stopPropagation()}>
+                            {/* Nút "Quét vị trí" và "Quét pallet" - chỉ hiển thị cho Warehouse Staff, nhóm "Đang lấy hàng" */}
+                            {isWarehouseStaff &&
+                                statusCode === ISSUE_ITEM_STATUS.Picking && (
+                                    <>
+                                        <Button
+                                            onClick={() => handleOpenScanLocationModal(items)}
+                                            className="h-[38px] px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+                                            title="Quét mã vị trí để tìm kiếm nhanh"
+                                        >
+                                            <MapPin className="w-4 h-4" />
+                                            Quét vị trí
+                                        </Button>
+                                        <Button
+                                            onClick={() => handleOpenScanPalletSearchModal(items)}
+                                            className="h-[38px] px-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+                                            title="Quét mã pallet để tìm kiếm nhanh"
+                                        >
+                                            <Package className="w-4 h-4" />
+                                            Quét pallet
+                                        </Button>
+                                    </>
+                                )}
+                            {/* Nút "Lấy lại" nhiều - chỉ hiển thị cho quản lý kho, nhóm "Chờ duyệt" và khi phiếu KHÔNG ở trạng thái "Đang lấy hàng" */}
+                            {isWarehouseManager &&
+                                statusCode === ISSUE_ITEM_STATUS.PendingApproval &&
+                                goodsIssueNote.status !== GOODS_ISSUE_NOTE_STATUS.Picking && (
                                     <Button
                                         onClick={openRePickMultipleModal}
                                         className="h-[38px] px-4 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
@@ -487,8 +695,8 @@ const GoodsIssueNoteDetail = () => {
                                         <RefreshCw className="w-4 h-4 mr-2" />
                                         Lấy lại ({selectedDetailsForRePick.length})
                                     </Button>
-                                </div>
-                            )}
+                                )}
+                        </div>
                     </div>
 
                     {/* Nội dung nhóm (ẩn/hiện theo state) */}
@@ -518,6 +726,7 @@ const GoodsIssueNoteDetail = () => {
                                 const globalIndex = goodsIssueNote.goodsIssueNoteDetails.indexOf(detail);
                                 const isExpanded = expandedItems[globalIndex];
                                 const isSelected = isDetailSelectedForRePick(detail.goodsIssueNoteDetailId);
+                                const isDetailHighlighted = highlightedDetailId === detail.goodsIssueNoteDetailId;
 
                                 // Tính toán thông tin pick allocations cho Manager
                                 const pickAllocations = detail.pickAllocations || [];
@@ -530,7 +739,19 @@ const GoodsIssueNoteDetail = () => {
                                 } : null;
 
                                 return (
-                                    <div key={detail.goodsIssueNoteDetailId} className="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow">
+                                    <div 
+                                        key={detail.goodsIssueNoteDetailId}
+                                        ref={(el) => {
+                                            if (el) {
+                                                detailCardRefs.current[detail.goodsIssueNoteDetailId] = el;
+                                            }
+                                        }}
+                                        className={`border rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-all duration-300 ${
+                                            isDetailHighlighted 
+                                                ? 'border-yellow-400 border-2 shadow-lg bg-yellow-50' 
+                                                : 'border-gray-200'
+                                        }`}
+                                    >
                                         {/* Header sản phẩm - Compact và tích hợp thông tin pick allocations */}
                                         <div
                                             className="bg-white px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-100"
@@ -551,6 +772,13 @@ const GoodsIssueNoteDetail = () => {
                                                                 />
                                                             </div>
                                                         )}
+                                                    
+                                                    {/* Badge highlight khi được tìm thấy */}
+                                                    {isDetailHighlighted && (
+                                                        <div className="flex-shrink-0 px-2 py-1 bg-yellow-400 text-yellow-900 rounded-md text-xs font-semibold">
+                                                            Đã tìm thấy
+                                                        </div>
+                                                    )}
 
                                                     {/* Expand/Collapse icon */}
                                                     <div className="flex-shrink-0 p-1.5 bg-gray-100 rounded">
@@ -663,6 +891,7 @@ const GoodsIssueNoteDetail = () => {
                                                         onProceedPick={handleProceedPick}
                                                         confirmingPickId={confirmingPickId}
                                                         isWarehouseStaff={isWarehouseStaff}
+                                                        highlightedPickAllocationId={highlightedPickAllocationId}
                                                     />
                                                 ) : (
                                                     /* Warehouse Manager: Hiển thị bảng chi tiết (đã compact) */
@@ -995,6 +1224,26 @@ const GoodsIssueNoteDetail = () => {
                 setRejectReasons={setRejectReasons}
                 loading={rePickLoading}
             />
+
+            {/* Scan Location Modal */}
+            {currentItemsForLocationScan && currentItemsForLocationScan.length > 0 && (
+                <ScanLocationModal
+                    isOpen={showScanLocationModal}
+                    onClose={handleCloseScanLocationModal}
+                    onLocationFound={handleLocationFound}
+                    pickAllocations={getAllPickAllocationsFromItems(currentItemsForLocationScan)}
+                />
+            )}
+
+            {/* Scan Pallet Search Modal */}
+            {currentItemsForPalletScan && currentItemsForPalletScan.length > 0 && (
+                <ScanPalletSearchModal
+                    isOpen={showScanPalletSearchModal}
+                    onClose={handleCloseScanPalletSearchModal}
+                    onPalletFound={handlePalletFound}
+                    pickAllocations={getAllPickAllocationsFromItems(currentItemsForPalletScan)}
+                />
+            )}
         </div>
     );
 };

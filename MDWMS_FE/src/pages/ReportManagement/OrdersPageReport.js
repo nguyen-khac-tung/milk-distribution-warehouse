@@ -68,72 +68,45 @@ export default function OrdersPage({ onClose }) {
       const fromDate = dateRange.fromDate ? dayjs(dateRange.fromDate).format('YYYY-MM-DD') : null
       const toDate = dateRange.toDate ? dayjs(dateRange.toDate).format('YYYY-MM-DD') : null
 
+      // Build filters for backend
+      const filters = {}
+      if (supplierFilter) {
+        filters.supplierId = supplierFilter.toString()
+      }
+
       const response = await getGoodsReceiptReport({
         fromDate: fromDate,
-        toDate: toDate
+        toDate: toDate,
+        pageNumber: pagination.current,
+        pageSize: pagination.pageSize,
+        search: searchQuery || "",
+        sortField: sortField || "",
+        sortAscending: sortAscending,
+        filters: filters
       })
 
-      // Handle response structure - API may return array or object with items
+      // Handle response structure - API returns PageResult
       let orders = []
-      if (Array.isArray(response)) {
+      let totalCount = 0
+
+      if (response && response.items) {
+        orders = Array.isArray(response.items) ? response.items : []
+        totalCount = response.totalCount || orders.length || 0
+      } else if (response && Array.isArray(response)) {
         orders = response
-      } else if (response?.items && Array.isArray(response.items)) {
-        orders = response.items
-      } else if (response?.data && Array.isArray(response.data)) {
-        orders = response.data
-      } else if (response?.data?.items && Array.isArray(response.data.items)) {
-        orders = response.data.items
+        totalCount = response.length || 0
       }
 
-      // Apply search filter client-side if needed
-      let filteredOrders = orders
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase()
-        filteredOrders = orders.filter(order => {
-          const supplierName = (order.supplierName || '').toLowerCase()
-          const goodsCode = (order.goodsCode || '').toLowerCase()
-          const goodsName = (order.goodsName || '').toLowerCase()
-          return supplierName.includes(query) || goodsCode.includes(query) || goodsName.includes(query)
-        })
+      // Validate: ensure we don't show more items than pageSize
+      if (orders.length > pagination.pageSize) {
+        console.warn(`Backend returned ${orders.length} items but pageSize is ${pagination.pageSize}. Slicing to match pageSize.`)
+        orders = orders.slice(0, pagination.pageSize)
       }
 
-      // Apply supplier filter client-side
-      if (supplierFilter) {
-        filteredOrders = filteredOrders.filter(order => {
-          return order.supplierId && order.supplierId.toString() === supplierFilter
-        })
-      }
-
-      // Apply sorting client-side
-      if (sortField) {
-        filteredOrders = [...filteredOrders].sort((a, b) => {
-          let aValue, bValue
-
-          if (sortField === "goodsName") {
-            aValue = (a.goodsName || '').toLowerCase()
-            bValue = (b.goodsName || '').toLowerCase()
-          } else if (sortField === "totalPackageQuantity") {
-            aValue = a.totalPackageQuantity || 0
-            bValue = b.totalPackageQuantity || 0
-          } else {
-            return 0
-          }
-
-          if (aValue < bValue) return sortAscending ? -1 : 1
-          if (aValue > bValue) return sortAscending ? 1 : -1
-          return 0
-        })
-      }
-
-      // Apply pagination client-side
-      const startIndex = (pagination.current - 1) * pagination.pageSize
-      const endIndex = startIndex + pagination.pageSize
-      const paginatedOrders = filteredOrders.slice(startIndex, endIndex)
-
-      setPurchaseOrders(paginatedOrders)
+      setPurchaseOrders(orders)
       setPagination(prev => ({
         ...prev,
-        total: filteredOrders.length
+        total: totalCount
       }))
     } catch (error) {
       console.error("Error fetching purchase orders:", error)
@@ -153,72 +126,45 @@ export default function OrdersPage({ onClose }) {
       const fromDate = dateRange.fromDate ? dayjs(dateRange.fromDate).format('YYYY-MM-DD') : null
       const toDate = dateRange.toDate ? dayjs(dateRange.toDate).format('YYYY-MM-DD') : null
 
+      // Build filters for backend
+      const filters = {}
+      if (retailerFilter) {
+        filters.retailerId = retailerFilter.toString()
+      }
+
       const response = await getGoodsIssueReport({
         fromDate: fromDate,
-        toDate: toDate
+        toDate: toDate,
+        pageNumber: pagination.current,
+        pageSize: pagination.pageSize,
+        search: searchQuery || "",
+        sortField: sortField || "",
+        sortAscending: sortAscending,
+        filters: filters
       })
 
-      // Handle response structure - API may return array or object with items
+      // Handle response structure - API returns PageResult
       let orders = []
-      if (Array.isArray(response)) {
+      let totalCount = 0
+
+      if (response && response.items) {
+        orders = Array.isArray(response.items) ? response.items : []
+        totalCount = response.totalCount || orders.length || 0
+      } else if (response && Array.isArray(response)) {
         orders = response
-      } else if (response?.items && Array.isArray(response.items)) {
-        orders = response.items
-      } else if (response?.data && Array.isArray(response.data)) {
-        orders = response.data
-      } else if (response?.data?.items && Array.isArray(response.data.items)) {
-        orders = response.data.items
+        totalCount = response.length || 0
       }
 
-      // Apply search filter client-side if needed
-      let filteredOrders = orders
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase()
-        filteredOrders = orders.filter(order => {
-          const retailerName = (order.retailerName || '').toLowerCase()
-          const goodsCode = (order.goodsCode || '').toLowerCase()
-          const goodsName = (order.goodsName || '').toLowerCase()
-          return retailerName.includes(query) || goodsCode.includes(query) || goodsName.includes(query)
-        })
+      // Validate: ensure we don't show more items than pageSize
+      if (orders.length > pagination.pageSize) {
+        console.warn(`Backend returned ${orders.length} items but pageSize is ${pagination.pageSize}. Slicing to match pageSize.`)
+        orders = orders.slice(0, pagination.pageSize)
       }
 
-      // Apply retailer filter client-side
-      if (retailerFilter) {
-        filteredOrders = filteredOrders.filter(order => {
-          return order.retailerId && order.retailerId.toString() === retailerFilter
-        })
-      }
-
-      // Apply sorting client-side
-      if (sortField) {
-        filteredOrders = [...filteredOrders].sort((a, b) => {
-          let aValue, bValue
-
-          if (sortField === "goodsName") {
-            aValue = (a.goodsName || '').toLowerCase()
-            bValue = (b.goodsName || '').toLowerCase()
-          } else if (sortField === "totalPackageQuantity") {
-            aValue = a.totalPackageQuantity || 0
-            bValue = b.totalPackageQuantity || 0
-          } else {
-            return 0
-          }
-
-          if (aValue < bValue) return sortAscending ? -1 : 1
-          if (aValue > bValue) return sortAscending ? 1 : -1
-          return 0
-        })
-      }
-
-      // Apply pagination client-side
-      const startIndex = (pagination.current - 1) * pagination.pageSize
-      const endIndex = startIndex + pagination.pageSize
-      const paginatedOrders = filteredOrders.slice(startIndex, endIndex)
-
-      setSalesOrders(paginatedOrders)
+      setSalesOrders(orders)
       setPagination(prev => ({
         ...prev,
-        total: filteredOrders.length
+        total: totalCount
       }))
     } catch (error) {
       console.error("Error fetching sales orders:", error)
@@ -317,6 +263,11 @@ export default function OrdersPage({ onClose }) {
     }
   }, [showSupplierFilter, showRetailerFilter])
 
+  // Reset pagination to page 1 when filters or sort change
+  useEffect(() => {
+    setPagination(prev => ({ ...prev, current: 1 }))
+  }, [searchQuery, supplierFilter, retailerFilter, dateRange.fromDate, dateRange.toDate, sortField])
+
   // Fetch data based on active order type
   useEffect(() => {
     // Reset pagination and filters when changing order type
@@ -344,8 +295,19 @@ export default function OrdersPage({ onClose }) {
     return currentOrders.map((order, index) => {
       if (activeOrderType === "purchase") {
         // GoodsReceiptReport structure
+        // Create unique key by combining multiple fields
+        const uniqueId = order.goodsId && order.supplierId && order.receiptDate
+          ? `${order.goodsId}-${order.supplierId}-${order.receiptDate}-${index}`
+          : order.goodsId && order.supplierId
+            ? `${order.goodsId}-${order.supplierId}-${index}`
+            : order.goodsId
+              ? `${order.goodsId}-${index}`
+              : order.id
+                ? `${order.id}-${index}`
+                : `purchase-${index}`
+
         return {
-          id: order.goodsId || order.id || index,
+          id: uniqueId,
           supplierId: order.supplierId,
           supplierName: order.supplierName || "",
           goodsId: order.goodsId,
@@ -359,8 +321,19 @@ export default function OrdersPage({ onClose }) {
         }
       } else {
         // GoodsIssueReport structure
+        // Create unique key by combining multiple fields
+        const uniqueId = order.goodsId && order.retailerId && order.issueDate
+          ? `${order.goodsId}-${order.retailerId}-${order.issueDate}-${index}`
+          : order.goodsId && order.retailerId
+            ? `${order.goodsId}-${order.retailerId}-${index}`
+            : order.goodsId
+              ? `${order.goodsId}-${index}`
+              : order.id
+                ? `${order.id}-${index}`
+                : `sales-${index}`
+
         return {
-          id: order.goodsId || order.id || index,
+          id: uniqueId,
           retailerId: order.retailerId,
           retailerName: order.retailerName || "",
           goodsId: order.goodsId,
@@ -391,6 +364,10 @@ export default function OrdersPage({ onClose }) {
 
   const handlePageChange = (page) => {
     setPagination(prev => ({ ...prev, current: page }))
+  }
+
+  const handlePageSizeChange = (newPageSize) => {
+    setPagination(prev => ({ ...prev, pageSize: newPageSize, current: 1 }))
   }
 
   const handleClearAllFilters = () => {
@@ -813,7 +790,8 @@ export default function OrdersPage({ onClose }) {
                 current={pagination.current}
                 pageSize={pagination.pageSize}
                 total={pagination.total}
-                onChange={handlePageChange}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
               />
             </div>
           )}

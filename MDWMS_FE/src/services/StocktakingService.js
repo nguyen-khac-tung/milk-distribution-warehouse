@@ -153,8 +153,14 @@ export const assignStocktakingAreas = async (data) => {
 
 export const inProgressStocktaking = async (data) => {
     try {
+        if (!data.stocktakingSheetId) {
+            throw new Error("stocktakingSheetId is required");
+        }
+        // stocktakingAreaId có thể là null khi stockAreaStarted === 1
+        // stocktakingAreaId là bắt buộc khi stockAreaStarted === 3
         const body = {
-            stocktakingSheetId: data.stocktakingSheetId
+            stocktakingSheetId: data.stocktakingSheetId,
+            stocktakingAreaId: data.stocktakingAreaId || null
         };
 
         const res = await api.put("/StocktakingSheet/InProgress", body);
@@ -168,9 +174,18 @@ export const inProgressStocktaking = async (data) => {
 
 
 // Lấy chi tiết StocktakingArea theo stocktakingSheetId
-export const getStocktakingAreaDetailBySheetId = async (stocktakingSheetId) => {
+// stocktakingSheetId: path parameter (required)
+// stocktakingAreaId: query parameter (optional, UUID)
+export const getStocktakingAreaDetailBySheetId = async (stocktakingSheetId, stocktakingAreaId = null) => {
     try {
-        const res = await api.get(`/StocktakingArea/GetDetailForWarehouseStaffByStocktakingSheetId/${stocktakingSheetId}`);
+        let url = `/StocktakingArea/GetDetailForWarehouseStaffByStocktakingSheetId/${stocktakingSheetId}`;
+
+        // Thêm stocktakingAreaId như query parameter nếu có
+        if (stocktakingAreaId) {
+            url += `?stocktakingAreaId=${stocktakingAreaId}`;
+        }
+
+        const res = await api.get(url);
         return res.data;
     } catch (error) {
         console.error("Error fetching stocktaking area detail:", error);
@@ -188,6 +203,8 @@ export const getStocktakingAreaDetailForOtherRoleBySheetId = async (stocktakingS
         throw error;
     }
 };
+
+
 
 // Phân công lại nhân viên theo khu vực
 export const reAssignAreaConfirm = async (data) => {
@@ -315,6 +332,28 @@ export const surplusStocktakingPallet = async (data) => {
     }
 };
 
+// Đánh dấu pallet đặt sai vị trí trong kiểm kê
+export const mislocatedStocktakingPallet = async (data) => {
+    try {
+        if (!data.stocktakingPalletId) {
+            throw new Error("stocktakingPalletId is required");
+        }
+        if (data.actualPackageQuantity === undefined || data.actualPackageQuantity === null) {
+            throw new Error("actualPackageQuantity is required");
+        }
+        const body = {
+            stocktakingPalletId: data.stocktakingPalletId,
+            actualPackageQuantity: data.actualPackageQuantity,
+            note: data.note || ""
+        };
+        const res = await api.put("/StocktakingPallet/MislocatedStocktakingPallet", body);
+        return res.data;
+    } catch (error) {
+        console.error("Error marking stocktaking pallet as mislocated:", error);
+        throw error;
+    }
+};
+
 // Hoàn tác pallet trong kiểm kê
 export const undoStocktakingPallet = async (stocktakingPalletId) => {
     try {
@@ -404,7 +443,7 @@ export const rejectStocktakingLocationRecords = async (records) => {
         if (!records || !Array.isArray(records) || records.length === 0) {
             throw new Error("records is required and must be a non-empty array");
         }
-        
+
         // Validate each record
         records.forEach((record, index) => {
             if (!record.stocktakingLocationId) {
@@ -438,7 +477,7 @@ export const cancelStocktakingLocationRecord = async (records) => {
         if (!records || !Array.isArray(records) || records.length === 0) {
             throw new Error("records is required and must be a non-empty array");
         }
-        
+
         // Validate each record
         records.forEach((record, index) => {
             if (!record.stocktakingLocationId) {
@@ -461,6 +500,8 @@ export const cancelStocktakingLocationRecord = async (records) => {
         throw error;
     }
 };
+
+
 
 // Duyệt khu vực kiểm kê (Approval stocktaking area)
 export const approveStocktakingArea = async (stocktakingAreaId) => {
@@ -494,6 +535,37 @@ export const completeStocktaking = async (data) => {
         return res.data;
     } catch (error) {
         console.error("Error completing stocktaking:", error);
+        throw error;
+    }
+};
+// Lấy chi tiết StocktakingArea theo stocktakingSheetId
+export const getStocktakingAreaById = async (stocktakingSheetId) => {
+    try {
+        if (!stocktakingSheetId) {
+            throw new Error("stocktakingSheetId is required");
+        }
+        const res = await api.get(`/StocktakingArea/GetStocktakingAreaById/${stocktakingSheetId}`);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching stocktaking area by id:", error);
+        throw error;
+    }
+};
+
+// Cập nhật bản ghi kiểm kê (Update stocktaking location records)
+export const updateStocktakingLocationRecords = async (data) => {
+    try {
+        if (!data.stocktakingLocationId) {
+            throw new Error("stocktakingLocationId is required");
+        }
+        const body = {
+            stocktakingLocationId: data.stocktakingLocationId,
+            note: data.note || ""
+        };
+        const res = await api.put("/StocktakingLocation/UpdateRecords", body);
+        return res.data;
+    } catch (error) {
+        console.error("Error updating stocktaking location records:", error);
         throw error;
     }
 };

@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, Calendar, User, MapPin, Clock, Thermometer, Droplets, Sun, RotateCcw, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, Calendar, User, MapPin, Clock, Thermometer, Droplets, Sun, RotateCcw, CheckCircle2, AlertTriangle, Edit2, Save, X } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
-import { getStocktakingAreaDetailForOtherRoleBySheetId, getStocktakingDetail, getStocktakingPalletDetail, rejectStocktakingLocationRecords, approveStocktakingArea, completeStocktaking } from '../../services/StocktakingService';
+import { getStocktakingAreaDetailForOtherRoleBySheetId, getStocktakingDetail, getStocktakingPalletDetail, rejectStocktakingLocationRecords, approveStocktakingArea, completeStocktaking, updateStocktakingLocationRecords } from '../../services/StocktakingService';
 import { usePermissions } from '../../hooks/usePermissions';
 import { extractErrorMessage } from '../../utils/Validation';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
@@ -39,6 +39,8 @@ const StocktakingAreaDetailForOther = () => {
     const { isWarehouseManager, isSaleManager } = usePermissions();
     const [completingStocktaking, setCompletingStocktaking] = useState(false);
     const [completeNote, setCompleteNote] = useState('');
+    const [editingNotes, setEditingNotes] = useState({}); // Map locationId -> note value
+    const [updatingNotes, setUpdatingNotes] = useState(new Set()); // Set of locationIds being updated
 
     useEffect(() => {
         const fetchData = async () => {
@@ -481,6 +483,77 @@ const StocktakingAreaDetailForOther = () => {
         }
     };
 
+    const handleNoteChange = (locationId, value) => {
+        setEditingNotes(prev => ({
+            ...prev,
+            [locationId]: value
+        }));
+    };
+
+    const handleStartEditNote = (locationId, currentNote, event) => {
+        event?.stopPropagation();
+        setEditingNotes(prev => ({
+            ...prev,
+            [locationId]: currentNote || ''
+        }));
+    };
+
+    const handleCancelEditNote = (locationId, event) => {
+        event?.stopPropagation();
+        setEditingNotes(prev => {
+            const newNotes = { ...prev };
+            delete newNotes[locationId];
+            return newNotes;
+        });
+    };
+
+    const handleUpdateNote = async (locationId, event) => {
+        event?.stopPropagation();
+
+        if (!locationId) {
+            if (window.showToast) {
+                window.showToast('Không tìm thấy mã vị trí', 'error');
+            }
+            return;
+        }
+
+        const note = editingNotes[locationId] || '';
+
+        try {
+            setUpdatingNotes(prev => new Set(prev).add(locationId));
+            await updateStocktakingLocationRecords({
+                stocktakingLocationId: locationId,
+                note: note
+            });
+
+            if (window.showToast) {
+                window.showToast('Cập nhật ghi chú thành công', 'success');
+            }
+
+            // Clear editing state
+            setEditingNotes(prev => {
+                const newNotes = { ...prev };
+                delete newNotes[locationId];
+                return newNotes;
+            });
+
+            // Refresh data
+            await handleRefresh();
+        } catch (error) {
+            console.error('Error updating note:', error);
+            const errorMessage = extractErrorMessage(error);
+            if (window.showToast) {
+                window.showToast(errorMessage || 'Không thể cập nhật ghi chú', 'error');
+            }
+        } finally {
+            setUpdatingNotes(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(locationId);
+                return newSet;
+            });
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen">
@@ -848,10 +921,10 @@ const StocktakingAreaDetailForOther = () => {
                                                             <div
                                                                 key={locationId}
                                                                 className={`border rounded-lg ${hasFails
-                                                                        ? 'border-red-500 border-2'
-                                                                        : hasOnlyWarnings
-                                                                            ? 'border-yellow-500 border-2'
-                                                                            : 'border-gray-200'
+                                                                    ? 'border-red-500 border-2'
+                                                                    : hasOnlyWarnings
+                                                                        ? 'border-yellow-500 border-2'
+                                                                        : 'border-gray-200'
                                                                     } ${isExpanded ? 'bg-gray-50' : 'bg-white'} ${isSelected ? 'ring-2 ring-orange-500' : ''} transition-colors`}
                                                             >
                                                                 {/* Location Header */}
@@ -904,7 +977,7 @@ const StocktakingAreaDetailForOther = () => {
                                                                             </div>
                                                                         </div>
                                                                     </div>
-                                                                    <div className="ml-4">
+                                                                    <div className="ml-4 flex items-center gap-2">
                                                                         {isExpanded ? (
                                                                             <ChevronUp className="w-5 h-5 text-gray-400" />
                                                                         ) : (
@@ -957,6 +1030,62 @@ const StocktakingAreaDetailForOther = () => {
                                                                         </div>
                                                                     );
                                                                 })()}
+
+                                                                {/* Note Section */}
+                                                                <div className="px-4 pb-3 border-b border-gray-200" onClick={(e) => e.stopPropagation()}>
+                                                                    <div className="flex items-start gap-2">
+                                                                        <div className="flex-1">
+                                                                            <div className="text-xs text-gray-500 mb-1">Ghi chú</div>
+                                                                            {editingNotes.hasOwnProperty(locationId) ? (
+                                                                                <div className="flex items-start gap-2">
+                                                                                    <textarea
+                                                                                        value={editingNotes[locationId] || ''}
+                                                                                        onChange={(e) => handleNoteChange(locationId, e.target.value)}
+                                                                                        placeholder="Nhập ghi chú..."
+                                                                                        className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
+                                                                                        rows={2}
+                                                                                        disabled={updatingNotes.has(locationId)}
+                                                                                    />
+                                                                                    <div className="flex items-center gap-1 mt-1">
+                                                                                        <button
+                                                                                            onClick={(e) => handleUpdateNote(locationId, e)}
+                                                                                            disabled={updatingNotes.has(locationId)}
+                                                                                            className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                                            title="Lưu ghi chú"
+                                                                                        >
+                                                                                            {updatingNotes.has(locationId) ? (
+                                                                                                <RefreshCw className="h-4 w-4 animate-spin" />
+                                                                                            ) : (
+                                                                                                <Save className="h-4 w-4" />
+                                                                                            )}
+                                                                                        </button>
+                                                                                        <button
+                                                                                            onClick={(e) => handleCancelEditNote(locationId, e)}
+                                                                                            disabled={updatingNotes.has(locationId)}
+                                                                                            className="p-1.5 text-gray-500 hover:bg-gray-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                                            title="Hủy"
+                                                                                        >
+                                                                                            <X className="h-4 w-4" />
+                                                                                        </button>
+                                                                                    </div>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <div className="flex items-start gap-2">
+                                                                                    <div className="flex-1 min-h-[2rem] px-2 py-1.5 text-sm text-gray-900 bg-gray-50 rounded-lg border border-transparent">
+                                                                                        {location.note || <span className="text-gray-400 italic">Chưa có ghi chú</span>}
+                                                                                    </div>
+                                                                                    <button
+                                                                                        onClick={(e) => handleStartEditNote(locationId, location.note, e)}
+                                                                                        className="p-1.5 text-orange-600 hover:bg-orange-50 rounded transition-colors mt-1"
+                                                                                        title="Chỉnh sửa ghi chú"
+                                                                                    >
+                                                                                        <Edit2 className="h-4 w-4" />
+                                                                                    </button>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
 
                                                                 {/* Packages Table */}
                                                                 {isExpanded && (

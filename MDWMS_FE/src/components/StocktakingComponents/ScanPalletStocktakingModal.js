@@ -5,7 +5,7 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { X, Barcode, Trash2 } from "lucide-react";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "../ui/table";
-import { getStocktakingPalletDetailByLocationCode, scannerStocktakingPallet, missStocktakingPallet, matchStocktakingPallet, surplusStocktakingPallet, deleteStocktakingPallet, undoStocktakingPallet, confirmStocktakingLocationCounted } from "../../services/StocktakingService";
+import { getStocktakingPalletDetailByLocationCode, scannerStocktakingPallet, missStocktakingPallet, matchStocktakingPallet, surplusStocktakingPallet, mislocatedStocktakingPallet, deleteStocktakingPallet, undoStocktakingPallet, confirmStocktakingLocationCounted } from "../../services/StocktakingService";
 import { extractErrorMessage } from "../../utils/Validation";
 import PalletStatusDisplay, { STOCK_PALLET_STATUS } from "../../pages/StocktakingArea/PalletStatusDisplay";
 import DeletePalletConfirmModal from "./DeletePalletConfirmModal";
@@ -507,19 +507,29 @@ export default function ScanPalletStocktakingModal({
                 return;
             }
 
-            // Lưu tất cả pallet không mong đợi (Surplus và Mislocated) - gọi surplusStocktakingPallet
-            const surplusPromises = unexpectedPallets.map(pallet => {
+            // Lưu tất cả pallet không mong đợi - phân biệt Surplus và Mislocated
+            const unexpectedPromises = unexpectedPallets.map(pallet => {
                 // Sử dụng số lượng thực tế (đã validate ở trên)
                 const actualQuantity = pallet.actualPackageQuantity !== null &&
                     pallet.actualPackageQuantity !== undefined
                     ? pallet.actualPackageQuantity
                     : (pallet.expectedPackageQuantity ?? 0);
 
-                return surplusStocktakingPallet({
-                    stocktakingPalletId: pallet.stocktakingPalletId,
-                    actualPackageQuantity: actualQuantity,
-                    note: pallet.note || ""
-                });
+                // Nếu status là Mislocated thì gọi API mislocatedStocktakingPallet
+                if (pallet.status === STOCK_PALLET_STATUS.Mislocated) {
+                    return mislocatedStocktakingPallet({
+                        stocktakingPalletId: pallet.stocktakingPalletId,
+                        actualPackageQuantity: actualQuantity,
+                        note: pallet.note || ""
+                    });
+                } else {
+                    // Nếu status là Surplus thì gọi API surplusStocktakingPallet
+                    return surplusStocktakingPallet({
+                        stocktakingPalletId: pallet.stocktakingPalletId,
+                        actualPackageQuantity: actualQuantity,
+                        note: pallet.note || ""
+                    });
+                }
             });
 
             // Lưu tất cả pallet dự kiến có số lượng thực tế (match)
@@ -539,7 +549,7 @@ export default function ScanPalletStocktakingModal({
                 );
 
             // Thực hiện tất cả các promise song song
-            await Promise.all([...matchPromises, ...surplusPromises]);
+            await Promise.all([...matchPromises, ...unexpectedPromises]);
 
             // Reload danh sách pallet sau khi lưu thành công
             await loadPallets();

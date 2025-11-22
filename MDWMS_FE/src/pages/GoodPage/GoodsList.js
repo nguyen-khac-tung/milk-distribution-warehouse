@@ -805,7 +805,7 @@ export default function GoodsPage() {
                           className="hover:bg-slate-50 border-b border-slate-200 min-h-[60px]"
                         >
                           <TableCell className="px-6 py-4 text-slate-600 font-medium">
-                            {index + 1}
+                            {(pagination.pageNumber - 1) * pagination.pageSize + (index + 1)}
                           </TableCell>
                           <TableCell className="px-6 py-4 text-slate-700 font-medium">{good?.goodsCode || ''}</TableCell>
                           <TableCell className="px-6 py-4 text-slate-700 font-medium">{good?.goodsName || ''}</TableCell>

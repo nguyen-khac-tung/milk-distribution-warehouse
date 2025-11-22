@@ -7,6 +7,7 @@ import Pagination from "../../components/Common/Pagination";
 import StocktakingFilterToggle from "../../components/StocktakingComponents/StocktakingFilterToggle";
 import CancelStocktakingModal from "../../components/StocktakingComponents/CancelStocktakingModal";
 import DeleteModal from "../../components/Common/DeleteModal";
+import SelectAreaModal from "../../components/StocktakingComponents/SelectAreaModal";
 import StocktakingTable from "./StocktakingTable";
 import { extractErrorMessage } from "../../utils/Validation";
 import { getStocktakingListForWarehouseManager, getStocktakingListForWarehouseStaff, getStocktakingListForSaleManager, cancelStocktaking, deleteStocktaking, inProgressStocktaking } from "../../services/StocktakingService";
@@ -44,6 +45,10 @@ export default function StocktakingList() {
     // Delete modal states
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
+
+    // Select area modal states
+    const [showSelectAreaModal, setShowSelectAreaModal] = useState(false);
+    const [stocktakingForAreaSelection, setStocktakingForAreaSelection] = useState(null);
 
     // Fetch data from API
     const fetchDataWithParams = async (params) => {
@@ -261,8 +266,44 @@ export default function StocktakingList() {
 
     const handleStartStocktaking = async (stocktaking) => {
         try {
-            if (stocktaking.isStocktakingStarted === false) {
-                await inProgressStocktaking({ stocktakingSheetId: stocktaking.stocktakingSheetId });
+            const stockAreaStarted = stocktaking.stockAreaStarted;
+            const status = stocktaking.status;
+            
+            // stockAreaStarted === 1: Chưa bắt đầu (1 khu vực) -> gọi API trực tiếp
+            // stockAreaStarted === 3: Chưa bắt đầu (nhiều khu vực) -> hiển thị modal chọn khu vực
+            // stockAreaStarted === 2: Đã bắt đầu -> chỉ navigate, không gọi API
+            
+            if (stockAreaStarted !== undefined && stockAreaStarted !== null) {
+                if (stockAreaStarted === 3 || stockAreaStarted === '3') {
+                    // Nhiều khu vực -> hiển thị modal để chọn
+                    setStocktakingForAreaSelection(stocktaking);
+                    setShowSelectAreaModal(true);
+                    return;
+                } else if (stockAreaStarted === 1 || stockAreaStarted === '1') {
+                    // stockAreaStarted === 1: Chỉ truyền stocktakingSheetId, stocktakingAreaId = null
+                    await inProgressStocktaking({ 
+                        stocktakingSheetId: stocktaking.stocktakingSheetId,
+                        stocktakingAreaId: null
+                    });
+
+                    if (window.showToast) {
+                        window.showToast("Bắt đầu kiểm kê thành công!", "success");
+                    }
+                    navigate(`/stocktaking-area/${stocktaking.stocktakingSheetId}`);
+                    return;
+                } else if (stockAreaStarted === 2 || stockAreaStarted === '2') {
+                    // Đã bắt đầu -> chỉ navigate
+                    navigate(`/stocktaking-area/${stocktaking.stocktakingSheetId}`);
+                    return;
+                }
+            }
+            
+            // Fallback: nếu status là Assigned (2) = chưa bắt đầu -> cần gọi API
+            if (status === 2 || status === '2' || status === STOCKTAKING_STATUS.Assigned) {
+                await inProgressStocktaking({ 
+                    stocktakingSheetId: stocktaking.stocktakingSheetId,
+                    stocktakingAreaId: null
+                });
 
                 if (window.showToast) {
                     window.showToast("Bắt đầu kiểm kê thành công!", "success");
@@ -277,6 +318,40 @@ export default function StocktakingList() {
                 window.showToast(errorMessage || "Có lỗi xảy ra khi bắt đầu kiểm kê", "error");
             }
         }
+    };
+
+    const handleSelectAreaConfirm = async (stocktakingAreaId) => {
+        if (!stocktakingForAreaSelection || !stocktakingAreaId) {
+            return;
+        }
+
+        try {
+            // stockAreaStarted === 3: Phải truyền cả stocktakingSheetId và stocktakingAreaId
+            await inProgressStocktaking({
+                stocktakingSheetId: stocktakingForAreaSelection.stocktakingSheetId,
+                stocktakingAreaId: stocktakingAreaId
+            });
+
+            if (window.showToast) {
+                window.showToast("Bắt đầu kiểm kê thành công!", "success");
+            }
+
+            setShowSelectAreaModal(false);
+            setStocktakingForAreaSelection(null);
+
+            navigate(`/stocktaking-area/${stocktakingForAreaSelection.stocktakingSheetId}`);
+        } catch (error) {
+            console.error("Error starting stocktaking with selected area:", error);
+            const errorMessage = extractErrorMessage(error);
+            if (window.showToast) {
+                window.showToast(errorMessage || "Có lỗi xảy ra khi bắt đầu kiểm kê", "error");
+            }
+        }
+    };
+
+    const handleSelectAreaModalClose = () => {
+        setShowSelectAreaModal(false);
+        setStocktakingForAreaSelection(null);
     };
 
     const handlePageChange = (newPage) => {
@@ -494,6 +569,14 @@ export default function StocktakingList() {
                     onClose={handleDeleteModalClose}
                     onConfirm={handleDeleteConfirm}
                     itemName={"phiếu kiểm kê này"}
+                />
+
+                {/* Select Area Modal */}
+                <SelectAreaModal
+                    isOpen={showSelectAreaModal}
+                    onClose={handleSelectAreaModalClose}
+                    onConfirm={handleSelectAreaConfirm}
+                    stocktakingSheetId={stocktakingForAreaSelection?.stocktakingSheetId}
                 />
             </div>
         </div>

@@ -1,6 +1,6 @@
 import { Download } from "lucide-react"
 import { Button } from "../ui/button"
-import { getInventoryReport } from "../../services/DashboardService"
+import { getInventoryReport, getInventoryLedgerReport } from "../../services/DashboardService"
 import * as XLSX from "xlsx"
 import dayjs from "dayjs"
 
@@ -44,9 +44,11 @@ const isExpiringSoon = (expiryDate, daysThreshold = 30) => {
  * Export Inventory Report Component
  * 
  * @param {Object} props
+ * @param {string} props.reportType - "current" or "period"
  * @param {string} props.searchQuery - Search query string
  * @param {string} props.areaId - Selected area ID
- * @param {string} props.timeRange - Time range filter (week, month, year)
+ * @param {string} props.timeRange - Time range filter (week, month, year) - for current report
+ * @param {Object} props.dateRange - Date range for period report { fromDate, toDate }
  * @param {string} props.sortField - Field to sort by
  * @param {boolean} props.sortAscending - Sort direction
  * @param {Function} props.onExportStart - Optional callback when export starts
@@ -54,10 +56,12 @@ const isExpiringSoon = (expiryDate, daysThreshold = 30) => {
  * @param {Function} props.onExportError - Optional callback when export fails
  */
 export default function ExportInventoryReport({
+  reportType = "current",
   searchQuery = "",
   areaId = "",
   timeRange = "week",
-  sortField = "batchCode",
+  dateRange = { fromDate: "", toDate: "" },
+  sortField = "",
   sortAscending = true,
   onExportStart,
   onExportComplete,
@@ -75,29 +79,105 @@ export default function ExportInventoryReport({
         onExportStart()
       }
 
-      // Fetch tất cả dữ liệu để export (không phân trang)
-      const filters = {}
-      if (timeRange) {
-        filters.timeRange = timeRange
-      }
-
-      const requestParams = {
-        areaId: areaId ? parseInt(areaId) : undefined,
-        pageNumber: 1,
-        pageSize: 10000, // Lấy tất cả dữ liệu
-        search: searchQuery || "",
-        sortField: sortField,
-        sortAscending: sortAscending,
-        filters
-      }
-
-      const response = await getInventoryReport(requestParams)
-
       let allData = []
-      if (response && response.items) {
-        allData = Array.isArray(response.items) ? response.items : []
-      } else if (response && Array.isArray(response)) {
-        allData = response
+
+      if (reportType === "current") {
+        // Export tồn kho hiện tại
+        const filters = {}
+        if (timeRange) {
+          filters.timeRange = timeRange
+        }
+
+        const requestParams = {
+          areaId: areaId ? parseInt(areaId) : undefined,
+          pageNumber: 1,
+          pageSize: 10000, // Lấy tất cả dữ liệu
+          search: searchQuery || "",
+          sortField: sortField || "",
+          sortAscending: sortAscending,
+          filters
+        }
+
+        const response = await getInventoryReport(requestParams)
+
+        if (response && response.items) {
+          allData = Array.isArray(response.items) ? response.items : []
+        } else if (response && Array.isArray(response)) {
+          allData = response
+        }
+      } else {
+        // Export tồn kho theo kỳ
+        // Format dates for API (ISO 8601 format)
+        const fromDate = dateRange.fromDate ? new Date(dateRange.fromDate).toISOString() : ""
+        const toDate = dateRange.toDate ? new Date(dateRange.toDate + "T23:59:59").toISOString() : ""
+
+        // Build filters
+        const filters = {}
+        if (areaId) {
+          filters.areaId = areaId.toString()
+        }
+
+        // Fetch tất cả dữ liệu (không phân trang) - fetch nhiều lần nếu cần
+        allData = []
+        let currentPage = 1
+        const pageSize = 1000 // Fetch từng batch 1000 items
+        let hasMoreData = true
+
+        while (hasMoreData) {
+          const requestParams = {
+            fromDate: fromDate,
+            toDate: toDate,
+            pageNumber: currentPage,
+            pageSize: pageSize,
+            search: searchQuery || "",
+            sortField: sortField || "",
+            sortAscending: sortAscending,
+            filters: filters
+          }
+
+          const response = await getInventoryLedgerReport(requestParams)
+
+          // Handle response structure
+          let pageData = []
+          if (response && response.items) {
+            pageData = Array.isArray(response.items) ? response.items : []
+          } else if (response && Array.isArray(response)) {
+            pageData = response
+          } else if (response && response.data && Array.isArray(response.data)) {
+            pageData = response.data
+          }
+
+          if (pageData && pageData.length > 0) {
+            allData = [...allData, ...pageData]
+            
+            // Kiểm tra xem còn dữ liệu không
+            const totalCount = response.totalCount || 0
+            const totalPages = response.totalPages || 1
+            hasMoreData = currentPage < totalPages && pageData.length === pageSize
+            currentPage++
+          } else {
+            hasMoreData = false
+          }
+        }
+
+        // Apply client-side filters if needed (search, area) - chỉ khi backend chưa filter
+        // Nếu đã có search query hoặc areaId trong request, backend đã filter rồi
+        // Nhưng để đảm bảo, vẫn apply filter client-side nếu cần
+        if (searchQuery && searchQuery.trim() !== "") {
+          const query = searchQuery.toLowerCase()
+          allData = allData.filter(item => {
+            return (
+              (item.batchCode && item.batchCode.toLowerCase().includes(query)) ||
+              (item.goodName && item.goodName.toLowerCase().includes(query)) ||
+              (item.goodsName && item.goodsName.toLowerCase().includes(query)) ||
+              (item.goodsCode && item.goodsCode.toLowerCase().includes(query))
+            )
+          })
+        }
+
+        if (areaId) {
+          allData = allData.filter(item => item.areaId === parseInt(areaId))
+        }
       }
 
       if (!allData || allData.length === 0) {
@@ -111,53 +191,90 @@ export default function ExportInventoryReport({
       }
 
       // Chuẩn bị dữ liệu cho Excel với tiêu đề tiếng Việt
-      const excelData = allData.map((item, index) => {
-        const expired = isExpired(item.expiryDate)
-        const expiringSoon = isExpiringSoon(item.expiryDate, 30)
+      let excelData = []
 
-        let statusText = "Còn hạn"
-        if (expired) {
-          statusText = "Hết hạn"
-        } else if (expiringSoon) {
-          statusText = "Sắp hết hạn"
-        }
+      if (reportType === "current") {
+        // Format cho tồn kho hiện tại
+        excelData = allData.map((item, index) => {
+          const expired = isExpired(item.expiryDate)
+          const expiringSoon = isExpiringSoon(item.expiryDate, 30)
 
-        return {
-          "STT": index + 1,
-          "Mã sản phẩm": item.goodsCode || "-",
-          "Tên sản phẩm": item.goodName || "-",
-          "Đơn vị/thùng": item.unitPerPackage || "-",
-          "Đơn vị": item.unitOfMeasure || "-",
-          "Mã lô": item.batchCode || "-",
-          "Ngày sản xuất": item.manufacturingDate ? formatDate(item.manufacturingDate) : "-",
-          "Ngày hết hạn": item.expiryDate ? formatDate(item.expiryDate) : "-",
-          "Số lượng thùng": item.totalPackageQuantity || 0,
-          "Trạng thái": statusText
-        }
-      })
+          let statusText = "Còn hạn"
+          if (expired) {
+            statusText = "Hết hạn"
+          } else if (expiringSoon) {
+            statusText = "Sắp hết hạn"
+          }
+
+          return {
+            "STT": index + 1,
+            "Mã sản phẩm": item.goodsCode || "-",
+            "Tên sản phẩm": item.goodName || "-",
+            "Đơn vị/thùng": item.unitPerPackage || "-",
+            "Đơn vị": item.unitOfMeasure || "-",
+            "Mã lô": item.batchCode || "-",
+            "Ngày sản xuất": item.manufacturingDate ? formatDate(item.manufacturingDate) : "-",
+            "Ngày hết hạn": item.expiryDate ? formatDate(item.expiryDate) : "-",
+            "Số lượng thùng": item.totalPackageQuantity || 0,
+            "Trạng thái": statusText
+          }
+        })
+      } else {
+        // Format cho tồn kho theo kỳ
+        excelData = allData.map((item, index) => {
+          return {
+            "STT": index + 1,
+            "Mã sản phẩm": item.goodsCode || "-",
+            "Tên sản phẩm": item.goodsName || "-",
+            "Đơn vị/thùng": item.unitPerPackage || "-",
+            "Đơn vị": item.unitOfMeasure || "-",
+            "Tồn đầu kỳ": item.beginningInventoryPackages || 0,
+            "Nhập trong kỳ": item.inQuantityPackages || 0,
+            "Xuất trong kỳ": item.outQuantityPackages || 0,
+            "Tồn cuối kỳ": item.endingInventoryPackages || 0
+          }
+        })
+      }
 
       // Tạo workbook và worksheet
       const worksheet = XLSX.utils.json_to_sheet(excelData)
       const workbook = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Báo cáo tồn kho")
+      const sheetName = reportType === "current" ? "Báo cáo tồn kho hiện tại" : "Báo cáo tồn kho theo kỳ"
+      XLSX.utils.book_append_sheet(workbook, worksheet, sheetName)
 
       // Đặt độ rộng cột
-      const columnWidths = [
-        { wch: 5 },   // STT
-        { wch: 15 },  // Mã sản phẩm
-        { wch: 30 },  // Tên sản phẩm
-        { wch: 12 },  // Đơn vị/thùng
-        { wch: 10 },  // Đơn vị
-        { wch: 15 },  // Mã lô
-        { wch: 15 },  // Ngày sản xuất
-        { wch: 15 },  // Ngày hết hạn
-        { wch: 15 },  // Số lượng thùng
-        { wch: 15 }   // Trạng thái
-      ]
+      let columnWidths = []
+      if (reportType === "current") {
+        columnWidths = [
+          { wch: 5 },   // STT
+          { wch: 15 },  // Mã sản phẩm
+          { wch: 30 },  // Tên sản phẩm
+          { wch: 12 },  // Đơn vị/thùng
+          { wch: 10 },  // Đơn vị
+          { wch: 15 },  // Mã lô
+          { wch: 15 },  // Ngày sản xuất
+          { wch: 15 },  // Ngày hết hạn
+          { wch: 15 },  // Số lượng thùng
+          { wch: 15 }   // Trạng thái
+        ]
+      } else {
+        columnWidths = [
+          { wch: 5 },   // STT
+          { wch: 15 },  // Mã sản phẩm
+          { wch: 30 },  // Tên sản phẩm
+          { wch: 12 },  // Đơn vị/thùng
+          { wch: 10 },  // Đơn vị
+          { wch: 15 },  // Tồn đầu kỳ
+          { wch: 15 },  // Nhập trong kỳ
+          { wch: 15 },  // Xuất trong kỳ
+          { wch: 15 }   // Tồn cuối kỳ
+        ]
+      }
       worksheet['!cols'] = columnWidths
 
       // Tạo tên file với ngày tháng
-      const fileName = `Bao_cao_ton_kho_${dayjs().format('DDMMYYYY_HHmmss')}.xlsx`
+      const reportTypeName = reportType === "current" ? "ton_kho_hien_tai" : "ton_kho_theo_ky"
+      const fileName = `Bao_cao_${reportTypeName}_${dayjs().format('DDMMYYYY_HHmmss')}.xlsx`
 
       // Xuất file
       XLSX.writeFile(workbook, fileName)
