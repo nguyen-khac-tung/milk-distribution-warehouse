@@ -91,8 +91,6 @@ namespace MilkDistributionWarehouse.Repositories
                     || (b.Goods != null && b.Goods.GoodsName.ToLower().Contains(search)));
             }
 
-            var totalCount = await query.CountAsync(cancellationToken);
-
             if (!string.IsNullOrEmpty(request.SortField))
             {
                 switch (request.SortField)
@@ -104,7 +102,7 @@ namespace MilkDistributionWarehouse.Repositories
                         query = request.SortAscending ? query.OrderBy(b => b.ManufacturingDate) : query.OrderByDescending(b => b.ManufacturingDate);
                         break;
                     case "ExpiryDate":
-                        query = request.SortAscending ? query.OrderBy(b => b.ExpiryDate) : request.SortAscending ? query.OrderBy(b => b.ExpiryDate) : query.OrderByDescending(b => b.ExpiryDate);
+                        query = request.SortAscending ? query.OrderBy(b => b.ExpiryDate) : query.OrderByDescending(b => b.ExpiryDate);
                         break;
                     default:
                         query = query.OrderByDescending(b => b.CreateAt);
@@ -116,8 +114,7 @@ namespace MilkDistributionWarehouse.Repositories
                 query = query.OrderByDescending(b => b.CreateAt);
             }
 
-            var skip = (request.PageNumber - 1) * request.PageSize;
-            var raw = await query.Skip(skip).Take(request.PageSize)
+            var raw = await query
                 .Select(b => new
                 {
                     b.BatchId,
@@ -254,12 +251,19 @@ namespace MilkDistributionWarehouse.Repositories
                 })
                 .ToList();
 
+            // paginate grouped results so TotalCount reflects number of grouped inventory rows
+            var totalGroupedCount = grouped.Count;
+            var pageNumber = Math.Max(1, request.PageNumber);
+            var pageSize = Math.Max(1, request.PageSize);
+            var skip = (pageNumber - 1) * pageSize;
+            var pagedItems = grouped.Skip(skip).Take(pageSize).ToList();
+
             return new PageResult<ReportDto.InventoryReportDto>
             {
-                Items = grouped,
-                TotalCount = totalCount,
-                PageNumber = request.PageNumber,
-                PageSize = request.PageSize
+                Items = pagedItems,
+                TotalCount = totalGroupedCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize
             };
         }
 
@@ -756,18 +760,18 @@ namespace MilkDistributionWarehouse.Repositories
                 grouped = grouped.OrderBy(r => r.IssueDate).ThenBy(r => r.RetailerId).ThenBy(r => r.GoodsId).ToList();
             }
 
-            var totalCount = grouped.Count;
-            var pageNumber = Math.Max(1, request.PageNumber);
-            var pageSize = Math.Max(1, request.PageSize);
-            var skip2 = (pageNumber - 1) * pageSize;
-            var items = grouped.Skip(skip2).Take(pageSize).ToList();
+            var totalCount2 = grouped.Count;
+            var pageNumber2 = Math.Max(1, request.PageNumber);
+            var pageSize2 = Math.Max(1, request.PageSize);
+            var skip2 = (pageNumber2 - 1) * pageSize2;
+            var items2 = grouped.Skip(skip2).Take(pageSize2).ToList();
 
             return new PageResult<ReportDto.GoodIssueReportDto>
             {
-                Items = items,
-                TotalCount = totalCount,
-                PageNumber = pageNumber,
-                PageSize = pageSize
+                Items = items2,
+                TotalCount = totalCount2,
+                PageNumber = pageNumber2,
+                PageSize = pageSize2
             };
         }
 
