@@ -73,6 +73,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
   const [purchaseOrdersStats, setPurchaseOrdersStats] = useState({ current: 0, previous: 0, change: 0 })
   const [salesOrdersStats, setSalesOrdersStats] = useState({ current: 0, previous: 0, change: 0 })
   const [chartLoading, setChartLoading] = useState(false)
+  const [chartPeriod, setChartPeriod] = useState("week") // "week" or "month"
   const [inventoryStats, setInventoryStats] = useState({ current: 0, previous: 0, change: 0 })
   const [inventoryLoading, setInventoryLoading] = useState(false)
   const [activityStats, setActivityStats] = useState({ emptyAreas: 0, fullAreas: 0, products: 0 })
@@ -121,31 +122,79 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
     return weekDays
   }
 
+  // Get current month days
+  const getCurrentMonthDays = () => {
+    const today = dayjs()
+    const startOfMonth = today.startOf("month")
+    const endOfMonth = today.endOf("month")
+    const daysInMonth = endOfMonth.date()
+
+    // Generate all days in the current month
+    const monthDays = []
+    for (let i = 1; i <= daysInMonth; i++) {
+      const day = startOfMonth.add(i - 1, "day")
+      monthDays.push({
+        date: day,
+        dayName: day.format("DD/MM"),
+        dayOfMonth: day.date(),
+      })
+    }
+
+    return monthDays
+  }
+
   // Fetch purchase and sales orders data for charts and stats
   useEffect(() => {
     const fetchOrdersData = async () => {
       try {
         setChartLoading(true)
-        const weekDays = getCurrentWeekDays()
 
-        // Get current week date range (Monday to Sunday)
-        const startOfWeek = weekDays[0].date
-        const endOfWeek = weekDays[6].date
-        const fromDate = startOfWeek.format('YYYY-MM-DD')
-        const toDate = endOfWeek.format('YYYY-MM-DD')
+        let periodDays = []
+        let fromDate = ""
+        let toDate = ""
+        let prevFromDate = ""
+        let prevToDate = ""
 
-        // Get previous week date range for comparison
-        const prevStartOfWeek = startOfWeek.subtract(7, 'day')
-        const prevEndOfWeek = endOfWeek.subtract(7, 'day')
-        const prevFromDate = prevStartOfWeek.format('YYYY-MM-DD')
-        const prevToDate = prevEndOfWeek.format('YYYY-MM-DD')
+        if (chartPeriod === "week") {
+          // Week mode
+          const weekDays = getCurrentWeekDays()
+          periodDays = weekDays
+          const startOfWeek = weekDays[0].date
+          const endOfWeek = weekDays[6].date
+          fromDate = startOfWeek.format('YYYY-MM-DD')
+          toDate = endOfWeek.format('YYYY-MM-DD')
 
-        // Fetch current week data
+          // Get previous week date range for comparison
+          const prevStartOfWeek = startOfWeek.subtract(7, 'day')
+          const prevEndOfWeek = endOfWeek.subtract(7, 'day')
+          prevFromDate = prevStartOfWeek.format('YYYY-MM-DD')
+          prevToDate = prevEndOfWeek.format('YYYY-MM-DD')
+
+        } else {
+          // Month mode
+          const monthDays = getCurrentMonthDays()
+          periodDays = monthDays
+          // Use startOf and endOf to ensure accurate date range
+          const today = dayjs()
+          const startOfMonth = today.startOf("month")
+          const endOfMonth = today.endOf("month")
+          fromDate = startOfMonth.format('YYYY-MM-DD')
+          toDate = endOfMonth.format('YYYY-MM-DD')
+
+          // Get previous month date range for comparison
+          const prevStartOfMonth = startOfMonth.subtract(1, 'month').startOf("month")
+          const prevEndOfMonth = endOfMonth.subtract(1, 'month').endOf("month")
+          prevFromDate = prevStartOfMonth.format('YYYY-MM-DD')
+          prevToDate = prevEndOfMonth.format('YYYY-MM-DD')
+
+        }
+
+        // Fetch current period data - use large pageSize to get all data
         const [currentReceipts, currentIssues, previousReceipts, previousIssues] = await Promise.all([
-          getGoodsReceiptReport({ fromDate, toDate }).catch(() => []),
-          getGoodsIssueReport({ fromDate, toDate }).catch(() => []),
-          getGoodsReceiptReport({ fromDate: prevFromDate, toDate: prevToDate }).catch(() => []),
-          getGoodsIssueReport({ fromDate: prevFromDate, toDate: prevToDate }).catch(() => [])
+          getGoodsReceiptReport({ fromDate, toDate, pageNumber: 1, pageSize: 1000 }).catch(() => []),
+          getGoodsIssueReport({ fromDate, toDate, pageNumber: 1, pageSize: 1000 }).catch(() => []),
+          getGoodsReceiptReport({ fromDate: prevFromDate, toDate: prevToDate, pageNumber: 1, pageSize: 1000 }).catch(() => []),
+          getGoodsIssueReport({ fromDate: prevFromDate, toDate: prevToDate, pageNumber: 1, pageSize: 1000 }).catch(() => [])
         ])
 
         // Handle response structure
@@ -156,6 +205,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
           if (response?.data?.items && Array.isArray(response.data.items)) return response.data.items
           return []
         }
+
 
         const currentReceiptsList = normalizeData(currentReceipts)
         const currentIssuesList = normalizeData(currentIssues)
@@ -187,50 +237,109 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
           change: parseFloat(salesChange)
         })
 
-        // Group receipts and issues by day of week (Monday to Sunday)
+        // Group receipts and issues by day
         const purchaseDataByDay = {}
         const salesDataByDay = {}
-        weekDays.forEach(day => {
-          purchaseDataByDay[day.dayOfWeek] = 0
-          salesDataByDay[day.dayOfWeek] = 0
-        })
 
-        currentReceiptsList.forEach(receipt => {
-          if (receipt.receiptDate) {
-            const receiptDate = dayjs(receipt.receiptDate)
-            const dayOfWeek = receiptDate.day()
-            if (purchaseDataByDay.hasOwnProperty(dayOfWeek)) {
-              purchaseDataByDay[dayOfWeek]++
+        if (chartPeriod === "week") {
+          // Week mode: group by day of week
+          periodDays.forEach(day => {
+            purchaseDataByDay[day.dayOfWeek] = 0
+            salesDataByDay[day.dayOfWeek] = 0
+          })
+
+          currentReceiptsList.forEach(receipt => {
+            if (receipt.receiptDate) {
+              const receiptDate = dayjs(receipt.receiptDate)
+              const dayOfWeek = receiptDate.day()
+              if (purchaseDataByDay.hasOwnProperty(dayOfWeek)) {
+                purchaseDataByDay[dayOfWeek]++
+              }
             }
-          }
-        })
+          })
 
-        currentIssuesList.forEach(issue => {
-          if (issue.issueDate) {
-            const issueDate = dayjs(issue.issueDate)
-            const dayOfWeek = issueDate.day()
-            if (salesDataByDay.hasOwnProperty(dayOfWeek)) {
-              salesDataByDay[dayOfWeek]++
+          currentIssuesList.forEach(issue => {
+            if (issue.issueDate) {
+              const issueDate = dayjs(issue.issueDate)
+              const dayOfWeek = issueDate.day()
+              if (salesDataByDay.hasOwnProperty(dayOfWeek)) {
+                salesDataByDay[dayOfWeek]++
+              }
             }
-          }
-        })
+          })
 
-        const combinedOrdersData = weekDays.map(day => ({
-          name: day.dayName,
-          sales: salesDataByDay[day.dayOfWeek] || 0,
-          purchase: purchaseDataByDay[day.dayOfWeek] || 0
-        }))
-        setOrdersChartData(combinedOrdersData)
+          const combinedOrdersData = periodDays.map(day => ({
+            name: day.dayName,
+            sales: salesDataByDay[day.dayOfWeek] || 0,
+            purchase: purchaseDataByDay[day.dayOfWeek] || 0
+          }))
+          setOrdersChartData(combinedOrdersData)
+        } else {
+          // Month mode: group by day of month (using date string for accurate matching)
+          // Create a map with date string (YYYY-MM-DD) as key for accurate matching
+          const purchaseDataByDate = {}
+          const salesDataByDate = {}
+
+          periodDays.forEach(day => {
+            const dateKey = day.date.format('YYYY-MM-DD')
+            purchaseDataByDate[dateKey] = 0
+            salesDataByDate[dateKey] = 0
+          })
+
+          // Group purchase orders by exact date
+          currentReceiptsList.forEach(receipt => {
+            if (receipt.receiptDate) {
+              const receiptDate = dayjs(receipt.receiptDate)
+              const dateKey = receiptDate.format('YYYY-MM-DD')
+              if (purchaseDataByDate.hasOwnProperty(dateKey)) {
+                purchaseDataByDate[dateKey]++
+              }
+            }
+          })
+
+          // Group sales orders by exact date
+          currentIssuesList.forEach(issue => {
+            if (issue.issueDate) {
+              const issueDate = dayjs(issue.issueDate)
+              const dateKey = issueDate.format('YYYY-MM-DD')
+              if (salesDataByDate.hasOwnProperty(dateKey)) {
+                salesDataByDate[dateKey]++
+              }
+            }
+          })
+
+          // Map data to chart format
+          const combinedOrdersData = periodDays.map(day => {
+            const dateKey = day.date.format('YYYY-MM-DD')
+            return {
+              name: day.dayName,
+              sales: salesDataByDate[dateKey] || 0,
+              purchase: purchaseDataByDate[dateKey] || 0
+            }
+          })
+
+          setOrdersChartData(combinedOrdersData)
+        }
 
       } catch (error) {
         console.error("Error fetching orders data:", error)
         // Fallback to empty data
-        const weekDays = getCurrentWeekDays()
-        setOrdersChartData(weekDays.map(day => ({
-          name: day.dayName,
-          sales: 0,
-          purchase: 0
-        })))
+        let fallbackDays = []
+        if (chartPeriod === "week") {
+          fallbackDays = getCurrentWeekDays()
+          setOrdersChartData(fallbackDays.map(day => ({
+            name: day.dayName,
+            sales: 0,
+            purchase: 0
+          })))
+        } else {
+          fallbackDays = getCurrentMonthDays()
+          setOrdersChartData(fallbackDays.map(day => ({
+            name: day.dayName,
+            sales: 0,
+            purchase: 0
+          })))
+        }
       } finally {
         setChartLoading(false)
       }
@@ -239,7 +348,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
     if (activeSection === "dashboard") {
       fetchOrdersData()
     }
-  }, [activeSection])
+  }, [activeSection, chartPeriod])
 
   // Fetch areas dropdown
   useEffect(() => {
@@ -620,12 +729,22 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-8 text-xs">
-                    tuần này <ChevronDown className="ml-1 h-3 w-3" />
+                    {chartPeriod === "week" ? "tuần này" : "tháng này"} <ChevronDown className="ml-1 h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem>Tháng này</DropdownMenuItem>
-                  <DropdownMenuItem>Năm nay</DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setChartPeriod("week")}
+                    className={chartPeriod === "week" ? "bg-gray-100" : ""}
+                  >
+                    Tuần này
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setChartPeriod("month")}
+                    className={chartPeriod === "month" ? "bg-gray-100" : ""}
+                  >
+                    Tháng này
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </CardHeader>

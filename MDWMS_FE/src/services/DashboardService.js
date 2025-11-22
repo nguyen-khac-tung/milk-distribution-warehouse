@@ -233,15 +233,23 @@ export const getGoodsReceiptReport = async (params = {}) => {
             pageSize: pageSize
         };
     } catch (error) {
-        if (error.response) {
-            console.error("Error response data:", error.response.data);
-            console.error("Error response status:", error.response.status);
-            console.error("Error response headers:", error.response.headers);
+        // Check if error is "No data found" - this is a normal case, not a real error
+        const isNoDataError = error.response?.status === 400 &&
+            (error.response?.data?.message?.toLowerCase().includes('no goods receipt data found') ||
+                error.response?.data?.message?.toLowerCase().includes('no data found'));
+
+        if (!isNoDataError) {
+            // Only log real errors, not "no data found" cases
+            if (error.response) {
+                console.error("Error response data:", error.response.data);
+                console.error("Error response status:", error.response.status);
+                console.error("Error response headers:", error.response.headers);
+            }
+            if (error.request) {
+                console.error("Error request:", error.request);
+            }
+            console.error("Error fetching goods receipt report:", error);
         }
-        if (error.request) {
-            console.error("Error request:", error.request);
-        }
-        console.error("Error fetching goods receipt report:", error);
         return {
             items: [],
             totalCount: 0,
@@ -336,15 +344,23 @@ export const getGoodsIssueReport = async (params = {}) => {
             pageSize: pageSize
         };
     } catch (error) {
-        if (error.response) {
-            console.error("Error response data:", error.response.data);
-            console.error("Error response status:", error.response.status);
-            console.error("Error response headers:", error.response.headers);
+        // Check if error is "No data found" - this is a normal case, not a real error
+        const isNoDataError = error.response?.status === 400 &&
+            (error.response?.data?.message?.toLowerCase().includes('no goods issue data found') ||
+                error.response?.data?.message?.toLowerCase().includes('no data found'));
+
+        if (!isNoDataError) {
+            // Only log real errors, not "no data found" cases
+            if (error.response) {
+                console.error("Error response data:", error.response.data);
+                console.error("Error response status:", error.response.status);
+                console.error("Error response headers:", error.response.headers);
+            }
+            if (error.request) {
+                console.error("Error request:", error.request);
+            }
+            console.error("Error fetching goods issue report:", error);
         }
-        if (error.request) {
-            console.error("Error request:", error.request);
-        }
-        console.error("Error fetching goods issue report:", error);
         return {
             items: [],
             totalCount: 0,
