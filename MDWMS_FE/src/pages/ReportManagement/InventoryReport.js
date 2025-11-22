@@ -24,7 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "../../components/ui/table"
-import { getInventoryReport } from "../../services/DashboardService"
+import { getInventoryReport, getInventoryLedgerReport } from "../../services/DashboardService"
 import { getAreaDropdown } from "../../services/AreaServices"
 import Loading from "../../components/Common/Loading"
 import Pagination from "../../components/Common/Pagination"
@@ -392,7 +392,13 @@ const TopProductsChart = ({ data }) => {
 }
 
 export default function InventoryReport({ onClose }) {
+  // Report type: "current" (tồn kho hiện tại) or "period" (tồn kho theo kỳ)
+  const [reportType, setReportType] = useState("current")
+
+  // Data states
   const [inventoryData, setInventoryData] = useState([])
+  const [ledgerData, setLedgerData] = useState([])
+
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [areaId, setAreaId] = useState("")
@@ -406,8 +412,14 @@ export default function InventoryReport({ onClose }) {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState(null)
   const searchTimeoutRef = useRef(null)
-  const [sortField, setSortField] = useState("batchCode")
+  const [sortField, setSortField] = useState("") // No default sort
   const [sortAscending, setSortAscending] = useState(true)
+
+  // Date range for period report
+  const [dateRange, setDateRange] = useState({
+    fromDate: "",
+    toDate: ""
+  })
 
   // Fetch areas for dropdown
   useEffect(() => {
@@ -433,7 +445,11 @@ export default function InventoryReport({ onClose }) {
 
   // Initial load on component mount
   useEffect(() => {
-    fetchInventoryData()
+    if (reportType === "current") {
+      fetchInventoryData()
+    } else {
+      fetchLedgerData()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -448,7 +464,12 @@ export default function InventoryReport({ onClose }) {
     setPagination(prev => ({ ...prev, current: 1 }))
 
     const fetchData = () => {
-      fetchInventoryData()
+      if (reportType === "current") {
+        fetchInventoryData()
+      } else {
+        // Always fetch from server when filters change (search, area)
+        fetchLedgerData(true)
+      }
     }
 
     // Debounce search queries (500ms), immediate for other changes
@@ -465,20 +486,41 @@ export default function InventoryReport({ onClose }) {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, timeRange, areaId])
+  }, [searchQuery, timeRange, areaId, reportType])
+
+  // Fetch ledger data when date range changes
+  useEffect(() => {
+    if (reportType === "period") {
+      setPagination(prev => ({ ...prev, current: 1 }))
+      // Fetch with new date range and pagination
+      fetchLedgerData(true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateRange.fromDate, dateRange.toDate])
 
   // Fetch data when pagination changes
   useEffect(() => {
-    fetchInventoryData()
+    if (reportType === "current") {
+      fetchInventoryData()
+    } else {
+      // Fetch from server with new pagination
+      fetchLedgerData(true)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination.current, pagination.pageSize])
+  }, [pagination.current, pagination.pageSize, reportType])
 
   // Fetch data when sort changes
   useEffect(() => {
-    setPagination(prev => ({ ...prev, current: 1 }))
-    fetchInventoryData()
+    if (reportType === "current") {
+      setPagination(prev => ({ ...prev, current: 1 }))
+      fetchInventoryData()
+    } else {
+      // Reset pagination and fetch from server with new sort
+      setPagination(prev => ({ ...prev, current: 1 }))
+      fetchLedgerData(true)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortField, sortAscending])
+  }, [sortField, sortAscending, reportType])
 
   const fetchInventoryData = async () => {
     try {
@@ -495,7 +537,7 @@ export default function InventoryReport({ onClose }) {
         pageNumber: pagination.current,
         pageSize: pagination.pageSize,
         search: searchQuery || "",
-        sortField: sortField,
+        sortField: sortField || "", // Only send sortField if it's not empty
         sortAscending: sortAscending,
         filters
       }
@@ -505,11 +547,22 @@ export default function InventoryReport({ onClose }) {
 
       if (response && response.items) {
         // Handle response with items array (even if empty)
-        const itemsArray = Array.isArray(response.items) ? response.items : []
+        let itemsArray = Array.isArray(response.items) ? response.items : []
+        
+        // Ensure we only display items up to pageSize (in case backend returns more)
+        // This is a safety check to prevent displaying more items than expected
+        if (itemsArray.length > pagination.pageSize) {
+          // Only log warning in development mode to reduce console noise
+          if (process.env.NODE_ENV === 'development') {
+            console.warn(`Backend returned ${itemsArray.length} items but pageSize is ${pagination.pageSize}. Limiting display.`)
+          }
+          itemsArray = itemsArray.slice(0, pagination.pageSize)
+        }
+        
         setInventoryData(itemsArray)
         setPagination(prev => ({
           ...prev,
-          total: response.totalCount || itemsArray.length || 0
+          total: response.totalCount || 0 // Use totalCount from backend, not itemsArray.length
         }))
       } else if (response && Array.isArray(response)) {
         // Handle case where response is directly an array
@@ -534,6 +587,82 @@ export default function InventoryReport({ onClose }) {
       setLoading(false)
     }
   }
+
+  const fetchLedgerData = async (forceFetch = false) => {
+    try {
+      setLoading(true)
+
+      // Format dates for API (ISO 8601 format) - optional
+      const fromDate = dateRange.fromDate ? new Date(dateRange.fromDate).toISOString() : ""
+      const toDate = dateRange.toDate ? new Date(dateRange.toDate + "T23:59:59").toISOString() : ""
+
+      // Build filters - backend supports search via search parameter
+      // Area filter might need to be client-side if backend doesn't support it
+      const filters = {}
+      if (areaId) {
+        filters.areaId = areaId.toString()
+      }
+
+      const requestParams = {
+        fromDate: fromDate,
+        toDate: toDate,
+        pageNumber: pagination.current,
+        pageSize: pagination.pageSize,
+        search: searchQuery || "",
+        sortField: sortField || "",
+        sortAscending: sortAscending,
+        filters: filters
+      }
+
+      const response = await getInventoryLedgerReport(requestParams)
+
+      // Handle response structure - backend returns PageResult
+      let itemsArray = []
+      let totalCount = 0
+
+      if (response && response.items) {
+        itemsArray = Array.isArray(response.items) ? response.items : []
+        totalCount = response.totalCount || 0 // Use totalCount from backend, not itemsArray.length
+      } else if (response && Array.isArray(response)) {
+        // Fallback: response is array directly
+        itemsArray = response
+        totalCount = response.length || 0
+      }
+
+      // Apply client-side area filter if backend doesn't support it via filters
+      // Note: If backend supports areaId in filters, this won't filter anything
+      let filteredData = itemsArray
+      if (areaId && itemsArray.length > 0) {
+        // Check if backend already filtered by areaId
+        const allMatchArea = itemsArray.every(item => item.areaId === parseInt(areaId))
+        if (!allMatchArea) {
+          // Backend didn't filter, do client-side filtering
+          filteredData = itemsArray.filter(item => item.areaId === parseInt(areaId))
+          // Recalculate totalCount for client-side filtered data
+          // This is approximate - ideally backend should support areaId filter
+          totalCount = Math.ceil((totalCount * filteredData.length) / itemsArray.length) || filteredData.length
+        }
+      }
+
+      // Store data
+      setLedgerData(filteredData)
+      setPagination(prev => ({
+        ...prev,
+        total: totalCount
+      }))
+    } catch (error) {
+      console.error("Error fetching ledger data:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      })
+      setLedgerData([])
+      setPagination(prev => ({ ...prev, total: 0 }))
+    } finally {
+      setLoading(false)
+    }
+  }
+
 
   const handlePageChange = (page) => {
     setPagination(prev => ({ ...prev, current: page }))
@@ -595,14 +724,31 @@ export default function InventoryReport({ onClose }) {
     setSearchQuery("")
     setTimeRange("week")
     setAreaId("")
-    setSortField("batchCode")
+    setSortField("") // Reset to no sort
     setSortAscending(true)
+    setDateRange({ fromDate: "", toDate: "" })
     setPagination(prev => ({ ...prev, current: 1 }))
+  }
+
+  const handleReportTypeChange = (type) => {
+    setReportType(type)
+    setPagination(prev => ({ ...prev, current: 1 }))
+    // Reset date range when switching to current report
+    if (type === "current") {
+      setDateRange({ fromDate: "", toDate: "" })
+    } else {
+      // Clear ledger data when switching to period report to force fresh fetch
+      setLedgerData([])
+    }
+    // Reset sort to no sort when switching report type
+    setSortField("")
+    setSortAscending(true)
   }
 
   // Calculate chart data from inventory data
   const calculateChartData = () => {
-    if (!inventoryData || inventoryData.length === 0) {
+    const dataToUse = reportType === "current" ? inventoryData : ledgerData
+    if (!dataToUse || dataToUse.length === 0) {
       return {
         statusData: { expired: 0, expiringSoon: 0, valid: 0 },
         topProducts: [],
@@ -618,7 +764,7 @@ export default function InventoryReport({ onClose }) {
     // Product quantity aggregation
     const productMap = new Map()
 
-    inventoryData.forEach(item => {
+    dataToUse.forEach(item => {
       // Count status
       if (isExpired(item.expiryDate)) {
         expired++
@@ -654,6 +800,7 @@ export default function InventoryReport({ onClose }) {
   }
 
   const chartData = calculateChartData()
+  const displayData = reportType === "current" ? inventoryData : ledgerData
 
   return (
     <div className="min-h-screen">
@@ -661,14 +808,22 @@ export default function InventoryReport({ onClose }) {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-600">Báo cáo tồn kho hiện tại</h1>
-            <p className="text-slate-600 mt-1">Theo dõi tồn kho chi tiết hiện tại</p>
+            <h1 className="text-2xl font-bold text-slate-600">
+              {reportType === "current" ? "Báo cáo tồn kho hiện tại" : "Báo cáo tồn kho theo kỳ"}
+            </h1>
+            <p className="text-slate-600 mt-1">
+              {reportType === "current"
+                ? "Theo dõi tồn kho chi tiết hiện tại"
+                : "Theo dõi tồn kho theo khoảng thời gian"}
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <ExportInventoryReport
+              reportType={reportType}
               searchQuery={searchQuery}
               areaId={areaId}
-              timeRange={timeRange}
+              timeRange={reportType === "current" ? timeRange : undefined}
+              dateRange={reportType === "period" ? dateRange : undefined}
               sortField={sortField}
               sortAscending={sortAscending}
             />
@@ -684,8 +839,75 @@ export default function InventoryReport({ onClose }) {
           </div>
         </div>
 
+        {/* Report Type Toggle */}
+        <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium text-slate-700">Loại báo cáo:</span>
+            <div className="flex gap-2">
+              <Button
+                variant={reportType === "current" ? "default" : "outline"}
+                onClick={() => handleReportTypeChange("current")}
+                className={`h-9 px-4 ${reportType === "current"
+                  ? "bg-orange-500 hover:bg-orange-600 text-white"
+                  : "bg-white text-slate-700 hover:bg-slate-50"
+                  }`}
+              >
+                Tồn kho hiện tại
+              </Button>
+              <Button
+                variant={reportType === "period" ? "default" : "outline"}
+                onClick={() => handleReportTypeChange("period")}
+                className={`h-9 px-4 ${reportType === "period"
+                  ? "bg-orange-500 hover:bg-orange-600 text-white"
+                  : "bg-white text-slate-700 hover:bg-slate-50"
+                  }`}
+              >
+                Tồn kho theo kỳ
+              </Button>
+            </div>
+          </div>
+
+          {/* Date Range Picker for Period Report */}
+          {reportType === "period" && (
+            <div className="mt-4 flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-slate-700 whitespace-nowrap">Từ ngày:</label>
+                <input
+                  type="date"
+                  value={dateRange.fromDate}
+                  onChange={(e) => setDateRange(prev => ({ ...prev, fromDate: e.target.value }))}
+                  className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-slate-700 whitespace-nowrap">Đến ngày:</label>
+                <input
+                  type="date"
+                  value={dateRange.toDate}
+                  onChange={(e) => setDateRange(prev => ({ ...prev, toDate: e.target.value }))}
+                  min={dateRange.fromDate}
+                  className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                />
+              </div>
+              {(dateRange.fromDate || dateRange.toDate) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setDateRange({ fromDate: "", toDate: "" })
+                    setPagination(prev => ({ ...prev, current: 1 }))
+                  }}
+                  className="h-9 text-sm"
+                >
+                  Xóa lọc ngày
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Charts Section */}
-        {!loading && inventoryData.length > 0 && (
+        {!loading && displayData.length > 0 && reportType === "current" && (
           <>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Status Distribution Pie Chart */}
@@ -739,14 +961,9 @@ export default function InventoryReport({ onClose }) {
           <InventorySearchFilter
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            searchPlaceholder="Tìm kiếm theo mã lô, tên sản phẩm..."
-            timeRange={timeRange}
-            setTimeRange={setTimeRange}
-            // timeRangeOptions={[
-            //   { value: "week", label: "Tuần này" },
-            //   { value: "month", label: "Tháng này" },
-            //   { value: "year", label: "Năm nay" }
-            // ]}
+            searchPlaceholder={reportType === "current" ? "Tìm kiếm theo mã lô, tên sản phẩm..." : "Tìm kiếm theo mã sản phẩm, tên sản phẩm..."}
+            timeRange={reportType === "current" ? timeRange : undefined}
+            setTimeRange={reportType === "current" ? setTimeRange : undefined}
             areaId={areaId}
             setAreaId={setAreaId}
             areas={areas}
@@ -770,10 +987,32 @@ export default function InventoryReport({ onClose }) {
                         STT
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                        Mã sản phẩm
+                        <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("goodsCode")}>
+                          <span>Mã sản phẩm</span>
+                          {sortField === "goodsCode" ? (
+                            sortAscending ? (
+                              <ArrowUp className="h-4 w-4 text-orange-500" />
+                            ) : (
+                              <ArrowDown className="h-4 w-4 text-orange-500" />
+                            )
+                          ) : (
+                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                          )}
+                        </div>
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                        Tên sản phẩm
+                        <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("goodsName")}>
+                          <span>Tên sản phẩm</span>
+                          {sortField === "goodsName" ? (
+                            sortAscending ? (
+                              <ArrowUp className="h-4 w-4 text-orange-500" />
+                            ) : (
+                              <ArrowDown className="h-4 w-4 text-orange-500" />
+                            )
+                          ) : (
+                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                          )}
+                        </div>
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
                         Đơn vị/thùng
@@ -781,132 +1020,255 @@ export default function InventoryReport({ onClose }) {
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
                         Đơn vị
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                        Mã lô
-                      </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                        <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("manufacturingDate")}>
-                          <span>Ngày sản xuất</span>
-                          {sortField === "manufacturingDate" ? (
-                            sortAscending ? (
-                              <ArrowUp className="h-4 w-4 text-orange-500" />
-                            ) : (
-                              <ArrowDown className="h-4 w-4 text-orange-500" />
-                            )
-                          ) : (
-                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
-                          )}
-                        </div>
-                      </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                        <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("expiryDate")}>
-                          <span>Ngày hết hạn</span>
-                          {sortField === "expiryDate" ? (
-                            sortAscending ? (
-                              <ArrowUp className="h-4 w-4 text-orange-500" />
-                            ) : (
-                              <ArrowDown className="h-4 w-4 text-orange-500" />
-                            )
-                          ) : (
-                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
-                          )}
-                        </div>
-                      </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-right">
-                        <div className="flex items-center justify-end space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("totalPackageQuantity")}>
-                          <span>Số lượng thùng</span>
-                          {sortField === "totalPackageQuantity" ? (
-                            sortAscending ? (
-                              <ArrowUp className="h-4 w-4 text-orange-500" />
-                            ) : (
-                              <ArrowDown className="h-4 w-4 text-orange-500" />
-                            )
-                          ) : (
-                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
-                          )}
-                        </div>
-                      </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                        Trạng thái
-                      </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
-                        Hoạt động
-                      </TableHead>
+                      {reportType === "current" ? (
+                        <>
+                          <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                            Mã lô
+                          </TableHead>
+                          <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                            <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("manufacturingDate")}>
+                              <span>Ngày sản xuất</span>
+                              {sortField === "manufacturingDate" ? (
+                                sortAscending ? (
+                                  <ArrowUp className="h-4 w-4 text-orange-500" />
+                                ) : (
+                                  <ArrowDown className="h-4 w-4 text-orange-500" />
+                                )
+                              ) : (
+                                <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                              )}
+                            </div>
+                          </TableHead>
+                          <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                            <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("expiryDate")}>
+                              <span>Ngày hết hạn</span>
+                              {sortField === "expiryDate" ? (
+                                sortAscending ? (
+                                  <ArrowUp className="h-4 w-4 text-orange-500" />
+                                ) : (
+                                  <ArrowDown className="h-4 w-4 text-orange-500" />
+                                )
+                              ) : (
+                                <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                              )}
+                            </div>
+                          </TableHead>
+                          <TableHead className="font-semibold text-slate-900 px-6 py-3 text-right">
+                            <div className="flex items-center justify-end space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("totalPackageQuantity")}>
+                              <span>Số lượng thùng</span>
+                              {sortField === "totalPackageQuantity" ? (
+                                sortAscending ? (
+                                  <ArrowUp className="h-4 w-4 text-orange-500" />
+                                ) : (
+                                  <ArrowDown className="h-4 w-4 text-orange-500" />
+                                )
+                              ) : (
+                                <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                              )}
+                            </div>
+                          </TableHead>
+                          <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                            Trạng thái
+                          </TableHead>
+                          <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
+                            Hoạt động
+                          </TableHead>
+                        </>
+                      ) : (
+                        <>
+                          <TableHead className="font-semibold text-slate-900 px-6 py-3 text-right">
+                            <div className="flex items-center justify-end space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("beginningInventoryPackages")}>
+                              <span>Tồn đầu kỳ</span>
+                              {sortField === "beginningInventoryPackages" ? (
+                                sortAscending ? (
+                                  <ArrowUp className="h-4 w-4 text-orange-500" />
+                                ) : (
+                                  <ArrowDown className="h-4 w-4 text-orange-500" />
+                                )
+                              ) : (
+                                <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                              )}
+                            </div>
+                          </TableHead>
+                          <TableHead className="font-semibold text-slate-900 px-6 py-3 text-right">
+                            <div className="flex items-center justify-end space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("inQuantityPackages")}>
+                              <span>Nhập trong kỳ</span>
+                              {sortField === "inQuantityPackages" ? (
+                                sortAscending ? (
+                                  <ArrowUp className="h-4 w-4 text-orange-500" />
+                                ) : (
+                                  <ArrowDown className="h-4 w-4 text-orange-500" />
+                                )
+                              ) : (
+                                <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                              )}
+                            </div>
+                          </TableHead>
+                          <TableHead className="font-semibold text-slate-900 px-6 py-3 text-right">
+                            <div className="flex items-center justify-end space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("outQuantityPackages")}>
+                              <span>Xuất trong kỳ</span>
+                              {sortField === "outQuantityPackages" ? (
+                                sortAscending ? (
+                                  <ArrowUp className="h-4 w-4 text-orange-500" />
+                                ) : (
+                                  <ArrowDown className="h-4 w-4 text-orange-500" />
+                                )
+                              ) : (
+                                <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                              )}
+                            </div>
+                          </TableHead>
+                          <TableHead className="font-semibold text-slate-900 px-6 py-3 text-right">
+                            <div className="flex items-center justify-end space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("endingInventoryPackages")}>
+                              <span>Tồn cuối kỳ</span>
+                              {sortField === "endingInventoryPackages" ? (
+                                sortAscending ? (
+                                  <ArrowUp className="h-4 w-4 text-orange-500" />
+                                ) : (
+                                  <ArrowDown className="h-4 w-4 text-orange-500" />
+                                )
+                              ) : (
+                                <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                              )}
+                            </div>
+                          </TableHead>
+                        </>
+                      )}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {inventoryData.length === 0 ? (
+                    {displayData.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={13} className="text-center text-gray-500 py-8">
+                        <TableCell colSpan={reportType === "current" ? 13 : 8} className="text-center text-gray-500 py-8">
                           Không có dữ liệu tồn kho
                         </TableCell>
                       </TableRow>
                     ) : (
-                      inventoryData.map((item, index) => {
+                      displayData.map((item, index) => {
                         const rowNumber = (pagination.current - 1) * pagination.pageSize + index + 1
-                        const expired = isExpired(item.expiryDate)
-                        const expiringSoon = isExpiringSoon(item.expiryDate, 30) // Cảnh báo trong 30 ngày
 
-                        return (
-                          <TableRow
-                            key={item.batchId || index}
-                            className="hover:bg-slate-50 border-b border-slate-200"
-                          >
-                            <TableCell className="px-6 py-4 text-slate-600 font-medium">
-                              {rowNumber}
-                            </TableCell>
-                            <TableCell className="px-6 py-4 text-slate-700 font-medium">
-                              {item.goodsCode || "-"}
-                            </TableCell>
-                            <TableCell className="px-6 py-4 text-slate-700">
-                              {item.goodName || "-"}
-                            </TableCell>
-                            <TableCell className="px-6 py-4 text-slate-700 text-center font-medium">
-                              {item.unitPerPackage || "-"}
-                            </TableCell>
-                            <TableCell className="px-6 py-4 text-slate-700 text-center font-medium">
-                              {item.unitOfMeasure || "-"}
-                            </TableCell>
-                            <TableCell className="px-6 py-4 text-slate-700 font-medium">
-                              {item.batchCode || "-"}
-                            </TableCell>
-                            <TableCell className="px-6 py-4 text-slate-700">
-                              {formatDate(item.manufacturingDate)}
-                            </TableCell>
-                            <TableCell className="px-6 py-4 text-slate-700">
-                              {formatDate(item.expiryDate)}
-                            </TableCell>
-                            <TableCell className="px-6 py-4 text-slate-700 text-right font-medium">
-                              {item.totalPackageQuantity?.toLocaleString("vi-VN") || 0}
-                            </TableCell>
-                            <TableCell className="px-6 py-4 text-center">
-                              {expired ? (
-                                <Badge variant="destructive" className="text-xs bg-red-500 text-white">
-                                  Hết hạn
-                                </Badge>
-                              ) : expiringSoon ? (
-                                <Badge variant="outline" className="text-xs bg-orange-100 text-orange-700 border-orange-300">
-                                  Sắp hết hạn
-                                </Badge>
-                              ) : (
-                                <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
-                                  Còn hạn
-                                </Badge>
-                              )}
-                            </TableCell>
-                            <TableCell className="px-6 py-4 text-center">
-                              <div className="flex items-center justify-center space-x-1">
-                                <button
-                                  className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                  title="Xem chi tiết"
-                                  onClick={() => handleViewClick(item)}
-                                >
-                                  <Eye className="h-4 w-4 text-orange-500" />
-                                </button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )
+                        if (reportType === "current") {
+                          const expired = isExpired(item.expiryDate)
+                          const expiringSoon = isExpiringSoon(item.expiryDate, 30) // Cảnh báo trong 30 ngày
+
+                          // Create unique key by combining batchId, goodsId, manufacturingDate, expiryDate, and index
+                          // This ensures uniqueness even if multiple items share the same batchId
+                          const uniqueKey = item.batchId && item.goodsId && item.manufacturingDate && item.expiryDate
+                            ? `current-${item.batchId}-${item.goodsId}-${item.manufacturingDate}-${item.expiryDate}-${index}`
+                            : item.batchId && item.goodsId
+                            ? `current-${item.batchId}-${item.goodsId}-${index}`
+                            : item.batchId
+                            ? `current-${item.batchId}-${index}`
+                            : item.goodsId
+                            ? `current-${item.goodsId}-${rowNumber}-${index}`
+                            : `current-${rowNumber}-${index}`
+
+                          return (
+                            <TableRow
+                              key={uniqueKey}
+                              className="hover:bg-slate-50 border-b border-slate-200"
+                            >
+                              <TableCell className="px-6 py-4 text-slate-600 font-medium">
+                                {rowNumber}
+                              </TableCell>
+                              <TableCell className="px-6 py-4 text-slate-700 font-medium">
+                                {item.goodsCode || "-"}
+                              </TableCell>
+                              <TableCell className="px-6 py-4 text-slate-700">
+                                {item.goodName || "-"}
+                              </TableCell>
+                              <TableCell className="px-6 py-4 text-slate-700 text-center font-medium">
+                                {item.unitPerPackage || "-"}
+                              </TableCell>
+                              <TableCell className="px-6 py-4 text-slate-700 text-center font-medium">
+                                {item.unitOfMeasure || "-"}
+                              </TableCell>
+                              <TableCell className="px-6 py-4 text-slate-700 font-medium">
+                                {item.batchCode || "-"}
+                              </TableCell>
+                              <TableCell className="px-6 py-4 text-slate-700">
+                                {formatDate(item.manufacturingDate)}
+                              </TableCell>
+                              <TableCell className="px-6 py-4 text-slate-700">
+                                {formatDate(item.expiryDate)}
+                              </TableCell>
+                              <TableCell className="px-6 py-4 text-slate-700 text-right font-medium">
+                                {item.totalPackageQuantity?.toLocaleString("vi-VN") || 0}
+                              </TableCell>
+                              <TableCell className="px-6 py-4 text-center">
+                                {expired ? (
+                                  <Badge variant="destructive" className="text-xs bg-red-500 text-white">
+                                    Hết hạn
+                                  </Badge>
+                                ) : expiringSoon ? (
+                                  <Badge variant="outline" className="text-xs bg-orange-100 text-orange-700 border-orange-300">
+                                    Sắp hết hạn
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
+                                    Còn hạn
+                                  </Badge>
+                                )}
+                              </TableCell>
+                              <TableCell className="px-6 py-4 text-center">
+                                <div className="flex items-center justify-center space-x-1">
+                                  <button
+                                    className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                    title="Xem chi tiết"
+                                    onClick={() => handleViewClick(item)}
+                                  >
+                                    <Eye className="h-4 w-4 text-orange-500" />
+                                  </button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        } else {
+                          // Period report row
+                          // Create unique key by combining goodsId, goodPackingId, and index
+                          const uniqueKey = item.goodsId && item.goodPackingId 
+                            ? `period-${item.goodsId}-${item.goodPackingId}-${index}`
+                            : item.goodsId 
+                            ? `period-${item.goodsId}-${index}`
+                            : item.goodPackingId
+                            ? `period-${item.goodPackingId}-${index}`
+                            : `period-${rowNumber}-${index}`
+                          
+                          return (
+                            <TableRow
+                              key={uniqueKey}
+                              className="hover:bg-slate-50 border-b border-slate-200"
+                            >
+                              <TableCell className="px-6 py-4 text-slate-600 font-medium">
+                                {rowNumber}
+                              </TableCell>
+                              <TableCell className="px-6 py-4 text-slate-700 font-medium">
+                                {item.goodsCode || "-"}
+                              </TableCell>
+                              <TableCell className="px-6 py-4 text-slate-700">
+                                {item.goodsName || "-"}
+                              </TableCell>
+                              <TableCell className="px-6 py-4 text-slate-700 text-center font-medium">
+                                {item.unitPerPackage || "-"}
+                              </TableCell>
+                              <TableCell className="px-6 py-4 text-slate-700 text-center font-medium">
+                                {item.unitOfMeasure || "-"}
+                              </TableCell>
+                              <TableCell className="px-6 py-4 text-slate-700 text-right font-medium">
+                                {(item.beginningInventoryPackages || 0).toLocaleString("vi-VN")}
+                              </TableCell>
+                              <TableCell className="px-6 py-4 text-slate-700 text-right font-medium">
+                                {(item.inQuantityPackages || 0).toLocaleString("vi-VN")}
+                              </TableCell>
+                              <TableCell className="px-6 py-4 text-slate-700 text-right font-medium">
+                                {(item.outQuantityPackages || 0).toLocaleString("vi-VN")}
+                              </TableCell>
+                              <TableCell className="px-6 py-4 text-slate-700 text-right font-medium">
+                                {(item.endingInventoryPackages || 0).toLocaleString("vi-VN")}
+                              </TableCell>
+                            </TableRow>
+                          )
+                        }
                       })
                     )}
                   </TableBody>
@@ -920,7 +1282,7 @@ export default function InventoryReport({ onClose }) {
                 current={pagination.current}
                 pageSize={pagination.pageSize}
                 total={pagination.total}
-                onChange={handlePageChange}
+                onPageChange={handlePageChange}
                 onPageSizeChange={handlePageSizeChange}
                 showPageSize={true}
                 pageSizeOptions={[10, 20, 30, 50]}

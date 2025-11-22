@@ -54,27 +54,60 @@ export default function ExportSalesOrdersReport({
             const fromDate = dateRange.fromDate ? dayjs(dateRange.fromDate).format('YYYY-MM-DD') : null
             const toDate = dateRange.toDate ? dayjs(dateRange.toDate).format('YYYY-MM-DD') : null
 
-            // Fetch tất cả dữ liệu để export
-            const response = await getGoodsIssueReport({
-                fromDate: fromDate,
-                toDate: toDate
-            })
-
-            // Handle response structure - API may return array or object with items
-            let allData = []
-            if (Array.isArray(response)) {
-                allData = response
-            } else if (response?.items && Array.isArray(response.items)) {
-                allData = response.items
-            } else if (response?.data && Array.isArray(response.data)) {
-                allData = response.data
-            } else if (response?.data?.items && Array.isArray(response.data.items)) {
-                allData = response.data.items
+            // Build filters for backend
+            const filters = {}
+            if (retailerFilter) {
+                filters.retailerId = retailerFilter.toString()
             }
 
-            // Apply search filter client-side if needed
+            // Fetch tất cả dữ liệu (không phân trang) - fetch nhiều lần nếu cần
+            let allData = []
+            let currentPage = 1
+            const pageSize = 1000 // Fetch từng batch 1000 items
+            let hasMoreData = true
+
+            while (hasMoreData) {
+                const requestParams = {
+                    fromDate: fromDate,
+                    toDate: toDate,
+                    pageNumber: currentPage,
+                    pageSize: pageSize,
+                    search: searchQuery || "",
+                    sortField: sortField || "",
+                    sortAscending: sortAscending,
+                    filters: filters
+                }
+
+                const response = await getGoodsIssueReport(requestParams)
+
+                // Handle response structure - API returns PageResult
+                let pageData = []
+                if (response && response.items) {
+                    pageData = Array.isArray(response.items) ? response.items : []
+                } else if (response && Array.isArray(response)) {
+                    pageData = response
+                } else if (response && response.data && Array.isArray(response.data)) {
+                    pageData = response.data
+                } else if (response && response.data && response.data.items && Array.isArray(response.data.items)) {
+                    pageData = response.data.items
+                }
+
+                if (pageData && pageData.length > 0) {
+                    allData = [...allData, ...pageData]
+
+                    // Kiểm tra xem còn dữ liệu không
+                    const totalCount = response.totalCount || 0
+                    const totalPages = response.totalPages || 1
+                    hasMoreData = currentPage < totalPages && pageData.length === pageSize
+                    currentPage++
+                } else {
+                    hasMoreData = false
+                }
+            }
+
+            // Apply client-side filters if needed (backup) - chỉ khi backend chưa filter
             let filteredData = allData
-            if (searchQuery) {
+            if (searchQuery && searchQuery.trim() !== "") {
                 const query = searchQuery.toLowerCase()
                 filteredData = allData.filter(order => {
                     const retailerName = (order.retailerName || '').toLowerCase()
@@ -84,31 +117,9 @@ export default function ExportSalesOrdersReport({
                 })
             }
 
-            // Apply retailer filter client-side
             if (retailerFilter) {
                 filteredData = filteredData.filter(order => {
                     return order.retailerId && order.retailerId.toString() === retailerFilter
-                })
-            }
-
-            // Apply sorting client-side
-            if (sortField) {
-                filteredData = [...filteredData].sort((a, b) => {
-                    let aValue, bValue
-
-                    if (sortField === "goodsName") {
-                        aValue = (a.goodsName || '').toLowerCase()
-                        bValue = (b.goodsName || '').toLowerCase()
-                    } else if (sortField === "totalPackageQuantity") {
-                        aValue = a.totalPackageQuantity || 0
-                        bValue = b.totalPackageQuantity || 0
-                    } else {
-                        return 0
-                    }
-
-                    if (aValue < bValue) return sortAscending ? -1 : 1
-                    if (aValue > bValue) return sortAscending ? 1 : -1
-                    return 0
                 })
             }
 
