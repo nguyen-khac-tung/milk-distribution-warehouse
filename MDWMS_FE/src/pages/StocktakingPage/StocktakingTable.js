@@ -291,7 +291,9 @@ const StocktakingTable = ({
                                                     </PermissionWrapper>
                                                 )}
                                                 {isWarehouseManager && (
-                                                    (stocktaking.status === STOCKTAKING_STATUS.Assigned || stocktaking.status === 2 || stocktaking.status === '2')
+                                                    (stocktaking.status === STOCKTAKING_STATUS.Assigned || stocktaking.status === 2 || stocktaking.status === '2') ||
+                                                    (stocktaking.status === STOCKTAKING_STATUS.InProgress || stocktaking.status === 4 || stocktaking.status === '4') ||
+                                                    (stocktaking.status === STOCKTAKING_STATUS.PendingApproval || stocktaking.status === 5 || stocktaking.status === '5')
                                                 ) && (
                                                         <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_DELETE}>
                                                             <button
