@@ -22,7 +22,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpGet("GetDetail/{stocktakingLocationId}")]
-        [Authorize(Roles = $"{RoleNames.WarehouseManager}, {RoleNames.SalesManager}")]
+        [Authorize(Roles = $"{RoleNames.WarehouseManager}, {RoleNames.SalesManager}, {RoleNames.WarehouseStaff}")]
         public async Task<IActionResult> GetDetailStocktakingPallet(Guid stocktakingLocationId)
         {
             var (msg, stocktakingPallet) = await _stocktakingPalletService.GetStocktakingPalletByStocktakingLocationId(stocktakingLocationId);

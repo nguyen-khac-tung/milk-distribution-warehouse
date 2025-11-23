@@ -11,6 +11,12 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int Status { get; set;  }
     }
 
+    public class StocktakingAreaCreateDto
+    {
+        [Required(ErrorMessage = "AreaId là bắt buộc.")]
+        [Range(1, int.MaxValue, ErrorMessage = "AreaId phải lớn hơn 0.")]
+        public int AreaId { get; set; }
+    }
 
     public class StocktakingAreaCreate
     {
