@@ -425,6 +425,7 @@ namespace MilkDistributionWarehouse.Mappers
                 .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Goods != null && src.Goods.Category != null ? src.Goods.Category.CategoryName : null))
                 .ForMember(dest => dest.SupplierId, opt => opt.MapFrom(src => src.Goods != null ? (src.Goods.SupplierId ?? 0) : 0))
                 .ForMember(dest => dest.CompanyName, opt => opt.MapFrom(src => src.Goods != null && src.Goods.Supplier != null ? src.Goods.Supplier.CompanyName : null))
+                .ForMember(dest => dest.BrandName, opt => opt.MapFrom(src => src.Goods != null && src.Goods.Supplier != null ? src.Goods.Supplier.BrandName : null))
                 .ForMember(dest => dest.UnitPerPackage, opt => opt.MapFrom(src => src.GoodsPacking != null ? (src.GoodsPacking.UnitPerPackage ?? 0) : 0))
                 .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => src.CreatedByNavigation != null ? src.CreatedByNavigation.FullName : null));
             CreateMap<BackOrder, BackOrderDto.BackOrderResponseCreateDto>()
