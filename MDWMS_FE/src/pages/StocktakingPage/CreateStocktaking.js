@@ -1,16 +1,18 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
 import { Label } from '../../components/ui/label';
-import { Calendar, User, FileText } from 'lucide-react';
+import { Checkbox } from '../../components/ui/checkbox';
+import { Calendar, User, FileText, MapPin } from 'lucide-react';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
 import { DatePicker, ConfigProvider } from 'antd';
 import dayjs from 'dayjs';
 import { createStocktaking } from '../../services/StocktakingService';
 import { extractErrorMessage } from '../../utils/Validation';
+import { getAreaDropdown } from '../../services/AreaServices';
 import AssignAreaModal from '../../components/StocktakingComponents/AssignAreaModal';
 import PermissionWrapper from '../../components/Common/PermissionWrapper';
 import { PERMISSIONS } from '../../utils/permissions';
@@ -43,7 +45,56 @@ const CreateStocktaking = () => {
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [stocktakingSheetId, setStocktakingSheetId] = useState(null);
 
+    // Area dropdown states
+    const [areas, setAreas] = useState([]);
+    const [selectedAreas, setSelectedAreas] = useState([]);
+    const [areasLoading, setAreasLoading] = useState(false);
+    const [isAreaDropdownOpen, setIsAreaDropdownOpen] = useState(false);
+    const areaDropdownRef = useRef(null);
+
     // Không set default values - người dùng phải tự chọn
+
+    // Fetch areas on component mount
+    useEffect(() => {
+        const fetchAreas = async () => {
+            try {
+                setAreasLoading(true);
+                const response = await getAreaDropdown();
+                let areasList = [];
+                if (Array.isArray(response)) {
+                    areasList = response;
+                } else if (response?.data) {
+                    areasList = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+                } else if (response?.items) {
+                    areasList = response.items;
+                }
+                setAreas(areasList);
+            } catch (error) {
+                console.error('Error fetching areas:', error);
+                setAreas([]);
+            } finally {
+                setAreasLoading(false);
+            }
+        };
+        fetchAreas();
+    }, []);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (areaDropdownRef.current && !areaDropdownRef.current.contains(event.target)) {
+                setIsAreaDropdownOpen(false);
+            }
+        };
+
+        if (isAreaDropdownOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isAreaDropdownOpen]);
 
     const handleInputChange = (field, value) => {
         setFormData(prev => {
@@ -63,12 +114,70 @@ const CreateStocktaking = () => {
         });
     };
 
+    // Handle area checkbox change
+    const handleAreaCheckboxChange = (areaId, checked) => {
+        setSelectedAreas(prev => {
+            const newSelectedAreas = checked
+                ? [...prev, areaId]
+                : prev.filter(id => id !== areaId);
+
+            // Clear error when user selects an area
+            if (newSelectedAreas.length > 0 && fieldErrors.selectedAreas) {
+                setFieldErrors(prevErrors => {
+                    const newErrors = { ...prevErrors };
+                    delete newErrors.selectedAreas;
+                    return newErrors;
+                });
+            }
+
+            return newSelectedAreas;
+        });
+    };
+
+    // Handle select all areas
+    const handleSelectAllAreas = (checked) => {
+        if (checked) {
+            const allAreaIds = areas.map(area => area.areaId);
+            setSelectedAreas(allAreaIds);
+            // Clear error when user selects areas
+            if (fieldErrors.selectedAreas) {
+                setFieldErrors(prevErrors => {
+                    const newErrors = { ...prevErrors };
+                    delete newErrors.selectedAreas;
+                    return newErrors;
+                });
+            }
+        } else {
+            setSelectedAreas([]);
+        }
+    };
+
+    // Get display text for selected areas
+    const getSelectedAreasText = () => {
+        if (selectedAreas.length === 0) {
+            return 'Chọn khu vực kiểm kê';
+        }
+        if (selectedAreas.length === areas.length) {
+            return 'Tất cả khu vực';
+        }
+        if (selectedAreas.length === 1) {
+            const area = areas.find(a => a.areaId === selectedAreas[0]);
+            return area ? area.areaName : '1 khu vực';
+        }
+        return `${selectedAreas.length} khu vực đã chọn`;
+    };
+
     const validateForm = () => {
         const errors = {};
         let isValid = true;
 
         if (!formData.startTime) {
             errors.startTime = 'Vui lòng chọn thời gian bắt đầu';
+            isValid = false;
+        }
+
+        if (selectedAreas.length === 0) {
+            errors.selectedAreas = 'Vui lòng chọn ít nhất 1 khu vực kiểm kê';
             isValid = false;
         }
 
@@ -90,17 +199,23 @@ const CreateStocktaking = () => {
             startTimeISO = date.format('YYYY-MM-DDTHH:mm:ss');
         }
 
+        // Format areaIds theo API: array of { areaId: number }
+        const areaIds = selectedAreas.map(areaId => ({
+            areaId: areaId
+        }));
+
         const submitData = {
             startTime: startTimeISO,
-            note: formData.reason.trim()
+            note: formData.reason.trim(),
+            areaIds: areaIds
         };
 
         const response = await createStocktaking(submitData);
-        
+
         // Extract stocktakingSheetId from response
-        const stocktakingSheetId = response?.data?.stocktakingSheetId || 
-                                  response?.stocktakingSheetId || 
-                                  response?.data?.data?.stocktakingSheetId;
+        const stocktakingSheetId = response?.data?.stocktakingSheetId ||
+            response?.stocktakingSheetId ||
+            response?.data?.data?.stocktakingSheetId;
 
         return stocktakingSheetId;
     };
@@ -120,7 +235,7 @@ const CreateStocktaking = () => {
             if (window.showToast) {
                 window.showToast('Lưu nháp thành công!', 'success');
             }
-            
+
             // Chỉ navigate về danh sách, không mở modal
             navigate('/stocktakings');
         } catch (error) {
@@ -147,7 +262,7 @@ const CreateStocktaking = () => {
         try {
             // Tạo stocktaking trước để lấy ID
             const newStocktakingSheetId = await createStocktakingData();
-            
+
             if (!newStocktakingSheetId) {
                 window.showToast('Không thể lấy ID phiếu kiểm kê', 'error');
                 return;
@@ -155,7 +270,7 @@ const CreateStocktaking = () => {
 
             // Lưu ID vào state
             setStocktakingSheetId(newStocktakingSheetId);
-            
+
             // Mở modal sau khi đã có ID
             setShowAssignModal(true);
         } catch (error) {
@@ -206,8 +321,8 @@ const CreateStocktaking = () => {
                                 Thông Tin Đơn Kiểm Kê
                             </h3>
                             <div className="space-y-6">
-                                {/* Người tạo và Thời gian bắt đầu */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Người tạo, Thời gian bắt đầu và Khu vực kiểm kê */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     {/* Người tạo */}
                                     <div className="space-y-2">
                                         <Label htmlFor="createdBy" className="text-slate-600 font-medium flex items-center gap-2">
@@ -263,13 +378,138 @@ const CreateStocktaking = () => {
                                                 }}
                                                 className={fieldErrors.startTime ? 'border-red-500' : ''}
                                                 disabledDate={(current) => {
-                                                    // Có thể thêm logic disable dates nếu cần
-                                                    return false;
+                                                    // Không cho chọn ngày trong quá khứ
+                                                    return current && current < dayjs().startOf('day');
+                                                }}
+                                                disabledTime={(current) => {
+                                                    // Nếu chọn ngày hôm nay, disable các giờ đã qua
+                                                    if (current && current.isSame(dayjs(), 'day')) {
+                                                        const now = dayjs();
+                                                        return {
+                                                            disabledHours: () => {
+                                                                const hours = [];
+                                                                for (let i = 0; i < now.hour(); i++) {
+                                                                    hours.push(i);
+                                                                }
+                                                                return hours;
+                                                            },
+                                                            disabledMinutes: (selectedHour) => {
+                                                                if (selectedHour === now.hour()) {
+                                                                    const minutes = [];
+                                                                    for (let i = 0; i <= now.minute(); i++) {
+                                                                        minutes.push(i);
+                                                                    }
+                                                                    return minutes;
+                                                                }
+                                                                return [];
+                                                            },
+                                                            disabledSeconds: () => []
+                                                        };
+                                                    }
+                                                    return {};
                                                 }}
                                             />
                                         </ConfigProvider>
                                         {fieldErrors.startTime && (
                                             <p className="text-red-500 text-xs mt-1">{fieldErrors.startTime}</p>
+                                        )}
+                                    </div>
+
+                                    {/* Khu vực kiểm kê */}
+                                    <div className="space-y-2">
+                                        <Label className="text-slate-600 font-medium flex items-center gap-2">
+                                            <MapPin className="h-4 w-4 text-orange-500" />
+                                            Khu Vực Kiểm Kê <span className="text-red-500">*</span>
+                                        </Label>
+                                        <div className="relative" ref={areaDropdownRef}>
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsAreaDropdownOpen(!isAreaDropdownOpen)}
+                                                className={`h-[38px] w-full px-3 py-2 border rounded-lg text-left flex items-center justify-between transition-all ${fieldErrors.selectedAreas
+                                                    ? 'border-red-500'
+                                                    : 'border-slate-300 focus:border-orange-500 focus:ring-orange-500'
+                                                    } ${isAreaDropdownOpen ? 'border-orange-500 ring-2 ring-orange-200' : ''}`}
+                                            >
+                                                <span className={selectedAreas.length > 0 ? 'text-slate-900' : 'text-slate-500'}>
+                                                    {getSelectedAreasText()}
+                                                </span>
+                                                <ComponentIcon
+                                                    name={isAreaDropdownOpen ? "up" : "down"}
+                                                    size={16}
+                                                    color="#6b7280"
+                                                />
+                                            </button>
+
+                                            {isAreaDropdownOpen && (
+                                                <div className="absolute z-50 w-full mt-1 bg-white border border-slate-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+                                                    {areasLoading ? (
+                                                        <div className="px-3 py-2 text-slate-500 text-sm">Đang tải...</div>
+                                                    ) : areas.length === 0 ? (
+                                                        <div className="px-3 py-2 text-slate-500 text-sm">Không có khu vực nào</div>
+                                                    ) : (
+                                                        <>
+                                                            {/* Select All Option */}
+                                                            <div className="px-3 py-2 border-b border-slate-200 hover:bg-slate-50">
+                                                                <label className="flex items-center space-x-2 cursor-pointer">
+                                                                    <Checkbox
+                                                                        checked={selectedAreas.length === areas.length && areas.length > 0}
+                                                                        onChange={(e) => handleSelectAllAreas(e.target.checked)}
+                                                                        className={`border-slate-300 focus:ring-orange-500 focus:ring-offset-0 ${selectedAreas.length === areas.length && areas.length > 0
+                                                                            ? 'bg-orange-500 border-orange-500'
+                                                                            : ''
+                                                                            }`}
+                                                                        style={{
+                                                                            accentColor: '#f97316',
+                                                                            ...(selectedAreas.length === areas.length && areas.length > 0 && {
+                                                                                backgroundColor: '#f97316',
+                                                                                borderColor: '#f97316'
+                                                                            })
+                                                                        }}
+                                                                    />
+                                                                    <span className="text-sm font-medium text-slate-700">
+                                                                        Chọn tất cả
+                                                                    </span>
+                                                                </label>
+                                                            </div>
+
+                                                            {/* Area Options */}
+                                                            {areas.map((area) => (
+                                                                <div
+                                                                    key={area.areaId}
+                                                                    className="px-3 py-2 hover:bg-orange-50 transition-colors"
+                                                                >
+                                                                    <label className="flex items-center space-x-2 cursor-pointer">
+                                                                        <Checkbox
+                                                                            checked={selectedAreas.includes(area.areaId)}
+                                                                            onChange={(e) => handleAreaCheckboxChange(area.areaId, e.target.checked)}
+                                                                            className={`border-slate-300 focus:ring-orange-500 focus:ring-offset-0 ${selectedAreas.includes(area.areaId)
+                                                                                ? 'bg-orange-500 border-orange-500'
+                                                                                : ''
+                                                                                }`}
+                                                                            style={{
+                                                                                accentColor: '#f97316',
+                                                                                ...(selectedAreas.includes(area.areaId) && {
+                                                                                    backgroundColor: '#f97316',
+                                                                                    borderColor: '#f97316'
+                                                                                })
+                                                                            }}
+                                                                        />
+                                                                        <span className="text-sm text-slate-700 flex-1">
+                                                                            {area.areaName}
+                                                                            {area.areaCode && (
+                                                                                <span className="text-slate-500 ml-2">({area.areaCode})</span>
+                                                                            )}
+                                                                        </span>
+                                                                    </label>
+                                                                </div>
+                                                            ))}
+                                                        </>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                        {fieldErrors.selectedAreas && (
+                                            <p className="text-red-500 text-xs mt-1">{fieldErrors.selectedAreas}</p>
                                         )}
                                     </div>
                                 </div>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { ArrowLeft, FileText, Calendar, User, Hash, Clock, Users, Play, Edit, MapPin, Thermometer, Droplets, Sun } from 'lucide-react';
+import { ArrowLeft, FileText, Calendar, User, Hash, Clock, Users, Play, Edit, MapPin, Thermometer, Droplets, Sun, Package } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
 import { getStocktakingDetail } from '../../services/StocktakingService';
@@ -350,10 +350,46 @@ const StocktakingDetail = () => {
                                                                 Người được phân công
                                                             </div>
                                                             <div className="text-base font-bold text-slate-700">
-                                                                {area.assignName || `ID: ${area.assignTo || '-'}`}
+                                                                {!area.status || (!area.assignName && !area.assignTo)
+                                                                    ? 'Chưa phân công'
+                                                                    : (area.assignName || `ID: ${area.assignTo}`)
+                                                                }
                                                             </div>
                                                         </div>
                                                     </div>
+
+                                                    {/* Vị trí đã xếp pallet và chưa xếp pallet */}
+                                                    {(area.availableLocationCount !== undefined || area.unAvailableLocationCount !== undefined) && (
+                                                        <div className="border-t border-slate-200 pt-3">
+                                                            <div className="grid grid-cols-2 gap-2">
+                                                                {/* Vị trí đã xếp pallet */}
+                                                                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200">
+                                                                    <Package className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="text-xs text-blue-600 mb-0.5">
+                                                                            Vị trí đã xếp pallet
+                                                                        </div>
+                                                                        <div className="text-base font-bold text-blue-700">
+                                                                            {area.unAvailableLocationCount ?? 0}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Vị trí chưa xếp pallet */}
+                                                                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 border border-red-200">
+                                                                    <Package className="h-4 w-4 text-red-600 flex-shrink-0" />
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="text-xs text-red-600 mb-0.5">
+                                                                            Vị trí chưa xếp pallet
+                                                                        </div>
+                                                                        <div className="text-base font-bold text-red-700">
+                                                                            {area.availableLocationCount ?? 0}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
 
                                                     {/* Điều kiện bảo quản */}
                                                     {(area.temperatureMin !== null || area.humidityMin !== null || area.lightLevel) && (

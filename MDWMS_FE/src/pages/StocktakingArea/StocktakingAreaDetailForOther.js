@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, Calendar, User, MapPin, Clock, Thermometer, Droplets, Sun, RotateCcw, CheckCircle2, AlertTriangle, Edit2, Save, X, Search } from 'lucide-react';
+import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, Calendar, User, MapPin, Clock, Thermometer, Droplets, Sun, RotateCcw, CheckCircle2, AlertTriangle, Edit2, Save, X, Search, Package } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
 import { getStocktakingAreaDetailForOtherRoleBySheetId, getStocktakingDetail, getStocktakingPalletDetail, rejectStocktakingLocationRecords, approveStocktakingArea, completeStocktaking, updateStocktakingLocationRecords } from '../../services/StocktakingService';
@@ -948,7 +948,7 @@ const StocktakingAreaDetailForOther = () => {
                                                 <div className="text-sm font-semibold text-gray-700 mb-3">
                                                     {areaName}
                                                 </div>
-                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                                                     {/* Nhiệt độ */}
                                                     <div>
                                                         <div className="text-xs text-gray-500 mb-0.5 flex items-center gap-1.5">
@@ -983,6 +983,28 @@ const StocktakingAreaDetailForOther = () => {
                                                         </div>
                                                         <div className="text-base font-semibold text-gray-900">
                                                             {areaDetail?.lightLevel || '-'}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Vị trí đã xếp pallet */}
+                                                    <div>
+                                                        <div className="text-xs text-gray-500 mb-0.5 flex items-center gap-1.5">
+                                                            <Package className="h-4 w-4 text-blue-600" />
+                                                            Vị trí đã xếp pallet
+                                                        </div>
+                                                        <div className="text-base font-semibold text-gray-900">
+                                                            {areaDetail?.unAvailableLocationCount ?? 0}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Vị trí chưa xếp pallet */}
+                                                    <div>
+                                                        <div className="text-xs text-gray-500 mb-0.5 flex items-center gap-1.5">
+                                                            <Package className="h-4 w-4 text-red-600" />
+                                                            Vị trí chưa xếp pallet
+                                                        </div>
+                                                        <div className="text-base font-semibold text-gray-900">
+                                                            {areaDetail?.availableLocationCount ?? 0}
                                                         </div>
                                                     </div>
                                                 </div>
