@@ -80,6 +80,7 @@ export function BackOrderDetail({ backOrder, onClose }) {
             <SimpleCard title="Thông tin hàng hóa" icon="package" color="blue">
               <InfoRow label="Tên hàng hóa" value={backOrderData?.goodsName} />
               <InfoRow label="Tên danh mục" value={backOrderData?.categoryName} />
+              <InfoRow label="Thương hiệu" value={backOrderData?.brandName} />
             </SimpleCard>
 
             {/* Quantity */}
