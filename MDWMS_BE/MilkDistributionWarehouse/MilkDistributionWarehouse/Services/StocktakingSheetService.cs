@@ -427,6 +427,9 @@ namespace MilkDistributionWarehouse.Services
             //    return $"Còn {remaining.Hours} giờ {remaining.Minutes} phút nữa đến thời gian bắt đầu kiểm kê.".ToMessageForUser();
             //}
 
+            if(sheet.Status == StocktakingStatus.Completed || sheet.Status == StocktakingStatus.Cancelled)
+                return "Không thể bắt đầu kiểm kê khi phiếu kiểm kê đã Hoàn thành hoặc Đã huỷ.".ToMessageForUser();
+
             if (inProgressStatus.StocktakingAreaId != Guid.Empty)
             {
                 bool hasOtherActiveArea = sheet.StocktakingAreas.Any(sa =>

@@ -473,8 +473,8 @@ namespace MilkDistributionWarehouse.Services
             //if (HasDuplicateAssigneeInSameSheet(areas))
             //    return "Không thể phân công 1 nhân viên kho các khu vực khác nhau.";
 
-            if (!(await CheckAllAssignAreaStocktaking(areas)))
-                return "Còn khu vực chưa được phân công nhân viên kiểm kê.";
+            //if (!(await CheckAllAssignAreaStocktaking(areas)))
+            //    return "Còn khu vực chưa được phân công nhân viên kiểm kê.";
 
             return "";
         }

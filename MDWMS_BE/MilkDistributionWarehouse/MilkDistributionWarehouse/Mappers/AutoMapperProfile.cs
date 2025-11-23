@@ -142,8 +142,8 @@ namespace MilkDistributionWarehouse.Mappers
                 .ForMember(dest => dest.HumidityMax, opt => opt.MapFrom(src => src.StorageCondition.HumidityMax))
                 .ForMember(dest => dest.LightLevel, opt => opt.MapFrom(src => src.StorageCondition.LightLevel));
             CreateMap<Area, AreaDto.StocktakingAreaDto>()
-                .ForMember(dest => dest.AvailableLocationCount, opt => opt.MapFrom(src => src.Locations.Count(l => l.IsAvailable == true && l.Status != CommonStatus.Inactive)))
-                .ForMember(dest => dest.UnAvailableLocationCount, opt => opt.MapFrom(src => src.Locations.Count(l => l.IsAvailable == false && l.Status != CommonStatus.Inactive)))
+                .ForMember(dest => dest.AvailableLocationCount, opt => opt.MapFrom(src => src.Locations.Count(l => l.IsAvailable == true && l.Status != CommonStatus.Active)))
+                .ForMember(dest => dest.UnAvailableLocationCount, opt => opt.MapFrom(src => src.Locations.Count(l => l.IsAvailable == false && l.Status != CommonStatus.Active)))
                 .ForMember(dest => dest.TemperatureMin, opt => opt.MapFrom(src => src.StorageCondition.TemperatureMin))
                 .ForMember(dest => dest.TemperatureMax, opt => opt.MapFrom(src => src.StorageCondition.TemperatureMax))
                 .ForMember(dest => dest.HumidityMin, opt => opt.MapFrom(src => src.StorageCondition.HumidityMin))
