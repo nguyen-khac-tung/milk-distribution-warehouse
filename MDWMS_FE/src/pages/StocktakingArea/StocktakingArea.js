@@ -5,11 +5,12 @@ import { Button } from '../../components/ui/button';
 import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, MapPin, Clock, Calendar, User, Thermometer, Droplets, Sun, Check, RotateCcw, Search } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
-import { getStocktakingAreaDetailBySheetId, getStocktakingDetail, confirmStocktakingLocationCounted, submitStocktakingArea, cancelStocktakingLocationRecord } from '../../services/StocktakingService';
+import { getStocktakingAreaDetailBySheetId, getStocktakingDetail, confirmStocktakingLocationCounted, submitStocktakingArea, cancelStocktakingLocationRecord, getStocktakingPalletDetail } from '../../services/StocktakingService';
 import { extractErrorMessage } from '../../utils/Validation';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
 import StatusDisplay from '../../components/StocktakingComponents/StatusDisplay';
 import LocationStatusDisplay, { STOCK_LOCATION_STATUS } from './LocationStatusDisplay';
+import PalletStatusDisplay from './PalletStatusDisplay';
 import ScanLocationStocktakingModal from '../../components/StocktakingComponents/ScanLocationStocktakingModal';
 import ScanPalletStocktakingModal from '../../components/StocktakingComponents/ScanPalletStocktakingModal';
 import ConfirmCountedModal from '../../components/StocktakingComponents/ConfirmCountedModal';
@@ -26,8 +27,11 @@ const StocktakingArea = () => {
     const [expandedSections, setExpandedSections] = useState({
         detail: true,
         areas: {},
-        check: {}
+        check: {},
+        sheets: {}
     });
+    const [locationPackages, setLocationPackages] = useState({});
+    const [loadingPackages, setLoadingPackages] = useState({});
     const [showScanModal, setShowScanModal] = useState(false);
     const [showPalletModal, setShowPalletModal] = useState(false);
     const [selectedLocation, setSelectedLocation] = useState(null);
@@ -156,6 +160,9 @@ const StocktakingArea = () => {
                 setStocktakingAreas([]);
             }
             if (detailData) setStocktakingDetail(detailData);
+
+            // Clear cached packages to force reload when expanded
+            setLocationPackages({});
         } catch (error) {
             console.error('Error refreshing data:', error);
             if (window.showToast) {
@@ -402,6 +409,65 @@ const StocktakingArea = () => {
                 [areaId]: !prev.areas[areaId]
             }
         }));
+    };
+
+    const toggleSheet = async (location) => {
+        const locationId = location.stocktakingLocationId || location.locationId;
+        if (!locationId) return;
+
+        const isCurrentlyExpanded = expandedSections.sheets[locationId] || false;
+        const willBeExpanded = !isCurrentlyExpanded;
+
+        // Toggle expanded state
+        setExpandedSections(prev => ({
+            ...prev,
+            sheets: {
+                ...prev.sheets,
+                [locationId]: willBeExpanded
+            }
+        }));
+
+        // Chỉ gọi API khi expand (mở ra) và chưa có data trong cache
+        if (willBeExpanded && !locationPackages[locationId]) {
+            try {
+                setLoadingPackages(prev => ({ ...prev, [locationId]: true }));
+                const response = await getStocktakingPalletDetail(locationId);
+                const packagesData = response?.data || response;
+
+                // Handle both array and single object response
+                let packages = [];
+                if (Array.isArray(packagesData)) {
+                    packages = packagesData;
+                } else if (packagesData) {
+                    // If it's a single object, check if it has nested array or is the object itself
+                    if (packagesData.stocktakingPallets && Array.isArray(packagesData.stocktakingPallets)) {
+                        packages = packagesData.stocktakingPallets;
+                    } else if (packagesData.pallets && Array.isArray(packagesData.pallets)) {
+                        packages = packagesData.pallets;
+                    } else {
+                        // Single object response
+                        packages = [packagesData];
+                    }
+                }
+
+                setLocationPackages(prev => ({
+                    ...prev,
+                    [locationId]: packages
+                }));
+            } catch (error) {
+                console.error('Error fetching pallet detail:', error);
+                const errorMessage = extractErrorMessage(error);
+                if (window.showToast) {
+                    window.showToast(errorMessage || 'Không thể tải danh sách gói hàng', 'error');
+                }
+                setLocationPackages(prev => ({
+                    ...prev,
+                    [locationId]: []
+                }));
+            } finally {
+                setLoadingPackages(prev => ({ ...prev, [locationId]: false }));
+            }
+        }
     };
 
     const handleSearchLocation = (areaId, searchTerm) => {
@@ -753,6 +819,9 @@ const StocktakingArea = () => {
                                     const isSelected = selectedLocations.has(locationId);
                                     const canSelect = location.status === STOCK_LOCATION_STATUS.Counted;
                                     const colSpanForRejectReason = isUnchecked ? (hasConfirmableLocation ? 5 : 4) : 5;
+                                    const isExpanded = expandedSections.sheets[locationId] || false;
+                                    const packages = locationPackages[locationId] || [];
+                                    const isLoading = loadingPackages[locationId] || false;
 
                                     // Check if location matches search term
                                     const locationCode = location.locationCode || '';
@@ -770,17 +839,17 @@ const StocktakingArea = () => {
                                                     }
                                                 }}
                                                 className={`border-b border-slate-200 transition-colors ${isHighlighted
-                                                        ? 'bg-orange-300 hover:bg-orange-400 border-l-4 border-l-orange-500'
-                                                        : isSelected
-                                                            ? 'bg-orange-50 hover:bg-orange-100'
-                                                            : 'hover:bg-slate-50'
+                                                    ? 'bg-orange-300 hover:bg-orange-400 border-l-4 border-l-orange-500'
+                                                    : isSelected
+                                                        ? 'bg-orange-50 hover:bg-orange-100'
+                                                        : 'hover:bg-slate-50'
                                                     }`}
                                             >
-                                                <TableCell className="px-6 py-4 text-center text-slate-700 font-medium">
-                                                    {index + 1}
-                                                </TableCell>
                                                 {!isUnchecked && (
-                                                    <TableCell className="px-6 py-4">
+                                                    <TableCell
+                                                        className="px-6 py-4 text-center"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
                                                         {canSelect ? (
                                                             <input
                                                                 type="checkbox"
@@ -793,6 +862,9 @@ const StocktakingArea = () => {
                                                         )}
                                                     </TableCell>
                                                 )}
+                                                <TableCell className="px-6 py-4 text-center text-slate-700 font-medium">
+                                                    {index + 1}
+                                                </TableCell>
                                                 <TableCell className="px-6 py-4 text-slate-700">
                                                     {location.locationCode || '-'}
                                                 </TableCell>
@@ -809,7 +881,10 @@ const StocktakingArea = () => {
                                                         </Button>
                                                     ) : location.status === STOCK_LOCATION_STATUS.Counted ? (
                                                         <Button
-                                                            onClick={() => handleRecheckLocation(location)}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleRecheckLocation(location);
+                                                            }}
                                                             disabled={cancelingLocationId === location.stocktakingLocationId}
                                                             className="bg-orange-300 hover:bg-orange-400 text-white text-sm px-4 py-2 h-8 disabled:opacity-50 disabled:cursor-not-allowed"
                                                         >
@@ -826,6 +901,22 @@ const StocktakingArea = () => {
                                                         <span className="text-gray-400 text-sm">-</span>
                                                     )}
                                                 </TableCell>
+                                                {!isUnchecked && (
+                                                    <TableCell 
+                                                        className="px-6 py-4 text-center cursor-pointer hover:bg-slate-100"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            toggleSheet(location);
+                                                        }}
+                                                        title={isExpanded ? "Thu gọn" : "Mở rộng"}
+                                                    >
+                                                        {isExpanded ? (
+                                                            <ChevronUp className="w-5 h-5 text-gray-400" />
+                                                        ) : (
+                                                            <ChevronDown className="w-5 h-5 text-gray-400" />
+                                                        )}
+                                                    </TableCell>
+                                                )}
                                                 {isUnchecked && hasConfirmableLocation && (
                                                     <TableCell className="px-6 py-4 text-center">
                                                         {location.isAvailable === true && location.status === STOCK_LOCATION_STATUS.Pending ? (
@@ -845,6 +936,103 @@ const StocktakingArea = () => {
                                                     </TableCell>
                                                 )}
                                             </TableRow>
+                                            {!isUnchecked && isExpanded && (
+                                                <TableRow key={`${locationId}-packages`}>
+                                                    <TableCell colSpan={6} className="px-0 py-0">
+                                                        <div className="border-t border-gray-200 p-4 bg-gray-50">
+                                                            <h4 className="text-sm font-semibold text-gray-700 mb-4">
+                                                                Kệ kê hàng tại vị trí này
+                                                            </h4>
+                                                            {isLoading ? (
+                                                                <div className="flex justify-center items-center py-8">
+                                                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                                                                </div>
+                                                            ) : packages.length > 0 ? (
+                                                                <div className="overflow-x-auto">
+                                                                    <Table className="w-full">
+                                                                        <TableHeader>
+                                                                            <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
+                                                                                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
+                                                                                    Mã pallet
+                                                                                </TableHead>
+                                                                                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
+                                                                                    Mã sản phẩm
+                                                                                </TableHead>
+                                                                                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
+                                                                                    Tên sản phẩm
+                                                                                </TableHead>
+                                                                                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
+                                                                                    Số lô
+                                                                                </TableHead>
+                                                                                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-center">
+                                                                                    Số thùng dự kiến
+                                                                                </TableHead>
+                                                                                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-center">
+                                                                                    Số thùng thực tế
+                                                                                </TableHead>
+                                                                                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-center">
+                                                                                    Trạng thái
+                                                                                </TableHead>
+                                                                                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
+                                                                                    Ghi chú
+                                                                                </TableHead>
+                                                                            </TableRow>
+                                                                        </TableHeader>
+                                                                        <TableBody>
+                                                                            {packages.map((pkg, pkgIndex) => {
+                                                                                const pkgId = pkg.stocktakingPalletId || pkg.palletId || pkgIndex;
+                                                                                const goodsName = pkg.gooodsName || pkg.gooodsName || pkg.pallet?.gooodsName || pkg.pallet?.gooodsName || '-';
+                                                                                const goodsCode = pkg.goodsCode || pkg.goodCode || pkg.pallet?.goodsCode || pkg.pallet?.goodCode || '';
+                                                                                const batchCode = pkg.batchCode || pkg.pallet?.batchCode || pkg.batch?.batchCode || pkg.lot || '-';
+                                                                                const expected = pkg.expectedPackageQuantity ?? pkg.expectedQuantity ?? 0;
+                                                                                const actual = pkg.actualPackageQuantity ?? pkg.actualQuantity ?? null;
+                                                                                const status = pkg.status || 1;
+                                                                                const note = pkg.note || pkg.notes || pkg.description || pkg.remark || pkg.pallet?.note || pkg.pallet?.notes || '';
+
+                                                                                return (
+                                                                                    <TableRow
+                                                                                        key={pkgId}
+                                                                                        className="hover:bg-slate-50 border-b border-slate-200"
+                                                                                    >
+                                                                                        <TableCell className="px-4 py-3 text-slate-700">
+                                                                                            {pkg.palletId || pkg.id || String(pkgId).substring(0, 4)}
+                                                                                        </TableCell>
+                                                                                        <TableCell className="px-4 py-3 text-slate-700">
+                                                                                            {goodsCode || '-'}
+                                                                                        </TableCell>
+                                                                                        <TableCell className="px-4 py-3 text-slate-700">
+                                                                                            {goodsName || '-'}
+                                                                                        </TableCell>
+                                                                                        <TableCell className="px-4 py-3 text-slate-700">
+                                                                                            {batchCode}
+                                                                                        </TableCell>
+                                                                                        <TableCell className="px-4 py-3 text-center text-slate-700">
+                                                                                            {expected}
+                                                                                        </TableCell>
+                                                                                        <TableCell className="px-4 py-3 text-center text-slate-700">
+                                                                                            {actual !== null && actual !== undefined ? actual : '-'}
+                                                                                        </TableCell>
+                                                                                        <TableCell className="px-4 py-3 text-center">
+                                                                                            <PalletStatusDisplay status={status} />
+                                                                                        </TableCell>
+                                                                                        <TableCell className="px-4 py-3 text-slate-700">
+                                                                                            {note || '-'}
+                                                                                        </TableCell>
+                                                                                    </TableRow>
+                                                                                );
+                                                                            })}
+                                                                        </TableBody>
+                                                                    </Table>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="text-center py-8 text-gray-500">
+                                                                    Không có gói hàng nào tại vị trí này
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
                                             {isUnchecked && location.rejectReason && (
                                                 <TableRow key={`${locationId}-reject`} className="bg-red-50">
                                                     <TableCell colSpan={colSpanForRejectReason} className="px-6 py-2">
@@ -859,7 +1047,7 @@ const StocktakingArea = () => {
                                 };
 
                                 const colSpanUnchecked = hasConfirmableLocation ? 5 : 4; // Thêm 1 cột cho STT
-                                const colSpanChecked = 5; // Thêm 1 cột cho STT và 1 cột cho checkbox
+                                const colSpanChecked = 6; // Thêm 1 cột cho STT, 1 cột cho checkbox, và 1 cột cho chi tiết
 
                                 const currentSearchTerm = searchTerms[areaId] || '';
                                 const currentSearchInput = searchInputs[areaId] || '';
@@ -1046,11 +1234,11 @@ const StocktakingArea = () => {
                                                             <Table className="w-full">
                                                                 <TableHeader>
                                                                     <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
-                                                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-16">
-                                                                            STT
-                                                                        </TableHead>
                                                                         <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
                                                                             Chọn
+                                                                        </TableHead>
+                                                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-16">
+                                                                            STT
                                                                         </TableHead>
                                                                         <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                                                                             Vị Trí
@@ -1060,6 +1248,9 @@ const StocktakingArea = () => {
                                                                         </TableHead>
                                                                         <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
                                                                             Hành Động
+                                                                        </TableHead>
+                                                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                                                                            Chi tiết
                                                                         </TableHead>
                                                                     </TableRow>
                                                                 </TableHeader>
