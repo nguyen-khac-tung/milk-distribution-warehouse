@@ -267,5 +267,11 @@
         public const int Disposal = 3;
     }
 
+    public static class InventoryConfig
+    {
+        public const int NotificationHour = 9; // Giờ chạy thông báo (0-23)
+        public const int DaysBeforeExpiryWarning = 60; // Cảnh báo trước 60 ngày
+        public const int LowStockThreshold = 10;       // Cảnh báo dưới 10 thùng
+    }
 
 }

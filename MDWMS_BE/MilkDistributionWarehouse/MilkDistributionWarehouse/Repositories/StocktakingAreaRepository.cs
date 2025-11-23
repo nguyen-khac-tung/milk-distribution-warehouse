@@ -50,9 +50,12 @@ namespace MilkDistributionWarehouse.Repositories
             return await _context.StocktakingAreas
                 .Include(sa => sa.Area)
                     .ThenInclude(a => a.StorageCondition)
+                .Include(sa => sa.Area)
+                    .ThenInclude(a => a.Locations)
                 .Include(sa => sa.AssignToNavigation)
                 .Include(sa => sa.StocktakingLocations.OrderBy(sl => sl.Location.IsAvailable))
                     .ThenInclude(sl => sl.Location)
+                .AsSplitQuery()
                 .Where(sa => 
                                 sa.StocktakingSheetId.Equals(stocktakingSheetId) &&
                                 (stocktakingAreaId == null || sa.StocktakingAreaId == stocktakingAreaId) &&

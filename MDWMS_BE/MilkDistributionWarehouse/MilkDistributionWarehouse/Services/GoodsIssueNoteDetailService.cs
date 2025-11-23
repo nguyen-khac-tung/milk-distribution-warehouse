@@ -16,16 +16,19 @@ namespace MilkDistributionWarehouse.Services
     public class GoodsIssueNoteDetailService : IGoodsIssueNoteDetailService
     {
         private readonly IGoodsIssueNoteDetailRepository _goodsIssueNoteDetailRepository;
+        private readonly IStocktakingSheetRepository _stocktakingSheetRepository;
         private readonly INotificationService _notificationService;
         private readonly IUserRepository _userRepository;
         private readonly IUnitOfWork _unitOfWork;
 
         public GoodsIssueNoteDetailService(IGoodsIssueNoteDetailRepository goodsIssueNoteDetailRepository,
+                                           IStocktakingSheetRepository stocktakingSheetRepository,
                                            INotificationService notificationService,
                                            IUserRepository userRepository,
                                            IUnitOfWork unitOfWork)
         {
             _goodsIssueNoteDetailRepository = goodsIssueNoteDetailRepository;
+            _stocktakingSheetRepository = stocktakingSheetRepository;
             _notificationService = notificationService;
             _userRepository = userRepository;
             _unitOfWork = unitOfWork;
@@ -36,6 +39,9 @@ namespace MilkDistributionWarehouse.Services
             var issueNoteDetail = await _goodsIssueNoteDetailRepository.GetGoodsIssueNoteDetailById(rePickGoodsIssue.GoodsIssueNoteDetailId);
             if (issueNoteDetail == null)
                 return "Không tìm thấy chi tiết phiếu xuất kho.".ToMessageForUser();
+
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                throw new Exception("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser());
 
             if (issueNoteDetail.Status != IssueItemStatus.Picked)
                 return "Chỉ có thể thực hiện thao tác này khi hạng mục đang ở trạng thái 'Đã lấy hàng'.".ToMessageForUser();
@@ -77,6 +83,9 @@ namespace MilkDistributionWarehouse.Services
 
             if (rePickGoodsIssueList.Any(re => string.IsNullOrWhiteSpace(re.RejectionReason)))
                 return "Quản lý kho phải cung cấp lý do từ chối cho mỗi mặt hàng lấy lại.".ToMessageForUser();
+
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                throw new Exception("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser());
 
             var ids = rePickGoodsIssueList.Select(r => r.GoodsIssueNoteDetailId).ToList();
             var issueNoteDetails = await _goodsIssueNoteDetailRepository.GetGoodsIssueNoteDetailByIds(ids);
