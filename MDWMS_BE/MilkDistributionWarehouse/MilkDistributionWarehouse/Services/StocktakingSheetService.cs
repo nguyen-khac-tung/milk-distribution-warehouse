@@ -34,12 +34,16 @@ namespace MilkDistributionWarehouse.Services
         private readonly IStocktakingLocationService _stocktakingLocationService;
         private readonly IStocktakingLocationRepository _stocktakingLocationRepository;
         private readonly IStocktakingStatusDomainService _stocktakingStatusDomainService;
+        private readonly IStocktakingPalletRepository _stocktakingPalletRepository;
+        private readonly IPalletRepository _palletRepository;
+        private readonly ILocationRepository _locationRepository;
 
         public StocktakingSheetService(IMapper mapper, IStocktakingSheetRepository stocktakingSheetRepository,
             IStocktakingAreaRepository stocktakingAreaRepository,
             IUnitOfWork unitOfWork, IAreaRepository areaRepository,
             IStocktakingAreaService stocktakingAreaService, IStocktakingLocationService stocktakingLocationService,
-            IStocktakingLocationRepository stocktakingLocationRepository, IStocktakingStatusDomainService stocktakingStatusDomainService)
+            IStocktakingLocationRepository stocktakingLocationRepository, IStocktakingStatusDomainService stocktakingStatusDomainService,
+            IStocktakingPalletRepository stocktakingPalletRepository, IPalletRepository palletRepository, ILocationRepository locationRepository)
         {
             _mapper = mapper;
             _stocktakingSheetRepository = stocktakingSheetRepository;
@@ -50,6 +54,10 @@ namespace MilkDistributionWarehouse.Services
             _stocktakingLocationService = stocktakingLocationService;
             _stocktakingLocationRepository = stocktakingLocationRepository;
             _stocktakingStatusDomainService = stocktakingStatusDomainService;
+            _stocktakingPalletRepository = stocktakingPalletRepository;
+            _palletRepository = palletRepository;
+            _locationRepository = locationRepository;
+
         }
 
         public async Task<(string, PageResult<StocktakingSheetDto>?)> GetStocktakingSheets(PagedRequest request, string roleName, int? userId)
@@ -113,7 +121,7 @@ namespace MilkDistributionWarehouse.Services
                         ? StockAreaStarted.Started
 
                     : StockAreaStarted.HasSomeAreas
-            });
+            }).OrderByDescending(ss => ss.CreatedAt);
 
             var items = await queryDto.ToPagedResultAsync(request);
 
@@ -248,6 +256,64 @@ namespace MilkDistributionWarehouse.Services
             var updateMessage = await _stocktakingStatusDomainService.UpdateSheetStatusAsync(sheet, StocktakingStatus.Completed, noteUpdate);
             if (!string.IsNullOrEmpty(updateMessage))
                 return updateMessage;
+
+            var stocktakingAreas = await _stocktakingAreaRepository.GetStocktakingAreasByStocktakingSheetId(sheet.StocktakingSheetId);
+            if (!stocktakingAreas.Any())
+                return "Phiếu kiểm kê chưa có khu vực nào được phân công.".ToMessageForUser();
+
+            var areaIds = stocktakingAreas
+                .Where(sa => sa.AreaId.HasValue)
+                .Select(sa => sa.AreaId.Value)
+                .Distinct()
+                .ToList();
+
+            if (!areaIds.Any())
+                return "Không tìm thấy khu vực nào trong phiếu kiểm kê.".ToMessageForUser();
+
+            var stocktakingLocations = await _stocktakingLocationRepository.GetLocationsByStockSheetIdAreaIdsAsync(
+                sheet.StocktakingSheetId, 
+                areaIds);
+
+            if (!stocktakingLocations.Any())
+                return "Không tìm thấy vị trí kiểm kê nào.".ToMessageForUser();
+
+            var stocktakingLocationIds = stocktakingLocations.Select(l => l.StocktakingLocationId).ToList();
+
+            var stocktakingPallets = await _stocktakingPalletRepository.GetStocktakingPalletsByStocktakingLocationIds(stocktakingLocationIds);
+            if (stocktakingPallets == null || !stocktakingPallets.Any())
+                return "Không tìm thấy pallet kiểm kê nào.".ToMessageForUser();
+
+            foreach (var stocktakingPallet in stocktakingPallets)
+            {
+                if (string.IsNullOrEmpty(stocktakingPallet.PalletId))
+                    continue;
+
+                var pallet = await _palletRepository.GetPalletById(stocktakingPallet.PalletId);
+                if (pallet == null)
+                    return $"Không tìm thấy pallet với mã {stocktakingPallet.PalletId} trong hệ thống.".ToMessageForUser();
+
+                if (stocktakingPallet.ActualPackageQuantity.HasValue)
+                {
+                    pallet.PackageQuantity = stocktakingPallet.ActualPackageQuantity.Value;
+                    pallet.UpdateAt = DateTime.Now;
+
+                    if (pallet.PackageQuantity < 0)
+                        return $"Số lượng pallet {stocktakingPallet.PalletId} không được âm.".ToMessageForUser();
+
+                    if (pallet.PackageQuantity == 0 && pallet.LocationId.HasValue)
+                    {
+                        var updateIsAvail = await _locationRepository.UpdateIsAvailableAsync(pallet.LocationId, true);
+                        if (!updateIsAvail)
+                            return ("Cập nhật trạng thái vị trí khi pallet hết hàng thất bại.".ToMessageForUser());
+                        pallet.Status = CommonStatus.Deleted;
+                    }
+                    pallet.UpdateAt = DateTime.Now;
+
+                    var updatedPallet = await _palletRepository.UpdatePallet(pallet);
+                    if (updatedPallet == null)
+                        return $"Cập nhật số lượng pallet {stocktakingPallet.PalletId} thất bại.".ToMessageForUser();
+                }
+            }
 
             return string.Empty;
         }

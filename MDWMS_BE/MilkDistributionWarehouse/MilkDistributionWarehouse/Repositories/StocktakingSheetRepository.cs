@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.Entities;
 using System.Threading.Tasks;
 
@@ -13,6 +14,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<int> UpdateStockingtakingSheet(StocktakingSheet update);
         Task<int> DeleteStocktakingSheet(StocktakingSheet delete);
         Task<bool> IsDuplicationStartTimeStocktakingSheet(string? stocktakingSheetId, DateTime startTime);
+        Task<bool> HasActiveStocktakingInProgressAsync();
     }
     public class StocktakingSheetRepository : IStocktakingSheetRepository
     {
@@ -121,6 +123,12 @@ namespace MilkDistributionWarehouse.Repositories
                 && ss.StartTime.Value.Date == startTime.Date);
         }
 
-        
+        public async Task<bool> HasActiveStocktakingInProgressAsync()
+        {
+            return await _context.StocktakingSheets
+                .AnyAsync(ss => ss.Status == StocktakingStatus.InProgress 
+                    || ss.Status == StocktakingStatus.PendingApproval 
+                    || ss.Status == StocktakingStatus.Approved);
+        }
     }
 }
