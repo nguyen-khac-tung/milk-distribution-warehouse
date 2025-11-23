@@ -364,7 +364,14 @@ const AssignAreaModal = ({
                                                     {area.availableLocationCount !== undefined && (
                                                         <div className="flex items-center gap-1 text-slate-600">
                                                             <Package className="h-3 w-3 text-blue-500" />
-                                                            <span>Vị trí khả dụng: <span className="font-semibold text-blue-600">{area.availableLocationCount}</span></span>
+                                                            <span>Vị trí đã xếp pallet: <span className="font-semibold text-blue-600">{area.unAvailableLocationCount}</span></span>
+                                                        </div>
+                                                        
+                                                    )}
+                                                    {area.unAvailableLocationCount !== undefined && (
+                                                        <div className="flex items-center gap-1 text-slate-600">
+                                                            <Package className="h-3 w-3 text-red-500" />
+                                                            <span>Vị trí chưa xếp pallet: <span className="font-semibold text-red-600">{area.availableLocationCount}</span></span>
                                                         </div>
                                                     )}
                                                     {area.temperatureMin !== undefined && area.temperatureMax !== undefined && (
