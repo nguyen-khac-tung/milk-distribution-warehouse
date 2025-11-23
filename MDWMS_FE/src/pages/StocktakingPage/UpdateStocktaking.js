@@ -6,7 +6,7 @@ import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
 import { Label } from '../../components/ui/label';
 import { Checkbox } from '../../components/ui/checkbox';
-import { Calendar, User, FileText, MapPin } from 'lucide-react';
+import { Calendar, User, FileText, MapPin, ChevronDown, ChevronUp } from 'lucide-react';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
 import { DatePicker, ConfigProvider } from 'antd';
 import dayjs from 'dayjs';
@@ -484,11 +484,11 @@ const UpdateStocktaking = () => {
                                                 <span className={selectedAreas.length > 0 ? 'text-slate-900' : 'text-slate-500'}>
                                                     {getSelectedAreasText()}
                                                 </span>
-                                                <ComponentIcon
-                                                    name={isAreaDropdownOpen ? "up" : "down"}
-                                                    size={16}
-                                                    color="#6b7280"
-                                                />
+                                                {isAreaDropdownOpen ? (
+                                                    <ChevronUp className="h-5 w-5 text-slate-400 transition-all duration-200" />
+                                                ) : (
+                                                    <ChevronDown className="h-5 w-5 text-slate-400 transition-all duration-200" />
+                                                )}
                                             </button>
 
                                             {isAreaDropdownOpen && (
