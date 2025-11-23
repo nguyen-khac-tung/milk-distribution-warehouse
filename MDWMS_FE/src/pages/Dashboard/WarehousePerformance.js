@@ -61,7 +61,7 @@ export default function WarehousePerformance() {
       <CardHeader className="relative p-4 pb-0 flex flex-col items-center gap-2 text-center">
         <Button
           variant="default"
-          className="absolute right-4 top-4 whitespace-nowrap bg-orange-500 hover:bg-orange-600 text-slate-900 font-medium h-[38px] px-5 rounded-full shadow-sm"
+          className="absolute right-4 top-4 whitespace-nowrap bg-orange-500 hover:bg-orange-600 text-white font-medium h-[38px] px-5 rounded-full shadow-sm"
           onClick={() => navigate("/reports/inventory")}
         >
           Báo cáo tồn kho
@@ -69,8 +69,8 @@ export default function WarehousePerformance() {
         <CardTitle className="text-base font-medium">Tồn kho hiện tại</CardTitle>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 text-xs">
-                  Theo {getTimeRangeLabel(timeRange).toLowerCase()} <ChevronDown className="ml-1 h-3 w-3" />
+            <Button variant="ghost" size="sm" className="h-8 text-xs">
+              Theo {getTimeRangeLabel(timeRange).toLowerCase()} <ChevronDown className="ml-1 h-3 w-3" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="center">

@@ -45,8 +45,12 @@ const StocktakingArea = () => {
     const [locationToConfirm, setLocationToConfirm] = useState(null);
     const [searchTerms, setSearchTerms] = useState({}); // Lưu search term đang active (đã tìm) cho mỗi area
     const [searchInputs, setSearchInputs] = useState({}); // Lưu giá trị input cho mỗi area
+    const [searchErrors, setSearchErrors] = useState({}); // Lưu error message cho mỗi area
     const locationRefs = useRef({}); // Refs để scroll đến location được tìm thấy
     const isFetchingRef = useRef(false);
+    const searchInputTimers = useRef({}); // Timer để detect scanner input (input nhanh)
+    const lastInputTime = useRef({}); // Thời gian input cuối cùng cho mỗi area
+    const highlightTimers = useRef({}); // Timer để tự động clear highlight sau 5 giây
 
     useEffect(() => {
         const fetchData = async () => {
@@ -477,14 +481,22 @@ const StocktakingArea = () => {
                 delete newTerms[areaId];
                 return newTerms;
             });
+            setSearchErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors[areaId];
+                return newErrors;
+            });
             return;
         }
 
         const trimmedTerm = searchTerm.trim().toLowerCase();
-        setSearchTerms(prev => ({
-            ...prev,
-            [areaId]: trimmedTerm
-        }));
+
+        // Clear error trước
+        setSearchErrors(prev => {
+            const newErrors = { ...prev };
+            delete newErrors[areaId];
+            return newErrors;
+        });
 
         // Tìm location trong area này
         const area = stocktakingAreas.find(a => a.stocktakingAreaId === areaId);
@@ -496,6 +508,12 @@ const StocktakingArea = () => {
         );
 
         if (foundLocation) {
+            // Set search term để highlight
+            setSearchTerms(prev => ({
+                ...prev,
+                [areaId]: trimmedTerm
+            }));
+
             // Đảm bảo area được expand
             setExpandedSections(prev => ({
                 ...prev,
@@ -516,19 +534,112 @@ const StocktakingArea = () => {
                     });
                 }
             }, 100);
-        } else {
-            if (window.showToast) {
-                window.showToast('Không tìm thấy vị trí với mã này', 'warning');
+
+            // Tự động clear highlight sau 5 giây
+            if (highlightTimers.current[areaId]) {
+                clearTimeout(highlightTimers.current[areaId]);
             }
-            // Vẫn set search term để highlight (nếu có match một phần)
+            highlightTimers.current[areaId] = setTimeout(() => {
+                setSearchTerms(prev => {
+                    const newTerms = { ...prev };
+                    delete newTerms[areaId];
+                    return newTerms;
+                });
+                delete highlightTimers.current[areaId];
+            }, 5000);
+        } else {
+            // Không tìm thấy - hiển thị error dưới input, không show toast
+            setSearchErrors(prev => ({
+                ...prev,
+                [areaId]: 'Không tìm thấy vị trí với mã này'
+            }));
+            // Clear search term để không highlight
+            setSearchTerms(prev => {
+                const newTerms = { ...prev };
+                delete newTerms[areaId];
+                return newTerms;
+            });
         }
     };
 
     const handleSearchInputChange = (areaId, value) => {
+        // Xử lý giá trị để loại bỏ tab và whitespace không cần thiết
+        let cleanedValue = value
+            .replace(/\t/g, ' ') // Thay tab bằng space
+            .replace(/\n/g, ' ') // Thay newline bằng space
+            .replace(/\r/g, ' '); // Thay carriage return bằng space
+
+        // Nếu có nhiều từ (có thể do paste), lấy từ đầu tiên
+        const words = cleanedValue.split(/\s+/);
+        if (words.length > 1 && words[0] === words[1]) {
+            // Loại bỏ duplicate
+            cleanedValue = words[0];
+        } else if (words.length > 1) {
+            // Lấy từ đầu tiên nếu có nhiều từ
+            cleanedValue = words[0];
+        } else {
+            cleanedValue = cleanedValue.trim();
+        }
+
         setSearchInputs(prev => ({
             ...prev,
-            [areaId]: value
+            [areaId]: cleanedValue
         }));
+
+        // Clear timer cũ nếu có
+        if (searchInputTimers.current[areaId]) {
+            clearTimeout(searchInputTimers.current[areaId]);
+        }
+
+        const now = Date.now();
+        const lastTime = lastInputTime.current[areaId] || 0;
+        const timeDiff = now - lastTime;
+        lastInputTime.current[areaId] = now;
+
+        // Nếu input quá nhanh (dưới 50ms giữa các ký tự) hoặc giá trị đủ dài, có thể là scanner
+        // Scanner thường input rất nhanh và kèm Enter, nhưng để an toàn ta sẽ auto-search sau khi không có input trong 300ms
+        if (cleanedValue && cleanedValue.trim().length > 0) {
+            searchInputTimers.current[areaId] = setTimeout(() => {
+                // Nếu input dừng lại và có giá trị, tự động tìm kiếm (hỗ trợ scanner không có Enter)
+                if (cleanedValue && cleanedValue.trim().length >= 3) { // Chỉ auto-search nếu có ít nhất 3 ký tự
+                    handleSearchLocation(areaId, cleanedValue);
+                }
+            }, 300); // Đợi 300ms sau khi ngừng input
+        }
+    };
+
+    const handleSearchPaste = (areaId, e) => {
+        // Khi paste (thường từ scanner), tự động tìm kiếm
+        e.preventDefault(); // Ngăn paste mặc định để xử lý thủ công
+        const pastedValue = e.clipboardData.getData('text');
+        if (pastedValue) {
+            // Xử lý giá trị paste: loại bỏ whitespace, tab, newline
+            let cleanedValue = pastedValue
+                .replace(/\t/g, ' ') // Thay tab bằng space
+                .replace(/\n/g, ' ') // Thay newline bằng space
+                .replace(/\r/g, ' ') // Thay carriage return bằng space
+                .trim(); // Loại bỏ space đầu cuối
+
+            // Nếu có nhiều từ (có thể do paste từ Excel hoặc có tab), lấy từ đầu tiên
+            const words = cleanedValue.split(/\s+/);
+            cleanedValue = words[0] || cleanedValue;
+
+            // Loại bỏ duplicate nếu có (ví dụ: "A01-Rack1-R01-C04	A01-Rack1-R01-C04" -> "A01-Rack1-R01-C04")
+            if (words.length > 1 && words[0] === words[1]) {
+                cleanedValue = words[0];
+            }
+
+            if (cleanedValue) {
+                setSearchInputs(prev => ({
+                    ...prev,
+                    [areaId]: cleanedValue
+                }));
+                // Tự động tìm kiếm sau khi paste
+                setTimeout(() => {
+                    handleSearchLocation(areaId, cleanedValue);
+                }, 100);
+            }
+        }
     };
 
     const clearSearch = (areaId) => {
@@ -542,6 +653,16 @@ const StocktakingArea = () => {
             delete newInputs[areaId];
             return newInputs;
         });
+        setSearchErrors(prev => {
+            const newErrors = { ...prev };
+            delete newErrors[areaId];
+            return newErrors;
+        });
+        // Clear highlight timer nếu có
+        if (highlightTimers.current[areaId]) {
+            clearTimeout(highlightTimers.current[areaId]);
+            delete highlightTimers.current[areaId];
+        }
     };
 
     if (loading) {
@@ -839,7 +960,7 @@ const StocktakingArea = () => {
                                                     }
                                                 }}
                                                 className={`border-b border-slate-200 transition-colors ${isHighlighted
-                                                    ? 'bg-orange-300 hover:bg-orange-400 border-l-4 border-l-orange-500'
+                                                    ? 'bg-green-300 hover:bg-green-400 border-l-4 border-l-green-500'
                                                     : isSelected
                                                         ? 'bg-orange-50 hover:bg-orange-100'
                                                         : 'hover:bg-slate-50'
@@ -865,7 +986,7 @@ const StocktakingArea = () => {
                                                 <TableCell className="px-6 py-4 text-center text-slate-700 font-medium">
                                                     {index + 1}
                                                 </TableCell>
-                                                <TableCell className="px-6 py-4 text-slate-700">
+                                                <TableCell className="px-6 py-4 text-slate-700 text-center">
                                                     {location.locationCode || '-'}
                                                 </TableCell>
                                                 <TableCell className="px-6 py-4 text-center">
@@ -902,7 +1023,7 @@ const StocktakingArea = () => {
                                                     )}
                                                 </TableCell>
                                                 {!isUnchecked && (
-                                                    <TableCell 
+                                                    <TableCell
                                                         className="px-6 py-4 text-center cursor-pointer hover:bg-slate-100"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
@@ -910,11 +1031,13 @@ const StocktakingArea = () => {
                                                         }}
                                                         title={isExpanded ? "Thu gọn" : "Mở rộng"}
                                                     >
-                                                        {isExpanded ? (
-                                                            <ChevronUp className="w-5 h-5 text-gray-400" />
-                                                        ) : (
-                                                            <ChevronDown className="w-5 h-5 text-gray-400" />
-                                                        )}
+                                                        <div className="flex items-center justify-center">
+                                                            {isExpanded ? (
+                                                                <ChevronUp className="w-5 h-5 text-gray-400" />
+                                                            ) : (
+                                                                <ChevronDown className="w-5 h-5 text-gray-400" />
+                                                            )}
+                                                        </div>
                                                     </TableCell>
                                                 )}
                                                 {isUnchecked && hasConfirmableLocation && (
@@ -1051,6 +1174,7 @@ const StocktakingArea = () => {
 
                                 const currentSearchTerm = searchTerms[areaId] || '';
                                 const currentSearchInput = searchInputs[areaId] || '';
+                                const currentSearchError = searchErrors[areaId] || '';
 
                                 return (
                                     <div key={areaId || areaIndex} className="border border-gray-200 rounded-lg bg-white">
@@ -1079,26 +1203,37 @@ const StocktakingArea = () => {
                                                 </div>
                                                 {/* Search Bar - cùng dòng */}
                                                 <div
-                                                    className="search-container flex items-center gap-2 ml-4"
+                                                    className="search-container flex flex-col items-end gap-1 ml-4"
                                                     onClick={(e) => e.stopPropagation()}
                                                 >
                                                     <div className="relative w-64">
                                                         <input
                                                             type="text"
-                                                            placeholder="Nhập mã vị trí..."
+                                                            placeholder="Nhập hoặc quét mã vị trí..."
                                                             value={currentSearchInput}
                                                             onChange={(e) => handleSearchInputChange(areaId, e.target.value)}
                                                             onKeyDown={(e) => {
                                                                 if (e.key === 'Enter') {
+                                                                    e.preventDefault();
+                                                                    // Tự động tìm kiếm khi nhấn Enter (hỗ trợ cả quét và nhập)
                                                                     handleSearchLocation(areaId, currentSearchInput);
                                                                 }
                                                             }}
-                                                            className="w-full px-3 py-2 pr-20 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
+                                                            onPaste={(e) => handleSearchPaste(areaId, e)}
+                                                            autoComplete="off"
+                                                            className={`w-full px-3 py-2 pr-20 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm ${currentSearchError ? 'border-red-500' : 'border-slate-300'}`}
                                                         />
                                                         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                                                             {(currentSearchInput || currentSearchTerm) && (
                                                                 <button
-                                                                    onClick={() => clearSearch(areaId)}
+                                                                    onClick={() => {
+                                                                        clearSearch(areaId);
+                                                                        setSearchErrors(prev => {
+                                                                            const newErrors = { ...prev };
+                                                                            delete newErrors[areaId];
+                                                                            return newErrors;
+                                                                        });
+                                                                    }}
                                                                     className="text-gray-400 hover:text-gray-600 text-xl leading-none w-5 h-5 flex items-center justify-center"
                                                                     title="Xóa tìm kiếm"
                                                                 >
@@ -1114,6 +1249,11 @@ const StocktakingArea = () => {
                                                             </button>
                                                         </div>
                                                     </div>
+                                                    {currentSearchError && (
+                                                        <div className="text-xs text-red-500 mt-0.5 w-64 text-right">
+                                                            {currentSearchError}
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <div className="ml-4">
                                                     {isAreaExpanded ? (
@@ -1143,7 +1283,7 @@ const StocktakingArea = () => {
                                                                         <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-16">
                                                                             STT
                                                                         </TableHead>
-                                                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
                                                                             Vị Trí
                                                                         </TableHead>
                                                                         <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
@@ -1240,7 +1380,7 @@ const StocktakingArea = () => {
                                                                         <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-16">
                                                                             STT
                                                                         </TableHead>
-                                                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
                                                                             Vị Trí
                                                                         </TableHead>
                                                                         <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">

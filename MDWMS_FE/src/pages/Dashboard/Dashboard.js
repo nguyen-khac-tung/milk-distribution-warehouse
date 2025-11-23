@@ -980,7 +980,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                 </div>
                 <Button
                   onClick={link.action}
-                  className="whitespace-nowrap bg-orange-500 hover:bg-orange-600 h-[38px] px-5 flex-shrink-0"
+                  className="whitespace-nowrap bg-orange-500 hover:bg-orange-600 h-[38px] px-5 flex-shrink-0 text-white"
                 >
                   {link.actionLabel}
                 </Button>
