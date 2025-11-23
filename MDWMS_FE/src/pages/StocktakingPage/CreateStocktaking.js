@@ -14,6 +14,7 @@ import { createStocktaking } from '../../services/StocktakingService';
 import { extractErrorMessage } from '../../utils/Validation';
 import { getAreaDropdown } from '../../services/AreaServices';
 import AssignAreaModal from '../../components/StocktakingComponents/AssignAreaModal';
+import AssignSingleAreaModalForCreate from '../../components/StocktakingComponents/AssignSingleAreaModalForCreate';
 import PermissionWrapper from '../../components/Common/PermissionWrapper';
 import { PERMISSIONS } from '../../utils/permissions';
 
@@ -43,6 +44,7 @@ const CreateStocktaking = () => {
     const [saveDraftLoading, setSaveDraftLoading] = useState(false);
     const [assignLoading, setAssignLoading] = useState(false);
     const [showAssignModal, setShowAssignModal] = useState(false);
+    const [showSingleAreaModal, setShowSingleAreaModal] = useState(false);
     const [stocktakingSheetId, setStocktakingSheetId] = useState(null);
 
     // Area dropdown states
@@ -258,6 +260,12 @@ const CreateStocktaking = () => {
             return;
         }
 
+        // Kiểm tra số lượng khu vực đã chọn
+        if (selectedAreas.length === 0) {
+            window.showToast('Vui lòng chọn ít nhất một khu vực kiểm kê', 'error');
+            return;
+        }
+
         setAssignLoading(true);
         try {
             // Tạo stocktaking trước để lấy ID
@@ -271,8 +279,14 @@ const CreateStocktaking = () => {
             // Lưu ID vào state
             setStocktakingSheetId(newStocktakingSheetId);
 
-            // Mở modal sau khi đã có ID
-            setShowAssignModal(true);
+            // Kiểm tra số lượng khu vực để quyết định mở modal nào
+            if (selectedAreas.length === 1) {
+                // Nếu chỉ có 1 khu vực, mở modal phân công 1 khu vực
+                setShowSingleAreaModal(true);
+            } else {
+                // Nếu có 2+ khu vực, mở modal phân công nhiều khu vực
+                setShowAssignModal(true);
+            }
         } catch (error) {
             console.error('Error creating stocktaking:', error);
             const errorMessage = extractErrorMessage(error);
@@ -562,7 +576,7 @@ const CreateStocktaking = () => {
                 </Card>
             </div>
 
-            {/* Assign Area Modal - Hiển thị khi click nút Phân công */}
+            {/* Assign Area Modal - Hiển thị khi click nút Phân công và có 2+ khu vực */}
             <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_VIEW_WM}>
                 <AssignAreaModal
                     isOpen={showAssignModal}
@@ -575,6 +589,21 @@ const CreateStocktaking = () => {
                     isReassign={false}
                     stocktaking={null}
                     formData={formData} // Truyền formData để modal có thể sử dụng nếu cần
+                />
+            </PermissionWrapper>
+
+            {/* Assign Single Area Modal - Hiển thị khi click nút Phân công và có 1 khu vực */}
+            <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_VIEW_WM}>
+                <AssignSingleAreaModalForCreate
+                    isOpen={showSingleAreaModal}
+                    onClose={() => {
+                        // Chỉ đóng modal, không làm gì cả, form vẫn giữ nguyên
+                        setShowSingleAreaModal(false);
+                    }}
+                    onSuccess={handleAssignmentSuccess}
+                    stocktakingSheetId={stocktakingSheetId} // ID đã được tạo khi click "Phân công"
+                    formData={formData} // Truyền formData để modal có thể sử dụng nếu cần
+                    areaId={selectedAreas.length === 1 ? selectedAreas[0] : null} // areaId của khu vực duy nhất
                 />
             </PermissionWrapper>
         </div>
