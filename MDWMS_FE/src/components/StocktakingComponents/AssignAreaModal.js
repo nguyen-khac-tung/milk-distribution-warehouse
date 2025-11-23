@@ -366,7 +366,7 @@ const AssignAreaModal = ({
                                                             <Package className="h-3 w-3 text-blue-500" />
                                                             <span>Vị trí đã xếp pallet: <span className="font-semibold text-blue-600">{area.unAvailableLocationCount}</span></span>
                                                         </div>
-                                                        
+
                                                     )}
                                                     {area.unAvailableLocationCount !== undefined && (
                                                         <div className="flex items-center gap-1 text-slate-600">
