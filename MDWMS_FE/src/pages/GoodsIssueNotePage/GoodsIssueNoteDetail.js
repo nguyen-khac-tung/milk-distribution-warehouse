@@ -762,7 +762,7 @@ const GoodsIssueNoteDetail = () => {
                                             }
                                         }}
                                         className={`border rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-all duration-300 ${isDetailHighlighted
-                                                ? 'border-yellow-400 border-2 shadow-lg bg-yellow-50'
+                                                ? 'border-green-400 border-2 shadow-lg bg-green-50'
                                                 : 'border-gray-200'
                                             }`}
                                     >
@@ -787,12 +787,6 @@ const GoodsIssueNoteDetail = () => {
                                                             </div>
                                                         )}
 
-                                                    {/* Badge highlight khi được tìm thấy */}
-                                                    {isDetailHighlighted && (
-                                                        <div className="flex-shrink-0 px-2 py-1 bg-yellow-400 text-yellow-900 rounded-md text-xs font-semibold">
-                                                            Đã tìm thấy
-                                                        </div>
-                                                    )}
 
                                                     {/* Expand/Collapse icon */}
                                                     <div className="flex-shrink-0 p-1.5 bg-gray-100 rounded">

@@ -24,7 +24,7 @@ const DisposalNoteDetail = () => {
     const [disposalNote, setDisposalNote] = useState(null);
     const [error, setError] = useState(null);
 
-    console.log("====:", disposalNote)
+    // console.log("====:", disposalNote)
     // Get current user info from localStorage - useMemo to recalculate when needed
     const currentUserInfo = useMemo(() => {
         try {
@@ -766,7 +766,7 @@ const DisposalNoteDetail = () => {
                                             }
                                         }}
                                         className={`border rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-all duration-300 ${isDetailHighlighted
-                                            ? 'border-yellow-400 border-2 shadow-lg bg-yellow-50'
+                                            ? 'border-green-400 border-2 shadow-lg bg-green-50'
                                             : 'border-gray-200'
                                             }`}
                                     >
@@ -791,12 +791,6 @@ const DisposalNoteDetail = () => {
                                                             </div>
                                                         )}
 
-                                                    {/* Badge highlight khi được tìm thấy */}
-                                                    {isDetailHighlighted && (
-                                                        <div className="flex-shrink-0 px-2 py-1 bg-yellow-400 text-yellow-900 rounded-md text-xs font-semibold">
-                                                            Đã tìm thấy
-                                                        </div>
-                                                    )}
 
                                                     {/* Expand/Collapse icon */}
                                                     <div className="flex-shrink-0 p-1.5 bg-gray-100 rounded">
@@ -1105,8 +1099,8 @@ const DisposalNoteDetail = () => {
                             {renderStatusGroupCard(
                                 DISPOSAL_ITEM_STATUS.PendingApproval,
                                 'Chờ duyệt',
-                                <AlertCircle className="w-5 h-5 text-yellow-600" />,
-                                'bg-yellow-100',
+                                <AlertCircle className="w-5 h-5 text-green-600" />,
+                                'bg-green-100',
                                 disposalNote.disposalNoteDetails.filter(d => d.status === DISPOSAL_ITEM_STATUS.PendingApproval)
                             )}
 

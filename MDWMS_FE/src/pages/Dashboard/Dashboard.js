@@ -747,7 +747,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-8 text-xs">
-                    {chartPeriod === "week" ? "tuần này" : "tháng này"} <ChevronDown className="ml-1 h-3 w-3" />
+                    {chartPeriod === "week" ? "Tuần này" : "Tháng này"} <ChevronDown className="ml-1 h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
