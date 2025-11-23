@@ -820,6 +820,9 @@ export default function OrdersPage({ onClose }) {
                         </div>
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                        Đơn vị/thùng
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
                         <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("totalPackageQuantity")}>
                           <span>Số thùng</span>
                           {sortField === "totalPackageQuantity" ? (
@@ -847,7 +850,7 @@ export default function OrdersPage({ onClose }) {
                   <TableBody>
                     {displayOrders.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={9} className="text-center text-gray-500 py-8">
+                        <TableCell colSpan={10} className="text-center text-gray-500 py-8">
                           Không có dữ liệu nào
                         </TableCell>
                       </TableRow>
@@ -874,6 +877,9 @@ export default function OrdersPage({ onClose }) {
                               <div className="max-w-xs truncate" title={order.goodsName}>
                                 {order.goodsName}
                               </div>
+                            </TableCell>
+                            <TableCell className="px-6 py-4 text-center text-slate-700">
+                              {order.unitPerPackage || '-'}
                             </TableCell>
                             <TableCell className="px-6 py-4 text-center text-slate-700">
                               {order.totalPackageQuantity}
