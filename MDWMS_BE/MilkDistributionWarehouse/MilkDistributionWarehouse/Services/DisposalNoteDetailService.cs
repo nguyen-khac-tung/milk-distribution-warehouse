@@ -16,16 +16,19 @@ namespace MilkDistributionWarehouse.Services
     public class DisposalNoteDetailService : IDisposalNoteDetailService
     {
         private readonly IDisposalNoteDetailRepository _disposalNoteDetailRepository;
+        private readonly IStocktakingSheetRepository _stocktakingSheetRepository;
         private readonly INotificationService _notificationService;
         private readonly IUserRepository _userRepository;
         private readonly IUnitOfWork _unitOfWork;
 
         public DisposalNoteDetailService(IDisposalNoteDetailRepository disposalNoteDetailRepository,
+                                         IStocktakingSheetRepository stocktakingSheetRepository,
                                          INotificationService notificationService,
                                          IUserRepository userRepository,
                                          IUnitOfWork unitOfWork)
         {
             _disposalNoteDetailRepository = disposalNoteDetailRepository;
+            _stocktakingSheetRepository = stocktakingSheetRepository;
             _notificationService = notificationService;
             _userRepository = userRepository;
             _unitOfWork = unitOfWork;
@@ -36,6 +39,9 @@ namespace MilkDistributionWarehouse.Services
             var noteDetail = await _disposalNoteDetailRepository.GetDisposalNoteDetailById(rePickDto.DisposalNoteDetailId);
             if (noteDetail == null)
                 return "Không tìm thấy chi tiết phiếu xuất hủy.".ToMessageForUser();
+
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                throw new Exception("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser());
 
             if (noteDetail.Status != DisposalNoteItemStatus.Picked)
                 return "Chỉ có thể thực hiện thao tác này khi hạng mục đang ở trạng thái 'Đã lấy hàng'.".ToMessageForUser();
@@ -74,6 +80,9 @@ namespace MilkDistributionWarehouse.Services
         public async Task<string> RePickDisposalNoteDetailList(List<RePickDisposalNoteDetailDto> rePickList)
         {
             if (rePickList.IsNullOrEmpty()) return "Danh sách yêu cầu lấy lại hàng không được bỏ trống.".ToMessageForUser();
+
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                throw new Exception("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser());
 
             if (rePickList.Any(re => string.IsNullOrWhiteSpace(re.RejectionReason)))
                 return "Quản lý kho phải cung cấp lý do từ chối cho mỗi mặt hàng lấy lại.".ToMessageForUser();

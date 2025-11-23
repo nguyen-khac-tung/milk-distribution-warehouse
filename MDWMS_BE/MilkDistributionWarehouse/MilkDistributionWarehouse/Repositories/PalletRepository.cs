@@ -22,6 +22,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<List<Pallet>> GetExpiredPalletsForPicking(int? goodsId, int? goodsPackingId);
         Task<bool> IsAnyDiffActivePalletByGRNId(string grndId);
         Task<List<Pallet>> GetActivePalletIdsByLocationId(List<int> locationIds);
+        Task<List<Pallet>> GetMisstoredPallets();
     }
 
     public class PalletRepository : IPalletRepository
@@ -184,6 +185,18 @@ namespace MilkDistributionWarehouse.Repositories
                 .Where(p => p.LocationId.HasValue 
                 && locationIds.Contains(p.LocationId.Value) 
                 && p.Status == CommonStatus.Active)
+                .ToListAsync();
+        }
+
+        public async Task<List<Pallet>> GetMisstoredPallets()
+        {
+            return await _context.Pallets
+                .Include(p => p.Batch).ThenInclude(b => b.Goods)
+                .Include(p => p.Location).ThenInclude(l => l.Area)
+                .Where(p => p.Status == CommonStatus.Active
+                       && p.LocationId != null
+                       && p.Batch.Goods.StorageConditionId != p.Location.Area.StorageConditionId)
+                .AsNoTracking()
                 .ToListAsync();
         }
     }

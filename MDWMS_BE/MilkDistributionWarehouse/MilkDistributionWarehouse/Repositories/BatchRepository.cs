@@ -10,10 +10,11 @@ namespace MilkDistributionWarehouse.Repositories
         Task<Batch?> GetBatchById(Guid batchId);
         Task<List<Batch>> GetActiveBatchesByGoodsId(int goodsId);
         Task<(string, bool)> IsBatchCodeDuplicate(Guid? batchId, int goodsId, string batchCode);
-        Task<string> CreateBatch(Batch batch);
-        Task<string> UpdateBatch(Batch batch);
         Task<bool> IsBatchOnPalletActive(Guid batchId);
         Task<bool> IsBatchOnPallet(Guid batchId);
+        Task<List<Batch>> GetExpiringBatches(int daysThreshold);
+        Task<string> CreateBatch(Batch batch);
+        Task<string> UpdateBatch(Batch batch);
     }
 
     public class BatchRepository : IBatchRepository
@@ -83,6 +84,20 @@ namespace MilkDistributionWarehouse.Repositories
         public async Task<bool> IsBatchOnPallet(Guid batchId)
         {
             return await _context.Pallets.AnyAsync(p => p.BatchId == batchId && p.Status != CommonStatus.Deleted);
+        }
+
+        public async Task<List<Batch>> GetExpiringBatches(int daysThreshold)
+        {
+            var today = DateOnly.FromDateTime(DateTime.Now);
+            var targetDate = today.AddDays(daysThreshold);
+
+            return await _context.Batchs
+                .Include(b => b.Goods)
+                .Where(b => b.Status == CommonStatus.Active
+                       && b.ExpiryDate > today
+                       && b.ExpiryDate <= targetDate)
+                .AsNoTracking()
+                .ToListAsync();
         }
 
         public async Task<string> CreateBatch(Batch batch)

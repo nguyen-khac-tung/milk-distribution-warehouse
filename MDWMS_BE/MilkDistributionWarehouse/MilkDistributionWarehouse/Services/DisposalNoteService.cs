@@ -22,6 +22,7 @@ namespace MilkDistributionWarehouse.Services
         private readonly IDisposalNoteRepository _disposalNoteRepository;
         private readonly IDisposalRequestRepository _disposalRequestRepository;
         private readonly IPalletRepository _palletRepository;
+        private readonly IStocktakingSheetRepository _stocktakingSheetRepository;
         private readonly IPickAllocationRepository _pickAllocationRepository;
         private readonly INotificationService _notificationService;
         private readonly IUnitOfWork _unitOfWork;
@@ -31,6 +32,7 @@ namespace MilkDistributionWarehouse.Services
         public DisposalNoteService(IDisposalNoteRepository disposalNoteRepository,
                                    IDisposalRequestRepository disposalRequestRepository,
                                    IPalletRepository palletRepository,
+                                   IStocktakingSheetRepository stocktakingSheetRepository,
                                    IPickAllocationRepository pickAllocationRepository,
                                    INotificationService notificationService,
                                    IUnitOfWork unitOfWork,
@@ -40,6 +42,7 @@ namespace MilkDistributionWarehouse.Services
             _disposalNoteRepository = disposalNoteRepository;
             _disposalRequestRepository = disposalRequestRepository;
             _palletRepository = palletRepository;
+            _stocktakingSheetRepository = stocktakingSheetRepository;
             _pickAllocationRepository = pickAllocationRepository;
             _notificationService = notificationService;
             _unitOfWork = unitOfWork;
@@ -50,6 +53,9 @@ namespace MilkDistributionWarehouse.Services
         public async Task<string> CreateDisposalNote(DisposalNoteCreateDto createDto, int? userId)
         {
             if (createDto.DisposalRequestId == null) return "DisposalRequestId to create DisposalNote is null.";
+
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                throw new Exception("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser());
 
             var disposalRequest = await _disposalRequestRepository.GetDisposalRequestById(createDto.DisposalRequestId);
             if (disposalRequest == null) return "Data of DisposalRequest to create DisposalNote is null.";
@@ -156,6 +162,9 @@ namespace MilkDistributionWarehouse.Services
         {
             if (submitDto.DisposalNoteId == null) return "DisposalNoteId is null.";
 
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                throw new Exception("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser());
+
             var disposalNote = await _disposalNoteRepository.GetDNByDisposalNoteId(submitDto.DisposalNoteId);
             if (disposalNote == null) return "Không tìm thấy phiếu xuất hủy.".ToMessageForUser();
 
@@ -201,6 +210,9 @@ namespace MilkDistributionWarehouse.Services
         public async Task<string> ApproveDisposalNote(ApproveDisposalNoteDto approveDto, int? userId)
         {
             if (approveDto.DisposalNoteId == null) return "DisposalNoteId is null.";
+
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                throw new Exception("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser());
 
             var disposalNote = await _disposalNoteRepository.GetDNByDisposalNoteId(approveDto.DisposalNoteId);
             if (disposalNote == null) return "Không tìm thấy phiếu xuất hủy.".ToMessageForUser();

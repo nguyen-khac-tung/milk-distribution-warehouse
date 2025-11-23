@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.VisualBasic;
 using MilkDistributionWarehouse.Constants;
+using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 using System;
 using System.Linq;
@@ -32,6 +33,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> VerifyStorageConditionUsage(int storageConditionId);
         Task<bool> HasActiveGoods(int supplierId);
         Task<bool> IsGoodsActiveOrInActive(int supplierId);
+        Task<IEnumerable<LowStockGoodsDto>> GetLowStockGoods(int quantityThreshold);
         Task<List<string>> GetExistingGoodsCode(List<string> goodsCode);
         Task<int> CreateGoodsBulk(List<Good> goods);
         Task<bool> IsDuplicationNameAndSupplier(string goodsName, int supplierId);
@@ -137,6 +139,27 @@ namespace MilkDistributionWarehouse.Repositories
                 Goods = g.FirstOrDefault()?.Batch?.Goods,
                 GoodsPacking = g.FirstOrDefault()?.GoodsPacking,
                 TotalExpiredPackageQuantity = g.Sum(p => p.PackageQuantity ?? 0)
+            });
+        }
+
+        public async Task<IEnumerable<LowStockGoodsDto>> GetLowStockGoods(int quantityThreshold)
+        {
+            var groups = await _warehouseContext.Pallets
+                .Include(p => p.Batch).ThenInclude(b => b.Goods).ThenInclude(g => g.UnitMeasure)
+                .Include(p => p.GoodsPacking)
+                .Where(p => p.Status == CommonStatus.Active && p.PackageQuantity > 0)
+                .GroupBy(p => new { p.Batch.GoodsId, p.GoodsPackingId })
+                .Where(g => g.Sum(p => p.PackageQuantity) < quantityThreshold)
+                .AsNoTracking()
+                .ToListAsync();
+
+            return groups.Select(g => new LowStockGoodsDto
+            {
+                GoodsCode = g.FirstOrDefault()?.Batch.Goods.GoodsCode,
+                GoodsName = g.FirstOrDefault()?.Batch.Goods.GoodsName,
+                UnitMeasureName = g.FirstOrDefault()?.Batch.Goods.UnitMeasure.Name,
+                UnitPerPackage = g.FirstOrDefault()?.GoodsPacking.UnitPerPackage,
+                TotalPackage = g.Sum(p => p.PackageQuantity ?? 0)
             });
         }
 

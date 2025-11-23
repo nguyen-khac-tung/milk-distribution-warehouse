@@ -22,6 +22,7 @@ namespace MilkDistributionWarehouse.Services
         private readonly IGoodsIssueNoteRepository _goodsIssueNoteRepository;
         private readonly ISalesOrderRepository _salesOrderRepository;
         private readonly IPalletRepository _palletRepository;
+        private readonly IStocktakingSheetRepository _stocktakingSheetRepository;
         private readonly IPickAllocationRepository _pickAllocationRepository;
         private readonly INotificationService _notificationService;
         private readonly IUnitOfWork _unitOfWork;
@@ -31,6 +32,7 @@ namespace MilkDistributionWarehouse.Services
         public GoodsIssueNoteService(IGoodsIssueNoteRepository goodsIssueNoteRepository,
                                  ISalesOrderRepository salesOrderRepository,
                                  IPalletRepository palletRepository,
+                                 IStocktakingSheetRepository stocktakingSheetRepository,
                                  IPickAllocationRepository pickAllocationRepository,
                                  INotificationService notificationService,
                                  IUnitOfWork unitOfWork,
@@ -40,6 +42,7 @@ namespace MilkDistributionWarehouse.Services
             _goodsIssueNoteRepository = goodsIssueNoteRepository;
             _salesOrderRepository = salesOrderRepository;
             _palletRepository = palletRepository;
+            _stocktakingSheetRepository = stocktakingSheetRepository;
             _pickAllocationRepository = pickAllocationRepository;
             _notificationService = notificationService;
             _unitOfWork = unitOfWork;
@@ -50,6 +53,9 @@ namespace MilkDistributionWarehouse.Services
         public async Task<string> CreateGoodsIssueNote(GoodsIssueNoteCreateDto goodsIssueNoteCreate, int? userId)
         {
             if (goodsIssueNoteCreate.SalesOrderId == null) return "SalesOrderId to create GoodsIssueNote Data is null.";
+
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                throw new Exception("Không thể tạo phiếu xuất kho khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser());
 
             var salesOrder = await _salesOrderRepository.GetSalesOrderById(goodsIssueNoteCreate.SalesOrderId);
             if (salesOrder == null) return "Data of SalesOrder to create GoodsIssueNote is null.";
@@ -152,6 +158,9 @@ namespace MilkDistributionWarehouse.Services
         {
             if (submitGoodsIssueDto.GoodsIssueNoteId == null) return "GoodsIssueNoteId is null.";
 
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                throw new Exception("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser());
+
             var goodsIssueNote = await _goodsIssueNoteRepository.GetGINByGoodsIssueNoteId(submitGoodsIssueDto.GoodsIssueNoteId);
             if (goodsIssueNote == null) return "Không tìm thấy phiếu xuất kho.".ToMessageForUser();
 
@@ -197,6 +206,9 @@ namespace MilkDistributionWarehouse.Services
         public async Task<string> ApproveGoodsIssueNote(ApproveGoodsIssueNoteDto approveGoodsIssueDto, int? userId)
         {
             if (approveGoodsIssueDto.GoodsIssueNoteId == null) return "GoodsIssueNoteId is null.";
+
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                throw new Exception("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser());
 
             var goodsIssueNote = await _goodsIssueNoteRepository.GetGINByGoodsIssueNoteId(approveGoodsIssueDto.GoodsIssueNoteId);
             if (goodsIssueNote == null) return "Không tìm thấy phiếu xuất kho.".ToMessageForUser();
