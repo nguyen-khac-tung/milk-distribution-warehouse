@@ -1108,11 +1108,11 @@ export default function InventoryReport({ onClose }) {
                 <Table className="w-full">
                   <TableHeader>
                     <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-16">
+                      <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center w-8">
                         STT
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                        <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("goodsCode")}>
+                      <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center min-w-[140px]">
+                        <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("goodsCode")}>
                           <span>Mã hàng hóa</span>
                           {sortField === "goodsCode" ? (
                             sortAscending ? (
@@ -1125,8 +1125,8 @@ export default function InventoryReport({ onClose }) {
                           )}
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                        <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("goodsName")}>
+                      <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center">
+                        <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("goodsName")}>
                           <span>Tên hàng hóa</span>
                           {sortField === "goodsName" ? (
                             sortAscending ? (
@@ -1139,20 +1139,23 @@ export default function InventoryReport({ onClose }) {
                           )}
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                        Đơn vị/thùng
+                      <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center">
+                        Đơn vị /thùng
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                      <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center min-w-[100px]">
                         Đơn vị
                       </TableHead>
                       {reportType === "current" ? (
                         <>
-                          <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                          <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center">
                             Mã lô
                           </TableHead>
-                          <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                            <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("manufacturingDate")}>
-                              <span>Ngày sản xuất</span>
+                          <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center min-w-[130px]">
+                            <div className="flex items-center justify-center space-x-1 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("manufacturingDate")}>
+                              <div className="flex flex-col items-center">
+                                <span>Ngày</span>
+                                <span>sản xuất</span>
+                              </div>
                               {sortField === "manufacturingDate" ? (
                                 sortAscending ? (
                                   <ArrowUp className="h-4 w-4 text-orange-500" />
@@ -1164,9 +1167,12 @@ export default function InventoryReport({ onClose }) {
                               )}
                             </div>
                           </TableHead>
-                          <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                            <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("expiryDate")}>
-                              <span>Ngày hết hạn</span>
+                          <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center min-w-[130px]">
+                            <div className="flex items-center justify-center space-x-1 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("expiryDate")}>
+                              <div className="flex flex-col items-center">
+                                <span>Ngày</span>
+                                <span>hết hạn</span>
+                              </div>
                               {sortField === "expiryDate" ? (
                                 sortAscending ? (
                                   <ArrowUp className="h-4 w-4 text-orange-500" />
@@ -1178,8 +1184,8 @@ export default function InventoryReport({ onClose }) {
                               )}
                             </div>
                           </TableHead>
-                          <TableHead className="font-semibold text-slate-900 px-6 py-3 text-right">
-                            <div className="flex items-center justify-end space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("totalPackageQuantity")}>
+                          <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center">
+                            <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("totalPackageQuantity")}>
                               <span>Số lượng thùng</span>
                               {sortField === "totalPackageQuantity" ? (
                                 sortAscending ? (
@@ -1192,17 +1198,17 @@ export default function InventoryReport({ onClose }) {
                               )}
                             </div>
                           </TableHead>
-                          <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                          <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center">
                             Trạng thái
                           </TableHead>
-                          <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
+                          <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center w-20">
                             Hoạt động
                           </TableHead>
                         </>
                       ) : (
                         <>
-                          <TableHead className="font-semibold text-slate-900 px-6 py-3 text-right">
-                            <div className="flex items-center justify-end space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("beginningInventoryPackages")}>
+                          <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center w-24">
+                            <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("beginningInventoryPackages")}>
                               <span>Tồn đầu kỳ</span>
                               {sortField === "beginningInventoryPackages" ? (
                                 sortAscending ? (
@@ -1215,8 +1221,8 @@ export default function InventoryReport({ onClose }) {
                               )}
                             </div>
                           </TableHead>
-                          <TableHead className="font-semibold text-slate-900 px-6 py-3 text-right">
-                            <div className="flex items-center justify-end space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("inQuantityPackages")}>
+                          <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center w-28">
+                            <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("inQuantityPackages")}>
                               <span>Nhập trong kỳ</span>
                               {sortField === "inQuantityPackages" ? (
                                 sortAscending ? (
@@ -1229,8 +1235,8 @@ export default function InventoryReport({ onClose }) {
                               )}
                             </div>
                           </TableHead>
-                          <TableHead className="font-semibold text-slate-900 px-6 py-3 text-right">
-                            <div className="flex items-center justify-end space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("outQuantityPackages")}>
+                          <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center w-28">
+                            <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("outQuantityPackages")}>
                               <span>Xuất trong kỳ</span>
                               {sortField === "outQuantityPackages" ? (
                                 sortAscending ? (
@@ -1243,8 +1249,8 @@ export default function InventoryReport({ onClose }) {
                               )}
                             </div>
                           </TableHead>
-                          <TableHead className="font-semibold text-slate-900 px-6 py-3 text-right">
-                            <div className="flex items-center justify-end space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("endingInventoryPackages")}>
+                          <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center w-24">
+                            <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("endingInventoryPackages")}>
                               <span>Tồn cuối kỳ</span>
                               {sortField === "endingInventoryPackages" ? (
                                 sortAscending ? (
@@ -1293,34 +1299,34 @@ export default function InventoryReport({ onClose }) {
                               key={uniqueKey}
                               className="hover:bg-slate-50 border-b border-slate-200"
                             >
-                              <TableCell className="px-6 py-4 text-slate-600 font-medium">
+                              <TableCell className="px-2 py-4 text-center text-slate-600 font-medium">
                                 {rowNumber}
                               </TableCell>
-                              <TableCell className="px-6 py-4 text-slate-700 font-medium">
+                              <TableCell className="px-2 py-4 text-center text-slate-700 font-medium">
                                 {item.goodsCode || "-"}
                               </TableCell>
-                              <TableCell className="px-6 py-4 text-slate-700">
+                              <TableCell className="px-2 py-4 text-center text-slate-700">
                                 {item.goodName || "-"}
                               </TableCell>
-                              <TableCell className="px-6 py-4 text-slate-700 text-center font-medium">
+                              <TableCell className="px-2 py-4 text-center text-slate-700 font-medium">
                                 {item.unitPerPackage || "-"}
                               </TableCell>
-                              <TableCell className="px-6 py-4 text-slate-700 text-center font-medium">
+                              <TableCell className="px-2 py-4 text-center text-slate-700 font-medium">
                                 {item.unitOfMeasure || "-"}
                               </TableCell>
-                              <TableCell className="px-6 py-4 text-slate-700 font-medium">
+                              <TableCell className="px-2 py-4 text-center text-slate-700 font-medium">
                                 {item.batchCode || "-"}
                               </TableCell>
-                              <TableCell className="px-6 py-4 text-slate-700">
+                              <TableCell className="px-2 py-4 text-center text-slate-700">
                                 {formatDate(item.manufacturingDate)}
                               </TableCell>
-                              <TableCell className="px-6 py-4 text-slate-700">
+                              <TableCell className="px-2 py-4 text-center text-slate-700">
                                 {formatDate(item.expiryDate)}
                               </TableCell>
-                              <TableCell className="px-6 py-4 text-slate-700 text-right font-medium">
+                              <TableCell className="px-2 py-4 text-center text-slate-700 font-medium">
                                 {item.totalPackageQuantity?.toLocaleString("vi-VN") || 0}
                               </TableCell>
-                              <TableCell className="px-6 py-4 text-center">
+                              <TableCell className="px-2 py-4 text-center">
                                 {expired ? (
                                   <Badge variant="destructive" className="text-xs bg-red-500 text-white">
                                     Hết hạn
@@ -1335,7 +1341,7 @@ export default function InventoryReport({ onClose }) {
                                   </Badge>
                                 )}
                               </TableCell>
-                              <TableCell className="px-6 py-4 text-center">
+                              <TableCell className="px-2 py-4 text-center">
                                 <div className="flex items-center justify-center space-x-1">
                                   <button
                                     className="p-1.5 hover:bg-slate-100 rounded transition-colors"
@@ -1364,31 +1370,31 @@ export default function InventoryReport({ onClose }) {
                               key={uniqueKey}
                               className="hover:bg-slate-50 border-b border-slate-200"
                             >
-                              <TableCell className="px-6 py-4 text-slate-600 font-medium">
+                              <TableCell className="px-2 py-4 text-center text-slate-600 font-medium">
                                 {rowNumber}
                               </TableCell>
-                              <TableCell className="px-6 py-4 text-slate-700 font-medium">
+                              <TableCell className="px-2 py-4 text-center text-slate-700 font-medium">
                                 {item.goodsCode || "-"}
                               </TableCell>
-                              <TableCell className="px-6 py-4 text-slate-700">
+                              <TableCell className="px-2 py-4 text-center text-slate-700">
                                 {item.goodsName || "-"}
                               </TableCell>
-                              <TableCell className="px-6 py-4 text-slate-700 text-center font-medium">
+                              <TableCell className="px-2 py-4 text-center text-slate-700 font-medium">
                                 {item.unitPerPackage || "-"}
                               </TableCell>
-                              <TableCell className="px-6 py-4 text-slate-700 text-center font-medium">
+                              <TableCell className="px-2 py-4 text-center text-slate-700 font-medium">
                                 {item.unitOfMeasure || "-"}
                               </TableCell>
-                              <TableCell className="px-6 py-4 text-slate-700 text-right font-medium">
+                              <TableCell className="px-2 py-4 text-center text-slate-700 font-medium">
                                 {(item.beginningInventoryPackages || 0).toLocaleString("vi-VN")}
                               </TableCell>
-                              <TableCell className="px-6 py-4 text-slate-700 text-right font-medium">
+                              <TableCell className="px-2 py-4 text-center text-slate-700 font-medium">
                                 {(item.inQuantityPackages || 0).toLocaleString("vi-VN")}
                               </TableCell>
-                              <TableCell className="px-6 py-4 text-slate-700 text-right font-medium">
+                              <TableCell className="px-2 py-4 text-center text-slate-700 font-medium">
                                 {(item.outQuantityPackages || 0).toLocaleString("vi-VN")}
                               </TableCell>
-                              <TableCell className="px-6 py-4 text-slate-700 text-right font-medium">
+                              <TableCell className="px-2 py-4 text-center text-slate-700 font-medium">
                                 {(item.endingInventoryPackages || 0).toLocaleString("vi-VN")}
                               </TableCell>
                             </TableRow>
