@@ -141,7 +141,7 @@ namespace MilkDistributionWarehouse.Repositories
                     sp.StocktakingLocation.StocktakingAreaId == stocktakingAreaId &&
                     sp.PalletId.Equals(palletId) &&
                     sp.StocktakingLocationId != stocktakingLocationId &&
-                    sp.Status == StockPalletStatus.Unscanned);
+                    (sp.Status == StockPalletStatus.Unscanned || sp.Status == StockPalletStatus.Missing));
         }
 
         public async Task<StocktakingPallet?> GetScannedPalletInOtherLocationAsync(

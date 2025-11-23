@@ -32,6 +32,7 @@ namespace MilkDistributionWarehouse.Repositories
         {
             return await _context.StocktakingLocations
                 .Include(sl => sl.StocktakingArea)
+                .Include(sl => sl.Location)
                 .Where(sl => sl.StocktakingArea.StocktakingSheetId.Equals(stockSheetId) &&
                             sl.StocktakingArea.AreaId.HasValue &&
                             areaIds.Contains(sl.StocktakingArea.AreaId.Value)

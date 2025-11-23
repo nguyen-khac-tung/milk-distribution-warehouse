@@ -30,14 +30,16 @@ namespace MilkDistributionWarehouse.Services
         private readonly IMapper _mapper;
         private readonly IAreaRepository _areaRepository;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IStocktakingSheetRepository _stocktakingSheetRepository;
 
-        public LocationService(ILocationRepository locationRepository, IPalletRepository palletRepository, IMapper mapper, IAreaRepository areaRepository, IUnitOfWork unitOfWork)
+        public LocationService(ILocationRepository locationRepository, IPalletRepository palletRepository, IMapper mapper, IAreaRepository areaRepository, IUnitOfWork unitOfWork, IStocktakingSheetRepository stocktakingSheetRepository)
         {
             _locationRepository = locationRepository;
             _palletRepository = palletRepository;
             _mapper = mapper;
             _areaRepository = areaRepository;
             _unitOfWork = unitOfWork;
+            _stocktakingSheetRepository = stocktakingSheetRepository;
         }
 
         public async Task<(string, PageResult<LocationResponseDto>)> GetLocations(PagedRequest request)
@@ -71,6 +73,9 @@ namespace MilkDistributionWarehouse.Services
             if (dto == null)
                 return ("Dữ liệu vị trí không hợp lệ.".ToMessageForUser(), new LocationResponseDto());
 
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                return ("Không thể thêm mới vị trí khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser(), new LocationResponseDto());
+
             var areaExists = await _areaRepository.GetAreaById(dto.AreaId);
             if (areaExists == null)
                 return ("Khu vực được chọn không tồn tại hoặc đã bị xoá.".ToMessageForUser(), new LocationResponseDto());
@@ -97,6 +102,9 @@ namespace MilkDistributionWarehouse.Services
         {
             if (dto == null)
                 return ("Dữ liệu cập nhật vị trí không hợp lệ.".ToMessageForUser(), new LocationResponseDto());
+
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                return ("Không thể cập nhật vị trí khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser(), new LocationResponseDto());
 
             var locationExists = await _locationRepository.GetLocationById(locationId);
             if (locationExists == null)
@@ -129,6 +137,9 @@ namespace MilkDistributionWarehouse.Services
             if (locationId <= 0)
                 return ("Mã vị trí không hợp lệ.".ToMessageForUser(), new LocationResponseDto());
 
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                return ("Không thể xoá vị trí khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser(), new LocationResponseDto());
+
             var locationExists = await _locationRepository.GetLocationById(locationId);
             if (locationExists == null)
                 return ("Không tìm thấy vị trí để xoá.".ToMessageForUser(), new LocationResponseDto());
@@ -150,6 +161,9 @@ namespace MilkDistributionWarehouse.Services
         {
             if (locationId <= 0)
                 return ("Mã vị trí không hợp lệ.".ToMessageForUser(), new LocationResponseDto());
+
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                return ("Không thể cập nhật trạng thái vị trí khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser(), new LocationResponseDto());
 
             var location = await _locationRepository.GetLocationById(locationId);
             if (location == null)
@@ -219,6 +233,9 @@ namespace MilkDistributionWarehouse.Services
             var result = new LocationBulkResponse();
             try
             {
+                if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                    return ("Không thể thêm mới vị trí khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser(), result);
+
                 await _unitOfWork.BeginTransactionAsync();
 
                 var areaIds = create.Locations.Select(l => l.AreaId).Distinct().ToList();
