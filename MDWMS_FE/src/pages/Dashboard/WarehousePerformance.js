@@ -1,28 +1,11 @@
 import { useEffect, useMemo, useState } from "react"
-import { ChevronDown } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../../components/ui/dropdown-menu"
 import { useNavigate } from "react-router-dom"
 import { getInventoryReport } from "../../services/DashboardService"
 
-const TIME_RANGE_OPTIONS = [
-  { label: "Tuần này", value: "week" },
-  { label: "Tháng này", value: "month" },
-  { label: "Năm nay", value: "year" }
-]
-
-const getTimeRangeLabel = (value) =>
-  TIME_RANGE_OPTIONS.find(option => option.value === value)?.label || TIME_RANGE_OPTIONS[0].label
-
 export default function WarehousePerformance() {
   const navigate = useNavigate()
-  const [timeRange, setTimeRange] = useState(TIME_RANGE_OPTIONS[0].value)
   const [inventoryData, setInventoryData] = useState([])
   const [loading, setLoading] = useState(false)
 
@@ -32,8 +15,7 @@ export default function WarehousePerformance() {
         setLoading(true)
         const response = await getInventoryReport({
           pageNumber: 1,
-          pageSize: 500,
-          filters: { timeRange }
+          pageSize: 500
         })
 
         if (Array.isArray(response)) {
@@ -52,13 +34,13 @@ export default function WarehousePerformance() {
     }
 
     fetchInventoryData()
-  }, [timeRange])
+  }, [])
 
   const summary = useMemo(() => calculateInventorySummary(inventoryData), [inventoryData])
 
   return (
     <Card className="h-full">
-      <CardHeader className="relative p-4 pb-0 flex flex-col items-center gap-2 text-center">
+      <CardHeader className="relative p-4 pb-2 flex flex-col items-center gap-2 text-center">
         <Button
           variant="default"
           className="absolute right-4 top-4 whitespace-nowrap bg-orange-500 hover:bg-orange-600 text-white font-medium h-[38px] px-5 rounded-full shadow-sm"
@@ -67,22 +49,8 @@ export default function WarehousePerformance() {
           Báo cáo tồn kho
         </Button>
         <CardTitle className="text-base font-medium">Tồn kho hiện tại</CardTitle>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-8 text-xs">
-              Theo {getTimeRangeLabel(timeRange).toLowerCase()} <ChevronDown className="ml-1 h-3 w-3" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="center">
-            {TIME_RANGE_OPTIONS.map(option => (
-              <DropdownMenuItem key={option.value} onClick={() => setTimeRange(option.value)}>
-                {option.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
       </CardHeader>
-      <CardContent className="p-4">
+      <CardContent className="p-4 pt-6">
         {loading ? (
           <div className="py-12 text-center text-sm text-slate-500">Đang tải dữ liệu tồn kho...</div>
         ) : summary.totalLots === 0 ? (
@@ -93,7 +61,6 @@ export default function WarehousePerformance() {
             <div className="border border-slate-200 rounded-lg p-4 bg-white shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <p className="text-sm font-semibold text-slate-700">Phân bố trạng thái lô</p>
-                <span className="text-xs text-slate-500">Theo {getTimeRangeLabel(timeRange).toLowerCase()}</span>
               </div>
               <StatusPieChart data={summary.statusData} />
             </div>
