@@ -556,163 +556,181 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
           <Card>
-            <CardContent className="p-4 flex items-center">
-              <div className="bg-blue-50 p-3 rounded-full mr-4">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 text-blue-500"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M5 12h14"></path>
-                  <path d="M12 5l7 7-7 7"></path>
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 mt-5">
-                  Đơn mua hàng <span className="text-xs">(Hiện tại)</span>
-                </p>
-                <div className="flex items-center">
-                  <h3 className="text-2xl font-bold mr-2">{purchaseOrdersStats.current}</h3>
-                  {purchaseOrdersStats.change !== 0 && (
-                    <span className={`text-xs px-1.5 py-0.5 rounded ${purchaseOrdersStats.change > 0
-                      ? 'bg-green-100 text-green-600'
-                      : 'bg-red-100 text-red-600'
-                      }`}>
-                      {purchaseOrdersStats.change > 0 ? '+' : ''}{purchaseOrdersStats.change}%
-                    </span>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4 flex items-center">
-              <div className="bg-amber-50 p-3 rounded-full mr-4">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 text-amber-500"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M19 12H5"></path>
-                  <path d="M12 19l-7-7 7-7"></path>
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 mt-5">
-                  Đơn bán hàng <span className="text-xs">(Hiện tại)</span>
-                </p>
-                <div className="flex items-center">
-                  <h3 className="text-2xl font-bold mr-2">{salesOrdersStats.current}</h3>
-                  {salesOrdersStats.change !== 0 && (
-                    <span className={`text-xs px-1.5 py-0.5 rounded ${salesOrdersStats.change > 0
-                      ? 'bg-green-100 text-green-600'
-                      : 'bg-red-100 text-red-600'
-                      }`}>
-                      {salesOrdersStats.change > 0 ? '+' : ''}{salesOrdersStats.change}%
-                    </span>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4 flex items-center">
-              <div className="bg-cyan-50 p-3 rounded-full mr-4">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 text-cyan-500"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                  <line x1="16" y1="2" x2="16" y2="6"></line>
-                  <line x1="8" y1="2" x2="8" y2="6"></line>
-                  <line x1="3" y1="10" x2="21" y2="10"></line>
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 mt-5">
-                  Tồn kho <span className="text-xs">(Hiện tại)</span>
-                </p>
-                {inventoryLoading ? (
-                  <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-cyan-500 mr-2"></div>
-                    <span className="text-xs text-gray-500">Đang tải...</span>
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center flex-1">
+                  <div className="bg-blue-50 p-2.5 rounded-full mr-3 flex-shrink-0">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 text-blue-500"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M5 12h14"></path>
+                      <path d="M12 5l7 7-7 7"></path>
+                    </svg>
                   </div>
-                ) : (
-                  <>
-                    <div className="flex items-center">
-                      <h3 className="text-2xl font-bold mr-2">{inventoryStats.current}(thùng)</h3>
-                      {inventoryStats.change !== 0 && (
-                        <span className={`text-xs px-1.5 py-0.5 rounded ${inventoryStats.change > 0
-                          ? 'bg-green-100 text-green-600'
-                          : 'bg-red-100 text-red-600'
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-gray-600 mb-1 mt-5">
+                      Đơn mua hàng <span className="text-gray-500 font-normal">(Hiện tại)</span>
+                    </p>
+                    <div className="flex items-baseline gap-2 mb-1">
+                      <h3 className="text-2xl font-bold text-gray-900">{purchaseOrdersStats.current.toLocaleString("vi-VN")}</h3>
+                      <span className="text-sm font-semibold text-gray-600">đơn</span>
+                      {purchaseOrdersStats.change !== 0 && (
+                        <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${purchaseOrdersStats.change > 0
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-red-100 text-red-700'
                           }`}>
-                          {inventoryStats.change > 0 ? '+' : ''}{inventoryStats.change}%
+                          {purchaseOrdersStats.change > 0 ? '+' : ''}{purchaseOrdersStats.change}%
                         </span>
                       )}
                     </div>
-                  </>
-                )}
+                    <p className="text-xs font-medium text-gray-500">Tổng số đơn mua hàng</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center flex-1">
+                  <div className="bg-amber-50 p-2.5 rounded-full mr-3 flex-shrink-0">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 text-amber-500"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M19 12H5"></path>
+                      <path d="M12 19l-7-7 7-7"></path>
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-gray-600 mb-1 mt-5">
+                      Đơn bán hàng <span className="text-gray-500 font-normal">(Hiện tại)</span>
+                    </p>
+                    <div className="flex items-baseline gap-2 mb-1">
+                      <h3 className="text-2xl font-bold text-gray-900">{salesOrdersStats.current.toLocaleString("vi-VN")}</h3>
+                      <span className="text-sm font-semibold text-gray-600">đơn</span>
+                      {salesOrdersStats.change !== 0 && (
+                        <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${salesOrdersStats.change > 0
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-red-100 text-red-700'
+                          }`}>
+                          {salesOrdersStats.change > 0 ? '+' : ''}{salesOrdersStats.change}%
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs font-medium text-gray-500">Tổng số đơn bán hàng</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center flex-1">
+                  <div className="bg-cyan-50 p-2.5 rounded-full mr-3 flex-shrink-0">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 text-cyan-500"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                      <line x1="16" y1="2" x2="16" y2="6"></line>
+                      <line x1="8" y1="2" x2="8" y2="6"></line>
+                      <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-gray-600 mb-1 mt-5">
+                      Tồn kho <span className="text-gray-500 font-normal">(Hiện tại)</span>
+                    </p>
+                    {inventoryLoading ? (
+                      <div className="flex items-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-cyan-500 mr-2"></div>
+                        <span className="text-xs font-medium text-gray-500">Đang tải...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-baseline gap-2 mb-1">
+                          <h3 className="text-2xl font-bold text-gray-900">{inventoryStats.current.toLocaleString("vi-VN")}</h3>
+                          <span className="text-sm font-semibold text-gray-600">thùng</span>
+                          {inventoryStats.change !== 0 && (
+                            <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${inventoryStats.change > 0
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-red-100 text-red-700'
+                              }`}>
+                              {inventoryStats.change > 0 ? '+' : ''}{inventoryStats.change}%
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs font-medium text-gray-500">Tổng số lượng tồn kho</p>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-4">
-              <p className="text-sm text-gray-500 mb-2 mt-5">Hoạt động hôm nay</p>
+            <CardContent className="pt-2 pb-4 px-4">
+              <p className="text-xs font-semibold text-gray-600 mb-2 mt-3">Hoạt động hôm nay</p>
               {activityLoading ? (
-                <div className="flex items-center justify-center h-20">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500"></div>
+                <div className="flex items-center justify-center h-16">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-orange-500"></div>
                 </div>
               ) : (
-                <div className="flex justify-between mb-2">
-                  <div className="text-center">
-                    <div className="bg-blue-500 text-white rounded-full w-10 h-10 flex items-center justify-center mx-auto mb-1">
-                      <span>{activityStats.emptyAreas}</span>
+                <div className="flex justify-between gap-2">
+                  <div className="text-center flex-1">
+                    <div className="bg-blue-500 text-white rounded-full w-9 h-9 flex items-center justify-center mx-auto mb-1">
+                      <span className="text-sm font-bold">{activityStats.emptyAreas}</span>
                     </div>
-                    <p className="text-xs">
+                    <p className="text-xs font-semibold text-gray-700">
                       Khu vực
                       <br />
-                      Chưa đầy
+                      <span className="font-medium text-gray-600">Chưa đầy</span>
                     </p>
                   </div>
-                  <div className="text-center">
-                    <div className="bg-orange-500 text-white rounded-full w-10 h-10 flex items-center justify-center mx-auto mb-1">
-                      <span>{activityStats.fullAreas}</span>
+                  <div className="text-center flex-1">
+                    <div className="bg-orange-500 text-white rounded-full w-9 h-9 flex items-center justify-center mx-auto mb-1">
+                      <span className="text-sm font-bold">{activityStats.fullAreas}</span>
                     </div>
-                    <p className="text-xs">
+                    <p className="text-xs font-semibold text-gray-700">
                       Khu vực
                       <br />
-                      Đầy
+                      <span className="font-medium text-gray-600">Đầy</span>
                     </p>
                   </div>
-                  <div className="text-center">
-                    <div className="bg-green-500 text-white rounded-full w-10 h-10 flex items-center justify-center mx-auto mb-1">
-                      <span>{activityStats.products}</span>
+                  <div className="text-center flex-1">
+                    <div className="bg-green-500 text-white rounded-full w-9 h-9 flex items-center justify-center mx-auto mb-1">
+                      <span className="text-sm font-bold">{activityStats.products}</span>
                     </div>
-                    <p className="text-xs">Hàng hóa</p>
+                    <p className="text-xs font-semibold text-gray-700">Hàng hóa</p>
                   </div>
                 </div>
               )}
