@@ -29,6 +29,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public string CategoryName { get; set; }
             public int SupplierId { get; set; }
             public string CompanyName { get; set; }
+            public string BrandName { get; set; }
         }
 
         public class BackOrderResponseCreateDto

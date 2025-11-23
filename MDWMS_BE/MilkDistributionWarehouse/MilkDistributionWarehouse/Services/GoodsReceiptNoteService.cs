@@ -27,13 +27,15 @@ namespace MilkDistributionWarehouse.Services
         private readonly IGoodsReceiptNoteDetailService _goodsReceiptNoteDetailService;
         private readonly IPurchaseOrderRepositoy _purchaseOrderRepository;
         private readonly IInventoryLedgerService _inventoryLedgerService;
+        private readonly IStocktakingSheetRepository _stocktakingSheetRepository;
 
         public GoodsReceiptNoteService(IGoodsReceiptNoteRepository goodsReceiptNoteRepository,
             IMapper mapper, IPurchaseOrderDetailRepository purchaseOrderDetailRepository,
             IGoodsReceiptNoteDetailRepository goodsReceiptNoteDetailRepository, IUnitOfWork unitOfWork,
             IGoodsReceiptNoteDetailService goodsReceiptNoteDetailService,
             IPurchaseOrderRepositoy purchaseOrderRepository,
-            IInventoryLedgerService inventoryLedgerService)
+            IInventoryLedgerService inventoryLedgerService,
+            IStocktakingSheetRepository stocktakingSheetRepository)
         {
             _goodsReceiptNoteRepository = goodsReceiptNoteRepository;
             _mapper = mapper;
@@ -43,12 +45,16 @@ namespace MilkDistributionWarehouse.Services
             _goodsReceiptNoteDetailService = goodsReceiptNoteDetailService;
             _purchaseOrderRepository = purchaseOrderRepository;
             _inventoryLedgerService = inventoryLedgerService;
+            _stocktakingSheetRepository = stocktakingSheetRepository;
         }
 
         public async Task<(string, GoodsReceiptNoteDto?)> CreateGoodsReceiptNote(GoodsReceiptNoteCreate create, int? userId)
         {
             try
             {
+                if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                    throw new Exception("Không thể tạo phiếu nhập kho khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser());
+
                 var purchaseOrderDetails = await _purchaseOrderDetailRepository.GetPurchaseOrderDetail()
                 .Where(pod => pod.PurchaseOderId.Equals(create.PurchaseOderId)).ToListAsync();
 
@@ -107,6 +113,9 @@ namespace MilkDistributionWarehouse.Services
 
         public async Task<(string, T?)> UpdateGRNStatus<T>(T update, int? userId) where T : GoodsReceiptNoteUpdateStatus
         {
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                return ("Không thể cập nhật phiếu nhập kho khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser(), default);
+
             var grn = await _goodsReceiptNoteRepository.GetGoodsReceiptNoteById(update.GoodsReceiptNoteId);
 
             if (grn == null) return ("GRN is not exist.", default);
