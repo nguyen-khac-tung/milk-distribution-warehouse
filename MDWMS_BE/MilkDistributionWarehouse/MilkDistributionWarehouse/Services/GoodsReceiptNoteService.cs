@@ -176,6 +176,10 @@ namespace MilkDistributionWarehouse.Services
                     }
                 }
 
+                await HandleGRNStatusChangeNotification(grn);
+
+                await HandleStatusChangeNotification(grn.PurchaseOder);
+
                 return ("", update);
             }
             catch (Exception ex)
@@ -240,6 +244,43 @@ namespace MilkDistributionWarehouse.Services
                 return "Chỉ có thể nộp đơn khi mà tất cả các mục nhập kho chi tiết ở trạng thái Đã kiểm tra";
 
             return "";
+        }
+
+        private async Task HandleGRNStatusChangeNotification(GoodsReceiptNote grn)
+        {
+            var notificationToCreate = new NotificationCreateDto();
+            switch(grn.Status)             {
+                case GoodsReceiptNoteStatus.PendingApproval:
+                    notificationToCreate.UserId = grn.PurchaseOder.ArrivalConfirmedBy;
+                    notificationToCreate.Title = "Phiếu nhập kho chờ duyệt";
+                    notificationToCreate.Content = $"Phiếu nhập kho {grn.GoodsReceiptNoteId} đang chờ duyệt.";
+                    notificationToCreate.EntityType = NotificationEntityType.GoodsReceiptNote;
+                    notificationToCreate.EntityId = grn.PurchaseOderId;
+                    break;
+                case GoodsReceiptNoteStatus.Completed:
+                    notificationToCreate.UserId = grn.PurchaseOder.AssignTo;
+                    notificationToCreate.Title = "Phiếu nhập kho hoàn thành";
+                    notificationToCreate.Content = $"Phiếu nhập kho {grn.GoodsReceiptNoteId} đã được hoàn thành.";
+                    notificationToCreate.EntityType = NotificationEntityType.GoodsReceiptNote;
+                    notificationToCreate.EntityId = grn.PurchaseOderId;
+                    break;
+                default:
+                    break;
+            }
+
+        }
+        private async Task HandleStatusChangeNotification(PurchaseOrder purchaseOder)
+        {
+            var notificationToCreate = new NotificationCreateDto();
+            if(purchaseOder.Status == PurchaseOrderStatus.Inspected)
+            {
+                notificationToCreate.UserId = purchaseOder.ArrivalConfirmedBy;
+                notificationToCreate.Title = "Đơn đặt hàng đã được kiểm tra";
+                notificationToCreate.Content = $"Đơn đặt hàng {purchaseOder.PurchaseOderId} đã được kiểm tra.";
+                notificationToCreate.EntityType = NotificationEntityType.PurchaseOrder;
+                notificationToCreate.EntityId = purchaseOder.PurchaseOderId;
+            }
+
         }
 
     }

@@ -170,6 +170,10 @@ namespace MilkDistributionWarehouse.Services
                 if (resultCreate == 0)
                     throw new Exception("Tạo phiếu kiểm kê thất bại.".ToMessageForUser());
 
+                var (msgResultCreateAreas, _) = await _stocktakingAreaService.CreateStocktakingAreaBulk(stocktakingSheetMap.StocktakingSheetId, create.AreaIds);
+                if (!string.IsNullOrEmpty(msgResultCreateAreas))
+                    throw new Exception(msgResultCreateAreas);
+
                 await _unitOfWork.CommitTransactionAsync();
                 return ("", new StocktakingSheeteResponse { StocktakingSheetId = stocktakingSheetMap.StocktakingSheetId });
             }
@@ -364,7 +368,7 @@ namespace MilkDistributionWarehouse.Services
             if (sheet.Status != StocktakingStatus.Draft)
                 return "Chỉ đươc chuyển sang trạng thái Đã phân công khi phiếu kiểm kê ở trạng thái Nháp.".ToMessageForUser();
 
-            var (msg, _) = await _stocktakingAreaService.CreateStocktakingAreaBulk(assignStatus.StocktakingSheetId, assignStatus.StocktakingAreaAssign);
+            var (msg, _) = await _stocktakingAreaService.UpdateStocktakingAreaBulk(assignStatus.StocktakingSheetId, assignStatus.StocktakingAreaAssign, "Assign");
             if (!string.IsNullOrEmpty(msg))
                 return msg;
 
@@ -383,7 +387,7 @@ namespace MilkDistributionWarehouse.Services
             if (sheet.Status != StocktakingStatus.Assigned)
                 return "Chỉ đươc được phân công lại khi phiếu kiểm kê ở trạng thái Đã phân công.".ToMessageForUser();
 
-            var (msg, _) = await _stocktakingAreaService.UpdateStocktakingAreaBulk(sheet.StocktakingSheetId, reAssingStatus.StocktakingAreaReAssign);
+            var (msg, _) = await _stocktakingAreaService.UpdateStocktakingAreaBulk(sheet.StocktakingSheetId, reAssingStatus.StocktakingAreaReAssign, "ReAssign");
             if (!string.IsNullOrEmpty(msg))
                 return msg;
 
@@ -475,8 +479,6 @@ namespace MilkDistributionWarehouse.Services
             var updateMessage = await _stocktakingStatusDomainService.UpdateSheetStatusAsync(sheet, targetStatus);
             if (!string.IsNullOrEmpty(updateMessage))
                 return updateMessage;
-
-            //Check dừng các hoạt động nhập, xuất
 
             return string.Empty;
         }
