@@ -213,7 +213,7 @@ namespace MilkDistributionWarehouse.Services
                 UserId = goodsReceiptNote.PurchaseOder.AssignTo,
                 Title = "Phiếu nhập kho bị từ chối",
                 Content = $"Phiếu nhập kho {goodsReceiptNote.GoodsReceiptNoteId} được yêu cầu kiểm tra lại.",
-                EntityId = goodsReceiptNote.GoodsReceiptNoteId,
+                EntityId = goodsReceiptNote.PurchaseOderId,
                 EntityType = NotificationEntityType.GoodsReceiptNote,
                 Category = NotificationCategory.Important
             };
