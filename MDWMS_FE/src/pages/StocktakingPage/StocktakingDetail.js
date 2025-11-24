@@ -5,7 +5,7 @@ import { Button } from '../../components/ui/button';
 import { ArrowLeft, FileText, Calendar, User, Hash, Clock, Users, Play, Edit, MapPin, Thermometer, Droplets, Sun, Package } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
-import { getStocktakingDetail } from '../../services/StocktakingService';
+import { getStocktakingDetail, inProgressStocktaking } from '../../services/StocktakingService';
 import { extractErrorMessage } from '../../utils/Validation';
 import StatusDisplay, { STOCKTAKING_STATUS } from '../../components/StocktakingComponents/StatusDisplay';
 import AssignAreaModal from '../../components/StocktakingComponents/AssignAreaModal';
@@ -13,6 +13,7 @@ import AssignSingleAreaModal from '../../components/StocktakingComponents/Assign
 import AssignSingleAreaModalForCreate from '../../components/StocktakingComponents/AssignSingleAreaModalForCreate';
 import AssignSingleAreaModalForReassign from '../../components/StocktakingComponents/AssignSingleAreaModalForReassign';
 import StartStocktakingModal from '../../components/StocktakingComponents/StartStocktakingModal';
+import SelectAreaModal from '../../components/StocktakingComponents/SelectAreaModal';
 import { PERMISSIONS } from '../../utils/permissions';
 import PermissionWrapper from '../../components/Common/PermissionWrapper';
 import { usePermissions } from '../../hooks/usePermissions';
@@ -38,6 +39,7 @@ const StocktakingDetail = () => {
     // Start stocktaking modal state
     const [showStartStocktakingModal, setShowStartStocktakingModal] = useState(false);
     const [startStocktakingLoading, setStartStocktakingLoading] = useState(false);
+    const [showSelectAreaModal, setShowSelectAreaModal] = useState(false);
 
     useEffect(() => {
         const fetchStocktakingDetail = async () => {
@@ -154,7 +156,55 @@ const StocktakingDetail = () => {
     };
 
     const handleStartStocktaking = () => {
-        setShowStartStocktakingModal(true);
+        // Kiểm tra số lượng khu vực
+        const totalAreas = stocktaking?.stocktakingAreas?.length || 0;
+        
+        // Nếu có 2+ khu vực, hiển thị modal chọn khu vực
+        if (totalAreas >= 2) {
+            setShowSelectAreaModal(true);
+        } else {
+            // Nếu chỉ có 1 khu vực, hiển thị modal bắt đầu kiểm kê để xác nhận
+            setShowStartStocktakingModal(true);
+        }
+    };
+
+    const handleSelectAreaConfirm = async (areaId) => {
+        if (!stocktaking?.stocktakingSheetId) {
+            window.showToast?.('Không tìm thấy ID phiếu kiểm kê', 'error');
+            return;
+        }
+
+        // Đảm bảo areaId là string và đúng format
+        const stocktakingAreaId = String(areaId);
+        console.log('handleSelectAreaConfirm - Received areaId:', {
+            original: areaId,
+            converted: stocktakingAreaId,
+            type: typeof areaId
+        });
+
+        try {
+            setStartStocktakingLoading(true);
+            // Gọi API InProgress để update trạng thái
+            await inProgressStocktaking({
+                stocktakingSheetId: stocktaking.stocktakingSheetId
+            });
+
+            // Hiển thị thông báo thành công
+            window.showToast?.('Bắt đầu quá trình kiểm kê thành công!', 'success');
+
+            // Đóng modal chọn khu vực
+            setShowSelectAreaModal(false);
+
+            // Navigate sang trang StocktakingArea với stocktakingSheetId và stocktakingAreaId
+            console.log('Navigating with stocktakingAreaId:', stocktakingAreaId);
+            navigate(`/stocktaking-area/${stocktaking.stocktakingSheetId}?stocktakingAreaId=${stocktakingAreaId}`);
+        } catch (error) {
+            console.error('Error starting stocktaking process:', error);
+            const errorMessage = extractErrorMessage(error) || 'Có lỗi xảy ra khi bắt đầu quá trình kiểm kê';
+            window.showToast?.(errorMessage, 'error');
+        } finally {
+            setStartStocktakingLoading(false);
+        }
     };
 
     const handleStartStocktakingConfirm = async () => {
@@ -581,13 +631,24 @@ const StocktakingDetail = () => {
 
                 {/* Start Stocktaking Modal - for Warehouse Staff */}
                 {stocktaking?.status === STOCKTAKING_STATUS.Assigned && hasPermission(PERMISSIONS.STOCKTAKING_IN_PROGRESS) && (
-                    <StartStocktakingModal
-                        isOpen={showStartStocktakingModal}
-                        onClose={() => setShowStartStocktakingModal(false)}
-                        onConfirm={handleStartStocktakingConfirm}
-                        stocktaking={stocktaking}
-                        loading={startStocktakingLoading}
-                    />
+                    <>
+                        {/* Modal chọn khu vực khi có 2+ khu vực - bắt đầu kiểm kê ngay sau khi chọn */}
+                        <SelectAreaModal
+                            isOpen={showSelectAreaModal}
+                            onClose={() => setShowSelectAreaModal(false)}
+                            onConfirm={handleSelectAreaConfirm}
+                            stocktakingSheetId={stocktaking?.stocktakingSheetId || id}
+                            loading={startStocktakingLoading}
+                        />
+                        {/* Modal bắt đầu kiểm kê - chỉ hiển thị khi có 1 khu vực */}
+                        <StartStocktakingModal
+                            isOpen={showStartStocktakingModal}
+                            onClose={() => setShowStartStocktakingModal(false)}
+                            onConfirm={handleStartStocktakingConfirm}
+                            stocktaking={stocktaking}
+                            loading={startStocktakingLoading}
+                        />
+                    </>
                 )}
             </div>
         </div>
