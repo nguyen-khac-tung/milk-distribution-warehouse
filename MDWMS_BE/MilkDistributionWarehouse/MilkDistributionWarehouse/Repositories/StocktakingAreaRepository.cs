@@ -16,6 +16,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<int?> CreateStocktakingAreaBulk(List<StocktakingArea> creates);
         Task<int> UpdateStocktakingArea(StocktakingArea stocktakingArea);
         Task<int?> UpdateStocktakingAreaBulk(List<StocktakingArea> updates);
+        Task<int> DeleteStocktakingAreasAsync(List<StocktakingArea> deletes);
         Task<bool> IsStocktakingAreaAssignTo(int? areaId, string stocktakingSheetId, int assignTo);
         Task<bool> IsCheckStocktakingAreaExist(string stocktakingSheetId);
         Task<bool> IsCheckStockAreasCompleted(Guid stocktakingAreaId, string stocktakingSheetId);
@@ -33,6 +34,7 @@ namespace MilkDistributionWarehouse.Repositories
         public async Task<StocktakingArea?> GetStocktakingAreaByStocktakingAreaId (Guid stocktakingAreaId)
         {
             return await _context.StocktakingAreas
+                .Include(sa => sa.Area)
                 .Include(sa => sa.StocktakingLocations)
                 .FirstOrDefaultAsync(sa => sa.StocktakingAreaId == stocktakingAreaId);
         }
@@ -104,6 +106,20 @@ namespace MilkDistributionWarehouse.Repositories
                 _context.StocktakingAreas.UpdateRange(updates);
                 await _context.SaveChangesAsync();
                 return updates.Count;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        public async Task<int> DeleteStocktakingAreasAsync(List<StocktakingArea> deletes)
+        {
+            try
+            {
+                _context.StocktakingAreas.RemoveRange(deletes);
+                await _context.SaveChangesAsync();
+                return deletes.Count;
             }
             catch
             {

@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
@@ -21,6 +22,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, StocktakingAreaReAssignStatus?)> UpdateStocktakingReAssignTo(StocktakingAreaReAssignStatus update);
         Task<(string, StocktakingAreaResponse?)> UpdateStocktakingAreaStatus<T>(T update) where T : StocktakingAreaUpdateStatus;
         Task<(string, StocktakingAreaApprovalResponse?)> UpdateStocktakingAreaApprovalStatus(StocktakingAreaApprovalStatus update);
+        Task<(string, StocktakingSheeteResponse?)> UpdateStocktakingAreaBulk(string stocktakingSheetId, List<StocktakingAreaCreateDto> updates);
     }
     public class StocktakingAreaService : IStocktakingAreaService
     {
@@ -33,10 +35,12 @@ namespace MilkDistributionWarehouse.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IStocktakingStatusDomainService _stocktakingStatusDomainService;
         private readonly IPalletRepository _palletRepository;
+        private readonly INotificationService _notificationService;
         public StocktakingAreaService(IStocktakingAreaRepository stocktakingAreaRepository, IAreaRepository areaRepository, IMapper mapper,
             IStocktakingLocationRepository stocktakingLocationRepository, IStocktakingPalletRepository stocktakingPalletRepository,
             IStocktakingSheetRepository stocktakingSheetRepository, IUnitOfWork unitOfWork,
-            IStocktakingStatusDomainService stocktakingStatusDomainService, IPalletRepository palletRepository)
+            IStocktakingStatusDomainService stocktakingStatusDomainService, IPalletRepository palletRepository,
+            INotificationService notificationService)
         {
             _stocktakingAreaRepository = stocktakingAreaRepository;
             _areaRepository = areaRepository;
@@ -47,6 +51,7 @@ namespace MilkDistributionWarehouse.Services
             _unitOfWork = unitOfWork;
             _stocktakingStatusDomainService = stocktakingStatusDomainService;
             _palletRepository = palletRepository;
+            _notificationService = notificationService;
         }
 
         public async Task<(string, List<StocktakingAreaDetailDto>?)> GetStocktakingAreaByStocktakingSheetId(string stoctakingSheetId, Guid? stocktakingAreaId, int? userId)
@@ -56,7 +61,7 @@ namespace MilkDistributionWarehouse.Services
 
             var stocktakingArea = new List<StocktakingArea>();
 
-            if (userId.HasValue && stocktakingAreaId != Guid.NewGuid())      
+            if (userId.HasValue && stocktakingAreaId != Guid.NewGuid())
                 stocktakingArea = await _stocktakingAreaRepository.GetStocktakingAreaByStocktakingSheetIdAndAssignTo(stoctakingSheetId, stocktakingAreaId, userId.Value);
             else
                 stocktakingArea = await _stocktakingAreaRepository.GetStocktakingAreaByStocktakingSheetIdAndAssignTo(stoctakingSheetId, null, null);
@@ -104,6 +109,71 @@ namespace MilkDistributionWarehouse.Services
             return ("", new StocktakingSheeteResponse { StocktakingSheetId = stocktakingSheetId });
         }
 
+        public async Task<(string, StocktakingSheeteResponse?)> UpdateStocktakingAreaBulk(string stocktakingSheetId, List<StocktakingAreaCreateDto> updates)
+        {
+            if (updates == null || !updates.Any())
+                return ("Danh sách khu vực cập nhật không được để trống.".ToMessageForUser(), default);
+
+            var stocktakingAreas = await _stocktakingAreaRepository.GetStocktakingAreasByStocktakingSheetId(stocktakingSheetId);
+            var existingAreaIds = stocktakingAreas
+                .Where(sa => sa.AreaId.HasValue)
+                .Select(sa => sa.AreaId!.Value)
+                .ToHashSet();
+
+            var requestedAreaIds = updates
+                .Select(u => u.AreaId)
+                .Distinct()
+                .ToList();
+
+            var areasToRemove = stocktakingAreas
+                .Where(sa => sa.AreaId.HasValue && !requestedAreaIds.Contains(sa.AreaId.Value))
+                .ToList();
+
+            var areaIdsToCreate = requestedAreaIds
+                .Where(areaId => !existingAreaIds.Contains(areaId))
+                .ToList();
+
+            if (!areasToRemove.Any() && !areaIdsToCreate.Any())
+                return ("", new StocktakingSheeteResponse { StocktakingSheetId = stocktakingSheetId });
+
+            var stocktakingAreasToCreate = areaIdsToCreate
+                .Select(areaId =>
+                {
+                    var dto = new StocktakingAreaCreateDto { AreaId = areaId };
+                    var entity = _mapper.Map<StocktakingArea>(dto);
+                    entity.StocktakingSheetId = stocktakingSheetId;
+                    return entity;
+                })
+                .ToList();
+
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                if (areasToRemove.Any())
+                {
+                    var deleteResult = await _stocktakingAreaRepository.DeleteStocktakingAreasAsync(areasToRemove);
+                    if (deleteResult == 0)
+                        throw new Exception("Xoá khu vực kiểm kê thất bại.".ToMessageForUser());
+                }
+
+                if (stocktakingAreasToCreate.Any())
+                {
+                    var createResult = await _stocktakingAreaRepository.CreateStocktakingAreaBulk(stocktakingAreasToCreate);
+                    if (createResult == 0)
+                        throw new Exception("Thêm mới khu vực kiểm kê thất bại.".ToMessageForUser());
+                }
+
+                await _unitOfWork.CommitTransactionAsync();
+                return ("", new StocktakingSheeteResponse { StocktakingSheetId = stocktakingSheetId });
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return (ex.Message, default);
+            }
+        }
+
         public async Task<(string, StocktakingSheeteResponse?)> UpdateStocktakingAreaBulk(string stocktakingSheetId, List<StocktakingAreaUpdate> updates, string updateType)
         {
             var stocktakingAreas = await _stocktakingAreaRepository.GetStocktakingAreasByStocktakingSheetId(stocktakingSheetId);
@@ -111,7 +181,7 @@ namespace MilkDistributionWarehouse.Services
             if (!stocktakingAreas.Any())
                 return ("Danh sách kiểm kê khu vực không tồn tại.".ToMessageForUser(), default);
 
-            if(updateType.Equals("ReAssign"))
+            if (updateType.Equals("ReAssign"))
             {
                 var validationReAssignStocktakingArea = await ValidationReAssignStocktakingArea(stocktakingAreas, updates);
                 if (!string.IsNullOrEmpty(validationReAssignStocktakingArea))
@@ -158,6 +228,8 @@ namespace MilkDistributionWarehouse.Services
                 var msg = await _stocktakingStatusDomainService.UpdateAreaStatusAsync(stocktakingArea.StocktakingAreaId, (int)targetStatus);
                 if (!string.IsNullOrEmpty(msg)) return (msg, default);
 
+                await HandleStockAreaNotificationStatusChange(stocktakingArea);
+
                 return ("", new StocktakingAreaResponse { StocktakingAreaId = update.StocktakingAreaId });
             }
             catch (Exception ex)
@@ -198,6 +270,8 @@ namespace MilkDistributionWarehouse.Services
                     return (msg, default(StocktakingAreaApprovalResponse?));
 
                 await HandleUpdateStockSheetApproval(update.StocktakingAreaId, stocktakingArea.StocktakingSheetId);
+
+                await HandleStockAreaNotificationStatusChange(stocktakingArea);
 
                 return ("", validationStocktakingLocationsToApproval);
             });
@@ -299,7 +373,7 @@ namespace MilkDistributionWarehouse.Services
                 .ToList();
 
             var expectedPallets = await _palletRepository.GetActivePalletIdsByLocationId(locationIds);
-            
+
             var expectedPalletMap = expectedPallets
                 .Where(p => p.LocationId.HasValue)
                 .GroupBy(p => p.LocationId.Value)
@@ -330,12 +404,12 @@ namespace MilkDistributionWarehouse.Services
             }
 
             var palletToScannedLocationInfo = allScannedPallets
-                .Where(sp => sp.StocktakingLocationId.HasValue && 
-                            (sp.Status == StockPalletStatus.Matched || 
-                             sp.Status == StockPalletStatus.Surplus || 
+                .Where(sp => sp.StocktakingLocationId.HasValue &&
+                            (sp.Status == StockPalletStatus.Matched ||
+                             sp.Status == StockPalletStatus.Surplus ||
                              sp.Status == StockPalletStatus.Mislocated))
                 .GroupBy(sp => sp.PalletId)
-                .ToDictionary(g => g.Key, g => 
+                .ToDictionary(g => g.Key, g =>
                 {
                     var pallet = g.First();
                     var location = stocktakingLocations.FirstOrDefault(l => l.StocktakingLocationId == pallet.StocktakingLocationId);
@@ -537,6 +611,43 @@ namespace MilkDistributionWarehouse.Services
             {
                 await _unitOfWork.RollbackTransactionAsync();
                 return (ex.Message, default);
+            }
+        }
+
+        private async Task HandleStockAreaNotificationStatusChange(StocktakingArea stocktakingArea)
+        {
+            var notificationToCreate = new NotificationCreateDto();
+
+            switch (stocktakingArea.Status)
+            {
+                case StockAreaStatus.Pending:
+                    notificationToCreate.UserId = stocktakingArea.StocktakingSheet.CreatedBy;
+                    notificationToCreate.Title = $"Khu vực {stocktakingArea.Area.AreaName} đang tiến hành kiểm kê";
+                    notificationToCreate.Content = $"Khu vực {stocktakingArea.Area.AreaName} trong phiếu kiểm kê {stocktakingArea.StocktakingSheetId} đã được chuyển sang trạng thái Đang kiểm kê.";
+                    notificationToCreate.EntityType = NotificationEntityType.StocktakingSheet;
+                    notificationToCreate.EntityId = stocktakingArea.StocktakingSheetId;
+                    break;
+                case StockAreaStatus.PendingApproval:
+                    notificationToCreate.UserId = stocktakingArea.StocktakingSheet.CreatedBy;
+                    notificationToCreate.Title = $"Khu vực {stocktakingArea.Area.AreaName} chờ duyệt kiểm kê";
+                    notificationToCreate.Content = $"Khu vực {stocktakingArea.Area.AreaName} trong phiếu kiểm kê {stocktakingArea.StocktakingSheetId} đã được chuyển sang trạng thái Chờ duyệt.";
+                    notificationToCreate.EntityType = NotificationEntityType.StocktakingSheet;
+                    notificationToCreate.EntityId = stocktakingArea.StocktakingSheetId;
+                    break;
+                case StockAreaStatus.Completed:
+                    notificationToCreate.UserId = stocktakingArea.AssignTo;
+                    notificationToCreate.Title = $"Khu vực {stocktakingArea.Area.AreaName} đã hoàn thành kiểm kê";
+                    notificationToCreate.Content = $"Khu vực {stocktakingArea.Area.AreaName} trong phiếu kiểm kê {stocktakingArea.StocktakingSheetId} đã được hoàn thành kiểm kê.";
+                    notificationToCreate.EntityType = NotificationEntityType.StocktakingSheet;
+                    notificationToCreate.EntityId = stocktakingArea.StocktakingSheetId;
+                    notificationToCreate.Category = NotificationCategory.Important;
+                    break;
+                default:
+                    break;
+            }
+            if (notificationToCreate != null && notificationToCreate.UserId.HasValue)
+            {
+                await _notificationService.CreateNotification(notificationToCreate);
             }
         }
     }

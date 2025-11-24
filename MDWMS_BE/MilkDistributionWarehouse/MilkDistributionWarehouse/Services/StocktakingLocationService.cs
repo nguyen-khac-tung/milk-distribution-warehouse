@@ -28,10 +28,12 @@ namespace MilkDistributionWarehouse.Services
         private readonly IStocktakingPalletRepository _stocktakingPalletRepository;
         private readonly IStocktakingAreaRepository _stocktakingAreaRepository;
         private readonly IStocktakingStatusDomainService _stocktakingStatusDomainService;
+        private readonly INotificationService _notificationService;
         public StocktakingLocationService(IStocktakingLocationRepository stocktakingLocationRepository, IMapper mapper,
             ILocationRepository locationRepository, IStocktakingPalletService stocktakingPalletService, IUnitOfWork unitOfWork,
             IStocktakingPalletRepository stocktakingPalletRepository, IStocktakingAreaRepository stocktakingAreaRepository,
-            IStocktakingStatusDomainService stocktakingStatusDomainService)
+            IStocktakingStatusDomainService stocktakingStatusDomainService, 
+            INotificationService notificationService)
         {
             _stocktakingLocationRepository = stocktakingLocationRepository;
             _mapper = mapper;
@@ -41,6 +43,7 @@ namespace MilkDistributionWarehouse.Services
             _stocktakingPalletRepository = stocktakingPalletRepository;
             _stocktakingAreaRepository = stocktakingAreaRepository;
             _stocktakingStatusDomainService = stocktakingStatusDomainService;
+            _notificationService = notificationService;
         }
 
         public async Task<(string, StocktakingLocationCreate?)> CreateStocktakingLocationBulk(StocktakingLocationCreate create)
@@ -176,11 +179,17 @@ namespace MilkDistributionWarehouse.Services
 
                 var stocktakingAreaId = stocktakingLocations.FirstOrDefault().StocktakingAreaId;
 
+
                 msg = await UpdateStocktakingAreaStatus((Guid)stocktakingAreaId, StockAreaStatus.Pending);
                 if (!string.IsNullOrEmpty(msg))
                     throw new Exception(msg);
 
                 await _unitOfWork.CommitTransactionAsync();
+
+                var stocktakingArea = await _stocktakingAreaRepository.GetStocktakingAreaByStocktakingAreaId((Guid)stocktakingAreaId);
+
+                await HandleStocktakingLocationNotificationStatusChange(stocktakingArea);
+
                 return ("", update);
             }
             catch (Exception ex)
@@ -294,5 +303,24 @@ namespace MilkDistributionWarehouse.Services
             return "";
         }
 
+        private async Task HandleStocktakingLocationNotificationStatusChange(StocktakingArea stocktakingArea)
+        {
+            var notificationToCreate = new NotificationCreateDto();
+
+            if (stocktakingArea.Status == StockAreaStatus.Pending)
+            {
+                notificationToCreate.UserId = stocktakingArea.AssignTo;
+                notificationToCreate.Title = "Kiểm kê vị trí bị từ chối";
+                notificationToCreate.Content = $"Khu vực kiểm kê của bạn đã bị từ chối ở một số khu vực. Vui lòng kiểm tra lại.";
+                notificationToCreate.EntityType = NotificationEntityType.StocktakingSheet;
+                notificationToCreate.EntityId = stocktakingArea.StocktakingSheetId;
+                notificationToCreate.Category = NotificationCategory.Important;
+            }
+
+            if (notificationToCreate.UserId != null)
+            {
+                await _notificationService.CreateNotification(notificationToCreate);
+            }
+        }
     }
 }
