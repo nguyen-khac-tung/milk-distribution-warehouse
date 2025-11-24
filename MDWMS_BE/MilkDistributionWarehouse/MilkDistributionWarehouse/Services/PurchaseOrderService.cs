@@ -667,7 +667,8 @@ namespace MilkDistributionWarehouse.Services
                         Title = "Đơn mua hàng bị từ chối",
                         Content = $"Đơn mua hàng {purchaseOrder.PurchaseOderId} đã bị từ chối.",
                         EntityType = NotificationEntityType.PurchaseOrder,
-                        EntityId = purchaseOrder.PurchaseOderId
+                        EntityId = purchaseOrder.PurchaseOderId,
+                        Category = NotificationCategory.Important
                     });
                     break;
                 case PurchaseOrderStatus.Ordered:
@@ -689,7 +690,7 @@ namespace MilkDistributionWarehouse.Services
                         notificationStatusChange.Add(new NotificationCreateDto
                         {
                             UserId = salesManager.UserId,
-                            Title = "Đơn mua hàng chờ duyệt",
+                            Title = "Đơn mua hàng đã được đặt",
                             Content = $"Đơn mua hàng {purchaseOrder.PurchaseOderId} đã được đặt.",
                             EntityType = NotificationEntityType.PurchaseOrder,
                             EntityId = purchaseOrder.PurchaseOderId
@@ -700,10 +701,10 @@ namespace MilkDistributionWarehouse.Services
                     notificationStatusChange.Add(new NotificationCreateDto
                     {
                         UserId = purchaseOrder.AssignTo,
-                        Title = "Đơn mua hàng đang chờ đến",
-                        Content = $"Đơn mua hàng {purchaseOrder.PurchaseOderId} đang chờ đến.",
+                        Title = "Đơn mua hàng đã được phân công và đang chờ đến",
+                        Content = $"Bạn đã được phân công nhận đơn mua hàng {purchaseOrder.PurchaseOderId} và đang chờ đến.",
                         EntityType = NotificationEntityType.PurchaseOrder,
-                        EntityId = purchaseOrder.PurchaseOderId
+                        EntityId = purchaseOrder.PurchaseOderId,
                     });
                     break;
                 case PurchaseOrderStatus.GoodsReceived:
@@ -716,7 +717,9 @@ namespace MilkDistributionWarehouse.Services
                             Title = "Đơn mua hàng đã được xác nhận đến",
                             Content = $"Đơn mua hàng {purchaseOrder.PurchaseOderId} đã được xác nhận đến.",
                             EntityType = NotificationEntityType.PurchaseOrder,
-                            EntityId = purchaseOrder.PurchaseOderId
+                            EntityId = purchaseOrder.PurchaseOderId,
+                            Category = NotificationCategory.Important
+                            
                         });
                     }
                     break;
@@ -757,7 +760,8 @@ namespace MilkDistributionWarehouse.Services
                         Title = "Đơn mua hàng đã hoàn thành",
                         Content = $"Đơn mua hàng {purchaseOrder.PurchaseOderId} đã hoàn thành.",
                         EntityType = NotificationEntityType.PurchaseOrder,
-                        EntityId = purchaseOrder.PurchaseOderId
+                        EntityId = purchaseOrder.PurchaseOderId,
+                        Category = NotificationCategory.Important
                     });
                     notificationStatusChange.Add(new NotificationCreateDto
                     {
@@ -765,7 +769,8 @@ namespace MilkDistributionWarehouse.Services
                         Title = "Đơn mua hàng đã hoàn thành",
                         Content = $"Đơn mua hàng {purchaseOrder.PurchaseOderId} đã hoàn thành.",
                         EntityType = NotificationEntityType.PurchaseOrder,
-                        EntityId = purchaseOrder.PurchaseOderId
+                        EntityId = purchaseOrder.PurchaseOderId,
+                        Category = NotificationCategory.Important
                     });
                     notificationStatusChange.Add(new NotificationCreateDto
                     {
@@ -773,7 +778,8 @@ namespace MilkDistributionWarehouse.Services
                         Title = "Đơn mua hàng đã hoàn thành",
                         Content = $"Đơn mua hàng {purchaseOrder.PurchaseOderId} đã hoàn thành.",
                         EntityType = NotificationEntityType.PurchaseOrder,
-                        EntityId = purchaseOrder.PurchaseOderId
+                        EntityId = purchaseOrder.PurchaseOderId,
+                        Category = NotificationCategory.Important
                     });
                     break;
                 default:
