@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { ArrowLeft, FileText, Calendar, User, Hash, Clock, Users, Play, Edit, MapPin, Thermometer, Droplets, Sun } from 'lucide-react';
+import { ArrowLeft, FileText, Calendar, User, Hash, Clock, Users, Play, Edit, MapPin, Thermometer, Droplets, Sun, Package } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
 import { getStocktakingDetail } from '../../services/StocktakingService';
@@ -10,6 +10,8 @@ import { extractErrorMessage } from '../../utils/Validation';
 import StatusDisplay, { STOCKTAKING_STATUS } from '../../components/StocktakingComponents/StatusDisplay';
 import AssignAreaModal from '../../components/StocktakingComponents/AssignAreaModal';
 import AssignSingleAreaModal from '../../components/StocktakingComponents/AssignSingleAreaModal';
+import AssignSingleAreaModalForCreate from '../../components/StocktakingComponents/AssignSingleAreaModalForCreate';
+import AssignSingleAreaModalForReassign from '../../components/StocktakingComponents/AssignSingleAreaModalForReassign';
 import StartStocktakingModal from '../../components/StocktakingComponents/StartStocktakingModal';
 import { PERMISSIONS } from '../../utils/permissions';
 import PermissionWrapper from '../../components/Common/PermissionWrapper';
@@ -27,8 +29,11 @@ const StocktakingDetail = () => {
 
     // Assignment modal state
     const [showAssignModal, setShowAssignModal] = useState(false);
+    const [showSingleAreaModal, setShowSingleAreaModal] = useState(false);
+    const [showSingleAreaReassignModal, setShowSingleAreaReassignModal] = useState(false);
     const [isReassign, setIsReassign] = useState(false);
     const [areasToReassign, setAreasToReassign] = useState([]); // Danh sách khu vực cần phân công lại (nếu chỉ có 1 khu vực)
+    const [singleAreaIdToReassign, setSingleAreaIdToReassign] = useState(null); // areaId của khu vực duy nhất cần phân công lại
 
     // Start stocktaking modal state
     const [showStartStocktakingModal, setShowStartStocktakingModal] = useState(false);
@@ -83,8 +88,23 @@ const StocktakingDetail = () => {
         const isReassignMode = stocktaking?.status === STOCKTAKING_STATUS.Assigned;
         setIsReassign(isReassignMode);
 
-        // Kiểm tra trạng thái các khu vực khi reassign
-        let areasToReassignList = [];
+        // Nếu là Draft (chưa phân công)
+        if (!isReassignMode && stocktaking?.stocktakingAreas) {
+            const totalAreas = stocktaking.stocktakingAreas.length;
+
+            // Nếu chỉ có 1 khu vực, mở modal phân công 1 khu vực
+            if (totalAreas === 1) {
+                setShowSingleAreaModal(true);
+                return;
+            }
+            // Nếu có 2+ khu vực, mở modal phân công nhiều khu vực
+            if (totalAreas >= 2) {
+                setShowAssignModal(true);
+                return;
+            }
+        }
+
+        // Kiểm tra trạng thái các khu vực khi reassign (status là Assigned)
         if (isReassignMode && stocktaking?.stocktakingAreas) {
             // Đếm số khu vực có trạng thái "Đã Phân Công" (status = 1)
             const assignedAreas = stocktaking.stocktakingAreas.filter(
@@ -92,17 +112,28 @@ const StocktakingDetail = () => {
             );
             const totalAreas = stocktaking.stocktakingAreas.length;
 
-            // Nếu chỉ có 1 khu vực "Đã Phân Công", chỉ hiển thị khu vực đó
-            if (assignedAreas.length === 1 && totalAreas > 1) {
-                // Lấy areaId (int) để so sánh với API getStocktakingArea
-                areasToReassignList = assignedAreas.map(area => area.areaId);
+            // Nếu chỉ có 1 khu vực đã phân công, mở modal phân công lại 1 khu vực
+            if (assignedAreas.length === 1) {
+                const singleAreaId = assignedAreas[0].areaId;
+                setSingleAreaIdToReassign(singleAreaId);
+                setShowSingleAreaReassignModal(true);
+                return;
             }
-            // Nếu tất cả khu vực đều "Đã Phân Công" (assignedAreas.length === totalAreas), 
-            // giữ nguyên logic cũ (hiển thị tất cả, areasToReassignList = [])
-        }
 
-        setAreasToReassign(areasToReassignList);
-        setShowAssignModal(true);
+            // Nếu có 2+ khu vực đã phân công, mở modal phân công lại nhiều khu vực
+            if (assignedAreas.length >= 2) {
+                // Nếu chỉ có 1 khu vực "Đã Phân Công" trong tổng số nhiều khu vực, chỉ hiển thị khu vực đó
+                if (assignedAreas.length === 1 && totalAreas > 1) {
+                    const areasToReassignList = assignedAreas.map(area => area.areaId);
+                    setAreasToReassign(areasToReassignList);
+                } else {
+                    // Nếu tất cả khu vực đều "Đã Phân Công", hiển thị tất cả
+                    setAreasToReassign([]);
+                }
+                setShowAssignModal(true);
+                return;
+            }
+        }
     };
 
     const handleAssignmentSuccess = () => {
@@ -350,10 +381,46 @@ const StocktakingDetail = () => {
                                                                 Người được phân công
                                                             </div>
                                                             <div className="text-base font-bold text-slate-700">
-                                                                {area.assignName || `ID: ${area.assignTo || '-'}`}
+                                                                {!area.status || (!area.assignName && !area.assignTo)
+                                                                    ? 'Chưa phân công'
+                                                                    : (area.assignName || `ID: ${area.assignTo}`)
+                                                                }
                                                             </div>
                                                         </div>
                                                     </div>
+
+                                                    {/* Vị trí đã xếp pallet và chưa xếp pallet */}
+                                                    {(area.availableLocationCount !== undefined || area.unAvailableLocationCount !== undefined) && (
+                                                        <div className="border-t border-slate-200 pt-3">
+                                                            <div className="grid grid-cols-2 gap-2">
+                                                                {/* Vị trí đã xếp pallet */}
+                                                                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200">
+                                                                    <Package className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="text-xs text-blue-600 mb-0.5">
+                                                                            Vị trí đã xếp pallet
+                                                                        </div>
+                                                                        <div className="text-base font-bold text-blue-700">
+                                                                            {area.unAvailableLocationCount ?? 0}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Vị trí chưa xếp pallet */}
+                                                                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 border border-red-200">
+                                                                    <Package className="h-4 w-4 text-red-600 flex-shrink-0" />
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="text-xs text-red-600 mb-0.5">
+                                                                            Vị trí chưa xếp pallet
+                                                                        </div>
+                                                                        <div className="text-base font-bold text-red-700">
+                                                                            {area.availableLocationCount ?? 0}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
 
                                                     {/* Điều kiện bảo quản */}
                                                     {(area.temperatureMin !== null || area.humidityMin !== null || area.lightLevel) && (
@@ -458,28 +525,45 @@ const StocktakingDetail = () => {
                     <>
                         {stocktaking?.status === STOCKTAKING_STATUS.Draft && (
                             <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_VIEW_WM}>
-                                <AssignAreaModal
-                                    isOpen={showAssignModal}
-                                    onClose={() => setShowAssignModal(false)}
-                                    onSuccess={handleAssignmentSuccess}
-                                    stocktakingSheetId={stocktaking?.stocktakingSheetId || id}
-                                    isReassign={isReassign}
-                                    stocktaking={stocktaking}
-                                />
-                            </PermissionWrapper>
-                        )}
-                        {stocktaking?.status === STOCKTAKING_STATUS.Assigned && (
-                            <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_REASSIGN_AREA}>
-                                {areasToReassign.length === 1 ? (
-                                    <AssignSingleAreaModal
+                                {/* Nếu có 1 khu vực, hiển thị modal phân công 1 khu vực */}
+                                {stocktaking?.stocktakingAreas?.length === 1 ? (
+                                    <AssignSingleAreaModalForCreate
+                                        isOpen={showSingleAreaModal}
+                                        onClose={() => setShowSingleAreaModal(false)}
+                                        onSuccess={handleAssignmentSuccess}
+                                        stocktakingSheetId={stocktaking?.stocktakingSheetId || id}
+                                        areaId={stocktaking?.stocktakingAreas?.[0]?.areaId || null}
+                                    />
+                                ) : (
+                                    /* Nếu có 2+ khu vực, hiển thị modal phân công nhiều khu vực */
+                                    <AssignAreaModal
                                         isOpen={showAssignModal}
                                         onClose={() => setShowAssignModal(false)}
                                         onSuccess={handleAssignmentSuccess}
                                         stocktakingSheetId={stocktaking?.stocktakingSheetId || id}
+                                        isReassign={isReassign}
                                         stocktaking={stocktaking}
-                                        areaIdToReassign={areasToReassign[0]}
+                                    />
+                                )}
+                            </PermissionWrapper>
+                        )}
+                        {stocktaking?.status === STOCKTAKING_STATUS.Assigned && (
+                            <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_REASSIGN_AREA}>
+                                {/* Nếu có 1 khu vực đã phân công, hiển thị modal phân công lại 1 khu vực */}
+                                {singleAreaIdToReassign ? (
+                                    <AssignSingleAreaModalForReassign
+                                        isOpen={showSingleAreaReassignModal}
+                                        onClose={() => {
+                                            setShowSingleAreaReassignModal(false);
+                                            setSingleAreaIdToReassign(null);
+                                        }}
+                                        onSuccess={handleAssignmentSuccess}
+                                        stocktakingSheetId={stocktaking?.stocktakingSheetId || id}
+                                        stocktaking={stocktaking}
+                                        areaId={singleAreaIdToReassign}
                                     />
                                 ) : (
+                                    /* Nếu có 2+ khu vực đã phân công, hiển thị modal phân công lại nhiều khu vực */
                                     <AssignAreaModal
                                         isOpen={showAssignModal}
                                         onClose={() => setShowAssignModal(false)}

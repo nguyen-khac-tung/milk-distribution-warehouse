@@ -71,7 +71,8 @@ export const createStocktaking = async (data) => {
     try {
         const body = {
             startTime: data.startTime, // ISO string format
-            note: data.note || ""
+            note: data.note || "",
+            areaIds: data.areaIds || [] // Array of { areaId: number }
         };
 
         const res = await api.post("/StocktakingSheet/Create", body);
@@ -124,7 +125,8 @@ export const updateStocktaking = async (data) => {
         const body = {
             stocktakingSheetId: data.stocktakingSheetId,
             startTime: data.startTime, // ISO string format
-            note: data.note || ""
+            note: data.note || "",
+            areaIds: data.areaIds || [] // Array of { areaId: number }
         };
 
         const res = await api.put("/StocktakingSheet/Update", body);

@@ -774,12 +774,12 @@ export default function OrdersPage({ onClose }) {
                 <Table className="w-full">
                   <TableHeader>
                     <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-16">
+                      <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center w-8">
                         STT
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                        <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort(activeOrderType === "purchase" ? "supplierName" : "retailerName")}>
-                          <span>{activeOrderType === "purchase" ? "Nhà cung cấp" : "Khách hàng"}</span>
+                      <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left w-40">
+                        <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort(activeOrderType === "purchase" ? "supplierName" : "retailerName")}>
+                          <span>{activeOrderType === "purchase" ? "Nhà cung cấp" : "Nhà bán lẻ"}</span>
                           {sortField === (activeOrderType === "purchase" ? "supplierName" : "retailerName") ? (
                             sortAscending ? (
                               <ArrowUp className="h-4 w-4 text-orange-500" />
@@ -791,8 +791,8 @@ export default function OrdersPage({ onClose }) {
                           )}
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                        <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("goodsCode")}>
+                      <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left min-w-[140px]">
+                        <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("goodsCode")}>
                           <span>Mã hàng hóa</span>
                           {sortField === "goodsCode" ? (
                             sortAscending ? (
@@ -805,8 +805,8 @@ export default function OrdersPage({ onClose }) {
                           )}
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                        <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("goodsName")}>
+                      <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left w-40">
+                        <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("goodsName")}>
                           <span>Tên hàng hóa</span>
                           {sortField === "goodsName" ? (
                             sortAscending ? (
@@ -819,8 +819,11 @@ export default function OrdersPage({ onClose }) {
                           )}
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                        <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("totalPackageQuantity")}>
+                      <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center min-w-[140px]">
+                        Đơn vị/thùng
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center min-w-[110px]">
+                        <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("totalPackageQuantity")}>
                           <span>Số thùng</span>
                           {sortField === "totalPackageQuantity" ? (
                             sortAscending ? (
@@ -833,13 +836,13 @@ export default function OrdersPage({ onClose }) {
                           )}
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                      <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center min-w-[130px]">
                         Tổng số đơn vị
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                      <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center min-w-[110px]">
                         Đơn vị tính
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                      <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center min-w-[120px]">
                         {activeOrderType === "purchase" ? "Ngày nhập" : "Ngày xuất"}
                       </TableHead>
                     </TableRow>
@@ -847,7 +850,7 @@ export default function OrdersPage({ onClose }) {
                   <TableBody>
                     {displayOrders.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={9} className="text-center text-gray-500 py-8">
+                        <TableCell colSpan={10} className="text-center text-gray-500 py-8">
                           Không có dữ liệu nào
                         </TableCell>
                       </TableRow>
@@ -859,21 +862,24 @@ export default function OrdersPage({ onClose }) {
                             key={order.id}
                             className="hover:bg-slate-50 border-b border-slate-200"
                           >
-                            <TableCell className="px-6 py-4 text-center text-slate-700">
+                            <TableCell className="px-2 py-4 text-center text-slate-700">
                               {stt}
                             </TableCell>
-                            <TableCell className="px-6 py-4 text-slate-700">
-                              <p className="font-medium">
+                            <TableCell className="px-4 py-4 text-slate-700">
+                              <p className="font-medium break-words">
                                 {activeOrderType === "purchase" ? order.supplierName : order.retailerName}
                               </p>
                             </TableCell>
                             <TableCell className="px-6 py-4 text-slate-700 font-medium">
                               {order.goodsCode}
                             </TableCell>
-                            <TableCell className="px-6 py-4 text-slate-700">
-                              <div className="max-w-xs truncate" title={order.goodsName}>
+                            <TableCell className="px-4 py-4 text-slate-700">
+                              <div className="max-w-[160px] truncate" title={order.goodsName}>
                                 {order.goodsName}
                               </div>
+                            </TableCell>
+                            <TableCell className="px-6 py-4 text-center text-slate-700">
+                              {order.unitPerPackage || '-'}
                             </TableCell>
                             <TableCell className="px-6 py-4 text-center text-slate-700">
                               {order.totalPackageQuantity}
