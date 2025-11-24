@@ -1075,13 +1075,13 @@ const StocktakingArea = () => {
                                                                     <Table className="w-full">
                                                                         <TableHeader>
                                                                             <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
-                                                                                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
+                                                                                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left min-w-[140px]">
                                                                                     Mã pallet
                                                                                 </TableHead>
-                                                                                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
+                                                                                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left min-w-[140px]">
                                                                                     Mã hàng hóa
                                                                                 </TableHead>
-                                                                                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
+                                                                                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left min-w-[140px]">
                                                                                     Tên hàng hóa
                                                                                 </TableHead>
                                                                                 <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">

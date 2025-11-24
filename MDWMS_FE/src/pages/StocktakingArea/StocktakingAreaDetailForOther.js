@@ -1396,10 +1396,10 @@ const StocktakingAreaDetailForOther = () => {
                                                                                             <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
                                                                                                 Mã pallet
                                                                                             </TableHead>
-                                                                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
+                                                                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left min-w-[140px]">
                                                                                                 Mã hàng hóa
                                                                                             </TableHead>
-                                                                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
+                                                                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left min-w-[140px]">
                                                                                                 Tên hàng hóa
                                                                                             </TableHead>
                                                                                             <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">

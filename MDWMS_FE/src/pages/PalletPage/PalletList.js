@@ -635,7 +635,7 @@ export default function PalletList() {
                                         </TableHead>
                                         <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                                             <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("batchCode")}>
-                                                <span>Mã lô hàng</span>
+                                                <span>Mã lô</span>
                                                 {sortField === "batchCode" ? (
                                                     sortAscending ? (
                                                         <ArrowUp className="h-4 w-4 text-orange-500" />
@@ -647,16 +647,16 @@ export default function PalletList() {
                                                 )}
                                             </div>
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left min-w-[120px]">
                                             Mã vị trí
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left min-w-[120px]">
                                             Số lượng thùng
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left min-w-[140px]">
                                             Đơn vị/thùng
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left min-w-[120px]">
                                             Người tạo
                                         </TableHead>
                                         <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-48">
