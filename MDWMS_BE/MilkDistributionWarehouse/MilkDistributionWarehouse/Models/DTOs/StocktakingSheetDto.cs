@@ -35,6 +35,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
         [Required(ErrorMessage = "Thời gian bắt đầu kiểm kê là bắt buộc.")]
         public DateTime StartTime { get; set; }
         public string? Note { get; set; }
+        public List<StocktakingAreaCreateDto> AreaIds { get; set; }
     }
 
     public class StocktakingSheetDetail : StocktakingSheetDto
