@@ -24,12 +24,16 @@ namespace MilkDistributionWarehouse.Services
         private readonly IGoodsReceiptNoteDetailRepository _grndRepository;
         private readonly IMapper _mapper;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly INotificationService _notificationService;
 
-        public GoodsReceiptNoteDetailService(IGoodsReceiptNoteDetailRepository grndRepository, IMapper mapper, IUnitOfWork unitOfWork)
+        public GoodsReceiptNoteDetailService(IGoodsReceiptNoteDetailRepository grndRepository, IMapper mapper, 
+            IUnitOfWork unitOfWork, 
+            INotificationService notificationService)
         {
             _grndRepository = grndRepository;
             _mapper = mapper;
             _unitOfWork = unitOfWork;
+            _notificationService = notificationService;
         }
 
         public async Task<(string, List<GoodsReceiptNoteDetailPalletDto>)> GetListGRNDByGRNId(string grnId)
@@ -107,6 +111,8 @@ namespace MilkDistributionWarehouse.Services
 
                     grnDetail = _mapper.Map(update, grnDetail);
                     grnDetail.GoodsReceiptNote.Status = GoodsReceiptNoteStatus.Receiving;
+
+                    await HandleStatusNotificationChange(grnDetail.GoodsReceiptNote);
                 }
 
                 if (update is GoodsReceiptNoteDetailCompletedDto)
@@ -188,6 +194,19 @@ namespace MilkDistributionWarehouse.Services
                 return "Từ chối thùng hàng phải có lý do.".ToMessageForUser();
 
             return string.Empty;
+        }
+        private async Task HandleStatusNotificationChange(GoodsReceiptNote goodsReceiptNote)
+        {
+            var notificationToCreate = new NotificationCreateDto
+            {
+                UserId = goodsReceiptNote.PurchaseOder.AssignTo,
+                Title = "Phiếu nhập kho bị từ chối",
+                Content = $"Phiếu nhập kho {goodsReceiptNote.GoodsReceiptNoteId} được yêu cầu kiểm tra lại.",
+                EntityId = goodsReceiptNote.GoodsReceiptNoteId,
+                EntityType = NotificationEntityType.GoodsReceiptNote,
+                Category = NotificationCategory.Important
+            };
+            await _notificationService.CreateNotification(notificationToCreate);
         }
 
     }
