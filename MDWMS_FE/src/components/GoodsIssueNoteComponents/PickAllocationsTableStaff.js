@@ -67,7 +67,7 @@ const PickAllocationsTableStaff = ({
                                     }
                                 }}
                                 className={`border-b border-gray-200 hover:bg-blue-50 transition-all duration-300 ${isPicked ? 'bg-green-50' : ''
-                                    } ${isHighlighted ? 'bg-yellow-100 border-yellow-400 border-2 shadow-md' : ''
+                                    } ${isHighlighted ? 'bg-green-100 border-green-400 border-2 shadow-md' : ''
                                     }`}
                             >
                                 <TableCell className="text-center text-gray-900 font-medium">

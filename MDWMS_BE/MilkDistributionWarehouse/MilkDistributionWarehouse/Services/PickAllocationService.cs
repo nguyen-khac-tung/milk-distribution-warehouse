@@ -17,18 +17,21 @@ namespace MilkDistributionWarehouse.Services
     {
         private readonly IPickAllocationRepository _pickAllocationRepository;
         private readonly IGoodsIssueNoteDetailRepository _goodsIssueNoteDetailRepository;
+        private readonly IStocktakingSheetRepository _stocktakingSheetRepository;
         private readonly IDisposalNoteDetailRepository _disposalNoteDetailRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
         public PickAllocationService(IPickAllocationRepository pickAllocationRepository,
                             IGoodsIssueNoteDetailRepository goodsIssueNoteDetailRepository,
+                            IStocktakingSheetRepository stocktakingSheetRepository,
                             IDisposalNoteDetailRepository disposalNoteDetailRepository,
                             IUnitOfWork unitOfWork,
                             IMapper mapper)
         {
             _pickAllocationRepository = pickAllocationRepository;
             _goodsIssueNoteDetailRepository = goodsIssueNoteDetailRepository;
+            _stocktakingSheetRepository = stocktakingSheetRepository;
             _disposalNoteDetailRepository = disposalNoteDetailRepository;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
@@ -37,6 +40,9 @@ namespace MilkDistributionWarehouse.Services
         public async Task<(string, PickAllocationDetailDto?)> GetPickAllocationDetailById(int? pickAllocationId)
         {
             if (pickAllocationId == null) return ("PickAllocationId is invalid.", null);
+
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                throw new Exception("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser());
 
             var pickAllocation = await _pickAllocationRepository.GetPickAllocationDetailById(pickAllocationId);
             if (pickAllocation == null) return ("Pick Allocation exist is null", null);
@@ -49,6 +55,9 @@ namespace MilkDistributionWarehouse.Services
         {
             var pickAllocation = await _pickAllocationRepository.GetPickAllocationDetailById(confirmPickAllocation.PickAllocationId);
             if (pickAllocation == null) return "Pick Allocation exist is null";
+
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                throw new Exception("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser());
 
             if (pickAllocation.PalletId != confirmPickAllocation.PalletId)
                 return "Mã kệ kê hàng được quét không khớp với kệ kê hàng được chỉ định.".ToMessageForUser();
