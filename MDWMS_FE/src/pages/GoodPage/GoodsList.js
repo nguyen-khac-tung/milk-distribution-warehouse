@@ -764,7 +764,18 @@ export default function GoodsPage() {
                         STT
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                        Mã hàng hóa
+                        <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("goodsCode")}>
+                          <span>Mã hàng hóa</span>
+                          {sortField === "goodsCode" ? (
+                            sortAscending ? (
+                              <ArrowUp className="h-4 w-4 text-orange-500" />
+                            ) : (
+                              <ArrowDown className="h-4 w-4 text-orange-500" />
+                            )
+                          ) : (
+                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                          )}
+                        </div>
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                         <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("goodsName")}>
@@ -784,7 +795,18 @@ export default function GoodsPage() {
                         Danh mục
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                        Nhà cung cấp
+                        <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("companyName")}>
+                          <span>Nhà cung cấp</span>
+                          {sortField === "companyName" ? (
+                            sortAscending ? (
+                              <ArrowUp className="h-4 w-4 text-orange-500" />
+                            ) : (
+                              <ArrowDown className="h-4 w-4 text-orange-500" />
+                            )
+                          ) : (
+                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                          )}
+                        </div>
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                         Đơn vị tính
