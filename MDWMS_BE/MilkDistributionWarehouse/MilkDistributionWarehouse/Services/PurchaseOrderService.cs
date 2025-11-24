@@ -683,6 +683,18 @@ namespace MilkDistributionWarehouse.Services
                             EntityId = purchaseOrder.PurchaseOderId
                         });
                     }
+                    salesManagers = await _userRepository.GetUsersByRoleId(RoleType.SaleManager);
+                    foreach (var salesManager in salesManagers)
+                    {
+                        notificationStatusChange.Add(new NotificationCreateDto
+                        {
+                            UserId = salesManager.UserId,
+                            Title = "Đơn mua hàng chờ duyệt",
+                            Content = $"Đơn mua hàng {purchaseOrder.PurchaseOderId} đã được đặt.",
+                            EntityType = NotificationEntityType.PurchaseOrder,
+                            EntityId = purchaseOrder.PurchaseOderId
+                        });
+                    }
                     break;
                 case PurchaseOrderStatus.AwaitingArrival:
                     notificationStatusChange.Add(new NotificationCreateDto
