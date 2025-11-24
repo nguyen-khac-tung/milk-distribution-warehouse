@@ -252,6 +252,8 @@
         public const int DisposalRequest = 5;
         public const int DisposalNote = 6;
         public const int StocktakingSheet = 7;
+        public const int InventoryReport = 8;
+        public const int NoNavigation = 9;
     }
 
     public static class StocktakingSettings

@@ -2,7 +2,6 @@ import React, { useState, useEffect, memo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogoutOutlined, StarOutlined, MenuOutlined, MenuFoldOutlined, UserOutlined, SettingOutlined } from "@ant-design/icons";
 import { logout } from "../../services/AuthenticationServices";
-import AnimatedBell from "../Common/AnimatedBell";
 import SearchBar from "../Common/SearchBar";
 import { ViewProfileModal } from "../../pages/AccountPage/ViewProfileModal";
 import NotificationDropdown from "../Common/NotificationDropdown";
@@ -18,6 +17,7 @@ const HeaderBar = memo(({ onToggleSidebar, sidebarCollapsed }) => {
     const [showNotifications, setShowNotifications] = useState(false);
     const [selectedNotificationId, setSelectedNotificationId] = useState(null);
     const [showNotificationDetail, setShowNotificationDetail] = useState(false);
+    const [unreadCountWhenOpened, setUnreadCountWhenOpened] = useState(null);
 
     const {
         notifications,
@@ -60,11 +60,12 @@ const HeaderBar = memo(({ onToggleSidebar, sidebarCollapsed }) => {
         setShowNotifications(prev => {
             const nextState = !prev;
             if (!prev) {
+                setUnreadCountWhenOpened(unreadCount);
                 refreshNotifications();
             }
             return nextState;
         });
-    }, [refreshNotifications]);
+    }, [refreshNotifications, unreadCount]);
 
     const handleMarkAllNotificationsAsRead = useCallback(() => {
         markAllAsRead();
@@ -138,32 +139,42 @@ const HeaderBar = memo(({ onToggleSidebar, sidebarCollapsed }) => {
 
                 <div style={{ display: "flex", alignItems: "center", gap: 20, position: "relative" }}>
                     <div style={{ position: "relative" }}>
-                        <div className={unreadCount > 0 ? "bell-shake" : ""}>
-                            <Bell
-                                size={30}
-                                color={unreadCount > 0 ? "#f97316" : "#6b7280"}
-                                onClick={handleToggleNotifications}
-                                className="cursor-pointer"
-                            />
-                        </div>
-                        {unreadCount > 0 && (
-                            <span
-                                style={{
-                                    position: "absolute",
-                                    top: -4,
-                                    right: -4,
-                                    backgroundColor: "#ef4444",
-                                    color: "white",
-                                    fontSize: 10,
-                                    fontWeight: 700,
-                                    padding: "2px 6px",
-                                    borderRadius: 999,
-                                    boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-                                }}
-                            >
-                                {unreadCount > 99 ? "99+" : unreadCount}
-                            </span>
-                        )}
+                        {(() => {
+                            const displayCount = unreadCountWhenOpened !== null 
+                                ? Math.max(0, unreadCount - unreadCountWhenOpened)
+                                : unreadCount;
+                            
+                            return (
+                                <>
+                                    <div className={displayCount > 0 ? "bell-shake" : ""}>
+                                        <Bell
+                                            size={30}
+                                            color={displayCount > 0 ? "#f97316" : "#6b7280"}
+                                            onClick={handleToggleNotifications}
+                                            className="cursor-pointer"
+                                        />
+                                    </div>
+                                    {displayCount > 0 && (
+                                        <span
+                                            style={{
+                                                position: "absolute",
+                                                top: -4,
+                                                right: -4,
+                                                backgroundColor: "#ef4444",
+                                                color: "white",
+                                                fontSize: 10,
+                                                fontWeight: 700,
+                                                padding: "2px 6px",
+                                                borderRadius: 999,
+                                                boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                                            }}
+                                        >
+                                            {displayCount > 99 ? "99+" : displayCount}
+                                        </span>
+                                    )}
+                                </>
+                            );
+                        })()}
 
                         {showNotifications && (
                             <>

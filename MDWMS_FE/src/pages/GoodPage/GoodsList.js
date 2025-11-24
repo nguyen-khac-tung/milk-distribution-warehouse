@@ -207,7 +207,7 @@ export default function GoodsPage() {
       }
     } catch (error) {
       console.error("Error fetching goods:", error)
-      const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi tải danh sách mặt hàng")
+      const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi tải danh sách hàng hóa")
       window.showToast(errorMessage, "error")
       setGoods([])
       setPagination(prev => ({ ...prev, totalCount: 0 }))
@@ -372,12 +372,12 @@ export default function GoodsPage() {
           )
         )
       } else {
-        window.showToast("Không thể tải chi tiết mặt hàng", "error")
+        window.showToast("Không thể tải chi tiết hàng hóa", "error")
         setShowViewModal(false)
       }
     } catch (error) {
       console.error("Error fetching good detail:", error)
-      const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi tải chi tiết mặt hàng")
+      const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi tải chi tiết hàng hóa")
       window.showToast(errorMessage, "error")
       setShowViewModal(false)
     } finally {
@@ -399,7 +399,7 @@ export default function GoodsPage() {
   const handleDeleteConfirm = async () => {
     try {
       await deleteGood(itemToDelete?.goodsId)
-      window.showToast(`Đã xóa mặt hàng: ${itemToDelete?.goodsName || ''}`, "success")
+      window.showToast(`Đã xóa hàng hóa: ${itemToDelete?.goodsName || ''}`, "success")
       setShowDeleteModal(false)
       setItemToDelete(null)
 
@@ -433,7 +433,7 @@ export default function GoodsPage() {
       })
     } catch (error) {
       console.error("Error deleting good:", error)
-      const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi xóa mặt hàng")
+      const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi xóa hàng hóa")
       window.showToast(`Lỗi: ${errorMessage}`, "error")
     }
   }
@@ -514,7 +514,7 @@ export default function GoodsPage() {
     ]
     if (!statusSearchQuery) return statusOptions
     const query = statusSearchQuery.toLowerCase()
-    return statusOptions.filter(option => 
+    return statusOptions.filter(option =>
       option.label.toLowerCase().includes(query)
     )
   }, [statusSearchQuery])
@@ -621,7 +621,7 @@ export default function GoodsPage() {
       })
 
       // Show success message
-      window.showToast(`Đã ${newStatus === 1 ? 'bắt đầu phân phối' : 'ngừng phân phối'} mặt hàng: ${goodsName}`, "success")
+      window.showToast(`Đã ${newStatus === 1 ? 'bắt đầu phân phối' : 'ngừng phân phối'} hàng hóa: ${goodsName}`, "success")
 
       // Refresh data
       fetchData({
@@ -642,7 +642,7 @@ export default function GoodsPage() {
       fetchTotalStats()
     } catch (error) {
       console.error("Error updating goods status:", error)
-      const cleanMsg = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật trạng thái mặt hàng")
+      const cleanMsg = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật trạng thái hàng hóa")
       window.showToast(`Lỗi: ${cleanMsg}`, "error")
     }
   }
@@ -653,8 +653,8 @@ export default function GoodsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-600">Quản Lý Mặt Hàng</h1>
-            <p className="text-slate-600 mt-1">Quản lý các mặt hàng sản phẩm trong hệ thống</p>
+            <h1 className="text-2xl font-bold text-slate-600">Quản Lý Hàng Hóa</h1>
+            <p className="text-slate-600 mt-1">Quản lý các hàng hóa hàng hóa trong hệ thống</p>
           </div>
           <div className="flex space-x-3">
             <PermissionWrapper requiredPermission={PERMISSIONS.GOODS_CREATE}>
@@ -663,7 +663,7 @@ export default function GoodsPage() {
                 onClick={() => setShowBulkCreateModal(true)}
               >
                 <Package className="mr-2 h-4 w-4 text-white" />
-                Thêm nhiều mặt hàng
+                Thêm nhiều hàng hóa
               </Button>
             </PermissionWrapper>
             <PermissionWrapper requiredPermission={PERMISSIONS.GOODS_CREATE}>
@@ -672,7 +672,7 @@ export default function GoodsPage() {
                 onClick={() => setShowCreateModal(true)}
               >
                 <Plus className="mr-2 h-4 w-4 text-white" />
-                Thêm mặt hàng
+                Thêm hàng hóa
               </Button>
             </PermissionWrapper>
           </div>
@@ -683,7 +683,7 @@ export default function GoodsPage() {
           totalCount={totalStats.totalCount}
           activeCount={totalStats.activeCount}
           inactiveCount={totalStats.inactiveCount}
-          totalLabel="Tổng mặt hàng"
+          totalLabel="Tổng hàng hóa"
           activeLabel="Đang Phân Phối"
           inactiveLabel="Ngừng Phân Phối"
         />
@@ -693,7 +693,7 @@ export default function GoodsPage() {
           <SearchFilterToggle
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            searchPlaceholder="Tìm kiếm theo mã hoặc tên mặt hàng..."
+            searchPlaceholder="Tìm kiếm theo mã hoặc tên hàng hóa..."
             statusFilter={statusFilter}
             setStatusFilter={setStatusFilter}
             showStatusFilter={showStatusFilter}
@@ -764,11 +764,11 @@ export default function GoodsPage() {
                         STT
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                        Mã mặt hàng
+                        Mã hàng hóa
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                         <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("goodsName")}>
-                          <span>Tên mặt hàng</span>
+                          <span>Tên hàng hóa</span>
                           {sortField === "goodsName" ? (
                             sortAscending ? (
                               <ArrowUp className="h-4 w-4 text-orange-500" />
@@ -833,7 +833,7 @@ export default function GoodsPage() {
                                   onStatusChange={handleStatusChange}
                                   supplierId={good?.goodsId}
                                   supplierName={good?.goodsName}
-                                  entityType="mặt hàng"
+                                  entityType="hàng hóa"
                                 />
                               </PermissionWrapper>
                             </div>
@@ -871,11 +871,11 @@ export default function GoodsPage() {
                     ) : (
                       <EmptyState
                         icon={Package}
-                        title="Không tìm thấy mặt hàng nào"
+                        title="Không tìm thấy hàng hóa nào"
                         description={
                           searchQuery || statusFilter || categoryFilter || supplierFilter || unitMeasureFilter
                             ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
-                            : "Chưa có mặt hàng nào trong hệ thống"
+                            : "Chưa có hàng hóa nào trong hệ thống"
                         }
                         actionText="Xóa bộ lọc"
                         onAction={clearAllFilters}
@@ -896,7 +896,7 @@ export default function GoodsPage() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-slate-600">
-                  Hiển thị {((pagination.pageNumber - 1) * pagination.pageSize) + 1} - {Math.min(pagination.pageNumber * pagination.pageSize, pagination.totalCount)} trong tổng số {pagination.totalCount} mặt hàng
+                  Hiển thị {((pagination.pageNumber - 1) * pagination.pageSize) + 1} - {Math.min(pagination.pageNumber * pagination.pageSize, pagination.totalCount)} trong tổng số {pagination.totalCount} hàng hóa
                 </div>
 
                 <div className="flex items-center space-x-4">
@@ -1028,7 +1028,7 @@ export default function GoodsPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[99999] p-4" style={{ zIndex: 99999 }}>
           <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             {loadingDetail ? (
-              <Loading size="large" text="Đang tải chi tiết mặt hàng..." />
+              <Loading size="large" text="Đang tải chi tiết hàng hóa..." />
             ) : goodDetail ? (
               <ProductDetail
                 product={goodDetail}

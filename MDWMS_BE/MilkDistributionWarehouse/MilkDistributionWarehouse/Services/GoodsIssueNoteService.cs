@@ -55,7 +55,7 @@ namespace MilkDistributionWarehouse.Services
             if (goodsIssueNoteCreate.SalesOrderId == null) return "SalesOrderId to create GoodsIssueNote Data is null.";
 
             if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
-                throw new Exception("Không thể tạo phiếu xuất kho khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser());
+                return "Không thể tạo phiếu xuất kho khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser();
 
             var salesOrder = await _salesOrderRepository.GetSalesOrderById(goodsIssueNoteCreate.SalesOrderId);
             if (salesOrder == null) return "Data of SalesOrder to create GoodsIssueNote is null.";
@@ -159,7 +159,7 @@ namespace MilkDistributionWarehouse.Services
             if (submitGoodsIssueDto.GoodsIssueNoteId == null) return "GoodsIssueNoteId is null.";
 
             if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
-                throw new Exception("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser());
+                return "Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser();
 
             var goodsIssueNote = await _goodsIssueNoteRepository.GetGINByGoodsIssueNoteId(submitGoodsIssueDto.GoodsIssueNoteId);
             if (goodsIssueNote == null) return "Không tìm thấy phiếu xuất kho.".ToMessageForUser();
@@ -208,7 +208,7 @@ namespace MilkDistributionWarehouse.Services
             if (approveGoodsIssueDto.GoodsIssueNoteId == null) return "GoodsIssueNoteId is null.";
 
             if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
-                throw new Exception("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser());
+                return "Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser();
 
             var goodsIssueNote = await _goodsIssueNoteRepository.GetGINByGoodsIssueNoteId(approveGoodsIssueDto.GoodsIssueNoteId);
             if (goodsIssueNote == null) return "Không tìm thấy phiếu xuất kho.".ToMessageForUser();

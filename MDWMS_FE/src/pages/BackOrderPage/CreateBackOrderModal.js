@@ -268,13 +268,13 @@ export default function CreateBackOrderModal({ isOpen, onClose, onSuccess, selec
               return null;
             })()}
 
-            {/* Hiển thị danh sách mặt hàng nếu là bulk mode */}
+            {/* Hiển thị danh sách hàng hóa nếu là bulk mode */}
             {isBulkMode ? (
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <CheckCircle className="h-5 w-5 text-red-600 mb-1" />
                   <h3 className="text-lg font-semibold text-slate-700">
-                    Danh sách mặt hàng thiếu tồn kho ({selectedItems.length})
+                    Danh sách hàng hóa thiếu tồn kho ({selectedItems.length})
                   </h3>
                 </div>
                 <div className="grid grid-cols-2 gap-4 max-h-[400px] overflow-y-auto">

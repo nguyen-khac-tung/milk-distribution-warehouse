@@ -91,7 +91,7 @@ export default function UpdatePurchaseOrder() {
                         console.log("Formatted items:", formattedItems);
                         setItems(formattedItems);
 
-                        // Load goods packing data cho các sản phẩm hiện có
+                        // Load goods packing data cho các hàng hóa hiện có
                         console.log("Loading goods packing for existing items...");
                         for (const detail of orderData.purchaseOrderDetails) {
                             if (detail.goodsId) {
@@ -136,7 +136,7 @@ export default function UpdatePurchaseOrder() {
         const availableGoods = goods.filter(good => !selectedGoodsIds.includes(good.goodsId));
 
         if (availableGoods.length === 0 && goods.length > 0) {
-            window.showToast("Đã thêm hết tất cả mặt hàng từ nhà cung cấp này!", "error");
+            window.showToast("Đã thêm hết tất cả hàng hóa từ nhà cung cấp này!", "error");
             return;
         }
 
@@ -305,7 +305,7 @@ export default function UpdatePurchaseOrder() {
         setFieldErrors({});
         const newFieldErrors = {};
 
-        // Kiểm tra từng mặt hàng
+        // Kiểm tra từng hàng hóa
         items.forEach((item, index) => {
             if (!item.goodsName) {
                 newFieldErrors[`${item.id}-goodsName`] = "Vui lòng chọn tên hàng hóa";
@@ -396,7 +396,7 @@ export default function UpdatePurchaseOrder() {
         setFieldErrors({});
         const newFieldErrors = {};
 
-        // Kiểm tra từng mặt hàng
+        // Kiểm tra từng hàng hóa
         items.forEach((item, index) => {
             if (!item.goodsName) {
                 newFieldErrors[`${item.id}-goodsName`] = "Vui lòng chọn tên hàng hóa";
@@ -469,10 +469,10 @@ export default function UpdatePurchaseOrder() {
 
             // Cập nhật đơn hàng
             await updatePurchaseOrder(submitData);
-            
+
             // Sau đó gửi phê duyệt
             await submitPurchaseOrder(id);
-            
+
             window.showToast("Cập nhật và gửi phê duyệt đơn mua hàng thành công!", "success");
             navigate("/purchase-orders");
         } catch (error) {
@@ -728,7 +728,7 @@ export default function UpdatePurchaseOrder() {
                                     className="text-orange-500 hover:text-orange-600 font-medium cursor-pointer flex items-center gap-2"
                                 >
                                     <Plus className="h-4 w-4" />
-                                    Thêm mặt hàng
+                                    Thêm hàng hóa
                                 </button>
                             </div>
 

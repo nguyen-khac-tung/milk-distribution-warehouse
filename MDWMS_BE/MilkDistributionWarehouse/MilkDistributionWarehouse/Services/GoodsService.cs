@@ -495,10 +495,9 @@ namespace MilkDistributionWarehouse.Services
                 {
                     UserId = warehouseManagers?.FirstOrDefault()?.UserId,
                     Title = "Cảnh báo hàng sắp hết hạn",
-                    Content = $"Lô {batch.BatchCode} ({batch.Goods.GoodsName}) hết hạn ngày {batch.ExpiryDate:dd/MM/yyyy}. Còn dưới {InventoryConfig.DaysBeforeExpiryWarning} ngày.",
+                    Content = $"Lô '{batch.BatchCode}' ({batch.Goods.GoodsName}) hết hạn ngày {batch.ExpiryDate:dd/MM/yyyy}. Còn dưới {InventoryConfig.DaysBeforeExpiryWarning} ngày.",
                     Category = NotificationCategory.Important,
-                    EntityType = null,
-                    EntityId = batch.BatchId.ToString()
+                    EntityType = NotificationEntityType.InventoryReport
                 });
             }
 
@@ -509,10 +508,9 @@ namespace MilkDistributionWarehouse.Services
                 {
                     UserId = warehouseManagers?.FirstOrDefault()?.UserId,
                     Title = "Cảnh báo sai điều kiện bảo quản",
-                    Content = $"Pallet {pallet.PalletId} ({pallet.Batch.Goods.GoodsName}) đang ở vị trí {pallet.Location.LocationCode}. Sai điều kiện bảo quản!",
+                    Content = $"Pallet '{pallet.PalletId}' ({pallet.Batch.Goods.GoodsName}) đang ở vị trí {pallet.Location.LocationCode}. Sai điều kiện bảo quản!",
                     Category = NotificationCategory.Important,
-                    EntityType = null,
-                    EntityId = pallet.PalletId
+                    EntityType = NotificationEntityType.NoNavigation
                 });
             }
 
@@ -523,8 +521,9 @@ namespace MilkDistributionWarehouse.Services
                 {
                     UserId = saleManagers?.FirstOrDefault()?.UserId,
                     Title = "Cảnh báo hàng tồn kho thấp",
-                    Content = $"Mã: {item.GoodsName} - {item.GoodsCode}, đóng gói: {item.UnitPerPackage} {item.UnitMeasureName}/thùng. Chỉ còn {item.TotalPackage} thùng.",
+                    Content = $"Mã hàng hóa '{item.GoodsCode} - {item.GoodsName}', đóng gói {item.UnitPerPackage} {item.UnitMeasureName}/thùng chỉ còn {item.TotalPackage} thùng.",
                     Category = NotificationCategory.Normal,
+                    EntityType = NotificationEntityType.InventoryReport,
                 });
             }
 

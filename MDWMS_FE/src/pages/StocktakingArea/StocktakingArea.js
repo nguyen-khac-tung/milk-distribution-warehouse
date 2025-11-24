@@ -792,7 +792,7 @@ const StocktakingArea = () => {
                                     <div>
                                         <div className="text-xs text-gray-500 mb-0.5 flex items-center gap-1.5">
                                             <MapPin className="h-4 w-4 text-emerald-500" />
-                                            Số vị trí có sẵn
+                                            Vị trí chưa xếp pallet
                                         </div>
                                         <div className="text-base font-semibold text-gray-900">
                                             {stocktakingAreas.reduce((sum, area) => sum + (area.areaDetail?.availableLocationCount || 0), 0)}
@@ -803,7 +803,7 @@ const StocktakingArea = () => {
                                     <div>
                                         <div className="text-xs text-gray-500 mb-0.5 flex items-center gap-1.5">
                                             <MapPin className="h-4 w-4 text-red-500" />
-                                            Số vị trí không có sẵn
+                                            Vị trí đã xếp pallet
                                         </div>
                                         <div className="text-base font-semibold text-gray-900">
                                             {stocktakingAreas.reduce((sum, area) => sum + (area.areaDetail?.unAvailableLocationCount || 0), 0)}
@@ -840,7 +840,7 @@ const StocktakingArea = () => {
                             {/* Điều kiện bảo quản */}
                             <div>
                                 <h3 className="text-xs font-medium text-gray-500 mb-3">Điều kiện bảo quản</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     {/* Nhiệt độ */}
                                     <div>
                                         <div className="text-xs text-gray-500 mb-0.5 flex items-center gap-1.5">
@@ -883,28 +883,6 @@ const StocktakingArea = () => {
                                         </div>
                                         <div className="text-base font-semibold text-gray-900">
                                             {stocktakingAreas.map(area => area.areaDetail?.lightLevel).filter(Boolean).join(' / ') || '-'}
-                                        </div>
-                                    </div>
-
-                                    {/* Vị trí đã xếp pallet */}
-                                    <div>
-                                        <div className="text-xs text-gray-500 mb-0.5 flex items-center gap-1.5">
-                                            <Package className="h-4 w-4 text-blue-600" />
-                                            Vị trí đã xếp pallet
-                                        </div>
-                                        <div className="text-base font-semibold text-gray-900">
-                                            {stocktakingAreas.reduce((sum, area) => sum + (area.areaDetail?.unAvailableLocationCount || 0), 0)}
-                                        </div>
-                                    </div>
-
-                                    {/* Vị trí chưa xếp pallet */}
-                                    <div>
-                                        <div className="text-xs text-gray-500 mb-0.5 flex items-center gap-1.5">
-                                            <Package className="h-4 w-4 text-red-600" />
-                                            Vị trí chưa xếp pallet
-                                        </div>
-                                        <div className="text-base font-semibold text-gray-900">
-                                            {stocktakingAreas.reduce((sum, area) => sum + (area.areaDetail?.availableLocationCount || 0), 0)}
                                         </div>
                                     </div>
                                 </div>
@@ -1101,10 +1079,10 @@ const StocktakingArea = () => {
                                                                                     Mã pallet
                                                                                 </TableHead>
                                                                                 <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
-                                                                                    Mã sản phẩm
+                                                                                    Mã hàng hóa
                                                                                 </TableHead>
                                                                                 <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
-                                                                                    Tên sản phẩm
+                                                                                    Tên hàng hóa
                                                                                 </TableHead>
                                                                                 <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
                                                                                     Số lô

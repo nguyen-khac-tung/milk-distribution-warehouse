@@ -54,7 +54,7 @@ export function ProductDetail({ product, onClose }) {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
                   <ComponentIcon name="package" size={20} color="#374151" />
-                  Thông tin sản phẩm
+                  Thông tin hàng hóa
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">

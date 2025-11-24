@@ -494,8 +494,7 @@ export default function OrdersPage({ onClose }) {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-600"> Báo cáo đơn hàng</h1>
-            <p className="text-slate-600 mt-1">Quản lý đơn mua hàng và đơn bán hàng</p>
+            <h1 className="text-2xl font-bold text-slate-600"> Báo cáo xuất/nhập kho</h1>
           </div>
           <div className="flex items-center gap-2">
             {activeOrderType === "purchase" ? (
@@ -526,7 +525,7 @@ export default function OrdersPage({ onClose }) {
               }}
             >
               <Plus className="h-4 w-4 mr-2" />
-              {activeOrderType === "purchase" ? "Tạo đơn mua hàng" : "Tạo đơn bán hàng"}
+              {activeOrderType === "purchase" ? "Tạo đơn nhập kho" : "Tạo đơn xuất kho"}
             </Button>
             {onClose && (
               <Button
@@ -547,11 +546,11 @@ export default function OrdersPage({ onClose }) {
               <TabsList className="grid w-full max-w-md grid-cols-2">
                 <TabsTrigger value="purchase" className="flex items-center gap-2">
                   <Package className="h-4 w-4" />
-                  Đơn mua hàng
+                  Đơn nhập kho
                 </TabsTrigger>
                 <TabsTrigger value="sales" className="flex items-center gap-2">
                   <ShoppingCart className="h-4 w-4" />
-                  Đơn bán hàng
+                  Đơn xuất kho
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -565,7 +564,7 @@ export default function OrdersPage({ onClose }) {
                   <input
                     type="text"
                     placeholder="Tìm kiếm theo nhà cung cấp, mã hàng hóa, tên hàng hóa..."
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-full text-sm"
+                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-full text-sm truncate"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -730,7 +729,7 @@ export default function OrdersPage({ onClose }) {
                           fromDate: date ? date.format('YYYY-MM-DD') : ''
                         }))
                       }}
-                      className="w-[150px]"
+                      className="w-[150px] h-[38px]"
                       placeholder="Chọn ngày"
                     />
                   </div>
@@ -745,7 +744,7 @@ export default function OrdersPage({ onClose }) {
                           toDate: date ? date.format('YYYY-MM-DD') : ''
                         }))
                       }}
-                      className="w-[150px]"
+                      className="w-[150px] h-[38px]"
                       placeholder="Chọn ngày"
                     />
                   </div>
@@ -777,20 +776,6 @@ export default function OrdersPage({ onClose }) {
                       <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center w-8">
                         STT
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left w-40">
-                        <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort(activeOrderType === "purchase" ? "supplierName" : "retailerName")}>
-                          <span>{activeOrderType === "purchase" ? "Nhà cung cấp" : "Nhà bán lẻ"}</span>
-                          {sortField === (activeOrderType === "purchase" ? "supplierName" : "retailerName") ? (
-                            sortAscending ? (
-                              <ArrowUp className="h-4 w-4 text-orange-500" />
-                            ) : (
-                              <ArrowDown className="h-4 w-4 text-orange-500" />
-                            )
-                          ) : (
-                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
-                          )}
-                        </div>
-                      </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left min-w-[140px]">
                         <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("goodsCode")}>
                           <span>Mã hàng hóa</span>
@@ -809,6 +794,20 @@ export default function OrdersPage({ onClose }) {
                         <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("goodsName")}>
                           <span>Tên hàng hóa</span>
                           {sortField === "goodsName" ? (
+                            sortAscending ? (
+                              <ArrowUp className="h-4 w-4 text-orange-500" />
+                            ) : (
+                              <ArrowDown className="h-4 w-4 text-orange-500" />
+                            )
+                          ) : (
+                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                          )}
+                        </div>
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left w-40">
+                        <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort(activeOrderType === "purchase" ? "supplierName" : "retailerName")}>
+                          <span>{activeOrderType === "purchase" ? "Nhà cung cấp" : "Nhà bán lẻ"}</span>
+                          {sortField === (activeOrderType === "purchase" ? "supplierName" : "retailerName") ? (
                             sortAscending ? (
                               <ArrowUp className="h-4 w-4 text-orange-500" />
                             ) : (
@@ -865,18 +864,18 @@ export default function OrdersPage({ onClose }) {
                             <TableCell className="px-2 py-4 text-center text-slate-700">
                               {stt}
                             </TableCell>
-                            <TableCell className="px-4 py-4 text-slate-700">
-                              <p className="font-medium break-words">
-                                {activeOrderType === "purchase" ? order.supplierName : order.retailerName}
-                              </p>
-                            </TableCell>
                             <TableCell className="px-6 py-4 text-slate-700 font-medium">
                               {order.goodsCode}
                             </TableCell>
                             <TableCell className="px-4 py-4 text-slate-700">
-                              <div className="max-w-[160px] truncate" title={order.goodsName}>
+                              <div className="font-medium break-words">
                                 {order.goodsName}
                               </div>
+                            </TableCell>
+                            <TableCell className="px-4 py-4 text-slate-700">
+                              <p className="max-w-[150px] truncate" title={activeOrderType === "purchase" ? order.supplierName : order.retailerName}>
+                                {activeOrderType === "purchase" ? order.supplierName : order.retailerName}
+                              </p>
                             </TableCell>
                             <TableCell className="px-6 py-4 text-center text-slate-700">
                               {order.unitPerPackage || '-'}

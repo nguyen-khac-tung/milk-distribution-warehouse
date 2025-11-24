@@ -55,7 +55,7 @@ namespace MilkDistributionWarehouse.Services
             if (createDto.DisposalRequestId == null) return "DisposalRequestId to create DisposalNote is null.";
 
             if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
-                throw new Exception("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser());
+                return "Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser();
 
             var disposalRequest = await _disposalRequestRepository.GetDisposalRequestById(createDto.DisposalRequestId);
             if (disposalRequest == null) return "Data of DisposalRequest to create DisposalNote is null.";
@@ -163,7 +163,7 @@ namespace MilkDistributionWarehouse.Services
             if (submitDto.DisposalNoteId == null) return "DisposalNoteId is null.";
 
             if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
-                throw new Exception("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser());
+                return "Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser();
 
             var disposalNote = await _disposalNoteRepository.GetDNByDisposalNoteId(submitDto.DisposalNoteId);
             if (disposalNote == null) return "Không tìm thấy phiếu xuất hủy.".ToMessageForUser();
@@ -212,7 +212,7 @@ namespace MilkDistributionWarehouse.Services
             if (approveDto.DisposalNoteId == null) return "DisposalNoteId is null.";
 
             if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
-                throw new Exception("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser());
+                return "Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser();
 
             var disposalNote = await _disposalNoteRepository.GetDNByDisposalNoteId(approveDto.DisposalNoteId);
             if (disposalNote == null) return "Không tìm thấy phiếu xuất hủy.".ToMessageForUser();
