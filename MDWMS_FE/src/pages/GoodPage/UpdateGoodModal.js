@@ -45,7 +45,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
         unitMeasureId: 0,
       })
       setGoodsPackingUpdates([{ goodsPackingId: 0, unitPerPackage: "" }])
-      
+
       loadDropdownData().then(() => {
         // Đợi một chút để đảm bảo state đã được update
         setTimeout(() => {
@@ -69,7 +69,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
     try {
       setLoadingData(true)
       const response = await getGoodDetail(goodId)
-      
+
       if (response && response.data) {
         const good = response.data
         const newFormData = {
@@ -81,7 +81,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
           unitMeasureId: good.unitMeasureId || 0,
         }
         setFormData(newFormData)
-        
+
         // Load existing goodsPacking data
         if (good.goodsPackings && good.goodsPackings.length > 0) {
           const packingUpdates = good.goodsPackings.map(packing => ({
@@ -96,7 +96,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
       }
     } catch (error) {
       console.error("Error loading good data:", error)
-      const errorMessage = extractErrorMessage(error, "Lỗi khi tải thông tin mặt hàng")
+      const errorMessage = extractErrorMessage(error, "Lỗi khi tải thông tin hàng hóa")
       window.showToast(errorMessage, "error")
     } finally {
       setLoadingData(false)
@@ -139,7 +139,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
   }
 
   const updatePackingItem = (index, value) => {
-    const updatedPackings = goodsPackingUpdates.map((item, i) => 
+    const updatedPackings = goodsPackingUpdates.map((item, i) =>
       i === index ? { ...item, unitPerPackage: value } : item
     )
     setGoodsPackingUpdates(updatedPackings)
@@ -156,7 +156,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
     }
 
     // Validate goodsPackingUpdates
-    const validPackings = goodsPackingUpdates.filter(packing => 
+    const validPackings = goodsPackingUpdates.filter(packing =>
       packing.unitPerPackage && !isNaN(packing.unitPerPackage) && parseInt(packing.unitPerPackage) > 0
     )
 
@@ -166,7 +166,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
     }
 
     // Check if all packing items have valid unitPerPackage
-    const hasEmptyPacking = goodsPackingUpdates.some(packing => 
+    const hasEmptyPacking = goodsPackingUpdates.some(packing =>
       !packing.unitPerPackage || packing.unitPerPackage === "" || isNaN(packing.unitPerPackage) || parseInt(packing.unitPerPackage) <= 0
     )
 
@@ -184,24 +184,24 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
           unitPerPackage: parseInt(packing.unitPerPackage)
         }))
       }
-      
+
       console.log("=== DỮ LIỆU GỬI ĐI KHI UPDATE GOOD ===")
       console.log("Form Data:", formData)
       console.log("Valid Packings:", validPackings)
       console.log("Submit Data:", submitData)
       console.log("Goods Packing Updates:", submitData.goodsPackingUpdates)
       console.log("=====================================")
-      
+
       const response = await updateGood(submitData)
       console.log("Good updated:", response)
-      window.showToast("Cập nhật mặt hàng thành công!", "success")
+      window.showToast("Cập nhật hàng hóa thành công!", "success")
       onSuccess && onSuccess()
       onClose && onClose()
     } catch (error) {
       console.error("Error updating good:", error)
 
       // Sử dụng extractErrorMessage để xử lý lỗi từ API
-      const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật mặt hàng")
+      const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật hàng hóa")
       window.showToast(`Lỗi: ${errorMessage}`, "error")
     } finally {
       setLoading(false)
@@ -230,7 +230,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
       <div className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-slate-800">Cập nhật mặt hàng</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Cập nhật hàng hóa</h1>
           <button
             onClick={onClose}
             className="p-1 hover:bg-gray-100 rounded-full transition-colors"
@@ -247,11 +247,11 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
             <div className="grid grid-cols-1 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="goodsName" className="text-sm font-medium text-slate-700">
-                  Tên mặt hàng <span className="text-red-500">*</span>
+                  Tên hàng hóa <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="goodsName"
-                  placeholder="Nhập tên mặt hàng..."
+                  placeholder="Nhập tên hàng hóa..."
                   value={formData.goodsName}
                   onChange={(e) => setFormData({ ...formData, goodsName: e.target.value })}
                   className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
@@ -357,7 +357,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
                   Thêm đóng gói
                 </Button>
               </div>
-              
+
               <Card className="p-4 border border-gray-200">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {goodsPackingUpdates.map((packing, index) => (
@@ -387,7 +387,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
                     </div>
                   ))}
                 </div>
-                
+
                 <p className="text-xs text-slate-500 mt-3">
                   * Nhập số lượng {unitMeasures.find(unit => unit.unitMeasureId === formData.unitMeasureId)?.name || 'đơn vị'} có trong mỗi thùng đóng gói
                 </p>

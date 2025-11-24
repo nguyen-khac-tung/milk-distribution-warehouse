@@ -1101,10 +1101,10 @@ const StocktakingArea = () => {
                                                                                     Mã pallet
                                                                                 </TableHead>
                                                                                 <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
-                                                                                    Mã sản phẩm
+                                                                                    Mã hàng hóa
                                                                                 </TableHead>
                                                                                 <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
-                                                                                    Tên sản phẩm
+                                                                                    Tên hàng hóa
                                                                                 </TableHead>
                                                                                 <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
                                                                                     Số lô

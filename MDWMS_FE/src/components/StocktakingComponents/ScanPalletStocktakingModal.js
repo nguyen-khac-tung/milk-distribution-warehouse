@@ -646,8 +646,8 @@ export default function ScanPalletStocktakingModal({
                                     <TableHeader>
                                         <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
                                             <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">Mã pallet</TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">Mã sản phẩm</TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">Tên sản phẩm</TableHead>
+                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">Mã hàng hóa</TableHead>
+                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">Tên hàng hóa</TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">Lô</TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-4 py-3 text-center">Dự Kiến</TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-4 py-3 text-center">Thực Tế</TableHead>
@@ -775,8 +775,8 @@ export default function ScanPalletStocktakingModal({
                                     <TableHeader>
                                         <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
                                             <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">Mã pallet</TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">Mã sản phẩm</TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">Tên sản phẩm</TableHead>
+                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">Mã hàng hóa</TableHead>
+                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">Tên hàng hóa</TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">Lô</TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-4 py-3 text-center">Dự Kiến</TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-4 py-3 text-center">Thực Tế</TableHead>

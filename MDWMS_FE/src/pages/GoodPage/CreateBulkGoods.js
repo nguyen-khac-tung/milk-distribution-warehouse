@@ -35,7 +35,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
   const [hasBackendErrors, setHasBackendErrors] = useState(false)
   const [successfulGoods, setSuccessfulGoods] = useState(new Set())
   const isCheckingDuplicates = useRef(false)
-  
+
   // Default values state
   const [defaultValues, setDefaultValues] = useState({
     categoryId: "",
@@ -63,7 +63,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
     if (useDefaults && goodsList.length > 0) {
       const firstGoods = goodsList[0]
       const updatedGoods = { ...firstGoods }
-      
+
       if (defaultFields.category && defaultValues.categoryId) {
         updatedGoods.categoryId = defaultValues.categoryId
       }
@@ -77,7 +77,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
         updatedGoods.unitMeasureId = defaultValues.unitMeasureId
       }
 
-      const shouldUpdate = 
+      const shouldUpdate =
         firstGoods.categoryId !== updatedGoods.categoryId ||
         firstGoods.supplierId !== updatedGoods.supplierId ||
         firstGoods.storageConditionId !== updatedGoods.storageConditionId ||
@@ -103,7 +103,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
       if (goods.goodsCode) {
         const duplicateIndex = goodsList.findIndex((g, i) => i !== index && g.goodsCode === goods.goodsCode)
         if (duplicateIndex !== -1) {
-          newErrors[`${index}-goodsCode`] = "Mã mặt hàng đã tồn tại trong danh sách"
+          newErrors[`${index}-goodsCode`] = "Mã hàng hóa đã tồn tại trong danh sách"
           hasDuplicates = true
         } else {
           // Clear duplicate error if no longer duplicate
@@ -162,7 +162,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
       if (goods.goodsCode) {
         const duplicateIndex = newGoodsList.findIndex((g, i) => i !== index && g.goodsCode === goods.goodsCode)
         if (duplicateIndex !== -1) {
-          newErrors[`${index}-goodsCode`] = "Mã mặt hàng đã tồn tại trong danh sách"
+          newErrors[`${index}-goodsCode`] = "Mã hàng hóa đã tồn tại trong danh sách"
         }
       }
     })
@@ -214,7 +214,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
         if (goods.goodsCode) {
           const duplicateIndex = newList.findIndex((g, i) => i !== newIndex && g.goodsCode === goods.goodsCode)
           if (duplicateIndex !== -1) {
-            newErrors[`${newIndex}-goodsCode`] = "Mã mặt hàng đã tồn tại trong danh sách"
+            newErrors[`${newIndex}-goodsCode`] = "Mã hàng hóa đã tồn tại trong danh sách"
           }
         }
       })
@@ -250,7 +250,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
       const duplicateIndex = newList.findIndex((g, i) => i !== index && g.goodsCode === value)
       if (duplicateIndex !== -1) {
         const newErrors = { ...errors }
-        newErrors[`${index}-goodsCode`] = "Mã mặt hàng đã tồn tại trong danh sách"
+        newErrors[`${index}-goodsCode`] = "Mã hàng hóa đã tồn tại trong danh sách"
         setErrors(newErrors)
         setHasBackendErrors(true)
       }
@@ -311,7 +311,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
       // Check for duplicate goods codes
       const duplicateIndex = goodsList.findIndex((g, i) => i !== index && g.goodsCode === goods.goodsCode)
       if (duplicateIndex !== -1 && goods.goodsCode) {
-        newErrors[`${index}-goodsCode`] = "Mã mặt hàng đã tồn tại trong danh sách"
+        newErrors[`${index}-goodsCode`] = "Mã hàng hóa đã tồn tại trong danh sách"
         isValid = false
       }
 
@@ -395,11 +395,11 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
             const errorMessage = error.response.data.message.toLowerCase()
 
             // Check for duplicate goods code errors
-            if (errorMessage.includes('goodsCode') || errorMessage.includes('mã mặt hàng') ||
+            if (errorMessage.includes('goodsCode') || errorMessage.includes('mã hàng hóa') ||
               errorMessage.includes('đã tồn tại') || errorMessage.includes('duplicate') ||
               errorMessage.includes('already exists') || errorMessage.includes('trùng lặp')) {
               backendErrors.goodsCode = cleanErrorMessage(error.response.data.message)
-            } else if (errorMessage.includes('goodsName') || errorMessage.includes('tên mặt hàng')) {
+            } else if (errorMessage.includes('goodsName') || errorMessage.includes('tên hàng hóa')) {
               backendErrors.goodsName = cleanErrorMessage(error.response.data.message)
             } else if (errorMessage.includes('category') || errorMessage.includes('danh mục')) {
               backendErrors.categoryId = cleanErrorMessage(error.response.data.message)
@@ -436,7 +436,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
 
           // If no specific field errors, add general error
           if (Object.keys(backendErrors).length === 0) {
-            const errorMessage = extractErrorMessage(error, "Lỗi khi tạo mặt hàng")
+            const errorMessage = extractErrorMessage(error, "Lỗi khi tạo hàng hóa")
             errors.push({ index: i, error: errorMessage })
           }
         }
@@ -455,7 +455,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
 
       if (results.length === goodsList.length) {
         // All goods created successfully
-        window.showToast(`Đã tạo thành công ${results.length} mặt hàng!`, "success")
+        window.showToast(`Đã tạo thành công ${results.length} hàng hóa!`, "success")
         setHasBackendErrors(false)
         setSuccessfulGoods(new Set())
         // Reset default values
@@ -483,10 +483,10 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
           err.error.includes('already exists') || err.error.includes('trùng lặp')
         )
 
-        let toastMessage = `Tạo thành công ${results.length}/${goodsList.length} mặt hàng.\n\nCòn ${goodsList.length - results.length} mặt hàng cần sửa lỗi trước khi có thể đóng modal.`
+        let toastMessage = `Tạo thành công ${results.length}/${goodsList.length} hàng hóa.\n\nCòn ${goodsList.length - results.length} hàng hóa cần sửa lỗi trước khi có thể đóng modal.`
 
         if (duplicateErrors.length > 0) {
-          toastMessage += `\n\n Có ${duplicateErrors.length} mặt hàng bị trùng mã với dữ liệu trong hệ thống.`
+          toastMessage += `\n\n Có ${duplicateErrors.length} hàng hóa bị trùng mã với dữ liệu trong hệ thống.`
         }
 
         window.showToast(toastMessage, "warning")
@@ -496,7 +496,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
 
     } catch (error) {
       console.error("Error in bulk create:", error)
-      const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi tạo mặt hàng")
+      const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi tạo hàng hóa")
       window.showToast(`Lỗi: ${errorMessage}`, "error")
     } finally {
       setLoading(false)
@@ -567,7 +567,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
             <Package className="h-6 w-6 text-orange-500" />
-            <h1 className="text-2xl font-bold text-slate-800">Thêm nhiều mặt hàng</h1>
+            <h1 className="text-2xl font-bold text-slate-800">Thêm nhiều hàng hóa</h1>
           </div>
           <button
             onClick={handleClose}
@@ -597,7 +597,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                   </label>
                 </div>
               </div>
-              
+
               {useDefaults && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Default Category */}
@@ -726,11 +726,11 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
             {/* Instructions */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-800">
-                <strong>Hướng dẫn:</strong> Điền thông tin cho từng mặt hàng. Bạn có thể thêm/xóa mặt hàng bằng các nút bên dưới.
+                <strong>Hướng dẫn:</strong> Điền thông tin cho từng hàng hóa. Bạn có thể thêm/xóa hàng hóa bằng các nút bên dưới.
                 Tất cả các trường có dấu <span className="text-red-500">*</span> là bắt buộc.
                 {useDefaults && (
                   <span className="block mt-2 text-orange-600 font-medium">
-                    ✓ Đã bật chế độ sử dụng giá trị mặc định. Các mặt hàng mới sẽ tự động điền sẵn các trường đã chọn checkbox.
+                    ✓ Đã bật chế độ sử dụng giá trị mặc định. Các hàng hóa mới sẽ tự động điền sẵn các trường đã chọn checkbox.
                   </span>
                 )}
                 {hasBackendErrors && (
@@ -748,8 +748,8 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                 // Ensure goods has packing array (use local variable, don't mutate)
                 const goodsWithPacking = {
                   ...goods,
-                  goodsPackingCreates: goods.goodsPackingCreates && goods.goodsPackingCreates.length > 0 
-                    ? goods.goodsPackingCreates 
+                  goodsPackingCreates: goods.goodsPackingCreates && goods.goodsPackingCreates.length > 0
+                    ? goods.goodsPackingCreates
                     : [{ unitPerPackage: "" }]
                 }
                 console.log(`Rendering goods ${index + 1}:`, goodsWithPacking, 'isSuccessful:', isSuccessful)
@@ -758,7 +758,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-2">
                         <h3 className="text-lg font-semibold text-slate-700">
-                          Mặt hàng {index + 1}
+                          hàng hóa {index + 1}
                         </h3>
                         {isSuccessful && (
                           <span className="px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full">
@@ -804,10 +804,10 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                       {/* Goods Code */}
                       <div className="space-y-2">
                         <Label className="text-sm font-medium text-slate-700">
-                          Mã mặt hàng <span className="text-red-500">*</span>
+                          Mã hàng hóa <span className="text-red-500">*</span>
                         </Label>
                         <Input
-                          placeholder="Nhập mã mặt hàng..."
+                          placeholder="Nhập mã hàng hóa..."
                           value={goods.goodsCode}
                           onChange={(e) => updateGoodsRow(index, 'goodsCode', e.target.value)}
                           disabled={isSuccessful}
@@ -827,10 +827,10 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                       {/* Goods Name */}
                       <div className="space-y-2">
                         <Label className="text-sm font-medium text-slate-700">
-                          Tên mặt hàng <span className="text-red-500">*</span>
+                          Tên hàng hóa <span className="text-red-500">*</span>
                         </Label>
                         <Input
-                          placeholder="Nhập tên mặt hàng..."
+                          placeholder="Nhập tên hàng hóa..."
                           value={goods.goodsName}
                           onChange={(e) => updateGoodsRow(index, 'goodsName', e.target.value)}
                           disabled={isSuccessful}
@@ -1054,7 +1054,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                 className="h-[38px] px-6 border-orange-500 text-orange-500 hover:bg-orange-50"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Thêm mặt hàng
+                Thêm hàng hóa
               </Button>
             </div>
 

@@ -288,7 +288,7 @@ export default function CategoriesPage() {
     ]
     if (!statusSearchQuery) return statusOptions
     const query = statusSearchQuery.toLowerCase()
-    return statusOptions.filter(option => 
+    return statusOptions.filter(option =>
       option.label.toLowerCase().includes(query)
     )
   }, [statusSearchQuery])
@@ -377,7 +377,7 @@ export default function CategoriesPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-600">Quản lý Danh mục</h1>
-            <p className="text-slate-600 mt-1">Quản lý các danh mục sản phẩm trong hệ thống</p>
+            <p className="text-slate-600 mt-1">Quản lý các danh mục hàng hóa trong hệ thống</p>
           </div>
           <Button
             className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"

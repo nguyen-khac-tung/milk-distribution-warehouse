@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  Search, 
-  X, 
-  Home, 
-  Users, 
-  Package, 
-  ShoppingCart, 
-  BarChart3, 
+import {
+  Search,
+  X,
+  Home,
+  Users,
+  Package,
+  ShoppingCart,
+  BarChart3,
   Settings,
   FileText,
   MapPin,
@@ -36,127 +36,127 @@ const SearchBar = () => {
   // Danh sách các chức năng có thể tìm kiếm (dựa trên Sidebar)
   const searchItems = [
     // Dashboard
-    { 
-      id: "dashboard", 
-      title: "Dashboard", 
+    {
+      id: "dashboard",
+      title: "Dashboard",
       description: "Trang tổng quan hệ thống",
-      icon: Home, 
+      icon: Home,
       path: "/dashboard",
       category: "DASHBOARD"
     },
 
     // User Management
-    { 
-      id: "accounts", 
-      title: "Quản lý tài khoản", 
+    {
+      id: "accounts",
+      title: "Quản lý tài khoản",
       description: "Quản lý tài khoản người dùng",
-      icon: Users, 
+      icon: Users,
       path: "/accounts",
       category: "QUẢN LÝ NGƯỜI DÙNG"
     },
 
     // Product Management
-    { 
-      id: "categories", 
-      title: "Quản lý danh mục", 
-      description: "Phân loại sản phẩm",
-      icon: Tag, 
+    {
+      id: "categories",
+      title: "Quản lý danh mục",
+      description: "Phân loại hàng hóa",
+      icon: Tag,
       path: "/categories",
       category: "QUẢN LÝ HÀNG HÓA"
     },
-    { 
-      id: "unitMeasures", 
-      title: "Quản lý đơn vị", 
+    {
+      id: "unitMeasures",
+      title: "Quản lý đơn vị",
       description: "Quản lý đơn vị đo lường",
-      icon: Scale, 
+      icon: Scale,
       path: "/unit-measures",
       category: "QUẢN LÝ HÀNG HÓA"
     },
-    { 
-      id: "goods", 
-      title: "Quản lý hàng hóa", 
-      description: "Quản lý sản phẩm và hàng hóa",
-      icon: Package, 
+    {
+      id: "goods",
+      title: "Quản lý hàng hóa",
+      description: "Quản lý hàng hóa và hàng hóa",
+      icon: Package,
       path: "/goods",
       category: "QUẢN LÝ HÀNG HÓA"
     },
-    { 
-      id: "batches", 
-      title: "Quản lý lô hàng", 
+    {
+      id: "batches",
+      title: "Quản lý lô hàng",
       description: "Quản lý các lô hàng",
-      icon: Package, 
+      icon: Package,
       path: "/batches",
       category: "QUẢN LÝ HÀNG HÓA"
     },
-    { 
-      id: "pallets", 
-      title: "Quản lý kệ kê hàng", 
+    {
+      id: "pallets",
+      title: "Quản lý kệ kê hàng",
       description: "Quản lý các kệ kê hàng trong kho",
-      icon: Package, 
+      icon: Package,
       path: "/pallets",
       category: "QUẢN LÝ HÀNG HÓA"
     },
 
     // Business Partners
-    { 
-      id: "suppliers", 
-      title: "Quản lý nhà cung cấp", 
+    {
+      id: "suppliers",
+      title: "Quản lý nhà cung cấp",
       description: "Quản lý đối tác cung cấp",
-      icon: Truck, 
+      icon: Truck,
       path: "/suppliers",
       category: "QUẢN LÝ ĐỐI TÁC"
     },
-    { 
-      id: "retailers", 
-      title: "Quản lý nhà bán lẻ", 
+    {
+      id: "retailers",
+      title: "Quản lý nhà bán lẻ",
       description: "Quản lý đối tác bán lẻ",
-      icon: ShoppingCart, 
+      icon: ShoppingCart,
       path: "/retailers",
       category: "QUẢN LÝ ĐỐI TÁC"
     },
 
     // Location Management
-    { 
-      id: "areas", 
-      title: "Quản lý khu vực", 
+    {
+      id: "areas",
+      title: "Quản lý khu vực",
       description: "Quản lý các khu vực kho",
-      icon: MapPin, 
+      icon: MapPin,
       path: "/areas",
       category: "QUẢN LÝ VỊ TRÍ VÀ KHU VỰC"
     },
-    { 
-      id: "locations", 
-      title: "Quản lý vị trí", 
+    {
+      id: "locations",
+      title: "Quản lý vị trí",
       description: "Quản lý vị trí lưu trữ",
-      icon: Building2, 
+      icon: Building2,
       path: "/locations",
       category: "QUẢN LÝ VỊ TRÍ VÀ KHU VỰC"
     },
-    { 
-      id: "storage-condition", 
-      title: "Quản lý điều kiện bảo quản", 
+    {
+      id: "storage-condition",
+      title: "Quản lý điều kiện bảo quản",
       description: "Quản lý điều kiện lưu trữ",
-      icon: Thermometer, 
+      icon: Thermometer,
       path: "/storage-conditions",
       category: "QUẢN LÝ VỊ TRÍ VÀ KHU VỰC"
     },
 
     // Reports
-    { 
-      id: "reports", 
-      title: "Báo cáo", 
+    {
+      id: "reports",
+      title: "Báo cáo",
       description: "Xem các báo cáo chi tiết",
-      icon: BarChart3, 
+      icon: BarChart3,
       path: "/reports",
       category: "BÁO CÁO"
     },
 
     // System
-    { 
-      id: "settings", 
-      title: "Cài đặt", 
+    {
+      id: "settings",
+      title: "Cài đặt",
       description: "Cấu hình hệ thống",
-      icon: Settings, 
+      icon: Settings,
       path: "/settings",
       category: "HỆ THỐNG"
     }
@@ -238,7 +238,7 @@ const SearchBar = () => {
     return acc;
   }, {});
 
-    return (
+  return (
     <>
       {/* Search Button */}
       <div
@@ -266,16 +266,16 @@ const SearchBar = () => {
         }}
       >
         <Search size={16} color="#6b7280" />
-        <span style={{ 
-          color: "#6b7280", 
+        <span style={{
+          color: "#6b7280",
           fontSize: "14px",
           flex: 1,
           textAlign: "left"
         }}>
           Tìm kiếm chức năng...
         </span>
-        <span style={{ 
-          color: "#9ca3af", 
+        <span style={{
+          color: "#9ca3af",
           fontSize: "12px",
           backgroundColor: "#f3f4f6",
           padding: "2px 6px",
@@ -334,7 +334,7 @@ const SearchBar = () => {
                 placeholder="Tìm kiếm chức năng..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                    style={{
+                style={{
                   flex: 1,
                   border: "none",
                   outline: "none",
@@ -344,8 +344,8 @@ const SearchBar = () => {
                 }}
               />
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span style={{ 
-                  color: "#9ca3af", 
+                <span style={{
+                  color: "#9ca3af",
                   fontSize: "12px",
                   backgroundColor: "#f3f4f6",
                   padding: "2px 6px",
@@ -384,9 +384,9 @@ const SearchBar = () => {
             >
               {searchQuery.trim() === "" ? (
                 <div style={{ padding: "0 20px" }}>
-                  <div style={{ 
-                    color: "#6b7280", 
-                    fontSize: "14px", 
+                  <div style={{
+                    color: "#6b7280",
+                    fontSize: "14px",
                     marginBottom: "16px",
                     fontWeight: "600",
                     textTransform: "uppercase",
@@ -424,9 +424,9 @@ const SearchBar = () => {
                 <div style={{ padding: "0 20px" }}>
                   {Object.entries(groupedResults).map(([category, items]) => (
                     <div key={category} style={{ marginBottom: "24px" }}>
-                      <div style={{ 
-                        color: "#6b7280", 
-                        fontSize: "12px", 
+                      <div style={{
+                        color: "#6b7280",
+                        fontSize: "12px",
                         marginBottom: "8px",
                         fontWeight: "600",
                         textTransform: "uppercase",
@@ -466,8 +466,8 @@ const SearchBar = () => {
                   ))}
                 </div>
               ) : (
-                <div style={{ 
-                  padding: "40px 20px", 
+                <div style={{
+                  padding: "40px 20px",
                   textAlign: "center",
                   color: "#6b7280",
                   display: "flex",
@@ -489,7 +489,7 @@ const SearchBar = () => {
         </div>
       )}
     </>
-    );
+  );
 };
 
 export default SearchBar;
