@@ -634,8 +634,7 @@ namespace MilkDistributionWarehouse.Services
                                 UserId = userId,
                                 Title = "Phiếu kiểm kê thay đổi phân công",
                                 Content = $"Bạn đã được gỡ khỏi phiếu kiểm kê {sheet.StocktakingSheetId}. Vui lòng liên hệ quản lý kho nếu cần thêm thông tin.",
-                                EntityType = NotificationEntityType.StocktakingSheet,
-                                EntityId = sheet.StocktakingSheetId,
+                                EntityType = NotificationEntityType.NoNavigation,
                             });
                         }
                     }

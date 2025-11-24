@@ -32,6 +32,7 @@ namespace MilkDistributionWarehouse.Services
         private readonly IDisposalRequestRepository _disposalRequestRepository;
         private readonly IDisposalNoteRepository _disposalNoteRepository;
         private readonly IStocktakingSheetRepository _stocktakingSheetRepository;
+        private readonly IStocktakingAreaRepository _stocktakingAreaRepository;
         private readonly IHubContext<NotificationHub> _hubContext;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
@@ -44,6 +45,7 @@ namespace MilkDistributionWarehouse.Services
                                    IDisposalRequestRepository disposalRequestRepository,
                                    IDisposalNoteRepository disposalNoteRepository,
                                    IStocktakingSheetRepository stocktakingSheetRepository,
+                                   IStocktakingAreaRepository stocktakingAreaRepository,
                                    IHubContext<NotificationHub> hubContext,
                                    IUnitOfWork unitOfWork,
                                    IMapper mapper)
@@ -56,6 +58,7 @@ namespace MilkDistributionWarehouse.Services
             _disposalRequestRepository = disposalRequestRepository;
             _disposalNoteRepository = disposalNoteRepository;
             _stocktakingSheetRepository = stocktakingSheetRepository;
+            _stocktakingAreaRepository = stocktakingAreaRepository;
             _hubContext = hubContext;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
@@ -263,6 +266,11 @@ namespace MilkDistributionWarehouse.Services
                     break;
 
                 case NotificationEntityType.NoNavigation: 
+                    break;
+
+                case NotificationEntityType.StocktakingArea:
+                    var stocktakingAreas = await _stocktakingAreaRepository.GetStocktakingAreasByStocktakingSheetId(notification.EntityId);
+                    if (!stocktakingAreas.Any()) return errorMessage;
                     break;
 
                 default: return errorMessage;
