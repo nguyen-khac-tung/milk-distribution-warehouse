@@ -19,6 +19,8 @@ export const NotificationEntityType = {
     DISPOSAL_REQUEST: 5,
     DISPOSAL_NOTE: 6,
     STOCKTAKING_SHEET: 7,
+    INVENTORY_REPORT: 8,
+    NO_NAVIGATION: 9,
 };
 
 const unwrapResponse = (response, fallbackMessage = "Không thể xử lý yêu cầu thông báo.") => {
@@ -70,27 +72,38 @@ export const getNotificationDetail = async (notificationId) => {
 /**
  * Map EntityType to route path
  * @param {number} entityType - NotificationEntityType constant
- * @param {string} entityId - Entity ID
+ * @param {string} entityId - Entity ID (optional for some entity types)
  * @returns {string|null} - Route path or null if invalid
  */
 export const getEntityRoute = (entityType, entityId) => {
-    if (!entityId) return null;
-
     switch (entityType) {
         case NotificationEntityType.PURCHASE_ORDER:
+            if (!entityId) return null;
             return `/purchase-orders/${entityId}`;
         case NotificationEntityType.SALE_ORDER:
+            if (!entityId) return null;
             return `/sales-orders/${entityId}`;
         case NotificationEntityType.GOODS_RECEIPT_NOTE:
+            if (!entityId) return null;
             return `/goods-receipt-notes/${entityId}`;
         case NotificationEntityType.GOODS_ISSUE_NOTE:
+            if (!entityId) return null;
             return `/goods-issue-note-detail/${entityId}`;
         case NotificationEntityType.DISPOSAL_REQUEST:
+            if (!entityId) return null;
             return `/disposal/${entityId}`;
         case NotificationEntityType.DISPOSAL_NOTE:
+            if (!entityId) return null;
             return `/disposal-note-detail/${entityId}`;
         case NotificationEntityType.STOCKTAKING_SHEET:
+            if (!entityId) return null;
             return `/stocktakings/${entityId}`;
+        case NotificationEntityType.INVENTORY_REPORT:
+            // Thông báo về báo cáo tồn kho - link đến trang báo cáo tồn kho
+            return `/reports/inventory`;
+        case NotificationEntityType.NO_NAVIGATION:
+            // Thông báo không có navigation - chỉ đánh dấu đã đọc, không điều hướng
+            return null;
         default:
             return null;
     }
