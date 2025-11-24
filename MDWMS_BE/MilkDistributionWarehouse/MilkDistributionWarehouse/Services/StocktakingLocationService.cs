@@ -310,9 +310,9 @@ namespace MilkDistributionWarehouse.Services
             if (stocktakingArea.Status == StockAreaStatus.Pending)
             {
                 notificationToCreate.UserId = stocktakingArea.AssignTo;
-                notificationToCreate.Title = "Kiểm kê vị trí bị từ chối";
-                notificationToCreate.Content = $"Khu vực kiểm kê của bạn đã bị từ chối ở một số khu vực. Vui lòng kiểm tra lại.";
-                notificationToCreate.EntityType = NotificationEntityType.StocktakingSheet;
+                notificationToCreate.Title = $"Khu vực kiểm kê '{stocktakingArea.Area.AreaName}' đã bị từ chối";
+                notificationToCreate.Content = $"Khu vực kiểm kê '{stocktakingArea.Area.AreaName}' của bạn đã bị từ chối do có sai lệch hoặc yêu cầu điều chỉnh. Vui lòng kiểm tra và thực hiện lại.";
+                notificationToCreate.EntityType = NotificationEntityType.StocktakingArea;
                 notificationToCreate.EntityId = stocktakingArea.StocktakingSheetId;
                 notificationToCreate.Category = NotificationCategory.Important;
             }

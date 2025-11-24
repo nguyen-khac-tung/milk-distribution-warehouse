@@ -19,6 +19,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, NotificationDetailDto?)> GetNotificationDetail(Guid notificationId, int? userId);
         Task<string> MarkAsRead(NotificationMarkAsReadDto dto, int? userId);
         Task<string> MarkAllAsRead(int? userId);
+        Task CreateNotificationNoTransaction(NotificationCreateDto notificationCreateDto);
     }
 
     public class NotificationService : INotificationService
@@ -31,6 +32,7 @@ namespace MilkDistributionWarehouse.Services
         private readonly IDisposalRequestRepository _disposalRequestRepository;
         private readonly IDisposalNoteRepository _disposalNoteRepository;
         private readonly IStocktakingSheetRepository _stocktakingSheetRepository;
+        private readonly IStocktakingAreaRepository _stocktakingAreaRepository;
         private readonly IHubContext<NotificationHub> _hubContext;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
@@ -43,6 +45,7 @@ namespace MilkDistributionWarehouse.Services
                                    IDisposalRequestRepository disposalRequestRepository,
                                    IDisposalNoteRepository disposalNoteRepository,
                                    IStocktakingSheetRepository stocktakingSheetRepository,
+                                   IStocktakingAreaRepository stocktakingAreaRepository,
                                    IHubContext<NotificationHub> hubContext,
                                    IUnitOfWork unitOfWork,
                                    IMapper mapper)
@@ -55,6 +58,7 @@ namespace MilkDistributionWarehouse.Services
             _disposalRequestRepository = disposalRequestRepository;
             _disposalNoteRepository = disposalNoteRepository;
             _stocktakingSheetRepository = stocktakingSheetRepository;
+            _stocktakingAreaRepository = stocktakingAreaRepository;
             _hubContext = hubContext;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
@@ -79,6 +83,25 @@ namespace MilkDistributionWarehouse.Services
             catch
             {
                 await _unitOfWork.RollbackTransactionAsync();
+            }
+        }
+
+        public async Task CreateNotificationNoTransaction(NotificationCreateDto notificationCreateDto)
+        {
+            if (notificationCreateDto == null) return;
+
+            var notification = _mapper.Map<Notification>(notificationCreateDto);
+            try
+            {
+                await _notificationRepository.CreateNotification(notification);
+                var notificationDto = _mapper.Map<NotificationDto>(notification);
+
+                await _hubContext.Clients
+                    .Group(notification.UserId.ToString() ?? "")
+                    .SendAsync("ReceiveNotification", notificationDto);
+            }
+            catch
+            {
             }
         }
 
@@ -243,6 +266,11 @@ namespace MilkDistributionWarehouse.Services
                     break;
 
                 case NotificationEntityType.NoNavigation: 
+                    break;
+
+                case NotificationEntityType.StocktakingArea:
+                    var stocktakingAreas = await _stocktakingAreaRepository.GetStocktakingAreasByStocktakingSheetId(notification.EntityId);
+                    if (!stocktakingAreas.Any()) return errorMessage;
                     break;
 
                 default: return errorMessage;

@@ -84,7 +84,6 @@ namespace MilkDistributionWarehouse.Services
                     var excludedStatus = new int[]
                     {
                         StocktakingStatus.Draft,
-                        StocktakingStatus.Cancelled
                     };
                     stocktakingSheetQuery = stocktakingSheetQuery.Where(ss => ss.StocktakingAreas
                                                 .Any(sa => userId.HasValue
@@ -229,19 +228,38 @@ namespace MilkDistributionWarehouse.Services
             if (stocktakingSheetExist == null)
                 return ("Phiếu kiểm kê không tồn tại.".ToMessageForUser(), default);
 
+            var oldAssignToList = stocktakingSheetExist.StocktakingAreas.Select(sa => sa.AssignTo).Distinct().ToList();
             try
             {
                 await _unitOfWork.BeginTransactionAsync();
 
-                string errorMessage = update switch
+                StocktakingSheetAssignStatus? assignStatusPayload = null;
+                StocktakingSheetReAssignStatus? reAssignStatusPayload = null;
+                string errorMessage;
+
+                switch (update)
                 {
-                    StocktakingSheetAssignStatus assignStatus => await HandleAssignStatus(stocktakingSheetExist, assignStatus, userId),
-                    StocktakingSheetReAssignStatus reAssingStatus => await HandleReAssignStatus(stocktakingSheetExist, reAssingStatus, userId),
-                    StocktakingSheetCancelStatus => await HandleCancelStatus(stocktakingSheetExist, userId),
-                    StocktakingSheetInProgressStatus inProgress => await HandleInProgressStatus(stocktakingSheetExist, inProgress, userId),
-                    StocktakingSheetCompletedStatus completedStatus => await HandleCompletedStatus(stocktakingSheetExist, completedStatus.Note),
-                    _ => "Loại cập nhật trạng thái không hợp lệ.".ToMessageForUser()
-                };
+                    case StocktakingSheetAssignStatus assignStatus:
+                        assignStatusPayload = assignStatus;
+                        errorMessage = await HandleAssignStatus(stocktakingSheetExist, assignStatus, userId);
+                        break;
+                    case StocktakingSheetReAssignStatus reAssignStatus:
+                        reAssignStatusPayload = reAssignStatus;
+                        errorMessage = await HandleReAssignStatus(stocktakingSheetExist, reAssignStatus, userId);
+                        break;
+                    case StocktakingSheetCancelStatus:
+                        errorMessage = await HandleCancelStatus(stocktakingSheetExist, userId);
+                        break;
+                    case StocktakingSheetInProgressStatus inProgress:
+                        errorMessage = await HandleInProgressStatus(stocktakingSheetExist, inProgress, userId);
+                        break;
+                    case StocktakingSheetCompletedStatus completedStatus:
+                        errorMessage = await HandleCompletedStatus(stocktakingSheetExist, completedStatus.Note);
+                        break;
+                    default:
+                        errorMessage = "Loại cập nhật trạng thái không hợp lệ.".ToMessageForUser();
+                        break;
+                }
 
                 if (!string.IsNullOrEmpty(errorMessage))
                 {
@@ -250,7 +268,7 @@ namespace MilkDistributionWarehouse.Services
 
                 await _unitOfWork.CommitTransactionAsync();
 
-                await HandleNotificationStatusChange(stocktakingSheetExist);
+                await HandleNotificationStatusChange(stocktakingSheetExist, oldAssignToList, assignStatusPayload, reAssignStatusPayload);
 
                 return ("", new StocktakingSheeteResponse { StocktakingSheetId = update.StocktakingSheetId });
             }
@@ -542,58 +560,99 @@ namespace MilkDistributionWarehouse.Services
             return string.Empty;
         }
 
-        private async Task HandleNotificationStatusChange(StocktakingSheet sheet)
+        private async Task HandleNotificationStatusChange(
+            StocktakingSheet sheet,
+            List<int?> oldAssignToList,
+            StocktakingSheetAssignStatus? assignStatus = null,
+            StocktakingSheetReAssignStatus? reAssignStatus = null)
         {
             var notificationToCreates = new List<NotificationCreateDto>();
             var staffIds = sheet.StocktakingAreas
-                            .Where(sa => sa.AssignTo.HasValue)
-                            .Select(sa => sa.AssignTo.Value)
-                            .Distinct()
-                            .ToList();
+                .Where(sa => sa.AssignTo.HasValue)
+                .Select(sa => sa.AssignTo.Value)
+                .Distinct()
+                .ToList();
+
             switch (sheet.Status)
             {
                 case StocktakingStatus.Assigned:
+                    var hasOldAssignments = oldAssignToList != null &&
+                                            oldAssignToList.Any(assignTo => assignTo.HasValue);
+
+                    if (!hasOldAssignments && assignStatus?.StocktakingAreaAssign != null)
                     {
-                        if (!staffIds.Any()) break;
-                        foreach (var staffId in staffIds)
+                        var assignUserIds = assignStatus.StocktakingAreaAssign
+                            .Select(sa => sa.AssignTo)
+                            .Distinct()
+                            .ToList();
+
+                        foreach (var userId in assignUserIds)
                         {
                             notificationToCreates.Add(new NotificationCreateDto
                             {
-                                UserId = staffId,
+                                UserId = userId,
                                 Title = "Phiếu kiểm kê được phân công",
-                                Content = $"Bạn đã được phân công kiểm kê trong phiếu kiểm kê {sheet.StocktakingSheetId}. Vui lòng kiểm tra và thực hiện kiểm kê đúng thời gian quy định.",
+                                Content = $"Bạn đã được phân công kiểm kê trong phiếu kiểm kê {sheet.StocktakingSheetId}. Vui lòng kiểm tra và thực hiện đúng thời gian quy định.",
                                 EntityType = NotificationEntityType.StocktakingSheet,
                                 EntityId = sheet.StocktakingSheetId,
                             });
                         }
-                        break;
                     }
-                case StocktakingStatus.Cancelled:
+                    else if (hasOldAssignments && reAssignStatus?.StocktakingAreaReAssign != null)
                     {
-                        if (!staffIds.Any()) break;
-                        foreach (var staffId in staffIds)
+                        var reAssignUserIds = reAssignStatus.StocktakingAreaReAssign
+                            .Select(sa => sa.AssignTo)
+                            .Distinct()
+                            .ToList();
+
+                        foreach (var userId in reAssignUserIds)
                         {
                             notificationToCreates.Add(new NotificationCreateDto
                             {
-                                UserId = staffId,
-                                Title = "Phiếu kiểm kê bị huỷ",
-                                Content = $"Phiếu kiểm kê {sheet.StocktakingSheetId} đã bị huỷ. Vui lòng liên hệ quản lý kho để biết thêm chi tiết.",
+                                UserId = userId,
+                                Title = "Phiếu kiểm kê được phân công",
+                                Content = $"Bạn đã được phân công kiểm kê trong phiếu kiểm kê {sheet.StocktakingSheetId}. Vui lòng kiểm tra và thực hiện đúng thời gian quy định.",
                                 EntityType = NotificationEntityType.StocktakingSheet,
                                 EntityId = sheet.StocktakingSheetId,
-                                Category = NotificationCategory.Important
                             });
                         }
-                        break;
+
+                        var previousAssignUserIds = oldAssignToList?
+                            .Where(id => id.HasValue)
+                            .Select(id => id!.Value)
+                            .Distinct()
+                            .ToList() ?? new List<int>();
+
+                        var removedUserIds = previousAssignUserIds
+                            .Except(reAssignUserIds)
+                            .ToList();
+
+                        foreach (var userId in removedUserIds)
+                        {
+                            notificationToCreates.Add(new NotificationCreateDto
+                            {
+                                UserId = userId,
+                                Title = "Phiếu kiểm kê thay đổi phân công",
+                                Content = $"Bạn đã được gỡ khỏi phiếu kiểm kê {sheet.StocktakingSheetId}. Vui lòng liên hệ quản lý kho nếu cần thêm thông tin.",
+                                EntityType = NotificationEntityType.NoNavigation,
+                            });
+                        }
                     }
-                case StocktakingStatus.InProgress:
-                    notificationToCreates.Add(new NotificationCreateDto
+                    break;
+                case StocktakingStatus.Cancelled:
+                    if (!staffIds.Any()) break;
+                    foreach (var staffId in staffIds)
                     {
-                        UserId = sheet.CreatedBy,
-                        Title = "Phiếu kiểm kê đang tiến hành",
-                        Content = $"Phiếu kiểm kê {sheet.StocktakingSheetId} đã được nhân viên bắt đầu kiểm kê.",
-                        EntityType = NotificationEntityType.StocktakingSheet,
-                        EntityId = sheet.StocktakingSheetId,
-                    });
+                        notificationToCreates.Add(new NotificationCreateDto
+                        {
+                            UserId = staffId,
+                            Title = "Phiếu kiểm kê bị huỷ",
+                            Content = $"Phiếu kiểm kê {sheet.StocktakingSheetId} đã bị huỷ. Vui lòng liên hệ quản lý kho để biết thêm chi tiết.",
+                            EntityType = NotificationEntityType.StocktakingSheet,
+                            EntityId = sheet.StocktakingSheetId,
+                            Category = NotificationCategory.Important
+                        });
+                    }
                     break;
                 case StocktakingStatus.Completed:
                     notificationToCreates.Add(new NotificationCreateDto
@@ -621,6 +680,7 @@ namespace MilkDistributionWarehouse.Services
                 default:
                     break;
             }
+
             if (notificationToCreates.Any())
             {
                 await _notificationService.CreateNotificationBulk(notificationToCreates);

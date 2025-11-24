@@ -36,11 +36,12 @@ namespace MilkDistributionWarehouse.Services
         private readonly IStocktakingStatusDomainService _stocktakingStatusDomainService;
         private readonly IPalletRepository _palletRepository;
         private readonly INotificationService _notificationService;
+        private readonly IUserRepository _userRepository;
         public StocktakingAreaService(IStocktakingAreaRepository stocktakingAreaRepository, IAreaRepository areaRepository, IMapper mapper,
             IStocktakingLocationRepository stocktakingLocationRepository, IStocktakingPalletRepository stocktakingPalletRepository,
             IStocktakingSheetRepository stocktakingSheetRepository, IUnitOfWork unitOfWork,
             IStocktakingStatusDomainService stocktakingStatusDomainService, IPalletRepository palletRepository,
-            INotificationService notificationService)
+            INotificationService notificationService, IUserRepository userRepository)
         {
             _stocktakingAreaRepository = stocktakingAreaRepository;
             _areaRepository = areaRepository;
@@ -52,6 +53,7 @@ namespace MilkDistributionWarehouse.Services
             _stocktakingStatusDomainService = stocktakingStatusDomainService;
             _palletRepository = palletRepository;
             _notificationService = notificationService;
+            _userRepository = userRepository;
         }
 
         public async Task<(string, List<StocktakingAreaDetailDto>?)> GetStocktakingAreaByStocktakingSheetId(string stoctakingSheetId, Guid? stocktakingAreaId, int? userId)
@@ -228,8 +230,6 @@ namespace MilkDistributionWarehouse.Services
                 var msg = await _stocktakingStatusDomainService.UpdateAreaStatusAsync(stocktakingArea.StocktakingAreaId, (int)targetStatus);
                 if (!string.IsNullOrEmpty(msg)) return (msg, default);
 
-                //await HandleStockAreaNotificationStatusChange(stocktakingArea);
-
                 return ("", new StocktakingAreaResponse { StocktakingAreaId = update.StocktakingAreaId });
             }
             catch (Exception ex)
@@ -243,19 +243,21 @@ namespace MilkDistributionWarehouse.Services
             var stocktakingArea = await _stocktakingAreaRepository.GetStocktakingAreaByStocktakingAreaId(update.StocktakingAreaId);
             if (stocktakingArea == null) return ("Kiểm kê khu vực không tồn tại.", default);
 
-            return await ExecuteInTransactionAsync(async () =>
+            try
             {
+                await _unitOfWork.BeginTransactionAsync();
+
                 var hasNoPendingApprovalLocations = await _stocktakingLocationRepository.HasLocationsNotPendingApprovalAsync(stocktakingArea.StocktakingAreaId);
 
                 if (stocktakingArea.Status != StockAreaStatus.PendingApproval)
-                    return ("Chỉ có thể chuyển trạng thái sang Đã duyệt khi kiểm kê khu vực ở trạng thái Chờ duyệt.".ToMessageForUser(), default(StocktakingAreaApprovalResponse?));
+                    throw new Exception ("Chỉ có thể chuyển trạng thái sang Đã duyệt khi kiểm kê khu vực ở trạng thái Chờ duyệt.".ToMessageForUser());
 
                 if (hasNoPendingApprovalLocations)
-                    return ("Chỉ có thể chuyển trạng thái sang Đã duyệt khi kiểm kê vị trí ở trạng thái Chờ duyệt.".ToMessageForUser(), default(StocktakingAreaApprovalResponse?));
+                    throw new Exception ("Chỉ có thể chuyển trạng thái sang Đã duyệt khi kiểm kê vị trí ở trạng thái Chờ duyệt.".ToMessageForUser());
 
                 var stocktakingLocations = await _stocktakingLocationRepository.GetLocationsByStockSheetIdAreaIdsAsync(stocktakingArea.StocktakingSheetId, new List<int> { (int)stocktakingArea.AreaId });
                 if (!stocktakingLocations.Any())
-                    return ("Danh sách kiểm kê vị trí trống.", default(StocktakingAreaApprovalResponse?));
+                    throw new Exception ("Danh sách kiểm kê vị trí trống.");
 
                 var validationStocktakingLocationsToApproval = await ValidationListStocktakingLocationToApproval(stocktakingLocations);
                 if (validationStocktakingLocationsToApproval.StocktakingLocationFails.Any())
@@ -271,10 +273,16 @@ namespace MilkDistributionWarehouse.Services
 
                 await HandleUpdateStockSheetApproval(update.StocktakingAreaId, stocktakingArea.StocktakingSheetId);
 
-                //await HandleStockAreaNotificationStatusChange(stocktakingArea);
+                await _unitOfWork.CommitTransactionAsync();
+
+                await HandleStockAreaNotificationStatusChange(stocktakingArea);
 
                 return ("", validationStocktakingLocationsToApproval);
-            });
+            }catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return (ex.Message, default);
+            }
         }
 
         private void HandleUpdateStockLocation(ICollection<StocktakingLocation> stocktakingLocations)
@@ -306,6 +314,8 @@ namespace MilkDistributionWarehouse.Services
             var stocktakingArea = await _stocktakingAreaRepository.GetStocktakingAreaByStocktakingAreaId(update.StocktakingAreaId);
             if (stocktakingArea == null) return ("Kiểm kê khu vực không tồn tại.", default);
 
+            var oldAssignTo = stocktakingArea.AssignTo;
+
             if (stocktakingArea.StocktakingLocations.Any())
                 return ("Nhân viên đang tiến hành kiểm kê. Không thể phân công lại.", default);
 
@@ -318,6 +328,8 @@ namespace MilkDistributionWarehouse.Services
 
             var updateResult = await _stocktakingAreaRepository.UpdateStocktakingArea(stocktakingArea);
             if (updateResult == 0) return ("Cập nhật kiểm kê khu vực thất bại.", default);
+
+            await HandleStockSheetNotificationStatusChange(stocktakingArea,(int)oldAssignTo);
 
             return ("", update);
         }
@@ -534,42 +546,65 @@ namespace MilkDistributionWarehouse.Services
 
         private async Task<string> HandleStocktakingAreaPendingApproval(StocktakingArea stocktakingArea)
         {
-            if (stocktakingArea.StocktakingAreaId == Guid.Empty)
-                return "Mã kiểm kê khu vực không hợp lệ.";
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
 
-            if (stocktakingArea.Status != StockAreaStatus.Pending)
-                return "Chỉ được chuyển sang trạng thái Chờ duyệt khi trạng thái của kiểm kê khu vực là Đang chờ kiểm kê.";
+                if (stocktakingArea.StocktakingAreaId == Guid.Empty)
+                    return "Mã kiểm kê khu vực không hợp lệ.";
 
-            var anyStockLocationPending = await _stocktakingLocationRepository.AnyStocktakingLocationPendingStatus((Guid)stocktakingArea.StocktakingAreaId);
+                if (stocktakingArea.Status != StockAreaStatus.Pending)
+                    return "Chỉ được chuyển sang trạng thái Chờ duyệt khi trạng thái của kiểm kê khu vực là Đang chờ kiểm kê.";
 
-            if (anyStockLocationPending)
-                return "Chỉ được chuyển trạng thái Chờ duyệt khi toàn bộ các vị trị ở trạng thái Đã kiểm kê.".ToMessageForUser();
+                var anyStockLocationPending = await _stocktakingLocationRepository.AnyStocktakingLocationPendingStatus((Guid)stocktakingArea.StocktakingAreaId);
 
-            if (!stocktakingArea.StocktakingLocations.Any())
-                return "Danh sách kiểm kê vị trí của khu vực này trống.";
+                if (anyStockLocationPending)
+                    return "Chỉ được chuyển trạng thái Chờ duyệt khi toàn bộ các vị trị ở trạng thái Đã kiểm kê.".ToMessageForUser();
 
-            var message = UpdateStocktakingLocationStatusPendingApproval((List<StocktakingLocation>)stocktakingArea.StocktakingLocations, stocktakingArea.StocktakingAreaId);
-            if (!string.IsNullOrEmpty(message))
-                return message;
+                if (!stocktakingArea.StocktakingLocations.Any())
+                    return "Danh sách kiểm kê vị trí của khu vực này trống.";
 
-            stocktakingArea.Status = StockAreaStatus.PendingApproval;
+                var message = UpdateStocktakingLocationStatusPendingApproval((List<StocktakingLocation>)stocktakingArea.StocktakingLocations, stocktakingArea.StocktakingAreaId);
+                if (!string.IsNullOrEmpty(message))
+                    return message;
 
-            var stockSheet = await _stocktakingSheetRepository.GetStocktakingSheetById(stocktakingArea.StocktakingSheetId);
-            if (stockSheet == null) return "Dữ liệu phiếu kiểm kê không tồn tại.";
+                stocktakingArea.Status = StockAreaStatus.PendingApproval;
 
-            //if (stockSheet.Status != StocktakingStatus.InProgress)
-            //    return "Chỉ cập nhật sang trạng thái Chờ duyệt khi phiếu kiêm kê đang ở trạng thái Đang kiểm kê.";
+                var stockSheet = await _stocktakingSheetRepository.GetStocktakingSheetById(stocktakingArea.StocktakingSheetId);
+                if (stockSheet == null) return "Dữ liệu phiếu kiểm kê không tồn tại.";
 
-            var updateMessage = await _stocktakingStatusDomainService.UpdateSheetStatusAsync(stockSheet, StocktakingStatus.PendingApproval);
-            if (!string.IsNullOrEmpty(updateMessage))
-                return updateMessage;
+                //if (stockSheet.Status != StocktakingStatus.InProgress)
+                //    return "Chỉ cập nhật sang trạng thái Chờ duyệt khi phiếu kiêm kê đang ở trạng thái Đang kiểm kê.";
 
-            return "";
+                var updateMessage = await _stocktakingStatusDomainService.UpdateSheetStatusAsync(stockSheet, StocktakingStatus.PendingApproval);
+                if (!string.IsNullOrEmpty(updateMessage))
+                    return updateMessage;
+                await _unitOfWork.CommitTransactionAsync();
+
+                await HandleStockAreaNotificationStatusChange(stocktakingArea);
+                return "";
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ex.Message;
+            }
         }
 
         private async Task<string> HandleStocktakingAreaPending(StocktakingArea stocktakingArea)
         {
             stocktakingArea.Status = StockAreaStatus.Pending;
+            var notificationtoCreate = new NotificationCreateDto
+            {
+                UserId = stocktakingArea.StocktakingSheet.CreatedBy,
+                Title = $"Phiếu kiểm kê đang được tiến hành",
+                Content = $"Khu vực kiểm kê '{stocktakingArea.Area.AreaName}' trong phiếu kiểm kê '{stocktakingArea.StocktakingSheetId}' đang tiến hành kiểm kê.",
+                EntityType = NotificationEntityType.StocktakingSheet,
+                EntityId = stocktakingArea.StocktakingSheetId
+            };
+
+            await _notificationService.CreateNotificationNoTransaction(notificationtoCreate);
+
             return "";
         }
 
@@ -591,64 +626,91 @@ namespace MilkDistributionWarehouse.Services
             return message;
         }
 
-        private async Task<(string, TResult?)> ExecuteInTransactionAsync<TResult>(Func<Task<(string, TResult?)>> action)
-        {
-            try
-            {
-                await _unitOfWork.BeginTransactionAsync();
-
-                var (msg, result) = await action();
-                if (!string.IsNullOrEmpty(msg))
-                {
-                    await _unitOfWork.RollbackTransactionAsync();
-                    return (msg, default);
-                }
-
-                await _unitOfWork.CommitTransactionAsync();
-                return ("", result);
-            }
-            catch (Exception ex)
-            {
-                await _unitOfWork.RollbackTransactionAsync();
-                return (ex.Message, default);
-            }
-        }
-
         private async Task HandleStockAreaNotificationStatusChange(StocktakingArea stocktakingArea)
         {
-            var notificationToCreate = new NotificationCreateDto();
+            var notificationToCreateList = new List<NotificationCreateDto>();
 
             switch (stocktakingArea.Status)
             {
-                case StockAreaStatus.Pending:
-                    notificationToCreate.UserId = stocktakingArea.StocktakingSheet.CreatedBy;
-                    notificationToCreate.Title = $"Khu vực {stocktakingArea.Area.AreaName} đang tiến hành kiểm kê";
-                    notificationToCreate.Content = $"Khu vực {stocktakingArea.Area.AreaName} trong phiếu kiểm kê {stocktakingArea.StocktakingSheetId} đã được chuyển sang trạng thái Đang kiểm kê.";
-                    notificationToCreate.EntityType = NotificationEntityType.StocktakingSheet;
-                    notificationToCreate.EntityId = stocktakingArea.StocktakingSheetId;
-                    break;
                 case StockAreaStatus.PendingApproval:
-                    notificationToCreate.UserId = stocktakingArea.StocktakingSheet.CreatedBy;
-                    notificationToCreate.Title = $"Khu vực {stocktakingArea.Area.AreaName} chờ duyệt kiểm kê";
-                    notificationToCreate.Content = $"Khu vực {stocktakingArea.Area.AreaName} trong phiếu kiểm kê {stocktakingArea.StocktakingSheetId} đã được chuyển sang trạng thái Chờ duyệt.";
-                    notificationToCreate.EntityType = NotificationEntityType.StocktakingSheet;
-                    notificationToCreate.EntityId = stocktakingArea.StocktakingSheetId;
+                    notificationToCreateList.Add(new NotificationCreateDto
+                    {
+                        UserId = stocktakingArea.StocktakingSheet.CreatedBy,
+                        Title = $"Yêu cầu duyệt phân công khu vực kiểm kê.",
+                        Content = $"Khu vực '{stocktakingArea.Area.AreaName}' trong phiếu kiểm kê '{stocktakingArea.StocktakingSheetId}' đã được gửi để duyệt. Vui lòng xem xét và phê duyệt.",
+                        EntityType = NotificationEntityType.StocktakingArea,
+                        EntityId = stocktakingArea.StocktakingSheetId
+                    });
                     break;
                 case StockAreaStatus.Completed:
-                    notificationToCreate.UserId = stocktakingArea.AssignTo;
-                    notificationToCreate.Title = $"Khu vực {stocktakingArea.Area.AreaName} đã hoàn thành kiểm kê";
-                    notificationToCreate.Content = $"Khu vực {stocktakingArea.Area.AreaName} trong phiếu kiểm kê {stocktakingArea.StocktakingSheetId} đã được hoàn thành kiểm kê.";
-                    notificationToCreate.EntityType = NotificationEntityType.StocktakingSheet;
-                    notificationToCreate.EntityId = stocktakingArea.StocktakingSheetId;
-                    notificationToCreate.Category = NotificationCategory.Important;
+                    notificationToCreateList.Add(new NotificationCreateDto
+                    {
+                        UserId = stocktakingArea.AssignTo,
+                        Title = $"Khu vực đã hoàn thành kiểm kê",
+                        Content = $"Khu vực '{stocktakingArea.Area.AreaName}' trong phiếu kiểm kê '{stocktakingArea.StocktakingSheetId}' đã được hoàn thành kiểm kê.",
+                        EntityType = NotificationEntityType.StocktakingArea,
+                        EntityId = stocktakingArea.StocktakingSheetId
+                    });
+                    if(stocktakingArea.StocktakingSheet.Status == StocktakingStatus.Approved)
+                    {
+                        var stocktakingSheet = await _stocktakingSheetRepository.GetStocktakingSheetById(stocktakingArea.StocktakingSheetId);
+                        var staffIds = stocktakingSheet.StocktakingAreas.Select(sa => sa.AssignTo).Distinct().ToList();
+
+                        foreach(var staffId in staffIds)
+                        {
+                            notificationToCreateList.Add(new NotificationCreateDto
+                            {
+                                UserId = staffId,
+                                Title = $"Phiếu kiểm kê đã được duyệt",
+                                Content = $"Các khu vực trong phiếu kiểm kê '{stocktakingArea.StocktakingSheetId}' đã được duyệt.",
+                                EntityType = NotificationEntityType.StocktakingArea,
+                                EntityId = stocktakingArea.StocktakingSheetId
+                            });
+                        }
+                        var salesManagers = await _userRepository.GetUsersByRoleId(RoleType.SaleManager);
+                        foreach (var salesManager in salesManagers)
+                        {
+                            notificationToCreateList.Add(new NotificationCreateDto
+                            {
+                                UserId = salesManager.UserId,
+                                Title = $"Phiếu kiểm kê đã được duyệt",
+                                Content = $"Phiếu '{stocktakingArea.StocktakingSheetId}' đã được duyệt. Vui lòng hoàn tất.",
+                                EntityType = NotificationEntityType.StocktakingArea,
+                                EntityId = stocktakingArea.StocktakingSheetId
+                            });
+                        }
+                    } 
                     break;
                 default:
                     break;
             }
-            if (notificationToCreate != null && notificationToCreate.UserId.HasValue)
+            if(notificationToCreateList.Any())
             {
-                await _notificationService.CreateNotification(notificationToCreate);
+                await _notificationService.CreateNotificationBulk(notificationToCreateList);
             }
+        }
+
+        private async Task HandleStockSheetNotificationStatusChange(StocktakingArea stocktakingArea, int oldAssignTo)
+        {
+            var notificationToCreateList = new List<NotificationCreateDto>();
+            notificationToCreateList.Add( new NotificationCreateDto()
+            {
+                UserId = stocktakingArea.AssignTo,
+                Title = $"Bạn có nhiệm vụ kiểm kê khu vực.",
+                Content = $"Khu vực '{stocktakingArea.Area.AreaName}' trong phiếu kiểm kê '{stocktakingArea.StocktakingSheetId}' đã được phân công cho bạn.",
+                EntityType = NotificationEntityType.StocktakingSheet,
+                EntityId = stocktakingArea.StocktakingSheetId,
+            });
+
+            notificationToCreateList.Add(new NotificationCreateDto
+            {
+                UserId = oldAssignTo,
+                Title = $"Bạn đã được rời khỏi nhiệm vụ kiểm kê khu vực.",
+                Content = $"Khu vực '{stocktakingArea.Area.AreaName}' trong phiếu kiểm kê '{stocktakingArea.StocktakingSheetId}' đã được giao cho nhân sự khác. Bạn không còn phụ trách khu vực này.",
+                EntityType = NotificationEntityType.NoNavigation
+            });
+
+            await _notificationService.CreateNotificationBulk(notificationToCreateList);
         }
     }
 }
