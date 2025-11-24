@@ -187,6 +187,7 @@
         public const int Pending = 2;             //Đang kiểm kê
         public const int PendingApproval = 3;     //Chờ duyệt
         public const int Completed = 4;           //Đã hoàn thành
+        public const int Cancelled = 5;           //Đã huỷ  
     }
 
     public static class StockAreaStarted
@@ -205,6 +206,7 @@
         public const int Counted = 2;             //Đã kiểm
         public const int PendingApproval = 3;     //Chờ duyệt
         public const int Completed = 4;           //Đã hoàn thành
+        public const int Cancelled = 5;           //Đã huỷ
     }
 
     /// <summary>
@@ -250,6 +252,8 @@
         public const int DisposalRequest = 5;
         public const int DisposalNote = 6;
         public const int StocktakingSheet = 7;
+        public const int InventoryReport = 8;
+        public const int NoNavigation = 9;
     }
 
     public static class StocktakingSettings

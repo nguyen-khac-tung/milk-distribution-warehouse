@@ -41,7 +41,7 @@ namespace MilkDistributionWarehouse.Services
                 return "Không tìm thấy chi tiết phiếu xuất hủy.".ToMessageForUser();
 
             if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
-                throw new Exception("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser());
+                return "Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser();
 
             if (noteDetail.Status != DisposalNoteItemStatus.Picked)
                 return "Chỉ có thể thực hiện thao tác này khi hạng mục đang ở trạng thái 'Đã lấy hàng'.".ToMessageForUser();
@@ -82,7 +82,7 @@ namespace MilkDistributionWarehouse.Services
             if (rePickList.IsNullOrEmpty()) return "Danh sách yêu cầu lấy lại hàng không được bỏ trống.".ToMessageForUser();
 
             if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
-                throw new Exception("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser());
+                return "Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser();
 
             if (rePickList.Any(re => string.IsNullOrWhiteSpace(re.RejectionReason)))
                 return "Quản lý kho phải cung cấp lý do từ chối cho mỗi mặt hàng lấy lại.".ToMessageForUser();

@@ -34,6 +34,7 @@ namespace MilkDistributionWarehouse.Repositories
         public async Task<StocktakingArea?> GetStocktakingAreaByStocktakingAreaId (Guid stocktakingAreaId)
         {
             return await _context.StocktakingAreas
+                .Include(sa => sa.StocktakingSheet)
                 .Include(sa => sa.Area)
                 .Include(sa => sa.StocktakingLocations)
                 .FirstOrDefaultAsync(sa => sa.StocktakingAreaId == stocktakingAreaId);
