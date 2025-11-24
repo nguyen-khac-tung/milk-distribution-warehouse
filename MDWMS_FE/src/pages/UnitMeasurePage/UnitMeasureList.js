@@ -47,7 +47,7 @@ export default function UnitMeasuresPage() {
   const [isInitialMount, setIsInitialMount] = useState(true)
   const [isInitialized, setIsInitialized] = useState(false)
   const [statusSearchQuery, setStatusSearchQuery] = useState("")
-  
+
   // Thống kê tổng (không thay đổi khi search/filter)
   const [totalStats, setTotalStats] = useState({
     totalCount: 0,
@@ -85,7 +85,7 @@ export default function UnitMeasuresPage() {
 
         const activeCount = allUnitMeasures.filter((u) => u.status === 1).length
         const inactiveCount = allUnitMeasures.filter((u) => u.status === 2).length
-        
+
         setTotalStats({
           totalCount: totalCount,
           activeCount: activeCount,
@@ -159,7 +159,7 @@ export default function UnitMeasuresPage() {
   useEffect(() => {
     // Fetch tổng thống kê khi component mount
     fetchTotalStats()
-    
+
     // Reset tất cả filter và sort về mặc định
     setSearchQuery("")
     setStatusFilter("")
@@ -170,7 +170,7 @@ export default function UnitMeasuresPage() {
       pageSize: 10,
       totalCount: 0
     })
-    
+
     // Fetch dữ liệu hiển thị với không có sort/filter
     fetchData({
       pageNumber: 1,
@@ -236,14 +236,14 @@ export default function UnitMeasuresPage() {
   const handleCreateSuccess = () => {
     // Refresh tổng thống kê
     fetchTotalStats()
-    
+
     // Reset về trang đầu và không có sort/filter để item mới hiển thị ở đầu
     setSearchQuery("")
     setStatusFilter("")
     setSortField("")
     setSortAscending(true)
     setPagination(prev => ({ ...prev, pageNumber: 1 }))
-    
+
     // Refresh data after successful creation
     fetchData({
       pageNumber: 1,
@@ -286,7 +286,7 @@ export default function UnitMeasuresPage() {
 
       // Refresh tổng thống kê
       fetchTotalStats()
-      
+
       // Refresh data after deletion, keeping current page or going to previous page if needed
       fetchData({
         pageNumber: targetPage,
@@ -322,7 +322,7 @@ export default function UnitMeasuresPage() {
     ]
     if (!statusSearchQuery) return statusOptions
     const query = statusSearchQuery.toLowerCase()
-    return statusOptions.filter(option => 
+    return statusOptions.filter(option =>
       option.label.toLowerCase().includes(query)
     )
   }, [statusSearchQuery])
@@ -381,10 +381,10 @@ export default function UnitMeasuresPage() {
         unitMeasureId: parseInt(unitMeasureId),
         status: newStatus
       })
-      
+
       // Show success message
       window.showToast(`Đã ${newStatus === 1 ? 'kích hoạt' : 'vô hiệu hóa'} đơn vị đo: ${unitMeasureName}`, "success")
-      
+
       // Refresh data
       fetchData({
         pageNumber: pagination.pageNumber,
@@ -394,7 +394,7 @@ export default function UnitMeasuresPage() {
         sortAscending: sortAscending,
         status: statusFilter
       })
-      
+
       // Refresh total stats
       fetchTotalStats()
     } catch (error) {
@@ -411,7 +411,7 @@ export default function UnitMeasuresPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-600">Quản lý Đơn vị đo</h1>
-            <p className="text-slate-600 mt-1">Quản lý các đơn vị đo sản phẩm trong hệ thống</p>
+            <p className="text-slate-600 mt-1">Quản lý các đơn vị đo hàng hóa trong hệ thống</p>
           </div>
           <Button
             className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"

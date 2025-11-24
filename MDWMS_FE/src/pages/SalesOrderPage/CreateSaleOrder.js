@@ -236,7 +236,7 @@ function CreateSaleOrder({
             // Kiểm tra xem hàng hóa đã được chọn ở hàng khác chưa
             const isDuplicate = items.some(item => item.id !== id && item.goodsName === value && value !== "");
             if (isDuplicate) {
-                window.showToast("Mặt hàng này đã được thêm vào danh sách!", "error");
+                window.showToast("Hàng hóa này đã được thêm vào danh sách!", "error");
                 return;
             }
 
@@ -358,7 +358,7 @@ function CreateSaleOrder({
         label: supplier.companyName
     }));
 
-    // Lọc danh sách hàng hóa để không hiển thị những mặt hàng đã được chọn
+    // Lọc danh sách hàng hóa để không hiển thị những hàng hóa đã được chọn
     const getAvailableGoodsOptions = (currentItemId) => {
         const currentItem = items.find(item => item.id === currentItemId);
         if (!currentItem || !currentItem.supplierName) {
@@ -596,7 +596,7 @@ function CreateSaleOrder({
         };
     };
 
-    // Tính toán danh sách mặt hàng thiếu để tạo BackOrder
+    // Tính toán danh sách hàng hóa thiếu để tạo BackOrder
     const getInsufficientItemsForBackOrder = () => {
         const validItems = items.filter(item =>
             item.supplierName && item.goodsName && item.quantity && item.goodsPackingId && parseInt(item.quantity) > 0
@@ -636,11 +636,11 @@ function CreateSaleOrder({
         return insufficientItems;
     };
 
-    // Mở modal BackOrder với danh sách mặt hàng thiếu
+    // Mở modal BackOrder với danh sách hàng hóa thiếu
     const handleOpenBackOrderModal = () => {
         const insufficient = getInsufficientItemsForBackOrder();
         if (insufficient.length === 0) {
-            window.showToast("Không có mặt hàng nào bị thiếu tồn kho", "info");
+            window.showToast("Không có hàng hóa nào bị thiếu tồn kho", "info");
             return;
         }
         setInsufficientItems(insufficient);
@@ -1354,7 +1354,7 @@ function CreateSaleOrder({
                                     className="text-orange-500 hover:text-orange-600 font-medium cursor-pointer flex items-center gap-2"
                                 >
                                     <Plus className="h-4 w-4" />
-                                    Thêm mặt hàng
+                                    Thêm hàng hóa
                                 </button>
                             </div>
 
@@ -1425,7 +1425,7 @@ function CreateSaleOrder({
                                                 }
                                             </span>
                                         </div>
-                                        {/* Button để tạo BackOrder cho các mặt hàng thiếu - Góc phải */}
+                                        {/* Button để tạo BackOrder cho các hàng hóa thiếu - Góc phải */}
                                         {!stockInfo.allSufficient && stockInfo.insufficientCount > 0 && (
                                             <Button
                                                 type="button"
@@ -1433,7 +1433,7 @@ function CreateSaleOrder({
                                                 className="h-[38px] px-4 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all whitespace-nowrap"
                                             >
                                                 <Plus className="h-4 w-4 mr-2" />
-                                                Tạo đơn bổ sung cho {stockInfo.insufficientCount} mặt hàng thiếu
+                                                Tạo đơn bổ sung cho {stockInfo.insufficientCount} hàng hóa thiếu
                                             </Button>
                                         )}
                                     </div>
@@ -1479,17 +1479,17 @@ function CreateSaleOrder({
                                     <div className="flex flex-wrap gap-2">
                                         <div className="px-3 py-1.5 bg-gray-100 rounded-full">
                                             <span className="text-sm font-medium text-blue-600">
-                                                Tổng: {stockInfo.totalGoods} mặt hàng
+                                                Tổng: {stockInfo.totalGoods} hàng hóa
                                             </span>
                                         </div>
                                         <div className="px-3 py-1.5 bg-green-100 rounded-full">
                                             <span className="text-sm font-medium text-green-600">
-                                                Đủ: {stockInfo.sufficientCount} mặt hàng
+                                                Đủ: {stockInfo.sufficientCount} hàng hóa
                                             </span>
                                         </div>
                                         <div className="px-3 py-1.5 bg-red-100 rounded-full">
                                             <span className="text-sm font-medium text-red-600">
-                                                Thiếu: {stockInfo.insufficientCount} mặt hàng
+                                                Thiếu: {stockInfo.insufficientCount} hàng hóa
                                             </span>
                                         </div>
                                     </div>

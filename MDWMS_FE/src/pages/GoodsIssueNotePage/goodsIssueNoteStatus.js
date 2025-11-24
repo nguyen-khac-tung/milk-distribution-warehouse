@@ -8,7 +8,7 @@ export const GOODS_ISSUE_NOTE_STATUS = {
 // Export constants for use in other files
 export { GOODS_ISSUE_NOTE_STATUS as GIN_STATUS };
 
-// Trạng thái của từng dòng sản phẩm trong Phiếu Xuất Kho (Goods Issue Note Item)
+// Trạng thái của từng dòng hàng hóa trong Phiếu Xuất Kho (Goods Issue Note Item)
 export const ISSUE_ITEM_STATUS = {
     Picking: 1,             // Đang lấy hàng
     Picked: 2,              // Đã lấy hàng

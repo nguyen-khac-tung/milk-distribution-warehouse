@@ -727,7 +727,7 @@ namespace MilkDistributionWarehouse.Services
                     notificationStatusChange.Add(new NotificationCreateDto
                     {
                         UserId = purchaseOrder.AssignTo,
-                        Title = "Đơn mua hàng đã được phân công",
+                        Title = "Đơn mua hàng đã được phân công và đã đến",
                         Content = $"Bạn đã được phân công nhận đơn mua hàng {purchaseOrder.PurchaseOderId}.",
                         EntityType = NotificationEntityType.PurchaseOrder,
                         EntityId = purchaseOrder.PurchaseOderId
@@ -761,7 +761,6 @@ namespace MilkDistributionWarehouse.Services
                         Content = $"Đơn mua hàng {purchaseOrder.PurchaseOderId} đã hoàn thành.",
                         EntityType = NotificationEntityType.PurchaseOrder,
                         EntityId = purchaseOrder.PurchaseOderId,
-                        Category = NotificationCategory.Important
                     });
                     notificationStatusChange.Add(new NotificationCreateDto
                     {
@@ -770,7 +769,6 @@ namespace MilkDistributionWarehouse.Services
                         Content = $"Đơn mua hàng {purchaseOrder.PurchaseOderId} đã hoàn thành.",
                         EntityType = NotificationEntityType.PurchaseOrder,
                         EntityId = purchaseOrder.PurchaseOderId,
-                        Category = NotificationCategory.Important
                     });
                     notificationStatusChange.Add(new NotificationCreateDto
                     {
@@ -779,7 +777,6 @@ namespace MilkDistributionWarehouse.Services
                         Content = $"Đơn mua hàng {purchaseOrder.PurchaseOderId} đã hoàn thành.",
                         EntityType = NotificationEntityType.PurchaseOrder,
                         EntityId = purchaseOrder.PurchaseOderId,
-                        Category = NotificationCategory.Important
                     });
                     break;
                 default:

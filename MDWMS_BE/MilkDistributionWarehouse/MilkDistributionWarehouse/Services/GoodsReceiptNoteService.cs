@@ -261,8 +261,8 @@ namespace MilkDistributionWarehouse.Services
                     break;
                 case GoodsReceiptNoteStatus.Completed:
                     notificationToCreate.UserId = grn.PurchaseOder.AssignTo;
-                    notificationToCreate.Title = "Phiếu nhập kho hoàn thành";
-                    notificationToCreate.Content = $"Phiếu nhập kho {grn.GoodsReceiptNoteId} đã được hoàn thành.";
+                    notificationToCreate.Title = "Phiếu nhập kho hoàn tất kiểm tra";
+                    notificationToCreate.Content = $"Phiếu nhập kho {grn.GoodsReceiptNoteId} đã được hoàn thành kiểm tra.";
                     notificationToCreate.EntityType = NotificationEntityType.GoodsReceiptNote;
                     notificationToCreate.EntityId = grn.PurchaseOderId;
                     notificationToCreate.Category = NotificationCategory.Important;

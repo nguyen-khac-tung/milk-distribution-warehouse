@@ -239,6 +239,12 @@ namespace MilkDistributionWarehouse.Services
                     if (stocktakingSheet == null) return errorMessage;
                     break;
 
+                case NotificationEntityType.InventoryReport: 
+                    break;
+
+                case NotificationEntityType.NoNavigation: 
+                    break;
+
                 default: return errorMessage;
             }
 

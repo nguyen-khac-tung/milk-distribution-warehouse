@@ -287,7 +287,7 @@ const GoodsIssueNoteDetail = () => {
             );
 
             if (!foundDetail) {
-                setSearchError('Không tìm thấy sản phẩm chứa vị trí/pallet này');
+                setSearchError('Không tìm thấy hàng hóa chứa vị trí/pallet này');
                 setHighlightedPickAllocationId(null);
                 setHighlightedDetailId(null);
                 return;
@@ -524,7 +524,7 @@ const GoodsIssueNoteDetail = () => {
     const openRePickMultipleModal = () => {
         if (selectedDetailsForRePick.length === 0) {
             if (window.showToast) {
-                window.showToast("Vui lòng chọn ít nhất một mặt hàng để lấy lại", "warning");
+                window.showToast("Vui lòng chọn ít nhất một hàng hóa để lấy lại", "warning");
             }
             return;
         }
@@ -549,7 +549,7 @@ const GoodsIssueNoteDetail = () => {
 
         if (missingReasons.length > 0) {
             if (window.showToast) {
-                window.showToast("Quản lý kho phải cung cấp lý do cho tất cả mặt hàng lấy lại", "error");
+                window.showToast("Quản lý kho phải cung cấp lý do cho tất cả hàng hóa lấy lại", "error");
             }
             return;
         }
@@ -611,7 +611,7 @@ const GoodsIssueNoteDetail = () => {
                             </div>
                             <div className="flex items-baseline gap-2">
                                 <h2 className="text-lg font-semibold text-gray-900 leading-none">{title}</h2>
-                                <span className="text-sm text-gray-500 leading-none">({items.length} sản phẩm)</span>
+                                <span className="text-sm text-gray-500 leading-none">({items.length} hàng hóa)</span>
                             </div>
                             <div className="text-gray-500 ml-auto">
                                 {isGroupExpanded ? (
@@ -731,7 +731,7 @@ const GoodsIssueNoteDetail = () => {
                                             className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
                                         />
                                         <label className="text-sm text-gray-700 cursor-pointer">
-                                            Chọn tất cả ({items.filter(d => d.status === ISSUE_ITEM_STATUS.PendingApproval).length} mặt hàng)
+                                            Chọn tất cả ({items.filter(d => d.status === ISSUE_ITEM_STATUS.PendingApproval).length} hàng hóa)
                                         </label>
                                     </div>
                                 )}
@@ -762,11 +762,11 @@ const GoodsIssueNoteDetail = () => {
                                             }
                                         }}
                                         className={`border rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-all duration-300 ${isDetailHighlighted
-                                                ? 'border-green-400 border-2 shadow-lg bg-green-50'
-                                                : 'border-gray-200'
+                                            ? 'border-green-400 border-2 shadow-lg bg-green-50'
+                                            : 'border-gray-200'
                                             }`}
                                     >
-                                        {/* Header sản phẩm - Compact và tích hợp thông tin pick allocations */}
+                                        {/* Header hàng hóa - Compact và tích hợp thông tin pick allocations */}
                                         <div
                                             className="bg-white px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-100"
                                             onClick={() => toggleItemExpanded(globalIndex)}
@@ -797,7 +797,7 @@ const GoodsIssueNoteDetail = () => {
                                                         )}
                                                     </div>
 
-                                                    {/* Thông tin sản phẩm */}
+                                                    {/* Thông tin hàng hóa */}
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center gap-2 flex-wrap">
                                                             <div className="text-base font-semibold text-gray-900 truncate">

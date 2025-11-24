@@ -45,7 +45,7 @@ const Reports = () => {
         }
     ];
 
-    // Dữ liệu báo cáo sản phẩm bán chạy
+    // Dữ liệu báo cáo hàng hóa bán chạy
     const topProducts = [
         {
             key: 1,
@@ -106,7 +106,7 @@ const Reports = () => {
             )
         },
         {
-            title: "Tên sản phẩm",
+            title: "Tên hàng hóa",
             dataIndex: "name",
             key: "name",
         },
@@ -206,10 +206,10 @@ const Reports = () => {
         <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
                 <h2 style={{ fontWeight: 700, fontSize: 24, margin: 0 }}>Báo cáo & Thống kê</h2>
-                <Button 
-                    type="primary" 
+                <Button
+                    type="primary"
                     icon={<DownloadOutlined />}
-                    style={{ 
+                    style={{
                         height: '38px',
                         backgroundColor: '#f97316',
                         borderColor: '#f97316',
@@ -233,36 +233,36 @@ const Reports = () => {
             <Card style={{ marginBottom: 24 }}>
                 <Row gutter={16}>
                     <Col span={8}>
-                        <RangePicker 
-                            style={{ 
+                        <RangePicker
+                            style={{
                                 width: '100%',
                                 height: '38px'
-                            }} 
-                            placeholder={["Từ ngày", "Đến ngày"]} 
+                            }}
+                            placeholder={["Từ ngày", "Đến ngày"]}
                         />
                     </Col>
                     <Col span={6}>
-                        <Select 
-                            placeholder="Loại báo cáo" 
-                            style={{ 
+                        <Select
+                            placeholder="Loại báo cáo"
+                            style={{
                                 width: '100%',
                                 height: '38px'
-                            }} 
+                            }}
                             defaultValue="all"
                         >
                             <Option value="all">Tất cả</Option>
-                            <Option value="products">Sản phẩm</Option>
+                            <Option value="products">Hàng hóa</Option>
                             <Option value="orders">Đơn hàng</Option>
                             <Option value="customers">Khách hàng</Option>
                         </Select>
                     </Col>
                     <Col span={6}>
-                        <Select 
-                            placeholder="Khoảng thời gian" 
-                            style={{ 
+                        <Select
+                            placeholder="Khoảng thời gian"
+                            style={{
                                 width: '100%',
                                 height: '38px'
-                            }} 
+                            }}
                             defaultValue="month"
                         >
                             <Option value="week">Tuần</Option>
@@ -272,10 +272,10 @@ const Reports = () => {
                         </Select>
                     </Col>
                     <Col span={4}>
-                        <Button 
-                            type="primary" 
-                            icon={<FileTextOutlined />} 
-                            style={{ 
+                        <Button
+                            type="primary"
+                            icon={<FileTextOutlined />}
+                            style={{
                                 width: '100%',
                                 height: '38px',
                                 backgroundColor: '#f97316',
@@ -316,9 +316,9 @@ const Reports = () => {
             </Row>
 
             <Row gutter={24}>
-                {/* Top sản phẩm bán chạy */}
+                {/* Top hàng hóa bán chạy */}
                 <Col xs={24} lg={12}>
-                    <Card title="Top sản phẩm bán chạy" style={{ marginBottom: 24 }}>
+                    <Card title="Top hàng hóa bán chạy" style={{ marginBottom: 24 }}>
                         <Table
                             columns={productColumns}
                             dataSource={topProducts}

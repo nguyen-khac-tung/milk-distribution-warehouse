@@ -528,7 +528,7 @@ const DisposalNoteDetail = () => {
     const openRePickMultipleModal = () => {
         if (selectedDetailsForRePick.length === 0) {
             if (window.showToast) {
-                window.showToast("Vui lòng chọn ít nhất một mặt hàng để lấy lại", "warning");
+                window.showToast("Vui lòng chọn ít nhất một hàng hóa để lấy lại", "warning");
             }
             return;
         }
@@ -553,7 +553,7 @@ const DisposalNoteDetail = () => {
 
         if (missingReasons.length > 0) {
             if (window.showToast) {
-                window.showToast("Quản lý kho phải cung cấp lý do cho tất cả mặt hàng lấy lại", "error");
+                window.showToast("Quản lý kho phải cung cấp lý do cho tất cả hàng hóa lấy lại", "error");
             }
             return;
         }
@@ -735,7 +735,7 @@ const DisposalNoteDetail = () => {
                                             className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
                                         />
                                         <label className="text-sm text-gray-700 cursor-pointer">
-                                            Chọn tất cả ({items.filter(d => d.status === DISPOSAL_ITEM_STATUS.PendingApproval).length} mặt hàng)
+                                            Chọn tất cả ({items.filter(d => d.status === DISPOSAL_ITEM_STATUS.PendingApproval).length} hàng hóa)
                                         </label>
                                     </div>
                                 )}

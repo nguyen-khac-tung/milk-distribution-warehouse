@@ -6,7 +6,7 @@ import { Button } from "../ui/button";
 export default function InventorySearchFilter({
   searchQuery,
   setSearchQuery,
-  searchPlaceholder = "Tìm kiếm theo mã lô, tên sản phẩm...",
+  searchPlaceholder = "Tìm kiếm theo mã lô, tên hàng hóa...",
   timeRange,
   setTimeRange,
   // timeRangeOptions = [

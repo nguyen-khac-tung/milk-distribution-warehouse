@@ -86,7 +86,7 @@ export default function GoodsReceiptDetail() {
   const [selectAll, setSelectAll] = useState(false);
   const [showPrintPreview, setShowPrintPreview] = useState(false);
   const printRef = useRef(null);
-  // Thêm state quản lý kiểm tra từng mặt hàng
+  // Thêm state quản lý kiểm tra từng hàng hóa
   // Xóa hẳn 2 state checkedDetails, notCheckedDetails và các setCheckedDetails/setNotCheckedDetails
 
   // Dùng useCallback để giữ reference ổn định, tránh loop vô hạn
@@ -335,7 +335,7 @@ export default function GoodsReceiptDetail() {
 
   const handleCompleteReceiving = async () => {
     if (needCheckDetails.length > 0) {
-      window.showToast("Bạn phải kiểm tra hết tất cả mặt hàng trước khi nộp đơn kiểm nhập!", "warning");
+      window.showToast("Bạn phải kiểm tra hết tất cả hàng hóa trước khi nộp đơn kiểm nhập!", "warning");
       return;
     }
     try {
@@ -478,7 +478,7 @@ export default function GoodsReceiptDetail() {
   // Mở modal từ chối với danh sách details đã chọn
   const openRejectMultipleModal = () => {
     if (selectedDetailsForReject.length === 0) {
-      window.showToast?.("Vui lòng chọn ít nhất một mặt hàng để từ chối", "warning");
+      window.showToast?.("Vui lòng chọn ít nhất một hàng hóa để từ chối", "warning");
       return;
     }
     // Khởi tạo rejectReasons cho các details đã chọn
@@ -664,9 +664,9 @@ export default function GoodsReceiptDetail() {
                   </div>
                 </div>
 
-                {/* Danh sách mặt hàng */}
+                {/* Danh sách hàng hóa */}
                 <div>
-                  <h3 className="text-xs font-medium text-gray-500 mb-1">Danh sách mặt hàng</h3>
+                  <h3 className="text-xs font-medium text-gray-500 mb-1">Danh sách hàng hóa</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                     {goodsReceiptNote.goodsReceiptNoteDetails?.map((detail, index) => (
                       <div key={index} className="rounded border border-gray-200 bg-white p-2 flex flex-col gap-1">
@@ -753,7 +753,7 @@ export default function GoodsReceiptDetail() {
                         <TableBody>
                           {needCheckDetails.length === 0 ? (
                             <TableRow>
-                              <TableCell colSpan={11} className="text-center text-gray-500 py-8">Chưa có mặt hàng cần kiểm nhập</TableCell>
+                              <TableCell colSpan={11} className="text-center text-gray-500 py-8">Chưa có hàng hóa cần kiểm nhập</TableCell>
                             </TableRow>
                           ) : needCheckDetails.map((detail, index) => {
                             const expectedPackageQuantity = Number(detail.expectedPackageQuantity) || 0;
@@ -1181,7 +1181,7 @@ export default function GoodsReceiptDetail() {
                                   })()}
                                   className="text-center text-green-500 py-8"
                                 >
-                                  Chưa có mặt hàng đã kiểm nhập
+                                  Chưa có hàng hóa đã kiểm nhập
                                 </TableCell>
                               </TableRow>
                             ) : filteredCheckedDetails.map((detail, idx) => {
@@ -1458,7 +1458,7 @@ export default function GoodsReceiptDetail() {
                                 </TableHead>
                               )}
                               <TableHead className="font-semibold text-purple-900">Mã pallet</TableHead>
-                              <TableHead className="font-semibold text-purple-900">Tên sản phẩm</TableHead>
+                              <TableHead className="font-semibold text-purple-900">Tên hàng hóa</TableHead>
                               <TableHead className="font-semibold text-purple-900">Mã hàng</TableHead>
                               <TableHead className="font-semibold text-purple-900 text-center">Số lô</TableHead>
                               <TableHead className="font-semibold text-purple-900 text-center">Số thùng</TableHead>
