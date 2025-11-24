@@ -271,6 +271,8 @@ namespace MilkDistributionWarehouse.Services
 
                 await HandleUpdateStockSheetApproval(update.StocktakingAreaId, stocktakingArea.StocktakingSheetId);
 
+                //await HandleStockAreaNotificationStatusChange(stocktakingArea);
+
                 return ("", validationStocktakingLocationsToApproval);
             });
         }
