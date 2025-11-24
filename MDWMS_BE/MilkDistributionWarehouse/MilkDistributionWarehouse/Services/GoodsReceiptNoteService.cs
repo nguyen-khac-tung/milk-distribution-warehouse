@@ -162,8 +162,6 @@ namespace MilkDistributionWarehouse.Services
                         throw new Exception("Chỉ được chuyển sang trạng thái Đã kiểm tra khi đơn hàng khi đơn hàng ở trạng thái Đang tiếp nhận.");
                     grn.PurchaseOder.Status = PurchaseOrderStatus.Inspected;
                     grn.PurchaseOder.UpdatedAt = DateTime.Now;
-
-                    await HandleStatusChangeNotification(grn.PurchaseOder);
                 }
 
                 var updateResult = await _goodsReceiptNoteRepository.UpdateGoodsReceiptNote(grn);
