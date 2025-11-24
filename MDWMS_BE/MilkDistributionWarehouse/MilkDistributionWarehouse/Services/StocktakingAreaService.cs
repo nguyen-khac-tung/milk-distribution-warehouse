@@ -228,7 +228,7 @@ namespace MilkDistributionWarehouse.Services
                 var msg = await _stocktakingStatusDomainService.UpdateAreaStatusAsync(stocktakingArea.StocktakingAreaId, (int)targetStatus);
                 if (!string.IsNullOrEmpty(msg)) return (msg, default);
 
-                await HandleStockAreaNotificationStatusChange(stocktakingArea);
+                //await HandleStockAreaNotificationStatusChange(stocktakingArea);
 
                 return ("", new StocktakingAreaResponse { StocktakingAreaId = update.StocktakingAreaId });
             }
@@ -271,7 +271,7 @@ namespace MilkDistributionWarehouse.Services
 
                 await HandleUpdateStockSheetApproval(update.StocktakingAreaId, stocktakingArea.StocktakingSheetId);
 
-                await HandleStockAreaNotificationStatusChange(stocktakingArea);
+                //await HandleStockAreaNotificationStatusChange(stocktakingArea);
 
                 return ("", validationStocktakingLocationsToApproval);
             });
