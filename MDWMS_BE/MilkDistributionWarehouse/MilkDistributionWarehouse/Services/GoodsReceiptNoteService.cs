@@ -162,6 +162,8 @@ namespace MilkDistributionWarehouse.Services
                         throw new Exception("Chỉ được chuyển sang trạng thái Đã kiểm tra khi đơn hàng khi đơn hàng ở trạng thái Đang tiếp nhận.");
                     grn.PurchaseOder.Status = PurchaseOrderStatus.Inspected;
                     grn.PurchaseOder.UpdatedAt = DateTime.Now;
+
+                    await HandleStatusChangeNotification(grn.PurchaseOder);
                 }
 
                 var updateResult = await _goodsReceiptNoteRepository.UpdateGoodsReceiptNote(grn);
@@ -180,8 +182,6 @@ namespace MilkDistributionWarehouse.Services
                 }
 
                 await HandleGRNStatusChangeNotification(grn);
-
-                await HandleStatusChangeNotification(grn.PurchaseOder);
 
                 return ("", update);
             }
@@ -252,7 +252,8 @@ namespace MilkDistributionWarehouse.Services
         private async Task HandleGRNStatusChangeNotification(GoodsReceiptNote grn)
         {
             var notificationToCreate = new NotificationCreateDto();
-            switch(grn.Status)             {
+            switch (grn.Status)
+            {
                 case GoodsReceiptNoteStatus.PendingApproval:
                     notificationToCreate.UserId = grn.PurchaseOder.ArrivalConfirmedBy;
                     notificationToCreate.Title = "Phiếu nhập kho chờ duyệt";
@@ -266,11 +267,12 @@ namespace MilkDistributionWarehouse.Services
                     notificationToCreate.Content = $"Phiếu nhập kho {grn.GoodsReceiptNoteId} đã được hoàn thành.";
                     notificationToCreate.EntityType = NotificationEntityType.GoodsReceiptNote;
                     notificationToCreate.EntityId = grn.PurchaseOderId;
+                    notificationToCreate.Category = NotificationCategory.Important;
                     break;
                 default:
                     break;
             }
-            if(notificationToCreate != null && notificationToCreate.UserId != null)
+            if (notificationToCreate != null && notificationToCreate.UserId != null)
                 await _notificationService.CreateNotification(notificationToCreate);
         }
 
@@ -278,7 +280,7 @@ namespace MilkDistributionWarehouse.Services
         {
             var notificationToCreate = new NotificationCreateDto();
             var notificationList = new List<NotificationCreateDto>();
-            switch(purchaseOder.Status)
+            switch (purchaseOder.Status)
             {
                 case PurchaseOrderStatus.Inspected:
                     notificationList.Add(new NotificationCreateDto
@@ -290,36 +292,10 @@ namespace MilkDistributionWarehouse.Services
                         EntityId = purchaseOder.PurchaseOderId
                     });
                     break;
-                    case PurchaseOrderStatus.Completed:
-                    notificationList.Add(new NotificationCreateDto
-                    {
-                        UserId = purchaseOder.CreatedBy,
-                        Title = "Đơn đặt hàng đã hoàn thành",
-                        Content = $"Đơn đặt hàng {purchaseOder.PurchaseOderId} đã được hoàn thành.",
-                        EntityType = NotificationEntityType.PurchaseOrder,
-                        EntityId = purchaseOder.PurchaseOderId
-                    });
-                    notificationList.Add(new NotificationCreateDto
-                    {
-                        UserId = purchaseOder.ApprovalBy,
-                        Title = "Đơn đặt hàng đã hoàn thành",
-                        Content = $"Đơn đặt hàng {purchaseOder.PurchaseOderId} đã được hoàn thành.",
-                        EntityType = NotificationEntityType.PurchaseOrder,
-                        EntityId = purchaseOder.PurchaseOderId
-                    });
-                    notificationList.Add(new NotificationCreateDto
-                    {
-                        UserId = purchaseOder.ArrivalConfirmedBy,
-                        Title = "Đơn đặt hàng đã hoàn thành",
-                        Content = $"Đơn đặt hàng {purchaseOder.PurchaseOderId} đã được hoàn thành.",
-                        EntityType = NotificationEntityType.PurchaseOrder,
-                        EntityId = purchaseOder.PurchaseOderId
-                    });
-                    break;
                 default:
                     break;
             }
-            if(notificationList.Any())
+            if (notificationList.Any())
                 await _notificationService.CreateNotificationBulk(notificationList);
         }
 
