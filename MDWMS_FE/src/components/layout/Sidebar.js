@@ -258,7 +258,7 @@ const Sidebar = memo(({ collapsed, isMobile }) => {
                     {
                         key: "/reports/orders",
                         icon: <ShoppingCartOutlined style={{ color: '#000000' }} />,
-                        label: "Báo cáo đơn hàng",
+                        label: "Báo cáo xuất/nhập kho",
                         permission: PERMISSIONS.REPORT_VIEW
                     },
                     {

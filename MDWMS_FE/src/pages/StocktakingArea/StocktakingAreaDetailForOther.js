@@ -890,10 +890,10 @@ const StocktakingAreaDetailForOther = () => {
                                     <div>
                                         <div className="text-xs text-gray-500 mb-0.5 flex items-center gap-1.5">
                                             <MapPin className="h-4 w-4 text-emerald-500" />
-                                            Số vị trí có sẵn
+                                            Vị trí đã xếp pallet
                                         </div>
                                         <div className="text-base font-semibold text-gray-900">
-                                            {stocktakingAreas.reduce((sum, area) => sum + (area.areaDetail?.availableLocationCount || 0), 0)}
+                                            {stocktakingAreas.reduce((sum, area) => sum + (area.areaDetail?.unAvailableLocationCount || 0), 0)}
                                         </div>
                                     </div>
 
@@ -901,10 +901,10 @@ const StocktakingAreaDetailForOther = () => {
                                     <div>
                                         <div className="text-xs text-gray-500 mb-0.5 flex items-center gap-1.5">
                                             <MapPin className="h-4 w-4 text-red-500" />
-                                            Số vị trí không có sẵn
+                                            Vị trí chưa xếp pallet
                                         </div>
                                         <div className="text-base font-semibold text-gray-900">
-                                            {stocktakingAreas.reduce((sum, area) => sum + (area.areaDetail?.unAvailableLocationCount || 0), 0)}
+                                            {stocktakingAreas.reduce((sum, area) => sum + (area.areaDetail?.availableLocationCount || 0), 0)}
                                         </div>
                                     </div>
                                 </div>

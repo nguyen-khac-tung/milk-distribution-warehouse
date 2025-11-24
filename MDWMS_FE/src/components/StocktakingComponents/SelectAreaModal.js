@@ -269,8 +269,8 @@ export default function SelectAreaModal({
                                                 {/* Location Count */}
                                                 {(availableLocationCount > 0 || unAvailableLocationCount > 0) && (
                                                     <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-200 text-xs text-gray-500">
-                                                        <span>Vị trí khả dụng: <span className="font-semibold text-green-600">{availableLocationCount}</span></span>
-                                                        <span>Vị trí không khả dụng: <span className="font-semibold text-red-600">{unAvailableLocationCount}</span></span>
+                                                        <span>Vị trí chưa xếp pallet: <span className="font-semibold text-green-600">{availableLocationCount}</span></span>
+                                                        <span>Vị trí đã xếp pallet: <span className="font-semibold text-red-600">{unAvailableLocationCount}</span></span>
                                                     </div>
                                                 )}
                                             </div>
