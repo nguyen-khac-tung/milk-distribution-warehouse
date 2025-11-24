@@ -149,6 +149,20 @@ const StocktakingTable = ({
                                         <span>Trạng thái</span>
                                     </TableHead>
                                 )}
+                                <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                                    <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("createdAt")}>
+                                        <span>Ngày tạo</span>
+                                        {sortField === "createdAt" ? (
+                                            sortAscending ? (
+                                                <ArrowUp className="h-4 w-4 text-orange-500" />
+                                            ) : (
+                                                <ArrowDown className="h-4 w-4 text-orange-500" />
+                                            )
+                                        ) : (
+                                            <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                        )}
+                                    </div>
+                                </TableHead>
                                 <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
                                     Thao tác
                                 </TableHead>
@@ -189,6 +203,14 @@ const StocktakingTable = ({
                                                 <StatusDisplay status={stocktaking.status} />
                                             </TableCell>
                                         )}
+                                        <TableCell className="px-6 py-4 text-slate-700 text-center">
+                                            {stocktaking.createdAt ? (() => {
+                                                const date = new Date(stocktaking.createdAt);
+                                                const time = date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                                                const dateStr = date.toLocaleDateString('vi-VN');
+                                                return `${time} ${dateStr}`;
+                                            })() : '-'}
+                                        </TableCell>
                                         <TableCell className="px-6 py-4 text-center">
                                             <div className="flex items-center justify-center space-x-1">
                                                 {/* Icon bắt đầu / xem lại kiểm kê dựa trên stockAreaStarted
@@ -198,7 +220,7 @@ const StocktakingTable = ({
                                                 {(() => {
                                                     const stockAreaStarted = stocktaking.stockAreaStarted;
                                                     const status = stocktaking.status;
-                                                    
+
                                                     let shouldShowIcon = false;
                                                     let isNotStarted = false; // true = chưa bắt đầu (1 hoặc 3), false = đã bắt đầu (2)
 
@@ -206,10 +228,10 @@ const StocktakingTable = ({
                                                         // Có giá trị từ API
                                                         // 1 hoặc 3 = chưa bắt đầu -> icon xanh lá "Bắt đầu kiểm kê"
                                                         // 2 = đã bắt đầu -> icon xanh dương "Xem chi tiết kiểm kê"
-                                                        shouldShowIcon = stockAreaStarted === 1 || stockAreaStarted === 2 || stockAreaStarted === 3 || 
-                                                                          stockAreaStarted === '1' || stockAreaStarted === '2' || stockAreaStarted === '3';
-                                                        isNotStarted = stockAreaStarted === 1 || stockAreaStarted === 3 || 
-                                                                       stockAreaStarted === '1' || stockAreaStarted === '3'; // 1 hoặc 3 = chưa bắt đầu
+                                                        shouldShowIcon = stockAreaStarted === 1 || stockAreaStarted === 2 || stockAreaStarted === 3 ||
+                                                            stockAreaStarted === '1' || stockAreaStarted === '2' || stockAreaStarted === '3';
+                                                        isNotStarted = stockAreaStarted === 1 || stockAreaStarted === 3 ||
+                                                            stockAreaStarted === '1' || stockAreaStarted === '3'; // 1 hoặc 3 = chưa bắt đầu
                                                     } else {
                                                         // Fallback dựa trên status nếu không có giá trị từ API
                                                         // Status Assigned (2) = chưa bắt đầu
@@ -224,7 +246,7 @@ const StocktakingTable = ({
                                                             isNotStarted = false; // Đã bắt đầu, chỉ xem
                                                         }
                                                     }
-                                                    
+
                                                     return shouldShowIcon && (
                                                         <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_IN_PROGRESS}>
                                                             <button
@@ -328,7 +350,7 @@ const StocktakingTable = ({
                                     actionText="Xóa bộ lọc"
                                     onAction={onClearFilters}
                                     showAction={false}
-                                    colSpan={2 + Object.values(availableFields).filter(Boolean).length + 2}
+                                    colSpan={2 + Object.values(availableFields).filter(Boolean).length + 3}
                                 />
                             )}
                         </TableBody>

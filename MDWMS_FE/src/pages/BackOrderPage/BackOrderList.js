@@ -751,7 +751,22 @@ export default function BackOrderList() {
 
                                             {/* Tên hàng hóa - quan trọng */}
                                             <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left min-w-[260px]">
-                                                <span className="truncate">Tên hàng hóa</span>
+                                                {/* <span className="truncate">Tên hàng hóa</span> */}
+                                                <div
+                                                    className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                                    onClick={() => handleSort("goodsName")}
+                                                >
+                                                    <span >Tên hàng hóa</span>
+                                                    {sortField === "goodsName" ? (
+                                                        sortAscending ? (
+                                                            <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                        ) : (
+                                                            <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                        )
+                                                    ) : (
+                                                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                    )}
+                                                </div>
                                             </TableHead>
 
                                             {/* Quy cách đóng gói */}
@@ -761,7 +776,22 @@ export default function BackOrderList() {
 
                                             {/* Số thùng */}
                                             <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left hidden md:table-cell w-[90px]">
-                                                Số thùng
+
+                                                <div
+                                                    className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                                    onClick={() => handleSort("packageQuantity")}
+                                                >
+                                                    <span >Số thùng</span>
+                                                    {sortField === "packageQuantity" ? (
+                                                        sortAscending ? (
+                                                            <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                        ) : (
+                                                            <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                        )
+                                                    ) : (
+                                                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                    )}
+                                                </div>
                                             </TableHead>
 
                                             {/* Tổng đơn vị */}
