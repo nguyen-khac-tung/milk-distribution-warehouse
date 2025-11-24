@@ -46,7 +46,7 @@ export default function WarehousePerformance() {
           className="absolute right-4 top-4 whitespace-nowrap bg-orange-500 hover:bg-orange-600 text-white font-medium h-[38px] px-5 rounded-full shadow-sm"
           onClick={() => navigate("/reports/inventory")}
         >
-          Báo cáo tồn kho
+          Xem báo cáo
         </Button>
         <CardTitle className="text-base font-medium">Tồn kho hiện tại</CardTitle>
       </CardHeader>

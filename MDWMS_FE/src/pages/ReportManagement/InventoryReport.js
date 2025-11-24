@@ -1299,22 +1299,22 @@ export default function InventoryReport({ onClose }) {
                               key={uniqueKey}
                               className="hover:bg-slate-50 border-b border-slate-200"
                             >
-                              <TableCell className="px-2 py-4 text-center text-slate-600 font-medium">
+                              <TableCell className="px-2 py-4 text-center text-slate-600">
                                 {rowNumber}
                               </TableCell>
                               <TableCell className="px-2 py-4 text-center text-slate-700 font-medium">
                                 {item.goodsCode || "-"}
                               </TableCell>
-                              <TableCell className="px-2 py-4 text-center text-slate-700">
+                              <TableCell className="px-2 py-4 text-center text-slate-700 font-medium">
                                 {item.goodName || "-"}
                               </TableCell>
-                              <TableCell className="px-2 py-4 text-center text-slate-700 font-medium">
+                              <TableCell className="px-2 py-4 text-center text-slate-700">
                                 {item.unitPerPackage || "-"}
                               </TableCell>
-                              <TableCell className="px-2 py-4 text-center text-slate-700 font-medium">
+                              <TableCell className="px-2 py-4 text-center text-slate-700">
                                 {item.unitOfMeasure || "-"}
                               </TableCell>
-                              <TableCell className="px-2 py-4 text-center text-slate-700 font-medium">
+                              <TableCell className="px-2 py-4 text-center text-slate-700">
                                 {item.batchCode || "-"}
                               </TableCell>
                               <TableCell className="px-2 py-4 text-center text-slate-700">
@@ -1323,7 +1323,7 @@ export default function InventoryReport({ onClose }) {
                               <TableCell className="px-2 py-4 text-center text-slate-700">
                                 {formatDate(item.expiryDate)}
                               </TableCell>
-                              <TableCell className="px-2 py-4 text-center text-slate-700 font-medium">
+                              <TableCell className="px-2 py-4 text-center text-slate-700">
                                 {item.totalPackageQuantity?.toLocaleString("vi-VN") || 0}
                               </TableCell>
                               <TableCell className="px-2 py-4 text-center">
@@ -1370,31 +1370,31 @@ export default function InventoryReport({ onClose }) {
                               key={uniqueKey}
                               className="hover:bg-slate-50 border-b border-slate-200"
                             >
-                              <TableCell className="px-2 py-4 text-center text-slate-600 font-medium">
+                              <TableCell className="px-2 py-4 text-center text-slate-600">
                                 {rowNumber}
                               </TableCell>
                               <TableCell className="px-2 py-4 text-center text-slate-700 font-medium">
                                 {item.goodsCode || "-"}
                               </TableCell>
-                              <TableCell className="px-2 py-4 text-center text-slate-700">
+                              <TableCell className="px-2 py-4 text-center text-slate-700 font-medium">
                                 {item.goodsName || "-"}
                               </TableCell>
-                              <TableCell className="px-2 py-4 text-center text-slate-700 font-medium">
+                              <TableCell className="px-2 py-4 text-center text-slate-700">
                                 {item.unitPerPackage || "-"}
                               </TableCell>
-                              <TableCell className="px-2 py-4 text-center text-slate-700 font-medium">
+                              <TableCell className="px-2 py-4 text-center text-slate-700">
                                 {item.unitOfMeasure || "-"}
                               </TableCell>
-                              <TableCell className="px-2 py-4 text-center text-slate-700 font-medium">
+                              <TableCell className="px-2 py-4 text-center text-slate-700">
                                 {(item.beginningInventoryPackages || 0).toLocaleString("vi-VN")}
                               </TableCell>
-                              <TableCell className="px-2 py-4 text-center text-slate-700 font-medium">
+                              <TableCell className="px-2 py-4 text-center text-slate-700">
                                 {(item.inQuantityPackages || 0).toLocaleString("vi-VN")}
                               </TableCell>
-                              <TableCell className="px-2 py-4 text-center text-slate-700 font-medium">
+                              <TableCell className="px-2 py-4 text-center text-slate-700">
                                 {(item.outQuantityPackages || 0).toLocaleString("vi-VN")}
                               </TableCell>
-                              <TableCell className="px-2 py-4 text-center text-slate-700 font-medium">
+                              <TableCell className="px-2 py-4 text-center text-slate-700">
                                 {(item.endingInventoryPackages || 0).toLocaleString("vi-VN")}
                               </TableCell>
                             </TableRow>

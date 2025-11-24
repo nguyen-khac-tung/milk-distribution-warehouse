@@ -945,7 +945,6 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
           {[
             {
               id: "inventory",
-              badge: "Thống kê tồn kho",
               title: "Báo cáo tồn kho",
               description: "Xem chi tiết báo cáo tồn kho và thống kê",
               icon: <Package className="h-5 w-5 text-orange-500" />,
@@ -955,13 +954,12 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
             },
             {
               id: "orders",
-              badge: "Đơn hàng",
-              title: "Quản lý đơn mua/bán",
-              description: "Xem danh sách đơn mua hàng và đơn bán hàng",
+              title: "Báo cáo xuất/nhập kho",
+              description: "Xem danh sách xuất/nhập kho",
               icon: <ShoppingCart className="h-5 w-5 text-blue-500" />,
               iconBg: "bg-blue-50",
               action: () => navigate("/reports/orders"),
-              actionLabel: "Xem đơn hàng"
+              actionLabel: "Xem báo cáo"
             }
           ].map(link => (
             <Card key={link.id} className="border border-dashed shadow-none">
