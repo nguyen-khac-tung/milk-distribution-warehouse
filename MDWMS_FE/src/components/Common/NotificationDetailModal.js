@@ -5,6 +5,7 @@ import { Button } from "../ui/button";
 import {
     getNotificationDetail,
     getEntityRoute,
+    NotificationEntityType,
 } from "../../services/NotificationService";
 
 const NotificationDetailModal = ({ notificationId, open, onClose }) => {
@@ -25,8 +26,10 @@ const NotificationDetailModal = ({ notificationId, open, onClose }) => {
             .then((data) => {
                 if (!isMounted) return;
                 
-                if (data?.entityType && data?.entityId) {
-                    const route = getEntityRoute(data.entityType, data.entityId);
+                if (data?.entityType) {
+                    const route = getEntityRoute(data.entityType, data?.entityId);
+                    
+                    // Nếu có route, điều hướng đến route đó
                     if (route) {
                         onClose();
                         navigate(route);
@@ -35,8 +38,15 @@ const NotificationDetailModal = ({ notificationId, open, onClose }) => {
                         }, 100);
                         return;
                     }
+                    
+                    // Nếu không có route (NoNavigation), chỉ đánh dấu đã đọc và đóng modal
+                    if (data.entityType === NotificationEntityType.NO_NAVIGATION) {
+                        onClose();
+                        return;
+                    }
                 }
                 
+                // Trường hợp không có entityType hoặc route không hợp lệ
                 setError("Trang này hiện tại không tìm thấy.");
             })
             .catch((err) => {
