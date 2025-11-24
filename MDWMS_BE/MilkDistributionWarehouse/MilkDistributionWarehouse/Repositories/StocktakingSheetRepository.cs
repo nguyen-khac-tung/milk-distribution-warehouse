@@ -120,7 +120,8 @@ namespace MilkDistributionWarehouse.Repositories
             return await _context.StocktakingSheets
                 .AnyAsync(ss => (stocktakingSheetId == null || !stocktakingSheetId.Equals(ss.StocktakingSheetId))
                 && ss.StartTime.HasValue
-                && ss.StartTime.Value.Date == startTime.Date);
+                && ss.StartTime.Value.Date == startTime.Date
+                && ss.Status != StocktakingStatus.Cancelled);
         }
 
         public async Task<bool> HasActiveStocktakingInProgressAsync()
