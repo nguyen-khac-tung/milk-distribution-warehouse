@@ -19,6 +19,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, NotificationDetailDto?)> GetNotificationDetail(Guid notificationId, int? userId);
         Task<string> MarkAsRead(NotificationMarkAsReadDto dto, int? userId);
         Task<string> MarkAllAsRead(int? userId);
+        Task CreateNotificationNoTransaction(NotificationCreateDto notificationCreateDto);
     }
 
     public class NotificationService : INotificationService
@@ -79,6 +80,25 @@ namespace MilkDistributionWarehouse.Services
             catch
             {
                 await _unitOfWork.RollbackTransactionAsync();
+            }
+        }
+
+        public async Task CreateNotificationNoTransaction(NotificationCreateDto notificationCreateDto)
+        {
+            if (notificationCreateDto == null) return;
+
+            var notification = _mapper.Map<Notification>(notificationCreateDto);
+            try
+            {
+                await _notificationRepository.CreateNotification(notification);
+                var notificationDto = _mapper.Map<NotificationDto>(notification);
+
+                await _hubContext.Clients
+                    .Group(notification.UserId.ToString() ?? "")
+                    .SendAsync("ReceiveNotification", notificationDto);
+            }
+            catch
+            {
             }
         }
 
