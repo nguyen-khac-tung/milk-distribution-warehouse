@@ -1,265 +1,156 @@
 import React, { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
-import { Separator } from "../../components/ui/separator"
-import { Button } from "../../components/ui/button"
-import { ComponentIcon } from "../../components/IconComponent/Icon";
-import { X } from "lucide-react";
-import { getBackOrderDetail } from "../../services/BackOrderService";
-import { extractErrorMessage } from "../../utils/Validation";
-
+import { ComponentIcon } from "../../components/IconComponent/Icon"
+import { X } from "lucide-react"
+import { getBackOrderDetail } from "../../services/BackOrderService"
+import { extractErrorMessage } from "../../utils/Validation"
 
 export function BackOrderDetail({ backOrder, onClose }) {
-  const [backOrderData, setBackOrderData] = useState(backOrder);
-  const [loading, setLoading] = useState(false);
+  const [backOrderData, setBackOrderData] = useState(backOrder)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (backOrder?.backOrderId) {
-      loadBackOrderDetail();
-    }
-  }, [backOrder?.backOrderId]);
+    if (backOrder?.backOrderId) loadBackOrderDetail()
+  }, [backOrder?.backOrderId])
 
   const loadBackOrderDetail = async () => {
     try {
-      setLoading(true);
-      const response = await getBackOrderDetail(backOrder.backOrderId);
-      console.log("API Response:", response);
-      const backOrderInfo = response.data || response;
-      console.log("BackOrder Info:", backOrderInfo);
-      setBackOrderData(backOrderInfo);
+      setLoading(true)
+      const response = await getBackOrderDetail(backOrder.backOrderId)
+      const backOrderInfo = response.data || response
+      setBackOrderData(backOrderInfo)
     } catch (error) {
-      console.error("Error loading backOrder detail:", error);
-      window.showToast(extractErrorMessage(error), "error");
+      window.showToast(extractErrorMessage(error), "error")
     } finally {
-      setLoading(false);
-    }
-  };
-
-  const getStatusBadge = (statusDinamic) => {
-    switch (statusDinamic) {
-      case "Unavailable":
-        return <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200">
-          <span className="w-2 h-2 rounded-full mr-2 bg-orange-500"></span>
-          Không có sẵn
-        </span>
-      case "Available":
-        return <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
-          <span className="w-2 h-2 rounded-full mr-2 bg-green-500"></span>
-          Có sẵn
-        </span>
-      default:
-        return <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
-          <span className="w-2 h-2 rounded-full mr-2 bg-gray-400"></span>
-          Không xác định
-        </span>
+      setLoading(false)
     }
   }
 
-  if (loading) {
+  const getStatusBadge = (status) => {
+    const map = {
+      Unavailable: { label: "Không có sẵn", color: "bg-orange-100 text-orange-800 border-orange-200", dot: "bg-orange-500" },
+      Available: { label: "Có sẵn", color: "bg-green-100 text-green-800 border-green-200", dot: "bg-green-500" },
+      Default: { label: "Không xác định", color: "bg-gray-100 text-gray-800 border-gray-200", dot: "bg-gray-400" }
+    }
+    const s = map[status] || map.Default
     return (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-        <div className="w-full max-w-5xl mx-4 max-h-[85vh] overflow-y-auto bg-white rounded-lg shadow-2xl relative">
-          <div className="flex items-center justify-center py-16">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-              <div className="text-slate-600 font-medium">Đang tải thông tin...</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${s.color}`}>
+        <span className={`w-2 h-2 rounded-full mr-2 ${s.dot}`}></span>
+        {s.label}
+      </span>
+    )
   }
 
   const totalQuantity = backOrderData?.packageQuantity && backOrderData?.unitPerPackage
     ? parseInt(backOrderData.packageQuantity) * parseInt(backOrderData.unitPerPackage)
-    : 0;
+    : 0
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-5xl mx-4 max-h-[85vh] overflow-y-auto bg-white rounded-lg shadow-2xl relative">
-        {/* Header with Close Button */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-full">
-              <ComponentIcon name="shopping-cart" size={24} color="#3b82f6" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-slate-800">Chi tiết đơn đặt hàng</h1>
-              <p className="text-sm text-gray-500">Thông tin chi tiết về back order</p>
-            </div>
-          </div>
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              aria-label="Đóng"
-            >
-              <X className="h-5 w-5 text-gray-500" />
-            </button>
-          )}
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="w-full max-w-4xl mx-4 max-h-[85vh] overflow-y-auto bg-white rounded-xl shadow-xl relative">
+
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 border-b border-gray-200 sticky top-0 bg-white z-10">
+          <h1 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+            <ComponentIcon name="shopping-cart" size={22} color="#3b82f6" />
+            Chi tiết đơn bổ sung
+          </h1>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition">
+            <X className="h-5 w-5 text-gray-600" />
+          </button>
         </div>
 
-        {/* Content */}
-        <div className="p-6 space-y-6">
-          {/* Header Info Section */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
-            <div className="flex items-start justify-between flex-wrap gap-4">
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <div className="px-4 py-2 bg-white rounded-lg shadow-sm">
-                    <span className="text-sm text-gray-600 font-medium">Mã hàng chờ</span>
-                    <div className="text-lg font-bold text-blue-600">#{backOrderData?.backOrderId || 'N/A'}</div>
-                  </div>
-                  {getStatusBadge(backOrderData?.statusDinamic)}
-                </div>
-                <div className="text-sm text-gray-600">
-                  <span className="font-medium">Nhà bán lẻ:</span>
-                  <span className="ml-2 text-base font-semibold text-gray-800">{backOrderData?.retailerName || 'N/A'}</span>
-                </div>
+        {/* Summary */}
+        <div className="p-5 space-y-3 border-b border-gray-100 bg-gray-50/40">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="space-y-1">
+              <p className="text-xs text-gray-500 font-medium">Trạng thái</p>
+            </div>
+            {getStatusBadge(backOrderData?.statusDinamic)}
+          </div>
+        </div>
+
+        {/* Content Grid */}
+        <div className="p-5 grid gap-6 lg:grid-cols-[6.5fr_5.5fr]">
+
+          {/* Left */}
+          <div className="space-y-6">
+
+            {/* Product */}
+            <SimpleCard title="Thông tin hàng hóa" icon="package" color="blue">
+              <InfoRow label="Tên hàng hóa" value={backOrderData?.goodsName} />
+              <InfoRow label="Tên danh mục" value={backOrderData?.categoryName} />
+              <InfoRow label="Thương hiệu" value={backOrderData?.brandName} />
+            </SimpleCard>
+
+            {/* Quantity */}
+            <SimpleCard title="Thông tin số lượng" icon="batch" color="green">
+              <InfoRow label="Số thùng" value={backOrderData?.packageQuantity} />
+              <InfoRow label="Quy cách" value={backOrderData?.unitPerPackage ? `${backOrderData.unitPerPackage} ${backOrderData.unitMeasureName || ""}/thùng` : "N/A"} />
+              <InfoRow label="Đơn vị" value={backOrderData?.unitMeasureName} />
+              <div className="pt-2 border-t border-gray-200">
+                <InfoRow label="Tổng số lượng" value={totalQuantity ? `${totalQuantity.toLocaleString("vi-VN")} ${backOrderData?.unitMeasureName}` : "N/A"} highlight />
               </div>
-            </div>
+            </SimpleCard>
           </div>
 
-          {/* Main Content Grid */}
-          <div className="grid gap-6 lg:grid-cols-[7fr_4fr]">
-            {/* Left Column - BackOrder Info */}
-            <div className="space-y-6">
-              {/* Product Information */}
-              <Card className="shadow-sm border border-gray-200">
-                <CardHeader className="bg-blue-50 border-b border-gray-200">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <ComponentIcon name="package" size={22} color="#374151" />
-                    Thông tin sản phẩm
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-4">
-                  <div className="space-y-4">
-                    <InfoRow
-                      icon={<ComponentIcon name="package" size={20} color="#6b7280" />}
-                      label="Tên sản phẩm"
-                      value={backOrderData?.goodsName || 'N/A'}
-                      isProductName={true}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
+          {/* Right */}
+          <div className="space-y-6">
+            {/* Supplier */}
+            <SimpleCard title="Thông tin nhà cung cấp" icon="supplier" color="purple">
+              <InfoRow label="Tên công ty" value={backOrderData?.companyName} />
+            </SimpleCard>
 
-              {/* Quantity Information */}
-              <Card className="shadow-sm border border-gray-200">
-                <CardHeader className="bg-green-50 border-b border-gray-200">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <ComponentIcon name="hash" size={22} color="#374151" />
-                    Thông tin số lượng
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-4">
-                  <div className="space-y-4">
-                    <InfoRow
-                      icon={<ComponentIcon name="box" size={20} color="#6b7280" />}
-                      label="Số thùng"
-                      value={backOrderData?.packageQuantity ? `${backOrderData.packageQuantity} thùng` : 'N/A'}
-                    />
-                    <InfoRow
-                      icon={<ComponentIcon name="layers" size={20} color="#6b7280" />}
-                      label="Quy cách đóng gói"
-                      value={backOrderData?.unitPerPackage ? `${backOrderData.unitPerPackage}${backOrderData?.unitMeasureName ? ' ' + backOrderData.unitMeasureName : ''}/thùng` : 'N/A'}
-                    />
-                    <InfoRow
-                      icon={<ComponentIcon name="ruler" size={20} color="#6b7280" />}
-                      label="Đơn vị"
-                      value={backOrderData?.unitMeasureName || 'N/A'}
-                    />
-                    <div className="pt-2 border-t border-gray-200">
-                      <InfoRow
-                        icon={<ComponentIcon name="calculator" size={20} color="#10b981" />}
-                        label="Tổng số lượng"
-                        value={totalQuantity > 0 ? `${totalQuantity.toLocaleString('vi-VN')}${backOrderData?.unitMeasureName ? ' ' + backOrderData.unitMeasureName : ''}` : 'N/A'}
-                        isTotal={true}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            {/* Retailer */}
+            <SimpleCard title="Thông tin nhà bán lẻ" icon="retailer" color="blue">
+              <InfoRow label="Tên nhà bán lẻ" value={backOrderData?.retailerName} />
+            </SimpleCard>
 
-            {/* Right Column - Retailer and Created By Info */}
-            <div className="space-y-6">
-              {/* Retailer Information */}
-              <Card className="shadow-sm border border-gray-200">
-                <CardHeader className="bg-purple-50 border-b border-gray-200">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <ComponentIcon name="building" size={22} color="#374151" />
-                    Nhà bán lẻ
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-4">
-                  <div className="space-y-4">
-                    <InfoRow
-                      icon={<ComponentIcon name="building" size={20} color="#6b7280" />}
-                      label="Tên nhà bán lẻ"
-                      value={backOrderData?.retailerName || 'N/A'}
-                    />
-                    {/* <InfoRow 
-                      icon={<ComponentIcon name="hash" size={20} color="#6b7280" />} 
-                      label="Mã nhà bán lẻ" 
-                      value={backOrderData?.retailerId || 'N/A'}
-                    /> */}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Created By Information */}
-              <Card className="shadow-sm border border-gray-200">
-                <CardHeader className="bg-amber-50 border-b border-gray-200">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <ComponentIcon name="user" size={22} color="#374151" />
-                    Người tạo
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-4">
-                  <div className="space-y-4">
-                    <InfoRow
-                      icon={<ComponentIcon name="user" size={20} color="#6b7280" />}
-                      label="Tên người tạo"
-                      value={backOrderData?.createdByName || 'N/A'}
-                    />
-                    {/* <InfoRow
-                      icon={<ComponentIcon name="hash" size={20} color="#6b7280" />}
-                      label="Mã người tạo"
-                      value={backOrderData?.createdBy || 'N/A'}
-                    /> */}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            {/* Creator */}
+            <SimpleCard title="Người tạo" icon="user" color="amber">
+              <InfoRow label="Tên người tạo" value={backOrderData?.createdByName} />
+            </SimpleCard>
           </div>
         </div>
 
-        {/* Close Button at Bottom */}
-        {onClose && (
-          <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-end shadow-lg">
-            <button
-              onClick={onClose}
-              className="h-[38px] px-8 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
-            >
-              Đóng
-            </button>
-          </div>
-        )}
+        {/* Footer */}
+        <div className="sticky bottom-0 bg-white border-t border-gray-200 px-5 py-4 flex justify-end shadow-sm">
+          <button onClick={onClose} className="h-[38px] px-7 bg-slate-800 hover:bg-slate-900 text-white rounded-lg font-medium transition shadow">
+            Đóng
+          </button>
+        </div>
       </div>
     </div>
   )
 }
 
-function InfoRow({ icon, label, value, isProductName = false, isTotal = false }) {
+function SimpleCard({ title, icon, color, children }) {
+  const colorMap = {
+    blue: "bg-blue-50",
+    green: "bg-green-50",
+    purple: "bg-purple-50",
+    amber: "bg-amber-50"
+  }
   return (
-    <div className={`flex items-start justify-between gap-4 py-2 ${isProductName ? 'items-start' : 'items-center'}`}>
-      <div className="flex items-center gap-2 text-muted-foreground min-w-0 flex-shrink-0">
-        {icon}
-        <span className="text-sm font-medium">{label}</span>
-      </div>
-      <span className={`text-sm font-semibold text-foreground text-right ${isProductName ? 'text-xs' : ''} ${isTotal ? 'text-green-600 text-base' : ''}`}>
-        {value}
-      </span>
+    <Card className="shadow-sm border border-gray-200">
+      <CardHeader className={`${colorMap[color]} border-b border-gray-200`}>
+        <CardTitle className="text-[15px] font-semibold flex items-center gap-2">
+          <ComponentIcon name={icon} size={18} color="#374151" />
+          {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="pt-4 space-y-3">
+        {children}
+      </CardContent>
+    </Card>
+  )
+}
+
+function InfoRow({ label, value, highlight }) {
+  return (
+    <div className="flex items-center justify-between py-1.5">
+      <span className="text-sm text-gray-600 font-medium">{label}</span>
+      <span className={`text-sm font-semibold ${highlight ? "text-green-600 text-base" : "text-gray-800"}`}>{value || "N/A"}</span>
     </div>
   )
 }

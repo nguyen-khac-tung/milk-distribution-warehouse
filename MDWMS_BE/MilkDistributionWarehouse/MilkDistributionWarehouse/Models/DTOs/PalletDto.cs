@@ -10,7 +10,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public class PalletResponseDto
         {
             public string PalletId { get; set; }
-            public Guid GoodsReceiptNoteId { get; set; }
+            public string GoodsReceiptNoteId { get; set; }
             public int GoodsPackingId { get; set; }
             public int? UnitPerPackage { get; set; }
             public int PackageQuantity { get; set; }
@@ -42,7 +42,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public int GoodsPackingId { get; set; }
 
             [Required(ErrorMessage = "Mã đơn kiểm nhập không được để trống")]
-            public Guid? GoodsReceiptNoteId { get; set; }
+            public string? GoodsReceiptNoteId { get; set; }
         }
 
         public class PalletActiveDto
@@ -70,7 +70,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public class PalletDetailDto
         {
             public string PalletId { get; set; }
-            public Guid GoodsReceiptNoteId { get; set; }
+            public string GoodsReceiptNoteId { get; set; }
             public int PackageQuantity { get; set; }
             public int GoodsPackingId { get; set; }
             public int UnitPerPackage { get; set; }

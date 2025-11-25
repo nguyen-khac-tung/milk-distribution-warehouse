@@ -71,5 +71,21 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public int TotalLocations { get; set; }
             public int AvailableLocationCount { get; set; }
         }
+
+        public class StocktakingAreaDto
+        {
+            public int AreaId { get; set; }
+            public string AreaName { get; set; }
+            public int AvailableLocationCount { get; set; }
+            public int UnAvailableLocationCount { get; set; }
+            public decimal? TemperatureMin { get; set; }
+            public decimal? TemperatureMax { get; set; }
+            public decimal? HumidityMin { get; set; }
+            public decimal? HumidityMax { get; set; }
+            public string? LightLevel { get; set; }
+            public int? AssignTo { get; set; }
+            public string? AssignName { get; set; }
+        }
+
     }
 }

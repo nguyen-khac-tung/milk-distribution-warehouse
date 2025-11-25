@@ -1,11 +1,9 @@
 import React, { useEffect, useState, useMemo, useCallback, memo } from "react";
-import { Menu } from "antd";
+import { Popover } from "antd";
 import {
     DashboardOutlined,
-    ShoppingOutlined,
     ShoppingCartOutlined,
     BarChartOutlined,
-    SettingOutlined,
     EnvironmentOutlined,
     UsergroupAddOutlined,
     ClusterOutlined,
@@ -16,20 +14,14 @@ import {
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ComponentIcon } from "../../components/IconComponent/Icon";
 import { usePermissions } from "../../hooks/usePermissions";
-import { ROLES, PERMISSIONS } from "../../utils/permissions";
+import { PERMISSIONS } from "../../utils/permissions";
 
-const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
+const Sidebar = memo(({ collapsed, isMobile }) => {
     const location = useLocation();
     const navigate = useNavigate();
-    const [user, setUser] = useState(null);
     const [openKeys, setOpenKeys] = useState([]);
+    const [activePopoverKey, setActivePopoverKey] = useState(null);
 
-    useEffect(() => {
-        const savedUser = localStorage.getItem("userInfo");
-        if (savedUser) setUser(JSON.parse(savedUser));
-    }, []);
-
-    // Xác định submenu nào cần mở dựa trên path hiện tại
     const getOpenKeysFromPath = useCallback((pathname) => {
         const keys = [];
         if (pathname.startsWith('/suppliers') || pathname.startsWith('/retailers')) {
@@ -44,8 +36,14 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
         if (pathname.startsWith('/sales-orders')) {
             keys.push('sales-orders-management');
         }
-        if (pathname.startsWith('/pallets')) {
-            // Pallet không có submenu, không cần thêm key
+        if (pathname.startsWith('/stocktakings') || pathname.startsWith('/stocktaking')) {
+            keys.push('stocktaking-management');
+        }
+        if (pathname.startsWith('/reports')) {
+            keys.push('reports-management');
+        }
+        if (pathname.startsWith('/disposal')) {
+            keys.push('disposal-management');
         }
         return keys;
     }, []);
@@ -55,6 +53,7 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
             setOpenKeys(getOpenKeysFromPath(location.pathname));
         } else {
             setOpenKeys([]);
+            setActivePopoverKey(null);
         }
     }, [collapsed, location.pathname, getOpenKeysFromPath]);
 
@@ -113,6 +112,28 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                 ],
             },
             {
+                key: "stocktaking-management",
+                icon: <ComponentIcon name="clipboard" size={16} collapsed={collapsed} />,
+                label: "Quản lý đơn kiểm kê",
+                permission: [PERMISSIONS.STOCKTAKING_VIEW, PERMISSIONS.STOCKTAKING_VIEW_WM, PERMISSIONS.STOCKTAKING_VIEW_WS],
+                requireAll: false,
+                children: [
+                    {
+                        key: "/stocktakings",
+                        icon: <ComponentIcon name="taskListEdit" size={14} collapsed={collapsed} />,
+                        label: "Danh sách đơn kiểm kê",
+                        permission: [PERMISSIONS.STOCKTAKING_VIEW, PERMISSIONS.STOCKTAKING_VIEW_WM, PERMISSIONS.STOCKTAKING_VIEW_WS],
+                        requireAll: false,
+                    },
+                    {
+                        key: "/stocktaking/create",
+                        icon: <ComponentIcon name="createTaskListEdit" size={14} collapsed={collapsed} />,
+                        label: "Tạo đơn kiểm kê",
+                        permission: PERMISSIONS.STOCKTAKING_CREATE,
+                    }
+                ],
+            },
+            {
                 key: "partner-management",
                 icon: <ComponentIcon name="partner" size={16} collapsed={collapsed} />,
                 label: "Quản lý đối tác",
@@ -130,6 +151,31 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                         label: "Quản lý nhà bán lẻ",
                         permission: PERMISSIONS.RETAILER_VIEW
                     },
+                ],
+            },
+            {
+                key: "disposal-management",
+                icon: <ComponentIcon name="disposal" size={16} collapsed={collapsed} />,
+                label: "Quản lý đơn xuất hủy",
+                permission: [PERMISSIONS.DISPOSAL_REQUEST_VIEW, PERMISSIONS.DISPOSAL_REQUEST_VIEW_SM, PERMISSIONS.DISPOSAL_REQUEST_VIEW_WM, PERMISSIONS.DISPOSAL_REQUEST_VIEW_WS],
+                requireAll: false,
+                children: [
+                    {
+                        key: "/disposal",
+                        icon: <ComponentIcon name="disposalList" size={14} collapsed={collapsed} />,
+                        label: "Danh sách đơn xuất hủy",
+                        permission: [
+                            PERMISSIONS.DISPOSAL_REQUEST_VIEW_SM,
+                            PERMISSIONS.DISPOSAL_REQUEST_VIEW_WM,
+                            PERMISSIONS.DISPOSAL_REQUEST_VIEW_WS],
+                        requireAll: false,
+                    },
+                    {
+                        key: "/disposal/create",
+                        icon: <ComponentIcon name="createDisposal" size={14} collapsed={collapsed} />,
+                        label: "Tạo đơn xuất hủy",
+                        permission: PERMISSIONS.DISPOSAL_REQUEST_CREATE,
+                    }
                 ],
             },
             {
@@ -166,7 +212,7 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
             {
                 key: "/pallets",
                 icon: <ComponentIcon name="pallet" size={16} collapsed={collapsed} />,
-                label: "Quản lý kệ kê hàng",
+                label: "Quản lý pallet",
                 permission: PERMISSIONS.PALLET_VIEW
             },
 
@@ -204,47 +250,43 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
             },
 
             {
-                key: "/reports",
+                key: "reports-management",
                 icon: <BarChartOutlined style={{ color: '#000000' }} />,
                 label: "Báo cáo",
-                permission: PERMISSIONS.REPORT_VIEW
+                permission: PERMISSIONS.REPORT_VIEW,
+                children: [
+                    {
+                        key: "/reports/orders",
+                        icon: <ShoppingCartOutlined style={{ color: '#000000' }} />,
+                        label: "Báo cáo xuất/nhập kho",
+                        permission: PERMISSIONS.REPORT_VIEW
+                    },
+                    {
+                        key: "/reports/inventory",
+                        icon: <AppstoreOutlined style={{ color: '#000000' }} />,
+                        label: "Báo cáo tồn kho",
+                        permission: PERMISSIONS.REPORT_VIEW
+                    }
+                ]
             },
-            // {
-            //     key: "/settings",
-            //     icon: <SettingOutlined style={{ color: '#000000' }} />,
-            //     label: "Cài đặt",
-            //     permission: PERMISSIONS.SETTINGS_VIEW
-            // },
         ];
 
         // Lọc menu theo quyền
         const filterMenuItems = (items) => {
             return items.filter(item => {
-                // Kiểm tra quyền của menu chính
-                if (item.role && !userRoles.includes(item.role)) {
-                    return false;
-                }
+                if (item.role && !userRoles.includes(item.role)) return false;
                 if (item.permission !== null && item.permission !== undefined) {
                     if (Array.isArray(item.permission)) {
-                        if (!item.permission.some(p => hasPermission(p))) {
-                            return false;
-                        }
+                        if (!item.permission.some(p => hasPermission(p))) return false;
                     } else {
-                        if (!hasPermission(item.permission)) {
-                            return false;
-                        }
+                        if (!hasPermission(item.permission)) return false;
                     }
                 }
-
-                // Kiểm tra children nếu có
                 if (item.children) {
                     const filteredChildren = filterMenuItems(item.children);
-                    if (filteredChildren.length === 0) {
-                        return false;
-                    }
+                    if (filteredChildren.length === 0) return false;
                     item.children = filteredChildren;
                 }
-
                 return true;
             });
         };
@@ -253,20 +295,12 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
     }, [collapsed, hasPermission, userRoles]);
 
 
-    const handleMenuClick = useCallback(({ key }) => {
-        if (key.startsWith('/')) {
-            // Đây là menu item thông thường, không cần xử lý gì thêm
-        }
-    }, []);
-
     const handleChildMenuClick = useCallback((path) => {
-        // Sử dụng navigate để chuyển trang mà không reload
         navigate(path);
     }, [navigate]);
 
     const handleSubMenuClick = useCallback(({ key }, event) => {
-        // Ngăn event bubbling để không ảnh hưởng đến menu cha
-        event.stopPropagation();
+        if (event) event.stopPropagation();
 
         setOpenKeys(prevKeys => {
             if (prevKeys.includes(key)) {
@@ -278,6 +312,105 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
     }, []);
 
     const renderMenuItem = useCallback((item, isActive) => {
+        // ===========================================================
+        // 1. LOGIC CHO SIDEBAR THU NHỎ (COLLAPSED) + CÓ MENU CON
+        // ===========================================================
+        if (collapsed && item.children && item.children.length > 0) {
+            // Nội dung bên trong Popover
+            const popoverContent = (
+                <div style={{ display: 'flex', flexDirection: 'column', minWidth: '200px' }}>
+                    <div style={{
+                        padding: '8px 16px',
+                        fontWeight: 600,
+                        color: '#6b7280',
+                        borderBottom: '1px solid #f3f4f6',
+                        marginBottom: 4
+                    }}>
+                        {item.label}
+                    </div>
+
+                    {item.children.map(child => {
+                        const isChildActive = location.pathname === child.key;
+                        return (
+                            <div
+                                key={child.key}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleChildMenuClick(child.key);
+                                    setActivePopoverKey(null);
+                                }}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    padding: '10px 16px',
+                                    cursor: 'pointer',
+                                    color: isChildActive ? '#d97706' : '#374151',
+                                    backgroundColor: isChildActive ? '#fef3c7' : 'transparent',
+                                    transition: 'all 0.2s',
+                                }}
+                                onMouseEnter={(e) => {
+                                    if (!isChildActive) e.currentTarget.style.backgroundColor = '#f9fafb';
+                                }}
+                                onMouseLeave={(e) => {
+                                    if (!isChildActive) e.currentTarget.style.backgroundColor = 'transparent';
+                                }}
+                            >
+                                <div style={{ marginRight: 10, display: 'flex', alignItems: 'center' }}>
+                                    {React.cloneElement(child.icon, {
+                                        color: isChildActive ? '#d97706' : '#6b7280',
+                                        size: 16
+                                    })}
+                                </div>
+                                <span style={{ fontSize: 14 }}>{child.label}</span>
+                            </div>
+                        );
+                    })}
+                </div>
+            );
+
+            return (
+                <Popover
+                    key={item.key}
+                    content={popoverContent}
+                    placement="rightTop"
+                    trigger="click"
+                    open={activePopoverKey === item.key} // Kiểm soát mở/đóng
+                    onOpenChange={(visible) => setActivePopoverKey(visible ? item.key : null)}
+                    overlayInnerStyle={{ padding: 0, borderRadius: 8, overflow: 'hidden' }}
+                    arrow={false}
+                >
+                    <div
+                        className={`menu-item ${isActive ? 'active' : ''}`}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: '12px 0',
+                            margin: '4px 12px',
+                            cursor: 'pointer',
+                            color: isActive ? '#d97706' : '#000000',
+                            backgroundColor: isActive ? '#fef3c7' : 'transparent',
+                            borderRadius: '8px',
+                            transition: 'all 0.2s ease',
+                            height: 48
+                        }}
+                    >
+                        {/* Chỉ hiển thị Icon ở giữa */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {React.cloneElement(item.icon, {
+                                color: isActive ? '#d97706' : '#000000',
+                                size: 20
+                            })}
+                        </div>
+                    </div>
+                </Popover>
+            );
+        }
+
+        // ===========================================================
+        // 2. LOGIC CHO SIDEBAR MỞ RỘNG (EXPANDED) HOẶC ITEM KHÔNG CÓ CON
+        // ===========================================================
         if (item.children) {
             const isOpen = openKeys.includes(item.key);
             return (
@@ -285,10 +418,7 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                     <div
                         className={`menu-item ${isActive ? 'active' : ''}`}
                         onClick={(e) => handleSubMenuClick({ key: item.key }, e)}
-                        onMouseDown={(e) => {
-                            // Ngăn event bubbling để không đóng sidebar
-                            e.stopPropagation();
-                        }}
+                        onMouseDown={(e) => e.stopPropagation()}
                         style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -302,7 +432,6 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
                         }}
-                    /* Hover effects handled by CSS for better performance */
                     >
                         <div style={{ marginRight: 12, display: 'flex', alignItems: 'center' }}>
                             {React.cloneElement(item.icon, {
@@ -335,9 +464,7 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                                             e.stopPropagation();
                                             handleChildMenuClick(child.key);
                                         }}
-                                        onMouseDown={(e) => {
-                                            e.stopPropagation();
-                                        }}
+                                        onMouseDown={(e) => e.stopPropagation()}
                                         style={{
                                             display: 'flex',
                                             alignItems: 'center',
@@ -372,18 +499,19 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
             );
         }
 
+        // ===========================================================
+        // 3. LOGIC CHO ITEM ĐƠN (KHÔNG CÓ CON)
+        // ===========================================================
         return (
             <Link key={item.key} to={item.key} style={{ textDecoration: 'none' }}>
                 <div
                     className={`menu-item ${isActive ? 'active' : ''}`}
-                    onMouseDown={(e) => {
-                        // Ngăn event bubbling để không đóng sidebar
-                        e.stopPropagation();
-                    }}
+                    onMouseDown={(e) => e.stopPropagation()}
                     style={{
                         display: 'flex',
                         alignItems: 'center',
-                        padding: '12px 20px',
+                        padding: collapsed ? '12px 0' : '12px 20px',
+                        justifyContent: collapsed ? 'center' : 'flex-start',
                         margin: '4px 12px',
                         cursor: 'pointer',
                         color: isActive ? '#d97706' : '#000000',
@@ -392,13 +520,13 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                         transition: 'all 0.2s ease',
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
+                        height: collapsed ? 48 : 'auto'
                     }}
-                /* Hover effects handled by CSS for better performance */
                 >
-                    <div style={{ marginRight: 12, display: 'flex', alignItems: 'center' }}>
+                    <div style={{ marginRight: collapsed ? 0 : 12, display: 'flex', alignItems: 'center' }}>
                         {React.cloneElement(item.icon, {
                             color: isActive ? '#d97706' : '#000000',
-                            size: 16
+                            size: collapsed ? 20 : 16
                         })}
                     </div>
                     {!collapsed && (
@@ -412,7 +540,7 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                 </div>
             </Link>
         );
-    }, [collapsed, openKeys, location.pathname, handleSubMenuClick, handleChildMenuClick]);
+    }, [collapsed, openKeys, location.pathname, handleSubMenuClick, handleChildMenuClick, activePopoverKey]);
 
     return (
         <aside
@@ -422,7 +550,6 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                 display: "flex",
                 flexDirection: "column",
                 transition: "width 0.3s ease-in-out, transform 0.3s ease-in-out",
-                overflow: "hidden",
                 transform: isMobile && collapsed ? "translateX(-100%)" : "translateX(0)",
                 boxShadow: "2px 0 8px rgba(0,0,0,0.1)",
                 borderRight: "1px solid #e5e7eb",
@@ -434,7 +561,7 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                 zIndex: isMobile ? 50 : 10,
             }}
         >
-            {/* Header với logo và nút toggle */}
+            {/* Header với logo */}
             <div style={{
                 height: 75,
                 background: "#ffffff",
@@ -478,8 +605,8 @@ const Sidebar = memo(({ collapsed, isMobile, onToggleSidebar }) => {
                 )}
             </div>
 
-            {/* Menu */}
-            <div style={{ flex: 1, overflowY: "auto", backgroundColor: "#ffffff" }}>
+            {/* Menu Container */}
+            <div style={{ flex: 1, overflowY: "auto", backgroundColor: "#ffffff", overflowX: 'hidden' }}>
                 {menuItems.map((item) => {
                     const isActive = location.pathname === item.key ||
                         item.children?.some((c) => c.key === location.pathname);

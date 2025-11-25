@@ -224,8 +224,25 @@ const PurchaseOrderDetail = () => {
     };
 
     const canReAssignReceiving = () => {
-        return hasPermission(PERMISSIONS.PURCHASE_ORDER_REASSIGN_FOR_RECEIVING) &&
-            purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving;
+        if (!hasPermission(PERMISSIONS.PURCHASE_ORDER_REASSIGN_FOR_RECEIVING)) {
+            return false;
+        }
+
+        // Kiểm tra xem đã có người được giao chưa
+        const hasBeenAssigned = purchaseOrder?.assignToByName ||
+            purchaseOrder?.assignedAt ||
+            purchaseOrder?.assignTo ||
+            purchaseOrder?.assignToById;
+
+        // Backend cho phép reAssign khi status là AssignedForReceiving hoặc AwaitingArrival
+        // Cho phép hiển thị nút "Giao lại" khi:
+        // 1. Status là AssignedForReceiving (đã giao, chưa xác nhận đến)
+        // 2. Status là AwaitingArrival (Chờ đến) VÀ đã có người được giao trước đó
+        // 3. Status là GoodsReceived (đã xác nhận đến) VÀ đã có người được giao trước đó
+        //    -> Khi quản lý kho giao trước rồi mới xác nhận đến, vẫn phải hiển thị nút Giao lại
+        return purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving ||
+            (purchaseOrder?.status === PURCHASE_ORDER_STATUS.AwaitingArrival && hasBeenAssigned) ||
+            (purchaseOrder?.status === PURCHASE_ORDER_STATUS.GoodsReceived && hasBeenAssigned);
     };
 
     const canStartReceive = () => {
@@ -251,7 +268,9 @@ const PurchaseOrderDetail = () => {
     };
 
     const canEdit = () => {
-        return purchaseOrder?.status === PURCHASE_ORDER_STATUS.Draft;
+        return hasPermission(PERMISSIONS.PURCHASE_ORDER_UPDATE) &&
+            (purchaseOrder?.status === PURCHASE_ORDER_STATUS.Draft ||
+                purchaseOrder?.status === PURCHASE_ORDER_STATUS.Rejected);
     };
 
     const canChangeDeliveryDate = () => {
@@ -344,12 +363,29 @@ const PurchaseOrderDetail = () => {
     const handleAssignReceiving = async (assignTo) => {
         setAssignReceivingLoading(true);
         try {
-            if (purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving) {
+            // Kiểm tra xem đã có người được giao chưa
+            const hasBeenAssigned = purchaseOrder?.assignToByName ||
+                purchaseOrder?.assignedAt ||
+                purchaseOrder?.assignTo ||
+                purchaseOrder?.assignToById;
+
+            // Backend cho phép reAssign khi status là AssignedForReceiving hoặc AwaitingArrival
+            // Khi status là GoodsReceived, phải dùng assignForReceiving (backend sẽ tự động cập nhật người được giao)
+            const shouldUseReAssign = purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving ||
+                purchaseOrder?.status === PURCHASE_ORDER_STATUS.AwaitingArrival;
+
+            // Kiểm tra xem có phải là "giao lại" về mặt logic (đã có người được giao trước đó)
+            const isReassignLogic = shouldUseReAssign ||
+                (purchaseOrder?.status === PURCHASE_ORDER_STATUS.GoodsReceived && hasBeenAssigned);
+
+            if (shouldUseReAssign) {
                 await reAssignForReceiving(
                     purchaseOrder.purchaseOderId,
                     assignTo
                 );
             } else {
+                // Khi status là GoodsReceived và đã có người được giao, vẫn dùng assignForReceiving
+                // nhưng hiển thị message là "Giao lại"
                 await assignForReceiving(
                     purchaseOrder.purchaseOderId,
                     assignTo
@@ -358,7 +394,7 @@ const PurchaseOrderDetail = () => {
 
             if (window.showToast) {
                 window.showToast(
-                    purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving
+                    isReassignLogic
                         ? "Giao lại nhiệm vụ nhận hàng thành công!"
                         : "Giao nhiệm vụ nhận hàng thành công!",
                     "success"
@@ -371,9 +407,18 @@ const PurchaseOrderDetail = () => {
             }
         } catch (error) {
             console.error("Error assigning for receiving:", error);
-            const errorMessage = extractErrorMessage(error) || (purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving
-                ? "Có lỗi xảy ra khi giao lại nhiệm vụ nhận hàng"
-                : "Có lỗi xảy ra khi giao nhiệm vụ nhận hàng");
+            const hasBeenAssigned = purchaseOrder?.assignToByName ||
+                purchaseOrder?.assignedAt ||
+                purchaseOrder?.assignTo ||
+                purchaseOrder?.assignToById;
+            const shouldUseReAssign = purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving ||
+                purchaseOrder?.status === PURCHASE_ORDER_STATUS.AwaitingArrival;
+            const isReassignLogic = shouldUseReAssign ||
+                (purchaseOrder?.status === PURCHASE_ORDER_STATUS.GoodsReceived && hasBeenAssigned);
+            const errorMessage = extractErrorMessage(error) ||
+                (isReassignLogic
+                    ? "Có lỗi xảy ra khi giao lại nhiệm vụ nhận hàng"
+                    : "Có lỗi xảy ra khi giao nhiệm vụ nhận hàng");
             if (window.showToast) {
                 window.showToast(errorMessage, "error");
             }
@@ -538,19 +583,23 @@ const PurchaseOrderDetail = () => {
                                     {/* Supplier and Address on same line */}
                                     <div className="grid grid-cols-[1.2fr_1fr] gap-4">
                                         {/* Left: Supplier */}
-                                        <div className="flex items-center space-x-2 min-w-0">
-                                            <Store className="h-4 w-4 text-green-600 flex-shrink-0" />
-                                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0 w-[115px]">Nhà cung cấp:</label>
-                                            <span className="text-sm font-semibold text-gray-900 bg-gray-200 px-3 py-1 rounded border whitespace-nowrap flex-1">
+                                        <div className="grid grid-cols-[160px_1fr] gap-2 items-center">
+                                            <div className="flex items-center space-x-2 min-w-0">
+                                                <Store className="h-4 w-4 text-green-600 flex-shrink-0" />
+                                                <label className="text-sm font-medium text-gray-700 whitespace-nowrap leading-normal">Nhà cung cấp:</label>
+                                            </div>
+                                            <span className="text-sm font-semibold text-gray-900 bg-gray-200 px-3 py-1 rounded border break-words leading-normal">
                                                 {purchaseOrder.supplierName || 'Chưa có thông tin'}
                                             </span>
                                         </div>
 
                                         {/* Right: Address */}
-                                        <div className="flex items-center space-x-2 min-w-0">
-                                            <MapPin className="h-4 w-4 text-red-600 flex-shrink-0" />
-                                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0 w-[40px]">Địa chỉ:</label>
-                                            <span className="text-sm text-gray-900 bg-gray-200 px-3 py-1 rounded border">
+                                        <div className="grid grid-cols-[160px_1fr] gap-2 items-center">
+                                            <div className="flex items-center space-x-2 min-w-0">
+                                                <MapPin className="h-4 w-4 text-red-600 flex-shrink-0" />
+                                                <label className="text-sm font-medium text-gray-700 whitespace-nowrap leading-normal">Địa chỉ:</label>
+                                            </div>
+                                            <span className="text-sm text-gray-900 bg-gray-200 px-3 py-1 rounded border break-words leading-normal">
                                                 {purchaseOrder.address || 'Chưa có thông tin'}
                                             </span>
                                         </div>
@@ -559,19 +608,23 @@ const PurchaseOrderDetail = () => {
                                     {/* Email and Phone on same line */}
                                     <div className="grid grid-cols-[1.2fr_1fr] gap-4">
                                         {/* Left: Email */}
-                                        <div className="flex items-center space-x-2 min-w-0">
-                                            <Mail className="h-4 w-4 text-orange-600 flex-shrink-0" />
-                                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0 w-[115px]">Email:</label>
-                                            <span className="text-sm text-gray-900 bg-gray-200 px-3 py-1 rounded border whitespace-nowrap flex-1">
+                                        <div className="grid grid-cols-[160px_1fr] gap-2 items-center">
+                                            <div className="flex items-center space-x-2 min-w-0">
+                                                <Mail className="h-4 w-4 text-orange-600 flex-shrink-0" />
+                                                <label className="text-sm font-medium text-gray-700 whitespace-nowrap leading-normal">Email:</label>
+                                            </div>
+                                            <span className="text-sm text-gray-900 bg-gray-200 px-3 py-1 rounded border break-words leading-normal">
                                                 {purchaseOrder.email || 'Chưa có thông tin'}
                                             </span>
                                         </div>
 
                                         {/* Right: Phone */}
-                                        <div className="flex items-center space-x-2 min-w-0">
-                                            <Phone className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0 w-[40px]">SĐT:</label>
-                                            <span className="text-sm text-gray-900 bg-gray-200 px-3 py-1 rounded border">
+                                        <div className="grid grid-cols-[160px_1fr] gap-2 items-center">
+                                            <div className="flex items-center space-x-2 min-w-0">
+                                                <Phone className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                                                <label className="text-sm font-medium text-gray-700 whitespace-nowrap leading-normal">SĐT:</label>
+                                            </div>
+                                            <span className="text-sm text-gray-900 bg-gray-200 px-3 py-1 rounded border break-words leading-normal">
                                                 {purchaseOrder.phone || 'Chưa có thông tin'}
                                             </span>
                                         </div>
@@ -580,10 +633,12 @@ const PurchaseOrderDetail = () => {
                                     {/* Estimated Time Arrival */}
                                     {purchaseOrder.estimatedTimeArrival && (
                                         <div className="grid grid-cols-[1.2fr_1fr] gap-4">
-                                            <div className="flex items-center space-x-2 min-w-0">
-                                                <Calendar className="h-4 w-4 text-purple-600 flex-shrink-0" />
-                                                <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0 w-[115px]">Ngày dự kiến nhập:</label>
-                                                <span className="text-sm font-semibold text-gray-900 bg-gray-200 px-3 py-1 rounded border whitespace-nowrap flex-1">
+                                            <div className="grid grid-cols-[160px_1fr] gap-2 items-center">
+                                                <div className="flex items-center space-x-2 min-w-0">
+                                                    <Calendar className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                                                    <label className="text-sm font-medium text-gray-700 whitespace-nowrap leading-normal">Ngày dự kiến nhập:</label>
+                                                </div>
+                                                <span className="text-sm font-semibold text-gray-900 bg-gray-200 px-3 py-1 rounded border break-words leading-normal">
                                                     {purchaseOrder.estimatedTimeArrival ? new Date(purchaseOrder.estimatedTimeArrival).toLocaleDateString('vi-VN', {
                                                         year: 'numeric',
                                                         month: '2-digit',
@@ -632,7 +687,7 @@ const PurchaseOrderDetail = () => {
                                         ) : (
                                             <TableRow>
                                                 <TableCell colSpan={7} className="text-center text-gray-500 py-8">
-                                                    Không có sản phẩm nào
+                                                    Không có hàng hóa nào
                                                 </TableCell>
                                             </TableRow>
                                         )}

@@ -16,9 +16,18 @@ import { extractErrorMessage } from "../../utils/Validation"
 import { getGoodsInventoryBySupplierId } from "../../services/GoodService"
 // 1. IMPORT MODAL TẠO ĐƠN BỔ SUNG
 import CreateBackOrderModal from "../BackOrderPage/CreateBackOrderModal"
+import { ComponentIcon } from "../../components/IconComponent/Icon"
 
 function UpdateSaleOrder() {
     const navigate = useNavigate();
+    const minDate = (() => {
+        const d = new Date();
+        d.setDate(d.getDate() + 1);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    })();
     const dateInputRef = useRef(null);
     const { id } = useParams();
     const [loading, setLoading] = useState(true);
@@ -213,10 +222,10 @@ function UpdateSaleOrder() {
             setItems(updatedItems);
             return;
         } else if (field === "goodsName") {
-            // Kiểm tra xem sản phẩm đã được chọn ở hàng khác chưa
+            // Kiểm tra xem hàng hóa đã được chọn ở hàng khác chưa
             const isDuplicate = items.some(item => item.id !== id && item.goodsName === value && value !== "");
             if (isDuplicate) {
-                window.showToast("Mặt hàng này đã được thêm vào danh sách!", "error");
+                window.showToast("Hàng hóa này đã được thêm vào danh sách!", "error");
                 return;
             }
 
@@ -364,7 +373,7 @@ function UpdateSaleOrder() {
         label: supplier.companyName
     }));
 
-    // Lọc danh sách hàng hóa để không hiển thị những mặt hàng đã được chọn
+    // Lọc danh sách hàng hóa để không hiển thị những hàng hóa đã được chọn
     const getAvailableGoodsOptions = (currentItemId) => {
         const currentItem = items.find(item => item.id === currentItemId);
         if (!currentItem || !currentItem.supplierName) {
@@ -451,51 +460,89 @@ function UpdateSaleOrder() {
         return parseInt(item.quantity) * selectedPacking.unitPerPackage;
     };
 
-    // Hàm lấy thông tin tồn kho cho một item (được sao chép từ file CreateSaleOrder)
+    // Hàm lấy thông tin tồn kho cho một item
     const getItemStockInfo = (item) => {
-        if (!item.supplierName || !item.goodsName || !item.goodsPackingId) {
+        try {
+            // Kiểm tra điều kiện cơ bản
+            if (!item || !item.supplierName || !item.goodsName || !item.goodsPackingId || !item.quantity) {
+                return null;
+            }
+
+            const requestedQuantity = parseInt(item.quantity);
+            if (isNaN(requestedQuantity) || requestedQuantity <= 0) {
+                return null;
+            }
+
+            // Tìm supplier
+            const selectedSupplier = suppliers.find(s => s.companyName === item.supplierName);
+            if (!selectedSupplier) {
+                return null;
+            }
+
+            // Tìm goods
+            const goods = goodsBySupplier[selectedSupplier.supplierId] || [];
+            const selectedGood = goods.find(g => g.goodsName === item.goodsName);
+            if (!selectedGood || !selectedGood.goodsId) {
+                return null;
+            }
+
+            // Lấy inventory data
+            const inventoryData = inventoryMap[selectedGood.goodsId] || [];
+
+            // Normalize goodsPackingId về số
+            const itemPackingId = parseInt(item.goodsPackingId);
+            if (isNaN(itemPackingId)) {
+                return null;
+            }
+
+            // Tìm inventory matching goodsPackingId
+            let inventory = null;
+            for (const inv of inventoryData) {
+                if (!inv || !inv.goodsPackingId) continue;
+
+                const invPackingId = parseInt(inv.goodsPackingId);
+                if (!isNaN(invPackingId) && invPackingId === itemPackingId) {
+                    inventory = inv;
+                    break;
+                }
+            }
+
+            // Lấy available quantity (mặc định là 0 nếu không tìm thấy)
+            const availableQuantity = inventory?.availablePackageQuantity ?? 0;
+            const isExceeding = requestedQuantity > availableQuantity;
+
+            return {
+                availableQuantity,
+                requestedQuantity,
+                isExceeding,
+                hasInventory: inventory !== null
+            };
+        } catch (error) {
             return null;
         }
-
-        const selectedSupplier = suppliers.find(s => s.companyName === item.supplierName);
-        if (!selectedSupplier) return null;
-
-        const goods = goodsBySupplier[selectedSupplier.supplierId] || [];
-        const selectedGood = goods.find(g => g.goodsName === item.goodsName);
-        if (!selectedGood) return null;
-
-        const inventoryData = inventoryMap[selectedGood.goodsId] || [];
-        const inventory = inventoryData.find(inv =>
-            inv.goodsPackingId?.toString() === item.goodsPackingId?.toString() ||
-            inv.goodsPackingId === parseInt(item.goodsPackingId)
-        );
-
-        const availableQuantity = inventory?.availablePackageQuantity || 0;
-        const requestedQuantity = parseInt(item.quantity) || 0;
-
-        return {
-            availableQuantity,
-            requestedQuantity,
-            isExceeding: requestedQuantity > availableQuantity
-        };
     };
 
-    // Kiểm tra validation cho số thùng (đã có sẵn)
+    // Kiểm tra validation cho số thùng
     const validateQuantity = (item) => {
-        // ... (Logic kiểm tra số thùng và tồn kho giữ nguyên)
+        // Kiểm tra điều kiện cần thiết
         if (!item.quantity || item.quantity === "" || !item.goodsPackingId || !item.supplierName || !item.goodsName) {
             return null;
         }
 
         const quantity = parseInt(item.quantity);
 
+        // Kiểm tra số lượng hợp lệ
         if (isNaN(quantity) || quantity <= 0) {
             return "Vui lòng nhập số thùng lớn hơn 0";
         }
 
+        // Kiểm tra tồn kho
         const stockInfo = getItemStockInfo(item);
-        if (stockInfo && stockInfo.isExceeding) {
-            return `(Có sẵn: ${stockInfo.availableQuantity} thùng)`;
+        const availableQuantity = stockInfo?.availableQuantity ?? 0;
+
+        // Nếu vượt quá tồn kho, hiển thị thông báo tồn kho
+        if (quantity > availableQuantity) {
+            return `(Có sẵn: ${availableQuantity} thùng)`;
         }
 
         return null;
@@ -547,7 +594,7 @@ function UpdateSaleOrder() {
         };
     };
 
-    // 3. LOGIC TÍNH TOÁN DANH SÁCH MẶT HÀNG THIẾU CHO BACKORDER (Được sao chép từ CreateSaleOrder)
+    // 3. LOGIC TÍNH TOÁN DANH SÁCH hàng hóa THIẾU CHO BACKORDER (Được sao chép từ CreateSaleOrder)
     const getInsufficientItemsForBackOrder = () => {
         const validItems = items.filter(item =>
             item.supplierName && item.goodsName && item.quantity && item.goodsPackingId && parseInt(item.quantity) > 0
@@ -591,7 +638,7 @@ function UpdateSaleOrder() {
     const handleOpenBackOrderModal = () => {
         const insufficient = getInsufficientItemsForBackOrder();
         if (insufficient.length === 0) {
-            window.showToast("Không có mặt hàng nào bị thiếu tồn kho", "info");
+            window.showToast("Không có hàng hóa nào bị thiếu tồn kho", "info");
             return;
         }
         setInsufficientItems(insufficient);
@@ -618,37 +665,63 @@ function UpdateSaleOrder() {
                 if (!item.quantity || item.quantity === "" || parseInt(item.quantity) <= 0) {
                     newFieldErrors[`${item.id}-quantity`] = "Vui lòng nhập số thùng lớn hơn 0";
                 } else {
+                    // Kiểm tra tồn kho nếu đã nhập số lượng hợp lệ
+                    // NHƯNG: Không block validation khi vượt quá tồn kho
+                    // Chỉ hiển thị warning, validation sẽ pass để có thể show toast ở phần submit
                     const quantityError = validateQuantity(item);
-                    if (quantityError) newFieldErrors[`${item.id}-quantity`] = quantityError;
+                    if (quantityError && !quantityError.includes("(Có sẵn:")) {
+                        // Chỉ block validation nếu là lỗi format (không phải lỗi tồn kho)
+                        newFieldErrors[`${item.id}-quantity`] = quantityError;
+                    } else if (quantityError && quantityError.includes("(Có sẵn:")) {
+                        // Nếu vượt quá tồn kho, chỉ set warning (không block validation)
+                        // Validation vẫn pass để có thể show toast ở phần submit
+                        newFieldErrors[`${item.id}-quantity`] = quantityError;
+                    }
                 }
             } else if (!item.quantity || item.quantity === "" || parseInt(item.quantity) <= 0) {
                 newFieldErrors[`${item.id}-quantity`] = "Vui lòng nhập số thùng lớn hơn 0";
             }
         });
 
+        // Tách riêng blocking errors (lỗi format/required) và warnings (tồn kho)
+        // Chỉ block validation nếu có blocking errors, warnings không block
+        const blockingErrors = {};
+        const warnings = {};
+
+        Object.keys(newFieldErrors).forEach(key => {
+            const error = newFieldErrors[key];
+            // Nếu là warning về tồn kho (có chứa "(Có sẵn:"), chỉ thêm vào warnings
+            if (error && error.includes("(Có sẵn:")) {
+                warnings[key] = error;
+            } else {
+                // Các lỗi khác là blocking errors
+                blockingErrors[key] = error;
+            }
+        });
+
+        // Set cả warnings và blocking errors để hiển thị
+        setFieldErrors({ ...blockingErrors, ...warnings });
+
         if (!formData.retailerName) {
             window.showToast("Vui lòng chọn nhà bán lẻ", "error");
-            if (Object.keys(newFieldErrors).length > 0) setFieldErrors(newFieldErrors);
-            return;
+            if (Object.keys(blockingErrors).length > 0) return;
         }
 
         if (!formData.estimatedTimeDeparture) {
             window.showToast("Vui lòng chọn ngày dự kiến giao hàng", "error");
-            if (Object.keys(newFieldErrors).length > 0) setFieldErrors(newFieldErrors);
-            return;
+            if (Object.keys(blockingErrors).length > 0) return;
         }
 
-        const selectedDate = new Date(formData.estimatedTimeDeparture);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (selectedDate <= today) {
-            window.showToast("Ngày giao hàng phải trong tương lai", "error");
-            if (Object.keys(newFieldErrors).length > 0) setFieldErrors(newFieldErrors);
-            return;
-        }
+        // const selectedDate = new Date(formData.estimatedTimeDeparture);
+        // const today = new Date();
+        // today.setHours(0, 0, 0, 0);
+        // if (selectedDate <= today) {
+        //     window.showToast("Ngày giao hàng phải trong tương lai", "error");
+        //     if (Object.keys(blockingErrors).length > 0) return;
+        // }
 
-        if (Object.keys(newFieldErrors).length > 0) {
-            setFieldErrors(newFieldErrors);
+        // Chỉ block validation nếu có blocking errors
+        if (Object.keys(blockingErrors).length > 0) {
             return;
         }
 
@@ -664,21 +737,42 @@ function UpdateSaleOrder() {
             return;
         }
 
-        // Kiểm tra tồn kho - KHÔNG CHẶN submit, chỉ cảnh báo và đánh dấu đỏ
+        // Kiểm tra tồn kho - CHẶN submit nếu vượt quá tồn kho
         const itemsExceedingStockMap = {};
-        validItems.forEach(item => {
+        const insufficientItems = [];
+
+        for (const item of validItems) {
             const stockInfo = getItemStockInfo(item);
+
+            // Nếu có thông tin tồn kho và vượt quá tồn kho
             if (stockInfo && stockInfo.isExceeding) {
                 itemsExceedingStockMap[item.id] = {
                     availableQuantity: stockInfo.availableQuantity,
                     requestedQuantity: stockInfo.requestedQuantity
                 };
+                insufficientItems.push(item);
             }
-        });
+        }
 
-        if (Object.keys(itemsExceedingStockMap).length > 0) {
+        if (insufficientItems.length > 0) {
+            // Lưu thông tin các items vượt quá tồn kho để hiển thị viền đỏ
             setItemsExceedingStock(itemsExceedingStockMap);
-            window.showToast(`Cảnh báo: Có ${Object.keys(itemsExceedingStockMap).length} sản phẩm vượt quá tồn kho. Đơn hàng sẽ được cập nhật ở trạng thái Nháp (Draft).`, "warning");
+
+            // Hiển thị thông báo lỗi và CHẶN submit
+            const firstItem = insufficientItems[0];
+            const message = insufficientItems.length === 1
+                ? `Hàng hóa "${firstItem.goodsName}" vượt quá tồn kho. Vui lòng điều chỉnh số lượng.`
+                : `Có ${insufficientItems.length} hàng hóa vượt quá tồn kho. Vui lòng điều chỉnh số lượng.`;
+
+            // Đảm bảo toast được hiển thị và CHẶN submit
+            if (typeof window !== 'undefined' && window.showToast) {
+                window.showToast(message, "error");
+            } else if (typeof window !== 'undefined' && window.showToast) {
+                window.showToast(message);
+            }
+
+            // CHẶN submit khi vượt quá tồn kho
+            return;
         } else {
             setItemsExceedingStock({});
         }
@@ -739,39 +833,69 @@ function UpdateSaleOrder() {
             if (!item.supplierName) newFieldErrors[`${item.id}-supplierName`] = "Vui lòng chọn nhà cung cấp";
             if (!item.goodsName) newFieldErrors[`${item.id}-goodsName`] = "Vui lòng chọn tên hàng hóa";
             if (!item.goodsPackingId) newFieldErrors[`${item.id}-goodsPackingId`] = "Vui lòng chọn đóng gói";
+
             // Check quantity for validation
             if (item.supplierName && item.goodsName && item.goodsPackingId) {
-                const quantityError = validateQuantity(item);
-                if (quantityError) newFieldErrors[`${item.id}-quantity`] = quantityError;
-                if (!item.quantity || parseInt(item.quantity) <= 0) newFieldErrors[`${item.id}-quantity`] = "Vui lòng nhập số thùng lớn hơn 0";
-            } else if (!item.quantity || parseInt(item.quantity) <= 0) {
+                if (!item.quantity || item.quantity === "" || parseInt(item.quantity) <= 0) {
+                    newFieldErrors[`${item.id}-quantity`] = "Vui lòng nhập số thùng lớn hơn 0";
+                } else {
+                    // Kiểm tra tồn kho nếu đã nhập số lượng hợp lệ
+                    // NHƯNG: Không block validation khi vượt quá tồn kho
+                    // Chỉ hiển thị warning, validation sẽ pass để có thể show toast ở phần submit
+                    const quantityError = validateQuantity(item);
+                    if (quantityError && !quantityError.includes("(Có sẵn:")) {
+                        // Chỉ block validation nếu là lỗi format (không phải lỗi tồn kho)
+                        newFieldErrors[`${item.id}-quantity`] = quantityError;
+                    } else if (quantityError && quantityError.includes("(Có sẵn:")) {
+                        // Nếu vượt quá tồn kho, chỉ set warning (không block validation)
+                        // Validation vẫn pass để có thể show toast ở phần submit
+                        newFieldErrors[`${item.id}-quantity`] = quantityError;
+                    }
+                }
+            } else if (!item.quantity || item.quantity === "" || parseInt(item.quantity) <= 0) {
                 newFieldErrors[`${item.id}-quantity`] = "Vui lòng nhập số thùng lớn hơn 0";
             }
         });
 
+        // Tách riêng blocking errors (lỗi format/required) và warnings (tồn kho)
+        // Chỉ block validation nếu có blocking errors, warnings không block
+        const blockingErrors = {};
+        const warnings = {};
+
+        Object.keys(newFieldErrors).forEach(key => {
+            const error = newFieldErrors[key];
+            // Nếu là warning về tồn kho (có chứa "(Có sẵn:"), chỉ thêm vào warnings
+            if (error && error.includes("(Có sẵn:")) {
+                warnings[key] = error;
+            } else {
+                // Các lỗi khác là blocking errors
+                blockingErrors[key] = error;
+            }
+        });
+
+        // Set cả warnings và blocking errors để hiển thị
+        setFieldErrors({ ...blockingErrors, ...warnings });
+
         if (!formData.retailerName) {
             window.showToast("Vui lòng chọn nhà bán lẻ", "error");
-            if (Object.keys(newFieldErrors).length > 0) setFieldErrors(newFieldErrors);
-            return;
+            if (Object.keys(blockingErrors).length > 0) return;
         }
 
         if (!formData.estimatedTimeDeparture) {
             window.showToast("Vui lòng chọn ngày dự kiến giao hàng", "error");
-            if (Object.keys(newFieldErrors).length > 0) setFieldErrors(newFieldErrors);
-            return;
+            if (Object.keys(blockingErrors).length > 0) return;
         }
 
-        const selectedDate = new Date(formData.estimatedTimeDeparture);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (selectedDate <= today) {
-            window.showToast("Ngày giao hàng phải trong tương lai", "error");
-            if (Object.keys(newFieldErrors).length > 0) setFieldErrors(newFieldErrors);
-            return;
-        }
+        // const selectedDate = new Date(formData.estimatedTimeDeparture);
+        // const today = new Date();
+        // today.setHours(0, 0, 0, 0);
+        // if (selectedDate <= today) {
+        //     window.showToast("Ngày giao hàng phải trong tương lai", "error");
+        //     if (Object.keys(blockingErrors).length > 0) return;
+        // }
 
-        if (Object.keys(newFieldErrors).length > 0) {
-            setFieldErrors(newFieldErrors);
+        // Chỉ block validation nếu có blocking errors
+        if (Object.keys(blockingErrors).length > 0) {
             return;
         }
 
@@ -787,29 +911,42 @@ function UpdateSaleOrder() {
             return;
         }
 
-        // Kiểm tra tồn kho - CHẶN SUBMIT nếu vượt quá
+        // Kiểm tra tồn kho - CHẶN submit nếu vượt quá tồn kho
         const itemsExceedingStockMap = {};
-        const insufficientItemsForBlock = validItems.filter(item => {
+        const insufficientItems = [];
+
+        for (const item of validItems) {
             const stockInfo = getItemStockInfo(item);
+
+            // Nếu có thông tin tồn kho và vượt quá tồn kho
             if (stockInfo && stockInfo.isExceeding) {
                 itemsExceedingStockMap[item.id] = {
                     availableQuantity: stockInfo.availableQuantity,
                     requestedQuantity: stockInfo.requestedQuantity
                 };
-                return true;
+                insufficientItems.push(item);
             }
-            return false;
-        });
+        }
 
-        if (insufficientItemsForBlock.length > 0) {
+        if (insufficientItems.length > 0) {
+            // Lưu thông tin các items vượt quá tồn kho để hiển thị viền đỏ
             setItemsExceedingStock(itemsExceedingStockMap);
-            const firstItem = insufficientItemsForBlock[0];
-            const message = insufficientItemsForBlock.length === 1
-                ? `Sản phẩm "${firstItem.goodsName}" vượt quá tồn kho.`
-                : `Có ${insufficientItemsForBlock.length} sản phẩm vượt quá tồn kho.`;
-            window.showToast(message, "error");
+
+            const firstItem = insufficientItems[0];
+            const message = insufficientItems.length === 1
+                ? `Hàng hóa "${firstItem.goodsName}" vượt quá tồn kho. Vui lòng kiểm tra lại số lượng.`
+                : `Có ${insufficientItems.length} hàng hóa vượt quá tồn kho. Vui lòng kiểm tra lại số lượng.`;
+
+            // Đảm bảo toast được hiển thị
+            if (typeof window !== 'undefined' && window.showToast) {
+                window.showToast(message, "error");
+            } else if (typeof window !== 'undefined' && window.showToast) {
+                window.showToast(message);
+            }
             return;
         }
+
+        // Nếu không có items vượt quá tồn kho, reset state
         setItemsExceedingStock({});
 
         try {
@@ -877,11 +1014,10 @@ function UpdateSaleOrder() {
                             onClick={() => navigate("/sales-orders")}
                             className="text-slate-600 hover:bg-slate-50 flex items-center"
                         >
-                            <ArrowLeft className="h-4 w-4 mr-2" />
-                            <span className="mt-[1px]">Quay Lại</span>
+                            <ComponentIcon name="arrowBackCircleOutline" size={28} />
                         </Button>
 
-                        <h1 className="text-2xl font-bold text-slate-700 leading-none flex items-center">
+                        <h1 className="text-2xl font-bold text-slate-700 leading-none flex items-center m-0">
                             Cập Nhật Đơn Bán Hàng
                         </h1>
                     </div>
@@ -1193,7 +1329,7 @@ function UpdateSaleOrder() {
                                     className="text-orange-500 hover:text-orange-600 font-medium cursor-pointer flex items-center gap-2"
                                 >
                                     <Plus className="h-4 w-4" />
-                                    Thêm mặt hàng
+                                    Thêm hàng hóa
                                 </button>
                             </div>
 
@@ -1273,7 +1409,7 @@ function UpdateSaleOrder() {
                                                 className="h-[38px] px-4 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all whitespace-nowrap"
                                             >
                                                 <Plus className="h-4 w-4 mr-2" />
-                                                Tạo đơn bổ sung cho {stockInfo.insufficientCount} mặt hàng thiếu
+                                                Tạo đơn bổ sung cho {stockInfo.insufficientCount} hàng hóa thiếu
                                             </Button>
                                         )}
                                     </div>
@@ -1294,7 +1430,7 @@ function UpdateSaleOrder() {
                                                 </div>
 
                                                 <div className="text-sm text-slate-600 mb-2">
-                                                    Mã sản phẩm: <span className="font-medium">{goods.goodsCode}</span>
+                                                    Mã hàng hóa: <span className="font-medium">{goods.goodsCode}</span>
                                                 </div>
 
                                                 <div className="space-y-1">
@@ -1320,17 +1456,17 @@ function UpdateSaleOrder() {
                                     <div className="flex flex-wrap gap-2">
                                         <div className="px-3 py-1.5 bg-gray-100 rounded-full">
                                             <span className="text-sm font-medium text-blue-600">
-                                                Tổng: {stockInfo.totalGoods} mặt hàng
+                                                Tổng: {stockInfo.totalGoods} hàng hóa
                                             </span>
                                         </div>
                                         <div className="px-3 py-1.5 bg-green-100 rounded-full">
                                             <span className="text-sm font-medium text-green-600">
-                                                Đủ: {stockInfo.sufficientCount} mặt hàng
+                                                Đủ: {stockInfo.sufficientCount} hàng hóa
                                             </span>
                                         </div>
                                         <div className="px-3 py-1.5 bg-red-100 rounded-full">
                                             <span className="text-sm font-medium text-red-600">
-                                                Thiếu: {stockInfo.insufficientCount} mặt hàng
+                                                Thiếu: {stockInfo.insufficientCount} hàng hóa
                                             </span>
                                         </div>
                                     </div>

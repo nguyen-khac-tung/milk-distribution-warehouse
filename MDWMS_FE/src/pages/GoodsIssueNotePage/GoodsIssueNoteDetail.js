@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { ArrowLeft, Printer, CheckCircle, Clock, AlertCircle, ChevronDown, ChevronUp, RefreshCw, Barcode, Package, Send, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Printer, CheckCircle, Clock, AlertCircle, ChevronDown, ChevronUp, RefreshCw, Barcode, Package, Send, ShieldCheck, MapPin, X } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { getDetailGoodsIssueNote, submitGoodsIssueNote, approveGoodsIssueNote, rePickGoodsIssueNoteDetail, rePickGoodsIssueNoteDetailList } from '../../services/GoodsIssueNoteService';
 import { getPickAllocationDetail, confirmPickAllocation } from '../../services/PickAllocationService';
@@ -58,9 +58,16 @@ const GoodsIssueNoteDetail = () => {
     const [expandedItems, setExpandedItems] = useState({});
     const [expandedGroups, setExpandedGroups] = useState({});
     const [confirmingPickId, setConfirmingPickId] = useState(null);
+    const detailCardRefs = useRef({});
     const [showScanModal, setShowScanModal] = useState(false);
     const [pickDetailData, setPickDetailData] = useState(null);
     const [isConfirming, setIsConfirming] = useState(false);
+    const [highlightedPickAllocationId, setHighlightedPickAllocationId] = useState(null);
+    const [highlightedDetailId, setHighlightedDetailId] = useState(null); // Detail ID được highlight
+    const [searchCode, setSearchCode] = useState(''); // Input tìm kiếm (vị trí hoặc pallet)
+    const [searchError, setSearchError] = useState(''); // Lỗi tìm kiếm
+    const [searching, setSearching] = useState(false); // Đang tìm kiếm
+    const searchTimeoutRef = useRef(null);
 
     // Modals for actions
     const [showRePickModal, setShowRePickModal] = useState(false);
@@ -77,21 +84,48 @@ const GoodsIssueNoteDetail = () => {
         fetchGoodsIssueNoteDetail();
     }, [id]);
 
-    const fetchGoodsIssueNoteDetail = async () => {
+    // Cleanup timeout khi unmount
+    useEffect(() => {
+        return () => {
+            if (searchTimeoutRef.current) {
+                clearTimeout(searchTimeoutRef.current);
+            }
+        };
+    }, []);
+
+    const fetchGoodsIssueNoteDetail = async (preserveExpandedState = false) => {
         setLoading(true);
         try {
             const response = await getDetailGoodsIssueNote(id);
 
             if (response && response.success && response.data) {
+                // Nếu cần giữ lại trạng thái mở, lưu lại danh sách các detailId đang mở
+                let expandedDetailIds = new Set();
+                if (preserveExpandedState && goodsIssueNote?.goodsIssueNoteDetails) {
+                    goodsIssueNote.goodsIssueNoteDetails.forEach((detail, idx) => {
+                        if (expandedItems[idx]) {
+                            expandedDetailIds.add(detail.goodsIssueNoteDetailId);
+                        }
+                    });
+                }
+
                 setGoodsIssueNote(response.data);
-                // Auto-expand all items by default
-                // const defaultExpanded = {};
-                // response.data.goodsIssueNoteDetails?.forEach((detail, idx) => {
-                //     defaultExpanded[idx] = true;
-                // });
-                // setExpandedItems(defaultExpanded);
-                // User có thể click để expand khi cần xem chi tiết
-                setExpandedItems({});
+
+                // Nếu cần giữ lại trạng thái, khôi phục lại các item đã mở dựa trên detailId
+                if (preserveExpandedState && expandedDetailIds.size > 0) {
+                    setExpandedItems(prev => {
+                        const newExpanded = {};
+                        response.data.goodsIssueNoteDetails?.forEach((detail, idx) => {
+                            if (expandedDetailIds.has(detail.goodsIssueNoteDetailId)) {
+                                newExpanded[idx] = true;
+                            }
+                        });
+                        return newExpanded;
+                    });
+                } else if (!preserveExpandedState) {
+                    // Chỉ reset khi không cần giữ lại trạng thái
+                    setExpandedItems({});
+                }
             } else {
                 setError('Không tìm thấy phiếu xuất kho cho đơn hàng này');
             }
@@ -153,9 +187,12 @@ const GoodsIssueNoteDetail = () => {
 
             setShowScanModal(false);
             setPickDetailData(null);
+            // Bỏ highlight sau khi quét thành công
+            setHighlightedPickAllocationId(null);
+            setHighlightedDetailId(null);
 
-            // Refresh the goods issue note to get updated status
-            await fetchGoodsIssueNoteDetail();
+            // Refresh the goods issue note to get updated status, nhưng giữ lại trạng thái mở của các card
+            await fetchGoodsIssueNoteDetail(true);
         } catch (error) {
             console.error('Error confirming pick:', error);
             const errorMessage = extractErrorMessage(error);
@@ -170,6 +207,134 @@ const GoodsIssueNoteDetail = () => {
     const handleCloseModal = () => {
         setShowScanModal(false);
         setPickDetailData(null);
+    };
+
+    // Thu thập tất cả pick allocations từ nhóm items
+    const getAllPickAllocationsFromItems = (items) => {
+        const allPickAllocations = [];
+        items.forEach(detail => {
+            if (detail.pickAllocations && detail.pickAllocations.length > 0) {
+                allPickAllocations.push(...detail.pickAllocations);
+            }
+        });
+        return allPickAllocations;
+    };
+
+    // Xử lý tìm kiếm (tự động phát hiện là vị trí hay pallet)
+    // Tìm trong TẤT CẢ items của phiếu, không chỉ nhóm hiện tại
+    const handleSearch = async (searchValue) => {
+        if (!searchValue || !searchValue.trim()) {
+            setSearchError('');
+            setHighlightedPickAllocationId(null);
+            setHighlightedDetailId(null);
+            setSearching(false);
+            return;
+        }
+
+        if (!goodsIssueNote || !goodsIssueNote.goodsIssueNoteDetails) {
+            setSearchError('Không có dữ liệu để tìm kiếm');
+            setSearching(false);
+            return;
+        }
+
+        setSearching(true);
+        setSearchError('');
+
+        try {
+            const trimmedValue = searchValue.trim();
+            // Tìm trong TẤT CẢ items của phiếu, không chỉ nhóm hiện tại
+            const allItems = goodsIssueNote.goodsIssueNoteDetails;
+            const allPickAllocations = getAllPickAllocationsFromItems(allItems);
+
+            // Bước 1: Tìm theo locationCode trước (nhanh hơn, không cần API)
+            let foundPickAllocation = allPickAllocations.find(
+                pick => pick.locationCode &&
+                    pick.locationCode.trim().toLowerCase() === trimmedValue.toLowerCase()
+            );
+
+            // Bước 2: Nếu không tìm thấy theo locationCode, tìm theo palletId (cần gọi API)
+            // Tìm trong tất cả pick allocations, kể cả đã quét rồi
+            if (!foundPickAllocation) {
+                for (const pick of allPickAllocations) {
+                    try {
+                        const response = await getPickAllocationDetail(pick.pickAllocationId);
+                        if (response && response.success && response.data) {
+                            const pickDetail = response.data;
+                            if (pickDetail.palletId &&
+                                pickDetail.palletId.trim().toLowerCase() === trimmedValue.toLowerCase()) {
+                                foundPickAllocation = pick;
+                                break;
+                            }
+                        }
+                    } catch (error) {
+                        // Bỏ qua lỗi và tiếp tục tìm
+                        console.error(`Error checking pick allocation ${pick.pickAllocationId}:`, error);
+                    }
+                }
+            }
+
+            if (!foundPickAllocation) {
+                setSearchError('Không tìm thấy vị trí hoặc pallet này');
+                setHighlightedPickAllocationId(null);
+                setHighlightedDetailId(null);
+                return;
+            }
+
+            // Tìm detail chứa pick allocation này trong TẤT CẢ items
+            const foundDetail = allItems.find(detail =>
+                detail.pickAllocations &&
+                detail.pickAllocations.some(p => p.pickAllocationId === foundPickAllocation.pickAllocationId)
+            );
+
+            if (!foundDetail) {
+                setSearchError('Không tìm thấy hàng hóa chứa vị trí/pallet này');
+                setHighlightedPickAllocationId(null);
+                setHighlightedDetailId(null);
+                return;
+            }
+
+            // Clear error và highlight
+            setSearchError('');
+            setHighlightedPickAllocationId(foundPickAllocation.pickAllocationId);
+            setHighlightedDetailId(foundDetail.goodsIssueNoteDetailId);
+
+            // Tự động mở nhóm (status group) nếu đang đóng
+            const detailStatus = foundDetail.status;
+            if (expandedGroups[detailStatus] === false) {
+                setExpandedGroups(prev => ({
+                    ...prev,
+                    [detailStatus]: true
+                }));
+            }
+
+            // Tự động mở card detail nếu chưa mở
+            const globalIndex = goodsIssueNote.goodsIssueNoteDetails.indexOf(foundDetail);
+            if (globalIndex !== -1 && !expandedItems[globalIndex]) {
+                setExpandedItems(prev => ({
+                    ...prev,
+                    [globalIndex]: true
+                }));
+            }
+
+            // Scroll đến card detail sau khi mở nhóm và card (tăng timeout để đợi DOM update)
+            setTimeout(() => {
+                const cardElement = detailCardRefs.current[foundDetail.goodsIssueNoteDetailId];
+                if (cardElement) {
+                    cardElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                }
+            }, 500);
+
+            // Tự động bỏ highlight sau 5 giây
+            setTimeout(() => {
+                setHighlightedPickAllocationId(null);
+                setHighlightedDetailId(null);
+            }, 5000);
+        } finally {
+            setSearching(false);
+        }
     };
 
     // Helper function to add icons to status info
@@ -299,7 +464,8 @@ const GoodsIssueNoteDetail = () => {
                 }
                 setShowRePickModal(false);
                 setSelectedItemForRePick(null);
-                await fetchGoodsIssueNoteDetail();
+                // Giữ lại trạng thái mở của các card sau khi lấy lại
+                await fetchGoodsIssueNoteDetail(true);
             }
         } catch (error) {
             console.error('Error re-picking:', error);
@@ -358,7 +524,7 @@ const GoodsIssueNoteDetail = () => {
     const openRePickMultipleModal = () => {
         if (selectedDetailsForRePick.length === 0) {
             if (window.showToast) {
-                window.showToast("Vui lòng chọn ít nhất một mặt hàng để lấy lại", "warning");
+                window.showToast("Vui lòng chọn ít nhất một hàng hóa để lấy lại", "warning");
             }
             return;
         }
@@ -383,7 +549,7 @@ const GoodsIssueNoteDetail = () => {
 
         if (missingReasons.length > 0) {
             if (window.showToast) {
-                window.showToast("Quản lý kho phải cung cấp lý do cho tất cả mặt hàng lấy lại", "error");
+                window.showToast("Quản lý kho phải cung cấp lý do cho tất cả hàng hóa lấy lại", "error");
             }
             return;
         }
@@ -405,7 +571,8 @@ const GoodsIssueNoteDetail = () => {
                 setShowRePickMultipleModal(false);
                 setSelectedDetailsForRePick([]);
                 setRejectReasons({});
-                await fetchGoodsIssueNoteDetail();
+                // Giữ lại trạng thái mở của các card sau khi lấy lại nhiều items
+                await fetchGoodsIssueNoteDetail(true);
             }
         } catch (error) {
             console.error('Error re-picking multiple:', error);
@@ -444,7 +611,7 @@ const GoodsIssueNoteDetail = () => {
                             </div>
                             <div className="flex items-baseline gap-2">
                                 <h2 className="text-lg font-semibold text-gray-900 leading-none">{title}</h2>
-                                <span className="text-sm text-gray-500 leading-none">({items.length} sản phẩm)</span>
+                                <span className="text-sm text-gray-500 leading-none">({items.length} hàng hóa)</span>
                             </div>
                             <div className="text-gray-500 ml-auto">
                                 {isGroupExpanded ? (
@@ -454,11 +621,87 @@ const GoodsIssueNoteDetail = () => {
                                 )}
                             </div>
                         </div>
-                        {/* Nút "Lấy lại" nhiều - chỉ hiển thị cho quản lý kho, nhóm "Chờ duyệt" và khi phiếu KHÔNG ở trạng thái "Đang lấy hàng" */}
-                        {isWarehouseManager &&
-                            statusCode === ISSUE_ITEM_STATUS.PendingApproval &&
-                            goodsIssueNote.status !== GOODS_ISSUE_NOTE_STATUS.Picking && (
-                                <div className="flex items-center gap-2 ml-4" onClick={(e) => e.stopPropagation()}>
+                        {/* Các nút hành động ở header nhóm */}
+                        <div className="flex items-center gap-2 ml-4" onClick={(e) => e.stopPropagation()}>
+                            {/* Search bar tìm kiếm vị trí hoặc pallet - chỉ hiển thị cho Warehouse Staff, nhóm "Đang lấy hàng" */}
+                            {isWarehouseStaff &&
+                                statusCode === ISSUE_ITEM_STATUS.Picking && (
+                                    <div className="flex flex-col bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
+                                        <div className="flex items-center gap-2">
+                                            <Barcode className="w-4 h-4 text-gray-600" />
+                                            <div className="relative flex-1">
+                                                <input
+                                                    type="text"
+                                                    value={searchCode}
+                                                    onChange={(e) => {
+                                                        const value = e.target.value;
+                                                        setSearchCode(value);
+                                                        setSearchError('');
+
+                                                        // Clear timeout cũ
+                                                        if (searchTimeoutRef.current) {
+                                                            clearTimeout(searchTimeoutRef.current);
+                                                        }
+
+                                                        const trimmedValue = value.trim();
+                                                        if (!trimmedValue) {
+                                                            setHighlightedPickAllocationId(null);
+                                                            setHighlightedDetailId(null);
+                                                            setSearching(false);
+                                                            return;
+                                                        }
+
+                                                        // Debounce 500ms cho tìm kiếm
+                                                        setSearching(true);
+                                                        searchTimeoutRef.current = setTimeout(async () => {
+                                                            await handleSearch(trimmedValue);
+                                                        }, 500);
+                                                    }}
+                                                    onKeyDown={async (e) => {
+                                                        if (e.key === 'Enter' && searchCode.trim()) {
+                                                            // Clear timeout nếu đang debounce
+                                                            if (searchTimeoutRef.current) {
+                                                                clearTimeout(searchTimeoutRef.current);
+                                                            }
+                                                            await handleSearch(searchCode.trim());
+                                                        }
+                                                    }}
+                                                    placeholder="Quét mã vị trí hoặc pallet nhanh"
+                                                    className="w-64 px-3 py-1.5 pr-8 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                />
+                                                {searchCode && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setSearchCode('');
+                                                            setSearchError('');
+                                                            setHighlightedPickAllocationId(null);
+                                                            setHighlightedDetailId(null);
+                                                            setSearching(false);
+                                                            if (searchTimeoutRef.current) {
+                                                                clearTimeout(searchTimeoutRef.current);
+                                                            }
+                                                        }}
+                                                        className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 hover:bg-gray-200 rounded-full transition-colors"
+                                                        title="Xóa"
+                                                    >
+                                                        <X className="w-3.5 h-3.5 text-gray-500" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                            {searching && (
+                                                <RefreshCw className="w-4 h-4 text-gray-600 animate-spin" />
+                                            )}
+                                        </div>
+                                        {searchError && (
+                                            <span className="text-xs text-red-600 mt-1">{searchError}</span>
+                                        )}
+                                    </div>
+                                )}
+                            {/* Nút "Lấy lại" nhiều - chỉ hiển thị cho quản lý kho, nhóm "Chờ duyệt" và khi phiếu KHÔNG ở trạng thái "Đang lấy hàng" */}
+                            {isWarehouseManager &&
+                                statusCode === ISSUE_ITEM_STATUS.PendingApproval &&
+                                goodsIssueNote.status !== GOODS_ISSUE_NOTE_STATUS.Picking && (
                                     <Button
                                         onClick={openRePickMultipleModal}
                                         className="h-[38px] px-4 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
@@ -467,8 +710,8 @@ const GoodsIssueNoteDetail = () => {
                                         <RefreshCw className="w-4 h-4 mr-2" />
                                         Lấy lại ({selectedDetailsForRePick.length})
                                     </Button>
-                                </div>
-                            )}
+                                )}
+                        </div>
                     </div>
 
                     {/* Nội dung nhóm (ẩn/hiện theo state) */}
@@ -488,7 +731,7 @@ const GoodsIssueNoteDetail = () => {
                                             className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
                                         />
                                         <label className="text-sm text-gray-700 cursor-pointer">
-                                            Chọn tất cả ({items.filter(d => d.status === ISSUE_ITEM_STATUS.PendingApproval).length} mặt hàng)
+                                            Chọn tất cả ({items.filter(d => d.status === ISSUE_ITEM_STATUS.PendingApproval).length} hàng hóa)
                                         </label>
                                     </div>
                                 )}
@@ -498,6 +741,7 @@ const GoodsIssueNoteDetail = () => {
                                 const globalIndex = goodsIssueNote.goodsIssueNoteDetails.indexOf(detail);
                                 const isExpanded = expandedItems[globalIndex];
                                 const isSelected = isDetailSelectedForRePick(detail.goodsIssueNoteDetailId);
+                                const isDetailHighlighted = highlightedDetailId === detail.goodsIssueNoteDetailId;
 
                                 // Tính toán thông tin pick allocations cho Manager
                                 const pickAllocations = detail.pickAllocations || [];
@@ -510,8 +754,19 @@ const GoodsIssueNoteDetail = () => {
                                 } : null;
 
                                 return (
-                                    <div key={detail.goodsIssueNoteDetailId} className="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow">
-                                        {/* Header sản phẩm - Compact và tích hợp thông tin pick allocations */}
+                                    <div
+                                        key={detail.goodsIssueNoteDetailId}
+                                        ref={(el) => {
+                                            if (el) {
+                                                detailCardRefs.current[detail.goodsIssueNoteDetailId] = el;
+                                            }
+                                        }}
+                                        className={`border rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-all duration-300 ${isDetailHighlighted
+                                            ? 'border-green-400 border-2 shadow-lg bg-green-50'
+                                            : 'border-gray-200'
+                                            }`}
+                                    >
+                                        {/* Header hàng hóa - Compact và tích hợp thông tin pick allocations */}
                                         <div
                                             className="bg-white px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-100"
                                             onClick={() => toggleItemExpanded(globalIndex)}
@@ -531,7 +786,8 @@ const GoodsIssueNoteDetail = () => {
                                                                 />
                                                             </div>
                                                         )}
-                                                    
+
+
                                                     {/* Expand/Collapse icon */}
                                                     <div className="flex-shrink-0 p-1.5 bg-gray-100 rounded">
                                                         {isExpanded ? (
@@ -541,7 +797,7 @@ const GoodsIssueNoteDetail = () => {
                                                         )}
                                                     </div>
 
-                                                    {/* Thông tin sản phẩm */}
+                                                    {/* Thông tin hàng hóa */}
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center gap-2 flex-wrap">
                                                             <div className="text-base font-semibold text-gray-900 truncate">
@@ -555,7 +811,7 @@ const GoodsIssueNoteDetail = () => {
                                                                 {detailStatusInfo.label}
                                                             </span>
                                                         </div>
-                                                        
+
                                                         {/* Thông tin pick allocations - tích hợp vào header cho Manager */}
                                                         {isWarehouseManager && hasPickAllocations && pickProgress && (
                                                             <div className="flex items-center gap-3 mt-1.5 flex-wrap">
@@ -575,9 +831,8 @@ const GoodsIssueNoteDetail = () => {
                                                                 {pickProgress.total > 0 && (
                                                                     <div className="flex-1 max-w-[120px] bg-gray-200 rounded-full h-1.5">
                                                                         <div
-                                                                            className={`h-1.5 rounded-full transition-all ${
-                                                                                pickProgress.picked === pickProgress.total ? 'bg-green-600' : 'bg-blue-600'
-                                                                            }`}
+                                                                            className={`h-1.5 rounded-full transition-all ${pickProgress.picked === pickProgress.total ? 'bg-green-600' : 'bg-blue-600'
+                                                                                }`}
                                                                             style={{ width: `${Math.round((pickProgress.picked / pickProgress.total) * 100)}%` }}
                                                                         />
                                                                     </div>
@@ -644,6 +899,7 @@ const GoodsIssueNoteDetail = () => {
                                                         onProceedPick={handleProceedPick}
                                                         confirmingPickId={confirmingPickId}
                                                         isWarehouseStaff={isWarehouseStaff}
+                                                        highlightedPickAllocationId={highlightedPickAllocationId}
                                                     />
                                                 ) : (
                                                     /* Warehouse Manager: Hiển thị bảng chi tiết (đã compact) */
@@ -765,6 +1021,12 @@ const GoodsIssueNoteDetail = () => {
                                         Thông tin xử lý
                                     </h3>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+                                        <div>
+                                            <div className="text-xs text-gray-500">Mã đơn bán hàng</div>
+                                            <div className="text-base font-medium text-gray-900">
+                                                {goodsIssueNote.salesOderId || "N/A"}
+                                            </div>
+                                        </div>
                                         <div>
                                             <div className="text-xs text-gray-500">Người tạo</div>
                                             <div className="text-base font-medium text-gray-900">

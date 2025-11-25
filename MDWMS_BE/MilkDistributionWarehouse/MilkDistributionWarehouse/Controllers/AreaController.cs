@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Services;
 using MilkDistributionWarehouse.Utilities;
+using System.Threading.Tasks;
 
 namespace MilkDistributionWarehouse.Controllers
 {
@@ -53,6 +54,15 @@ namespace MilkDistributionWarehouse.Controllers
                 return ApiResponse<string>.ToResultError(msg);
 
             return ApiResponse<List<AreaDto.AreaLocationAvailableDto>>.ToResultOk(data);
+        }
+
+        [HttpGet("GetStocktakingArea/{stocktakingSheetId}")]
+        public async Task<IActionResult> GetStocktakingArea(string? stocktakingSheetId)
+        {
+            var (msg, stocktakingArea) = await _areaService.GetStocktakingArea(stocktakingSheetId);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<List<AreaDto.StocktakingAreaDto>>.ToResultOk(stocktakingArea);
         }
 
         [Authorize(Roles = "Business Owner, Administrator")]

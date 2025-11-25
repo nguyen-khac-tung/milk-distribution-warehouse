@@ -335,7 +335,7 @@ export default function SuppliersPage() {
     ]
     if (!statusSearchQuery) return statusOptions
     const query = statusSearchQuery.toLowerCase()
-    return statusOptions.filter(option => 
+    return statusOptions.filter(option =>
       option.label.toLowerCase().includes(query)
     )
   }, [statusSearchQuery])
@@ -422,7 +422,7 @@ export default function SuppliersPage() {
           <SearchFilterToggle
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            searchPlaceholder="Tìm kiếm theo tên công ty hoặc thương hiệu..."
+            searchPlaceholder="Tìm kiếm theo CT, SDT, người liên hệ, thương hiệu"
             statusFilter={statusFilter}
             setStatusFilter={setStatusFilter}
             showStatusFilter={showStatusFilter}
@@ -498,7 +498,7 @@ export default function SuppliersPage() {
                           className="hover:bg-slate-50 border-b border-slate-200"
                         >
                           <TableCell className="px-6 py-4 text-slate-600 font-medium">
-                            {index + 1}
+                            {(pagination.pageNumber - 1) * pagination.pageSize + (index + 1)}
                           </TableCell>
                           <TableCell className="px-6 py-4 text-slate-700 font-medium">{supplier?.companyName || ''}</TableCell>
                           <TableCell className="px-6 py-4 text-slate-700">{supplier?.brandName || ''}</TableCell>

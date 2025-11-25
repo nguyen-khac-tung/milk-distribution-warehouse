@@ -23,6 +23,15 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public string StatusDinamic { get; set; }
         }
 
+        public class BackOrderDetailDto : BackOrderResponseDto
+        {
+            public int CategoryId { get; set; }
+            public string CategoryName { get; set; }
+            public int SupplierId { get; set; }
+            public string CompanyName { get; set; }
+            public string BrandName { get; set; }
+        }
+
         public class BackOrderResponseCreateDto
         {
             public Guid BackOrderId { get; set; }

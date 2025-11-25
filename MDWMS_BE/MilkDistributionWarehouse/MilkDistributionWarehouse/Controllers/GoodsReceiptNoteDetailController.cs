@@ -21,7 +21,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpGet("GoodRNDPallet/{grnId}")]
-        public async Task<IActionResult> GetGRNDPallet(Guid grnId)
+        public async Task<IActionResult> GetGRNDPallet(string grnId)
         {
             var (msg, grnds) = await _gcndService.GetListGRNDByGRNId(grnId);
 

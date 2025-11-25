@@ -128,7 +128,7 @@ export default function AdminPage() {
     ]
     if (!statusSearchQuery) return statusOptions
     const query = statusSearchQuery.toLowerCase()
-    return statusOptions.filter(option => 
+    return statusOptions.filter(option =>
       option.label.toLowerCase().includes(query)
     )
   }, [statusSearchQuery])
@@ -174,7 +174,7 @@ export default function AdminPage() {
     try {
       // console.log(`Updating user ${id} (${name}) status to ${newStatus}`)
       const response = await updateUserStatus(id, newStatus)
-      
+
       // Kiểm tra response từ backend
       if (response && response.success === true) {
         const statusText = newStatus === 1 ? "kích hoạt" : "ngừng hoạt động"
@@ -197,16 +197,16 @@ export default function AdminPage() {
       } else {
         // Hiển thị thông báo lỗi từ backend
         let errorMessage = response?.message || response?.data?.message || "Có lỗi xảy ra khi cập nhật trạng thái người dùng"
-        
+
         // Kiểm tra nếu lỗi liên quan đến việc không thể vô hiệu hóa người dùng quan trọng
-        if (errorMessage.includes("Failed to update user status") || 
-            errorMessage.includes("không thể") || 
-            errorMessage.includes("quản lý") ||
-            errorMessage.includes("admin") ||
-            errorMessage.includes("business owner")) {
+        if (errorMessage.includes("Failed to update user status") ||
+          errorMessage.includes("không thể") ||
+          errorMessage.includes("quản lý") ||
+          errorMessage.includes("admin") ||
+          errorMessage.includes("business owner")) {
           errorMessage = "Không thể cập nhật trạng thái người dùng khi đã có đủ các vai trò quan trọng (quản lý kho, quản lý kinh doanh, admin, business owner)"
         }
-        
+
         window.showToast(errorMessage, "error")
         // console.error(`Failed to update user ${name} status:`, response?.message)
       }
@@ -623,7 +623,7 @@ export default function AdminPage() {
           <SearchFilterToggle
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            searchPlaceholder="Tìm kiếm theo tên, email hoặc chức vụ..."
+            searchPlaceholder="Tìm kiếm theo tên, email"
             statusFilter={statusFilter}
             setStatusFilter={setStatusFilter}
             showStatusFilter={showStatusFilter}

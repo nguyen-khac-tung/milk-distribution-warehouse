@@ -70,12 +70,12 @@ export default function CreatePurchaseOrder({
 
         // Chỉ kiểm tra khi đã có danh sách hàng hóa từ nhà cung cấp
         if (goods.length > 0) {
-            // Đếm số mặt hàng đã được chọn
+            // Đếm số hàng hóa đã được chọn
             const selectedGoodsCount = items.filter(item => item.goodsName && item.goodsName !== "").length;
 
-            // Kiểm tra xem còn mặt hàng nào để thêm không
+            // Kiểm tra xem còn hàng hóa nào để thêm không
             if (selectedGoodsCount >= goods.length) {
-                window.showToast("Đã thêm hết tất cả mặt hàng từ nhà cung cấp này!", "error");
+                window.showToast("Đã thêm hết tất cả hàng hóa từ nhà cung cấp này!", "error");
                 return;
             }
         }
@@ -94,34 +94,34 @@ export default function CreatePurchaseOrder({
     }
     const updateItem = (id, field, value) => {
         if (field === "goodsName") {
-            // Kiểm tra xem sản phẩm đã được chọn ở hàng khác chưa
+            // Kiểm tra xem hàng hóa đã được chọn ở hàng khác chưa
             const isDuplicate = items.some(item => item.id !== id && item.goodsName === value && value !== "");
             if (isDuplicate) {
-                window.showToast("Mặt hàng này đã được thêm vào danh sách!", "error");
+                window.showToast("hàng hóa này đã được thêm vào danh sách!", "error");
                 return;
             }
 
-            // Lấy thông tin mặt hàng cũ để so sánh
+            // Lấy thông tin hàng hóa cũ để so sánh
             const currentItem = items.find(item => item.id === id);
             const oldGoodsName = currentItem?.goodsName;
 
-            // Nếu thay đổi mặt hàng (bao gồm cả khi xóa/chọn lại), reset goodsPackingId và quantity
+            // Nếu thay đổi hàng hóa (bao gồm cả khi xóa/chọn lại), reset goodsPackingId và quantity
             if (value !== oldGoodsName) {
                 if (value) {
-                    // Chọn mặt hàng mới - Load goods packing cho mặt hàng mới
+                    // Chọn hàng hóa mới - Load goods packing cho hàng hóa mới
                     const selectedGood = goods.find(good => good.goodsName === value);
                     if (selectedGood) {
                         // Load goods packing (load lại ngay cả khi đã có trong map để đảm bảo data mới nhất)
                         loadGoodsPacking(selectedGood.goodsId);
 
-                        // Reset goodsPackingId và quantity khi đổi mặt hàng
+                        // Reset goodsPackingId và quantity khi đổi hàng hóa
                         setItems(items.map((item) =>
                             item.id === id
                                 ? { ...item, goodsName: value, goodsPackingId: "", quantity: "" }
                                 : item
                         ));
 
-                        // Xóa lỗi validation liên quan đến packing và quantity khi đổi mặt hàng
+                        // Xóa lỗi validation liên quan đến packing và quantity khi đổi hàng hóa
                         setFieldErrors(prev => {
                             const newErrors = { ...prev };
                             delete newErrors[`${id}-goodsPackingId`];
@@ -131,7 +131,7 @@ export default function CreatePurchaseOrder({
                         return;
                     }
                 } else {
-                    // Xóa mặt hàng - Reset tất cả các trường liên quan
+                    // Xóa hàng hóa - Reset tất cả các trường liên quan
                     setItems(items.map((item) =>
                         item.id === id
                             ? { ...item, goodsName: "", goodsPackingId: "", quantity: "" }
@@ -148,7 +148,7 @@ export default function CreatePurchaseOrder({
                     return;
                 }
             } else if (value) {
-                // Lần đầu chọn mặt hàng (chưa có oldGoodsName), chỉ load packing nếu chưa có trong map
+                // Lần đầu chọn hàng hóa (chưa có oldGoodsName), chỉ load packing nếu chưa có trong map
                 const selectedGood = goods.find(good => good.goodsName === value);
                 if (selectedGood && !goodsPackingsMap[selectedGood.goodsId]) {
                     loadGoodsPacking(selectedGood.goodsId);
@@ -273,7 +273,7 @@ export default function CreatePurchaseOrder({
         label: supplier.companyName
     }));
 
-    // Lọc danh sách hàng hóa để không hiển thị những mặt hàng đã được chọn
+    // Lọc danh sách hàng hóa để không hiển thị những hàng hóa đã được chọn
     const getAvailableGoodsOptions = (currentItemId) => {
         const selectedGoodsNames = items
             .filter(item => item.id !== currentItemId && item.goodsName)
@@ -358,7 +358,7 @@ export default function CreatePurchaseOrder({
         setFieldErrors({});
         const newFieldErrors = {};
 
-        // Kiểm tra từng mặt hàng
+        // Kiểm tra từng hàng hóa
         items.forEach((item, index) => {
             const rowNumber = index + 1;
             if (!item.goodsName) {
@@ -448,7 +448,7 @@ export default function CreatePurchaseOrder({
         setFieldErrors({});
         const newFieldErrors = {};
 
-        // Kiểm tra từng mặt hàng
+        // Kiểm tra từng hàng hóa
         items.forEach((item, index) => {
             if (!item.goodsName) {
                 newFieldErrors[`${item.id}-goodsName`] = "Vui lòng chọn tên hàng hóa";
@@ -519,15 +519,15 @@ export default function CreatePurchaseOrder({
                 purchaseOrderDetailCreate: itemsWithIds,
                 note: formData.note || ""
             };
-            
+
             const createResponse = await createPurchaseOrder(submitData);
-            
+
             // Lấy purchaseOrderId từ response (có thể từ data hoặc response trực tiếp)
-            const purchaseOrderId = createResponse?.data?.purchaseOrderId || 
-                                   createResponse?.purchaseOrderId || 
-                                   createResponse?.data?.purchaseOderId || 
-                                   createResponse?.purchaseOderId;
-            
+            const purchaseOrderId = createResponse?.data?.purchaseOrderId ||
+                createResponse?.purchaseOrderId ||
+                createResponse?.data?.purchaseOderId ||
+                createResponse?.purchaseOderId;
+
             if (!purchaseOrderId) {
                 console.error("Không tìm thấy purchaseOrderId từ response:", createResponse);
                 window.showToast("Tạo đơn hàng thành công nhưng không thể gửi phê duyệt. Vui lòng thử lại.", "error");
@@ -537,7 +537,7 @@ export default function CreatePurchaseOrder({
 
             // Sau đó gửi phê duyệt
             await submitPurchaseOrder(purchaseOrderId);
-            
+
             window.showToast("Tạo đơn và gửi phê duyệt thành công!", "success");
             navigate("/purchase-orders");
         } catch (error) {
@@ -762,7 +762,7 @@ export default function CreatePurchaseOrder({
                                     className="text-orange-500 hover:text-orange-600 font-medium cursor-pointer flex items-center gap-2"
                                 >
                                     <Plus className="h-4 w-4" />
-                                    Thêm mặt hàng
+                                    Thêm hàng hóa
                                 </button>
                             </div>
 
@@ -789,7 +789,7 @@ export default function CreatePurchaseOrder({
                                     onClick={handleSubmit}
                                     className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
                                 >
-                                    Lưu bản nháp
+                                    Lưu nháp
                                 </Button>
                                 <Button
                                     type="button"

@@ -11,7 +11,7 @@ export default function RePickMultipleModal({ isOpen, onCancel, onConfirm, selec
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]">
       <div className={`bg-white p-6 rounded-lg shadow-xl ${isMultipleRePick ? 'max-w-4xl w-full mx-4' : 'max-w-md w-full'}`}>
         <h3 className="text-lg font-medium text-gray-900 mb-4">
-          {isMultipleRePick ? `Nhập lý do yêu cầu lấy lại (${selectedDetails.length} mặt hàng)` : "Nhập lý do yêu cầu lấy lại"}
+          {isMultipleRePick ? `Nhập lý do yêu cầu lấy lại (${selectedDetails.length} hàng hóa)` : "Nhập lý do yêu cầu lấy lại"}
         </h3>
 
         {isMultipleRePick ? (
@@ -26,34 +26,38 @@ export default function RePickMultipleModal({ isOpen, onCancel, onConfirm, selec
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {selectedDetails.map((detail, index) => (
-                  <TableRow key={detail.goodsIssueNoteDetailId}>
-                    <TableCell className="text-center text-gray-600 text-sm">
-                      {index + 1}
-                    </TableCell>
-                    <TableCell className="font-medium text-gray-900 text-sm">
-                      {detail.goodsCode}
-                    </TableCell>
-                    <TableCell className="text-sm text-gray-700">
-                      {detail.goodsName}
-                    </TableCell>
-                    <TableCell>
-                      <textarea
-                        className="w-full h-16 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 text-sm resize-none"
-                        placeholder="Nhập lý do yêu cầu lấy lại (bắt buộc)"
-                        maxLength={255}
-                        value={rejectReasons[detail.goodsIssueNoteDetailId] || ""}
-                        onChange={(e) => {
-                          setRejectReasons(prev => ({
-                            ...prev,
-                            [detail.goodsIssueNoteDetailId]: e.target.value
-                          }));
-                        }}
-                        required
-                      />
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {selectedDetails.map((detail, index) => {
+                  // Support both goodsIssueNoteDetailId and disposalNoteDetailId
+                  const detailId = detail.goodsIssueNoteDetailId || detail.disposalNoteDetailId;
+                  return (
+                    <TableRow key={detailId}>
+                      <TableCell className="text-center text-gray-600 text-sm">
+                        {index + 1}
+                      </TableCell>
+                      <TableCell className="font-medium text-gray-900 text-sm">
+                        {detail.goodsCode}
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-700">
+                        {detail.goodsName}
+                      </TableCell>
+                      <TableCell>
+                        <textarea
+                          className="w-full h-16 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 text-sm resize-none"
+                          placeholder="Nhập lý do yêu cầu lấy lại (bắt buộc)"
+                          maxLength={255}
+                          value={rejectReasons[detailId] || ""}
+                          onChange={(e) => {
+                            setRejectReasons(prev => ({
+                              ...prev,
+                              [detailId]: e.target.value
+                            }));
+                          }}
+                          required
+                        />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
@@ -62,12 +66,13 @@ export default function RePickMultipleModal({ isOpen, onCancel, onConfirm, selec
             className="w-full h-20 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 resize-none"
             placeholder="Nhập lý do yêu cầu lấy lại (bắt buộc)"
             maxLength={255}
-            value={rejectReasons[selectedDetails?.[0]?.goodsIssueNoteDetailId] || ""}
+            value={rejectReasons[selectedDetails?.[0]?.goodsIssueNoteDetailId || selectedDetails?.[0]?.disposalNoteDetailId] || ""}
             onChange={(e) => {
               if (selectedDetails?.[0]) {
+                const detailId = selectedDetails[0].goodsIssueNoteDetailId || selectedDetails[0].disposalNoteDetailId;
                 setRejectReasons(prev => ({
                   ...prev,
-                  [selectedDetails[0].goodsIssueNoteDetailId]: e.target.value
+                  [detailId]: e.target.value
                 }));
               }
             }}

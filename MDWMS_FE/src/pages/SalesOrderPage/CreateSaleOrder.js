@@ -7,8 +7,8 @@ import { Label } from "../../components/ui/label"
 import { Textarea } from "../../components/ui/textarea"
 import FloatingDropdown from "../../components/Common/FloatingDropdown"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
-import { Plus, Trash2, ArrowLeft, Save, X, CheckCircle, BarChart3, ArrowRightLeft, Calendar } from "lucide-react"
-import { createSaleOrder, getSalesOrderDetail, updateSaleOrderStatusPendingApproval, getSalesOrderListSalesRepresentatives } from "../../services/SalesOrderService"
+import { Plus, Trash2, CheckCircle, BarChart3, ArrowRightLeft, Calendar } from "lucide-react"
+import { createSaleOrder, updateSaleOrderStatusPendingApproval, getSalesOrderListSalesRepresentatives } from "../../services/SalesOrderService"
 import { getRetailersDropdown } from "../../services/RetailerService"
 import { getSuppliersDropdown } from "../../services/SupplierService"
 import { getGoodsPackingByGoodsId } from "../../services/PurchaseOrderService"
@@ -23,14 +23,23 @@ function CreateSaleOrder({
 }) {
     const navigate = useNavigate();
     const dateInputRef = useRef(null);
+    // Minimum selectable date: tomorrow (force future date)
+    const minDate = (() => {
+        const d = new Date();
+        d.setDate(d.getDate() + 1);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    })();
     const [retailers, setRetailers] = useState([]);
     const [suppliers, setSuppliers] = useState([]);
-    const [goodsBySupplier, setGoodsBySupplier] = useState({}); // Map supplierId -> goods
-    const [goodsPackingsMap, setGoodsPackingsMap] = useState({}); // Map goodsId -> packings
-    const [inventoryMap, setInventoryMap] = useState({}); // Map goodsId -> inventoryPackingDtos
+    const [goodsBySupplier, setGoodsBySupplier] = useState({});
+    const [goodsPackingsMap, setGoodsPackingsMap] = useState({});
+    const [inventoryMap, setInventoryMap] = useState({});
     const [retailersLoading, setRetailersLoading] = useState(false);
     const [suppliersLoading, setSuppliersLoading] = useState(false);
-    const [goodsLoading, setGoodsLoading] = useState({}); // Map supplierId -> loading state
+    const [goodsLoading, setGoodsLoading] = useState({});
     const [packingLoading, setPackingLoading] = useState(false);
 
     // Lấy dữ liệu từ localStorage nếu có (từ BackOrderList)
@@ -64,10 +73,10 @@ function CreateSaleOrder({
             { id: 1, supplierName: "", goodsName: "", quantity: "", goodsPackingId: "" },
         ],
     )
-    const [fieldErrors, setFieldErrors] = useState({}) // Lỗi theo từng trường
+    const [fieldErrors, setFieldErrors] = useState({})
     const [showBackOrderModal, setShowBackOrderModal] = useState(false)
     const [insufficientItems, setInsufficientItems] = useState([])
-    const [itemsExceedingStock, setItemsExceedingStock] = useState({}) // Map itemId -> { availableQuantity, requestedQuantity }
+    const [itemsExceedingStock, setItemsExceedingStock] = useState({})
     const [saveDraftLoading, setSaveDraftLoading] = useState(false)
     const [submitApprovalLoading, setSubmitApprovalLoading] = useState(false)
 
@@ -110,7 +119,6 @@ function CreateSaleOrder({
                 return newInventoryMap;
             });
         } catch (error) {
-            console.error("Error loading goods by supplier:", error);
             setGoodsBySupplier(prev => ({
                 ...prev,
                 [supplierId]: []
@@ -148,7 +156,6 @@ function CreateSaleOrder({
                     }
                 }
             } catch (error) {
-                console.error("Error loading data:", error);
                 setRetailers([]);
                 setSuppliers([]);
             } finally {
@@ -226,10 +233,10 @@ function CreateSaleOrder({
             setItems(updatedItems);
             return;
         } else if (field === "goodsName") {
-            // Kiểm tra xem sản phẩm đã được chọn ở hàng khác chưa
+            // Kiểm tra xem hàng hóa đã được chọn ở hàng khác chưa
             const isDuplicate = items.some(item => item.id !== id && item.goodsName === value && value !== "");
             if (isDuplicate) {
-                window.showToast("Mặt hàng này đã được thêm vào danh sách!", "error");
+                window.showToast("Hàng hóa này đã được thêm vào danh sách!", "error");
                 return;
             }
 
@@ -330,7 +337,6 @@ function CreateSaleOrder({
                 [goodsId]: packingData
             }));
         } catch (error) {
-            console.error("Error loading goods packing:", error);
             // Lưu mảng rỗng vào map
             setGoodsPackingsMap(prev => ({
                 ...prev,
@@ -352,7 +358,7 @@ function CreateSaleOrder({
         label: supplier.companyName
     }));
 
-    // Lọc danh sách hàng hóa để không hiển thị những mặt hàng đã được chọn
+    // Lọc danh sách hàng hóa để không hiển thị những hàng hóa đã được chọn
     const getAvailableGoodsOptions = (currentItemId) => {
         const currentItem = items.find(item => item.id === currentItemId);
         if (!currentItem || !currentItem.supplierName) {
@@ -407,8 +413,7 @@ function CreateSaleOrder({
         if (goodsPackings.length === 0 && currentItem.goodsPackingId && !goodsLoading[selectedSupplier.supplierId]) {
             // Trigger load nếu chưa có packings
             if (goodsBySupplier[selectedSupplier.supplierId] && goodsBySupplier[selectedSupplier.supplierId].length > 0) {
-                // Goods đã được load nhưng chưa có packings, có thể là vấn đề về data structure
-                console.warn(`No packings found for goodsId ${goodsId}, goodsName: ${currentItem.goodsName}`);
+                // Goods đã được load nhưng chưa có packings
             } else {
                 // Goods chưa được load, trigger load
                 loadGoodsBySupplier(selectedSupplier.supplierId);
@@ -457,6 +462,68 @@ function CreateSaleOrder({
         return parseInt(item.quantity) * selectedPacking.unitPerPackage;
     };
 
+    // Hàm lấy thông tin tồn kho cho một item
+    const getItemStockInfo = (item) => {
+        try {
+            // Kiểm tra điều kiện cơ bản
+            if (!item || !item.supplierName || !item.goodsName || !item.goodsPackingId || !item.quantity) {
+                return null;
+            }
+
+            const requestedQuantity = parseInt(item.quantity);
+            if (isNaN(requestedQuantity) || requestedQuantity <= 0) {
+                return null;
+            }
+
+            // Tìm supplier
+            const selectedSupplier = suppliers.find(s => s.companyName === item.supplierName);
+            if (!selectedSupplier) {
+                return null;
+            }
+
+            // Tìm goods
+            const goods = goodsBySupplier[selectedSupplier.supplierId] || [];
+            const selectedGood = goods.find(g => g.goodsName === item.goodsName);
+            if (!selectedGood || !selectedGood.goodsId) {
+                return null;
+            }
+
+            // Lấy inventory data
+            const inventoryData = inventoryMap[selectedGood.goodsId] || [];
+
+            // Normalize goodsPackingId về số
+            const itemPackingId = parseInt(item.goodsPackingId);
+            if (isNaN(itemPackingId)) {
+                return null;
+            }
+
+            // Tìm inventory matching goodsPackingId
+            let inventory = null;
+            for (const inv of inventoryData) {
+                if (!inv || !inv.goodsPackingId) continue;
+
+                const invPackingId = parseInt(inv.goodsPackingId);
+                if (!isNaN(invPackingId) && invPackingId === itemPackingId) {
+                    inventory = inv;
+                    break;
+                }
+            }
+
+            // Lấy available quantity (mặc định là 0 nếu không tìm thấy)
+            const availableQuantity = inventory?.availablePackageQuantity ?? 0;
+            const isExceeding = requestedQuantity > availableQuantity;
+
+            return {
+                availableQuantity,
+                requestedQuantity,
+                isExceeding,
+                hasInventory: inventory !== null
+            };
+        } catch (error) {
+            return null;
+        }
+    };
+
     // Kiểm tra validation cho số thùng
     const validateQuantity = (item) => {
         // Kiểm tra điều kiện cần thiết
@@ -472,55 +539,15 @@ function CreateSaleOrder({
         }
 
         // Kiểm tra tồn kho
-        const selectedSupplier = suppliers.find(s => s.companyName === item.supplierName);
-        if (!selectedSupplier) return null;
-
-        const goods = goodsBySupplier[selectedSupplier.supplierId] || [];
-        const selectedGood = goods.find(g => g.goodsName === item.goodsName);
-        if (!selectedGood) return null;
-
-        const inventoryData = inventoryMap[selectedGood.goodsId] || [];
-        const inventory = inventoryData.find(inv =>
-            inv.goodsPackingId?.toString() === item.goodsPackingId?.toString() ||
-            inv.goodsPackingId === parseInt(item.goodsPackingId)
-        );
-        const availableQuantity = inventory?.availablePackageQuantity || 0;
+        const stockInfo = getItemStockInfo(item);
+        const availableQuantity = stockInfo?.availableQuantity ?? 0;
 
         // Nếu vượt quá tồn kho, hiển thị thông báo tồn kho
         if (quantity > availableQuantity) {
-            return `(Có sắn: ${availableQuantity} thùng)`;
+            return `(Có sẵn: ${availableQuantity} thùng)`;
         }
 
         return null;
-    };
-
-    // Lấy thông tin tồn kho cho một item
-    const getItemStockInfo = (item) => {
-        if (!item.supplierName || !item.goodsName || !item.goodsPackingId) {
-            return null;
-        }
-
-        const selectedSupplier = suppliers.find(s => s.companyName === item.supplierName);
-        if (!selectedSupplier) return null;
-
-        const goods = goodsBySupplier[selectedSupplier.supplierId] || [];
-        const selectedGood = goods.find(g => g.goodsName === item.goodsName);
-        if (!selectedGood) return null;
-
-        const inventoryData = inventoryMap[selectedGood.goodsId] || [];
-        const inventory = inventoryData.find(inv =>
-            inv.goodsPackingId?.toString() === item.goodsPackingId?.toString() ||
-            inv.goodsPackingId === parseInt(item.goodsPackingId)
-        );
-
-        const availableQuantity = inventory?.availablePackageQuantity || 0;
-        const requestedQuantity = parseInt(item.quantity) || 0;
-
-        return {
-            availableQuantity,
-            requestedQuantity,
-            isExceeding: requestedQuantity > availableQuantity
-        };
     };
 
     // Tính toán thông tin tồn kho để hiển thị
@@ -540,28 +567,19 @@ function CreateSaleOrder({
         }
 
         const goods = validItems.map(item => {
+            const stockInfo = getItemStockInfo(item);
+            if (!stockInfo) return null;
+
             const selectedSupplier = suppliers.find(s => s.companyName === item.supplierName);
-            if (!selectedSupplier) return null;
-
-            const goods = goodsBySupplier[selectedSupplier.supplierId] || [];
-            const selectedGood = goods.find(g => g.goodsName === item.goodsName);
-            if (!selectedGood) return null;
-
-            const inventoryData = inventoryMap[selectedGood.goodsId] || [];
-            const inventory = inventoryData.find(inv =>
-                inv.goodsPackingId?.toString() === item.goodsPackingId?.toString() ||
-                inv.goodsPackingId === parseInt(item.goodsPackingId)
-            );
-            const availableQuantity = inventory?.availablePackageQuantity || 0;
-            const requestedQuantity = parseInt(item.quantity) || 0;
-            const isSufficient = requestedQuantity <= availableQuantity;
+            const goodsList = selectedSupplier ? goodsBySupplier[selectedSupplier.supplierId] || [] : [];
+            const selectedGood = goodsList.find(g => g.goodsName === item.goodsName);
 
             return {
                 goodsName: item.goodsName,
-                goodsCode: selectedGood.goodsCode || "-",
-                requestedQuantity,
-                availableQuantity,
-                isSufficient
+                goodsCode: selectedGood?.goodsCode || "-",
+                requestedQuantity: stockInfo.requestedQuantity,
+                availableQuantity: stockInfo.availableQuantity,
+                isSufficient: !stockInfo.isExceeding
             };
         }).filter(item => item !== null);
 
@@ -578,7 +596,7 @@ function CreateSaleOrder({
         };
     };
 
-    // Tính toán danh sách mặt hàng thiếu để tạo BackOrder
+    // Tính toán danh sách hàng hóa thiếu để tạo BackOrder
     const getInsufficientItemsForBackOrder = () => {
         const validItems = items.filter(item =>
             item.supplierName && item.goodsName && item.quantity && item.goodsPackingId && parseInt(item.quantity) > 0
@@ -589,6 +607,11 @@ function CreateSaleOrder({
         }
 
         const insufficientItems = validItems.map(item => {
+            const stockInfo = getItemStockInfo(item);
+            if (!stockInfo || !stockInfo.isExceeding) {
+                return null;
+            }
+
             const selectedSupplier = suppliers.find(s => s.companyName === item.supplierName);
             if (!selectedSupplier) return null;
 
@@ -596,29 +619,16 @@ function CreateSaleOrder({
             const selectedGood = goods.find(g => g.goodsName === item.goodsName);
             if (!selectedGood) return null;
 
-            const inventoryData = inventoryMap[selectedGood.goodsId] || [];
-            const inventory = inventoryData.find(inv =>
-                inv.goodsPackingId?.toString() === item.goodsPackingId?.toString() ||
-                inv.goodsPackingId === parseInt(item.goodsPackingId)
-            );
-            const availableQuantity = inventory?.availablePackageQuantity || 0;
-            const requestedQuantity = parseInt(item.quantity) || 0;
-
-            // Chỉ lấy những mặt hàng thiếu (yêu cầu > có sẵn)
-            if (requestedQuantity <= availableQuantity) {
-                return null;
-            }
-
-            // Tính số lượng thiếu
-            const shortageQuantity = requestedQuantity - availableQuantity;
+            // Tính số lượng thiếu (requested - available)
+            const shortageQuantity = stockInfo.requestedQuantity - stockInfo.availableQuantity;
 
             return {
                 goodsId: selectedGood.goodsId,
                 goodsPackingId: parseInt(item.goodsPackingId),
                 goodsName: selectedGood.goodsName,
                 goodsCode: selectedGood.goodsCode || "-",
-                requestedQuantity: requestedQuantity,
-                availableQuantity: availableQuantity,
+                requestedQuantity: stockInfo.requestedQuantity,
+                availableQuantity: stockInfo.availableQuantity,
                 packageQuantity: shortageQuantity, // Số lượng thiếu
             };
         }).filter(item => item !== null);
@@ -626,134 +636,142 @@ function CreateSaleOrder({
         return insufficientItems;
     };
 
-    // Mở modal BackOrder với danh sách mặt hàng thiếu
+    // Mở modal BackOrder với danh sách hàng hóa thiếu
     const handleOpenBackOrderModal = () => {
         const insufficient = getInsufficientItemsForBackOrder();
         if (insufficient.length === 0) {
-            window.showToast("Không có mặt hàng nào bị thiếu tồn kho", "info");
+            window.showToast("Không có hàng hóa nào bị thiếu tồn kho", "info");
             return;
         }
         setInsufficientItems(insufficient);
         setShowBackOrderModal(true);
     };
 
-    // Validate form data
-    const validateFormData = () => {
+    // Lưu lại thành bản nháp
+    const handleSaveAsDraft = async (e) => {
+        e.preventDefault();
+
         // Reset validation errors
         setFieldErrors({});
         const newFieldErrors = {};
 
-        // Kiểm tra từng mặt hàng
+        // Kiểm tra validation
         items.forEach((item, index) => {
-            const rowNumber = index + 1;
-            if (!item.supplierName) {
-                newFieldErrors[`${item.id}-supplierName`] = "Vui lòng chọn nhà cung cấp";
-            }
-            if (!item.goodsName) {
-                newFieldErrors[`${item.id}-goodsName`] = "Vui lòng chọn tên hàng hóa";
-            }
-            if (!item.goodsPackingId) {
-                newFieldErrors[`${item.id}-goodsPackingId`] = "Vui lòng chọn đóng gói";
-            }
+            if (!item.supplierName) newFieldErrors[`${item.id}-supplierName`] = "Vui lòng chọn nhà cung cấp";
+            if (!item.goodsName) newFieldErrors[`${item.id}-goodsName`] = "Vui lòng chọn tên hàng hóa";
+            if (!item.goodsPackingId) newFieldErrors[`${item.id}-goodsPackingId`] = "Vui lòng chọn đóng gói";
 
-            // Kiểm tra validation số thùng
-            // Chỉ validate nếu đã có đủ thông tin (supplierName, goodsName, goodsPackingId)
             if (item.supplierName && item.goodsName && item.goodsPackingId) {
                 if (!item.quantity || item.quantity === "" || parseInt(item.quantity) <= 0) {
                     newFieldErrors[`${item.id}-quantity`] = "Vui lòng nhập số thùng lớn hơn 0";
                 } else {
                     // Kiểm tra tồn kho nếu đã nhập số lượng hợp lệ
                     const quantityError = validateQuantity(item);
-                    if (quantityError) {
+                    if (quantityError && !quantityError.includes("(Có sẵn:")) {
+                        // Chỉ block validation nếu là lỗi format (không phải lỗi tồn kho)
+                        newFieldErrors[`${item.id}-quantity`] = quantityError;
+                    } else if (quantityError && quantityError.includes("(Có sẵn:")) {
+                        // Nếu vượt quá tồn kho, chỉ set warning (không block validation)
+                        // Validation vẫn pass để có thể show toast ở phần submit
                         newFieldErrors[`${item.id}-quantity`] = quantityError;
                     }
                 }
             } else if (!item.quantity || item.quantity === "" || parseInt(item.quantity) <= 0) {
-                // Nếu chưa có đủ thông tin nhưng đã nhập số lượng, vẫn validate cơ bản
                 newFieldErrors[`${item.id}-quantity`] = "Vui lòng nhập số thùng lớn hơn 0";
             }
         });
 
-        // Kiểm tra nhà bán lẻ
+        // Tách riêng blocking errors (lỗi format/required) và warnings (tồn kho)
+        // Chỉ block validation nếu có blocking errors, warnings không block
+        const blockingErrors = {};
+        const warnings = {};
+
+        Object.keys(newFieldErrors).forEach(key => {
+            const error = newFieldErrors[key];
+            // Nếu là warning về tồn kho (có chứa "(Có sẵn:"), chỉ thêm vào warnings
+            if (error && error.includes("(Có sẵn:")) {
+                warnings[key] = error;
+            } else {
+                // Các lỗi khác là blocking errors
+                blockingErrors[key] = error;
+            }
+        });
+
+        // Set cả warnings và blocking errors để hiển thị
+        setFieldErrors({ ...blockingErrors, ...warnings });
+
         if (!formData.retailerName) {
             window.showToast("Vui lòng chọn nhà bán lẻ", "error");
-            if (Object.keys(newFieldErrors).length > 0) {
-                setFieldErrors(newFieldErrors);
-            }
-            return { isValid: false, errors: newFieldErrors };
+            if (Object.keys(blockingErrors).length > 0) return;
         }
 
-        // Kiểm tra ngày giao hàng
         if (!formData.estimatedTimeDeparture) {
             window.showToast("Vui lòng chọn ngày dự kiến giao hàng", "error");
-            if (Object.keys(newFieldErrors).length > 0) {
-                setFieldErrors(newFieldErrors);
-            }
-            return { isValid: false, errors: newFieldErrors };
+            if (Object.keys(blockingErrors).length > 0) return;
         }
 
-        // Kiểm tra ngày giao hàng phải trong tương lai (chỉ khi submit for approval)
-        // Không validate cho save draft
-        // const selectedDate = new Date(formData.estimatedTimeDeparture);
-        // const today = new Date();
-        // today.setHours(0, 0, 0, 0);
-        // if (selectedDate <= today) {
-        //     window.showToast("Ngày giao hàng phải trong tương lai", "error");
-        //     if (Object.keys(newFieldErrors).length > 0) {
-        //         setFieldErrors(newFieldErrors);
-        //     }
-        //     return { isValid: false, errors: newFieldErrors };
-        // }
+        const selectedDate = new Date(formData.estimatedTimeDeparture);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        selectedDate.setHours(0, 0, 0, 0);
+        if (selectedDate <= today) {
+            window.showToast("Ngày giao hàng phải trong tương lai", "error");
+            if (Object.keys(blockingErrors).length > 0) return;
+        }
 
-        if (Object.keys(newFieldErrors).length > 0) {
-            setFieldErrors(newFieldErrors);
-            return { isValid: false, errors: newFieldErrors };
+        // Chỉ block validation nếu có blocking errors
+        if (Object.keys(blockingErrors).length > 0) {
+            return;
         }
 
         const selectedRetailer = retailers.find(retailer => retailer.retailerName === formData.retailerName);
         if (!selectedRetailer) {
             window.showToast("Không tìm thấy nhà bán lẻ", "error");
-            return { isValid: false, errors: newFieldErrors };
+            return;
         }
 
         const validItems = items.filter(item => item.supplierName && item.goodsName && item.quantity && item.goodsPackingId);
         if (validItems.length === 0) {
             window.showToast("Vui lòng thêm ít nhất một hàng hóa với đầy đủ thông tin", "error");
-            return { isValid: false, errors: newFieldErrors };
-        }
-
-        return { isValid: true, errors: newFieldErrors, selectedRetailer, validItems };
-    };
-
-    // Lưu lại thành bản nháp
-    const handleSaveAsDraft = async (e) => {
-        e.preventDefault();
-
-        const validation = validateFormData();
-        if (!validation.isValid) {
             return;
         }
 
-        const { selectedRetailer, validItems } = validation;
-
-        // Kiểm tra inventory - chặn submit nếu có item vượt quá tồn kho (chỉ warning, không block)
-        // Lưu thông tin các items vượt quá tồn kho
+        // Kiểm tra tồn kho - CHẶN submit nếu vượt quá tồn kho
         const itemsExceedingStockMap = {};
-        const insufficientItems = validItems.filter(item => {
+        const insufficientItems = [];
+
+        for (const item of validItems) {
             const stockInfo = getItemStockInfo(item);
+
+            // Nếu có thông tin tồn kho và vượt quá tồn kho
             if (stockInfo && stockInfo.isExceeding) {
                 itemsExceedingStockMap[item.id] = {
                     availableQuantity: stockInfo.availableQuantity,
                     requestedQuantity: stockInfo.requestedQuantity
                 };
-                return true;
+                insufficientItems.push(item);
             }
-            return false;
-        });
+        }
 
         if (insufficientItems.length > 0) {
             // Lưu thông tin các items vượt quá tồn kho để hiển thị viền đỏ
             setItemsExceedingStock(itemsExceedingStockMap);
+
+            // Hiển thị thông báo lỗi và CHẶN submit
+            const firstItem = insufficientItems[0];
+            const message = insufficientItems.length === 1
+                ? `Hàng hóa "${firstItem.goodsName}" vượt quá tồn kho. Vui lòng điều chỉnh số lượng.`
+                : `Có ${insufficientItems.length} hàng hóa vượt quá tồn kho. Vui lòng điều chỉnh số lượng.`;
+
+            // Đảm bảo toast được hiển thị và CHẶN submit
+            if (typeof window !== 'undefined' && window.showToast) {
+                window.showToast(message, "error");
+            } else if (typeof window !== 'undefined' && window.showToast) {
+                window.showToast(message);
+            }
+
+            // CHẶN submit khi vượt quá tồn kho
+            return;
         } else {
             setItemsExceedingStock({});
         }
@@ -778,7 +796,6 @@ function CreateSaleOrder({
             }).filter(item => item !== null);
 
             if (itemsWithIds.length === 0) {
-                console.log("Không tìm thấy hàng hóa hợp lệ");
                 window.showToast("Không tìm thấy hàng hóa hợp lệ!", "error");
                 return;
             }
@@ -794,7 +811,6 @@ function CreateSaleOrder({
             window.showToast("Lưu bản nháp thành công!", "success");
             navigate("/sales-orders");
         } catch (error) {
-            console.error("Lỗi khi lưu bản nháp:", error);
             const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi lưu bản nháp!");
 
             if (window.showToast) {
@@ -809,35 +825,109 @@ function CreateSaleOrder({
     const handleSubmitForApproval = async (e) => {
         e.preventDefault();
 
-        const validation = validateFormData();
-        if (!validation.isValid) {
-            return;
+        // **LOGIC CHẶN KHI VƯỢT QUÁ TỒN KHO VẪN ĐƯỢC GIỮ NGUYÊN (Không cho gửi phê duyệt)**
+        setFieldErrors({});
+        const newFieldErrors = {};
+
+        items.forEach((item, index) => {
+            if (!item.supplierName) newFieldErrors[`${item.id}-supplierName`] = "Vui lòng chọn nhà cung cấp";
+            if (!item.goodsName) newFieldErrors[`${item.id}-goodsName`] = "Vui lòng chọn tên hàng hóa";
+            if (!item.goodsPackingId) newFieldErrors[`${item.id}-goodsPackingId`] = "Vui lòng chọn đóng gói";
+
+            // Check quantity for validation
+            if (item.supplierName && item.goodsName && item.goodsPackingId) {
+                if (!item.quantity || item.quantity === "" || parseInt(item.quantity) <= 0) {
+                    newFieldErrors[`${item.id}-quantity`] = "Vui lòng nhập số thùng lớn hơn 0";
+                } else {
+                    // Kiểm tra tồn kho nếu đã nhập số lượng hợp lệ
+                    // NHƯNG: Không block validation khi vượt quá tồn kho
+                    // Chỉ hiển thị warning, validation sẽ pass để có thể show toast ở phần submit
+                    const quantityError = validateQuantity(item);
+                    if (quantityError && !quantityError.includes("(Có sẵn:")) {
+                        // Chỉ block validation nếu là lỗi format (không phải lỗi tồn kho)
+                        newFieldErrors[`${item.id}-quantity`] = quantityError;
+                    } else if (quantityError && quantityError.includes("(Có sẵn:")) {
+                        // Nếu vượt quá tồn kho, chỉ set warning (không block validation)
+                        // Validation vẫn pass để có thể show toast ở phần submit
+                        newFieldErrors[`${item.id}-quantity`] = quantityError;
+                    }
+                }
+            } else if (!item.quantity || item.quantity === "" || parseInt(item.quantity) <= 0) {
+                newFieldErrors[`${item.id}-quantity`] = "Vui lòng nhập số thùng lớn hơn 0";
+            }
+        });
+
+        // Tách riêng blocking errors (lỗi format/required) và warnings (tồn kho)
+        // Chỉ block validation nếu có blocking errors, warnings không block
+        const blockingErrors = {};
+        const warnings = {};
+
+        Object.keys(newFieldErrors).forEach(key => {
+            const error = newFieldErrors[key];
+            // Nếu là warning về tồn kho (có chứa "(Có sẵn:"), chỉ thêm vào warnings
+            if (error && error.includes("(Có sẵn:")) {
+                warnings[key] = error;
+            } else {
+                // Các lỗi khác là blocking errors
+                blockingErrors[key] = error;
+            }
+        });
+
+        // Set cả warnings và blocking errors để hiển thị
+        setFieldErrors({ ...blockingErrors, ...warnings });
+
+        if (!formData.retailerName) {
+            window.showToast("Vui lòng chọn nhà bán lẻ", "error");
+            if (Object.keys(blockingErrors).length > 0) return;
         }
 
-        const { selectedRetailer, validItems } = validation;
+        if (!formData.estimatedTimeDeparture) {
+            window.showToast("Vui lòng chọn ngày dự kiến giao hàng", "error");
+            if (Object.keys(blockingErrors).length > 0) return;
+        }
 
-        // Kiểm tra ngày giao hàng phải trong tương lai (chỉ khi submit for approval)
         const selectedDate = new Date(formData.estimatedTimeDeparture);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
+        selectedDate.setHours(0, 0, 0, 0);
         if (selectedDate <= today) {
             window.showToast("Ngày giao hàng phải trong tương lai", "error");
+            if (Object.keys(blockingErrors).length > 0) return;
+        }
+
+        // Chỉ block validation nếu có blocking errors
+        if (Object.keys(blockingErrors).length > 0) {
             return;
         }
 
-        // Kiểm tra inventory - chặn submit nếu có item vượt quá tồn kho
+        const selectedRetailer = retailers.find(retailer => retailer.retailerName === formData.retailerName);
+        if (!selectedRetailer) {
+            window.showToast("Không tìm thấy nhà bán lẻ", "error");
+            return;
+        }
+
+        const validItems = items.filter(item => item.supplierName && item.goodsName && item.quantity && item.goodsPackingId);
+        if (validItems.length === 0) {
+            window.showToast("Vui lòng thêm ít nhất một hàng hóa với đầy đủ thông tin", "error");
+            return;
+        }
+
+        // Kiểm tra tồn kho - CHẶN submit nếu vượt quá tồn kho
         const itemsExceedingStockMap = {};
-        const insufficientItems = validItems.filter(item => {
+        const insufficientItems = [];
+
+        for (const item of validItems) {
             const stockInfo = getItemStockInfo(item);
+
+            // Nếu có thông tin tồn kho và vượt quá tồn kho
             if (stockInfo && stockInfo.isExceeding) {
                 itemsExceedingStockMap[item.id] = {
                     availableQuantity: stockInfo.availableQuantity,
                     requestedQuantity: stockInfo.requestedQuantity
                 };
-                return true;
+                insufficientItems.push(item);
             }
-            return false;
-        });
+        }
 
         if (insufficientItems.length > 0) {
             // Lưu thông tin các items vượt quá tồn kho để hiển thị viền đỏ
@@ -845,10 +935,15 @@ function CreateSaleOrder({
 
             const firstItem = insufficientItems[0];
             const message = insufficientItems.length === 1
-                ? `Sản phẩm "${firstItem.goodsName}" vượt quá tồn kho.`
-                : `Có ${insufficientItems.length} sản phẩm vượt quá tồn kho.`;
+                ? `Hàng hóa "${firstItem.goodsName}" vượt quá tồn kho. Vui lòng kiểm tra lại số lượng.`
+                : `Có ${insufficientItems.length} hàng hóa vượt quá tồn kho. Vui lòng kiểm tra lại số lượng.`;
 
-            window.showToast(message, "error");
+            // Đảm bảo toast được hiển thị
+            if (typeof window !== 'undefined' && window.showToast) {
+                window.showToast(message, "error");
+            } else if (typeof window !== 'undefined' && window.showToast) {
+                window.showToast(message);
+            }
             return;
         }
 
@@ -875,7 +970,6 @@ function CreateSaleOrder({
             }).filter(item => item !== null);
 
             if (itemsWithIds.length === 0) {
-                console.log("Không tìm thấy hàng hóa hợp lệ");
                 window.showToast("Không tìm thấy hàng hóa hợp lệ!", "error");
                 return;
             }
@@ -916,13 +1010,11 @@ function CreateSaleOrder({
                     navigate("/sales-orders");
                 }
             } catch (fetchError) {
-                console.error("Error fetching sales order list:", fetchError);
                 // Nếu không fetch được, vẫn báo thành công (đã tạo)
                 window.showToast("Tạo đơn bán hàng thành công! Vui lòng gửi phê duyệt từ trang chi tiết.", "success");
                 navigate("/sales-orders");
             }
         } catch (error) {
-            console.error("Lỗi khi tạo và gửi phê duyệt đơn bán hàng:", error);
             const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi tạo và gửi phê duyệt đơn bán hàng!");
 
             if (window.showToast) {
@@ -989,6 +1081,7 @@ function CreateSaleOrder({
                                                 value={formData.estimatedTimeDeparture}
                                                 onChange={(e) => handleInputChange("estimatedTimeDeparture", e.target.value)}
                                                 ref={dateInputRef}
+                                                // min={minDate}
                                                 className="date-picker-input h-[37px] pr-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg w-full"
                                             />
                                             <Calendar
@@ -1261,7 +1354,7 @@ function CreateSaleOrder({
                                     className="text-orange-500 hover:text-orange-600 font-medium cursor-pointer flex items-center gap-2"
                                 >
                                     <Plus className="h-4 w-4" />
-                                    Thêm mặt hàng
+                                    Thêm hàng hóa
                                 </button>
                             </div>
 
@@ -1284,9 +1377,9 @@ function CreateSaleOrder({
                                     type="button"
                                     onClick={handleSaveAsDraft}
                                     disabled={saveDraftLoading || submitApprovalLoading}
-                                    className="h-[38px] px-6 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {saveDraftLoading ? "Đang lưu..." : "Lưu lại"}
+                                    {saveDraftLoading ? "Đang lưu..." : "Lưu nháp"}
                                 </Button>
                                 <Button
                                     type="button"
@@ -1332,7 +1425,7 @@ function CreateSaleOrder({
                                                 }
                                             </span>
                                         </div>
-                                        {/* Button để tạo BackOrder cho các mặt hàng thiếu - Góc phải */}
+                                        {/* Button để tạo BackOrder cho các hàng hóa thiếu - Góc phải */}
                                         {!stockInfo.allSufficient && stockInfo.insufficientCount > 0 && (
                                             <Button
                                                 type="button"
@@ -1340,7 +1433,7 @@ function CreateSaleOrder({
                                                 className="h-[38px] px-4 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all whitespace-nowrap"
                                             >
                                                 <Plus className="h-4 w-4 mr-2" />
-                                                Tạo đơn bổ sung cho {stockInfo.insufficientCount} mặt hàng thiếu
+                                                Tạo đơn bổ sung cho {stockInfo.insufficientCount} hàng hóa thiếu
                                             </Button>
                                         )}
                                     </div>
@@ -1360,7 +1453,7 @@ function CreateSaleOrder({
                                                 </div>
 
                                                 <div className="text-sm text-slate-600 mb-2">
-                                                    Mã sản phẩm: <span className="font-medium">{goods.goodsCode}</span>
+                                                    Mã hàng hóa: <span className="font-medium">{goods.goodsCode}</span>
                                                 </div>
 
                                                 <div className="space-y-1">
@@ -1386,17 +1479,17 @@ function CreateSaleOrder({
                                     <div className="flex flex-wrap gap-2">
                                         <div className="px-3 py-1.5 bg-gray-100 rounded-full">
                                             <span className="text-sm font-medium text-blue-600">
-                                                Tổng: {stockInfo.totalGoods} mặt hàng
+                                                Tổng: {stockInfo.totalGoods} hàng hóa
                                             </span>
                                         </div>
                                         <div className="px-3 py-1.5 bg-green-100 rounded-full">
                                             <span className="text-sm font-medium text-green-600">
-                                                Đủ: {stockInfo.sufficientCount} mặt hàng
+                                                Đủ: {stockInfo.sufficientCount} hàng hóa
                                             </span>
                                         </div>
                                         <div className="px-3 py-1.5 bg-red-100 rounded-full">
                                             <span className="text-sm font-medium text-red-600">
-                                                Thiếu: {stockInfo.insufficientCount} mặt hàng
+                                                Thiếu: {stockInfo.insufficientCount} hàng hóa
                                             </span>
                                         </div>
                                     </div>
@@ -1426,7 +1519,6 @@ function CreateSaleOrder({
                 }))}
                 retailerId={(() => {
                     if (!formData.retailerName || retailers.length === 0) {
-                        console.log("No retailerName or retailers not loaded yet");
                         return null;
                     }
                     const selectedRetailer = retailers.find(r =>
@@ -1436,10 +1528,8 @@ function CreateSaleOrder({
                     );
                     if (selectedRetailer) {
                         const retailerIdValue = selectedRetailer.retailerId || selectedRetailer.RetailerId;
-                        console.log("Found retailer:", selectedRetailer, "retailerId:", retailerIdValue);
                         return retailerIdValue ? retailerIdValue.toString() : null;
                     }
-                    console.log("Retailer not found. formData.retailerName:", formData.retailerName, "retailers:", retailers);
                     return null;
                 })()}
             />

@@ -7,7 +7,7 @@ namespace MilkDistributionWarehouse.Models.Entities;
 
 public partial class GoodsIssueNote
 {
-    public Guid GoodsIssueNoteId { get; set; }
+    public string GoodsIssueNoteId { get; set; }
 
     public int? Status { get; set; }
 
@@ -19,7 +19,7 @@ public partial class GoodsIssueNote
 
     public DateTime? UpdatedAt { get; set; }
 
-    public Guid SalesOderId { get; set; }
+    public string SalesOderId { get; set; }
 
     public virtual User ApprovalByNavigation { get; set; }
 

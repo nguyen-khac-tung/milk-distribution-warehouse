@@ -56,20 +56,20 @@ const RoleBasedRedirect = () => {
             return '/dashboard';
         }
 
-        // Sales Representative -> Reports
+        // Sales Representative -> Reports Orders
         if (isSalesRepresentative) {
-            return '/reports';
+            return '/reports/orders';
         }
 
-        // Warehouse Staff -> Reports
+        // Warehouse Staff -> Reports Orders
         if (isWarehouseStaff) {
-            return '/reports';
+            return '/reports/orders';
         }
 
         // Fallback: kiểm tra permission có sẵn
         const availableRoutes = [
             { path: '/dashboard', permission: 'DASHBOARD_VIEW' },
-            { path: '/reports', permission: 'REPORT_VIEW' }
+            { path: '/reports/orders', permission: 'REPORT_VIEW' }
         ];
 
         // Tìm route đầu tiên mà user có quyền

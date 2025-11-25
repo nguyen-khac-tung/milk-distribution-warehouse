@@ -75,7 +75,7 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
   }
 
   const updatePackingItem = (index, value) => {
-    const updatedPackings = goodsPackingCreates.map((item, i) => 
+    const updatedPackings = goodsPackingCreates.map((item, i) =>
       i === index ? { ...item, unitPerPackage: value } : item
     )
     setGoodsPackingCreates(updatedPackings)
@@ -92,7 +92,7 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
     }
 
     // Validate goodsPackingCreates
-    const validPackings = goodsPackingCreates.filter(packing => 
+    const validPackings = goodsPackingCreates.filter(packing =>
       packing.unitPerPackage && !isNaN(packing.unitPerPackage) && parseInt(packing.unitPerPackage) > 0
     )
 
@@ -102,7 +102,7 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
     }
 
     // Check if all packing items have valid unitPerPackage
-    const hasEmptyPacking = goodsPackingCreates.some(packing => 
+    const hasEmptyPacking = goodsPackingCreates.some(packing =>
       !packing.unitPerPackage || packing.unitPerPackage === "" || isNaN(packing.unitPerPackage) || parseInt(packing.unitPerPackage) <= 0
     )
 
@@ -119,17 +119,17 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
           unitPerPackage: parseInt(packing.unitPerPackage)
         }))
       }
-      
+
       const response = await createGood(submitData)
       console.log("Good created:", response)
-      window.showToast("Thêm mặt hàng thành công!", "success")
+      window.showToast("Thêm hàng hóa thành công!", "success")
       onSuccess && onSuccess()
       onClose && onClose()
     } catch (error) {
       console.error("Error creating good:", error)
 
       // Sử dụng extractErrorMessage để xử lý lỗi từ API
-      const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi thêm mặt hàng")
+      const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi thêm hàng hóa")
       window.showToast(`Lỗi: ${errorMessage}`, "error")
     } finally {
       setLoading(false)
@@ -156,7 +156,7 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
       <div className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-slate-800">Thêm mặt hàng mới</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Thêm hàng hóa mới</h1>
           <button
             onClick={onClose}
             className="p-1 hover:bg-gray-100 rounded-full transition-colors"
@@ -173,11 +173,11 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="goodsCode" className="text-sm font-medium text-slate-700">
-                  Mã mặt hàng <span className="text-red-500">*</span>
+                  Mã hàng hóa <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="goodsCode"
-                  placeholder="Nhập mã mặt hàng..."
+                  placeholder="Nhập mã hàng hóa..."
                   value={formData.goodsCode}
                   onChange={(e) => setFormData({ ...formData, goodsCode: e.target.value })}
                   className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
@@ -187,11 +187,11 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
 
               <div className="space-y-2">
                 <Label htmlFor="goodsName" className="text-sm font-medium text-slate-700">
-                  Tên mặt hàng <span className="text-red-500">*</span>
+                  Tên hàng hóa <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="goodsName"
-                  placeholder="Nhập tên mặt hàng..."
+                  placeholder="Nhập tên hàng hóa..."
                   value={formData.goodsName}
                   onChange={(e) => setFormData({ ...formData, goodsName: e.target.value })}
                   className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
@@ -297,7 +297,7 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
                   Thêm đóng gói
                 </Button>
               </div>
-              
+
               <Card className="p-4 border border-gray-200">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {goodsPackingCreates.map((packing, index) => (
@@ -327,7 +327,7 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
                     </div>
                   ))}
                 </div>
-                
+
                 <p className="text-xs text-slate-500 mt-3">
                   * Nhập số lượng {unitMeasures.find(unit => unit.unitMeasureId.toString() === formData.unitMeasureId)?.name || 'đơn vị'} có trong mỗi thùng đóng gói
                 </p>

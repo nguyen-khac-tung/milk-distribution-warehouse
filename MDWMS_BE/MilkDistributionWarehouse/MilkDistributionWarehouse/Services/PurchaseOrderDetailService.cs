@@ -10,7 +10,7 @@ namespace MilkDistributionWarehouse.Services
 {
     public interface IPurchaseOrderDetailService
     {
-        Task<(string, List<PurchaseOrderDetailDto>?)> GetPurchaseOrderDetailByPurchaseOrderId(Guid purchaseOrderId);
+        Task<(string, List<PurchaseOrderDetailDto>?)> GetPurchaseOrderDetailByPurchaseOrderId(string purchaseOrderId);
     }
     public class PurchaseOrderDetailService : IPurchaseOrderDetailService
     {
@@ -22,13 +22,13 @@ namespace MilkDistributionWarehouse.Services
             _purchaseOrderDetailRepository = purchaseOrderDetailRepository;
         }
 
-        public async Task<(string, List<PurchaseOrderDetailDto>?)> GetPurchaseOrderDetailByPurchaseOrderId(Guid purchaseOrderId)
+        public async Task<(string, List<PurchaseOrderDetailDto>?)> GetPurchaseOrderDetailByPurchaseOrderId(string purchaseOrderId)
         {
             var purchaseOrderDetailQuery = _purchaseOrderDetailRepository.GetPurchaseOrderDetail();
 
             var purchaseOrderDetail = purchaseOrderDetailQuery.ProjectTo<PurchaseOrderDetailDto>(_mapper.ConfigurationProvider);
 
-            var result = await purchaseOrderDetail.Where(pod => pod.PurchaseOderId == purchaseOrderId).ToListAsync();
+            var result = await purchaseOrderDetail.Where(pod => pod.PurchaseOderId.Equals(purchaseOrderId)).ToListAsync();
 
             if (!result.Any())
                 return ("Danh sách đơn đặt hàng chi tiết trống".ToMessageForUser(), default);

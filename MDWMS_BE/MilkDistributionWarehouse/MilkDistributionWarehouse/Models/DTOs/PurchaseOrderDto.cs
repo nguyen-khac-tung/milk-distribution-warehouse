@@ -9,7 +9,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
 {
     public class PurchaseOrderDtoCommon
     {
-        public Guid PurchaseOderId { get; set; }
+        public string PurchaseOderId { get; set; }
         public int Status { get; set; }
         public int SupplierId { get; set; }
         public string? SupplierName { get; set; }
@@ -79,7 +79,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
     public class PurchaseOrderDetailBySupplier
     {
-        public Guid PurchaseOderId { get; set; }
+        public string PurchaseOderId { get; set; }
         public int SupplierId { get; set; }
         public string? SupplierName { get; set; }
         public int? CreatedBy { get; set; }
@@ -99,12 +99,12 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
     public class PurchaseOrderCreateResponse
     {
-        public Guid PurchaseOderId { get; set; }
+        public string PurchaseOderId { get; set; }
     }
 
     public class PurchaseOrderUpdate
     {
-        public Guid PurchaseOderId { get; set; }
+        public string PurchaseOderId { get; set; }
         public string? Note { get; set; }
         public List<PurchaseOrderDetailUpdate> PurchaseOrderDetailUpdates { get; set; } = new();
     }
@@ -112,7 +112,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
     public class PurchaseOrderUpdateStatusDto
     {
         [Required(ErrorMessage = "Mã đơn hàng không được để trống.")]
-        public Guid PurchaseOrderId { get; set; }
+        public string PurchaseOrderId { get; set; }
     }
 
     public class PurchaseOrderPendingApprovalDto : PurchaseOrderUpdateStatusDto

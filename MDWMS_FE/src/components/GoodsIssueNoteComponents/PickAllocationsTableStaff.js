@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { Button } from '../../components/ui/button';
 import { Barcode, RefreshCw, CheckCircle } from 'lucide-react';
@@ -10,8 +10,24 @@ const PickAllocationsTableStaff = ({
     statusCode,
     onProceedPick,
     confirmingPickId,
-    isWarehouseStaff
+    isWarehouseStaff,
+    highlightedPickAllocationId // ID của pick allocation được highlight
 }) => {
+    // Refs để scroll đến row được highlight
+    const rowRefs = useRef({});
+
+    // Scroll đến row được highlight khi có thay đổi
+    useEffect(() => {
+        if (highlightedPickAllocationId && rowRefs.current[highlightedPickAllocationId]) {
+            const rowElement = rowRefs.current[highlightedPickAllocationId];
+            // Scroll đến row với smooth behavior
+            rowElement.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+        }
+    }, [highlightedPickAllocationId]);
+
     if (!pickAllocations || pickAllocations.length === 0) {
         return (
             <div className="text-center py-8 text-gray-500">Không có thông tin lấy hàng</div>
@@ -40,11 +56,18 @@ const PickAllocationsTableStaff = ({
                     {pickAllocations.map((pick, pickIndex) => {
                         const pickStatusInfo = getPickAllocationStatusMeta(pick.status);
                         const isPicked = pick.status === 2;
+                        const isHighlighted = highlightedPickAllocationId === pick.pickAllocationId;
 
                         return (
                             <TableRow
                                 key={pick.pickAllocationId}
-                                className={`border-b border-gray-200 hover:bg-blue-50 transition-colors ${isPicked ? 'bg-green-50' : ''
+                                ref={(el) => {
+                                    if (el) {
+                                        rowRefs.current[pick.pickAllocationId] = el;
+                                    }
+                                }}
+                                className={`border-b border-gray-200 hover:bg-blue-50 transition-all duration-300 ${isPicked ? 'bg-green-50' : ''
+                                    } ${isHighlighted ? 'bg-green-100 border-green-400 border-2 shadow-md' : ''
                                     }`}
                             >
                                 <TableCell className="text-center text-gray-900 font-medium">

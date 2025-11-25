@@ -35,6 +35,16 @@ public partial class User
 
     public virtual ICollection<Batch> Batches { get; set; } = new List<Batch>();
 
+    public virtual ICollection<DisposalNote> DisposalNoteApprovalByNavigations { get; set; } = new List<DisposalNote>();
+
+    public virtual ICollection<DisposalNote> DisposalNoteCreatedByNavigations { get; set; } = new List<DisposalNote>();
+
+    public virtual ICollection<DisposalRequest> DisposalRequestApprovalByNavigations { get; set; } = new List<DisposalRequest>();
+
+    public virtual ICollection<DisposalRequest> DisposalRequestAssignToNavigations { get; set; } = new List<DisposalRequest>();
+
+    public virtual ICollection<DisposalRequest> DisposalRequestCreatedByNavigations { get; set; } = new List<DisposalRequest>();
+
     public virtual ICollection<GoodsIssueNote> GoodsIssueNoteApprovalByNavigations { get; set; } = new List<GoodsIssueNote>();
 
     public virtual ICollection<GoodsIssueNote> GoodsIssueNoteCreatedByNavigations { get; set; } = new List<GoodsIssueNote>();
@@ -43,9 +53,7 @@ public partial class User
 
     public virtual ICollection<GoodsReceiptNote> GoodsReceiptNoteCreatedByNavigations { get; set; } = new List<GoodsReceiptNote>();
 
-    public virtual ICollection<Notification> NotificationReceivedByNavigations { get; set; } = new List<Notification>();
-
-    public virtual ICollection<Notification> NotificationSendByNavigations { get; set; } = new List<Notification>();
+    public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
 
     public virtual ICollection<Pallet> Pallets { get; set; } = new List<Pallet>();
 

@@ -138,7 +138,7 @@ export default function UpdateBackOrderModal({ isOpen, onClose, onSuccess, backO
       }
     } catch (error) {
       console.error("Error loading goods:", error)
-      window.showToast("Lỗi khi tải danh sách sản phẩm", "error")
+      window.showToast("Lỗi khi tải danh sách hàng hóa", "error")
     } finally {
       setLoadingGoods(false)
     }
@@ -232,7 +232,7 @@ export default function UpdateBackOrderModal({ isOpen, onClose, onSuccess, backO
             </div>
             <div>
               <h1 className="text-xl font-bold text-slate-800">Cập nhật đơn bổ sung</h1>
-              <p className="text-sm text-gray-500">Chỉnh sửa thông tin đơn hàng chờ</p>
+              <p className="text-sm text-gray-500">Chỉnh sửa thông tin đơn hàng bổ sung</p>
             </div>
           </div>
           <button
@@ -290,7 +290,7 @@ export default function UpdateBackOrderModal({ isOpen, onClose, onSuccess, backO
                         {/* Goods Selection */}
                         <div className="space-y-2">
                           <Label htmlFor="goodsId" className="text-sm font-medium text-slate-700">
-                            Sản phẩm <span className="text-red-500">*</span>
+                            Hàng hóa <span className="text-red-500">*</span>
                           </Label>
                           <FloatingDropdown
                             value={formData.goodsId}
@@ -298,7 +298,7 @@ export default function UpdateBackOrderModal({ isOpen, onClose, onSuccess, backO
                             loading={loadingGoods || loadingData}
                             disabled={loadingGoods || loadingData}
                             placeholder={
-                              loadingGoods || loadingData ? "Đang tải..." : "Chọn sản phẩm..."
+                              loadingGoods || loadingData ? "Đang tải..." : "Chọn hàng hóa..."
                             }
                             options={goods.map((good) => ({
                               value: good.goodsId.toString(),
@@ -372,7 +372,9 @@ export default function UpdateBackOrderModal({ isOpen, onClose, onSuccess, backO
                               Đơn vị / thùng
                             </Label>
                             <div className="h-[38px] px-3 flex items-center border border-slate-200 bg-slate-50 rounded-lg">
-                              <span className="text-slate-700">{unitPerPackage || 'N/A'}</span>
+                              <span className="text-slate-700">
+                                {unitPerPackage ? `${unitPerPackage} ${unitMeasureName}` : 'N/A'}
+                              </span>
                             </div>
                           </div>
                         )}
@@ -385,7 +387,9 @@ export default function UpdateBackOrderModal({ isOpen, onClose, onSuccess, backO
                               Tổng số đơn vị
                             </Label>
                             <div className="h-[38px] px-3 flex items-center border border-green-200 bg-green-50 rounded-lg">
-                              <span className="text-green-700 font-semibold text-base">{totalUnits.toLocaleString('vi-VN')}</span>
+                              <span className="text-green-700 font-semibold text-base">
+                                {totalUnits.toLocaleString('vi-VN')} {unitMeasureName}
+                              </span>
                             </div>
                           </div>
                         )}

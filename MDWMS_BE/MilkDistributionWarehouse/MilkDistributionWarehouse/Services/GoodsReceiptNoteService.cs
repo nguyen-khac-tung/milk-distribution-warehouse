@@ -12,7 +12,7 @@ namespace MilkDistributionWarehouse.Services
 {
     public interface IGoodsReceiptNoteService
     {
-        Task<(string, GoodsReceiptNoteDto?)> GetGRNByPurchaseOrderId(Guid purchaseOrderId);
+        Task<(string, GoodsReceiptNoteDto?)> GetGRNByPurchaseOrderId(string purchaseOrderId);
         Task<(string, GoodsReceiptNoteDto?)> CreateGoodsReceiptNote(GoodsReceiptNoteCreate create, int? userId);
         Task<(string, T?)> UpdateGRNStatus<T>(T update, int? userId) where T : GoodsReceiptNoteUpdateStatus;
     }
@@ -25,10 +25,19 @@ namespace MilkDistributionWarehouse.Services
         private readonly IGoodsReceiptNoteDetailRepository _goodsReceiptNoteDetailRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IGoodsReceiptNoteDetailService _goodsReceiptNoteDetailService;
+        private readonly IPurchaseOrderRepositoy _purchaseOrderRepository;
+        private readonly IInventoryLedgerService _inventoryLedgerService;
+        private readonly IStocktakingSheetRepository _stocktakingSheetRepository;
+        private readonly INotificationService _notificationService;
+
         public GoodsReceiptNoteService(IGoodsReceiptNoteRepository goodsReceiptNoteRepository,
             IMapper mapper, IPurchaseOrderDetailRepository purchaseOrderDetailRepository,
             IGoodsReceiptNoteDetailRepository goodsReceiptNoteDetailRepository, IUnitOfWork unitOfWork,
-            IGoodsReceiptNoteDetailService goodsReceiptNoteDetailService)
+            IGoodsReceiptNoteDetailService goodsReceiptNoteDetailService,
+            IPurchaseOrderRepositoy purchaseOrderRepository,
+            IInventoryLedgerService inventoryLedgerService,
+            IStocktakingSheetRepository stocktakingSheetRepository,
+            INotificationService notificationService)
         {
             _goodsReceiptNoteRepository = goodsReceiptNoteRepository;
             _mapper = mapper;
@@ -36,21 +45,35 @@ namespace MilkDistributionWarehouse.Services
             _goodsReceiptNoteDetailRepository = goodsReceiptNoteDetailRepository;
             _unitOfWork = unitOfWork;
             _goodsReceiptNoteDetailService = goodsReceiptNoteDetailService;
+            _purchaseOrderRepository = purchaseOrderRepository;
+            _inventoryLedgerService = inventoryLedgerService;
+            _stocktakingSheetRepository = stocktakingSheetRepository;
+            _notificationService = notificationService;
         }
 
         public async Task<(string, GoodsReceiptNoteDto?)> CreateGoodsReceiptNote(GoodsReceiptNoteCreate create, int? userId)
         {
             try
             {
+                if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                    throw new Exception("Không thể tạo phiếu nhập kho khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser());
+
                 var purchaseOrderDetails = await _purchaseOrderDetailRepository.GetPurchaseOrderDetail()
-                .Where(pod => pod.PurchaseOderId == create.PurchaseOderId).ToListAsync();
+                .Where(pod => pod.PurchaseOderId.Equals(create.PurchaseOderId)).ToListAsync();
 
                 if (!purchaseOrderDetails.Any())
                     throw new Exception("Danh sách đơn đặt hàng chi tiết trống.".ToMessageForUser());
 
                 var grnDetails = _mapper.Map<List<GoodsReceiptNoteDetail>>(purchaseOrderDetails);
 
+                var purchaseOrder = await _purchaseOrderRepository.GetPurchaseOrderByPurchaseOrderId(create.PurchaseOderId);
+
+                if (purchaseOrder == null)
+                    throw new Exception("Đơn đặt hàng không tồn tại.".ToMessageForUser());
+
                 var grn = _mapper.Map<GoodsReceiptNote>(create);
+
+                grn.GoodsReceiptNoteId = PrimaryKeyUtility.GenerateKey(purchaseOrder!.Supplier.BrandName, "GRN");
 
                 foreach (var detail in grnDetails)
                 {
@@ -75,15 +98,15 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
-        public async Task<(string, GoodsReceiptNoteDto?)> GetGRNByPurchaseOrderId(Guid purchaseOrderId)
+        public async Task<(string, GoodsReceiptNoteDto?)> GetGRNByPurchaseOrderId(string purchaseOrderId)
         {
-            if (purchaseOrderId == Guid.Empty)
+            if (string.IsNullOrEmpty(purchaseOrderId))
                 return ("PurchaseOrderId is invalid.", default);
 
             var grnQuery = _goodsReceiptNoteRepository.GetGRN();
 
             var grn = await (grnQuery.ProjectTo<GoodsReceiptNoteDto>(_mapper.ConfigurationProvider))
-                .FirstOrDefaultAsync(grn => grn.PurchaseOderId == purchaseOrderId);
+                .FirstOrDefaultAsync(grn => grn.PurchaseOderId.Equals(purchaseOrderId));
 
             if (grn == null)
                 return ("Phiếu nhập kho không tồn tại.".ToMessageForUser(), default);
@@ -93,6 +116,9 @@ namespace MilkDistributionWarehouse.Services
 
         public async Task<(string, T?)> UpdateGRNStatus<T>(T update, int? userId) where T : GoodsReceiptNoteUpdateStatus
         {
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                return ("Không thể cập nhật phiếu nhập kho khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser(), default);
+
             var grn = await _goodsReceiptNoteRepository.GetGoodsReceiptNoteById(update.GoodsReceiptNoteId);
 
             if (grn == null) return ("GRN is not exist.", default);
@@ -116,7 +142,6 @@ namespace MilkDistributionWarehouse.Services
                         throw new Exception(message.ToMessageForUser());
 
                     grn.Status = GoodsReceiptNoteStatus.PendingApproval;
-                    grn.ApprovalBy = userId;
                     grn.UpdatedAt = DateTime.Now;
                 }
 
@@ -144,6 +169,18 @@ namespace MilkDistributionWarehouse.Services
                     throw new Exception("Cập nhật trạng thái phiếu nhập kho thất bại.".ToMessageForUser());
 
                 await _unitOfWork.CommitTransactionAsync();
+
+                if (update is GoodsReceiptNoteCompletedDto)
+                {
+                    var (invErr, _) = await _inventoryLedgerService.CreateInventoryLedgerByGRNID(grn.GoodsReceiptNoteId);
+                    if (!string.IsNullOrEmpty(invErr))
+                    {
+                        return (invErr, default);
+                    }
+                }
+
+                await HandleGRNStatusChangeNotification(grn);
+
                 return ("", update);
             }
             catch (Exception ex)
@@ -209,5 +246,56 @@ namespace MilkDistributionWarehouse.Services
 
             return "";
         }
+
+        private async Task HandleGRNStatusChangeNotification(GoodsReceiptNote grn)
+        {
+            var notificationToCreate = new NotificationCreateDto();
+            switch (grn.Status)
+            {
+                case GoodsReceiptNoteStatus.PendingApproval:
+                    notificationToCreate.UserId = grn.PurchaseOder.ArrivalConfirmedBy;
+                    notificationToCreate.Title = "Phiếu nhập kho chờ duyệt";
+                    notificationToCreate.Content = $"Phiếu nhập kho {grn.GoodsReceiptNoteId} đang chờ duyệt.";
+                    notificationToCreate.EntityType = NotificationEntityType.GoodsReceiptNote;
+                    notificationToCreate.EntityId = grn.PurchaseOderId;
+                    break;
+                case GoodsReceiptNoteStatus.Completed:
+                    notificationToCreate.UserId = grn.PurchaseOder.AssignTo;
+                    notificationToCreate.Title = "Phiếu nhập kho hoàn tất kiểm tra";
+                    notificationToCreate.Content = $"Phiếu nhập kho {grn.GoodsReceiptNoteId} đã được hoàn thành kiểm tra.";
+                    notificationToCreate.EntityType = NotificationEntityType.GoodsReceiptNote;
+                    notificationToCreate.EntityId = grn.PurchaseOderId;
+                    notificationToCreate.Category = NotificationCategory.Important;
+                    break;
+                default:
+                    break;
+            }
+            if (notificationToCreate != null && notificationToCreate.UserId != null)
+                await _notificationService.CreateNotification(notificationToCreate);
+        }
+
+        private async Task HandleStatusChangeNotification(PurchaseOrder purchaseOder)
+        {
+            var notificationToCreate = new NotificationCreateDto();
+            var notificationList = new List<NotificationCreateDto>();
+            switch (purchaseOder.Status)
+            {
+                case PurchaseOrderStatus.Inspected:
+                    notificationList.Add(new NotificationCreateDto
+                    {
+                        UserId = purchaseOder.ArrivalConfirmedBy,
+                        Title = "Đơn đặt hàng đã được kiểm tra",
+                        Content = $"Đơn đặt hàng {purchaseOder.PurchaseOderId} đã được kiểm tra.",
+                        EntityType = NotificationEntityType.PurchaseOrder,
+                        EntityId = purchaseOder.PurchaseOderId
+                    });
+                    break;
+                default:
+                    break;
+            }
+            if (notificationList.Any())
+                await _notificationService.CreateNotificationBulk(notificationList);
+        }
+
     }
 }

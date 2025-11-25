@@ -83,7 +83,7 @@ export default function PalletList() {
 
     const handlePrint = useReactToPrint({
         contentRef: printRef,
-        documentTitle: "Phiếu dán mã kệ kê hàng",
+        documentTitle: "Phiếu dán mã pallet",
         pageStyle: `
             @page { 
                 size: A4; 
@@ -323,7 +323,7 @@ export default function PalletList() {
     // In nhiều pallet đã chọn
     const handlePrintSelected = () => {
         if (selectedPallets.length === 0) {
-            window.showToast("Vui lòng chọn ít nhất một kệ kê hàng để in", "warning");
+            window.showToast("Vui lòng chọn ít nhất một pallet để in", "warning");
             return;
         }
         // Hiển thị modal preview trước khi in
@@ -376,7 +376,7 @@ export default function PalletList() {
         try {
             await deletePallet(itemToDelete?.palletId)
 
-            window.showToast(`Đã xóa kệ kê hàng: ${itemToDelete?.batchCode || ''}`, "success")
+            window.showToast(`Đã xóa pallet: ${itemToDelete?.batchCode || ''}`, "success")
             setShowDeleteModal(false)
             setItemToDelete(null)
 
@@ -402,7 +402,7 @@ export default function PalletList() {
             })
         } catch (error) {
             console.error("Error deleting pallet:", error)
-            const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi xóa kệ kê hàng")
+            const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi xóa pallet")
             window.showToast(errorMessage, "error")
         }
     }
@@ -424,7 +424,7 @@ export default function PalletList() {
             )
 
             const statusText = newStatus === 1 ? "còn sử dụng" : "không còn sử dụng"
-            window.showToast(`Đã cập nhật kệ kê hàng thành ${statusText}`, "success")
+            window.showToast(`Đã cập nhật pallet thành ${statusText}`, "success")
         } catch (error) {
             console.error("Error updating pallet status:", error)
             const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật trạng thái")
@@ -435,12 +435,12 @@ export default function PalletList() {
     const filteredStatusOptions = useMemo(() => {
         const statusOptions = [
             { value: "", label: "Tất cả trạng thái" },
-            { value: "1", label: "Còn sử dụng" },
-            { value: "2", label: "Không còn sử dụng" }
+            { value: "1", label: "Đã đưa vào vị trí" },
+            { value: "2", label: "Chưa đưa vào vị trí" }
         ]
         if (!statusSearchQuery) return statusOptions
         const query = statusSearchQuery.toLowerCase()
-        return statusOptions.filter(option => 
+        return statusOptions.filter(option =>
             option.label.toLowerCase().includes(query)
         )
     }, [statusSearchQuery])
@@ -526,8 +526,8 @@ export default function PalletList() {
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-600">Quản lý Kệ Kê Hàng</h1>
-                        <p className="text-slate-600 mt-1">Quản lý các kệ kê hàng trong hệ thống</p>
+                        <h1 className="text-2xl font-bold text-slate-600">Quản lý Pallet</h1>
+                        <p className="text-slate-600 mt-1">Quản lý các pallet trong hệ thống</p>
                     </div>
 
                     <div className="flex items-center gap-3">
@@ -559,7 +559,7 @@ export default function PalletList() {
                     totalCount={totalStats.totalCount}
                     activeCount={totalStats.activeCount}
                     inactiveCount={totalStats.inactiveCount}
-                    totalLabel="Tổng kệ kê hàng"
+                    totalLabel="Tổng pallet"
                     activeLabel="Còn sử dụng"
                     inactiveLabel="Không còn sử dụng"
                 />
@@ -687,8 +687,8 @@ export default function PalletList() {
                                                 <TableCell className="px-6 py-4 text-slate-600 font-medium">
                                                     {index + 1}
                                                 </TableCell>
-                                                <TableCell 
-                                                    className="px-6 py-4 text-slate-700 font-medium max-w-[150px] truncate" 
+                                                <TableCell
+                                                    className="px-6 py-4 text-slate-700 font-medium max-w-[150px] truncate"
                                                     title={pallet?.palletId || ''}
                                                 >
                                                     {pallet?.palletId || ''}
@@ -719,7 +719,7 @@ export default function PalletList() {
                                                                 onStatusChange={handleStatusChange}
                                                                 palletId={pallet?.palletId}
                                                                 palletName={pallet?.batchCode}
-                                                                entityType="kệ kê hàng"
+                                                                entityType="pallet"
                                                             />
                                                         </PermissionWrapper>
                                                     </div>
@@ -762,11 +762,11 @@ export default function PalletList() {
                                     ) : (
                                         <EmptyState
                                             icon={Package}
-                                            title="Không tìm thấy kệ kê hàng nào"
+                                            title="Không tìm thấy pallet nào"
                                             description={
                                                 searchQuery || statusFilter || creatorFilter
                                                     ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
-                                                    : "Chưa có kệ kê hàng nào trong hệ thống"
+                                                    : "Chưa có pallet nào trong hệ thống"
                                             }
                                             actionText="Xóa bộ lọc"
                                             onAction={clearAllFilters}
@@ -786,7 +786,7 @@ export default function PalletList() {
                         <CardContent className="pt-6">
                             <div className="flex items-center justify-between">
                                 <div className="text-sm text-slate-600">
-                                    Hiển thị {((pagination.pageNumber - 1) * pagination.pageSize) + 1} - {Math.min(pagination.pageNumber * pagination.pageSize, pagination.totalCount)} trong tổng số {pagination.totalCount} kệ kê hàng
+                                    Hiển thị {((pagination.pageNumber - 1) * pagination.pageSize) + 1} - {Math.min(pagination.pageNumber * pagination.pageSize, pagination.totalCount)} trong tổng số {pagination.totalCount} pallet
                                 </div>
 
                                 <div className="flex items-center space-x-4">
@@ -879,7 +879,7 @@ export default function PalletList() {
                 )}
             </div>
 
-            {/* View Kệ Kê Hàng Detail Modal */}
+            {/* View Pallet Detail Modal */}
             {showViewModal && (
                 <PalletDetail
                     palletId={viewPalletId}
@@ -893,11 +893,11 @@ export default function PalletList() {
                     isOpen={showDeleteModal}
                     onClose={handleDeleteCancel}
                     onConfirm={handleDeleteConfirm}
-                    itemName={"kệ kê hàng"}
+                    itemName={"pallet"}
                 />
             )}
 
-            {/* Update Kệ Kê Hàng Modal */}
+            {/* Update Pallet Modal */}
             {showUpdateModal && (
                 <UpdatePalletModal
                     isOpen={showUpdateModal}
@@ -917,7 +917,7 @@ export default function PalletList() {
                     <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col">
                         <div className="flex items-center justify-between p-4 border-b">
                             <h3 className="text-lg font-semibold text-gray-900">
-                                Xem trước barcode ({selectedPallets.length} kệ kê hàng)
+                                Xem trước barcode ({selectedPallets.length} pallet)
                             </h3>
                             <button
                                 onClick={() => setShowPrintPreview(false)}

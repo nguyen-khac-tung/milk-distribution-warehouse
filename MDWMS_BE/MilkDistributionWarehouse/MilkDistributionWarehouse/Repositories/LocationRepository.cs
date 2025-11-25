@@ -2,6 +2,7 @@
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.Entities;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace MilkDistributionWarehouse.Repositories
 {
@@ -19,6 +20,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<int> CreateLocationsBulk(List<Location> locations);
         Task<bool> IsDuplicateLocationCodeInAreaAsync(string locationCode, int areaId, int? excludeId = null);
         Task<bool> UpdateIsAvailableAsync(int? locationId, bool isAvailable);
+        Task<List<Location>> GetActiveLocationByAreaIdAsync(int areaId);
     }
 
     public class LocationRepository : ILocationRepository
@@ -161,6 +163,14 @@ namespace MilkDistributionWarehouse.Repositories
             await _context.SaveChangesAsync();
 
             return true;
+        }
+
+        public async Task<List<Location>> GetActiveLocationByAreaIdAsync(int areaId)
+        {
+            return await _context.Locations
+                .Where(l => l.AreaId == areaId
+                       && l.Status == CommonStatus.Active)
+                .ToListAsync();
         }
     }
 }

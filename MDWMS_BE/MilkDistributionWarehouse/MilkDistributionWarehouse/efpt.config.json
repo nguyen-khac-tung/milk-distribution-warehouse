@@ -4,7 +4,6 @@
    "ContextNamespace": null,
    "FilterSchemas": false,
    "IncludeConnectionString": false,
-   "MinimumProductVersion": "2.6.1186",
    "ModelNamespace": null,
    "OutputContextPath": null,
    "OutputPath": "Models\/Entities",
@@ -32,6 +31,22 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[DisposalNoteDetails]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[DisposalNotes]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[DisposalRequestDetails]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[DisposalRequests]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[Goods]",
          "ObjectType": 0
       },
@@ -53,6 +68,10 @@
       },
       {
          "Name": "[dbo].[GoodsReceiptNotes]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[InventoryLedger]",
          "ObjectType": 0
       },
       {

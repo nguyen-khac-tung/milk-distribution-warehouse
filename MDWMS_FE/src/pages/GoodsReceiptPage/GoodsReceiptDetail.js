@@ -86,7 +86,7 @@ export default function GoodsReceiptDetail() {
   const [selectAll, setSelectAll] = useState(false);
   const [showPrintPreview, setShowPrintPreview] = useState(false);
   const printRef = useRef(null);
-  // Thêm state quản lý kiểm tra từng mặt hàng
+  // Thêm state quản lý kiểm tra từng hàng hóa
   // Xóa hẳn 2 state checkedDetails, notCheckedDetails và các setCheckedDetails/setNotCheckedDetails
 
   // Dùng useCallback để giữ reference ổn định, tránh loop vô hạn
@@ -118,7 +118,7 @@ export default function GoodsReceiptDetail() {
   // Xử lý in pallet
   const handlePrint = useReactToPrint({
     contentRef: printRef,
-    documentTitle: "Phiếu dán mã kệ kê hàng",
+    documentTitle: "Phiếu dán mã pallet",
     pageStyle: `
       @page { 
         size: A4; 
@@ -181,7 +181,7 @@ export default function GoodsReceiptDetail() {
   // In nhiều pallet đã chọn
   const handlePrintSelected = () => {
     if (selectedPallets.length === 0) {
-      window.showToast?.("Vui lòng chọn ít nhất một kệ kê hàng để in", "warning");
+      window.showToast?.("Vui lòng chọn ít nhất một pallet để in", "warning");
       return;
     }
     // Hiển thị modal preview trước khi in
@@ -322,7 +322,7 @@ export default function GoodsReceiptDetail() {
     // Chỉ cho mở cart pallet và arranging khi status là Completed
     if (section === 'pallet' || section === 'arranging') {
       if (goodsReceiptNote?.status !== GOODS_RECEIPT_NOTE_STATUS.Completed) {
-        window.showToast?.("Phiếu phải được Quản lý kho duyệt thì mới được đưa vào kệ kê hàng", "warning");
+        window.showToast?.("Phiếu phải được Quản lý kho duyệt thì mới được đưa vào pallet", "warning");
         return;
       }
     }
@@ -335,7 +335,7 @@ export default function GoodsReceiptDetail() {
 
   const handleCompleteReceiving = async () => {
     if (needCheckDetails.length > 0) {
-      window.showToast("Bạn phải kiểm tra hết tất cả mặt hàng trước khi nộp đơn kiểm nhập!", "warning");
+      window.showToast("Bạn phải kiểm tra hết tất cả hàng hóa trước khi nộp đơn kiểm nhập!", "warning");
       return;
     }
     try {
@@ -478,7 +478,7 @@ export default function GoodsReceiptDetail() {
   // Mở modal từ chối với danh sách details đã chọn
   const openRejectMultipleModal = () => {
     if (selectedDetailsForReject.length === 0) {
-      window.showToast?.("Vui lòng chọn ít nhất một mặt hàng để từ chối", "warning");
+      window.showToast?.("Vui lòng chọn ít nhất một hàng hóa để từ chối", "warning");
       return;
     }
     // Khởi tạo rejectReasons cho các details đã chọn
@@ -628,7 +628,7 @@ export default function GoodsReceiptDetail() {
                   <CheckCircle className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Chi tiết đơn hàng</h2>
+                  <h2 className="text-lg font-semibold text-gray-900">Chi tiết đơn mua hàng</h2>
                 </div>
               </div>
               {expandedSections.orderDetails ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
@@ -664,9 +664,9 @@ export default function GoodsReceiptDetail() {
                   </div>
                 </div>
 
-                {/* Danh sách mặt hàng */}
+                {/* Danh sách hàng hóa */}
                 <div>
-                  <h3 className="text-xs font-medium text-gray-500 mb-1">Danh sách mặt hàng</h3>
+                  <h3 className="text-xs font-medium text-gray-500 mb-1">Danh sách hàng hóa</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                     {goodsReceiptNote.goodsReceiptNoteDetails?.map((detail, index) => (
                       <div key={index} className="rounded border border-gray-200 bg-white p-2 flex flex-col gap-1">
@@ -753,7 +753,7 @@ export default function GoodsReceiptDetail() {
                         <TableBody>
                           {needCheckDetails.length === 0 ? (
                             <TableRow>
-                              <TableCell colSpan={11} className="text-center text-gray-500 py-8">Chưa có mặt hàng cần kiểm nhập</TableCell>
+                              <TableCell colSpan={11} className="text-center text-gray-500 py-8">Chưa có hàng hóa cần kiểm nhập</TableCell>
                             </TableRow>
                           ) : needCheckDetails.map((detail, index) => {
                             const expectedPackageQuantity = Number(detail.expectedPackageQuantity) || 0;
@@ -1181,7 +1181,7 @@ export default function GoodsReceiptDetail() {
                                   })()}
                                   className="text-center text-green-500 py-8"
                                 >
-                                  Chưa có mặt hàng đã kiểm nhập
+                                  Chưa có hàng hóa đã kiểm nhập
                                 </TableCell>
                               </TableRow>
                             ) : filteredCheckedDetails.map((detail, idx) => {
@@ -1310,8 +1310,8 @@ export default function GoodsReceiptDetail() {
                     <Plus className="w-5 h-5 text-orange-600" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-900">Kệ kê hàng</h2>
-                    <p className="text-sm text-gray-500">Quản lý kệ kê hàng và lô hàng</p>
+                    <h2 className="text-lg font-semibold text-gray-900">Pallet</h2>
+                    <p className="text-sm text-gray-500">Quản lý pallet và lô hàng</p>
                   </div>
                 </div>
                 {expandedSections.pallet ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
@@ -1349,10 +1349,10 @@ export default function GoodsReceiptDetail() {
                       {isSubmittingPallet ? (
                         <>
                           <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                          Đang tạo kệ kê hàng...
+                          Đang tạo pallet...
                         </>
                       ) : (
-                        "Tạo kệ kê hàng"
+                        "Tạo pallet"
                       )}
                     </Button>
                   )}
@@ -1458,7 +1458,7 @@ export default function GoodsReceiptDetail() {
                                 </TableHead>
                               )}
                               <TableHead className="font-semibold text-purple-900">Mã pallet</TableHead>
-                              <TableHead className="font-semibold text-purple-900">Tên sản phẩm</TableHead>
+                              <TableHead className="font-semibold text-purple-900">Tên hàng hóa</TableHead>
                               <TableHead className="font-semibold text-purple-900">Mã hàng</TableHead>
                               <TableHead className="font-semibold text-purple-900 text-center">Số lô</TableHead>
                               <TableHead className="font-semibold text-purple-900 text-center">Số thùng</TableHead>
@@ -1670,7 +1670,7 @@ export default function GoodsReceiptDetail() {
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between p-4 border-b">
               <h3 className="text-lg font-semibold text-gray-900">
-                Xem trước barcode ({selectedPallets.length} kệ kê hàng)
+                Xem trước barcode ({selectedPallets.length} pallet)
               </h3>
               <button
                 onClick={() => setShowPrintPreview(false)}

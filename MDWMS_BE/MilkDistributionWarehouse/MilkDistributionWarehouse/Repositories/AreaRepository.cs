@@ -2,6 +2,7 @@
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
+using System.Threading.Tasks;
 
 namespace MilkDistributionWarehouse.Repositories
 {
@@ -17,6 +18,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> HasDependentLocationsOrStocktakingsAsync(int areaId);
         Task<bool> VerifyStorageConditionUsage(int storageConditionId);
         Task<List<Area>> GetActiveAreasAsync();
+        Task<List<Area>> GetActiveAreasByStocktakingId();
     }
 
     public class AreaRepository : IAreaRepository
@@ -51,7 +53,7 @@ namespace MilkDistributionWarehouse.Repositories
                 {
                     AreaId = a.AreaId,
                     AreaName = a.AreaName,
-                    TotalLocations = a.Locations.Count(),
+                    TotalLocations = a.Locations.Count(l => l.Status == CommonStatus.Active),
                     AvailableLocationCount = a.Locations.Count(l => l.IsAvailable == true && l.Status == CommonStatus.Active)
                 })
                 .AsNoTracking()
@@ -118,10 +120,23 @@ namespace MilkDistributionWarehouse.Repositories
         public async Task<List<Area>> GetActiveAreasAsync()
         {
             return await _context.Areas
+                .Include(a => a.Locations)
+                .Include(a => a.StorageCondition)
                 .Where(a => a.Status == CommonStatus.Active)
                 .OrderBy(a => a.AreaName)
                 .AsNoTracking()
                 .ToListAsync();
         }
+
+        public async Task<List<Area>> GetActiveAreasByStocktakingId()
+        {
+            return await _context.Areas
+                .Where(a => a.Status == CommonStatus.Active)
+                .Include(a => a.StorageCondition)
+                .Include(a => a.Locations)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
     }
 }

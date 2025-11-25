@@ -23,7 +23,7 @@ namespace MilkDistributionWarehouse.Controllers
 
         [HttpGet("GetPurchaseOrder/{purchaseOrderId}")]
         [Authorize(Roles = "Sale Manager, Sales Representative, Warehouse Staff, Warehouse Manager")]
-        public async Task<IActionResult> GetPurchaseOrderByPurchaseOrderId(Guid purchaseOrderId)
+        public async Task<IActionResult> GetPurchaseOrderByPurchaseOrderId(string purchaseOrderId)
         {
             var (msg, purchaseOrderDetail) = await _purchaseOrderService.GetPurchaseOrderDetailById(purchaseOrderId, User.GetUserId(), User.GetUserRole());
             if (!string.IsNullOrEmpty(msg))
@@ -193,7 +193,7 @@ namespace MilkDistributionWarehouse.Controllers
 
         [HttpDelete("DeletePurchaseOrder/{purchaseOrderId}")]
         [Authorize(Roles = "Sales Representative")]
-        public async Task<IActionResult> DeletePurchaseOrder(Guid purchaseOrderId)
+        public async Task<IActionResult> DeletePurchaseOrder(string purchaseOrderId)
         {
             var (msg, purchaseOrderDelete) = await _purchaseOrderService.DeletePurchaseOrder(purchaseOrderId, User.GetUserId());
             if (!string.IsNullOrEmpty(msg))
