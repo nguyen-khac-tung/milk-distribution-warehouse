@@ -1,4 +1,4 @@
-name: Build and deploy ASP.Net Core app to Azure Web App - milkwarehouse
+name: Azure Back End CI/CD
 
 on:
   push:
@@ -14,6 +14,10 @@ jobs:
     permissions:
       contents: read
 
+    defaults:
+      run:
+        working-directory: ./MDWMS_BE/MilkDistributionWarehouse
+
     steps:
       - uses: actions/checkout@v4
 
@@ -23,16 +27,16 @@ jobs:
           dotnet-version: '8.x'
 
       - name: Build with dotnet
-        run: dotnet build MDWMS_BE --configuration Release
+        run: dotnet build --configuration Release
 
       - name: dotnet publish
-        run: dotnet publish MDWMS_BE -c Release -o ${{env.DOTNET_ROOT}}/myapp
+        run: dotnet publish -c Release -o ${{ github.workspace }}/myapp
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: .net-app
-          path: ${{env.DOTNET_ROOT}}/myapp
+          path: ${{ github.workspace }}/myapp
 
   deploy:
     runs-on: ubuntu-latest
@@ -50,9 +54,9 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.__clientidsecretname__ }}
-          tenant-id: ${{ secrets.__tenantidsecretname__ }}
-          subscription-id: ${{ secrets.__subscriptionidsecretname__ }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_8CEC02ECC6EF459CBF175886150AA5F7 }} 
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_43AFEB25761A46A88FE380089ADEC186 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F7BA94202F24402888B4A2492A08E1B0 }}
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
