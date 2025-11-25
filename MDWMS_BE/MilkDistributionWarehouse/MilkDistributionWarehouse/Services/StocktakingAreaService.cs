@@ -638,7 +638,7 @@ namespace MilkDistributionWarehouse.Services
                         UserId = stocktakingArea.StocktakingSheet.CreatedBy,
                         Title = $"Yêu cầu duyệt phân công khu vực kiểm kê.",
                         Content = $"Khu vực '{stocktakingArea.Area.AreaName}' trong phiếu kiểm kê '{stocktakingArea.StocktakingSheetId}' đã được gửi để duyệt. Vui lòng xem xét và phê duyệt.",
-                        EntityType = NotificationEntityType.StocktakingArea,
+                        EntityType = NotificationEntityType.StocktakingAreaManager,
                         EntityId = stocktakingArea.StocktakingSheetId
                     });
                     break;
@@ -648,7 +648,7 @@ namespace MilkDistributionWarehouse.Services
                         UserId = stocktakingArea.AssignTo,
                         Title = $"Khu vực đã hoàn thành kiểm kê",
                         Content = $"Khu vực '{stocktakingArea.Area.AreaName}' trong phiếu kiểm kê '{stocktakingArea.StocktakingSheetId}' đã được hoàn thành kiểm kê.",
-                        EntityType = NotificationEntityType.StocktakingArea,
+                        EntityType = NotificationEntityType.StocktakingAreaStaff,
                         EntityId = stocktakingArea.StocktakingSheetId
                     });
                     if(stocktakingArea.StocktakingSheet.Status == StocktakingStatus.Approved)
@@ -663,7 +663,7 @@ namespace MilkDistributionWarehouse.Services
                                 UserId = staffId,
                                 Title = $"Phiếu kiểm kê đã được duyệt",
                                 Content = $"Các khu vực trong phiếu kiểm kê '{stocktakingArea.StocktakingSheetId}' đã được duyệt.",
-                                EntityType = NotificationEntityType.StocktakingArea,
+                                EntityType = NotificationEntityType.StocktakingAreaStaff,
                                 EntityId = stocktakingArea.StocktakingSheetId
                             });
                         }
@@ -675,7 +675,7 @@ namespace MilkDistributionWarehouse.Services
                                 UserId = salesManager.UserId,
                                 Title = $"Phiếu kiểm kê đã được duyệt",
                                 Content = $"Phiếu '{stocktakingArea.StocktakingSheetId}' đã được duyệt. Vui lòng hoàn tất.",
-                                EntityType = NotificationEntityType.StocktakingArea,
+                                EntityType = NotificationEntityType.StocktakingAreaManager,
                                 EntityId = stocktakingArea.StocktakingSheetId
                             });
                         }

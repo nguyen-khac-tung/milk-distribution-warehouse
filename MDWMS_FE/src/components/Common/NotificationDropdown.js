@@ -125,13 +125,13 @@ const NotificationDropdown = ({
                     >
                         Quan trọng
                     </button>
-                    <button
+                    {/* <button
                         type="button"
                         onClick={onRefresh}
                         className="flex items-center gap-1 text-sm font-semibold text-slate-700 hover:text-slate-900"
                     >
                         <RefreshCw className="w-4 h-4" /> Làm mới
-                    </button>
+                    </button> */}
 
 
                     <span className="text-slate-200">|</span>
