@@ -33,7 +33,7 @@ export default function StocktakingList() {
     const [statusFilter, setStatusFilter] = useState("");
     const [showStatusFilter, setShowStatusFilter] = useState(false);
     const [showPageSizeFilter, setShowPageSizeFilter] = useState(false);
-    const [dateRangeFilter, setDateRangeFilter] = useState({ fromDate: '', toDate: '' });
+    const [startTimeFilter, setStartTimeFilter] = useState('');
     const [showDateRangeFilter, setShowDateRangeFilter] = useState(false);
     const [hasInitialLoad, setHasInitialLoad] = useState(false);
 
@@ -113,11 +113,6 @@ export default function StocktakingList() {
 
     // Helper function để tạo request params
     const createRequestParams = (overrides = {}) => {
-        let startTimeFilter = "";
-        if (dateRangeFilter.fromDate) {
-            startTimeFilter = dateRangeFilter.fromDate;
-        }
-
         return {
             pageNumber: pagination.current,
             pageSize: pagination.pageSize,
@@ -400,7 +395,9 @@ export default function StocktakingList() {
     };
 
     const handleDateRangeFilter = (value) => {
-        setDateRangeFilter(value);
+        // Nhận object từ component nhưng chỉ lấy ngày duy nhất để filter theo startTime
+        const date = value?.fromDate || value?.toDate || value || '';
+        setStartTimeFilter(date);
     };
 
     const applyDateRangeFilter = () => {
@@ -412,7 +409,7 @@ export default function StocktakingList() {
     };
 
     const clearDateRangeFilter = () => {
-        setDateRangeFilter({ fromDate: '', toDate: '' });
+        setStartTimeFilter('');
         setPagination(prev => ({ ...prev, current: 1 }));
         const requestParams = createRequestParams({
             pageNumber: 1
@@ -423,7 +420,7 @@ export default function StocktakingList() {
     const clearAllFilters = () => {
         setSearchQuery("");
         setStatusFilter("");
-        setDateRangeFilter({ fromDate: '', toDate: '' });
+        setStartTimeFilter('');
         setPagination(prev => ({ ...prev, current: 1 }));
         setShowStatusFilter(false);
         setShowDateRangeFilter(false);
@@ -512,8 +509,11 @@ export default function StocktakingList() {
                         pageSizeOptions={[10, 20, 30, 40]}
                         onPageSizeChange={handlePageSizeChangeFilter}
                         showPageSizeButton={true}
-                        dateRangeFilter={dateRangeFilter}
-                        setDateRangeFilter={setDateRangeFilter}
+                        dateRangeFilter={{ fromDate: startTimeFilter, toDate: startTimeFilter }}
+                        setDateRangeFilter={(value) => {
+                            const date = value?.fromDate || value?.toDate || value || '';
+                            setStartTimeFilter(date);
+                        }}
                         showDateRangeFilter={showDateRangeFilter}
                         setShowDateRangeFilter={setShowDateRangeFilter}
                         onDateRangeFilter={handleDateRangeFilter}
