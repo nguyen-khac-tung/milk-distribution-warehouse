@@ -550,11 +550,11 @@ export default function OrdersPage({ onClose }) {
               <TabsList className="grid w-full max-w-md grid-cols-2">
                 <TabsTrigger value="purchase" className="flex items-center gap-2">
                   <Package className="h-4 w-4" />
-                  Đơn nhập kho
+                  Nhập kho
                 </TabsTrigger>
                 <TabsTrigger value="sales" className="flex items-center gap-2">
                   <ShoppingCart className="h-4 w-4" />
-                  Đơn xuất kho
+                  Xuất kho
                 </TabsTrigger>
               </TabsList>
             </Tabs>
