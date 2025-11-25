@@ -113,12 +113,9 @@ export default function StocktakingList() {
 
     // Helper function để tạo request params
     const createRequestParams = (overrides = {}) => {
-        // Format date filter: chỉ cần 1 ngày, format "date~date" để filter đúng ngày đó
         let startTimeFilter = "";
-        const selectedDate = dateRangeFilter.fromDate || dateRangeFilter.toDate;
-        if (selectedDate) {
-            // Format: "date~date" để filter đúng ngày đó (từ đầu ngày đến cuối ngày)
-            startTimeFilter = `${selectedDate}~${selectedDate}`;
+        if (dateRangeFilter.fromDate) {
+            startTimeFilter = dateRangeFilter.fromDate;
         }
 
         return {
