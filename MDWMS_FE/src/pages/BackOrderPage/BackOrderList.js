@@ -8,6 +8,7 @@ import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
 import { Checkbox } from "../../components/ui/checkbox";
+import { Input } from "../../components/ui/input";
 import { Edit, Trash2, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Eye, Building2, Plus } from "lucide-react";
 import { BackOrderDetail } from "./ViewBackOrderModal";
 import UpdateBackOrder from "./UpdateBackOrderModal";
@@ -72,6 +73,8 @@ export default function BackOrderList() {
     })
     const [showPageSizeFilter, setShowPageSizeFilter] = useState(false)
     const [isInitialized, setIsInitialized] = useState(false)
+    const [retailerSearchQuery, setRetailerSearchQuery] = useState("")
+    const [statusSearchQuery, setStatusSearchQuery] = useState("")
 
     // Thống kê tổng (không thay đổi khi search/filter)
     const [totalStats, setTotalStats] = useState({
@@ -98,8 +101,8 @@ export default function BackOrderList() {
                 const dataArray = Array.isArray(payload.items) ? payload.items : []
                 const totalCount = payload.totalCount || dataArray.length
 
-                const activeCount = dataArray.filter((s) => s.status === 1).length
-                const inactiveCount = dataArray.filter((s) => s.status === 2).length
+                const activeCount = dataArray.filter((s) => s.statusDinamic === 'Available').length
+                const inactiveCount = dataArray.filter((s) => s.statusDinamic === 'Unavailable').length
 
                 setTotalStats({
                     totalCount: totalCount,
@@ -125,7 +128,7 @@ export default function BackOrderList() {
                 sortField: searchParams.sortField || "",
                 sortAscending: searchParams.sortAscending !== undefined ? searchParams.sortAscending : true,
                 filters: {
-                    status: searchParams.status || "",
+                    statusDinamic: searchParams.status || "",
                     retailerId: searchParams.retailerId || ""
                 }
             })
@@ -225,6 +228,11 @@ export default function BackOrderList() {
         const handleClickOutside = (event) => {
             if (showStatusFilter && !event.target.closest('.status-filter-dropdown')) {
                 setShowStatusFilter(false)
+                setStatusSearchQuery("")
+            }
+            if (showRetailerFilter && !event.target.closest('.retailer-filter-dropdown')) {
+                setShowRetailerFilter(false)
+                setRetailerSearchQuery("")
             }
             if (showPageSizeFilter && !event.target.closest('.page-size-filter-dropdown')) {
                 setShowPageSizeFilter(false)
@@ -235,7 +243,7 @@ export default function BackOrderList() {
         return () => {
             document.removeEventListener('mousedown', handleClickOutside)
         }
-    }, [showStatusFilter, showPageSizeFilter])
+    }, [showStatusFilter, showRetailerFilter, showPageSizeFilter])
 
     // Combined effect for search, filters, and sort
     useEffect(() => {
@@ -259,14 +267,20 @@ export default function BackOrderList() {
         return () => clearTimeout(timeoutId)
     }, [searchQuery, statusFilter, retailerFilter, sortField, sortAscending, isInitialized])
 
-    // Remove client-side filtering since backend already handles search and filter
+    // Filter backOrders by statusDinamic if statusFilter is set
     const filteredBackOrders = useMemo(() => {
-        // Just return the backOrders from API as they are already filtered
-        return Array.isArray(backOrders) ? backOrders : []
-    }, [backOrders])
+        if (!Array.isArray(backOrders)) return []
+        
+        // If statusFilter is set, filter by statusDinamic
+        if (statusFilter && statusFilter !== "") {
+            return backOrders.filter(bo => bo.statusDinamic === statusFilter)
+        }
+        
+        return backOrders
+    }, [backOrders, statusFilter])
 
-    const activeCount = Array.isArray(backOrders) ? backOrders.filter((s) => s.status === 1).length : 0
-    const inactiveCount = Array.isArray(backOrders) ? backOrders.filter((s) => s.status === 2).length : 0
+    const activeCount = Array.isArray(backOrders) ? backOrders.filter((s) => s.statusDinamic === 'Available').length : 0
+    const inactiveCount = Array.isArray(backOrders) ? backOrders.filter((s) => s.statusDinamic === 'Unavailable').length : 0
 
     const handleViewClick = (backOrder) => {
         setItemToView(backOrder)
@@ -378,29 +392,59 @@ export default function BackOrderList() {
     const handleStatusFilter = (status) => {
         setStatusFilter(status)
         setShowStatusFilter(false)
+        setStatusSearchQuery("") // Clear search when selecting
     }
 
     const clearStatusFilter = () => {
         setStatusFilter("")
         setShowStatusFilter(false)
+        setStatusSearchQuery("")
     }
 
     const handleRetailerFilter = (retailerId) => {
         setRetailerFilter(retailerId)
         setShowRetailerFilter(false)
+        setRetailerSearchQuery("") // Clear search when selecting
     }
 
     const clearRetailerFilter = () => {
         setRetailerFilter("")
         setShowRetailerFilter(false)
+        setRetailerSearchQuery("")
     }
+
+    // Filter retailers based on search query
+    const filteredRetailers = useMemo(() => {
+        if (!retailerSearchQuery) return retailers
+        const query = retailerSearchQuery.toLowerCase()
+        return retailers.filter(retailer => {
+            const retailerName = (retailer.companyName || retailer.retailerName || "").toLowerCase()
+            return retailerName.includes(query)
+        })
+    }, [retailers, retailerSearchQuery])
+
+    // Filter status options based on search query
+    const filteredStatusOptions = useMemo(() => {
+        const statusOptions = [
+            { value: "", label: "Tất cả trạng thái" },
+            { value: "Available", label: "Có sẵn" },
+            { value: "Unavailable", label: "Không có sẵn" }
+        ]
+        if (!statusSearchQuery) return statusOptions
+        const query = statusSearchQuery.toLowerCase()
+        return statusOptions.filter(option => 
+            option.label.toLowerCase().includes(query)
+        )
+    }, [statusSearchQuery])
 
     const handleClearAllFilters = () => {
         setSearchQuery("")
         setStatusFilter("")
         setShowStatusFilter(false)
+        setStatusSearchQuery("")
         setRetailerFilter("")
         setShowRetailerFilter(false)
+        setRetailerSearchQuery("")
     }
 
     const clearAllFilters = handleClearAllFilters
@@ -557,8 +601,8 @@ export default function BackOrderList() {
                     activeCount={totalStats.activeCount}
                     inactiveCount={totalStats.inactiveCount}
                     totalLabel="Tổng đơn bổ sung"
-                    activeLabel="Đang xử lý"
-                    inactiveLabel="Đã hoàn thành"
+                    activeLabel="Có sẵn"
+                    inactiveLabel="Không có sẵn"
                 />
 
                 {/* Search and Table Combined */}
@@ -573,8 +617,8 @@ export default function BackOrderList() {
                         setShowStatusFilter={setShowStatusFilter}
                         statusOptions={[
                             { value: "", label: "Tất cả trạng thái" },
-                            { value: "1", label: "Đang xử lý" },
-                            { value: "2", label: "Đã hoàn thành" }
+                            { value: "Available", label: "Có sẵn" },
+                            { value: "Unavailable", label: "Không có sẵn" }
                         ]}
                         onStatusFilter={handleStatusFilter}
                         clearStatusFilter={clearStatusFilter}
@@ -590,6 +634,14 @@ export default function BackOrderList() {
                         showToggle={true}
                         defaultOpen={true}
                         showClearButton={true}
+                        enableRetailerSearch={true}
+                        enableStatusSearch={true}
+                        retailerSearchQuery={retailerSearchQuery}
+                        setRetailerSearchQuery={setRetailerSearchQuery}
+                        statusSearchQuery={statusSearchQuery}
+                        setStatusSearchQuery={setStatusSearchQuery}
+                        filteredRetailers={filteredRetailers}
+                        filteredStatusOptions={filteredStatusOptions}
                     />
 
                     {/* Table */}

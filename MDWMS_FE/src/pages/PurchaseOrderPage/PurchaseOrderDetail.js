@@ -91,7 +91,8 @@ const PurchaseOrderDetail = () => {
             7: 'bg-orange-100 text-orange-800', // Receiving
             8: 'bg-indigo-100 text-indigo-800', // Inspected
             9: 'bg-emerald-100 text-emerald-800', // Completed
-            10: 'bg-green-100 text-green-800' // Ordered
+            10: 'bg-green-100 text-green-800', // Ordered
+            11: 'bg-cyan-100 text-cyan-800' // AwaitingArrival
         };
         return statusColors[status] || 'bg-gray-100 text-gray-800';
     };
@@ -107,7 +108,8 @@ const PurchaseOrderDetail = () => {
             7: <Package className="h-3 w-3" />, // Receiving
             8: <CheckSquare className="h-3 w-3" />, // Inspected
             9: <CheckCircle className="h-3 w-3" />, // Completed
-            10: <ShoppingCart className="h-3 w-3" /> // Ordered
+            10: <ShoppingCart className="h-3 w-3" />, // Ordered
+            11: <Clock className="h-3 w-3" /> // AwaitingArrival
         };
         return statusIcons[status] || <Clock className="h-3 w-3" />;
     };
@@ -123,7 +125,8 @@ const PurchaseOrderDetail = () => {
             7: 'Đang tiếp nhận',
             8: 'Đã kiểm nhập',
             9: 'Đã nhập kho',
-            10: 'Đã đặt hàng'
+            10: 'Đã đặt hàng',
+            11: 'Chờ đến'
         };
         return statusTexts[status] || 'Không xác định';
     };
@@ -198,24 +201,26 @@ const PurchaseOrderDetail = () => {
         if (purchaseOrder?.arrivalConfirmedBy || purchaseOrder?.arrivalConfirmedAt) {
             return false;
         }
-        
+
         // Cho phép xác nhận giao đến khi:
         // - Approved: đã duyệt (cho phép xác nhận giao đến)
         // - Ordered: đã đặt hàng (có thể xác nhận giao đến trước hoặc sau phân công)
         // - AssignedForReceiving: đã phân công (cho phép xác nhận giao đến sau khi phân công)
+        // - AwaitingArrival: Chờ đến (nhân viên/QL kho có thể xác nhận đến)
         // Không cho phép khi status là GoodsReceived (đã xác nhận)
         return hasPermission(PERMISSIONS.PURCHASE_ORDER_CONFIRM_GOODS_RECEIVED) &&
             purchaseOrder?.status !== PURCHASE_ORDER_STATUS.GoodsReceived &&
             (purchaseOrder?.status === PURCHASE_ORDER_STATUS.Approved ||
-             purchaseOrder?.status === PURCHASE_ORDER_STATUS.Ordered ||
-             purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving);
+                purchaseOrder?.status === PURCHASE_ORDER_STATUS.Ordered ||
+                purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving ||
+                purchaseOrder?.status === PURCHASE_ORDER_STATUS.AwaitingArrival);
     };
 
     const canAssignReceiving = () => {
         // Cho phép phân công khi status là Ordered hoặc GoodsReceived
         return hasPermission(PERMISSIONS.PURCHASE_ORDER_ASSIGN_FOR_RECEIVING) &&
             (purchaseOrder?.status === PURCHASE_ORDER_STATUS.Ordered ||
-             purchaseOrder?.status === PURCHASE_ORDER_STATUS.GoodsReceived);
+                purchaseOrder?.status === PURCHASE_ORDER_STATUS.GoodsReceived);
     };
 
     const canReAssignReceiving = () => {
@@ -257,6 +262,11 @@ const PurchaseOrderDetail = () => {
 
         // Cho phép khi status là Ordered (10)
         if (purchaseOrder?.status === PURCHASE_ORDER_STATUS.Ordered) {
+            return true;
+        }
+
+        // Cho phép khi status là AwaitingArrival (11)
+        if (purchaseOrder?.status === PURCHASE_ORDER_STATUS.AwaitingArrival) {
             return true;
         }
 
@@ -530,7 +540,7 @@ const PurchaseOrderDetail = () => {
                                         {/* Left: Supplier */}
                                         <div className="flex items-center space-x-2 min-w-0">
                                             <Store className="h-4 w-4 text-green-600 flex-shrink-0" />
-                                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0 w-[85px]">Nhà cung cấp:</label>
+                                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0 w-[115px]">Nhà cung cấp:</label>
                                             <span className="text-sm font-semibold text-gray-900 bg-gray-200 px-3 py-1 rounded border whitespace-nowrap flex-1">
                                                 {purchaseOrder.supplierName || 'Chưa có thông tin'}
                                             </span>
@@ -551,7 +561,7 @@ const PurchaseOrderDetail = () => {
                                         {/* Left: Email */}
                                         <div className="flex items-center space-x-2 min-w-0">
                                             <Mail className="h-4 w-4 text-orange-600 flex-shrink-0" />
-                                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0 w-[85px]">Email:</label>
+                                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0 w-[115px]">Email:</label>
                                             <span className="text-sm text-gray-900 bg-gray-200 px-3 py-1 rounded border whitespace-nowrap flex-1">
                                                 {purchaseOrder.email || 'Chưa có thông tin'}
                                             </span>
@@ -592,7 +602,7 @@ const PurchaseOrderDetail = () => {
                                     <TableHeader>
                                         <TableRow className="bg-gray-100">
                                             <TableHead className="w-16 text-center font-semibold">STT</TableHead>
-                                            <TableHead className="font-semibold"style={{ minWidth: '120px' }}>Mã hàng hóa</TableHead>
+                                            <TableHead className="font-semibold" style={{ minWidth: '120px' }}>Mã hàng hóa</TableHead>
                                             <TableHead className="font-semibold" style={{ minWidth: '120px' }}>Tên hàng hóa</TableHead>
                                             <TableHead className="text-center font-semibold" style={{ minWidth: '119px' }}>Đơn vị/thùng</TableHead>
                                             <TableHead className="text-center font-semibold">Số thùng</TableHead>

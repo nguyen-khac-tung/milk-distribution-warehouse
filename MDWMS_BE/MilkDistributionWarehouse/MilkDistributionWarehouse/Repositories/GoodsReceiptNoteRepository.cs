@@ -6,7 +6,7 @@ namespace MilkDistributionWarehouse.Repositories
 {
     public interface IGoodsReceiptNoteRepository
     {
-        IQueryable<GoodsReceiptNote?> GetGRN();
+        IQueryable<GoodsReceiptNote> GetGRN();
         Task<GoodsReceiptNote?> GetGoodsReceiptNoteById(Guid grnId);
         Task<GoodsReceiptNote?> CreateGoodsReceiptNote(GoodsReceiptNote create);
         Task<GoodsReceiptNote?> UpdateGoodsReceiptNote(GoodsReceiptNote update);

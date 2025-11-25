@@ -71,6 +71,12 @@ export default function GoodsPage() {
   const [isInitialized, setIsInitialized] = useState(false)
   const [statsLoaded, setStatsLoaded] = useState(false)
 
+  // Search queries for filter dropdowns
+  const [statusSearchQuery, setStatusSearchQuery] = useState("")
+  const [categorySearchQuery, setCategorySearchQuery] = useState("")
+  const [supplierSearchQuery, setSupplierSearchQuery] = useState("")
+  const [unitMeasureSearchQuery, setUnitMeasureSearchQuery] = useState("")
+
   // Dropdown data for filters
   const [categories, setCategories] = useState([])
   const [suppliers, setSuppliers] = useState([])
@@ -472,52 +478,105 @@ export default function GoodsPage() {
     setGoodDetail(null)
   }
 
+  // Filter retailers, categories, suppliers, unit measures based on search query
+  const filteredCategories = useMemo(() => {
+    if (!categorySearchQuery) return categories
+    const query = categorySearchQuery.toLowerCase()
+    return categories.filter(category => {
+      const categoryName = (category.categoryName || "").toLowerCase()
+      return categoryName.includes(query)
+    })
+  }, [categories, categorySearchQuery])
+
+  const filteredSuppliers = useMemo(() => {
+    if (!supplierSearchQuery) return suppliers
+    const query = supplierSearchQuery.toLowerCase()
+    return suppliers.filter(supplier => {
+      const supplierName = (supplier.companyName || "").toLowerCase()
+      return supplierName.includes(query)
+    })
+  }, [suppliers, supplierSearchQuery])
+
+  const filteredUnitMeasures = useMemo(() => {
+    if (!unitMeasureSearchQuery) return unitMeasures
+    const query = unitMeasureSearchQuery.toLowerCase()
+    return unitMeasures.filter(unit => {
+      const unitName = (unit.name || "").toLowerCase()
+      return unitName.includes(query)
+    })
+  }, [unitMeasures, unitMeasureSearchQuery])
+
+  const filteredStatusOptions = useMemo(() => {
+    const statusOptions = [
+      { value: "", label: "Tất cả trạng thái" },
+      { value: "1", label: "Đang Phân Phối" },
+      { value: "2", label: "Ngừng Phân Phối" }
+    ]
+    if (!statusSearchQuery) return statusOptions
+    const query = statusSearchQuery.toLowerCase()
+    return statusOptions.filter(option => 
+      option.label.toLowerCase().includes(query)
+    )
+  }, [statusSearchQuery])
+
   const handleStatusFilter = (status) => {
     setStatusFilter(status)
     setShowStatusFilter(false)
+    setStatusSearchQuery("")
   }
 
   const clearStatusFilter = () => {
     setStatusFilter("")
     setShowStatusFilter(false)
+    setStatusSearchQuery("")
   }
 
   const handleCategoryFilter = (categoryId) => {
     setCategoryFilter(categoryId)
     setShowCategoryFilter(false)
+    setCategorySearchQuery("")
   }
 
   const clearCategoryFilter = () => {
     setCategoryFilter("")
     setShowCategoryFilter(false)
+    setCategorySearchQuery("")
   }
 
   const handleSupplierFilter = (supplierId) => {
     setSupplierFilter(supplierId)
     setShowSupplierFilter(false)
+    setSupplierSearchQuery("")
   }
 
   const clearSupplierFilter = () => {
     setSupplierFilter("")
     setShowSupplierFilter(false)
+    setSupplierSearchQuery("")
   }
 
   const handleUnitMeasureFilter = (unitMeasureId) => {
     setUnitMeasureFilter(unitMeasureId)
     setShowUnitMeasureFilter(false)
+    setUnitMeasureSearchQuery("")
   }
 
   const clearUnitMeasureFilter = () => {
     setUnitMeasureFilter("")
     setShowUnitMeasureFilter(false)
+    setUnitMeasureSearchQuery("")
   }
 
   const clearAllFilters = () => {
     setSearchQuery("")
     setStatusFilter("")
+    setStatusSearchQuery("")
     setCategoryFilter("")
+    setCategorySearchQuery("")
     setSupplierFilter("")
+    setSupplierSearchQuery("")
     setUnitMeasureFilter("")
+    setUnitMeasureSearchQuery("")
     setShowStatusFilter(false)
     setShowCategoryFilter(false)
     setShowSupplierFilter(false)
@@ -646,6 +705,10 @@ export default function GoodsPage() {
             ]}
             onStatusFilter={handleStatusFilter}
             clearStatusFilter={clearStatusFilter}
+            enableStatusSearch={true}
+            statusSearchQuery={statusSearchQuery}
+            setStatusSearchQuery={setStatusSearchQuery}
+            filteredStatusOptions={filteredStatusOptions}
             // Category Filter
             categoryFilter={categoryFilter}
             setCategoryFilter={setCategoryFilter}
@@ -654,6 +717,10 @@ export default function GoodsPage() {
             categories={categories}
             onCategoryFilter={handleCategoryFilter}
             clearCategoryFilter={clearCategoryFilter}
+            enableCategorySearch={true}
+            categorySearchQuery={categorySearchQuery}
+            setCategorySearchQuery={setCategorySearchQuery}
+            filteredCategories={filteredCategories}
             // Supplier Filter
             supplierFilter={supplierFilter}
             setSupplierFilter={setSupplierFilter}
@@ -662,6 +729,10 @@ export default function GoodsPage() {
             suppliers={suppliers}
             onSupplierFilter={handleSupplierFilter}
             clearSupplierFilter={clearSupplierFilter}
+            enableSupplierSearch={true}
+            supplierSearchQuery={supplierSearchQuery}
+            setSupplierSearchQuery={setSupplierSearchQuery}
+            filteredSuppliers={filteredSuppliers}
             // Unit Measure Filter
             unitMeasureFilter={unitMeasureFilter}
             setUnitMeasureFilter={setUnitMeasureFilter}
@@ -670,6 +741,10 @@ export default function GoodsPage() {
             unitMeasures={unitMeasures}
             onUnitMeasureFilter={handleUnitMeasureFilter}
             clearUnitMeasureFilter={clearUnitMeasureFilter}
+            enableUnitMeasureSearch={true}
+            unitMeasureSearchQuery={unitMeasureSearchQuery}
+            setUnitMeasureSearchQuery={setUnitMeasureSearchQuery}
+            filteredUnitMeasures={filteredUnitMeasures}
             onClearAll={clearAllFilters}
           />
 
