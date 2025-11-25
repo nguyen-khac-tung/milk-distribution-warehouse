@@ -254,7 +254,8 @@
         public const int StocktakingSheet = 7;
         public const int InventoryReport = 8;
         public const int NoNavigation = 9;
-        public const int StocktakingArea = 10;
+        public const int StocktakingAreaStaff = 10;
+        public const int StocktakingAreaManager = 11;
     }
 
     public static class StocktakingSettings
