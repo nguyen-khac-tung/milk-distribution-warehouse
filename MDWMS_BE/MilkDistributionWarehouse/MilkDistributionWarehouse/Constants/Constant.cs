@@ -272,7 +272,9 @@
         public const int Issue = 2;
         public const int Disposal = 3;
     }
-
+    /// <summary>
+    /// Các cấu hình cho Scheduled Notifications
+    /// </summary>
     public static class InventoryConfig
     {
         public const int NotificationHour = 9; // Giờ chạy thông báo (0-23)
