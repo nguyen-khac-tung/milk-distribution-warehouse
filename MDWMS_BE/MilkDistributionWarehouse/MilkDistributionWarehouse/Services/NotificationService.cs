@@ -222,8 +222,7 @@ namespace MilkDistributionWarehouse.Services
         {
             var errorMessage = "Trang này hiện tại không tìm thấy.".ToMessageForUser();
 
-            if (notification.EntityId.IsNullOrEmpty() || notification.EntityType == null)
-                return errorMessage;
+            if (notification.EntityType == null) return errorMessage;
 
             switch (notification.EntityType)
             {
