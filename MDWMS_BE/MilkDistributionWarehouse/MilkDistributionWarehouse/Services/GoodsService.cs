@@ -18,6 +18,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, List<GoodsDropDown>?)> GetGoodsDropDown();
         Task<(string, List<GoodsDropDownAndUnitMeasure>?)> GetGoodsDropDownBySupplierId(int supplierId);
         Task<(string, List<GoodsInventoryDto>?)> GetGoodsInventoryBySupplierId(int supplierId);
+        Task PerformDailyGoodsCheck();
         Task<(string, GoodsDetail?)> GetGoodsByGoodsId(int goodsId);
         Task<(string, GoodsDto?)> CreateGoods(GoodsCreate goodsCreate);
         Task<(string, GoodsBulkdResponse)> CreateGoodsBulk(GoodsBulkCreate create);
@@ -36,9 +37,16 @@ namespace MilkDistributionWarehouse.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICacheService _cacheService;
         private readonly IGoodsPackingService _goodsPackingService;
+        private readonly IPalletRepository _palletRepository;
+        private readonly IBatchRepository _batchRepository;
+        private readonly IUserRepository _userRepository;
+        private readonly INotificationService _notificationService;
+        private readonly IInventoryLedgerService _inventoryLedgerService;
+
         public GoodsService(IGoodsRepository goodRepository, IMapper mapper, ICategoryRepository categoryRepository, ISalesOrderRepository salesOrderRepository,
-            IUnitMeasureRepository unitMeasureRepository, IStorageConditionRepository storageConditionRepository,
-            IUnitOfWork unitOfWork, ICacheService cacheService, IGoodsPackingService goodsPackingService)
+            IUserRepository userRepository, IUnitMeasureRepository unitMeasureRepository, IStorageConditionRepository storageConditionRepository,
+            IPalletRepository palletRepository, IUnitOfWork unitOfWork, ICacheService cacheService, IGoodsPackingService goodsPackingService,
+            IBatchRepository batchRepository, INotificationService notificationService, IInventoryLedgerService inventoryLedgerService)
         {
             _goodRepository = goodRepository;
             _mapper = mapper;
@@ -49,6 +57,11 @@ namespace MilkDistributionWarehouse.Services
             _unitOfWork = unitOfWork;
             _cacheService = cacheService;
             _goodsPackingService = goodsPackingService;
+            _palletRepository = palletRepository;
+            _batchRepository = batchRepository;
+            _userRepository = userRepository;
+            _notificationService = notificationService;
+            _inventoryLedgerService = inventoryLedgerService;
         }
 
         public async Task<(string, PageResult<GoodsDto>?)> GetGoods(PagedRequest request)
@@ -101,7 +114,7 @@ namespace MilkDistributionWarehouse.Services
                 goodsDto.GoodsPackings.ForEach(packing =>
                 {
                     var packageQuantityOnHand = goods?.Batches.SelectMany(b => b.Pallets)
-                                                      .Where(p => p.GoodsPackingId == packing.GoodsPackingId 
+                                                      .Where(p => p.GoodsPackingId == packing.GoodsPackingId
                                                                 && p.Status == CommonStatus.Active
                                                                 && p.Batch.ExpiryDate >= DateOnly.FromDateTime(DateTime.Now))
                                                       .Sum(p => p.PackageQuantity) ?? 0;
@@ -189,6 +202,32 @@ namespace MilkDistributionWarehouse.Services
 
             _cacheService.InvalidateDropdownCache("Goods", "Supplier", createResult.SupplierId);
 
+            try
+            {
+                if (createResult.GoodsPackings != null && createResult.GoodsPackings.Any())
+                {
+                    var ledgerDtos = createResult.GoodsPackings.Select(p => new InventoryLedgerRequestDto
+                    {
+                        GoodsId = createResult.GoodsId,
+                        GoodPackingId = p.GoodsPackingId,
+                        EventDate = DateTime.Now,
+                        InQty = 0,
+                        OutQty = 0,
+                        BalanceAfter = 0,
+                        TypeChange = null
+                    }).ToList();
+
+                    if (ledgerDtos.Any())
+                    {
+                        var (invErr, _) = await _inventoryLedgerService.CreateInventoryLedgerBulk(ledgerDtos);
+                    }
+                }
+            }
+            catch
+            {
+                return ("Tạo sổ cái thất bại!".ToMessageForUser(), default);
+            }
+
             return ("", _mapper.Map<GoodsDto>(createResult));
         }
 
@@ -241,6 +280,45 @@ namespace MilkDistributionWarehouse.Services
                     result.TotalInserted = validGoods.Count;
                 }
                 await _unitOfWork.CommitTransactionAsync();
+
+                try
+                {
+                    if (result.TotalInserted > 0)
+                    {
+                        var createdGoods = await _goodRepository.GetGoods()
+                            .Where(g => goodsCodeCreate.Contains(g.GoodsCode))
+                            .Include(g => g.GoodsPackings)
+                            .ToListAsync();
+
+                        var ledgerDtos = new List<InventoryLedgerRequestDto>();
+                        foreach (var g in createdGoods)
+                        {
+                            if (g.GoodsPackings == null) continue;
+                            foreach (var p in g.GoodsPackings)
+                            {
+                                ledgerDtos.Add(new InventoryLedgerRequestDto
+                                {
+                                    GoodsId = g.GoodsId,
+                                    GoodPackingId = p.GoodsPackingId,
+                                    EventDate = DateTime.Now,
+                                    InQty = 0,
+                                    OutQty = 0,
+                                    BalanceAfter = 0,
+                                    TypeChange = null
+                                });
+                            }
+                        }
+
+                        if (ledgerDtos.Any())
+                        {
+                            var (invErr, _) = await _inventoryLedgerService.CreateInventoryLedgerBulk(ledgerDtos);
+                        }
+                    }
+                }
+                catch
+                {
+                    return ("Tạo sổ cái thất bại!".ToMessageForUser(), default);
+                }
 
                 return ("", result);
             }
@@ -402,6 +480,54 @@ namespace MilkDistributionWarehouse.Services
             }
 
             return null;
+        }
+
+        public async Task PerformDailyGoodsCheck()
+        {
+            var warehouseManagers = await _userRepository.GetUsersByRoleId(RoleType.WarehouseManager);
+            var saleManagers = await _userRepository.GetUsersByRoleId(RoleType.SaleManager);
+            var notifications = new List<NotificationCreateDto>();
+
+            var expiringBatches = await _batchRepository.GetExpiringBatches(InventoryConfig.DaysBeforeExpiryWarning);
+            foreach (var batch in expiringBatches ?? new List<Batch>())
+            {
+                notifications.Add(new NotificationCreateDto
+                {
+                    UserId = warehouseManagers?.FirstOrDefault()?.UserId,
+                    Title = "Cảnh báo hàng sắp hết hạn",
+                    Content = $"Lô '{batch.BatchCode}' ({batch.Goods.GoodsName}) hết hạn ngày {batch.ExpiryDate:dd/MM/yyyy}. Còn dưới {InventoryConfig.DaysBeforeExpiryWarning} ngày.",
+                    Category = NotificationCategory.Important,
+                    EntityType = NotificationEntityType.InventoryReport
+                });
+            }
+
+            var misstoredPallets = await _palletRepository.GetMisstoredPallets();
+            foreach (var pallet in misstoredPallets ?? new List<Pallet>())
+            {
+                notifications.Add(new NotificationCreateDto
+                {
+                    UserId = warehouseManagers?.FirstOrDefault()?.UserId,
+                    Title = "Cảnh báo sai điều kiện bảo quản",
+                    Content = $"Pallet '{pallet.PalletId}' ({pallet.Batch.Goods.GoodsName}) đang ở vị trí {pallet.Location.LocationCode}. Sai điều kiện bảo quản!",
+                    Category = NotificationCategory.Important,
+                    EntityType = NotificationEntityType.NoNavigation
+                });
+            }
+
+            var lowStockGoods = await _goodRepository.GetLowStockGoods(InventoryConfig.LowStockThreshold);
+            foreach (var item in lowStockGoods ?? new List<LowStockGoodsDto>())
+            {
+                notifications.Add(new NotificationCreateDto
+                {
+                    UserId = saleManagers?.FirstOrDefault()?.UserId,
+                    Title = "Cảnh báo hàng tồn kho thấp",
+                    Content = $"Mã hàng hóa '{item.GoodsCode} - {item.GoodsName}', đóng gói {item.UnitPerPackage} {item.UnitMeasureName}/thùng chỉ còn {item.TotalPackage} thùng.",
+                    Category = NotificationCategory.Normal,
+                    EntityType = NotificationEntityType.InventoryReport,
+                });
+            }
+
+            if (notifications.Any()) await _notificationService.CreateNotificationBulk(notifications);
         }
 
         private async Task<bool> CheckValidationDeleteGoods(int goodsId)

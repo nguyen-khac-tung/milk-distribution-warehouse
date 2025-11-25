@@ -36,10 +36,12 @@ namespace MilkDistributionWarehouse.Services
         private readonly IPalletRepository _palletRepository;
         private readonly ISalesOrderRepository _saleOrderRepository;
         private readonly ISupplierRepository _supplierRepository;
+        private readonly INotificationService _notificationService;
         public PurchaseOrderService(IPurchaseOrderRepositoy purchaseOrderRepository, IMapper mapper, IPurchaseOrderDetailService purchaseOrderDetailService,
             IPurchaseOrderDetailRepository purchaseOrderDetailRepository, IUnitOfWork unitOfWork, IGoodsReceiptNoteService goodsReceiptNoteService,
             IUserRepository userRepository, IPalletRepository palletRepository,
-            ISalesOrderRepository salesOrderRepository, ISupplierRepository supplierRepository)
+            ISalesOrderRepository salesOrderRepository, ISupplierRepository supplierRepository, 
+            INotificationService notificationService)
         {
             _purchaseOrderRepository = purchaseOrderRepository;
             _mapper = mapper;
@@ -51,6 +53,7 @@ namespace MilkDistributionWarehouse.Services
             _palletRepository = palletRepository;
             _saleOrderRepository = salesOrderRepository;
             _supplierRepository = supplierRepository;
+            _notificationService = notificationService;
         }
 
         private async Task<(string, PageResult<TDto>?)> GetPurchaseOrdersAsync<TDto>(PagedRequest request, int? userId, string? userRole, params int[] excludedStatuses)
@@ -215,7 +218,7 @@ namespace MilkDistributionWarehouse.Services
 
                 var supplier = await _supplierRepository.GetSupplierBySupplierId(create.SupplierId);
 
-                if(supplier == null)
+                if (supplier == null)
                     throw new Exception("Nhà cung cấp không tồn tại.".ToMessageForUser());
 
                 purchaseOrderCreate.PurchaseOderId = PrimaryKeyUtility.GenerateKey(supplier.BrandName ?? "SUP", "PO");
@@ -318,6 +321,10 @@ namespace MilkDistributionWarehouse.Services
             if (purchaseOrder == null) return ("Purchase order is not exist.", default);
 
             var currentStatus = purchaseOrder.Status;
+            bool isReassignmentAction = false;
+            List<int>? removedAssignees = null;
+            List<int>? newAssignees = null;
+            bool isEstimatedArrivalUpdated = false;
 
             try
             {
@@ -397,6 +404,7 @@ namespace MilkDistributionWarehouse.Services
                     purchaseOrder.EstimatedTimeArrival = orderOrderedUpdateDto.EstimatedTimeArrival;
                     purchaseOrder.DeliveryDateChangeReason = orderOrderedUpdateDto.DeliveryDateChangeReason;
                     purchaseOrder.UpdatedAt = DateTime.Now;
+                    isEstimatedArrivalUpdated = true;
                 }
 
                 if (purchaseOrdersUpdateStatus is PurchaseOrderGoodsReceivedDto)
@@ -445,8 +453,20 @@ namespace MilkDistributionWarehouse.Services
                     //if (!string.IsNullOrEmpty(msg))
                     //    throw new Exception(msg.ToMessageForUser());
 
+                    var previousAssignee = purchaseOrder.AssignTo;
+
+                    if (previousAssignee.HasValue)
+                    {
+                        removedAssignees ??= new List<int>();
+                        removedAssignees.Add(previousAssignee.Value);
+                    }
+
                     purchaseOrder.AssignTo = reAssignForReceivingDto.ReAssignTo;
                     purchaseOrder.AssignedAt = DateTime.Now;
+
+                    newAssignees ??= new List<int>();
+                    newAssignees.Add(reAssignForReceivingDto.ReAssignTo);
+                    isReassignmentAction = true;
                 }
 
                 if (purchaseOrdersUpdateStatus is PurchaseOrderReceivingDto)
@@ -480,6 +500,8 @@ namespace MilkDistributionWarehouse.Services
                 purchaseOrder.UpdatedAt = DateTime.Now;
                 await _purchaseOrderRepository.UpdatePurchaseOrder(purchaseOrder);
                 await _unitOfWork.CommitTransactionAsync();
+
+                await HandleStatusChangeNotification(purchaseOrder, isReassignmentAction, removedAssignees, newAssignees, isEstimatedArrivalUpdated);
 
                 return ("", purchaseOrdersUpdateStatus);
             }
@@ -564,7 +586,6 @@ namespace MilkDistributionWarehouse.Services
 
             return "";
         }
-
         private bool AreDetailListsPOEqual(ICollection<PurchaseOderDetail> d1, ICollection<PurchaseOderDetail> d2)
         {
             if (d1 == null || d2 == null) return false;
@@ -579,8 +600,6 @@ namespace MilkDistributionWarehouse.Services
             return dic1.Count == dic2.Count &&
                    dic1.All(kvp => dic2.TryGetValue(kvp.Key, out var c) && c == kvp.Value);
         }
-
-
         private async Task<string> CheckAssignedForReceivingPO(int assignTo, PurchaseOrder purchaseOrder)
         {
             if (assignTo <= 0)
@@ -627,6 +646,210 @@ namespace MilkDistributionWarehouse.Services
                 return "Không thể hoàn thành đơn mua hàng. Hàng hoá chưa được sắp xếp vào pallet.";
 
             return "";
+        }
+        private async Task HandleStatusChangeNotification(
+            PurchaseOrder purchaseOrder,
+            bool isReassignment = false,
+            List<int>? removedAssignees = null,
+            List<int>? newAssignees = null,
+            bool isEstimatedArrivalUpdated = false)
+        {
+            var notificationStatusChange = new List<NotificationCreateDto>();
+            switch (purchaseOrder.Status)
+            {
+                case PurchaseOrderStatus.PendingApproval:
+
+                    var salesManagers = await _userRepository.GetUsersByRoleId(RoleType.SaleManager);
+                    foreach (var salesManager in salesManagers)
+                    {
+                        notificationStatusChange.Add(new NotificationCreateDto
+                        {
+                            UserId = salesManager.UserId,
+                            Title = "Đơn mua hàng chờ duyệt",
+                            Content = $"Đơn mua hàng '{purchaseOrder.PurchaseOderId}' đang chờ duyệt.",
+                            EntityType = NotificationEntityType.PurchaseOrder,
+                            EntityId = purchaseOrder.PurchaseOderId
+                        });
+                    }
+                    break;
+                case PurchaseOrderStatus.Approved:
+                    notificationStatusChange.Add(new NotificationCreateDto
+                    {
+                        UserId = purchaseOrder.CreatedBy,
+                        Title = "Đơn mua hàng đã được duyệt",
+                        Content = $"Đơn mua hàng '{purchaseOrder.PurchaseOderId}' đã được duyệt.",
+                        EntityType = NotificationEntityType.PurchaseOrder,
+                        EntityId = purchaseOrder.PurchaseOderId
+                    });
+                    break;
+                case PurchaseOrderStatus.Rejected:
+                    notificationStatusChange.Add(new NotificationCreateDto
+                    {
+                        UserId = purchaseOrder.CreatedBy,
+                        Title = "Đơn mua hàng bị từ chối",
+                        Content = $"Đơn mua hàng '{purchaseOrder.PurchaseOderId}' đã bị từ chối.",
+                        EntityType = NotificationEntityType.PurchaseOrder,
+                        EntityId = purchaseOrder.PurchaseOderId,
+                        Category = NotificationCategory.Important
+                    });
+                    break;
+                case PurchaseOrderStatus.Ordered:
+                    var orderedTitle = isEstimatedArrivalUpdated
+                        ? "Ngày giao hàng dự kiến thay đổi"
+                        : "Đơn mua hàng đã được đặt";
+                    var orderedContent = isEstimatedArrivalUpdated
+                        ? $"Đơn mua hàng '{purchaseOrder.PurchaseOderId}' vừa cập nhật thời gian giao hàng dự kiến."
+                        : $"Đơn mua hàng '{purchaseOrder.PurchaseOderId}' đã được đặt.";
+                    var warehouseManagers = await _userRepository.GetUsersByRoleId(RoleType.WarehouseManager);
+                    foreach (var warehouseManager in warehouseManagers)
+                    {
+                        notificationStatusChange.Add(new NotificationCreateDto
+                        {
+                            UserId = warehouseManager.UserId,
+                            Title = orderedTitle,
+                            Content = orderedContent,
+                            EntityType = NotificationEntityType.PurchaseOrder,
+                            EntityId = purchaseOrder.PurchaseOderId
+                        });
+                    }
+                    salesManagers = await _userRepository.GetUsersByRoleId(RoleType.SaleManager);
+                    foreach (var salesManager in salesManagers)
+                    {
+                        notificationStatusChange.Add(new NotificationCreateDto
+                        {
+                            UserId = salesManager.UserId,
+                            Title = orderedTitle,
+                            Content = orderedContent,
+                            EntityType = NotificationEntityType.PurchaseOrder,
+                            EntityId = purchaseOrder.PurchaseOderId
+                        });
+                    }
+                    break;
+                case PurchaseOrderStatus.AwaitingArrival:
+                    if (!isReassignment)
+                    {
+                        notificationStatusChange.Add(new NotificationCreateDto
+                        {
+                            UserId = purchaseOrder.AssignTo,
+                            Title = "Đơn mua hàng đã được phân công và đang chờ đến",
+                            Content = $"Bạn đã được phân công nhận đơn mua hàng '{purchaseOrder.PurchaseOderId}' và đang chờ đến.",
+                            EntityType = NotificationEntityType.PurchaseOrder,
+                            EntityId = purchaseOrder.PurchaseOderId,
+                        });
+                    }
+                    break;
+                case PurchaseOrderStatus.GoodsReceived:
+                    var warehouseStaffAssign = purchaseOrder.AssignTo;
+                    if (warehouseStaffAssign != null)
+                    {
+                        notificationStatusChange.Add(new NotificationCreateDto
+                        {
+                            UserId = warehouseStaffAssign,
+                            Title = "Đơn mua hàng đã được xác nhận đến",
+                            Content = $"Đơn mua hàng '{purchaseOrder.PurchaseOderId}' đã được xác nhận đến.",
+                            EntityType = NotificationEntityType.PurchaseOrder,
+                            EntityId = purchaseOrder.PurchaseOderId,
+                            Category = NotificationCategory.Important
+                        });
+                    }
+                    break;
+                case PurchaseOrderStatus.AssignedForReceiving:
+                    if (!isReassignment)
+                    {
+                        notificationStatusChange.Add(new NotificationCreateDto
+                        {
+                            UserId = purchaseOrder.AssignTo,
+                            Title = "Đơn mua hàng đã được phân công và đã đến",
+                            Content = $"Bạn đã được phân công nhận đơn mua hàng '{purchaseOrder.PurchaseOderId}'.",
+                            EntityType = NotificationEntityType.PurchaseOrder,
+                            EntityId = purchaseOrder.PurchaseOderId
+                        });
+                    }
+                    break;
+                case PurchaseOrderStatus.Receiving:
+                    notificationStatusChange.Add(new NotificationCreateDto
+                    {
+                        UserId = purchaseOrder.ArrivalConfirmedBy,
+                        Title = "Đơn mua hàng đang được tiếp nhận",
+                        Content = $"Đơn mua hàng '{purchaseOrder.PurchaseOderId}' đang được tiếp nhận.",
+                        EntityType = NotificationEntityType.PurchaseOrder,
+                        EntityId = purchaseOrder.PurchaseOderId
+                    });
+                    break;
+                case PurchaseOrderStatus.Inspected:
+                    notificationStatusChange.Add(new NotificationCreateDto
+                    {
+                        UserId = purchaseOrder.ArrivalConfirmedBy,
+                        Title = "Đơn mua hàng đã được kiểm tra",
+                        Content = $"Đơn mua hàng '{purchaseOrder.PurchaseOderId}' đã được kiểm tra.",
+                        EntityType = NotificationEntityType.PurchaseOrder,
+                        EntityId = purchaseOrder.PurchaseOderId
+                    });
+                    break;
+                case PurchaseOrderStatus.Completed:
+                    notificationStatusChange.Add(new NotificationCreateDto
+                    {
+                        UserId = purchaseOrder.ArrivalConfirmedBy,
+                        Title = "Đơn mua hàng đã hoàn thành",
+                        Content = $"Đơn mua hàng '{purchaseOrder.PurchaseOderId}' đã hoàn thành.",
+                        EntityType = NotificationEntityType.PurchaseOrder,
+                        EntityId = purchaseOrder.PurchaseOderId,
+                    });
+                    notificationStatusChange.Add(new NotificationCreateDto
+                    {
+                        UserId = purchaseOrder.CreatedBy,
+                        Title = "Đơn mua hàng đã hoàn thành",
+                        Content = $"Đơn mua hàng '{purchaseOrder.PurchaseOderId}' đã hoàn thành.",
+                        EntityType = NotificationEntityType.PurchaseOrder,
+                        EntityId = purchaseOrder.PurchaseOderId,
+                    });
+                    notificationStatusChange.Add(new NotificationCreateDto
+                    {
+                        UserId = purchaseOrder.ApprovalBy,
+                        Title = "Đơn mua hàng đã hoàn thành",
+                        Content = $"Đơn mua hàng '{purchaseOrder.PurchaseOderId}' đã hoàn thành.",
+                        EntityType = NotificationEntityType.PurchaseOrder,
+                        EntityId = purchaseOrder.PurchaseOderId,
+                    });
+                    break;
+                default:
+                    break;
+            }
+
+            if (isReassignment)
+            {
+                if (removedAssignees?.Any() == true)
+                {
+                    foreach (var removedUserId in removedAssignees.Distinct())
+                    {
+                        notificationStatusChange.Add(new NotificationCreateDto
+                        {
+                            UserId = removedUserId,
+                            Title = "Đơn mua hàng đã gỡ phân công",
+                            Content = $"Bạn không còn được phân công nhận đơn mua hàng '{purchaseOrder.PurchaseOderId}'.",
+                            EntityType = NotificationEntityType.NoNavigation,
+                            Category = NotificationCategory.Important
+                        });
+                    }
+                }
+
+                if (newAssignees?.Any() == true)
+                {
+                    foreach (var newUserId in newAssignees.Distinct())
+                    {
+                        notificationStatusChange.Add(new NotificationCreateDto
+                        {
+                            UserId = newUserId,
+                            Title = "Đơn mua hàng được phân công lại",
+                            Content = $"Bạn được phân công nhận đơn mua hàng '{purchaseOrder.PurchaseOderId}'.",
+                            EntityType = NotificationEntityType.PurchaseOrder,
+                            EntityId = purchaseOrder.PurchaseOderId
+                        });
+                    }
+                }
+            }
+            if (notificationStatusChange.Any())
+                await _notificationService.CreateNotificationBulk(notificationStatusChange);
         }
     }
 }

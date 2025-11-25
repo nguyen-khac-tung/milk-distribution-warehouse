@@ -14,11 +14,11 @@ namespace MilkDistributionWarehouse.Services
     public interface ISalesOrderService
     {
         Task<(string, PageResult<T>?)> GetSalesOrderList<T>(PagedRequest request, int? userId);
-        Task<(string, SalesOrderDetailDto?)> GetSalesOrderDetail(Guid? saleOrderId);
+        Task<(string, SalesOrderDetailDto?)> GetSalesOrderDetail(string? saleOrderId);
         Task<(string, SalesOrderCreateDto?)> CreateSalesOrder(SalesOrderCreateDto salesOrderCreate, int? userId);
         Task<(string, SalesOrderUpdateDto?)> UpdateSalesOrder(SalesOrderUpdateDto salesOrderUpdate, int? userId);
         Task<(string, T?)> UpdateStatusSalesOrder<T>(T salesOrderUpdateStatus, int? userId) where T : SaleSOrderUpdateStatusDto;
-        Task<string> DeleteSalesOrder(Guid? salesOrderId, int? userId);
+        Task<string> DeleteSalesOrder(string? salesOrderId, int? userId);
     }
 
 
@@ -28,6 +28,7 @@ namespace MilkDistributionWarehouse.Services
         private readonly ISalesOrderDetailRepository _salesOrderDetailRepository;
         private readonly IRetailerRepository _retailerRepository;
         private readonly IUserRepository _userRepository;
+        private readonly INotificationService _notificationService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
@@ -35,6 +36,7 @@ namespace MilkDistributionWarehouse.Services
                                  ISalesOrderDetailRepository salesOrderDetailRepository,
                                  IRetailerRepository retailerRepository,
                                  IUserRepository userRepository,
+                                 INotificationService notificationService,
                                  IUnitOfWork unitOfWork,
                                  IMapper mapper)
         {
@@ -42,6 +44,7 @@ namespace MilkDistributionWarehouse.Services
             _salesOrderDetailRepository = salesOrderDetailRepository;
             _retailerRepository = retailerRepository;
             _userRepository = userRepository;
+            _notificationService = notificationService;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
         }
@@ -93,7 +96,7 @@ namespace MilkDistributionWarehouse.Services
             return ("", result);
         }
 
-        public async Task<(string, SalesOrderDetailDto?)> GetSalesOrderDetail(Guid? saleOrderId)
+        public async Task<(string, SalesOrderDetailDto?)> GetSalesOrderDetail(string? saleOrderId)
         {
             if (saleOrderId == null) return ("SaleOrderId is invalid.", null);
             var salesOrder = await _salesOrderRepository.GetSalesOrderById(saleOrderId);
@@ -121,6 +124,7 @@ namespace MilkDistributionWarehouse.Services
                 await _unitOfWork.BeginTransactionAsync();
 
                 var salesOrder = _mapper.Map<SalesOrder>(salesOrderCreate);
+                salesOrder.SalesOrderId = PrimaryKeyUtility.GenerateKey("RET", "SO");
                 salesOrder.CreatedBy = userId;
                 await _salesOrderRepository.CreateSalesOrder(salesOrder);
 
@@ -196,7 +200,7 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
-        public async Task<string> DeleteSalesOrder(Guid? salesOrderId, int? userId)
+        public async Task<string> DeleteSalesOrder(string? salesOrderId, int? userId)
         {
             if (salesOrderId == null) return "SalesOrderId is invalid.";
 
@@ -283,6 +287,9 @@ namespace MilkDistributionWarehouse.Services
                 salesOrder.UpdateAt = DateTime.Now;
                 await _salesOrderRepository.UpdateSalesOrder(salesOrder);
                 await _unitOfWork.CommitTransactionAsync();
+
+                await HandleStatusChangeNotification(salesOrder);
+
                 return ("", salesOrderUpdateStatus);
             }
             catch
@@ -329,6 +336,81 @@ namespace MilkDistributionWarehouse.Services
 
             return dictionary1.All(kvp =>
                 dictionary2.TryGetValue(kvp.Key, out var count) && count == kvp.Value);
+        }
+
+        private async Task HandleStatusChangeNotification(SalesOrder salesOrder)
+        {
+            var notificationsToCreate = new List<NotificationCreateDto>();
+
+            switch (salesOrder.Status)
+            {
+                case SalesOrderStatus.PendingApproval:
+                    var saleManagers = await _userRepository.GetUsersByRoleId(RoleType.SaleManager);
+                    foreach (var manager in saleManagers ?? new List<User>())
+                    {
+                        notificationsToCreate.Add(new NotificationCreateDto()
+                        {
+                            UserId = manager.UserId,
+                            Title = "Đơn bán hàng mới chờ duyệt",
+                            Content = $"Đơn bán hàng bán '{salesOrder.SalesOrderId}' vừa được gửi và đang chờ bạn duyệt.",
+                            EntityType = NotificationEntityType.SaleOrder,
+                            EntityId = salesOrder.SalesOrderId
+                        });
+                    }
+                    break;
+
+                case SalesOrderStatus.Approved:
+                    var warehouseManagers = await _userRepository.GetUsersByRoleId(RoleType.WarehouseManager);
+                    foreach (var manager in warehouseManagers ?? new List<User>())
+                    {
+                        notificationsToCreate.Add(new NotificationCreateDto()
+                        {
+                            UserId = manager.UserId,
+                            Title = "Đơn bán hàng đã được duyệt",
+                            Content = $"Đơn bán hàng '{salesOrder.SalesOrderId}' đã được duyệt và sẵn sàng để phân công soạn hàng.",
+                            EntityType = NotificationEntityType.SaleOrder,
+                            EntityId = salesOrder.SalesOrderId
+                        });
+                    }
+                    notificationsToCreate.Add(new NotificationCreateDto()
+                    {
+                        UserId = salesOrder.CreatedBy,
+                        Title = "Đơn bán hàng đã được duyệt",
+                        Content = $"Đơn bán hàng '{salesOrder.SalesOrderId}' đã được duyệt.",
+                        EntityType = NotificationEntityType.SaleOrder,
+                        EntityId = salesOrder.SalesOrderId
+                    });
+                    break;
+
+                case SalesOrderStatus.Rejected:
+                    notificationsToCreate.Add(new NotificationCreateDto()
+                    {
+                        UserId = salesOrder.CreatedBy,
+                        Title = "Đơn bán hàng của bạn bị từ chối",
+                        Content = $"Đơn bán hàng '{salesOrder.SalesOrderId}' đã bị từ chối. Lý do: {salesOrder.RejectionReason}",
+                        EntityType = NotificationEntityType.SaleOrder,
+                        EntityId = salesOrder.SalesOrderId,
+                        Category = NotificationCategory.Important
+                    });
+                    break;
+
+                case SalesOrderStatus.AssignedForPicking:
+                    notificationsToCreate.Add(new NotificationCreateDto()
+                    {
+                        UserId = salesOrder.AssignTo,
+                        Title = "Bạn được phân công một đơn hàng mới",
+                        Content = $"Bạn vừa được phân công để soạn hàng cho đơn bán hàng '{salesOrder.SalesOrderId}'.",
+                        EntityType = NotificationEntityType.SaleOrder,
+                        EntityId = salesOrder.SalesOrderId,
+                        Category = NotificationCategory.Important
+                    });
+                    break;
+
+                default: break;
+            }
+
+            if (notificationsToCreate.Count > 0)
+                await _notificationService.CreateNotificationBulk(notificationsToCreate);
         }
     }
 }

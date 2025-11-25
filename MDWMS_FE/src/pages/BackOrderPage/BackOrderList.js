@@ -64,6 +64,7 @@ export default function BackOrderList() {
     const [updateBackOrderId, setUpdateBackOrderId] = useState(null)
     const [itemToView, setItemToView] = useState(null)
     const [selectedBackOrders, setSelectedBackOrders] = useState(new Set())
+    const [selectedBackOrdersData, setSelectedBackOrdersData] = useState(new Map()) // Lưu trữ thông tin đầy đủ của các items đã chọn
     const [suppliers, setSuppliers] = useState([])
     const [retailers, setRetailers] = useState([])
     const [pagination, setPagination] = useState({
@@ -270,12 +271,12 @@ export default function BackOrderList() {
     // Filter backOrders by statusDinamic if statusFilter is set
     const filteredBackOrders = useMemo(() => {
         if (!Array.isArray(backOrders)) return []
-        
+
         // If statusFilter is set, filter by statusDinamic
         if (statusFilter && statusFilter !== "") {
             return backOrders.filter(bo => bo.statusDinamic === statusFilter)
         }
-        
+
         return backOrders
     }, [backOrders, statusFilter])
 
@@ -324,10 +325,24 @@ export default function BackOrderList() {
     const handleDeleteConfirm = async () => {
         try {
             console.log("Deleting backOrder:", itemToDelete)
-            await deleteBackOrder(itemToDelete?.backOrderId)
+            const deletedBackOrderId = itemToDelete?.backOrderId
+
+            await deleteBackOrder(deletedBackOrderId)
             window.showToast(`Đã xóa đơn đặt hàng: ${itemToDelete?.retailerName || ''}`, "success")
             setShowDeleteModal(false)
             setItemToDelete(null)
+
+            // Xóa khỏi danh sách đã chọn nếu có
+            setSelectedBackOrders(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(deletedBackOrderId);
+                return newSet;
+            });
+            setSelectedBackOrdersData(prevData => {
+                const newMap = new Map(prevData);
+                newMap.delete(deletedBackOrderId);
+                return newMap;
+            });
 
             // Calculate if current page will be empty after deletion
             const currentPageItemCount = backOrders.length
@@ -432,7 +447,7 @@ export default function BackOrderList() {
         ]
         if (!statusSearchQuery) return statusOptions
         const query = statusSearchQuery.toLowerCase()
-        return statusOptions.filter(option => 
+        return statusOptions.filter(option =>
             option.label.toLowerCase().includes(query)
         )
     }, [statusSearchQuery])
@@ -482,8 +497,23 @@ export default function BackOrderList() {
             const newSet = new Set(prev);
             if (checked) {
                 newSet.add(backOrderId);
+                // Tìm và lưu thông tin đầy đủ của item đã chọn
+                const backOrder = filteredBackOrders.find(bo => bo.backOrderId === backOrderId);
+                if (backOrder) {
+                    setSelectedBackOrdersData(prevData => {
+                        const newMap = new Map(prevData);
+                        newMap.set(backOrderId, backOrder);
+                        return newMap;
+                    });
+                }
             } else {
                 newSet.delete(backOrderId);
+                // Xóa khỏi selectedBackOrdersData
+                setSelectedBackOrdersData(prevData => {
+                    const newMap = new Map(prevData);
+                    newMap.delete(backOrderId);
+                    return newMap;
+                });
             }
             return newSet;
         });
@@ -492,12 +522,35 @@ export default function BackOrderList() {
     // Xử lý select all (chỉ chọn các đơn có statusDinamic === 'Available')
     const handleSelectAll = (checked) => {
         if (checked) {
-            const availableBackOrderIds = filteredBackOrders
-                .filter(bo => bo.statusDinamic === 'Available')
-                .map(bo => bo.backOrderId);
+            const availableBackOrders = filteredBackOrders.filter(bo => bo.statusDinamic === 'Available');
+            const availableBackOrderIds = availableBackOrders.map(bo => bo.backOrderId);
             setSelectedBackOrders(new Set(availableBackOrderIds));
+            // Lưu thông tin đầy đủ của tất cả các items đã chọn
+            const newMap = new Map();
+            availableBackOrders.forEach(bo => {
+                newMap.set(bo.backOrderId, bo);
+            });
+            setSelectedBackOrdersData(prevData => {
+                // Merge với các items đã chọn trước đó (có thể từ các trang khác)
+                const mergedMap = new Map(prevData);
+                availableBackOrders.forEach(bo => {
+                    mergedMap.set(bo.backOrderId, bo);
+                });
+                return mergedMap;
+            });
         } else {
-            setSelectedBackOrders(new Set());
+            // Chỉ xóa các items trong filteredBackOrders hiện tại
+            const currentPageIds = new Set(filteredBackOrders.map(bo => bo.backOrderId));
+            setSelectedBackOrders(prev => {
+                const newSet = new Set(prev);
+                currentPageIds.forEach(id => newSet.delete(id));
+                return newSet;
+            });
+            setSelectedBackOrdersData(prevData => {
+                const newMap = new Map(prevData);
+                currentPageIds.forEach(id => newMap.delete(id));
+                return newMap;
+            });
         }
     };
 
@@ -514,8 +567,15 @@ export default function BackOrderList() {
         }
 
         try {
-            // Lấy thông tin các đơn đã chọn
-            const selectedOrders = filteredBackOrders.filter(bo => selectedBackOrders.has(bo.backOrderId));
+            // Lấy thông tin các đơn đã chọn từ selectedBackOrdersData (chứa tất cả items đã chọn, kể cả không còn trong danh sách hiện tại)
+            const selectedOrders = Array.from(selectedBackOrdersData.values()).filter(order =>
+                order.statusDinamic === 'Available' // Chỉ lấy các items có sẵn
+            );
+
+            if (selectedOrders.length === 0) {
+                window.showToast("Vui lòng chọn ít nhất một đơn hàng có sẵn", "error");
+                return;
+            }
 
             // Kiểm tra xem tất cả các đơn đã chọn có cùng retailer không
             const retailerIds = [...new Set(selectedOrders.map(order => order.retailerId))];
@@ -610,7 +670,7 @@ export default function BackOrderList() {
                     <SearchFilterToggle
                         searchQuery={searchQuery}
                         setSearchQuery={setSearchQuery}
-                        searchPlaceholder="Tìm kiếm theo tên nhà bán lẻ hoặc sản phẩm..."
+                        searchPlaceholder="Tìm kiếm theo tên nhà bán lẻ, hàng hóa"
                         statusFilter={statusFilter}
                         setStatusFilter={setStatusFilter}
                         showStatusFilter={showStatusFilter}
@@ -652,22 +712,31 @@ export default function BackOrderList() {
                             <Loading size="medium" text="Đang tìm kiếm..." />
                         ) : (
                             <div className="overflow-x-auto">
-                                <Table className="w-full">
+                                <Table className="w-full table-auto md:table-fixed">
                                     <TableHeader>
                                         <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-16">
+
+                                            {/* Checkbox - luôn hiển thị */}
+                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left w-12">
                                                 <Checkbox
                                                     checked={allAvailableSelected}
                                                     onChange={(e) => handleSelectAll(e.target.checked)}
                                                     disabled={availableBackOrders.length === 0}
                                                 />
                                             </TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-16">
+
+                                            {/* STT - luôn hiển thị */}
+                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left w-16">
                                                 STT
                                             </TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                                                <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("retailerName")}>
-                                                    <span>Tên nhà bán lẻ</span>
+
+                                            {/* Tên nhà bán lẻ - rất quan trọng */}
+                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left min-w-[220px]">
+                                                <div
+                                                    className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                                    onClick={() => handleSort("retailerName")}
+                                                >
+                                                    <span >Tên nhà bán lẻ</span>
                                                     {sortField === "retailerName" ? (
                                                         sortAscending ? (
                                                             <ArrowUp className="h-4 w-4 text-orange-500" />
@@ -679,32 +748,93 @@ export default function BackOrderList() {
                                                     )}
                                                 </div>
                                             </TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                                                Tên sản phẩm
+
+                                            {/* Tên hàng hóa - quan trọng */}
+                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left min-w-[260px]">
+                                                {/* <span className="truncate">Tên hàng hóa</span> */}
+                                                <div
+                                                    className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                                    onClick={() => handleSort("goodsName")}
+                                                >
+                                                    <span >Tên hàng hóa</span>
+                                                    {sortField === "goodsName" ? (
+                                                        sortAscending ? (
+                                                            <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                        ) : (
+                                                            <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                        )
+                                                    ) : (
+                                                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                    )}
+                                                </div>
                                             </TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+
+                                            {/* Quy cách đóng gói */}
+                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left hidden md:table-cell min-w-[150px]">
                                                 Quy cách đóng gói
                                             </TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                                                Số thùng
+
+                                            {/* Số thùng */}
+                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left hidden md:table-cell w-[90px]">
+
+                                                <div
+                                                    className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                                    onClick={() => handleSort("packageQuantity")}
+                                                >
+                                                    <span >Số thùng</span>
+                                                    {sortField === "packageQuantity" ? (
+                                                        sortAscending ? (
+                                                            <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                        ) : (
+                                                            <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                        )
+                                                    ) : (
+                                                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                    )}
+                                                </div>
                                             </TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+
+                                            {/* Tổng đơn vị */}
+                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left hidden md:table-cell w-[110px]">
                                                 Tổng đơn vị
                                             </TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+
+                                            {/* Đơn vị */}
+                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left hidden md:table-cell w-[90px]">
                                                 Đơn vị
                                             </TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-[150px]">
-                                                Người tạo
+
+                                            {/* Người tạo - ẩn mobile */}
+                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left hidden lg:table-cell w-[120px]">
+                                                <div
+                                                    className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                                    onClick={() => handleSort("createdByName")}
+                                                >
+                                                    <span>Người tạo</span>
+                                                    {sortField === "createdByName" ? (
+                                                        sortAscending ? (
+                                                            <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                        ) : (
+                                                            <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                        )
+                                                    ) : (
+                                                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                    )}
+                                                </div>
                                             </TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-[140px]">
+
+                                            {/* Trạng thái kho - ẩn mobile */}
+                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left hidden lg:table-cell w-[140px]">
                                                 Trạng thái kho
                                             </TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
+
+                                            {/* Hoạt động - ẩn mobile */}
+                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-center hidden lg:table-cell w-[120px]">
                                                 Hoạt động
                                             </TableHead>
                                         </TableRow>
                                     </TableHeader>
+
                                     <TableBody>
                                         {filteredBackOrders.length > 0 ? (
                                             filteredBackOrders.map((backOrder, index) => (
@@ -712,43 +842,85 @@ export default function BackOrderList() {
                                                     key={index}
                                                     className="hover:bg-slate-50 border-b border-slate-200"
                                                 >
-                                                    <TableCell className="px-6 py-4">
+                                                    {/* Checkbox */}
+                                                    <TableCell className="px-4 py-4">
                                                         {backOrder.statusDinamic === 'Available' ? (
                                                             <Checkbox
                                                                 checked={selectedBackOrders.has(backOrder.backOrderId)}
-                                                                onChange={(e) => handleCheckboxChange(backOrder.backOrderId, e.target.checked)}
+                                                                onChange={(e) =>
+                                                                    handleCheckboxChange(backOrder.backOrderId, e.target.checked)
+                                                                }
                                                             />
                                                         ) : (
                                                             <div className="w-4"></div>
                                                         )}
                                                     </TableCell>
-                                                    <TableCell className="px-6 py-4 text-slate-600 font-medium">
-                                                        {index + 1}
+
+                                                    {/* STT */}
+                                                    <TableCell className="px-4 py-4 text-slate-600 font-medium">
+                                                        {(pagination.pageNumber - 1) * pagination.pageSize + (index + 1)}
                                                     </TableCell>
-                                                    <TableCell className="px-6 py-4 text-slate-700 font-medium">{backOrder?.retailerName || ''}</TableCell>
-                                                    <TableCell className="px-6 py-4 text-slate-700">{backOrder?.goodsName || ''}</TableCell>
-                                                    <TableCell className="px-6 py-4 text-slate-700">{backOrder?.unitPerPackage ?? ''}{backOrder?.unitMeasureName ? ' ' + backOrder.unitMeasureName : ''}/thùng</TableCell>
-                                                    <TableCell className="px-6 py-4 text-slate-700">{backOrder?.packageQuantity ?? ''}</TableCell>
-                                                    <TableCell className="px-6 py-4 text-slate-700">{(() => {
-                                                        const up = parseInt(backOrder?.unitPerPackage ?? 0);
-                                                        const pq = parseInt(backOrder?.packageQuantity ?? 0);
-                                                        if (isNaN(up) || isNaN(pq)) return '';
-                                                        return up * pq;
-                                                    })()}</TableCell>
-                                                    <TableCell className="px-6 py-4 text-slate-700">{backOrder?.unitMeasureName || ''}</TableCell>
-                                                    <TableCell className="px-6 py-4 text-slate-700">{backOrder?.createdByName || backOrder?.createdBy || ''}</TableCell>
-                                                    <TableCell className="px-6 py-4">
-                                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${backOrder?.statusDinamic === 'Available' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+
+                                                    {/* Tên nhà bán lẻ */}
+                                                    <TableCell className="px-4 py-4 text-slate-700 font-medium min-w-[220px] ">
+                                                        {backOrder?.retailerName || ''}
+                                                    </TableCell>
+
+                                                    {/* Tên hàng hóa */}
+                                                    <TableCell className="px-4 py-4 text-slate-700 min-w-[260px] ">
+                                                        {backOrder?.goodsName || ''}
+                                                    </TableCell>
+
+                                                    {/* Quy cách đóng gói */}
+                                                    <TableCell className="px-4 py-4 text-slate-700 hidden md:table-cell">
+                                                        {backOrder?.unitPerPackage ?? ''}
+                                                        {backOrder?.unitMeasureName ? ' ' + backOrder.unitMeasureName : ''}/thùng
+                                                    </TableCell>
+
+                                                    {/* Số thùng */}
+                                                    <TableCell className="px-4 py-4 text-slate-700 hidden md:table-cell">
+                                                        {backOrder?.packageQuantity ?? ''}
+                                                    </TableCell>
+
+                                                    {/* Tổng đơn vị */}
+                                                    <TableCell className="px-4 py-4 text-slate-700 hidden md:table-cell">
+                                                        {(() => {
+                                                            const up = parseInt(backOrder?.unitPerPackage ?? 0);
+                                                            const pq = parseInt(backOrder?.packageQuantity ?? 0);
+                                                            if (isNaN(up) || isNaN(pq)) return '';
+                                                            return up * pq;
+                                                        })()}
+                                                    </TableCell>
+
+                                                    {/* Đơn vị */}
+                                                    <TableCell className="px-4 py-4 text-slate-700 hidden md:table-cell">
+                                                        {backOrder?.unitMeasureName || ''}
+                                                    </TableCell>
+
+                                                    {/* Người tạo */}
+                                                    <TableCell className="px-4 py-4 text-slate-700 hidden lg:table-cell">
+                                                        {backOrder?.createdByName || backOrder?.createdBy || ''}
+                                                    </TableCell>
+
+                                                    {/* Trạng thái kho */}
+                                                    <TableCell className="px-4 py-4 hidden lg:table-cell">
+                                                        <span
+                                                            className={`px-2 py-1 rounded-full text-xs font-medium ${backOrder?.statusDinamic === 'Available'
+                                                                ? 'bg-green-100 text-green-800'
+                                                                : 'bg-red-100 text-red-800'
+                                                                }`}
+                                                        >
                                                             {getStatusDynamicLabel(backOrder?.statusDinamic)}
                                                         </span>
                                                     </TableCell>
 
-                                                    <TableCell className="px-6 py-4 text-center">
+                                                    {/* Hoạt động */}
+                                                    <TableCell className="px-4 py-4 text-center hidden lg:table-cell">
                                                         <div className="flex items-center justify-center space-x-1">
+
                                                             <PermissionWrapper requiredPermission={PERMISSIONS.BACKORDER_VIEW}>
                                                                 <button
                                                                     className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                                    title="Xem chi tiết"
                                                                     onClick={() => handleViewClick(backOrder)}
                                                                 >
                                                                     <Eye className="h-4 w-4 text-orange-500" />
@@ -758,7 +930,6 @@ export default function BackOrderList() {
                                                             <PermissionWrapper requiredPermission={PERMISSIONS.BACKORDER_UPDATE}>
                                                                 <button
                                                                     className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                                    title="Chỉnh sửa"
                                                                     onClick={() => handleUpdateClick(backOrder)}
                                                                 >
                                                                     <Edit className="h-4 w-4 text-orange-500" />
@@ -768,7 +939,6 @@ export default function BackOrderList() {
                                                             <PermissionWrapper requiredPermission={PERMISSIONS.BACKORDER_DELETE}>
                                                                 <button
                                                                     className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                                    title="Xóa"
                                                                     onClick={() => handleDeleteClick(backOrder)}
                                                                 >
                                                                     <Trash2 className="h-4 w-4 text-red-500" />
@@ -784,13 +954,13 @@ export default function BackOrderList() {
                                                 title="Không tìm thấy đơn đặt hàng nào"
                                                 description={
                                                     searchQuery || statusFilter || retailerFilter
-                                                        ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
-                                                        : "Chưa có đơn đặt hàng nào trong hệ thống"
+                                                        ? 'Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm'
+                                                        : 'Chưa có đơn đặt hàng nào trong hệ thống'
                                                 }
                                                 actionText="Xóa bộ lọc"
                                                 onAction={clearAllFilters}
                                                 showAction={!!(searchQuery || statusFilter || retailerFilter)}
-                                                colSpan={10}
+                                                colSpan={11}
                                             />
                                         )}
                                     </TableBody>

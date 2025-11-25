@@ -121,6 +121,16 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<StocktakingSheeteResponse?>.ToResultOk(stocktaking);
         }
 
+        [HttpPut("Completed")]
+        [Authorize(Roles = RoleNames.SalesManager)]
+        public async Task<IActionResult> CompletedStocktakingSheet([FromBody] StocktakingSheetCompletedStatus update)
+        {
+            var (msg, stocktaking) = await _stocktakingSheetService.UpdateStocktakingSheetStatus(update, User.GetUserId());
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<StocktakingSheeteResponse?>.ToResultOk(stocktaking);
+        }
+
         [HttpDelete("Delete/{stocktakingSheetId}")]
         [Authorize(Roles = RoleNames.WarehouseManager)]
         public async Task<IActionResult> DeleteStocktakingSheet(string stocktakingSheetId)

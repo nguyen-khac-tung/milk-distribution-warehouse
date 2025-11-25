@@ -33,11 +33,17 @@ public partial class Good
 
     public virtual Category Category { get; set; }
 
+    public virtual ICollection<DisposalNoteDetail> DisposalNoteDetails { get; set; } = new List<DisposalNoteDetail>();
+
+    public virtual ICollection<DisposalRequestDetail> DisposalRequestDetails { get; set; } = new List<DisposalRequestDetail>();
+
     public virtual ICollection<GoodsIssueNoteDetail> GoodsIssueNoteDetails { get; set; } = new List<GoodsIssueNoteDetail>();
 
     public virtual ICollection<GoodsPacking> GoodsPackings { get; set; } = new List<GoodsPacking>();
 
     public virtual ICollection<GoodsReceiptNoteDetail> GoodsReceiptNoteDetails { get; set; } = new List<GoodsReceiptNoteDetail>();
+
+    public virtual ICollection<InventoryLedger> InventoryLedgers { get; set; } = new List<InventoryLedger>();
 
     public virtual ICollection<PurchaseOderDetail> PurchaseOderDetails { get; set; } = new List<PurchaseOderDetail>();
 

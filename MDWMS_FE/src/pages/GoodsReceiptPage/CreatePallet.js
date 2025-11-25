@@ -16,9 +16,9 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
   const [goodsPackingByDetailId, setGoodsPackingByDetailId] = useState({});
   const refreshBatchOptionsRef = useRef(null);
   const [rowErrors, setRowErrors] = useState({}); // Lưu lỗi theo index của row
-  const [missingProducts, setMissingProducts] = useState([]); // Danh sách mặt hàng còn thiếu
+  const [missingProducts, setMissingProducts] = useState([]); // Danh sách hàng hóa còn thiếu
 
-  // Tạo danh sách sản phẩm từ goodsReceiptNoteDetails
+  // Tạo danh sách hàng hóa từ goodsReceiptNoteDetails
   const productOptions = useMemo(() => {
     if (!goodsReceiptNoteDetails || goodsReceiptNoteDetails.length === 0) return [];
 
@@ -56,7 +56,7 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
     return map;
   }, [goodsReceiptNoteDetails]);
 
-  // Lọc chỉ các sản phẩm có số lượng thực nhận > 0
+  // Lọc chỉ các hàng hóa có số lượng thực nhận > 0
   const filteredProductOptions = useMemo(() => {
     return productOptions.filter(product => {
       const detailId = product.value;
@@ -65,7 +65,7 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
     });
   }, [productOptions, actualPackageQuantityByDetailId]);
 
-  // Kiểm tra xem có ít nhất một mặt hàng có số lượng thực nhận > 0 không
+  // Kiểm tra xem có ít nhất một hàng hóa có số lượng thực nhận > 0 không
   const hasAnyActualQuantity = useMemo(() => {
     return Object.values(actualPackageQuantityByDetailId).some(quantity => quantity > 0);
   }, [actualPackageQuantityByDetailId]);
@@ -121,7 +121,7 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
         const response = await getGoodRNDPallet(goodsReceiptNoteId);
         if (response && response.data && response.data.length > 0) {
           // Nếu có dữ liệu từ API, sử dụng dữ liệu đó
-          // Lọc chỉ lấy các pallet có sản phẩm với số lượng thực nhận > 0
+          // Lọc chỉ lấy các pallet có hàng hóa với số lượng thực nhận > 0
           const validPalletsFromAPI = response.data.filter(pallet => {
             const detailId = pallet.goodsReceiptNoteDetailId || pallet.productId || "";
             const actualQuantity = actualPackageQuantityByDetailId[detailId] || 0;
@@ -146,65 +146,93 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
                 };
               })
             );
-            // Lưu map goodsPackingId theo detailId để dùng khi user chọn sản phẩm
+            // Lưu map goodsPackingId theo detailId để dùng khi user chọn hàng hóa
             const map = {};
             validPalletsFromAPI.forEach(p => { map[p.goodsReceiptNoteDetailId] = p.goodsPackingId; });
             setGoodsPackingByDetailId(map);
-            setPalletRows(fetchedPallets);
+
+            // Kiểm tra và bổ sung các hàng hóa còn thiếu (có số lượng thực nhận > 0 nhưng chưa có trong API)
+            const existingProductIds = new Set(
+              fetchedPallets.map(p => p.productId)
+            );
+            const missingProducts = filteredProductOptions.filter(
+              product => !existingProductIds.has(product.value)
+            );
+
+            if (missingProducts.length > 0) {
+              const additionalRows = await Promise.all(
+                missingProducts.map(async (product) => ({
+                  productId: product.value || "",
+                  productName: product.label || "",
+                  batchId: "",
+                  batchCode: "",
+                  unitName: product.unitName || "",
+                  unitsPerPackage: product.unitsPerPackage || "",
+                  numPackages: "",
+                  goodsPackingId: product.goodsPackingId || goodsPackingByDetailId[product.value] || null,
+                  batchOptions: await fetchBatchOptionsByGoodsId(product.goodsId)
+                }))
+              );
+              setPalletRows([...fetchedPallets, ...additionalRows]);
+            } else {
+              setPalletRows(fetchedPallets);
+            }
           } else {
-            // Nếu không có pallet hợp lệ từ API, tạo dòng mới
-            const first = filteredProductOptions[0];
-            if (first) {
-              const defaultRow = {
-                productId: first.value || "",
-                productName: first.label || "",
-                batchId: "",
-                batchCode: "",
-                unitName: first.unitName || "",
-                unitsPerPackage: first.unitsPerPackage || "",
-                numPackages: "",
-                goodsPackingId: first.goodsPackingId || goodsPackingByDetailId[first.value] || null,
-                batchOptions: await fetchBatchOptionsByGoodsId(first.goodsId)
-              };
-              setPalletRows([defaultRow]);
+            // Nếu không có pallet hợp lệ từ API, tạo dòng mới cho TẤT CẢ hàng hóa có số lượng thực nhận > 0
+            if (filteredProductOptions.length > 0) {
+              const defaultRows = await Promise.all(
+                filteredProductOptions.map(async (product) => ({
+                  productId: product.value || "",
+                  productName: product.label || "",
+                  batchId: "",
+                  batchCode: "",
+                  unitName: product.unitName || "",
+                  unitsPerPackage: product.unitsPerPackage || "",
+                  numPackages: "",
+                  goodsPackingId: product.goodsPackingId || goodsPackingByDetailId[product.value] || null,
+                  batchOptions: await fetchBatchOptionsByGoodsId(product.goodsId)
+                }))
+              );
+              setPalletRows(defaultRows);
             }
           }
         } else {
-          // Nếu không có dữ liệu, tạo dòng mới
-          // Chọn mặc định sản phẩm đầu tiên có số lượng thực nhận > 0, và load batch
-          const first = filteredProductOptions[0];
-          if (first) {
-            const defaultRow = {
-              productId: first.value || "",
-              productName: first.label || "",
-              batchId: "",
-              batchCode: "",
-              unitName: first.unitName || "",
-              unitsPerPackage: first.unitsPerPackage || "",
-              numPackages: "",
-              goodsPackingId: first.goodsPackingId || goodsPackingByDetailId[first.value] || null,
-              batchOptions: await fetchBatchOptionsByGoodsId(first.goodsId)
-            };
-            setPalletRows([defaultRow]);
+          // Nếu không có dữ liệu, tạo dòng mới cho TẤT CẢ hàng hóa có số lượng thực nhận > 0
+          if (filteredProductOptions.length > 0) {
+            const defaultRows = await Promise.all(
+              filteredProductOptions.map(async (product) => ({
+                productId: product.value || "",
+                productName: product.label || "",
+                batchId: "",
+                batchCode: "",
+                unitName: product.unitName || "",
+                unitsPerPackage: product.unitsPerPackage || "",
+                numPackages: "",
+                goodsPackingId: product.goodsPackingId || goodsPackingByDetailId[product.value] || null,
+                batchOptions: await fetchBatchOptionsByGoodsId(product.goodsId)
+              }))
+            );
+            setPalletRows(defaultRows);
           }
         }
       } catch (error) {
         console.error("Error fetching pallet data:", error);
-        // Nếu có lỗi, vẫn tạo dòng mới với sản phẩm có số lượng thực nhận > 0
-        const first = filteredProductOptions[0];
-        if (first) {
-          const defaultRow = {
-            productId: first.value || "",
-            productName: first.label || "",
-            batchId: "",
-            batchCode: "",
-            unitName: first.unitName || "",
-            unitsPerPackage: first.unitsPerPackage || "",
-            numPackages: "",
-            goodsPackingId: first.goodsPackingId || goodsPackingByDetailId[first.value] || null,
-            batchOptions: await fetchBatchOptionsByGoodsId(first.goodsId)
-          };
-          setPalletRows([defaultRow]);
+        // Nếu có lỗi, vẫn tạo dòng mới cho TẤT CẢ hàng hóa có số lượng thực nhận > 0
+        if (filteredProductOptions.length > 0) {
+          const defaultRows = await Promise.all(
+            filteredProductOptions.map(async (product) => ({
+              productId: product.value || "",
+              productName: product.label || "",
+              batchId: "",
+              batchCode: "",
+              unitName: product.unitName || "",
+              unitsPerPackage: product.unitsPerPackage || "",
+              numPackages: "",
+              goodsPackingId: product.goodsPackingId || goodsPackingByDetailId[product.value] || null,
+              batchOptions: await fetchBatchOptionsByGoodsId(product.goodsId)
+            }))
+          );
+          setPalletRows(defaultRows);
         }
       } finally {
         setLoading(false);
@@ -220,30 +248,30 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
     // Validate từng row
     palletRows.forEach((r, idx) => {
       const rowErrors = [];
-      
-      // Kiểm tra sản phẩm có được chọn không
+
+      // Kiểm tra hàng hóa có được chọn không
       if (!r.productId) {
-        rowErrors.push("Chưa chọn sản phẩm");
+        rowErrors.push("Chưa chọn hàng hóa");
       } else {
-        // Kiểm tra sản phẩm có số lượng thực nhận > 0 không
+        // Kiểm tra hàng hóa có số lượng thực nhận > 0 không
         const actualQuantity = actualPackageQuantityByDetailId[r.productId] || 0;
         if (actualQuantity === 0) {
-          const productName = filteredProductOptions.find(p => p.value === r.productId)?.label 
-            || productOptions.find(p => p.value === r.productId)?.label 
-            || r.productName 
-            || "sản phẩm này";
+          const productName = filteredProductOptions.find(p => p.value === r.productId)?.label
+            || productOptions.find(p => p.value === r.productId)?.label
+            || r.productName
+            || "hàng hóa này";
           rowErrors.push(`${productName} có số lượng thực nhận bằng 0, không thể tạo pallet`);
         }
         // Kiểm tra goodsPackingId không được null
         if (!r.goodsPackingId) {
-          const productName = filteredProductOptions.find(p => p.value === r.productId)?.label 
-            || productOptions.find(p => p.value === r.productId)?.label 
-            || r.productName 
-            || "sản phẩm này";
+          const productName = filteredProductOptions.find(p => p.value === r.productId)?.label
+            || productOptions.find(p => p.value === r.productId)?.label
+            || r.productName
+            || "hàng hóa này";
           rowErrors.push(`${productName} thiếu thông tin quy cách đóng gói (goodsPackingId)`);
         }
       }
-      
+
       if (!r.batchId) {
         rowErrors.push("Chưa chọn số lô");
       }
@@ -257,13 +285,13 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
       }
     });
 
-    // Validate tổng số thùng phải BẰNG số lượng thùng thực nhận cho từng mặt hàng
-    // Chỉ validate các sản phẩm có số lượng thực nhận > 0
+    // Validate tổng số thùng phải BẰNG số lượng thùng thực nhận cho từng hàng hóa
+    // Chỉ validate các hàng hóa có số lượng thực nhận > 0
     const totalPackagesByProduct = {};
     palletRows.forEach((r, idx) => {
       if (r.productId && Number(r.numPackages) > 0) {
         const actualQuantity = actualPackageQuantityByDetailId[r.productId] || 0;
-        // Chỉ tính các sản phẩm có số lượng thực nhận > 0
+        // Chỉ tính các hàng hóa có số lượng thực nhận > 0
         if (actualQuantity > 0) {
           if (!totalPackagesByProduct[r.productId]) {
             totalPackagesByProduct[r.productId] = { total: 0, rowIndices: [] };
@@ -274,12 +302,12 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
       }
     });
 
-    // Kiểm tra từng mặt hàng: tổng số thùng phải BẰNG số thùng thực nhận
+    // Kiểm tra từng hàng hóa: tổng số thùng phải BẰNG số thùng thực nhận
     Object.keys(totalPackagesByProduct).forEach(productId => {
       const requiredQuantity = actualPackageQuantityByDetailId[productId] || 0;
       const { total, rowIndices } = totalPackagesByProduct[productId];
-      const productName = filteredProductOptions.find(p => p.value === productId)?.label 
-        || productOptions.find(p => p.value === productId)?.label 
+      const productName = filteredProductOptions.find(p => p.value === productId)?.label
+        || productOptions.find(p => p.value === productId)?.label
         || productId;
 
       if (requiredQuantity > 0) {
@@ -305,18 +333,18 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
       }
     });
 
-    // Kiểm tra tất cả mặt hàng từ đơn kiểm nhập đều phải có trong pallet
+    // Kiểm tra tất cả hàng hóa từ đơn kiểm nhập đều phải có trong pallet
     const requiredProductIds = new Set();
     goodsReceiptNoteDetails.forEach(detail => {
       const detailId = detail.goodsReceiptNoteDetailId || detail.id;
       const actualQuantity = Number(detail.actualPackageQuantity) || 0;
-      // Chỉ yêu cầu các mặt hàng có số lượng thực nhận > 0
+      // Chỉ yêu cầu các hàng hóa có số lượng thực nhận > 0
       if (detailId && actualQuantity > 0) {
         requiredProductIds.add(detailId);
       }
     });
 
-    // Kiểm tra xem các mặt hàng bắt buộc đã có trong pallet chưa
+    // Kiểm tra xem các hàng hóa bắt buộc đã có trong pallet chưa
     const existingProductIds = new Set();
     palletRows.forEach(r => {
       if (r.productId && Number(r.numPackages) > 0) {
@@ -324,7 +352,7 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
       }
     });
 
-    // Tìm các mặt hàng còn thiếu
+    // Tìm các hàng hóa còn thiếu
     const missingProductIds = Array.from(requiredProductIds).filter(id => !existingProductIds.has(id));
     const missingProductsList = missingProductIds.map(id => {
       const detail = goodsReceiptNoteDetails.find(d => (d.goodsReceiptNoteDetailId || d.id) === id);
@@ -334,7 +362,7 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
       };
     });
     setMissingProducts(missingProductsList);
-    
+
     if (missingProductIds.length > 0) {
       hasErrors = true;
     } else {
@@ -357,9 +385,9 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
       return;
     }
 
-    // Kiểm tra xem có ít nhất một mặt hàng có số lượng thực nhận > 0 không
+    // Kiểm tra xem có ít nhất một hàng hóa có số lượng thực nhận > 0 không
     if (!hasAnyActualQuantity) {
-      window.showToast?.("Không thể tạo pallet! Tất cả mặt hàng đều có số lượng thực nhận bằng 0. Vui lòng kiểm nhập lại.", "error");
+      window.showToast?.("Không thể tạo pallet! Tất cả hàng hóa đều có số lượng thực nhận bằng 0. Vui lòng kiểm nhập lại.", "error");
       return;
     }
 
@@ -369,7 +397,7 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
       return;
     }
 
-    // Lọc và chỉ lấy các row hợp lệ (có sản phẩm với số lượng thực nhận > 0 và có goodsPackingId)
+    // Lọc và chỉ lấy các row hợp lệ (có hàng hóa với số lượng thực nhận > 0 và có goodsPackingId)
     const validPallets = palletRows.filter(r => {
       if (!r.productId || !(Number(r.numPackages) || 0) > 0) {
         return false;
@@ -380,7 +408,7 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
     });
 
     if (validPallets.length === 0) {
-      window.showToast?.("Không có pallet hợp lệ để tạo! Vui lòng kiểm tra lại các sản phẩm có số lượng thực nhận > 0.", "error");
+      window.showToast?.("Không có pallet hợp lệ để tạo! Vui lòng kiểm tra lại các hàng hóa có số lượng thực nhận > 0.", "error");
       return;
     }
 
@@ -388,7 +416,7 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
       // Đảm bảo goodsPackingId luôn có giá trị (không được null)
       const goodsPackingId = r.goodsPackingId != null ? parseInt(r.goodsPackingId) : null;
       if (goodsPackingId === null) {
-        throw new Error(`Sản phẩm "${r.productName || r.productId}" thiếu goodsPackingId`);
+        throw new Error(`Hàng hóa "${r.productName || r.productId}" thiếu goodsPackingId`);
       }
       return {
         batchId: r.batchId,
@@ -427,12 +455,12 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
     }
   };
 
-  // Function để refresh batch options cho tất cả các dòng đã chọn sản phẩm
+  // Function để refresh batch options cho tất cả các dòng đã chọn hàng hóa
   const refreshBatchOptionsForAllRows = async () => {
     // Lấy tất cả rows hiện tại
     const currentRows = [...palletRows];
-    
-    // Refresh batch options cho từng row đã có sản phẩm
+
+    // Refresh batch options cho từng row đã có hàng hóa
     const updatedRows = await Promise.all(
       currentRows.map(async (row) => {
         if (row.productId) {
@@ -448,7 +476,7 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
         return row;
       })
     );
-    
+
     // Cập nhật state với batch options mới
     setPalletRows(updatedRows);
   };
@@ -493,7 +521,7 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
 
       {!hasExistingPallets && (
         <>
-          {/* Cảnh báo nếu không có mặt hàng nào có số lượng thực nhận > 0 */}
+          {/* Cảnh báo nếu không có hàng hóa nào có số lượng thực nhận > 0 */}
           {!hasAnyActualQuantity && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mt-3">
               <div className="flex items-center gap-2 text-red-700">
@@ -501,7 +529,7 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
                 <span className="font-medium">Không thể tạo pallet</span>
               </div>
               <p className="text-red-600 text-sm mt-1">
-                Tất cả mặt hàng đều có số lượng thực nhận bằng 0. Vui lòng kiểm nhập lại để có số lượng thực nhận lớn hơn 0 trước khi tạo pallet.
+                Tất cả hàng hóa đều có số lượng thực nhận bằng 0. Vui lòng kiểm nhập lại để có số lượng thực nhận lớn hơn 0 trước khi tạo pallet.
               </p>
             </div>
           )}
@@ -514,7 +542,7 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
               disabled={hasExistingPallets || !hasAnyActualQuantity}
             >
               <Plus className="w-4 h-4 mr-2" />
-              Thêm kệ kê hàng
+              Thêm pallet
             </Button>
           </div>
 
@@ -546,10 +574,10 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
               <div className="flex items-center gap-2 text-red-700">
                 <AlertCircle className="w-5 h-5" />
-                <span className="font-medium">Còn thiếu mặt hàng</span>
+                <span className="font-medium">Còn thiếu hàng hóa</span>
               </div>
               <p className="text-red-600 text-sm mt-1">
-                Vui lòng thêm tất cả mặt hàng từ đơn kiểm nhập vào pallet. Còn thiếu: {missingProducts.map(p => p.name).join(", ")}
+                Vui lòng thêm tất cả hàng hóa từ đơn kiểm nhập vào pallet. Còn thiếu: {missingProducts.map(p => p.name).join(", ")}
               </p>
             </div>
           )}
@@ -572,7 +600,7 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[4%] text-center"></TableHead>
-                <TableHead className="w-[20%]">Tên sản phẩm</TableHead>
+                <TableHead className="w-[20%]">Tên hàng hóa</TableHead>
                 <TableHead className="w-[14%]">Số Lô</TableHead>
                 <TableHead className="w-[12%] text-center">Đơn vị</TableHead>
                 <TableHead className="w-[10%] text-center">Đơn vị/thùng</TableHead>
@@ -616,119 +644,119 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
                                 return newRows;
                               });
                             }}
-                            title="Thêm dòng giống mặt hàng này"
+                            title="Thêm dòng giống hàng hóa này"
                           >
                             <Plus className="w-4 h-4 text-green-600" />
                           </Button>
                         </TableCell>
-                      <TableCell>
-                        <FloatingDropdown
-                          value={row.productId || undefined}
-                          onChange={(value) => {
-                            handleProductSelect(idx, value || "");
-                          }}
-                          options={filteredProductOptions}
-                          placeholder="Chọn sản phẩm..."
-                        />
-                      </TableCell>
-                      <TableCell>
-                        {row.batchOptions && row.batchOptions.length > 0 ? (
+                        <TableCell>
                           <FloatingDropdown
-                            value={row.batchId || undefined}
-                            onChange={(val) => {
-                              const selected = row.batchOptions.find(o => o.value === val);
-                              setPalletRows(prev => prev.map((r, i) => i === idx ? { ...r, batchId: val || '', batchCode: selected?.label || '' } : r));
+                            value={row.productId || undefined}
+                            onChange={(value) => {
+                              handleProductSelect(idx, value || "");
                             }}
-                            options={row.batchOptions}
-                            placeholder="Chọn số lô..."
+                            options={filteredProductOptions}
+                            placeholder="Chọn hàng hóa..."
                           />
-                        ) : (
+                        </TableCell>
+                        <TableCell>
+                          {row.batchOptions && row.batchOptions.length > 0 ? (
+                            <FloatingDropdown
+                              value={row.batchId || undefined}
+                              onChange={(val) => {
+                                const selected = row.batchOptions.find(o => o.value === val);
+                                setPalletRows(prev => prev.map((r, i) => i === idx ? { ...r, batchId: val || '', batchCode: selected?.label || '' } : r));
+                              }}
+                              options={row.batchOptions}
+                              placeholder="Chọn số lô..."
+                            />
+                          ) : (
+                            <input
+                              type="text"
+                              className="w-full h-[38px] px-2 rounded border border-gray-300 text-sm focus:outline-none focus:border-orange-500"
+                              value={row.batchCode}
+                              onChange={e => setPalletRows(prev => prev.map((r, i) => i === idx ? { ...r, batchCode: e.target.value } : r))}
+                              placeholder="Chọn hàng hóa để tải số lô"
+                              readOnly
+                            />
+                          )}
+
+                        </TableCell>
+                        <TableCell className="text-center">
                           <input
                             type="text"
-                            className="w-full h-[38px] px-2 rounded border border-gray-300 text-sm focus:outline-none focus:border-orange-500"
-                            value={row.batchCode}
-                            onChange={e => setPalletRows(prev => prev.map((r, i) => i === idx ? { ...r, batchCode: e.target.value } : r))}
-                            placeholder="Chọn sản phẩm để tải số lô"
-                            readOnly
+                            className={`w-full h-[38px] px-2 rounded border border-gray-300 text-sm text-center focus:outline-none focus:border-orange-500 ${hasSelectedProduct ? 'bg-gray-50' : ''}`}
+                            value={row.unitName || ""}
+                            readOnly={hasSelectedProduct}
+                            placeholder={hasSelectedProduct ? "" : "Chọn hàng hóa..."}
                           />
-                        )}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <input
+                            type="number"
+                            min={0}
+                            className={`w-full h-[38px] px-2 rounded border border-gray-300 text-sm text-center focus:outline-none focus:border-orange-500 ${hasSelectedProduct ? 'bg-gray-50' : ''}`}
+                            value={row.unitsPerPackage || ""}
+                            readOnly
+                            placeholder={hasSelectedProduct ? "" : "Chọn hàng hóa..."}
+                          />
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <input
+                            type="number"
+                            min={1}
+                            className="w-full h-[38px] px-2 rounded border border-gray-300 text-sm text-center focus:outline-none focus:border-orange-500"
+                            value={row.numPackages}
+                            onChange={e => setPalletRows(prev => prev.map((r, i) => i === idx ? { ...r, numPackages: e.target.value } : r))}
+                            placeholder="Nhập số thùng"
+                          />
 
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <input
-                          type="text"
-                          className={`w-full h-[38px] px-2 rounded border border-gray-300 text-sm text-center focus:outline-none focus:border-orange-500 ${hasSelectedProduct ? 'bg-gray-50' : ''}`}
-                          value={row.unitName || ""}
-                          readOnly={hasSelectedProduct}
-                          placeholder={hasSelectedProduct ? "" : "Chọn sản phẩm..."}
-                        />
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <input
-                          type="number"
-                          min={0}
-                          className={`w-full h-[38px] px-2 rounded border border-gray-300 text-sm text-center focus:outline-none focus:border-orange-500 ${hasSelectedProduct ? 'bg-gray-50' : ''}`}
-                          value={row.unitsPerPackage || ""}
-                          readOnly
-                          placeholder={hasSelectedProduct ? "" : "Chọn sản phẩm..."}
-                        />
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <input
-                          type="number"
-                          min={1}
-                          className="w-full h-[38px] px-2 rounded border border-gray-300 text-sm text-center focus:outline-none focus:border-orange-500"
-                          value={row.numPackages}
-                          onChange={e => setPalletRows(prev => prev.map((r, i) => i === idx ? { ...r, numPackages: e.target.value } : r))}
-                          placeholder="Nhập số thùng"
-                        />
-
-                      </TableCell>
-                      <TableCell className="text-sm font-semibold">{totalUnits}</TableCell>
-                      <TableCell className="text-center">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className={hasError ? 'border-2 border-red-500' : ''}
-                          onClick={() => {
-                            setPalletRows(prev => prev.filter((_, i) => i !== idx));
-                            // Xóa lỗi của row này
-                            setRowErrors(prev => {
-                              const newErrors = { ...prev };
-                              delete newErrors[idx];
-                              // Cập nhật lại index của các lỗi sau row bị xóa
-                              const updatedErrors = {};
-                              Object.keys(newErrors).forEach(key => {
-                                const keyNum = parseInt(key);
-                                if (keyNum < idx) {
-                                  updatedErrors[keyNum] = newErrors[keyNum];
-                                } else if (keyNum > idx) {
-                                  updatedErrors[keyNum - 1] = newErrors[keyNum];
-                                }
+                        </TableCell>
+                        <TableCell className="text-sm font-semibold">{totalUnits}</TableCell>
+                        <TableCell className="text-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={hasError ? 'border-2 border-red-500' : ''}
+                            onClick={() => {
+                              setPalletRows(prev => prev.filter((_, i) => i !== idx));
+                              // Xóa lỗi của row này
+                              setRowErrors(prev => {
+                                const newErrors = { ...prev };
+                                delete newErrors[idx];
+                                // Cập nhật lại index của các lỗi sau row bị xóa
+                                const updatedErrors = {};
+                                Object.keys(newErrors).forEach(key => {
+                                  const keyNum = parseInt(key);
+                                  if (keyNum < idx) {
+                                    updatedErrors[keyNum] = newErrors[keyNum];
+                                  } else if (keyNum > idx) {
+                                    updatedErrors[keyNum - 1] = newErrors[keyNum];
+                                  }
+                                });
+                                return updatedErrors;
                               });
-                              return updatedErrors;
-                            });
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4 text-red-600" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                    {hasError && (
-                      <TableRow>
-                        <TableCell colSpan={8} className="bg-red-50 py-2">
-                          <div className="text-red-600 text-xs space-y-1">
-                            {rowErrors[idx].map((error, errorIdx) => (
-                              <div key={errorIdx} className="flex items-start gap-1">
-                                <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                                <span>{error}</span>
-                              </div>
-                            ))}
-                          </div>
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4 text-red-600" />
+                          </Button>
                         </TableCell>
                       </TableRow>
-                    )}
-                  </React.Fragment>
+                      {hasError && (
+                        <TableRow>
+                          <TableCell colSpan={8} className="bg-red-50 py-2">
+                            <div className="text-red-600 text-xs space-y-1">
+                              {rowErrors[idx].map((error, errorIdx) => (
+                                <div key={errorIdx} className="flex items-start gap-1">
+                                  <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                                  <span>{error}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </React.Fragment>
                   );
                 })
               )}

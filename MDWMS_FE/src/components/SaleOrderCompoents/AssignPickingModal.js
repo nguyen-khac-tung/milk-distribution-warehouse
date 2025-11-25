@@ -180,6 +180,8 @@ const AssignPickingModal = ({
                     const processingPO = staff.processingPurchaseOrders ?? 0;
                     const pendingSO = staff.pendingSalesOrders ?? 0;
                     const processingSO = staff.processingSalesOrders ?? 0;
+                    const pendingDR = staff.pendingDisposalRequests ?? 0;
+                    const processingDR = staff.processingDisposalRequests ?? 0;
 
                     return (
                       <div
@@ -211,6 +213,14 @@ const AssignPickingModal = ({
                           <div>
                             <span className="text-gray-500">Đơn bán đang xử lý:</span>
                             <span className="font-medium ml-1">{processingSO}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Đơn hủy đang chờ:</span>
+                            <span className="font-medium ml-1">{pendingDR}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Đơn hủy đang xử lý:</span>
+                            <span className="font-medium ml-1">{processingDR}</span>
                           </div>
                         </div>
                       </div>

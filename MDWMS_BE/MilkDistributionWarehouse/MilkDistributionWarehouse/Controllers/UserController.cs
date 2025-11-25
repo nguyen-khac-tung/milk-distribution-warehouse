@@ -49,16 +49,25 @@ namespace MilkDistributionWarehouse.Controllers
         [HttpGet("GetAvailableReceiversDropDown/{purchaseOrderId}")]
         public async Task<IActionResult> GetAvailableReceiversDropDown(string? purchaseOrderId)
         {
-            var (msg, userDropDown) = await _userService.GetAvailableReceiversOrPickersDropDown(purchaseOrderId, null);
+            var (msg, userDropDown) = await _userService.GetAvailableReceiversOrPickersDropDown(purchaseOrderId, null, null);
             if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
 
             return ApiResponse<List<UserAssignedDropDown>>.ToResultOk(userDropDown);
         }
 
         [HttpGet("GetAvailablePickersDropDown/{salesOrderId}")]
-        public async Task<IActionResult> GetAvailablePickersDropDown(Guid? salesOrderId)
+        public async Task<IActionResult> GetAvailablePickersDropDown(string? salesOrderId)
         {
-            var (msg, userDropDown) = await _userService.GetAvailableReceiversOrPickersDropDown(null, salesOrderId);
+            var (msg, userDropDown) = await _userService.GetAvailableReceiversOrPickersDropDown(null, salesOrderId, null);
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return ApiResponse<List<UserAssignedDropDown>>.ToResultOk(userDropDown);
+        }
+
+        [HttpGet("GetAvailableDisposalPickersDropDown/{disposalRequestId}")]
+        public async Task<IActionResult> GetAvailableDisposalPickersDropDown(string? disposalRequestId)
+        {
+            var (msg, userDropDown) = await _userService.GetAvailableReceiversOrPickersDropDown(null, null, disposalRequestId);
             if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
 
             return ApiResponse<List<UserAssignedDropDown>>.ToResultOk(userDropDown);

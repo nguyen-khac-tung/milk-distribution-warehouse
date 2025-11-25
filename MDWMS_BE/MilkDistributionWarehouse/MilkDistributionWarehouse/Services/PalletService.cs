@@ -28,12 +28,14 @@ namespace MilkDistributionWarehouse.Services
         private readonly IPalletRepository _palletRepository;
         private readonly ILocationRepository _locationRepository;
         private readonly IMapper _mapper;
+        private readonly IStocktakingSheetRepository _stocktakingSheetRepository;
 
-        public PalletService(IPalletRepository palletRepository, IMapper mapper, ILocationRepository locationRepository)
+        public PalletService(IPalletRepository palletRepository, IMapper mapper, ILocationRepository locationRepository, IStocktakingSheetRepository stocktakingSheetRepository)
         {
             _palletRepository = palletRepository;
             _mapper = mapper;
             _locationRepository = locationRepository;
+            _stocktakingSheetRepository = stocktakingSheetRepository;
         }
 
         public async Task<(string, PageResult<PalletDto.PalletResponseDto>)> GetPallets(PagedRequest request)
@@ -61,6 +63,9 @@ namespace MilkDistributionWarehouse.Services
         {
             if (userId == null)
                 return ("The user is not logged into the system.".ToMessageForUser(), new PalletDto.PalletResponseDto());
+
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                return ("Không thể thêm mới pallet khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser(), new PalletDto.PalletResponseDto());
 
             if (dto.LocationId.HasValue)
             {
@@ -111,6 +116,9 @@ namespace MilkDistributionWarehouse.Services
 
             if (userId == null)
                 return ("The user is not logged into the system.".ToMessageForUser(), result);
+
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                return ("Không thể thêm mới pallet khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser(), result);
 
             if (create == null || create.Pallets == null || !create.Pallets.Any())
                 return ("Danh sách pallet trống.".ToMessageForUser(), result);
@@ -194,6 +202,9 @@ namespace MilkDistributionWarehouse.Services
 
         public async Task<(string, PalletDto.PalletResponseDto)> UpdatePallet(string palletId, PalletDto.PalletRequestDto dto)
         {
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                return ("Không thể cập nhật pallet khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser(), new PalletDto.PalletResponseDto());
+
             var pallet = await _palletRepository.GetPalletById(palletId);
             if (pallet == null)
                 return ("Pallet do not exist.", new PalletDto.PalletResponseDto());
@@ -250,6 +261,9 @@ namespace MilkDistributionWarehouse.Services
 
         public async Task<(string, PalletDto.PalletResponseDto)> DeletePallet(string palletId)
         {
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                return ("Không thể xoá pallet khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser(), new PalletDto.PalletResponseDto());
+
             var pallet = await _palletRepository.GetPalletById(palletId);
             if (pallet == null)
                 return ("Pallet do not exist.", new PalletDto.PalletResponseDto());
@@ -296,6 +310,9 @@ namespace MilkDistributionWarehouse.Services
 
         public async Task<(string, PalletDto.PalletUpdateStatusDto)> UpdatePalletStatus(PalletDto.PalletUpdateStatusDto update)
         {
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                return ("Không thể cập nhật trạng thái pallet khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser(), new PalletDto.PalletUpdateStatusDto());
+
             var palletExist = await _palletRepository.GetPalletById(update.PalletId);
             if (palletExist == null)
             {
@@ -337,6 +354,9 @@ namespace MilkDistributionWarehouse.Services
 
         public async Task<(string, PalletDto.PalletUpdateStatusDto)> UpdatePalletQuantity(string palletId, int takeOutQuantity)
         {
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                return ("Không thể cập nhật số lượng pallet khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser(), new PalletDto.PalletUpdateStatusDto());
+
             var pallet = await _palletRepository.GetPalletById(palletId);
             if (pallet == null)
                 return ("Pallet do not exist.", new PalletDto.PalletUpdateStatusDto());

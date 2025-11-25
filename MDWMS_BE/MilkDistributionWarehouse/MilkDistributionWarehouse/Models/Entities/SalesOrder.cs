@@ -7,7 +7,7 @@ namespace MilkDistributionWarehouse.Models.Entities;
 
 public partial class SalesOrder
 {
-    public Guid SalesOrderId { get; set; }
+    public string SalesOrderId { get; set; }
 
     public int? RetailerId { get; set; }
 

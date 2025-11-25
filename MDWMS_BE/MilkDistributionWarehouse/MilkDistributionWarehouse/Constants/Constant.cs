@@ -17,6 +17,16 @@
         public const int SaleManager = 6;
     }
 
+    public static class RoleNames
+    {
+        public const string SalesRepresentative = "Sales Representative";
+        public const string SalesManager = "Sale Manager";
+        public const string WarehouseManager = "Warehouse Manager";
+        public const string WarehouseStaff = "Warehouse Staff";
+        public const string Administrator = "Administrator";
+        public const string BusinessOwner = "Business Owner";
+    }
+
     /// <summary>
     /// Các trạng thái của Đơn đặt hàng (Purchase Order)
     /// </summary>
@@ -92,6 +102,41 @@
     }
 
     /// <summary>
+    /// Các trạng thái của Đơn Yêu Cầu Xuất Hủy (Disposal Request)
+    /// </summary>
+    public static class DisposalRequestStatus
+    {
+        public const int Draft = 1;
+        public const int PendingApproval = 2;
+        public const int Rejected = 3;
+        public const int Approved = 4;
+        public const int AssignedForPicking = 5;
+        public const int Picking = 6;
+        public const int Completed = 7;
+    }
+
+    /// <summary>
+    /// Các trạng thái của Phiếu Xuất Hủy (Disposal Note)
+    /// </summary>
+    public static class DisposalNoteStatus
+    {
+        public const int Picking = 1;
+        public const int PendingApproval = 2;
+        public const int Completed = 3;
+    }
+
+    /// <summary>
+    /// Các trạng thái của từng dòng sản phẩm trong Phiếu Xuất Hủy (Disposal Note)
+    /// </summary>
+    public static class DisposalNoteItemStatus
+    {
+        public const int Picking = 1;
+        public const int Picked = 2;
+        public const int PendingApproval = 3;
+        public const int Completed = 4;
+    }
+
+    /// <summary>
     /// Các trạng thái của PickAllocation
     /// </summary>
     public static class PickAllocationStatus
@@ -119,16 +164,6 @@
         public const string Unavailable = "Unavailable";
     }
 
-    public static class RoleNames
-    {
-        public const string SalesRepresentative = "Sales Representative";
-        public const string SalesManager = "Sale Manager";
-        public const string WarehouseManager = "Warehouse Manager";
-        public const string WarehouseStaff = "Warehouse Staff";
-        public const string Administrator = "Administrator";
-        public const string BusinessOwner = "Business Owner";
-    }
-
     /// <summary>
     /// Các trạng thái của phiểu kiểm kê
     /// </summary>
@@ -148,10 +183,18 @@
     /// </summary>
     public static class StockAreaStatus
     {
-        public const int Pending = 1;             //Đang chờ
-        public const int Counted = 2;             //Đã kiểm
+        public const int Assigned = 1;            //Đã Phân Công 
+        public const int Pending = 2;             //Đang kiểm kê
         public const int PendingApproval = 3;     //Chờ duyệt
         public const int Completed = 4;           //Đã hoàn thành
+        public const int Cancelled = 5;           //Đã huỷ  
+    }
+
+    public static class StockAreaStarted
+    {
+        public const int NotStarted = 1;     //Chưa bắt đầu
+        public const int Started = 2;        //Đã bắt đầu   
+        public const int HasSomeAreas = 3;   //Có một hoặc nhiều khu vực
     }
 
     /// <summary>
@@ -163,6 +206,7 @@
         public const int Counted = 2;             //Đã kiểm
         public const int PendingApproval = 3;     //Chờ duyệt
         public const int Completed = 4;           //Đã hoàn thành
+        public const int Cancelled = 5;           //Đã huỷ
     }
 
     /// <summary>
@@ -174,10 +218,66 @@
         public const int Matched = 2;       //Đúng pallet
         public const int Missing = 3;       //Thiếu pallet
         public const int Surplus = 4;       //Thừa pallet
+        public const int Mislocated = 5;    //Sai vị trí
+    }
+
+    /// <summary>
+    /// Các trạng thái của thông báo (NotificationStatus)
+    /// </summary>
+    public static class NotificationStatus
+    {
+        public const int Read = 1;
+        public const int Unread = 2;
+        public const int Deleted = 3;
+    }
+
+    /// <summary>
+    /// Các phân loại thông báo (NotificationCategory)
+    /// </summary>
+    public static class NotificationCategory
+    {
+        public const int Normal = 1;
+        public const int Important = 2;
+    }
+
+    /// <summary>
+    /// Định nghĩa các loại thực thể có thể được gắn vào một thông báo.
+    /// </summary>
+    public static class NotificationEntityType
+    {
+        public const int PurchaseOrder = 1;
+        public const int SaleOrder = 2;
+        public const int GoodsReceiptNote = 3;
+        public const int GoodsIssueNote = 4;
+        public const int DisposalRequest = 5;
+        public const int DisposalNote = 6;
+        public const int StocktakingSheet = 7;
+        public const int InventoryReport = 8;
+        public const int NoNavigation = 9;
+        public const int StocktakingAreaStaff = 10;
+        public const int StocktakingAreaManager = 11;
     }
 
     public static class StocktakingSettings
     {
         public const int HoursBeforeStartToAllowEdit = 6;
     }
+
+    /// <summary>
+    /// Các trạng thái của InventoryLedger (TypeChange)
+    /// </summary>
+    public static class InventoryLegerTypeChange
+    {
+        public const int Receipt = 1;
+        public const int Issue = 2;
+        public const int Disposal = 3;
+    }
+
+    public static class InventoryConfig
+    {
+        public const int NotificationHour = 9; // Giờ chạy thông báo (0-23)
+        public const int DaysBeforeExpiryWarning = 60; // Cảnh báo trước 60 ngày
+        public const int LowStockThreshold = 10;       // Cảnh báo dưới 10 thùng
+    }
+
 }

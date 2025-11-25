@@ -84,7 +84,12 @@ export const login = async (data) => {
 export const refreshAccessToken = async () => {
     try {
         const refreshToken = localStorage.getItem("refreshToken");
-        if (!refreshToken) throw new Error("Không tìm thấy refresh token.");
+        if (!refreshToken) {
+            const error = new Error("Không tìm thấy refresh token.");
+            // Đánh dấu đây là lỗi do không có refresh token
+            error.isMissingToken = true;
+            throw error;
+        }
 
         const res = await refreshApi.post("/Authentication/RefreshToken", {
             token: refreshToken,
@@ -97,13 +102,27 @@ export const refreshAccessToken = async () => {
             localStorage.setItem("accessToken", newAccessToken);
             return newAccessToken;
         } else {
-            throw new Error("Không thể làm mới token.");
+            // Nếu refresh token hết hạn hoặc không hợp lệ, server trả về success = false
+            const errorMessage = res.data?.message || "Không thể làm mới token.";
+            const error = new Error(errorMessage);
+            error.response = { status: 400, data: res.data };
+            throw error;
         }
     } catch (error) {
         console.error("Error refreshing token:", error);
-        if (error.response?.data?.message) {
-            throw new Error(error.response.data.message);
+
+        // Nếu là lỗi network (không có response), giữ nguyên error gốc
+        if (!error.response && !error.isMissingToken) {
+            error.isNetworkError = true;
+            throw error;
         }
+
+        if (error.response?.data?.message) {
+            const serverError = new Error(error.response.data.message);
+            serverError.response = error.response;
+            throw serverError;
+        }
+
         throw error;
     }
 };
@@ -144,18 +163,50 @@ export const validateAndRefreshToken = async () => {
                 return true;
             } catch (error) {
                 console.error("Token refresh failed:", error);
-                // Xóa tất cả token nếu refresh thất bại
-                localStorage.removeItem("accessToken");
-                localStorage.removeItem("refreshToken");
-                localStorage.removeItem("userInfo");
-                return false;
+
+                // Kiểm tra xem refresh token còn tồn tại không (có thể đã bị xóa ở đâu đó)
+                const currentRefreshToken = localStorage.getItem("refreshToken");
+                if (!currentRefreshToken) {
+                    // Refresh token đã bị xóa, không thể refresh được nữa
+                    console.warn("Refresh token không còn trong localStorage");
+                    localStorage.removeItem("accessToken");
+                    localStorage.removeItem("userInfo");
+                    return false;
+                }
+
+                // Kiểm tra loại lỗi
+                const isMissingToken = error.isMissingToken === true;
+                // Lỗi token: có response từ server với status 400/401/403
+                // 400: Refresh token hết hạn hoặc không hợp lệ (từ backend)
+                // 401/403: Unauthorized/Forbidden
+                const isTokenError = error.response?.status === 400 || 
+                                   error.response?.status === 401 || 
+                                   error.response?.status === 403;
+                // Lỗi network: không có response từ server
+                const isNetworkError = !error.response && !isMissingToken;
+
+                if (isMissingToken || isTokenError) {
+                    console.warn("Token error detected, clearing all tokens");
+                    localStorage.removeItem("accessToken");
+                    localStorage.removeItem("refreshToken");
+                    localStorage.removeItem("userInfo");
+                    return false;
+                } else if (isNetworkError) {
+                    console.warn("Network error during token refresh, keeping tokens");
+                    return !!accessToken;
+                } else {
+                    console.warn("Unknown error during token refresh, keeping tokens");
+                    return !!accessToken;
+                }
             }
         }
 
         return false;
     } catch (error) {
         console.error("Token validation error:", error);
-        return false;
+        // Nếu có accessToken, vẫn cho phép tiếp tục trong trường hợp lỗi không mong đợi
+        const accessToken = localStorage.getItem("accessToken");
+        return !!accessToken;
     }
 };
 

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
@@ -14,7 +14,6 @@ import { PERMISSIONS } from "../../utils/permissions";
 import { usePermissions } from "../../hooks/usePermissions";
 import PermissionWrapper from "../../components/Common/PermissionWrapper";
 import SalesOrderTable from "./SalesOrderTable";
-import SaleOrderStatsChart from "../../components/SaleOrderCompoents/SaleOrderStatsChart";
 import SaleOrderFilterToggle from "../../components/SaleOrderCompoents/SaleOrderFilterToggle";
 
 const SalesOrderList = () => {
@@ -583,33 +582,6 @@ const SalesOrderList = () => {
 
     const filterConfig = getFilterConfig();
 
-    const salesOrderStats = useMemo(() => {
-        const totalOrders = saleOrders.length;
-
-        const draftOrders = saleOrders.filter(order => order.status === SALE_ORDER_STATUS.Draft).length;
-        const pendingOrders = saleOrders.filter(order => order.status === SALE_ORDER_STATUS.PendingApproval).length;
-        const rejectedOrders = saleOrders.filter(order => order.status === SALE_ORDER_STATUS.Rejected).length;
-        const approvedOrders = saleOrders.filter(order => order.status === SALE_ORDER_STATUS.Approved).length;
-        const assignedOrders = saleOrders.filter(order => order.status === SALE_ORDER_STATUS.AssignedForPicking).length;
-        const pickingOrders = saleOrders.filter(order => order.status === SALE_ORDER_STATUS.Picking).length;
-        const completedOrders = saleOrders.filter(order => order.status === SALE_ORDER_STATUS.Completed).length;
-
-        const stats = {
-            totalOrders, draftOrders, pendingOrders, rejectedOrders, approvedOrders, assignedOrders, pickingOrders, completedOrders, statusStats:
-                [
-                    { status: SALE_ORDER_STATUS.Draft, label: STATUS_LABELS[SALE_ORDER_STATUS.Draft], count: draftOrders, percentage: totalOrders > 0 ? Math.round((draftOrders / totalOrders) * 100) : 0, },
-                    { status: SALE_ORDER_STATUS.PendingApproval, label: STATUS_LABELS[SALE_ORDER_STATUS.PendingApproval], count: pendingOrders, percentage: totalOrders > 0 ? Math.round((pendingOrders / totalOrders) * 100) : 0, },
-                    { status: SALE_ORDER_STATUS.Rejected, label: STATUS_LABELS[SALE_ORDER_STATUS.Rejected], count: rejectedOrders, percentage: totalOrders > 0 ? Math.round((rejectedOrders / totalOrders) * 100) : 0, },
-                    { status: SALE_ORDER_STATUS.Approved, label: STATUS_LABELS[SALE_ORDER_STATUS.Approved], count: approvedOrders, percentage: totalOrders > 0 ? Math.round((approvedOrders / totalOrders) * 100) : 0, },
-                    { status: SALE_ORDER_STATUS.AssignedForPicking, label: STATUS_LABELS[SALE_ORDER_STATUS.AssignedForPicking], count: assignedOrders, percentage: totalOrders > 0 ? Math.round((assignedOrders / totalOrders) * 100) : 0, },
-                    { status: SALE_ORDER_STATUS.Picking, label: STATUS_LABELS[SALE_ORDER_STATUS.Picking], count: pickingOrders, percentage: totalOrders > 0 ? Math.round((pickingOrders / totalOrders) * 100) : 0, },
-                    { status: SALE_ORDER_STATUS.Completed, label: STATUS_LABELS[SALE_ORDER_STATUS.Completed], count: completedOrders, percentage: totalOrders > 0 ? Math.round((completedOrders / totalOrders) * 100) : 0, },
-                ],
-        };
-
-        return stats;
-    }, [saleOrders]);
-
     return (
         <div className="min-h-screen">
             <div className="max-w-7xl mx-auto space-y-6">
@@ -635,11 +607,6 @@ const SalesOrderList = () => {
                         </PermissionWrapper>
                     </div>
                 </div>
-
-                {/* Stats Chart */}
-                <SaleOrderStatsChart
-                    saleOrderStats={salesOrderStats}
-                />
 
                 {/* Search and Table Combined */}
                 <Card className="shadow-sm border border-slate-200 overflow-visible bg-gray-50">

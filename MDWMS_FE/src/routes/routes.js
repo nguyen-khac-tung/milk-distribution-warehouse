@@ -1,8 +1,8 @@
 
 import NotFoundPage from "../pages/NotFoundPage";
-import Dashboard from "../pages/AccountPage/Dashboard/Dashboard";
+import Dashboard from "../pages/Dashboard/Dashboard";
 import CreateSaleOrder from "../pages/SalesOrderPage/CreateSaleOrder";
-import Reports from "../pages/Reports";
+import Reports from "../pages/ReportManagement/Reports";
 // import Settings from "../pages/Settings";
 import Areas from "../pages/AreaAndLocationPage/AreaPage/AreasList";
 import Locations from "../pages/AreaAndLocationPage/LocationPage/LocationList";
@@ -34,6 +34,19 @@ import GoodsReceiptDetail from "../pages/GoodsReceiptPage/GoodsReceiptDetail";
 import BackOrderList from "../pages/BackOrderPage/BackOrderList";
 import UpdateSaleOrder from "../pages/SalesOrderPage/UpdateSaleOrder";
 import GoodsIssueNoteDetail from "../pages/GoodsIssueNotePage/GoodsIssueNoteDetail";
+import StocktakingList from "../pages/StocktakingPage/StocktakingList";
+import CreateStocktaking from "../pages/StocktakingPage/CreateStocktaking";
+import UpdateStocktaking from "../pages/StocktakingPage/UpdateStocktaking";
+import StocktakingDetail from "../pages/StocktakingPage/StocktakingDetail";
+import StocktakingArea from "../pages/StocktakingArea/StocktakingArea";
+import StocktakingAreaDetailForOther from "../pages/StocktakingArea/StocktakingAreaDetailForOther";
+import OrdersPage from "../pages/ReportManagement/OrdersPageReport";
+import InventoryReport from "../pages/ReportManagement/InventoryReport";
+import DisposalList from "../pages/DisposalPage/DisposalList";
+import DisposalDetail from "../pages/DisposalPage/DisposalDetail";
+import CreateDisposal from "../pages/DisposalPage/CreateDisposal";
+import UpdateDisposal from "../pages/DisposalPage/UpdateDisposal";
+import DisposalNoteDetail from "../pages/DisposalNotePage/DisposalNoteDetail";
 
 export const routes = [
     {
@@ -180,10 +193,19 @@ export const routes = [
         isShowHeader: true,
     },
     {
-        path: "/reports",
+        path: "/reports/orders",
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.REPORT_VIEW}>
-                <Reports />
+                <OrdersPage />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/reports/inventory",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.REPORT_VIEW}>
+                <InventoryReport />
             </ProtectedRoute>
         ),
         isShowHeader: true,
@@ -285,6 +307,106 @@ export const routes = [
         page: () => (
             <ProtectedRoute requiredPermission={PERMISSIONS.SALES_ORDER_VIEW_DELIVERY_SLIP}>
                 <GoodsIssueNoteDetail />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/stocktakings",
+        page: () => (
+            <ProtectedRoute requiredPermission={[PERMISSIONS.STOCKTAKING_VIEW, PERMISSIONS.STOCKTAKING_VIEW_WM, PERMISSIONS.STOCKTAKING_VIEW_WS, PERMISSIONS.STOCKTAKING_VIEW_SM]} requireAll={false}>
+                <StocktakingList />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/stocktakings/:id",
+        page: () => (
+            <ProtectedRoute requiredPermission={[PERMISSIONS.STOCKTAKING_VIEW, PERMISSIONS.STOCKTAKING_VIEW_WM, PERMISSIONS.STOCKTAKING_VIEW_WS, PERMISSIONS.STOCKTAKING_VIEW_SM]} requireAll={false}>
+                <StocktakingDetail />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/stocktaking/create",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.STOCKTAKING_CREATE}>
+                <CreateStocktaking />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/stocktakings/update/:id",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.STOCKTAKING_UPDATE}>
+                <UpdateStocktaking />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/stocktaking-area/:id",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.STOCKTAKING_AREA_VIEW_DETAILS}>
+                <StocktakingArea />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/stocktaking-area-detail-other/:id",
+        page: () => (
+            <ProtectedRoute requiredPermission={[PERMISSIONS.STOCKTAKING_AREA_VIEW_DETAILS_FOR_OTHER, PERMISSIONS.STOCKTAKING_AREA_VIEW_DETAILS]} requireAll={false}>
+                <StocktakingAreaDetailForOther />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    //xuat huy
+    {
+        path: "/disposal",
+        page: () => (
+            <ProtectedRoute requiredPermission={[PERMISSIONS.DISPOSAL_REQUEST_VIEW]} requireAll={false}>
+                <DisposalList />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/disposal/:id",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.DISPOSAL_REQUEST_VIEW_DETAILS}>
+                <DisposalDetail />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/disposal/create",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.DISPOSAL_REQUEST_CREATE}>
+                <CreateDisposal />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/disposal/update/:id",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.DISPOSAL_REQUEST_UPDATE}>
+                <UpdateDisposal />
+            </ProtectedRoute>
+        ),
+        isShowHeader: true,
+    },
+    {
+        path: "/disposal-note-detail/:id",
+        page: () => (
+            <ProtectedRoute requiredPermission={PERMISSIONS.DISPOSAL_REQUEST_VIEW_DETAILS}>
+                <DisposalNoteDetail />
             </ProtectedRoute>
         ),
         isShowHeader: true,

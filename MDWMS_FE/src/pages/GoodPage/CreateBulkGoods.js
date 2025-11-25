@@ -22,6 +22,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
       supplierId: "",
       storageConditionId: "",
       unitMeasureId: "",
+      goodsPackingCreates: [{ unitPerPackage: "" }]
     }
   ])
   const [loading, setLoading] = useState(false)
@@ -34,7 +35,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
   const [hasBackendErrors, setHasBackendErrors] = useState(false)
   const [successfulGoods, setSuccessfulGoods] = useState(new Set())
   const isCheckingDuplicates = useRef(false)
-  
+
   // Default values state
   const [defaultValues, setDefaultValues] = useState({
     categoryId: "",
@@ -62,7 +63,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
     if (useDefaults && goodsList.length > 0) {
       const firstGoods = goodsList[0]
       const updatedGoods = { ...firstGoods }
-      
+
       if (defaultFields.category && defaultValues.categoryId) {
         updatedGoods.categoryId = defaultValues.categoryId
       }
@@ -76,7 +77,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
         updatedGoods.unitMeasureId = defaultValues.unitMeasureId
       }
 
-      const shouldUpdate = 
+      const shouldUpdate =
         firstGoods.categoryId !== updatedGoods.categoryId ||
         firstGoods.supplierId !== updatedGoods.supplierId ||
         firstGoods.storageConditionId !== updatedGoods.storageConditionId ||
@@ -102,7 +103,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
       if (goods.goodsCode) {
         const duplicateIndex = goodsList.findIndex((g, i) => i !== index && g.goodsCode === goods.goodsCode)
         if (duplicateIndex !== -1) {
-          newErrors[`${index}-goodsCode`] = "Mã mặt hàng đã tồn tại trong danh sách"
+          newErrors[`${index}-goodsCode`] = "Mã hàng hóa đã tồn tại trong danh sách"
           hasDuplicates = true
         } else {
           // Clear duplicate error if no longer duplicate
@@ -150,6 +151,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
       supplierId: (useDefaults && defaultFields.supplier) ? defaultValues.supplierId : "",
       storageConditionId: (useDefaults && defaultFields.storageCondition) ? defaultValues.storageConditionId : "",
       unitMeasureId: (useDefaults && defaultFields.unitMeasure) ? defaultValues.unitMeasureId : "",
+      goodsPackingCreates: [{ unitPerPackage: "" }]
     }
     const newGoodsList = [...goodsList, newGoods]
     setGoodsList(newGoodsList)
@@ -160,7 +162,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
       if (goods.goodsCode) {
         const duplicateIndex = newGoodsList.findIndex((g, i) => i !== index && g.goodsCode === goods.goodsCode)
         if (duplicateIndex !== -1) {
-          newErrors[`${index}-goodsCode`] = "Mã mặt hàng đã tồn tại trong danh sách"
+          newErrors[`${index}-goodsCode`] = "Mã hàng hóa đã tồn tại trong danh sách"
         }
       }
     })
@@ -212,7 +214,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
         if (goods.goodsCode) {
           const duplicateIndex = newList.findIndex((g, i) => i !== newIndex && g.goodsCode === goods.goodsCode)
           if (duplicateIndex !== -1) {
-            newErrors[`${newIndex}-goodsCode`] = "Mã mặt hàng đã tồn tại trong danh sách"
+            newErrors[`${newIndex}-goodsCode`] = "Mã hàng hóa đã tồn tại trong danh sách"
           }
         }
       })
@@ -248,10 +250,47 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
       const duplicateIndex = newList.findIndex((g, i) => i !== index && g.goodsCode === value)
       if (duplicateIndex !== -1) {
         const newErrors = { ...errors }
-        newErrors[`${index}-goodsCode`] = "Mã mặt hàng đã tồn tại trong danh sách"
+        newErrors[`${index}-goodsCode`] = "Mã hàng hóa đã tồn tại trong danh sách"
         setErrors(newErrors)
         setHasBackendErrors(true)
       }
+    }
+  }
+
+  const addPackingRow = (goodsIndex) => {
+    const newList = [...goodsList]
+    if (!newList[goodsIndex].goodsPackingCreates) {
+      newList[goodsIndex].goodsPackingCreates = []
+    }
+    newList[goodsIndex].goodsPackingCreates.push({ unitPerPackage: "" })
+    setGoodsList(newList)
+  }
+
+  const removePackingRow = (goodsIndex, packingIndex) => {
+    const newList = [...goodsList]
+    if (newList[goodsIndex].goodsPackingCreates && newList[goodsIndex].goodsPackingCreates.length > 1) {
+      newList[goodsIndex].goodsPackingCreates = newList[goodsIndex].goodsPackingCreates.filter((_, i) => i !== packingIndex)
+      setGoodsList(newList)
+    }
+  }
+
+  const updatePackingRow = (goodsIndex, packingIndex, field, value) => {
+    const newList = [...goodsList]
+    if (!newList[goodsIndex].goodsPackingCreates) {
+      newList[goodsIndex].goodsPackingCreates = []
+    }
+    if (!newList[goodsIndex].goodsPackingCreates[packingIndex]) {
+      newList[goodsIndex].goodsPackingCreates[packingIndex] = {}
+    }
+    newList[goodsIndex].goodsPackingCreates[packingIndex][field] = value
+    setGoodsList(newList)
+
+    // Clear error for this field
+    const errorKey = `${goodsIndex}-packing-${packingIndex}-${field}`
+    if (errors[errorKey]) {
+      const newErrors = { ...errors }
+      delete newErrors[errorKey]
+      setErrors(newErrors)
     }
   }
 
@@ -272,8 +311,21 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
       // Check for duplicate goods codes
       const duplicateIndex = goodsList.findIndex((g, i) => i !== index && g.goodsCode === goods.goodsCode)
       if (duplicateIndex !== -1 && goods.goodsCode) {
-        newErrors[`${index}-goodsCode`] = "Mã mặt hàng đã tồn tại trong danh sách"
+        newErrors[`${index}-goodsCode`] = "Mã hàng hóa đã tồn tại trong danh sách"
         isValid = false
+      }
+
+      // Validate packing - at least one packing is required and must have unitPerPackage
+      if (!goods.goodsPackingCreates || goods.goodsPackingCreates.length === 0) {
+        newErrors[`${index}-packing`] = "Vui lòng thêm ít nhất một quy cách đóng gói"
+        isValid = false
+      } else {
+        goods.goodsPackingCreates.forEach((packing, packingIndex) => {
+          if (!packing.unitPerPackage || packing.unitPerPackage === "" || Number(packing.unitPerPackage) <= 0) {
+            newErrors[`${index}-packing-${packingIndex}-unitPerPackage`] = "Số đơn vị/bao phải lớn hơn 0"
+            isValid = false
+          }
+        })
       }
     })
 
@@ -306,7 +358,20 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
         }
 
         try {
-          const response = await createGood(goodsList[i])
+          // Format data for API - convert to proper types and structure
+          const goodsData = {
+            goodsCode: goodsList[i].goodsCode,
+            goodsName: goodsList[i].goodsName,
+            categoryId: Number(goodsList[i].categoryId),
+            supplierId: Number(goodsList[i].supplierId),
+            storageConditionId: Number(goodsList[i].storageConditionId),
+            unitMeasureId: Number(goodsList[i].unitMeasureId),
+            goodsPackingCreates: (goodsList[i].goodsPackingCreates || []).map(packing => ({
+              unitPerPackage: Number(packing.unitPerPackage) || 0
+            })).filter(packing => packing.unitPerPackage > 0)
+          }
+
+          const response = await createGood(goodsData)
           results.push({ index: i, success: true, data: response })
         } catch (error) {
           console.error(`Error creating good ${i + 1}:`, error)
@@ -330,11 +395,11 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
             const errorMessage = error.response.data.message.toLowerCase()
 
             // Check for duplicate goods code errors
-            if (errorMessage.includes('goodsCode') || errorMessage.includes('mã mặt hàng') ||
+            if (errorMessage.includes('goodsCode') || errorMessage.includes('mã hàng hóa') ||
               errorMessage.includes('đã tồn tại') || errorMessage.includes('duplicate') ||
               errorMessage.includes('already exists') || errorMessage.includes('trùng lặp')) {
               backendErrors.goodsCode = cleanErrorMessage(error.response.data.message)
-            } else if (errorMessage.includes('goodsName') || errorMessage.includes('tên mặt hàng')) {
+            } else if (errorMessage.includes('goodsName') || errorMessage.includes('tên hàng hóa')) {
               backendErrors.goodsName = cleanErrorMessage(error.response.data.message)
             } else if (errorMessage.includes('category') || errorMessage.includes('danh mục')) {
               backendErrors.categoryId = cleanErrorMessage(error.response.data.message)
@@ -371,7 +436,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
 
           // If no specific field errors, add general error
           if (Object.keys(backendErrors).length === 0) {
-            const errorMessage = extractErrorMessage(error, "Lỗi khi tạo mặt hàng")
+            const errorMessage = extractErrorMessage(error, "Lỗi khi tạo hàng hóa")
             errors.push({ index: i, error: errorMessage })
           }
         }
@@ -390,7 +455,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
 
       if (results.length === goodsList.length) {
         // All goods created successfully
-        window.showToast(`Đã tạo thành công ${results.length} mặt hàng!`, "success")
+        window.showToast(`Đã tạo thành công ${results.length} hàng hóa!`, "success")
         setHasBackendErrors(false)
         setSuccessfulGoods(new Set())
         // Reset default values
@@ -418,10 +483,10 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
           err.error.includes('already exists') || err.error.includes('trùng lặp')
         )
 
-        let toastMessage = `Tạo thành công ${results.length}/${goodsList.length} mặt hàng.\n\nCòn ${goodsList.length - results.length} mặt hàng cần sửa lỗi trước khi có thể đóng modal.`
+        let toastMessage = `Tạo thành công ${results.length}/${goodsList.length} hàng hóa.\n\nCòn ${goodsList.length - results.length} hàng hóa cần sửa lỗi trước khi có thể đóng modal.`
 
         if (duplicateErrors.length > 0) {
-          toastMessage += `\n\n Có ${duplicateErrors.length} mặt hàng bị trùng mã với dữ liệu trong hệ thống.`
+          toastMessage += `\n\n Có ${duplicateErrors.length} hàng hóa bị trùng mã với dữ liệu trong hệ thống.`
         }
 
         window.showToast(toastMessage, "warning")
@@ -431,7 +496,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
 
     } catch (error) {
       console.error("Error in bulk create:", error)
-      const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi tạo mặt hàng")
+      const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi tạo hàng hóa")
       window.showToast(`Lỗi: ${errorMessage}`, "error")
     } finally {
       setLoading(false)
@@ -446,6 +511,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
       supplierId: (useDefaults && defaultFields.supplier) ? defaultValues.supplierId : "",
       storageConditionId: (useDefaults && defaultFields.storageCondition) ? defaultValues.storageConditionId : "",
       unitMeasureId: (useDefaults && defaultFields.unitMeasure) ? defaultValues.unitMeasureId : "",
+      goodsPackingCreates: [{ unitPerPackage: "" }]
     }])
     setErrors({})
     setHasBackendErrors(false)
@@ -501,7 +567,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
             <Package className="h-6 w-6 text-orange-500" />
-            <h1 className="text-2xl font-bold text-slate-800">Thêm nhiều mặt hàng</h1>
+            <h1 className="text-2xl font-bold text-slate-800">Thêm nhiều hàng hóa</h1>
           </div>
           <button
             onClick={handleClose}
@@ -531,7 +597,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                   </label>
                 </div>
               </div>
-              
+
               {useDefaults && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Default Category */}
@@ -660,11 +726,11 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
             {/* Instructions */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-800">
-                <strong>Hướng dẫn:</strong> Điền thông tin cho từng mặt hàng. Bạn có thể thêm/xóa mặt hàng bằng các nút bên dưới.
+                <strong>Hướng dẫn:</strong> Điền thông tin cho từng hàng hóa. Bạn có thể thêm/xóa hàng hóa bằng các nút bên dưới.
                 Tất cả các trường có dấu <span className="text-red-500">*</span> là bắt buộc.
                 {useDefaults && (
                   <span className="block mt-2 text-orange-600 font-medium">
-                    ✓ Đã bật chế độ sử dụng giá trị mặc định. Các mặt hàng mới sẽ tự động điền sẵn các trường đã chọn checkbox.
+                    ✓ Đã bật chế độ sử dụng giá trị mặc định. Các hàng hóa mới sẽ tự động điền sẵn các trường đã chọn checkbox.
                   </span>
                 )}
                 {hasBackendErrors && (
@@ -679,13 +745,20 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
             <div className="space-y-6">
               {goodsList.map((goods, index) => {
                 const isSuccessful = successfulGoods.has(index)
-                console.log(`Rendering goods ${index + 1}:`, goods, 'isSuccessful:', isSuccessful)
+                // Ensure goods has packing array (use local variable, don't mutate)
+                const goodsWithPacking = {
+                  ...goods,
+                  goodsPackingCreates: goods.goodsPackingCreates && goods.goodsPackingCreates.length > 0
+                    ? goods.goodsPackingCreates
+                    : [{ unitPerPackage: "" }]
+                }
+                console.log(`Rendering goods ${index + 1}:`, goodsWithPacking, 'isSuccessful:', isSuccessful)
                 return (
                   <Card key={index} className={`p-6 border ${isSuccessful ? 'border-green-200 bg-green-50' : 'border-slate-200'}`}>
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-2">
                         <h3 className="text-lg font-semibold text-slate-700">
-                          Mặt hàng {index + 1}
+                          hàng hóa {index + 1}
                         </h3>
                         {isSuccessful && (
                           <span className="px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full">
@@ -731,10 +804,10 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                       {/* Goods Code */}
                       <div className="space-y-2">
                         <Label className="text-sm font-medium text-slate-700">
-                          Mã mặt hàng <span className="text-red-500">*</span>
+                          Mã hàng hóa <span className="text-red-500">*</span>
                         </Label>
                         <Input
-                          placeholder="Nhập mã mặt hàng..."
+                          placeholder="Nhập mã hàng hóa..."
                           value={goods.goodsCode}
                           onChange={(e) => updateGoodsRow(index, 'goodsCode', e.target.value)}
                           disabled={isSuccessful}
@@ -754,10 +827,10 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                       {/* Goods Name */}
                       <div className="space-y-2">
                         <Label className="text-sm font-medium text-slate-700">
-                          Tên mặt hàng <span className="text-red-500">*</span>
+                          Tên hàng hóa <span className="text-red-500">*</span>
                         </Label>
                         <Input
-                          placeholder="Nhập tên mặt hàng..."
+                          placeholder="Nhập tên hàng hóa..."
                           value={goods.goodsName}
                           onChange={(e) => updateGoodsRow(index, 'goodsName', e.target.value)}
                           disabled={isSuccessful}
@@ -890,6 +963,83 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                         )}
                       </div>
                     </div>
+
+                    {/* Quy cách đóng gói */}
+                    <div className="mt-6 pt-6 border-t border-gray-200">
+                      <div className="flex items-center justify-between mb-4">
+                        <Label className="text-sm font-semibold text-slate-700">
+                          Quy cách đóng gói <span className="text-red-500">*</span>
+                        </Label>
+                        {!isSuccessful && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => addPackingRow(index)}
+                            className="h-8 px-3 text-xs border-orange-500 text-orange-500 hover:bg-orange-50"
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Thêm quy cách
+                          </Button>
+                        )}
+                      </div>
+                      {errors[`${index}-packing`] && (
+                        <p className="text-sm text-red-500 mb-2">
+                          {errors[`${index}-packing`]}
+                        </p>
+                      )}
+                      <div className="space-y-3">
+                        {goodsWithPacking.goodsPackingCreates.map((packing, packingIndex) => (
+                          <div key={packingIndex} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                            <div className="flex-1">
+                              <Label className="text-xs font-medium text-slate-600 mb-1 block">
+                                Số đơn vị/bao <span className="text-red-500">*</span>
+                              </Label>
+                              <Input
+                                type="number"
+                                placeholder="Nhập số đơn vị/bao..."
+                                value={packing.unitPerPackage || ""}
+                                onChange={(e) => {
+                                  const value = e.target.value
+                                  if (value === '' || value === '-') {
+                                    updatePackingRow(index, packingIndex, 'unitPerPackage', '')
+                                    return
+                                  }
+                                  const numValue = parseInt(value)
+                                  if (!isNaN(numValue) && numValue > 0) {
+                                    updatePackingRow(index, packingIndex, 'unitPerPackage', numValue)
+                                  }
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === '-' || e.key === '+' || e.key === 'e' || e.key === 'E' || e.key === '.') {
+                                    e.preventDefault()
+                                  }
+                                }}
+                                disabled={isSuccessful}
+                                min="1"
+                                className={`h-9 border-slate-300 focus:border-orange-500 focus:ring-orange-500 ${errors[`${index}-packing-${packingIndex}-unitPerPackage`] ? 'border-red-500' : ''} ${isSuccessful ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                              />
+                              {errors[`${index}-packing-${packingIndex}-unitPerPackage`] && (
+                                <p className="text-xs text-red-500 mt-1">
+                                  {errors[`${index}-packing-${packingIndex}-unitPerPackage`]}
+                                </p>
+                              )}
+                            </div>
+                            {!isSuccessful && goodsWithPacking.goodsPackingCreates.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => removePackingRow(index, packingIndex)}
+                                className="h-9 px-3 mt-6 text-red-500 hover:text-red-700 hover:bg-red-50 border-red-300"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </Card>
                 )
               })}
@@ -904,7 +1054,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                 className="h-[38px] px-6 border-orange-500 text-orange-500 hover:bg-orange-50"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Thêm mặt hàng
+                Thêm hàng hóa
               </Button>
             </div>
 

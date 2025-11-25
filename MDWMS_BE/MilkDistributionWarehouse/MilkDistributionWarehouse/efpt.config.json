@@ -4,18 +4,15 @@
    "ContextNamespace": null,
    "FilterSchemas": false,
    "IncludeConnectionString": false,
-   "IrregularWords": null,
-   "MinimumProductVersion": "2.6.1224",
+   "MinimumProductVersion": "2.6.1186",
    "ModelNamespace": null,
    "OutputContextPath": null,
    "OutputPath": "Models\/Entities",
-   "PluralRules": null,
    "PreserveCasingWithRegex": true,
    "ProjectRootNamespace": "MilkDistributionWarehouse",
    "Schemas": null,
    "SelectedHandlebarsLanguage": 2,
    "SelectedToBeGenerated": 0,
-   "SingularRules": null,
    "T4TemplatePath": null,
    "Tables": [
       {
@@ -32,6 +29,22 @@
       },
       {
          "Name": "[dbo].[Categories]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[DisposalNoteDetails]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[DisposalNotes]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[DisposalRequestDetails]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[DisposalRequests]",
          "ObjectType": 0
       },
       {
@@ -56,6 +69,10 @@
       },
       {
          "Name": "[dbo].[GoodsReceiptNotes]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[InventoryLedger]",
          "ObjectType": 0
       },
       {

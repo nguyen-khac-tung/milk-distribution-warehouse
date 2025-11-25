@@ -5,9 +5,9 @@ namespace MilkDistributionWarehouse.Repositories
 {
     public interface IGoodsIssueNoteRepository
     {
-        Task<GoodsIssueNote?> GetGINBySalesOrderId(Guid? salesOrderId);
-        Task<GoodsIssueNote?> GetGINDetailBySalesOrderId(Guid? salesOrderId);
-        Task<GoodsIssueNote?> GetGINByGoodsIssueNoteId(Guid? goodsIssueNoteId);
+        Task<GoodsIssueNote?> GetGINBySalesOrderId(string? salesOrderId);
+        Task<GoodsIssueNote?> GetGINDetailBySalesOrderId(string? salesOrderId);
+        Task<GoodsIssueNote?> GetGINByGoodsIssueNoteId(string? goodsIssueNoteId);
         Task CreateGoodsIssueNote(GoodsIssueNote goodsIssueNote);
         Task UpdateGoodsIssueNote(GoodsIssueNote goodsIssueNote);
     }
@@ -21,12 +21,12 @@ namespace MilkDistributionWarehouse.Repositories
             _context = context;
         }
 
-        public async Task<GoodsIssueNote?> GetGINBySalesOrderId(Guid? salesOrderId)
+        public async Task<GoodsIssueNote?> GetGINBySalesOrderId(string? salesOrderId)
         {
             return await _context.GoodsIssueNotes.FirstOrDefaultAsync(g => g.SalesOderId == salesOrderId);
         }
 
-        public async Task<GoodsIssueNote?> GetGINDetailBySalesOrderId(Guid? salesOrderId)
+        public async Task<GoodsIssueNote?> GetGINDetailBySalesOrderId(string? salesOrderId)
         {
             return await _context.GoodsIssueNotes
                 .Where(g => g.SalesOderId == salesOrderId)
@@ -48,7 +48,7 @@ namespace MilkDistributionWarehouse.Repositories
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<GoodsIssueNote?> GetGINByGoodsIssueNoteId(Guid? goodsIssueNoteId)
+        public async Task<GoodsIssueNote?> GetGINByGoodsIssueNoteId(string? goodsIssueNoteId)
         {
             return await _context.GoodsIssueNotes
                 .Include(gin => gin.SalesOder)

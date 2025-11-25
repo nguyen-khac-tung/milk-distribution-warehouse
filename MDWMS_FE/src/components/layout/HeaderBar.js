@@ -2,15 +2,34 @@ import React, { useState, useEffect, memo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogoutOutlined, StarOutlined, MenuOutlined, MenuFoldOutlined, UserOutlined, SettingOutlined } from "@ant-design/icons";
 import { logout } from "../../services/AuthenticationServices";
-import AnimatedBell from "../Common/AnimatedBell";
 import SearchBar from "../Common/SearchBar";
 import { ViewProfileModal } from "../../pages/AccountPage/ViewProfileModal";
+import NotificationDropdown from "../Common/NotificationDropdown";
+import NotificationDetailModal from "../Common/NotificationDetailModal";
+import useNotifications, { NotificationStatus } from "../../hooks/useNotifications";
+import { getNotificationDetail, NotificationEntityType } from "../../services/NotificationService";
+import { Bell } from "lucide-react";
 
 const HeaderBar = memo(({ onToggleSidebar, sidebarCollapsed }) => {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [showUserMenu, setShowUserMenu] = useState(false);
     const [showProfileModal, setShowProfileModal] = useState(false);
+    const [showNotifications, setShowNotifications] = useState(false);
+    const [selectedNotificationId, setSelectedNotificationId] = useState(null);
+    const [showNotificationDetail, setShowNotificationDetail] = useState(false);
+    const [unreadCountWhenOpened, setUnreadCountWhenOpened] = useState(null);
+
+    const {
+        notifications,
+        unreadCount,
+        loading: notificationsLoading,
+        error: notificationError,
+        connectionState: notificationConnectionState,
+        refreshNotifications,
+        markAllAsRead,
+        markNotificationsAsRead,
+    } = useNotifications();
 
     useEffect(() => {
         const savedUser = localStorage.getItem("userInfo");
@@ -36,6 +55,51 @@ const HeaderBar = memo(({ onToggleSidebar, sidebarCollapsed }) => {
     const handleProfileClick = useCallback(() => {
         setShowUserMenu(false);
         setShowProfileModal(true);
+    }, []);
+
+    const handleToggleNotifications = useCallback(() => {
+        setShowNotifications(prev => {
+            const nextState = !prev;
+            if (!prev) {
+                setUnreadCountWhenOpened(unreadCount);
+                refreshNotifications();
+            }
+            return nextState;
+        });
+    }, [refreshNotifications, unreadCount]);
+
+    const handleMarkAllNotificationsAsRead = useCallback(() => {
+        markAllAsRead();
+    }, [markAllAsRead]);
+
+    const handleNotificationClick = useCallback(
+        async (notification) => {
+            if (!notification) return;
+
+            if (notification.status === NotificationStatus.UNREAD && notification.notificationId) {
+                markNotificationsAsRead([notification.notificationId]);
+            }
+
+            try {
+                const detail = await getNotificationDetail(notification.notificationId);
+                
+                if (detail?.entityType === NotificationEntityType.NO_NAVIGATION) {
+                    return; 
+                }
+            } catch (err) {
+                console.error("Error getting notification detail:", err);
+            }
+
+            setShowNotifications(false);
+            setSelectedNotificationId(notification.notificationId);
+            setShowNotificationDetail(true);
+        },
+        [markNotificationsAsRead]
+    );
+    
+    const handleCloseNotificationDetail = useCallback(() => {
+        setShowNotificationDetail(false);
+        setSelectedNotificationId(null);
     }, []);
 
     return (
@@ -85,13 +149,70 @@ const HeaderBar = memo(({ onToggleSidebar, sidebarCollapsed }) => {
                 </div>
 
                 <div style={{ display: "flex", alignItems: "center", gap: 20, position: "relative" }}>
-                    <AnimatedBell
-                        size={35}
-                        color="#6b7280"
-                        duration="3s"
-                        delay="2s"
-                        title="Thông báo"
-                    />
+                    <div style={{ position: "relative" }}>
+                        {(() => {
+                            const displayCount = unreadCountWhenOpened !== null 
+                                ? Math.max(0, unreadCount - unreadCountWhenOpened)
+                                : unreadCount;
+                            
+                            return (
+                                <>
+                                    <div className={displayCount > 0 ? "bell-shake" : ""}>
+                                        <Bell
+                                            size={30}
+                                            color={displayCount > 0 ? "#f97316" : "#6b7280"}
+                                            onClick={handleToggleNotifications}
+                                            className="cursor-pointer"
+                                        />
+                                    </div>
+                                    {displayCount > 0 && (
+                                        <span
+                                            style={{
+                                                position: "absolute",
+                                                top: -4,
+                                                right: -4,
+                                                backgroundColor: "#ef4444",
+                                                color: "white",
+                                                fontSize: 10,
+                                                fontWeight: 700,
+                                                padding: "2px 6px",
+                                                borderRadius: 999,
+                                                boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                                            }}
+                                        >
+                                            {displayCount > 99 ? "99+" : displayCount}
+                                        </span>
+                                    )}
+                                </>
+                            );
+                        })()}
+
+                        {showNotifications && (
+                            <>
+                                <div
+                                    style={{
+                                        position: "fixed",
+                                        top: 0,
+                                        right: 0,
+                                        bottom: 0,
+                                        left: 0,
+                                        zIndex: 998,
+                                    }}
+                                    onClick={() => setShowNotifications(false)}
+                                />
+                                <NotificationDropdown
+                                    notifications={notifications}
+                                    unreadCount={unreadCount}
+                                    loading={notificationsLoading}
+                                    error={notificationError}
+                                    connectionState={notificationConnectionState}
+                                    onRefresh={refreshNotifications}
+                                    onMarkAllAsRead={handleMarkAllNotificationsAsRead}
+                                    onNotificationClick={handleNotificationClick}
+                                />
+                            </>
+                        )}
+                    </div>
 
                     {/* User Section: Avatar + Name + Role */}
                     <div style={{ position: "relative" }}>
@@ -261,6 +382,14 @@ const HeaderBar = memo(({ onToggleSidebar, sidebarCollapsed }) => {
                 <ViewProfileModal
                     isOpen={showProfileModal}
                     onClose={() => setShowProfileModal(false)}
+                />
+            )}
+
+            {showNotificationDetail && (
+                <NotificationDetailModal
+                    open={showNotificationDetail}
+                    notificationId={selectedNotificationId}
+                    onClose={handleCloseNotificationDetail}
                 />
             )}
         </>

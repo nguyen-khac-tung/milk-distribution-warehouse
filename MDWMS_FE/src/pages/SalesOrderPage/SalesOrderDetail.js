@@ -355,18 +355,18 @@ const SalesOrderDetail = () => {
                                     <div className="space-y-2">
                                         <div className="grid grid-cols-[auto_1fr] gap-x-2">
                                             <div className="flex items-center space-x-1">
-                                                <Store className="h-4 w-4 text-green-600" />
-                                                <label className="font-medium text-gray-700">Nhà bán lẻ:</label>
+                                                <Hash className="h-4 w-4 text-gray-600" />
+                                                <label className="font-medium text-gray-700">Mã bán hàng:</label>
                                             </div>
-                                            <span className="font-semibold text-gray-900">{salesOrder.retailerName || '—'}</span>
+                                            <span className="font-semibold text-gray-900">{salesOrder.salesOrderId || '—'}</span>
                                         </div>
 
                                         <div className="grid grid-cols-[auto_1fr] gap-x-2">
                                             <div className="flex items-center space-x-1">
-                                                <MapPin className="h-4 w-4 text-red-600" />
-                                                <label className="font-medium text-gray-700">Địa chỉ:</label>
+                                                <Store className="h-4 w-4 text-green-600" />
+                                                <label className="font-medium text-gray-700">Nhà bán lẻ:</label>
                                             </div>
-                                            <span className="font-semibold text-gray-900">{salesOrder.retailerAddress || '—'}</span>
+                                            <span className="font-semibold text-gray-900">{salesOrder.retailerName || '—'}</span>
                                         </div>
 
                                         <div className="grid grid-cols-[auto_1fr] gap-x-2">
@@ -398,6 +398,13 @@ const SalesOrderDetail = () => {
                                             <span className="font-semibold text-gray-900">{salesOrder.retailerEmail || '—'}</span>
                                         </div>
 
+                                        <div className="grid grid-cols-[auto_1fr] gap-x-2">
+                                            <div className="flex items-center space-x-1">
+                                                <MapPin className="h-4 w-4 text-red-600" />
+                                                <label className="font-medium text-gray-700">Địa chỉ:</label>
+                                            </div>
+                                            <span className="font-semibold text-gray-900">{salesOrder.retailerAddress || '—'}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -437,7 +444,7 @@ const SalesOrderDetail = () => {
                                         ) : (
                                             <TableRow>
                                                 <TableCell colSpan={6} className="text-center text-gray-500 py-8">
-                                                    Không có sản phẩm nào
+                                                    Không có hàng hóa nào
                                                 </TableCell>
                                             </TableRow>
                                         )}

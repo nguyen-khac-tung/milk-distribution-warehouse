@@ -5,7 +5,7 @@ export default function StatsCards({
   totalCount = 0,
   activeCount = 0,
   inactiveCount = 0,
-  totalLabel = "Tổng mặt hàng",
+  totalLabel = "Tổng hàng hóa",
   activeLabel = "Đang hoạt động",
   inactiveLabel = "Không hoạt động",
   className = ""

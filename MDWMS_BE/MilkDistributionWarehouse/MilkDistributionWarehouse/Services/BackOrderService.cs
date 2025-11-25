@@ -15,7 +15,7 @@ namespace MilkDistributionWarehouse.Services
     public interface IBackOrderService
     {
         Task<(string, PageResult<BackOrderDto.BackOrderResponseDto>)> GetBackOrders(PagedRequest request);
-        Task<(string, BackOrderDto.BackOrderResponseDto)> GetBackOrderById(Guid backOrderId);
+        Task<(string, BackOrderDto.BackOrderDetailDto)> GetBackOrderById(Guid backOrderId);
         Task<(string, BackOrderDto.BackOrderResponseCreateDto)> CreateBackOrder(BackOrderDto.BackOrderRequestDto dto, int? userId);
         Task<(string, BackOrderDto.BackOrderResponseDto)> UpdateBackOrder(Guid backOrderId, BackOrderDto.BackOrderRequestDto dto);
         Task<(string, BackOrderDto.BackOrderResponseDto)> DeleteBackOrder(Guid backOrderId);
@@ -92,6 +92,7 @@ namespace MilkDistributionWarehouse.Services
             // Apply sorting at database level
             if (!string.IsNullOrWhiteSpace(request.SortField))
             {
+                // Try to find a direct property on BackOrder first
                 var property = typeof(BackOrder).GetProperty(request.SortField, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
                 if (property != null)
                 {
@@ -105,6 +106,52 @@ namespace MilkDistributionWarehouse.Services
                         .MakeGenericMethod(typeof(BackOrder), property.PropertyType);
 
                     backOrders = (IQueryable<BackOrder>)method.Invoke(null, new object[] { backOrders, keySelector })!;
+                }
+                else
+                {
+                    // Map common DTO/consumer sort fields to entity navigation properties
+                    var sort = request.SortField.Trim().ToLowerInvariant();
+                    var methodName = request.SortAscending ? "OrderBy" : "OrderByDescending";
+
+                    ParameterExpression param = Expression.Parameter(typeof(BackOrder), "x");
+                    Expression? member = null;
+                    Type? memberType = null;
+
+                    switch (sort)
+                    {
+                        case "retailername":
+                            member = Expression.Property(Expression.Property(param, "Retailer"), "RetailerName");
+                            memberType = typeof(string);
+                            break;
+                        case "goodsname":
+                            member = Expression.Property(Expression.Property(param, "Goods"), "GoodsName");
+                            memberType = typeof(string);
+                            break;
+                        case "unitmeasurename":
+                        case "unitmeasure":
+                            // Goods.UnitMeasure.Name
+                            member = Expression.Property(Expression.Property(Expression.Property(param, "Goods"), "UnitMeasure"), "Name");
+                            memberType = typeof(string);
+                            break;
+                        case "createdbyname":
+                        case "createdby":
+                            member = Expression.Property(Expression.Property(param, "CreatedByNavigation"), "FullName");
+                            memberType = typeof(string);
+                            break;
+                        default:
+                            member = null;
+                            break;
+                    }
+
+                    if (member != null && memberType != null)
+                    {
+                        var keySelector = Expression.Lambda(member, param);
+                        var method = typeof(Queryable).GetMethods()
+                            .First(m => m.Name == methodName && m.GetParameters().Length == 2)
+                            .MakeGenericMethod(typeof(BackOrder), memberType);
+
+                        backOrders = (IQueryable<BackOrder>)method.Invoke(null, new object[] { backOrders, keySelector })!;
+                    }
                 }
             }
 
@@ -190,13 +237,13 @@ namespace MilkDistributionWarehouse.Services
 
 
 
-        public async Task<(string, BackOrderDto.BackOrderResponseDto)> GetBackOrderById(Guid backOrderId)
+        public async Task<(string, BackOrderDto.BackOrderDetailDto)> GetBackOrderById(Guid backOrderId)
         {
             var backOrder = await _backOrderRepository.GetBackOrderById(backOrderId);
             if (backOrder == null)
-                return ("Không tìm thấy back order.".ToMessageForUser(), new BackOrderDto.BackOrderResponseDto());
+                return ("Không tìm thấy back order.".ToMessageForUser(), new BackOrderDto.BackOrderDetailDto());
 
-            var response = _mapper.Map<BackOrderDto.BackOrderResponseDto>(backOrder);
+            var response = _mapper.Map<BackOrderDto.BackOrderDetailDto>(backOrder);
 
             var availableQuantity = await _backOrderRepository.GetAvailableQuantity(backOrder.GoodsId, backOrder.GoodsPackingId);
             response.StatusDinamic = availableQuantity >= backOrder.PackageQuantity

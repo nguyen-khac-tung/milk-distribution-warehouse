@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.Entities;
 using System.Threading.Tasks;
 
@@ -13,6 +14,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<int> UpdateStockingtakingSheet(StocktakingSheet update);
         Task<int> DeleteStocktakingSheet(StocktakingSheet delete);
         Task<bool> IsDuplicationStartTimeStocktakingSheet(string? stocktakingSheetId, DateTime startTime);
+        Task<bool> HasActiveStocktakingInProgressAsync();
     }
     public class StocktakingSheetRepository : IStocktakingSheetRepository
     {
@@ -30,16 +32,25 @@ namespace MilkDistributionWarehouse.Repositories
         public async Task<StocktakingSheet?> GetStocktakingSheetById(string stocktakingSheetId)
         {
             return await _context.StocktakingSheets
+
                 .Include(ss => ss.CreatedByNavigation)
+
                 .Include(ss => ss.StocktakingAreas)
                     .ThenInclude(sa => sa.AssignToNavigation)
+
                 .Include(ss => ss.StocktakingAreas)
                     .ThenInclude(sa => sa.Area)
                         .ThenInclude(a => a.StorageCondition)
-                    .ThenInclude(sa => sa.Areas)
+
+                .Include(ss => ss.StocktakingAreas)
+                    .ThenInclude(sa => sa.Area)
                         .ThenInclude(a => a.Locations)
+
+                .AsSplitQuery()
+                .AsNoTracking()
                 .FirstOrDefaultAsync(ss => ss.StocktakingSheetId.Equals(stocktakingSheetId));
         }
+
 
         public async Task<int> CreateStocktakingSheet(StocktakingSheet create)
         {
@@ -59,7 +70,28 @@ namespace MilkDistributionWarehouse.Repositories
         {
             try
             {
-                _context.StocktakingSheets.Update(update);
+                var trackedEntity = await _context.StocktakingSheets
+                    .FirstOrDefaultAsync(ss => ss.StocktakingSheetId == update.StocktakingSheetId);
+
+                if (trackedEntity != null)
+                {
+                    trackedEntity.Status = update.Status;
+                    trackedEntity.StartTime = update.StartTime;
+                    trackedEntity.Note = update.Note;
+                    trackedEntity.UpdateAt = update.UpdateAt;
+                }
+                else
+                {
+                    update.StocktakingAreas = null;
+                    update.CreatedByNavigation = null;
+
+                    _context.StocktakingSheets.Attach(update);
+                    _context.Entry(update).Property(x => x.Status).IsModified = true;
+                    _context.Entry(update).Property(x => x.StartTime).IsModified = true;
+                    _context.Entry(update).Property(x => x.Note).IsModified = true;
+                    _context.Entry(update).Property(x => x.UpdateAt).IsModified = true;
+                }
+
                 await _context.SaveChangesAsync();
                 return 1;
             }
@@ -88,9 +120,16 @@ namespace MilkDistributionWarehouse.Repositories
             return await _context.StocktakingSheets
                 .AnyAsync(ss => (stocktakingSheetId == null || !stocktakingSheetId.Equals(ss.StocktakingSheetId))
                 && ss.StartTime.HasValue
-                && ss.StartTime.Value.Date == startTime.Date);
+                && ss.StartTime.Value.Date == startTime.Date
+                && ss.Status != StocktakingStatus.Cancelled);
         }
 
-        
+        public async Task<bool> HasActiveStocktakingInProgressAsync()
+        {
+            return await _context.StocktakingSheets
+                .AnyAsync(ss => ss.Status == StocktakingStatus.InProgress 
+                    || ss.Status == StocktakingStatus.PendingApproval 
+                    || ss.Status == StocktakingStatus.Approved);
+        }
     }
 }

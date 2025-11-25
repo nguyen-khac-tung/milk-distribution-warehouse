@@ -229,10 +229,10 @@ const PurchaseOrderDetail = () => {
         }
 
         // Kiểm tra xem đã có người được giao chưa
-        const hasBeenAssigned = purchaseOrder?.assignToByName || 
-                                purchaseOrder?.assignedAt || 
-                                purchaseOrder?.assignTo || 
-                                purchaseOrder?.assignToById;
+        const hasBeenAssigned = purchaseOrder?.assignToByName ||
+            purchaseOrder?.assignedAt ||
+            purchaseOrder?.assignTo ||
+            purchaseOrder?.assignToById;
 
         // Backend cho phép reAssign khi status là AssignedForReceiving hoặc AwaitingArrival
         // Cho phép hiển thị nút "Giao lại" khi:
@@ -241,8 +241,8 @@ const PurchaseOrderDetail = () => {
         // 3. Status là GoodsReceived (đã xác nhận đến) VÀ đã có người được giao trước đó
         //    -> Khi quản lý kho giao trước rồi mới xác nhận đến, vẫn phải hiển thị nút Giao lại
         return purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving ||
-               (purchaseOrder?.status === PURCHASE_ORDER_STATUS.AwaitingArrival && hasBeenAssigned) ||
-               (purchaseOrder?.status === PURCHASE_ORDER_STATUS.GoodsReceived && hasBeenAssigned);
+            (purchaseOrder?.status === PURCHASE_ORDER_STATUS.AwaitingArrival && hasBeenAssigned) ||
+            (purchaseOrder?.status === PURCHASE_ORDER_STATUS.GoodsReceived && hasBeenAssigned);
     };
 
     const canStartReceive = () => {
@@ -268,8 +268,9 @@ const PurchaseOrderDetail = () => {
     };
 
     const canEdit = () => {
-        return purchaseOrder?.status === PURCHASE_ORDER_STATUS.Draft || 
-               purchaseOrder?.status === PURCHASE_ORDER_STATUS.Rejected;
+        return hasPermission(PERMISSIONS.PURCHASE_ORDER_UPDATE) &&
+            (purchaseOrder?.status === PURCHASE_ORDER_STATUS.Draft ||
+                purchaseOrder?.status === PURCHASE_ORDER_STATUS.Rejected);
     };
 
     const canChangeDeliveryDate = () => {
@@ -363,19 +364,19 @@ const PurchaseOrderDetail = () => {
         setAssignReceivingLoading(true);
         try {
             // Kiểm tra xem đã có người được giao chưa
-            const hasBeenAssigned = purchaseOrder?.assignToByName || 
-                                    purchaseOrder?.assignedAt || 
-                                    purchaseOrder?.assignTo || 
-                                    purchaseOrder?.assignToById;
-            
+            const hasBeenAssigned = purchaseOrder?.assignToByName ||
+                purchaseOrder?.assignedAt ||
+                purchaseOrder?.assignTo ||
+                purchaseOrder?.assignToById;
+
             // Backend cho phép reAssign khi status là AssignedForReceiving hoặc AwaitingArrival
             // Khi status là GoodsReceived, phải dùng assignForReceiving (backend sẽ tự động cập nhật người được giao)
             const shouldUseReAssign = purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving ||
-                                      purchaseOrder?.status === PURCHASE_ORDER_STATUS.AwaitingArrival;
-            
+                purchaseOrder?.status === PURCHASE_ORDER_STATUS.AwaitingArrival;
+
             // Kiểm tra xem có phải là "giao lại" về mặt logic (đã có người được giao trước đó)
-            const isReassignLogic = shouldUseReAssign || 
-                                    (purchaseOrder?.status === PURCHASE_ORDER_STATUS.GoodsReceived && hasBeenAssigned);
+            const isReassignLogic = shouldUseReAssign ||
+                (purchaseOrder?.status === PURCHASE_ORDER_STATUS.GoodsReceived && hasBeenAssigned);
 
             if (shouldUseReAssign) {
                 await reAssignForReceiving(
@@ -406,15 +407,15 @@ const PurchaseOrderDetail = () => {
             }
         } catch (error) {
             console.error("Error assigning for receiving:", error);
-            const hasBeenAssigned = purchaseOrder?.assignToByName || 
-                                    purchaseOrder?.assignedAt || 
-                                    purchaseOrder?.assignTo || 
-                                    purchaseOrder?.assignToById;
+            const hasBeenAssigned = purchaseOrder?.assignToByName ||
+                purchaseOrder?.assignedAt ||
+                purchaseOrder?.assignTo ||
+                purchaseOrder?.assignToById;
             const shouldUseReAssign = purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving ||
-                                      purchaseOrder?.status === PURCHASE_ORDER_STATUS.AwaitingArrival;
-            const isReassignLogic = shouldUseReAssign || 
-                                    (purchaseOrder?.status === PURCHASE_ORDER_STATUS.GoodsReceived && hasBeenAssigned);
-            const errorMessage = extractErrorMessage(error) || 
+                purchaseOrder?.status === PURCHASE_ORDER_STATUS.AwaitingArrival;
+            const isReassignLogic = shouldUseReAssign ||
+                (purchaseOrder?.status === PURCHASE_ORDER_STATUS.GoodsReceived && hasBeenAssigned);
+            const errorMessage = extractErrorMessage(error) ||
                 (isReassignLogic
                     ? "Có lỗi xảy ra khi giao lại nhiệm vụ nhận hàng"
                     : "Có lỗi xảy ra khi giao nhiệm vụ nhận hàng");
@@ -686,7 +687,7 @@ const PurchaseOrderDetail = () => {
                                         ) : (
                                             <TableRow>
                                                 <TableCell colSpan={7} className="text-center text-gray-500 py-8">
-                                                    Không có sản phẩm nào
+                                                    Không có hàng hóa nào
                                                 </TableCell>
                                             </TableRow>
                                         )}

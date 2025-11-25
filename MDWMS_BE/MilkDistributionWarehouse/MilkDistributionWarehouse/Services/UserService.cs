@@ -25,7 +25,7 @@ namespace MilkDistributionWarehouse.Services
         Task<string> UpdateUserStatus(UserStatusUpdateDto userUpdate);
         Task<string> DeleteUser(int? userId);
         Task<(string, List<UserDropDown>?)> GetUserDropDownByRoleName(string roleName);
-        Task<(string, List<UserAssignedDropDown>?)> GetAvailableReceiversOrPickersDropDown(string? purchaseOrderId, Guid? salesOrderId);
+        Task<(string, List<UserAssignedDropDown>?)> GetAvailableReceiversOrPickersDropDown(string? purchaseOrderId, string? salesOrderId, string? disposalRequestId);
     }
 
     public class UserService : IUserService
@@ -34,6 +34,7 @@ namespace MilkDistributionWarehouse.Services
         private readonly IRoleRepository _roleRepository;
         private readonly IPurchaseOrderRepositoy _purchaseOrderRepositoy;
         private readonly ISalesOrderRepository _salesOrderRepository;
+        private readonly IDisposalRequestRepository _disposalRequestRepository;
         private readonly EmailUtility _emailUtility;
         private readonly IMapper _mapper;
 
@@ -41,6 +42,7 @@ namespace MilkDistributionWarehouse.Services
                            IRoleRepository roleRepository,
                            IPurchaseOrderRepositoy purchaseOrderRepositoy,
                            ISalesOrderRepository salesOrderRepository,
+                           IDisposalRequestRepository disposalRequestRepository,
                            EmailUtility emailUtility,
                            IMapper mapper)
         {
@@ -48,6 +50,7 @@ namespace MilkDistributionWarehouse.Services
             _roleRepository = roleRepository;
             _purchaseOrderRepositoy = purchaseOrderRepositoy;
             _salesOrderRepository = salesOrderRepository;
+            _disposalRequestRepository = disposalRequestRepository;
             _emailUtility = emailUtility;
             _mapper = mapper;
         }
@@ -205,7 +208,7 @@ namespace MilkDistributionWarehouse.Services
             return ("", userDropDowns);
         }
 
-        public async Task<(string, List<UserAssignedDropDown>?)> GetAvailableReceiversOrPickersDropDown(string? purchaseOrderId, Guid? salesOrderId)
+        public async Task<(string, List<UserAssignedDropDown>?)> GetAvailableReceiversOrPickersDropDown(string? purchaseOrderId, string? salesOrderId, string? disposalRequestId)
         {
             int? assignedUser = null;
 
@@ -216,16 +219,24 @@ namespace MilkDistributionWarehouse.Services
                 assignedUser = purchaseOrder.AssignTo;
             }
 
-            if (salesOrderId != null)
+            if (!string.IsNullOrEmpty(salesOrderId))
             {
                 var salesOrder = await _salesOrderRepository.GetSalesOrderById(salesOrderId);
-                if (salesOrder == null) return ("SalesOrderId is invalid", null);
+                if (salesOrder == null) return ("SalesOrder is invalid", null);
                 assignedUser = salesOrder.AssignTo;
+            }
+
+            if (!string.IsNullOrEmpty(disposalRequestId))
+            {
+                var disposalRequest = await _disposalRequestRepository.GetDisposalRequestById(disposalRequestId);
+                if (disposalRequest == null) return ("DisposalRequest is invalid", null);
+                assignedUser = disposalRequest.AssignTo;
             }
 
             var users = await _userRepository.GetUsers()
                  .Include(u => u.PurchaseOrderAssignToNavigations)
                  .Include(u => u.SalesOrderAssignToNavigations)
+                 .Include(u => u.DisposalRequestAssignToNavigations)
                  .Where(u => u.Status == CommonStatus.Active
                              && u.Roles.Any(r => r.RoleName == RoleNames.WarehouseStaff)
                              && (assignedUser == null || u.UserId != assignedUser))
@@ -242,7 +253,9 @@ namespace MilkDistributionWarehouse.Services
                 PendingPurchaseOrders = u.PurchaseOrderAssignToNavigations.Where(p => p.Status == PurchaseOrderStatus.AssignedForReceiving).Count(),
                 ProcessingPurchaseOrders = u.PurchaseOrderAssignToNavigations.Where(p => p.Status == PurchaseOrderStatus.Receiving).Count(),
                 PendingSalesOrders = u.SalesOrderAssignToNavigations.Where(p => p.Status == SalesOrderStatus.AssignedForPicking).Count(),
-                ProcessingSalesOrders = u.SalesOrderAssignToNavigations.Where(p => p.Status == SalesOrderStatus.Picking).Count()
+                ProcessingSalesOrders = u.SalesOrderAssignToNavigations.Where(p => p.Status == SalesOrderStatus.Picking).Count(),
+                PendingDisposalRequests = u.DisposalRequestAssignToNavigations.Where(p => p.Status == DisposalRequestStatus.AssignedForPicking).Count(),
+                ProcessingDisposalRequests = u.DisposalRequestAssignToNavigations.Where(p => p.Status == DisposalRequestStatus.Picking).Count()
             }).ToList();
 
             return ("", userDropDowns);
@@ -267,10 +280,10 @@ namespace MilkDistributionWarehouse.Services
             var roleRestricted = new List<int?>() { RoleType.WarehouseManager, RoleType.SaleManager, RoleType.BusinessOwner, RoleType.Administrator };
             if (roleRestricted.All(roleReStricted => roleReStricted != role?.RoleId)) return "";
 
-            var users = await _userRepository.GetUsersByRoleId(role.RoleId);
-            var otherActiveUserExists = users.Any(u => u.UserId != userId && u.Status == CommonStatus.Active);
-            if (otherActiveUserExists)
-                return $"Vai trò {role.Description} đã được gán cho một tài khoản khác đang hoạt động.".ToMessageForUser();
+            var users = await _userRepository.GetUsersByRoleId(role?.RoleId);
+            var otherActiveUserExists = users?.Any(u => u.UserId != userId);
+            if (otherActiveUserExists == true)
+                return $"Vai trò {role?.Description} đã được gán cho một tài khoản khác đang hoạt động.".ToMessageForUser();
             return "";
         }
 

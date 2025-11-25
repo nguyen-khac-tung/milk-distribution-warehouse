@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 using System.Runtime.CompilerServices;
@@ -8,13 +9,19 @@ namespace MilkDistributionWarehouse.Repositories
 {
     public interface IStocktakingAreaRepository
     {
-        Task<StocktakingArea?> GetStocktakingAreaByStocktakingSheetIdAndAssignTo(string stocktakingSheetId, int? assignTo);
+        Task<List<StocktakingArea>?> GetStocktakingAreaByStocktakingSheetIdAndAssignTo(string stocktakingSheetId, Guid? stocktakingAreaId, int? assignTo);
         Task<List<Guid>> GetAreaIdsBySheetId(string stocktakingSheetId);
         Task<List<StocktakingArea>> GetStocktakingAreasByStocktakingSheetId(string stocktakingSheetId);
+        Task<StocktakingArea?> GetStocktakingAreaByStocktakingAreaId(Guid stocktakingAreaId);
         Task<int?> CreateStocktakingAreaBulk(List<StocktakingArea> creates);
+        Task<int> UpdateStocktakingArea(StocktakingArea stocktakingArea);
         Task<int?> UpdateStocktakingAreaBulk(List<StocktakingArea> updates);
+        Task<int> DeleteStocktakingAreasAsync(List<StocktakingArea> deletes);
         Task<bool> IsStocktakingAreaAssignTo(int? areaId, string stocktakingSheetId, int assignTo);
         Task<bool> IsCheckStocktakingAreaExist(string stocktakingSheetId);
+        Task<bool> IsCheckStockAreasCompleted(Guid stocktakingAreaId, string stocktakingSheetId);
+        Task<bool> AllStockAreaPending(string stocktakingSheetId);
+        Task<bool> HasAnyPendingStocktakingArea(string stocktakingSheetId);
     }
     public class StocktakingAreaRepository : IStocktakingAreaRepository
     {
@@ -22,6 +29,15 @@ namespace MilkDistributionWarehouse.Repositories
         public StocktakingAreaRepository(WarehouseContext context)
         {
             _context = context;
+        }
+
+        public async Task<StocktakingArea?> GetStocktakingAreaByStocktakingAreaId (Guid stocktakingAreaId)
+        {
+            return await _context.StocktakingAreas
+                .Include(sa => sa.StocktakingSheet)
+                .Include(sa => sa.Area)
+                .Include(sa => sa.StocktakingLocations)
+                .FirstOrDefaultAsync(sa => sa.StocktakingAreaId == stocktakingAreaId);
         }
 
         public async Task<List<Guid>> GetAreaIdsBySheetId(string stocktakingSheetId)
@@ -32,17 +48,21 @@ namespace MilkDistributionWarehouse.Repositories
                 .ToListAsync();
         }
 
-        public async Task<StocktakingArea?> GetStocktakingAreaByStocktakingSheetIdAndAssignTo(string stocktakingSheetId, int? assignTo)
+        public async Task<List<StocktakingArea>?> GetStocktakingAreaByStocktakingSheetIdAndAssignTo(string stocktakingSheetId, Guid? stocktakingAreaId, int? assignTo)
         {
             return await _context.StocktakingAreas
                 .Include(sa => sa.Area)
                     .ThenInclude(a => a.StorageCondition)
+                .Include(sa => sa.Area)
+                    .ThenInclude(a => a.Locations)
                 .Include(sa => sa.AssignToNavigation)
-                .Include(sa => sa.StocktakingLocations)
+                .Include(sa => sa.StocktakingLocations.OrderBy(sl => sl.Location.IsAvailable))
                     .ThenInclude(sl => sl.Location)
-                .FirstOrDefaultAsync(sa => 
+                .Where(sa => 
                                 sa.StocktakingSheetId.Equals(stocktakingSheetId) &&
-                                (assignTo == null || sa.AssignTo == assignTo));
+                                (stocktakingAreaId == null || sa.StocktakingAreaId == stocktakingAreaId) &&
+                                (assignTo == null || sa.AssignTo == assignTo))
+                .ToListAsync();
         }
 
         public async Task<List<StocktakingArea>> GetStocktakingAreasByStocktakingSheetId(string stocktakingSheetId)
@@ -66,6 +86,20 @@ namespace MilkDistributionWarehouse.Repositories
             }
         }
 
+        public async Task<int> UpdateStocktakingArea(StocktakingArea stocktakingArea)
+        {
+            try
+            {
+                _context.StocktakingAreas.Update(stocktakingArea);  
+                await _context.SaveChangesAsync();
+                return 1;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
         public async Task<int?> UpdateStocktakingAreaBulk(List<StocktakingArea> updates)
         {
             try
@@ -73,6 +107,20 @@ namespace MilkDistributionWarehouse.Repositories
                 _context.StocktakingAreas.UpdateRange(updates);
                 await _context.SaveChangesAsync();
                 return updates.Count;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        public async Task<int> DeleteStocktakingAreasAsync(List<StocktakingArea> deletes)
+        {
+            try
+            {
+                _context.StocktakingAreas.RemoveRange(deletes);
+                await _context.SaveChangesAsync();
+                return deletes.Count;
             }
             catch
             {
@@ -93,5 +141,28 @@ namespace MilkDistributionWarehouse.Repositories
             return await _context.StocktakingAreas.AnyAsync(sa => sa.StocktakingSheetId.Equals(stocktakingSheetId));
         }
 
+        public async Task<bool> IsCheckStockAreasCompleted(Guid stocktakingAreaId, string stocktakingSheetId)
+        {
+            return await _context.StocktakingAreas
+                .Where(sa => sa.StocktakingSheetId == stocktakingSheetId &&
+                             sa.StocktakingAreaId != stocktakingAreaId)
+                .AllAsync(sa => sa.Status == StockAreaStatus.Completed);
+        }
+
+        public async Task<bool> AllStockAreaPending(string stocktakingSheetId)
+        {
+            return await _context.StocktakingAreas
+                .AllAsync(sa => 
+                sa.StocktakingSheetId.Equals(stocktakingSheetId) && 
+                sa.Status == StockAreaStatus.Pending);
+        }
+
+        public async Task<bool> HasAnyPendingStocktakingArea(string stocktakingSheetId)
+        {
+            return await _context.StocktakingAreas
+                .AnyAsync(sa =>
+                sa.StocktakingSheetId.Equals(stocktakingSheetId) &&
+                sa.Status == StockAreaStatus.Pending);
+        }
     }
 }

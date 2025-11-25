@@ -5,7 +5,7 @@ export const GOODS_RECEIPT_NOTE_STATUS = {
     Completed: 3         // Hoàn thành
 };
 
-// Trạng thái của từng dòng sản phẩm trong Phiếu Nhập Kho (Goods Receipt Note Item)
+// Trạng thái của từng dòng hàng hóa trong Phiếu Nhập Kho (Goods Receipt Note Item)
 export const RECEIPT_ITEM_STATUS = {
     Receiving: 1,         // Đang kiểm nhập
     Inspected: 2,         // Đã kiểm nhập

@@ -12,6 +12,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<User?> GetUserByIdWithAssociations(int? userId);
         Task<User?> GetUserByEmail(string email);
         Task<List<User>?> GetUsersByRoleId(int? roleId);
+        Task<User?> GetAssignToStockArea(string stocktakingSheetId, int areaId);
         Task<string> CreateUser(User user);
         Task<string> UpdateUser(User user);
 
@@ -72,10 +73,18 @@ namespace MilkDistributionWarehouse.Repositories
 
         public async Task<List<User>?> GetUsersByRoleId(int? roleId)
         {
-            return await _context.Roles
-                .Where(r => r.RoleId == roleId)
-                .Select(r => r.Users.ToList())
-                .FirstOrDefaultAsync();
+            return await _context.Users
+                .Where(u => u.Roles.Any(r => r.RoleId == roleId) && u.Status == CommonStatus.Active)
+                .ToListAsync();
+        }
+
+        public async Task<User?> GetAssignToStockArea(string stocktakingSheetId, int areaId)
+        {
+            return await _context.Users
+                .Include(u => u.StocktakingAreas)
+                .FirstOrDefaultAsync(u => 
+                            u.StocktakingAreas.Any(sa => sa.StocktakingSheetId.Equals(stocktakingSheetId) && sa.AreaId == areaId)
+                );
         }
 
         public async Task<string> CreateUser(User user)

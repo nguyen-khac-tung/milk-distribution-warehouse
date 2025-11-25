@@ -12,6 +12,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int? CreatedBy { get; set; }
         public string CreateByName { get; set; }
         public bool CanViewStocktakingArea { get; set; }
+        public int StockAreaStarted { get; set; }
     }
 
     public class StocktakingSheetCreate
@@ -19,6 +20,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
         [Required(ErrorMessage = "Thời gian bắt đầu kiểm kê là bắt buộc.")]
         public DateTime StartTime { get; set; }
         public string? Note { get; set; }
+        public List<StocktakingAreaCreateDto> AreaIds { get; set; }
     }
 
     public class StocktakingSheeteResponse
@@ -33,11 +35,13 @@ namespace MilkDistributionWarehouse.Models.DTOs
         [Required(ErrorMessage = "Thời gian bắt đầu kiểm kê là bắt buộc.")]
         public DateTime StartTime { get; set; }
         public string? Note { get; set; }
+        public List<StocktakingAreaCreateDto> AreaIds { get; set; }
     }
 
     public class StocktakingSheetDetail : StocktakingSheetDto
     {
         public string? Note { get; set; }
+        public List<StocktakingAreaUpdateDto> StocktakingAreas { get; set; }
     }
 
     public class StocktakingSheetStatusUpdate
@@ -48,7 +52,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
     public class StocktakingSheetAssignStatus : StocktakingSheetStatusUpdate
     {
         [Required(ErrorMessage = "Danh sách phân công nhân viên theo khu vực là bắt buộc.")]
-        public List<StocktakingAreaCreate> StocktakingAreaAssign { get; set; }
+        public List<StocktakingAreaUpdate> StocktakingAreaAssign { get; set; }
     }
 
     public class StocktakingSheetReAssignStatus : StocktakingSheetStatusUpdate
@@ -58,5 +62,15 @@ namespace MilkDistributionWarehouse.Models.DTOs
     }
 
     public class StocktakingSheetCancelStatus : StocktakingSheetStatusUpdate { }
-    public class StocktakingSheetInProgressStatus : StocktakingSheetStatusUpdate { }
+    public class StocktakingSheetInProgressStatus : StocktakingSheetStatusUpdate
+    {
+        public Guid? StocktakingAreaId { get; set; }
+    }
+
+    public class StocktakingSheetApprovalStatus : StocktakingSheetStatusUpdate { }
+
+    public class StocktakingSheetCompletedStatus : StocktakingSheetStatusUpdate
+    {
+        public string? Note { get; set; }
+    }
 }
