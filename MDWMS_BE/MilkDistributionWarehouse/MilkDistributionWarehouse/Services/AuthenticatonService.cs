@@ -1,6 +1,4 @@
 ﻿using AutoMapper;
-using BCrypt.Net;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.IdentityModel.Tokens;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
