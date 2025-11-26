@@ -22,7 +22,15 @@ import {
   Calendar,
   CreditCard,
   Bell,
-  Shield
+  Shield,
+  ShoppingBag,
+  PlusCircle,
+  Trash2,
+  RotateCcw,
+  Edit,
+  Eye,
+  Receipt,
+  FileCheck
 } from "lucide-react";
 
 const SearchBar = () => {
@@ -43,6 +51,192 @@ const SearchBar = () => {
       icon: Home,
       path: "/dashboard",
       category: "DASHBOARD"
+    },
+
+    // Purchase Orders Management
+    {
+      id: "purchase-orders",
+      title: "Danh sách đơn mua hàng",
+      description: "Xem và quản lý các đơn mua hàng",
+      icon: ShoppingCart,
+      path: "/purchase-orders",
+      category: "QUẢN LÝ ĐƠN MUA HÀNG"
+    },
+    {
+      id: "purchase-orders-create",
+      title: "Tạo đơn mua hàng",
+      description: "Tạo đơn mua hàng mới",
+      icon: PlusCircle,
+      path: "/purchase-orders/create",
+      category: "QUẢN LÝ ĐƠN MUA HÀNG"
+    },
+    {
+      id: "purchase-orders-update",
+      title: "Cập nhật đơn mua hàng",
+      description: "Chỉnh sửa thông tin đơn mua hàng",
+      icon: Edit,
+      path: "/purchase-orders/update",
+      category: "QUẢN LÝ ĐƠN MUA HÀNG"
+    },
+    {
+      id: "purchase-orders-detail",
+      title: "Chi tiết đơn mua hàng",
+      description: "Xem chi tiết đơn mua hàng",
+      icon: Eye,
+      path: "/purchase-orders",
+      category: "QUẢN LÝ ĐƠN MUA HÀNG"
+    },
+    {
+      id: "goods-receipt-notes",
+      title: "Phiếu nhập kho",
+      description: "Xem chi tiết phiếu nhập kho",
+      icon: Receipt,
+      path: "/goods-receipt-notes",
+      category: "QUẢN LÝ ĐƠN MUA HÀNG"
+    },
+
+    // Sales Orders Management
+    {
+      id: "sales-orders",
+      title: "Danh sách đơn bán hàng",
+      description: "Xem và quản lý các đơn bán hàng",
+      icon: ShoppingBag,
+      path: "/sales-orders",
+      category: "QUẢN LÝ ĐƠN BÁN HÀNG"
+    },
+    {
+      id: "sales-orders-create",
+      title: "Tạo đơn bán hàng",
+      description: "Tạo đơn bán hàng mới",
+      icon: PlusCircle,
+      path: "/sales-orders/create",
+      category: "QUẢN LÝ ĐƠN BÁN HÀNG"
+    },
+    {
+      id: "sales-orders-update",
+      title: "Cập nhật đơn bán hàng",
+      description: "Chỉnh sửa thông tin đơn bán hàng",
+      icon: Edit,
+      path: "/sales-orders/update",
+      category: "QUẢN LÝ ĐƠN BÁN HÀNG"
+    },
+    {
+      id: "sales-orders-detail",
+      title: "Chi tiết đơn bán hàng",
+      description: "Xem chi tiết đơn bán hàng",
+      icon: Eye,
+      path: "/sales-orders",
+      category: "QUẢN LÝ ĐƠN BÁN HÀNG"
+    },
+    {
+      id: "goods-issue-note-detail",
+      title: "Phiếu xuất kho",
+      description: "Xem chi tiết phiếu xuất kho",
+      icon: FileCheck,
+      path: "/goods-issue-note-detail",
+      category: "QUẢN LÝ ĐƠN BÁN HÀNG"
+    },
+
+    // Stocktaking Management
+    {
+      id: "stocktakings",
+      title: "Danh sách đơn kiểm kê",
+      description: "Xem và quản lý các đơn kiểm kê",
+      icon: ClipboardList,
+      path: "/stocktakings",
+      category: "QUẢN LÝ ĐƠN KIỂM KÊ"
+    },
+    {
+      id: "stocktaking-create",
+      title: "Tạo đơn kiểm kê",
+      description: "Tạo đơn kiểm kê mới",
+      icon: PlusCircle,
+      path: "/stocktaking/create",
+      category: "QUẢN LÝ ĐƠN KIỂM KÊ"
+    },
+    {
+      id: "stocktakings-update",
+      title: "Cập nhật đơn kiểm kê",
+      description: "Chỉnh sửa thông tin đơn kiểm kê",
+      icon: Edit,
+      path: "/stocktakings/update",
+      category: "QUẢN LÝ ĐƠN KIỂM KÊ"
+    },
+    {
+      id: "stocktakings-detail",
+      title: "Chi tiết đơn kiểm kê",
+      description: "Xem chi tiết đơn kiểm kê",
+      icon: Eye,
+      path: "/stocktakings",
+      category: "QUẢN LÝ ĐƠN KIỂM KÊ"
+    },
+    {
+      id: "stocktaking-area",
+      title: "Khu vực kiểm kê",
+      description: "Xem chi tiết khu vực kiểm kê",
+      icon: MapPin,
+      path: "/stocktaking-area",
+      category: "QUẢN LÝ ĐƠN KIỂM KÊ"
+    },
+    {
+      id: "stocktaking-area-detail-other",
+      title: "Chi tiết khu vực kiểm kê (khác)",
+      description: "Xem chi tiết khu vực kiểm kê cho người khác",
+      icon: Eye,
+      path: "/stocktaking-area-detail-other",
+      category: "QUẢN LÝ ĐƠN KIỂM KÊ"
+    },
+
+    // Disposal Management
+    {
+      id: "disposal",
+      title: "Danh sách đơn xuất hủy",
+      description: "Xem và quản lý các đơn xuất hủy",
+      icon: Trash2,
+      path: "/disposal",
+      category: "QUẢN LÝ ĐƠN XUẤT HỦY"
+    },
+    {
+      id: "disposal-create",
+      title: "Tạo đơn xuất hủy",
+      description: "Tạo đơn xuất hủy mới",
+      icon: PlusCircle,
+      path: "/disposal/create",
+      category: "QUẢN LÝ ĐƠN XUẤT HỦY"
+    },
+    {
+      id: "disposal-update",
+      title: "Cập nhật đơn xuất hủy",
+      description: "Chỉnh sửa thông tin đơn xuất hủy",
+      icon: Edit,
+      path: "/disposal/update",
+      category: "QUẢN LÝ ĐƠN XUẤT HỦY"
+    },
+    {
+      id: "disposal-detail",
+      title: "Chi tiết đơn xuất hủy",
+      description: "Xem chi tiết đơn xuất hủy",
+      icon: Eye,
+      path: "/disposal",
+      category: "QUẢN LÝ ĐƠN XUẤT HỦY"
+    },
+    {
+      id: "disposal-note-detail",
+      title: "Phiếu xuất hủy",
+      description: "Xem chi tiết phiếu xuất hủy",
+      icon: Receipt,
+      path: "/disposal-note-detail",
+      category: "QUẢN LÝ ĐƠN XUẤT HỦY"
+    },
+
+    // Backorder Management
+    {
+      id: "backorder",
+      title: "Quản lý đơn bổ sung",
+      description: "Quản lý các đơn bổ sung",
+      icon: RotateCcw,
+      path: "/backorder",
+      category: "QUẢN LÝ ĐƠN BỔ SUNG"
     },
 
     // User Management
@@ -90,8 +284,8 @@ const SearchBar = () => {
     },
     {
       id: "pallets",
-      title: "Quản lý kệ kê hàng",
-      description: "Quản lý các kệ kê hàng trong kho",
+      title: "Quản lý pallet",
+      description: "Quản lý các pallet trong kho",
       icon: Package,
       path: "/pallets",
       category: "QUẢN LÝ HÀNG HÓA"
@@ -143,22 +337,20 @@ const SearchBar = () => {
 
     // Reports
     {
-      id: "reports",
-      title: "Báo cáo",
-      description: "Xem các báo cáo chi tiết",
+      id: "reports-orders",
+      title: "Báo cáo xuất/nhập kho",
+      description: "Xem báo cáo xuất nhập kho",
       icon: BarChart3,
-      path: "/reports",
+      path: "/reports/orders",
       category: "BÁO CÁO"
     },
-
-    // System
     {
-      id: "settings",
-      title: "Cài đặt",
-      description: "Cấu hình hệ thống",
-      icon: Settings,
-      path: "/settings",
-      category: "HỆ THỐNG"
+      id: "reports-inventory",
+      title: "Báo cáo tồn kho",
+      description: "Xem báo cáo tồn kho",
+      icon: BarChart3,
+      path: "/reports/inventory",
+      category: "BÁO CÁO"
     }
   ];
 

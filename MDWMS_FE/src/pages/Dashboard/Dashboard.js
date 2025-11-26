@@ -549,10 +549,6 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
 
     return (
       <>
-        <div className="flex justify-end mb-4">
-          <p className="text-sm text-gray-600">{currentDateDisplay}</p>
-        </div>
-
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
           <Card>
