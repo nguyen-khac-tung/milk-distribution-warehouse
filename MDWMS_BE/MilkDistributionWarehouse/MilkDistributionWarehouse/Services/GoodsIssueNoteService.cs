@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
@@ -15,6 +16,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, GoodsIssueNoteDetailDto?)> GetDetailGoodsIssueNote(string? salesOrderId);
         Task<string> SubmitGoodsIssueNote(SubmitGoodsIssueNoteDto submitGoodsIssueDto, int? userId);
         Task<string> ApproveGoodsIssueNote(ApproveGoodsIssueNoteDto approveGoodsIssueDto, int? userId);
+        Task<(string, byte[]?, string?)> ExportGoodsIssueNoteWord(string salesOrderId);
     }
 
     public class GoodsIssueNoteService : IGoodsIssueNoteService
@@ -25,9 +27,10 @@ namespace MilkDistributionWarehouse.Services
         private readonly IStocktakingSheetRepository _stocktakingSheetRepository;
         private readonly IPickAllocationRepository _pickAllocationRepository;
         private readonly INotificationService _notificationService;
+        private readonly IInventoryLedgerService _inventoryLedgerService;
+        private readonly IWebHostEnvironment _env;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
-        private readonly IInventoryLedgerService _inventoryLedgerService;
 
         public GoodsIssueNoteService(IGoodsIssueNoteRepository goodsIssueNoteRepository,
                                  ISalesOrderRepository salesOrderRepository,
@@ -35,9 +38,10 @@ namespace MilkDistributionWarehouse.Services
                                  IStocktakingSheetRepository stocktakingSheetRepository,
                                  IPickAllocationRepository pickAllocationRepository,
                                  INotificationService notificationService,
+                                 IInventoryLedgerService inventoryLedgerService,
+                                 IWebHostEnvironment env,
                                  IUnitOfWork unitOfWork,
-                                 IMapper mapper,
-                                 IInventoryLedgerService inventoryLedgerService)
+                                 IMapper mapper)
         {
             _goodsIssueNoteRepository = goodsIssueNoteRepository;
             _salesOrderRepository = salesOrderRepository;
@@ -45,9 +49,10 @@ namespace MilkDistributionWarehouse.Services
             _stocktakingSheetRepository = stocktakingSheetRepository;
             _pickAllocationRepository = pickAllocationRepository;
             _notificationService = notificationService;
+            _inventoryLedgerService = inventoryLedgerService;
+            _env = env;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
-            _inventoryLedgerService = inventoryLedgerService;
         }
 
         public async Task<string> CreateGoodsIssueNote(GoodsIssueNoteCreateDto goodsIssueNoteCreate, int? userId)
@@ -268,6 +273,55 @@ namespace MilkDistributionWarehouse.Services
                 await _unitOfWork.RollbackTransactionAsync();
                 if (ex.Message.Contains("[User]")) return ex.Message;
                 return "Đã xảy ra lỗi hệ thống khi duyệt phiếu xuất kho.".ToMessageForUser();
+            }
+        }
+
+        public async Task<(string, byte[]?, string?)> ExportGoodsIssueNoteWord(string salesOrderId)
+        {
+            var ginDetail = await _goodsIssueNoteRepository.GetGINDetailBySalesOrderId(salesOrderId);
+
+            if (ginDetail == null) return ("Không tìm thấy phiếu xuất kho.".ToMessageForUser(), null, null);
+
+            var simpleData = new Dictionary<string, string>
+            {
+                { "$Ngay", ginDetail.SalesOder.EstimatedTimeDeparture?.Day.ToString("00") ?? "..." },
+                { "$Thang", ginDetail.SalesOder.EstimatedTimeDeparture?.Month.ToString("00") ?? "..." },
+                { "$Nam", ginDetail.SalesOder.EstimatedTimeDeparture?.Year.ToString() ?? "..." },
+                { "$SoPhieu", ginDetail.GoodsIssueNoteId ?? "..." },
+                { "$NguoiNhan", ginDetail.SalesOder.Retailer.RetailerName ?? "" },
+                { "$DiaChi", ginDetail.SalesOder.Retailer.Address ?? "" },
+            };
+
+            var tableData = new List<Dictionary<string, string>>();
+            int stt = 1;
+            if (ginDetail.GoodsIssueNoteDetails != null)
+            {
+                foreach (var issueNoteDetail in ginDetail.GoodsIssueNoteDetails)
+                {
+                    tableData.Add(new Dictionary<string, string>
+                    {
+                        { "$STT", stt++.ToString() },
+                        { "$TenHang", issueNoteDetail.Goods.GoodsName ?? "" },
+                        { "$MaHang", issueNoteDetail.Goods.GoodsCode ?? "" },
+                        { "$DVT", "Thùng"},
+                        { "$LuongYeuCau", issueNoteDetail.PackageQuantity?.ToString() ?? "0" },
+                        { "$LuongThucXuat", issueNoteDetail.PackageQuantity?.ToString() ?? "0" },
+                    });
+                }
+            }
+
+            string templatePath = Path.Combine(_env.ContentRootPath, "Templates", "phieu-xuat-kho.docx");
+
+            try
+            {
+                var fileBytes = WordExportUtility.FillTemplate(templatePath, simpleData, tableData);
+                string fileName = $"PhieuXuat_{ginDetail.GoodsIssueNoteId}.docx";
+
+                return ("", fileBytes, fileName);
+            }
+            catch (Exception ex)
+            {
+                return ($"Xảy ra lỗi khi xuất file.".ToMessageForUser(), null, null);
             }
         }
 
