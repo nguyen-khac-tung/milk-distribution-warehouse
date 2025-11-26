@@ -70,30 +70,6 @@ const SearchBar = () => {
       path: "/purchase-orders/create",
       category: "QUẢN LÝ ĐƠN MUA HÀNG"
     },
-    {
-      id: "purchase-orders-update",
-      title: "Cập nhật đơn mua hàng",
-      description: "Chỉnh sửa thông tin đơn mua hàng",
-      icon: Edit,
-      path: "/purchase-orders/update",
-      category: "QUẢN LÝ ĐƠN MUA HÀNG"
-    },
-    {
-      id: "purchase-orders-detail",
-      title: "Chi tiết đơn mua hàng",
-      description: "Xem chi tiết đơn mua hàng",
-      icon: Eye,
-      path: "/purchase-orders",
-      category: "QUẢN LÝ ĐƠN MUA HÀNG"
-    },
-    {
-      id: "goods-receipt-notes",
-      title: "Phiếu nhập kho",
-      description: "Xem chi tiết phiếu nhập kho",
-      icon: Receipt,
-      path: "/goods-receipt-notes",
-      category: "QUẢN LÝ ĐƠN MUA HÀNG"
-    },
 
     // Sales Orders Management
     {
@@ -110,30 +86,6 @@ const SearchBar = () => {
       description: "Tạo đơn bán hàng mới",
       icon: PlusCircle,
       path: "/sales-orders/create",
-      category: "QUẢN LÝ ĐƠN BÁN HÀNG"
-    },
-    {
-      id: "sales-orders-update",
-      title: "Cập nhật đơn bán hàng",
-      description: "Chỉnh sửa thông tin đơn bán hàng",
-      icon: Edit,
-      path: "/sales-orders/update",
-      category: "QUẢN LÝ ĐƠN BÁN HÀNG"
-    },
-    {
-      id: "sales-orders-detail",
-      title: "Chi tiết đơn bán hàng",
-      description: "Xem chi tiết đơn bán hàng",
-      icon: Eye,
-      path: "/sales-orders",
-      category: "QUẢN LÝ ĐƠN BÁN HÀNG"
-    },
-    {
-      id: "goods-issue-note-detail",
-      title: "Phiếu xuất kho",
-      description: "Xem chi tiết phiếu xuất kho",
-      icon: FileCheck,
-      path: "/goods-issue-note-detail",
       category: "QUẢN LÝ ĐƠN BÁN HÀNG"
     },
 
@@ -154,38 +106,6 @@ const SearchBar = () => {
       path: "/stocktaking/create",
       category: "QUẢN LÝ ĐƠN KIỂM KÊ"
     },
-    {
-      id: "stocktakings-update",
-      title: "Cập nhật đơn kiểm kê",
-      description: "Chỉnh sửa thông tin đơn kiểm kê",
-      icon: Edit,
-      path: "/stocktakings/update",
-      category: "QUẢN LÝ ĐƠN KIỂM KÊ"
-    },
-    {
-      id: "stocktakings-detail",
-      title: "Chi tiết đơn kiểm kê",
-      description: "Xem chi tiết đơn kiểm kê",
-      icon: Eye,
-      path: "/stocktakings",
-      category: "QUẢN LÝ ĐƠN KIỂM KÊ"
-    },
-    {
-      id: "stocktaking-area",
-      title: "Khu vực kiểm kê",
-      description: "Xem chi tiết khu vực kiểm kê",
-      icon: MapPin,
-      path: "/stocktaking-area",
-      category: "QUẢN LÝ ĐƠN KIỂM KÊ"
-    },
-    {
-      id: "stocktaking-area-detail-other",
-      title: "Chi tiết khu vực kiểm kê (khác)",
-      description: "Xem chi tiết khu vực kiểm kê cho người khác",
-      icon: Eye,
-      path: "/stocktaking-area-detail-other",
-      category: "QUẢN LÝ ĐƠN KIỂM KÊ"
-    },
 
     // Disposal Management
     {
@@ -202,30 +122,6 @@ const SearchBar = () => {
       description: "Tạo đơn xuất hủy mới",
       icon: PlusCircle,
       path: "/disposal/create",
-      category: "QUẢN LÝ ĐƠN XUẤT HỦY"
-    },
-    {
-      id: "disposal-update",
-      title: "Cập nhật đơn xuất hủy",
-      description: "Chỉnh sửa thông tin đơn xuất hủy",
-      icon: Edit,
-      path: "/disposal/update",
-      category: "QUẢN LÝ ĐƠN XUẤT HỦY"
-    },
-    {
-      id: "disposal-detail",
-      title: "Chi tiết đơn xuất hủy",
-      description: "Xem chi tiết đơn xuất hủy",
-      icon: Eye,
-      path: "/disposal",
-      category: "QUẢN LÝ ĐƠN XUẤT HỦY"
-    },
-    {
-      id: "disposal-note-detail",
-      title: "Phiếu xuất hủy",
-      description: "Xem chi tiết phiếu xuất hủy",
-      icon: Receipt,
-      path: "/disposal-note-detail",
       category: "QUẢN LÝ ĐƠN XUẤT HỦY"
     },
 

@@ -8,7 +8,7 @@ import Loading from "../../components/Common/Loading";
 import EmptyState from "../../components/Common/EmptyState";
 import Pagination from "../../components/Common/Pagination";
 import PurchaseOrderFilterToggle from "../../components/PurchaseOrderComponents/PurchaseOrderFilterToggle";
-import PurchaseOrderStatsChart from "../../components/PurchaseOrderComponents/PurchaseOrderStatsChart";
+// import PurchaseOrderStatsChart from "../../components/PurchaseOrderComponents/PurchaseOrderStatsChart";
 import StatusDisplay, { STATUS_LABELS } from "../../components/PurchaseOrderComponents/StatusDisplay";
 import { PURCHASE_ORDER_STATUS } from "../../utils/permissions";
 import PurchaseOrderTable from "./PurchaseOrderTable";
@@ -755,9 +755,9 @@ export default function PurchaseOrderList() {
         </div>
 
         {/* Stats Chart */}
-        <PurchaseOrderStatsChart
+        {/* <PurchaseOrderStatsChart
           purchaseOrderStats={purchaseOrderStats}
-        />
+        /> */}
 
         {/* Search and Table Combined */}
         <Card className="shadow-sm border border-slate-200 overflow-visible bg-gray-50">
