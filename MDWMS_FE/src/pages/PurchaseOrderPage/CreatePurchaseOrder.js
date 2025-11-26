@@ -419,7 +419,6 @@ export default function CreatePurchaseOrder({
             }).filter(item => item.goodsId);
 
             if (itemsWithIds.length === 0) {
-                console.log("Không tìm thấy hàng hóa hợp lệ");
                 window.showToast("Không tìm thấy hàng hóa hợp lệ!", "error");
                 return;
             }

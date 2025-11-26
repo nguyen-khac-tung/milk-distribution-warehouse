@@ -98,10 +98,7 @@ export default function UpdateLocationModal({ isOpen, onClose, onSuccess, locati
         IsAvailable: formData.isAvailable,
       };
 
-      console.log("Payload gửi lên:", payload);
-
       const res = await updateLocation(payload);
-      console.log("Update response:", res);
       window.showToast("Cập nhật vị trí thành công!", "success");
 
       onSuccess && onSuccess();

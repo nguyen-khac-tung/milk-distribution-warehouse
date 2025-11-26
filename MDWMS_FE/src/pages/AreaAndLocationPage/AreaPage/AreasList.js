@@ -383,7 +383,6 @@ const AreaLists = () => {
     // Xem chi tiết khu vực
     const handleViewClick = async (area) => {
         try {
-            console.log("Viewing area:", area)
             setItemToView(area)
             setLoadingDetail(true)
             setShowViewModal(true)

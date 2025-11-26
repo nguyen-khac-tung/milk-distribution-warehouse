@@ -24,7 +24,6 @@ const DisposalNoteDetail = () => {
     const [disposalNote, setDisposalNote] = useState(null);
     const [error, setError] = useState(null);
 
-    // console.log("====:", disposalNote)
     // Get current user info from localStorage - useMemo to recalculate when needed
     const currentUserInfo = useMemo(() => {
         try {

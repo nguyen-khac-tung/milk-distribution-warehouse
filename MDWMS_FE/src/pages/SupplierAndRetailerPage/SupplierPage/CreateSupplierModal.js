@@ -24,13 +24,13 @@ export default function CreateSupplier({ isOpen, onClose, onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
+
     // Basic validation - check if required fields are filled
-    if (!formData.companyName?.trim() || !formData.brandName?.trim() || 
-        !formData.email?.trim() || !formData.phone?.trim() || 
-        !formData.taxCode?.trim() || !formData.address?.trim() ||
-        !formData.contactPersonName?.trim() || !formData.contactPersonPhone?.trim() || 
-        !formData.contactPersonEmail?.trim()) {
+    if (!formData.companyName?.trim() || !formData.brandName?.trim() ||
+      !formData.email?.trim() || !formData.phone?.trim() ||
+      !formData.taxCode?.trim() || !formData.address?.trim() ||
+      !formData.contactPersonName?.trim() || !formData.contactPersonPhone?.trim() ||
+      !formData.contactPersonEmail?.trim()) {
       window.showToast("Vui lòng điền đầy đủ thông tin", "error")
       return
     }
@@ -64,7 +64,6 @@ export default function CreateSupplier({ isOpen, onClose, onSuccess }) {
     try {
       setLoading(true)
       const response = await createSupplier(formData)
-      console.log("Supplier created:", response)
       window.showToast("Thêm nhà cung cấp thành công!", "success")
       onSuccess && onSuccess()
       onClose && onClose()
@@ -107,7 +106,7 @@ export default function CreateSupplier({ isOpen, onClose, onSuccess }) {
             <X className="h-5 w-5 text-gray-500" />
           </button>
         </div>
-        
+
         {/* Content */}
         <div className="p-6">
           <form id="supplier-form" className="space-y-6" onSubmit={handleSubmit}>
@@ -210,7 +209,7 @@ export default function CreateSupplier({ isOpen, onClose, onSuccess }) {
               {/* Contact Person Section */}
               <div className="border-t border-gray-200 pt-4">
                 <h3 className="text-lg font-semibold text-slate-800 mb-4">Thông tin người liên hệ</h3>
-                
+
                 {/* Row 4: Contact Person Name & Phone */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">

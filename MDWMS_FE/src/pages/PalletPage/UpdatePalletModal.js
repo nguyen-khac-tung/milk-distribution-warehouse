@@ -37,14 +37,11 @@ const UpdatePalletModal = ({
 
   // Debug batchOptions changes
   useEffect(() => {
-    console.log("batchOptions updated:", batchOptions);
   }, [batchOptions]);
 
   // Initialize form data when pallet changes
   useEffect(() => {
     if (pallet && isOpen) {
-      console.log("Modal opened with pallet:", pallet);
-      console.log("GoodsId:", goodsId);
       setFormData({
         batchCode: pallet.batchCode || '',
         batchId: pallet.batchId || '',
@@ -59,10 +56,8 @@ const UpdatePalletModal = ({
 
       // Load batch dropdown if goodsId exists
       if (goodsId) {
-        console.log("Loading batch dropdown for goodsId:", goodsId);
         loadBatchDropdown(goodsId);
       } else {
-        console.log("No goodsId provided");
       }
     }
   }, [pallet, goodsId, isOpen]);
@@ -72,10 +67,8 @@ const UpdatePalletModal = ({
     try {
       setBatchLoading(true);
       const response = await getBatchDropdown(goodsId);
-      console.log("Batch dropdown response:", response);
       // API trả về object có data property chứa array
       const batchData = response?.data || [];
-      console.log("Setting batchOptions to:", batchData);
       setBatchOptions(batchData);
     } catch (error) {
       console.error("Error loading batch dropdown:", error);
@@ -104,10 +97,9 @@ const UpdatePalletModal = ({
       const message = result.message || "";
       const isDefaultMessage = message === "Mã vị trí hợp lệ";
       const processedMessage = message ? extractErrorMessage({ response: { data: { message } } }, message) : (result.success ? "Mã vị trí hợp lệ" : "Mã vị trí không tồn tại");
-      
+
       if (result.success) {
         // Lưu locationId từ response
-        console.log("Location validation result:", result);
         setFormData(prev => ({
           ...prev,
           locationId: result.data?.locationId || ''

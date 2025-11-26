@@ -110,9 +110,6 @@ export default function UnitMeasuresPage() {
         status: searchParams.status
       })
 
-      console.log("Full response from getUnitMeasure:", response);
-      console.log("Response.data:", response?.data);
-
       if (response && response.data) {
         // Check different possible response structures
         let dataArray = [];
@@ -132,16 +129,12 @@ export default function UnitMeasuresPage() {
           totalCount = response.data.totalCount || dataArray.length;
         }
 
-        console.log("Parsed dataArray:", dataArray);
-        console.log("Parsed totalCount:", totalCount);
-
         setUnitMeasures(dataArray)
         setPagination(prev => ({
           ...prev,
           totalCount: totalCount
         }))
       } else {
-        console.log("No response or response.data");
         setUnitMeasures([])
         setPagination(prev => ({ ...prev, totalCount: 0 }))
       }
@@ -267,7 +260,6 @@ export default function UnitMeasuresPage() {
 
   const handleDeleteConfirm = async () => {
     try {
-      console.log("Deleting unit measure:", itemToDelete)
       await deleteUnitMeasure(itemToDelete?.unitMeasureId)
       window.showToast(`Đã xóa đơn vị đo: ${itemToDelete?.name || ''}`, "success")
       setShowDeleteModal(false)

@@ -37,7 +37,6 @@ export default function UpdatePurchaseOrder() {
     useEffect(() => {
         // Force re-render when goodsPacking is updated
         if (Object.keys(goodsPacking).length > 0) {
-            console.log("GoodsPacking updated, triggering re-calculation");
         }
     }, [goodsPacking]);
 
@@ -54,9 +53,6 @@ export default function UpdatePurchaseOrder() {
                 // Load purchase order detail
                 const orderResponse = await getPurchaseOrderDetail(id);
                 const orderData = orderResponse?.data || orderResponse;
-                console.log("=== LOADING UPDATE DATA ===");
-                console.log("Order data:", orderData);
-                console.log("Purchase order details:", orderData?.purchaseOrderDetails);
 
                 if (orderData) {
                     // Set supplier
@@ -88,18 +84,14 @@ export default function UpdatePurchaseOrder() {
                                 unitMeasureName: detail.unitMeasureName || "đơn vị"
                             };
                         });
-                        console.log("Formatted items:", formattedItems);
                         setItems(formattedItems);
 
                         // Load goods packing data cho các hàng hóa hiện có
-                        console.log("Loading goods packing for existing items...");
                         for (const detail of orderData.purchaseOrderDetails) {
                             if (detail.goodsId) {
                                 try {
-                                    console.log(`Loading packing for goodsId: ${detail.goodsId}`);
                                     const packingResponse = await getGoodsPackingByGoodsId(detail.goodsId);
                                     const packingData = packingResponse?.data || packingResponse?.items || packingResponse || [];
-                                    console.log(`Packing data for goodsId ${detail.goodsId}:`, packingData);
 
                                     setGoodsPacking(prev => ({
                                         ...prev,
@@ -265,7 +257,6 @@ export default function UpdatePurchaseOrder() {
         }
 
         if (!selectedGood) {
-            console.log("Selected good not found for:", item.goodsName, "goodsId:", item.goodsId);
             return 0;
         }
 
@@ -279,7 +270,6 @@ export default function UpdatePurchaseOrder() {
         );
 
         if (!selectedPacking) {
-            console.log("Selected packing not found for goodsPackingId:", item.goodsPackingId, "Available packings:", goodsPackings.map(p => p.goodsPackingId));
             // Nếu không tìm thấy trong goodsPacking, thử dùng unitPerPacking từ item (khi load từ API)
             if (item.unitPerPacking && item.quantity) {
                 return parseInt(item.quantity) * item.unitPerPacking;
@@ -288,7 +278,6 @@ export default function UpdatePurchaseOrder() {
         }
 
         const result = parseInt(item.quantity) * selectedPacking.unitPerPackage;
-        console.log("Calculating total units:", item.quantity, "*", selectedPacking.unitPerPackage, "=", result);
         return result;
     };
 
@@ -587,14 +576,7 @@ export default function UpdatePurchaseOrder() {
                                                                     .filter(otherItem => otherItem.id !== item.id && otherItem.goodsId && otherItem.goodsId !== 0)
                                                                     .map(otherItem => otherItem.goodsId);
 
-                                                                console.log(`=== DROPDOWN FOR ITEM ${index + 1} ===`);
-                                                                console.log("Current item:", item);
-                                                                console.log("All items:", items);
-                                                                console.log("Selected goods IDs:", selectedGoodsIds);
-                                                                console.log("All goods:", goods.map(g => ({ id: g.goodsId, name: g.goodsName })));
-
                                                                 const availableGoods = goods.filter(good => !selectedGoodsIds.includes(good.goodsId));
-                                                                console.log("Available goods:", availableGoods.map(g => ({ id: g.goodsId, name: g.goodsName })));
 
                                                                 // Nếu không còn hàng hóa nào để chọn, hiển thị thông báo
                                                                 if (availableGoods.length === 0 && goods.length > 0) {
