@@ -20,14 +20,6 @@ const UserInfoDisplay = ({
 
     const status = order.status;
 
-    // Debug: Log để xem data thực tế
-    console.log('UserInfoDisplay - Status:', status);
-    console.log('UserInfoDisplay - approvalBy:', order.approvalBy);
-    console.log('UserInfoDisplay - approvalByName:', order.approvalByName);
-    console.log('UserInfoDisplay - updatedAt:', order.updatedAt);
-    console.log('UserInfoDisplay - note:', order.note);
-    console.log('UserInfoDisplay - rejectionReason:', order.rejectionReason);
-
     // Logic hiển thị theo role và trạng thái
     const canViewApprovalInfo = () => {
         // Không hiển thị "Duyệt bởi" khi ở trạng thái Draft, PendingApproval, hoặc Rejected

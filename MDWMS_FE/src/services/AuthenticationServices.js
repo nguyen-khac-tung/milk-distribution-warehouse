@@ -15,8 +15,6 @@ export const login = async (data) => {
         if (res.data?.success && res.data?.data) {
             const userData = res.data.data;
 
-            // console.log("isFirstLogin:", userData.isFirstLogin);
-
             if (userData.isFirstLogin === true) {
                 localStorage.setItem("tempUserId", userData.userId.toString());
                 return {
@@ -42,11 +40,7 @@ export const login = async (data) => {
                         roles: userData.roles,
                     })
                 );
-                // console.log("localStorage after saving:", {
-                //     accessToken: localStorage.getItem("accessToken"),
-                //     refreshToken: localStorage.getItem("refreshToken"),
-                //     userInfo: localStorage.getItem("userInfo")
-                // });
+
             }
 
             return {
@@ -157,12 +151,9 @@ export const validateAndRefreshToken = async () => {
         // Nếu accessToken hết hạn hoặc không có, thử refresh
         if (refreshToken) {
             try {
-                console.log("Attempting to refresh token...");
                 const newToken = await refreshAccessToken();
-                console.log("Token refreshed successfully");
                 return true;
             } catch (error) {
-                console.error("Token refresh failed:", error);
 
                 // Kiểm tra xem refresh token còn tồn tại không (có thể đã bị xóa ở đâu đó)
                 const currentRefreshToken = localStorage.getItem("refreshToken");
@@ -179,9 +170,9 @@ export const validateAndRefreshToken = async () => {
                 // Lỗi token: có response từ server với status 400/401/403
                 // 400: Refresh token hết hạn hoặc không hợp lệ (từ backend)
                 // 401/403: Unauthorized/Forbidden
-                const isTokenError = error.response?.status === 400 || 
-                                   error.response?.status === 401 || 
-                                   error.response?.status === 403;
+                const isTokenError = error.response?.status === 400 ||
+                    error.response?.status === 401 ||
+                    error.response?.status === 403;
                 // Lỗi network: không có response từ server
                 const isNetworkError = !error.response && !isMissingToken;
 

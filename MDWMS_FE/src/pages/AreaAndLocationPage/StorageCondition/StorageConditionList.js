@@ -114,9 +114,6 @@ export default function StorageConditionPage() {
         status: searchParams.status
       })
 
-      console.log("Full response from getStorageCondition:", response);
-      console.log("Response.data:", response?.data);
-
       if (response && response.data) {
         // Check different possible response structures
         let dataArray = [];
@@ -136,16 +133,12 @@ export default function StorageConditionPage() {
           totalCount = response.data.totalCount || dataArray.length;
         }
 
-        console.log("Parsed dataArray:", dataArray);
-        console.log("Parsed totalCount:", totalCount);
-
         setStorageConditions(dataArray)
         setPagination(prev => ({
           ...prev,
           totalCount: totalCount
         }))
       } else {
-        console.log("No response or response.data");
         setStorageConditions([])
         setPagination(prev => ({ ...prev, totalCount: 0 }))
       }
@@ -271,8 +264,6 @@ export default function StorageConditionPage() {
 
   const handleDeleteConfirm = async () => {
     try {
-      console.log("Deleting storage condition:", itemToDelete)
-      console.log("StorageConditionId:", itemToDelete?.storageConditionId)
 
       if (!itemToDelete?.storageConditionId) {
         window.showToast("Không tìm thấy ID của điều kiện bảo quản", "error")

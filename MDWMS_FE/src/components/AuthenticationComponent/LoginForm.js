@@ -26,7 +26,6 @@ export function LoginForm() {
         setLoading(true);
         try {
             const res = await login({ email, password });
-            console.log("Login response:", res);
 
             if (res.success) {
                 if (res.isFirstLogin === true) {

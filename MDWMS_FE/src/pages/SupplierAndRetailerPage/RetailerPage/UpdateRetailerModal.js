@@ -32,11 +32,9 @@ export default function UpdateRetailerModal({ isOpen, onClose, onSuccess, retail
     try {
       setLoadingData(true)
       const response = await getRetailerDetail(retailerId)
-      console.log("API Response:", response);
 
       // API trả về { data: {...}, message: "", status: 200, success: true }
       const retailerInfo = response.data || response;
-      console.log("Retailer Info:", retailerInfo);
 
       if (retailerInfo) {
         setFormData({
@@ -60,10 +58,10 @@ export default function UpdateRetailerModal({ isOpen, onClose, onSuccess, retail
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
+
     // Basic validation - check if required fields are filled
-    if (!formData.retailerName?.trim() || !formData.taxCode?.trim() || 
-        !formData.email?.trim() || !formData.address?.trim() || !formData.phone?.trim()) {
+    if (!formData.retailerName?.trim() || !formData.taxCode?.trim() ||
+      !formData.email?.trim() || !formData.address?.trim() || !formData.phone?.trim()) {
       window.showToast("Vui lòng điền đầy đủ thông tin", "error")
       return
     }
@@ -86,7 +84,6 @@ export default function UpdateRetailerModal({ isOpen, onClose, onSuccess, retail
     try {
       setLoading(true)
       const response = await updateRetailer(formData)
-      console.log("Retailer updated:", response)
       window.showToast("Cập nhật nhà bán lẻ thành công!", "success")
       onSuccess && onSuccess()
       onClose && onClose()
@@ -127,7 +124,7 @@ export default function UpdateRetailerModal({ isOpen, onClose, onSuccess, retail
             <X className="h-5 w-5 text-gray-500" />
           </button>
         </div>
-        
+
         {/* Content */}
         <div className="p-6">
           <form className="space-y-6" onSubmit={handleSubmit}>

@@ -51,7 +51,6 @@ const PurchaseOrderDetail = () => {
             try {
                 setLoading(true);
                 const response = await getPurchaseOrderDetail(id);
-                console.log('PurchaseOrderDetail - response:', response);
                 if (response && response.success) {
                     setPurchaseOrder(response.data);
                 } else {

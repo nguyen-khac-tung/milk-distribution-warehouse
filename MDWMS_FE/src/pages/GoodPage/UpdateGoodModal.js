@@ -185,15 +185,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
         }))
       }
 
-      console.log("=== DỮ LIỆU GỬI ĐI KHI UPDATE GOOD ===")
-      console.log("Form Data:", formData)
-      console.log("Valid Packings:", validPackings)
-      console.log("Submit Data:", submitData)
-      console.log("Goods Packing Updates:", submitData.goodsPackingUpdates)
-      console.log("=====================================")
-
       const response = await updateGood(submitData)
-      console.log("Good updated:", response)
       window.showToast("Cập nhật hàng hóa thành công!", "success")
       onSuccess && onSuccess()
       onClose && onClose()

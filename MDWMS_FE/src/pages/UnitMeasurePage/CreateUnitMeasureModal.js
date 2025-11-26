@@ -27,7 +27,6 @@ export default function CreateUnitMeasure({ isOpen, onClose, onSuccess }) {
     try {
       setLoading(true)
       const response = await createUnitMeasure(formData)
-      console.log("Unit measure created:", response)
       window.showToast("Thêm đơn vị đo thành công!", "success")
       onSuccess && onSuccess()
       onClose && onClose()

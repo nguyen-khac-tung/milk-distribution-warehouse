@@ -27,12 +27,7 @@ export const getLocations = async (searchParams = {}) => {
             body.filters.areaId = String(searchParams.areaId);
         }
 
-        console.log("Sending request body:", body);
-        console.log("Search params:", searchParams);
-
         const res = await api.post("/Location/Locations", body);
-        console.log("Location API response:", res.data);
-        console.log("Search params received:", searchParams);
 
         const payload = res?.data?.data ?? res?.data ?? { items: [], totalCount: 0 };
         return payload;
@@ -79,7 +74,6 @@ export const updateLocation = async (data) => {
     };
 
     try {
-        console.log("Sending update request:", body);
         const res = await api.put(`/Location/Update/${data.LocationId}`, body);
         console.log("Location Update API response:", res.data);
         return res.data;
@@ -149,8 +143,6 @@ export const createMultipleLocations = async (locations) => {
             })),
         };
 
-        console.log("Sending CreateMultiple request:", body);
-
         const res = await api.post("/Location/CreateMultiple", body);
 
         console.log("CreateMultiple Locations API response:", res.data);
@@ -171,7 +163,7 @@ export const validateLocationCode = async (locationCode, palletId) => {
     try {
         // Convert palletId to string if provided
         const palletIdString = palletId != null ? String(palletId) : "";
-        
+
         const response = await api.post(`/Location/LocationPallet`, {
             locationCode: locationCode,
             palletId: palletIdString
@@ -180,7 +172,7 @@ export const validateLocationCode = async (locationCode, palletId) => {
         if (response.status === 200 && response.data) {
             // Lấy message từ response nếu có
             const responseMessage = response.data.message || response.data.Message || "";
-            
+
             if (response.data.success === true && response.data.data && response.data.data.locationId) {
                 return {
                     success: true,
@@ -202,7 +194,7 @@ export const validateLocationCode = async (locationCode, palletId) => {
                     message: responseMessage || "Mã vị trí hợp lệ"
                 };
             }
-            
+
             // Nếu response có message nhưng không thành công
             if (responseMessage) {
                 return {

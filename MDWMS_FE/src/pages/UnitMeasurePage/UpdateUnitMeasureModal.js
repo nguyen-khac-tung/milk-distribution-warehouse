@@ -19,7 +19,6 @@ export default function UpdateUnitMeasure({ isOpen, onClose, onSuccess, unitMeas
   // Load data when modal opens
   React.useEffect(() => {
     if (isOpen && unitMeasureData) {
-      console.log("Loading unit measure data for update:", unitMeasureData)
       setFormData({
         name: unitMeasureData.name || "",
         description: unitMeasureData.description || "",
@@ -50,15 +49,7 @@ export default function UpdateUnitMeasure({ isOpen, onClose, onSuccess, unitMeas
         status: unitMeasureData.status // Keep original status
       }
 
-      console.log("Update data:", updateData)
-      console.log("Data validation:", {
-        name: updateData.name.length > 0,
-        description: updateData.description.length > 0,
-        unitMeasureId: !isNaN(updateData.unitMeasureId)
-      })
-
       const response = await updateUnitMeasure(updateData)
-      console.log("Unit measure updated:", response)
       window.showToast("Cập nhật đơn vị đo thành công!", "success")
       onSuccess && onSuccess()
       onClose && onClose()

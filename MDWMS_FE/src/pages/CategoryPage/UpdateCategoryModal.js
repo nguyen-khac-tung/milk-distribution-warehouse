@@ -19,7 +19,6 @@ export default function UpdateCategory({ isOpen, onClose, onSuccess, categoryDat
   // Load data when modal opens
   React.useEffect(() => {
     if (isOpen && categoryData) {
-      console.log("Loading category data for update:", categoryData)
       setFormData({
         categoryName: categoryData.categoryName || "",
         description: categoryData.description || "",
@@ -49,15 +48,7 @@ export default function UpdateCategory({ isOpen, onClose, onSuccess, categoryDat
         categoryId: parseInt(categoryData.categoryId),
       }
 
-      console.log("Update data:", updateData)
-      console.log("Data validation:", {
-        categoryName: updateData.categoryName.length > 0,
-        description: updateData.description.length > 0,
-        categoryId: !isNaN(updateData.categoryId),
-      })
-
       const response = await updateCategory(updateData)
-      console.log("Category updated:", response)
       window.showToast("Cập nhật danh mục thành công!", "success")
       onSuccess && onSuccess()
       onClose && onClose()

@@ -56,7 +56,6 @@ export default function CreateAreaModal({ isOpen, onClose, onSuccess }) {
     try {
       setLoading(true)
       const response = await createArea(formData)
-      console.log("Area created:", response)
       window.showToast("Thêm khu vực thành công!", "success")
       onSuccess && onSuccess()
       onClose && onClose()

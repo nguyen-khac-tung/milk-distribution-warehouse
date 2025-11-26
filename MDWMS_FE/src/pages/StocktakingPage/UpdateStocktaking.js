@@ -76,7 +76,6 @@ const UpdateStocktaking = () => {
 
                     // Load selected areas from API response
                     // API trả về StocktakingAreas là mảng các StocktakingAreaUpdateDto, mỗi item có AreaId
-                    console.log('Stocktaking detail data:', data);
 
                     let areaIds = [];
 
@@ -84,30 +83,24 @@ const UpdateStocktaking = () => {
                         areaIds = data.stocktakingAreas
                             .map(area => area.areaId)
                             .filter(areaId => areaId != null);
-                        console.log('Found stocktakingAreas (camelCase):', areaIds);
                     } else if (data.StocktakingAreas && Array.isArray(data.StocktakingAreas)) {
                         // Handle PascalCase
                         areaIds = data.StocktakingAreas
                             .map(area => area.AreaId || area.areaId)
                             .filter(areaId => areaId != null);
-                        console.log('Found StocktakingAreas (PascalCase):', areaIds);
                     } else if (data.areaIds && Array.isArray(data.areaIds)) {
                         areaIds = data.areaIds.map(item =>
                             typeof item === 'object' ? (item.areaId || item.AreaId) : item
                         ).filter(areaId => areaId != null);
-                        console.log('Found areaIds:', areaIds);
                     } else if (data.areas && Array.isArray(data.areas)) {
                         areaIds = data.areas
                             .map(area => area.areaId || area.AreaId)
                             .filter(areaId => areaId != null);
-                        console.log('Found areas:', areaIds);
                     }
 
                     if (areaIds.length > 0) {
                         setSelectedAreas(areaIds);
-                        console.log('Set selected areas:', areaIds);
                     } else {
-                        console.log('No areas found in response');
                     }
                 }
             } catch (error) {
@@ -477,8 +470,8 @@ const UpdateStocktaking = () => {
                                                 type="button"
                                                 onClick={() => setIsAreaDropdownOpen(!isAreaDropdownOpen)}
                                                 className={`h-[38px] w-full px-3 py-2 border rounded-lg text-left flex items-center justify-between transition-all ${fieldErrors.selectedAreas
-                                                        ? 'border-red-500'
-                                                        : 'border-slate-300 focus:border-orange-500 focus:ring-orange-500'
+                                                    ? 'border-red-500'
+                                                    : 'border-slate-300 focus:border-orange-500 focus:ring-orange-500'
                                                     } ${isAreaDropdownOpen ? 'border-orange-500 ring-2 ring-orange-200' : ''}`}
                                             >
                                                 <span className={selectedAreas.length > 0 ? 'text-slate-900' : 'text-slate-500'}>
@@ -506,8 +499,8 @@ const UpdateStocktaking = () => {
                                                                         checked={selectedAreas.length === areas.length && areas.length > 0}
                                                                         onChange={(e) => handleSelectAllAreas(e.target.checked)}
                                                                         className={`border-slate-300 focus:ring-orange-500 focus:ring-offset-0 ${selectedAreas.length === areas.length && areas.length > 0
-                                                                                ? 'bg-orange-500 border-orange-500'
-                                                                                : ''
+                                                                            ? 'bg-orange-500 border-orange-500'
+                                                                            : ''
                                                                             }`}
                                                                         style={{
                                                                             accentColor: '#f97316',
@@ -534,8 +527,8 @@ const UpdateStocktaking = () => {
                                                                             checked={selectedAreas.includes(area.areaId)}
                                                                             onChange={(e) => handleAreaCheckboxChange(area.areaId, e.target.checked)}
                                                                             className={`border-slate-300 focus:ring-orange-500 focus:ring-offset-0 ${selectedAreas.includes(area.areaId)
-                                                                                    ? 'bg-orange-500 border-orange-500'
-                                                                                    : ''
+                                                                                ? 'bg-orange-500 border-orange-500'
+                                                                                : ''
                                                                                 }`}
                                                                             style={{
                                                                                 accentColor: '#f97316',

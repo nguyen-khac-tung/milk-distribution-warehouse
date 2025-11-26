@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePermissions } from "../../hooks/usePermissions";
+import { PERMISSIONS } from "../../utils/permissions";
 import {
   Search,
   X,
@@ -35,6 +37,7 @@ import {
 
 const SearchBar = () => {
   const navigate = useNavigate();
+  const { hasAnyPermission } = usePermissions();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredItems, setFilteredItems] = useState([]);
@@ -50,7 +53,8 @@ const SearchBar = () => {
       description: "Trang tổng quan hệ thống",
       icon: Home,
       path: "/dashboard",
-      category: "DASHBOARD"
+      category: "DASHBOARD",
+      permissions: [PERMISSIONS.DASHBOARD_VIEW]
     },
 
     // Purchase Orders Management
@@ -60,7 +64,14 @@ const SearchBar = () => {
       description: "Xem và quản lý các đơn mua hàng",
       icon: ShoppingCart,
       path: "/purchase-orders",
-      category: "QUẢN LÝ ĐƠN MUA HÀNG"
+      category: "QUẢN LÝ ĐƠN MUA HÀNG",
+      permissions: [
+        PERMISSIONS.PURCHASE_ORDER_VIEW,
+        PERMISSIONS.PURCHASE_ORDER_VIEW_RS,
+        PERMISSIONS.PURCHASE_ORDER_VIEW_SM,
+        PERMISSIONS.PURCHASE_ORDER_VIEW_WM,
+        PERMISSIONS.PURCHASE_ORDER_VIEW_WS
+      ]
     },
     {
       id: "purchase-orders-create",
@@ -68,7 +79,8 @@ const SearchBar = () => {
       description: "Tạo đơn mua hàng mới",
       icon: PlusCircle,
       path: "/purchase-orders/create",
-      category: "QUẢN LÝ ĐƠN MUA HÀNG"
+      category: "QUẢN LÝ ĐƠN MUA HÀNG",
+      permissions: [PERMISSIONS.PURCHASE_ORDER_CREATE]
     },
 
     // Sales Orders Management
@@ -78,7 +90,14 @@ const SearchBar = () => {
       description: "Xem và quản lý các đơn bán hàng",
       icon: ShoppingBag,
       path: "/sales-orders",
-      category: "QUẢN LÝ ĐƠN BÁN HÀNG"
+      category: "QUẢN LÝ ĐƠN BÁN HÀNG",
+      permissions: [
+        PERMISSIONS.SALES_ORDER_VIEW,
+        PERMISSIONS.SALES_ORDER_VIEW_SR,
+        PERMISSIONS.SALES_ORDER_VIEW_SM,
+        PERMISSIONS.SALES_ORDER_VIEW_WM,
+        PERMISSIONS.SALES_ORDER_VIEW_WS
+      ]
     },
     {
       id: "sales-orders-create",
@@ -86,7 +105,8 @@ const SearchBar = () => {
       description: "Tạo đơn bán hàng mới",
       icon: PlusCircle,
       path: "/sales-orders/create",
-      category: "QUẢN LÝ ĐƠN BÁN HÀNG"
+      category: "QUẢN LÝ ĐƠN BÁN HÀNG",
+      permissions: [PERMISSIONS.SALES_ORDER_CREATE]
     },
 
     // Stocktaking Management
@@ -96,7 +116,13 @@ const SearchBar = () => {
       description: "Xem và quản lý các đơn kiểm kê",
       icon: ClipboardList,
       path: "/stocktakings",
-      category: "QUẢN LÝ ĐƠN KIỂM KÊ"
+      category: "QUẢN LÝ ĐƠN KIỂM KÊ",
+      permissions: [
+        PERMISSIONS.STOCKTAKING_VIEW,
+        PERMISSIONS.STOCKTAKING_VIEW_WM,
+        PERMISSIONS.STOCKTAKING_VIEW_WS,
+        PERMISSIONS.STOCKTAKING_VIEW_SM
+      ]
     },
     {
       id: "stocktaking-create",
@@ -104,7 +130,8 @@ const SearchBar = () => {
       description: "Tạo đơn kiểm kê mới",
       icon: PlusCircle,
       path: "/stocktaking/create",
-      category: "QUẢN LÝ ĐƠN KIỂM KÊ"
+      category: "QUẢN LÝ ĐƠN KIỂM KÊ",
+      permissions: [PERMISSIONS.STOCKTAKING_CREATE]
     },
 
     // Disposal Management
@@ -114,7 +141,13 @@ const SearchBar = () => {
       description: "Xem và quản lý các đơn xuất hủy",
       icon: Trash2,
       path: "/disposal",
-      category: "QUẢN LÝ ĐƠN XUẤT HỦY"
+      category: "QUẢN LÝ ĐƠN XUẤT HỦY",
+      permissions: [
+        PERMISSIONS.DISPOSAL_REQUEST_VIEW,
+        PERMISSIONS.DISPOSAL_REQUEST_VIEW_SM,
+        PERMISSIONS.DISPOSAL_REQUEST_VIEW_WM,
+        PERMISSIONS.DISPOSAL_REQUEST_VIEW_WS
+      ]
     },
     {
       id: "disposal-create",
@@ -122,7 +155,8 @@ const SearchBar = () => {
       description: "Tạo đơn xuất hủy mới",
       icon: PlusCircle,
       path: "/disposal/create",
-      category: "QUẢN LÝ ĐƠN XUẤT HỦY"
+      category: "QUẢN LÝ ĐƠN XUẤT HỦY",
+      permissions: [PERMISSIONS.DISPOSAL_REQUEST_CREATE]
     },
 
     // Backorder Management
@@ -132,7 +166,8 @@ const SearchBar = () => {
       description: "Quản lý các đơn bổ sung",
       icon: RotateCcw,
       path: "/backorder",
-      category: "QUẢN LÝ ĐƠN BỔ SUNG"
+      category: "QUẢN LÝ ĐƠN BỔ SUNG",
+      permissions: [PERMISSIONS.BACKORDER_VIEW]
     },
 
     // User Management
@@ -142,7 +177,8 @@ const SearchBar = () => {
       description: "Quản lý tài khoản người dùng",
       icon: Users,
       path: "/accounts",
-      category: "QUẢN LÝ NGƯỜI DÙNG"
+      category: "QUẢN LÝ NGƯỜI DÙNG",
+      permissions: [PERMISSIONS.ACCOUNT_VIEW]
     },
 
     // Product Management
@@ -152,7 +188,8 @@ const SearchBar = () => {
       description: "Phân loại hàng hóa",
       icon: Tag,
       path: "/categories",
-      category: "QUẢN LÝ HÀNG HÓA"
+      category: "QUẢN LÝ HÀNG HÓA",
+      permissions: [PERMISSIONS.CATEGORY_VIEW]
     },
     {
       id: "unitMeasures",
@@ -160,7 +197,8 @@ const SearchBar = () => {
       description: "Quản lý đơn vị đo lường",
       icon: Scale,
       path: "/unit-measures",
-      category: "QUẢN LÝ HÀNG HÓA"
+      category: "QUẢN LÝ HÀNG HÓA",
+      permissions: [PERMISSIONS.UNIT_MEASURE_VIEW]
     },
     {
       id: "goods",
@@ -168,7 +206,8 @@ const SearchBar = () => {
       description: "Quản lý hàng hóa và hàng hóa",
       icon: Package,
       path: "/goods",
-      category: "QUẢN LÝ HÀNG HÓA"
+      category: "QUẢN LÝ HÀNG HÓA",
+      permissions: [PERMISSIONS.GOODS_VIEW]
     },
     {
       id: "batches",
@@ -176,7 +215,8 @@ const SearchBar = () => {
       description: "Quản lý các lô hàng",
       icon: Package,
       path: "/batches",
-      category: "QUẢN LÝ HÀNG HÓA"
+      category: "QUẢN LÝ HÀNG HÓA",
+      permissions: [PERMISSIONS.BATCH_VIEW]
     },
     {
       id: "pallets",
@@ -184,7 +224,8 @@ const SearchBar = () => {
       description: "Quản lý các pallet trong kho",
       icon: Package,
       path: "/pallets",
-      category: "QUẢN LÝ HÀNG HÓA"
+      category: "QUẢN LÝ HÀNG HÓA",
+      permissions: [PERMISSIONS.PALLET_VIEW]
     },
 
     // Business Partners
@@ -194,7 +235,8 @@ const SearchBar = () => {
       description: "Quản lý đối tác cung cấp",
       icon: Truck,
       path: "/suppliers",
-      category: "QUẢN LÝ ĐỐI TÁC"
+      category: "QUẢN LÝ ĐỐI TÁC",
+      permissions: [PERMISSIONS.SUPPLIER_VIEW]
     },
     {
       id: "retailers",
@@ -202,7 +244,8 @@ const SearchBar = () => {
       description: "Quản lý đối tác bán lẻ",
       icon: ShoppingCart,
       path: "/retailers",
-      category: "QUẢN LÝ ĐỐI TÁC"
+      category: "QUẢN LÝ ĐỐI TÁC",
+      permissions: [PERMISSIONS.RETAILER_VIEW]
     },
 
     // Location Management
@@ -212,7 +255,8 @@ const SearchBar = () => {
       description: "Quản lý các khu vực kho",
       icon: MapPin,
       path: "/areas",
-      category: "QUẢN LÝ VỊ TRÍ VÀ KHU VỰC"
+      category: "QUẢN LÝ VỊ TRÍ VÀ KHU VỰC",
+      permissions: [PERMISSIONS.AREA_VIEW]
     },
     {
       id: "locations",
@@ -220,7 +264,8 @@ const SearchBar = () => {
       description: "Quản lý vị trí lưu trữ",
       icon: Building2,
       path: "/locations",
-      category: "QUẢN LÝ VỊ TRÍ VÀ KHU VỰC"
+      category: "QUẢN LÝ VỊ TRÍ VÀ KHU VỰC",
+      permissions: [PERMISSIONS.LOCATION_VIEW]
     },
     {
       id: "storage-condition",
@@ -228,7 +273,8 @@ const SearchBar = () => {
       description: "Quản lý điều kiện lưu trữ",
       icon: Thermometer,
       path: "/storage-conditions",
-      category: "QUẢN LÝ VỊ TRÍ VÀ KHU VỰC"
+      category: "QUẢN LÝ VỊ TRÍ VÀ KHU VỰC",
+      permissions: [PERMISSIONS.STORAGE_CONDITION_VIEW]
     },
 
     // Reports
@@ -238,7 +284,8 @@ const SearchBar = () => {
       description: "Xem báo cáo xuất nhập kho",
       icon: BarChart3,
       path: "/reports/orders",
-      category: "BÁO CÁO"
+      category: "BÁO CÁO",
+      permissions: [PERMISSIONS.REPORT_VIEW]
     },
     {
       id: "reports-inventory",
@@ -246,18 +293,25 @@ const SearchBar = () => {
       description: "Xem báo cáo tồn kho",
       icon: BarChart3,
       path: "/reports/inventory",
-      category: "BÁO CÁO"
+      category: "BÁO CÁO",
+      permissions: [PERMISSIONS.REPORT_VIEW]
     }
   ];
 
   // Lọc kết quả tìm kiếm
   useEffect(() => {
+    // Lọc theo quyền trước
+    const visibleItems = searchItems.filter(item => {
+      if (!item.permissions || item.permissions.length === 0) return true;
+      return hasAnyPermission(item.permissions);
+    });
+
     if (searchQuery.trim() === "") {
-      setFilteredItems([]);
+      setFilteredItems(visibleItems);
       return;
     }
 
-    const filtered = searchItems.filter(item =>
+    const filtered = visibleItems.filter(item =>
       item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.category.toLowerCase().includes(searchQuery.toLowerCase())
@@ -483,7 +537,7 @@ const SearchBar = () => {
                     Tìm kiếm phổ biến
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                    {searchItems.slice(0, 8).map((item) => (
+                    {filteredItems.slice(0, 8).map((item) => (
                       <div
                         key={item.id}
                         onClick={() => handleItemClick(item)}

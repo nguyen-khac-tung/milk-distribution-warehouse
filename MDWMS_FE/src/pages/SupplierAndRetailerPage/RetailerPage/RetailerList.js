@@ -233,20 +233,16 @@ export default function RetailersPage() {
 
   const handleViewClick = async (retailer) => {
     try {
-      console.log("Viewing retailer:", retailer)
       setItemToView(retailer)
       setLoadingDetail(true)
       setShowViewModal(true)
 
       const response = await getRetailerDetail(retailer.retailerId)
-      console.log("API Response:", response)
 
       // Handle API response structure: { status: 200, message: "Success", data: {...} }
       if (response && response.status === 200 && response.data) {
         setRetailerDetail(response.data)
-        console.log("Retailer detail set:", response.data)
       } else {
-        console.log("Invalid response structure:", response)
         window.showToast("Không thể tải chi tiết nhà bán lẻ", "error")
         setShowViewModal(false)
       }
@@ -272,7 +268,6 @@ export default function RetailersPage() {
 
   const handleDeleteConfirm = async () => {
     try {
-      console.log("Deleting retailer:", itemToDelete)
       await deleteRetailer(itemToDelete?.retailerId)
       window.showToast(`Đã xóa nhà bán lẻ: ${itemToDelete?.retailerName || ''}`, "success")
       setShowDeleteModal(false)

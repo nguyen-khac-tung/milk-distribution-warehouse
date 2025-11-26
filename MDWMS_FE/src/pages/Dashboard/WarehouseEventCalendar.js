@@ -158,9 +158,6 @@ export default function WarehouseEventCalendar() {
         const receiptsList = allReceipts
         const issuesList = allIssues
 
-        console.log("Fetched receipts count:", receiptsList.length)
-        console.log("Fetched issues count:", issuesList.length)
-
         // Add purchase order events (goods receipts) - based on receiptDate
         receiptsList.forEach(receipt => {
           if (receipt.receiptDate) {
@@ -216,8 +213,6 @@ export default function WarehouseEventCalendar() {
             }
           }
         })
-
-        console.log("Total events created:", events.length)
 
         // Sort events by date
         events.sort((a, b) => {
