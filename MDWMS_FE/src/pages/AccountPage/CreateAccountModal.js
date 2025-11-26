@@ -52,10 +52,8 @@ export default function CreateAccount({ isOpen, onClose, onSuccess }) {
 
     try {
       setLoading(true)
-      console.log("Creating user with data:", formData)
 
       const response = await createUser(formData)
-      console.log("User created response:", response)
 
       // Check if response is successful
       if (response && (response.success !== false && response.status !== 500)) {

@@ -74,7 +74,6 @@ const CreateDisposal = () => {
             try {
                 setLoading(true);
                 const response = await getExpiredGoodsForDisposal();
-                console.log("expire: ", response)
                 // Handle response format: { success, data, message } or direct array
                 let goodsData = [];
                 if (response) {

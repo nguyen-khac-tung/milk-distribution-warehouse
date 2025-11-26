@@ -36,11 +36,9 @@ export default function UpdateSupplierModal({ isOpen, onClose, onSuccess, suppli
     try {
       setLoadingData(true)
       const response = await getSupplierDetail(supplierId)
-      console.log("API Response:", response);
 
       // API trả về { data: {...}, message: "", status: 200, success: true }
       const supplierInfo = response.data || response;
-      console.log("Supplier Info:", supplierInfo);
 
       if (supplierInfo) {
         setFormData({
@@ -72,7 +70,7 @@ export default function UpdateSupplierModal({ isOpen, onClose, onSuccess, suppli
     // Basic validation - check if required fields are filled
     if (!formData.companyName?.trim() || !formData.brandName?.trim() || !formData.taxCode?.trim() ||
       !formData.email?.trim() || !formData.address?.trim() || !formData.phone?.trim() ||
-      !formData.contactPersonName?.trim() || !formData.contactPersonPhone?.trim() || 
+      !formData.contactPersonName?.trim() || !formData.contactPersonPhone?.trim() ||
       !formData.contactPersonEmail?.trim()) {
       window.showToast("Vui lòng điền đầy đủ thông tin", "error")
       return
@@ -113,7 +111,6 @@ export default function UpdateSupplierModal({ isOpen, onClose, onSuccess, suppli
     try {
       setLoading(true)
       const response = await updateSupplier(formData)
-      console.log("Supplier updated:", response)
       window.showToast("Cập nhật nhà cung cấp thành công!", "success")
       onSuccess && onSuccess()
       onClose && onClose()
@@ -245,7 +242,7 @@ export default function UpdateSupplierModal({ isOpen, onClose, onSuccess, suppli
               {/* Contact Person Section */}
               <div className="border-t border-gray-200 pt-4">
                 <h3 className="text-lg font-semibold text-slate-800 mb-4">Thông tin người liên hệ</h3>
-                
+
                 {/* Row 4: Contact Person Name & Phone */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">

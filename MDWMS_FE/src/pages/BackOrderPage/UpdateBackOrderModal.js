@@ -23,7 +23,6 @@ export default function UpdateBackOrderModal({ isOpen, onClose, onSuccess, backO
   const [loading, setLoading] = useState(false)
   const [loadingData, setLoadingData] = useState(false)
   const [retailers, setRetailers] = useState([])
-  console.log('retailers: ', retailers)
   const [goods, setGoods] = useState([])
   const [goodsPackings, setGoodsPackings] = useState([])
   const [unitMeasureName, setUnitMeasureName] = useState("đơn vị") // Lưu unitMeasureName từ backOrder hoặc goods
@@ -78,11 +77,9 @@ export default function UpdateBackOrderModal({ isOpen, onClose, onSuccess, backO
     try {
       setLoadingData(true)
       const response = await getBackOrderDetail(backOrderId)
-      console.log("API Response:", response);
 
       // API trả về { data: {...}, message: "", status: 200, success: true }
       const backOrderInfo = response.data || response;
-      console.log("BackOrder Info:", backOrderInfo);
 
       if (backOrderInfo) {
         setFormData({
@@ -110,7 +107,6 @@ export default function UpdateBackOrderModal({ isOpen, onClose, onSuccess, backO
     try {
       setLoadingRetailers(true)
       const response = await getRetailersDropdown()
-      console.log("Retailers Response:", response);
 
       // Handle different response formats
       const retailersData = response?.data || response?.items || response || []
@@ -129,7 +125,6 @@ export default function UpdateBackOrderModal({ isOpen, onClose, onSuccess, backO
     try {
       setLoadingGoods(true)
       const response = await getGoodsDropdown()
-      console.log("Goods Response:", response);
 
       // Handle different response formats
       const goodsData = response?.data || response || []
@@ -148,7 +143,6 @@ export default function UpdateBackOrderModal({ isOpen, onClose, onSuccess, backO
     try {
       setLoadingPackings(true)
       const response = await getGoodsPackingByGoodsId(goodsId)
-      console.log("GoodsPackings Response:", response);
 
       if (response && response.data) {
         setGoodsPackings(response.data)
@@ -188,7 +182,6 @@ export default function UpdateBackOrderModal({ isOpen, onClose, onSuccess, backO
         goodsPackingId: parseInt(formData.goodsPackingId),
         packageQuantity: packageQuantity
       })
-      console.log("BackOrder updated:", response)
       window.showToast("Cập nhật đơn bổ sung thành công!", "success")
       onSuccess && onSuccess()
       onClose && onClose()

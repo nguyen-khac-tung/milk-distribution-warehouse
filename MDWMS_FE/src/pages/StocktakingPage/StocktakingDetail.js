@@ -158,7 +158,7 @@ const StocktakingDetail = () => {
     const handleStartStocktaking = () => {
         // Kiểm tra số lượng khu vực
         const totalAreas = stocktaking?.stocktakingAreas?.length || 0;
-        
+
         // Nếu có 2+ khu vực, hiển thị modal chọn khu vực
         if (totalAreas >= 2) {
             setShowSelectAreaModal(true);
@@ -196,7 +196,6 @@ const StocktakingDetail = () => {
             setShowSelectAreaModal(false);
 
             // Navigate sang trang StocktakingArea với stocktakingSheetId và stocktakingAreaId
-            console.log('Navigating with stocktakingAreaId:', stocktakingAreaId);
             navigate(`/stocktaking-area/${stocktaking.stocktakingSheetId}?stocktakingAreaId=${stocktakingAreaId}`);
         } catch (error) {
             console.error('Error starting stocktaking process:', error);

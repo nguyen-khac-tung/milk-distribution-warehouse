@@ -172,14 +172,12 @@ export default function AdminPage() {
   }
   const handleStatusChange = async (id, newStatus, name) => {
     try {
-      // console.log(`Updating user ${id} (${name}) status to ${newStatus}`)
       const response = await updateUserStatus(id, newStatus)
 
       // Kiểm tra response từ backend
       if (response && response.success === true) {
         const statusText = newStatus === 1 ? "kích hoạt" : "ngừng hoạt động"
         window.showToast(`Đã ${statusText} người dùng "${name}" thành công`, "success")
-        // console.log(`Successfully updated user ${name} status to ${newStatus}`)
 
         // Refresh all users for stats
         fetchAllUsersForStats()
@@ -317,12 +315,10 @@ export default function AdminPage() {
     if (!userToDelete) return
 
     try {
-      // console.log(`Deleting user ${userToDelete.userId || userToDelete.id} (${userToDelete.fullName})`)
       const response = await deleteUser(userToDelete.userId || userToDelete.id)
 
       if (response && response.success !== false) {
         window.showToast(`Đã xóa người dùng "${userToDelete.fullName}" thành công`, "success")
-        // console.log(`Successfully deleted user ${userToDelete.fullName}`)
 
         // Calculate if current page will be empty after deletion
         const currentPageItemCount = allEmployees.length

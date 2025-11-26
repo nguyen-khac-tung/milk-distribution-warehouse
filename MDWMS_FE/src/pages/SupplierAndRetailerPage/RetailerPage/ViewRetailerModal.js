@@ -21,9 +21,7 @@ export function RetailerDetail({ retailer, onClose }) {
     try {
       setLoading(true);
       const response = await getRetailerDetail(retailer.retailerId);
-      console.log("API Response:", response);
       const retailerInfo = response.data || response;
-      console.log("Retailer Info:", retailerInfo);
       setRetailerData(retailerInfo);
     } catch (error) {
       console.error("Error loading retailer detail:", error);
@@ -55,7 +53,7 @@ export function RetailerDetail({ retailer, onClose }) {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-sm" style={{zIndex: 99999}}>
+      <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-sm" style={{ zIndex: 99999 }}>
         <div className="w-full max-w-4xl mx-4 max-h-[75vh] overflow-y-auto bg-white rounded-lg shadow-2xl relative">
           <div className="flex items-center justify-center py-12">
             <div className="text-slate-600">Đang tải thông tin...</div>
@@ -66,7 +64,7 @@ export function RetailerDetail({ retailer, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-sm" style={{zIndex: 99999}}>
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-sm" style={{ zIndex: 99999 }}>
       <div className="w-full max-w-4xl mx-4 max-h-[75vh] overflow-y-auto bg-white rounded-lg shadow-2xl relative">
         {/* Header with Close Button */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
