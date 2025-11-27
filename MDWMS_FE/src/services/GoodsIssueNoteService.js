@@ -98,3 +98,39 @@ export const rePickGoodsIssueNoteDetailList = async (items) => {
     }
 };
 
+// Xuất phiếu xuất kho ra file Word
+export const exportGoodsIssueNoteWord = async (salesOrderId) => {
+    try {
+        const response = await api.get(
+            `/GoodsIssueNote/ExportGoodsIssueNoteWord/${salesOrderId}`,
+            { responseType: "blob" }
+        );
+
+        const contentDisposition = response.headers["content-disposition"] || "";
+        const fileNameMatch = contentDisposition.match(/filename="?([^"]+)"?/i);
+        const fileName = fileNameMatch ? fileNameMatch[1] : `phieu-xuat-kho.docx`;
+
+        return { file: response.data, fileName };
+    } catch (error) {
+        console.error("Error exporting Goods Issue Note word:", error);
+
+        if (error.response?.data instanceof Blob) {
+            try {
+                const errorText = await error.response.data.text();
+                const parsed = JSON.parse(errorText);
+                if (parsed?.message) {
+                    throw new Error(parsed.message);
+                }
+            } catch (parseError) {
+                console.error("Failed to parse export error blob:", parseError);
+            }
+        }
+
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
+
+        throw error;
+    }
+};
+
