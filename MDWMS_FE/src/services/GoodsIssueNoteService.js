@@ -1,3 +1,4 @@
+import { getFileNameFromHeader } from "../utils/Validation";
 import api from "./api";
 
 // Tạo mới phiếu xuất kho theo salesOrderId
@@ -106,31 +107,21 @@ export const exportGoodsIssueNoteWord = async (salesOrderId) => {
             { responseType: "blob" }
         );
 
-        const contentDisposition = response.headers["content-disposition"] || "";
-        const fileNameMatch = contentDisposition.match(/filename="?([^"]+)"?/i);
-        const fileName = fileNameMatch ? fileNameMatch[1] : `phieu-xuat-kho.docx`;
+        const cd = response.headers["content-disposition"];
+        const fileName = getFileNameFromHeader(cd) || `phieu-xuat-kho.docx`;
 
         return { file: response.data, fileName };
     } catch (error) {
-        console.error("Error exporting Goods Issue Note word:", error);
 
+        // đọc lỗi từ blob (ApiResponse)
         if (error.response?.data instanceof Blob) {
+            const text = await error.response.data.text();
             try {
-                const errorText = await error.response.data.text();
-                const parsed = JSON.parse(errorText);
-                if (parsed?.message) {
-                    throw new Error(parsed.message);
-                }
-            } catch (parseError) {
-                console.error("Failed to parse export error blob:", parseError);
-            }
-        }
-
-        if (error.response?.data?.message) {
-            throw new Error(error.response.data.message);
+                const parsed = JSON.parse(text);
+                if (parsed?.message) throw new Error(parsed.message);
+            } catch { }
         }
 
         throw error;
     }
 };
-

@@ -4,7 +4,7 @@ import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { ArrowLeft, Printer, CheckCircle, Clock, AlertCircle, ChevronDown, ChevronUp, RefreshCw, Barcode, Package, Send, ShieldCheck, MapPin, X } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
-import { getDetailDisposalNote, submitDisposalNote, approveDisposalNote, rePickDisposalNoteDetail, rePickDisposalNoteDetailList } from '../../services/DisposalService';
+import { getDetailDisposalNote, submitDisposalNote, approveDisposalNote, rePickDisposalNoteDetail, rePickDisposalNoteDetailList, exportDisposalNoteWord } from '../../services/DisposalService';
 import { getPickAllocationDetail, confirmPickAllocation } from '../../services/PickAllocationService';
 import { getDisposalNoteStatusMeta, getDisposalItemStatusMeta, DISPOSAL_ITEM_STATUS, DISPOSAL_NOTE_STATUS } from './DisposalNoteStatus';
 import { extractErrorMessage } from '../../utils/Validation';
@@ -82,6 +82,7 @@ const DisposalNoteDetail = () => {
     const [rePickLoading, setRePickLoading] = useState(false);
     const [submitLoading, setSubmitLoading] = useState(false);
     const [approveLoading, setApproveLoading] = useState(false);
+    const [exportingWord, setExportingWord] = useState(false);
 
 
     useEffect(() => {
@@ -391,6 +392,46 @@ const DisposalNoteDetail = () => {
         await fetchDisposalNoteDetail();
         if (window.showToast) {
             window.showToast('Đã làm mới dữ liệu', 'success');
+        }
+    };
+
+    const handleExportWord = async () => {
+        if (!disposalNote?.disposalRequestId) {
+            if (window.showToast) {
+                window.showToast('Không tìm thấy mã yêu cầu để xuất phiếu', 'error');
+            }
+            return;
+        }
+
+        try {
+            setExportingWord(true);
+            const { file, fileName } = await exportDisposalNoteWord(disposalNote.disposalRequestId);
+            const blob = new Blob(
+                [file],
+                { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }
+            );
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName || `Phieu_Xuat_Huy_${disposalNote.disposalRequestId}.docx`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            setTimeout(() => {
+                window.URL.revokeObjectURL(url);
+            }, 2000);
+
+            if (window.showToast) {
+                window.showToast('Tải phiếu xuất hủy thành công!', 'success');
+            }
+        } catch (error) {
+            console.error('Error exporting disposal note:', error);
+            const message = error?.message || 'Có lỗi xảy ra khi tải phiếu xuất hủy';
+            if (window.showToast) {
+                window.showToast(message, 'error');
+            }
+        } finally {
+            setExportingWord(false);
         }
     };
 
@@ -990,11 +1031,16 @@ const DisposalNoteDetail = () => {
 
                             {/* Nút In phiếu */}
                             <Button
-                                onClick={() => window.print()}
-                                className="flex items-center gap-2 h-9 bg-blue-600 hover:bg-blue-700 text-white shadow-sm rounded-lg px-3"
+                                onClick={handleExportWord}
+                                disabled={exportingWord}
+                                className="flex items-center gap-2 h-9 bg-blue-600 hover:bg-blue-700 text-white shadow-sm rounded-lg px-3 disabled:opacity-70"
                             >
-                                <Printer className="w-4 h-4" />
-                                In Phiếu
+                                {exportingWord ? (
+                                    <RefreshCw className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <Printer className="w-4 h-4" />
+                                )}
+                                {exportingWord ? 'Đang tải...' : 'Xuất Phiếu'}
                             </Button>
                         </div>
                     </div>
