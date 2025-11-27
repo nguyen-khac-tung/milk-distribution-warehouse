@@ -169,3 +169,51 @@ export const validateAndShowError = (formData) => {
   }
   return true
 }
+
+// Xử lý mọi kiểu Content - Disposition từ BE
+// Cắt các phần thừa
+// Lấy đúng tên file cuối cùng
+// Giải mã UTF - 8 nếu tên file có dấu(tiếng Việt)
+
+export const getFileNameFromHeader = (contentDisposition) => {
+  if (!contentDisposition) return null;
+
+  // 1) filename* (RFC 5987) e.g. filename*=UTF-8''%E1%BA%A3nh.docx
+  const filenameStar = contentDisposition.match(/filename\*\s*=\s*(?:UTF-8''|(?:'')?)([^;]+)/i);
+  if (filenameStar && filenameStar[1]) {
+    try {
+      let encoded = filenameStar[1].trim().replace(/^"|"$/g, '');
+      // strip optional prefix if still there
+      encoded = encoded.replace(/^UTF-8''/i, '');
+      return decodeURIComponent(encoded);
+    } catch {
+      return filenameStar[1].trim().replace(/^"|"$/g, '');
+    }
+  }
+
+  // 2) regular filename= (quoted or unquoted)
+  const filename = contentDisposition.match(/filename\s*=\s*"?([^";]+)"?/i);
+  if (filename && filename[1]) {
+    return filename[1].trim();
+  }
+
+  // 3) malformed servers: filename_ or filename*= but using underscore
+  const filenameUnderscore = contentDisposition.match(/filename_?\s*=\s*(?:UTF-8''|(?:'')?)([^;]+)/i);
+  if (filenameUnderscore && filenameUnderscore[1]) {
+    try {
+      let v = filenameUnderscore[1].trim().replace(/^"|"$/g, '');
+      v = v.replace(/^UTF-8''/i, '');
+      return decodeURIComponent(v);
+    } catch {
+      return filenameUnderscore[1].trim().replace(/^"|"$/g, '');
+    }
+  }
+
+  // 4) fallback: try to find a .docx-like token
+  const anyName = contentDisposition.match(/([\w\-\u00C0-\u017F\s%]+\.docx)/i);
+  if (anyName && anyName[1]) {
+    try { return decodeURIComponent(anyName[1]); } catch { return anyName[1]; }
+  }
+
+  return null;
+};

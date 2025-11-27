@@ -315,7 +315,7 @@ namespace MilkDistributionWarehouse.Services
             try
             {
                 var fileBytes = WordExportUtility.FillTemplate(templatePath, simpleData, tableData);
-                string fileName = $"PhieuXuat_{ginDetail.GoodsIssueNoteId}.docx";
+                string fileName = $"Phieu_Xuat_Kho_{ginDetail.GoodsIssueNoteId}.docx";
 
                 return ("", fileBytes, fileName);
             }

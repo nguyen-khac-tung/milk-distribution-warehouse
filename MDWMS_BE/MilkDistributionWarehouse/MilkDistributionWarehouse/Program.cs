@@ -118,7 +118,8 @@ namespace MilkDistributionWarehouse
                     corsBuilder.WithOrigins("http://khophanphoisua.id.vn", "https://khophanphoisua.id.vn")
                                .AllowAnyHeader()
                                .AllowAnyMethod()
-                               .AllowCredentials();
+                               .AllowCredentials()
+                               .WithExposedHeaders("Content-Disposition");
                 });
             });
 
