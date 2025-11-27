@@ -27,7 +27,6 @@ import {
   TableRow,
 } from "../../components/ui/table"
 import { getInventoryReport, getInventoryLedgerReport } from "../../services/DashboardService"
-import { getAreaDropdown } from "../../services/AreaServices"
 import { getSuppliersDropdown } from "../../services/SupplierService"
 import Loading from "../../components/Common/Loading"
 import Pagination from "../../components/Common/Pagination"
@@ -407,8 +406,6 @@ export default function InventoryReport({ onClose }) {
 
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const [areaId, setAreaId] = useState("")
-  const [areas, setAreas] = useState([])
   // Supplier filter
   const [supplierFilter, setSupplierFilter] = useState("")
   const [showSupplierFilter, setShowSupplierFilter] = useState(false)
@@ -431,28 +428,6 @@ export default function InventoryReport({ onClose }) {
     fromDate: "",
     toDate: ""
   })
-
-  // Fetch areas for dropdown
-  useEffect(() => {
-    const fetchAreas = async () => {
-      try {
-        const response = await getAreaDropdown()
-        let areasList = []
-        if (Array.isArray(response)) {
-          areasList = response
-        } else if (response?.data) {
-          areasList = Array.isArray(response.data) ? response.data : (response.data?.data || [])
-        } else if (response?.items) {
-          areasList = response.items
-        }
-        setAreas(areasList)
-      } catch (error) {
-        console.error("Error fetching areas:", error)
-        setAreas([])
-      }
-    }
-    fetchAreas()
-  }, [])
 
   // Fetch suppliers for dropdown
   useEffect(() => {
@@ -486,7 +461,7 @@ export default function InventoryReport({ onClose }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Fetch data when report type, timeRange, areaId, or date range changes (refetch from backend)
+  // Fetch data when report type, timeRange, or date range changes (refetch from backend)
   useEffect(() => {
     setPagination(prev => ({ ...prev, current: 1 }))
     if (reportType === "current") {
@@ -495,13 +470,13 @@ export default function InventoryReport({ onClose }) {
       fetchLedgerData()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reportType, timeRange, areaId, dateRange.fromDate, dateRange.toDate])
+  }, [reportType, timeRange, dateRange.fromDate, dateRange.toDate])
 
   const fetchInventoryData = async () => {
     try {
       setLoading(true)
 
-      // Build filters object - include timeRange (areaId is passed as query parameter, not in filters)
+      // Build filters object - include timeRange
       const filters = {}
       if (timeRange) {
         filters.timeRange = timeRange
@@ -515,7 +490,6 @@ export default function InventoryReport({ onClose }) {
 
       while (hasMore) {
         const requestParams = {
-          areaId: areaId ? parseInt(areaId) : undefined,
           pageNumber: page,
           pageSize: pageSize,
           filters
@@ -565,11 +539,8 @@ export default function InventoryReport({ onClose }) {
       const fromDate = dateRange.fromDate ? new Date(dateRange.fromDate).toISOString() : ""
       const toDate = dateRange.toDate ? new Date(dateRange.toDate + "T23:59:59").toISOString() : ""
 
-      // Build filters - areaId filter
+      // Build filters
       const filters = {}
-      if (areaId) {
-        filters.areaId = areaId.toString()
-      }
 
       // Fetch all data with pagination to get all pages
       let allItems = []
@@ -698,13 +669,6 @@ export default function InventoryReport({ onClose }) {
       })
     }
 
-    // Filter by area
-    if (areaId) {
-      filtered = filtered.filter(item =>
-        item.areaId && item.areaId.toString() === areaId.toString()
-      )
-    }
-
     // Filter by supplier (if supplierId exists in data)
     if (supplierFilter) {
       filtered = filtered.filter(item =>
@@ -779,7 +743,6 @@ export default function InventoryReport({ onClose }) {
     allInventoryData,
     allLedgerData,
     searchQuery,
-    areaId,
     supplierFilter,
     sortField,
     sortAscending,
@@ -790,7 +753,7 @@ export default function InventoryReport({ onClose }) {
   // Reset pagination to page 1 when filters or sort change
   useEffect(() => {
     setPagination(prev => ({ ...prev, current: 1 }))
-  }, [searchQuery, areaId, supplierFilter, sortField])
+  }, [searchQuery, supplierFilter, sortField])
 
   // Close supplier filter dropdown when clicking outside
   useEffect(() => {
@@ -824,7 +787,6 @@ export default function InventoryReport({ onClose }) {
   const handleClearAllFilters = () => {
     setSearchQuery("")
     setTimeRange("week")
-    setAreaId("")
     setSupplierFilter("")
     setSortField("") // Reset to no sort
     setSortAscending(true)
@@ -849,9 +811,10 @@ export default function InventoryReport({ onClose }) {
     setSupplierFilter("")
   }
 
-  // Calculate chart data from inventory data
+  // Calculate chart data from ORIGINAL data (not filtered) - charts are independent of filters
   const calculateChartData = () => {
-    const dataToUse = reportType === "current" ? inventoryData : ledgerData
+    // Use original data, not filtered data - charts show all data regardless of filters
+    const dataToUse = reportType === "current" ? allInventoryData : allLedgerData
     if (!dataToUse || dataToUse.length === 0) {
       return {
         statusData: { expired: 0, expiringSoon: 0, valid: 0 },
@@ -896,10 +859,14 @@ export default function InventoryReport({ onClose }) {
 
     const totalQuantity = Array.from(productMap.values()).reduce((sum, qty) => sum + qty, 0)
 
+    // Count unique products (for total display)
+    const uniqueProductsCount = productMap.size
+
     return {
       statusData: { expired, expiringSoon, valid },
       topProducts,
-      totalQuantity
+      totalQuantity,
+      uniqueProductsCount
     }
   }
 
@@ -925,7 +892,6 @@ export default function InventoryReport({ onClose }) {
             <ExportInventoryReport
               reportType={reportType}
               searchQuery={searchQuery}
-              areaId={areaId}
               timeRange={reportType === "current" ? timeRange : undefined}
               dateRange={reportType === "period" ? dateRange : undefined}
               sortField={sortField}
@@ -980,6 +946,7 @@ export default function InventoryReport({ onClose }) {
                   type="date"
                   value={dateRange.fromDate}
                   onChange={(e) => setDateRange(prev => ({ ...prev, fromDate: e.target.value }))}
+                  max={new Date().toISOString().split('T')[0]}
                   className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 />
               </div>
@@ -990,6 +957,7 @@ export default function InventoryReport({ onClose }) {
                   value={dateRange.toDate}
                   onChange={(e) => setDateRange(prev => ({ ...prev, toDate: e.target.value }))}
                   min={dateRange.fromDate}
+                  max={new Date().toISOString().split('T')[0]}
                   className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 />
               </div>
@@ -1010,8 +978,8 @@ export default function InventoryReport({ onClose }) {
           )}
         </div>
 
-        {/* Charts Section */}
-        {!loading && displayData.length > 0 && reportType === "current" && (
+        {/* Charts Section - Always show when there's original data, regardless of filters */}
+        {!loading && reportType === "current" && allInventoryData.length > 0 && (
           <>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Status Distribution Pie Chart */}
@@ -1033,7 +1001,7 @@ export default function InventoryReport({ onClose }) {
                       Tổng số hàng hóa tồn kho hiện tại
                     </p>
                     <p className="text-3xl font-bold text-orange-500">
-                      {pagination.total.toLocaleString("vi-VN")}
+                      {chartData.uniqueProductsCount.toLocaleString("vi-VN")}
                     </p>
                     <p className="text-xs text-slate-500 mt-1">hàng hóa</p>
                   </div>
@@ -1080,9 +1048,6 @@ export default function InventoryReport({ onClose }) {
             searchPlaceholder={reportType === "current" ? "Tìm kiếm theo mã lô, tên hàng hóa..." : "Tìm kiếm theo mã hàng hóa, tên hàng hóa..."}
             timeRange={reportType === "current" ? timeRange : undefined}
             setTimeRange={reportType === "current" ? setTimeRange : undefined}
-            areaId={areaId}
-            setAreaId={setAreaId}
-            areas={areas}
             onClearAll={handleClearAllFilters}
             showClearButton={true}
             showToggle={true}
