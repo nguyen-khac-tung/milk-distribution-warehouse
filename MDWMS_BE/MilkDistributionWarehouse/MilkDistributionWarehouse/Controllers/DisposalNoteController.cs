@@ -57,5 +57,15 @@ namespace MilkDistributionWarehouse.Controllers
 
             return ApiResponse<string>.ToResultOkMessage();
         }
+
+        [Authorize(Roles = "Warehouse Staff, Warehouse Manager")]
+        [HttpGet("ExportDisposalNoteWord/{disposalRequestId}")]
+        public async Task<IActionResult> ExportDisposalNoteWord(string disposalRequestId)
+        {
+            var (msg, fileBytes, fileName) = await _disposalNoteService.ExportDisposalNoteWord(disposalRequestId);
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+
+            return File(fileBytes, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", fileName);
+        }
     }
 }
