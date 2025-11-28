@@ -239,7 +239,7 @@ export default function UpdateBackOrderModal({ isOpen, onClose, onSuccess, backO
 
         {/* Content */}
         <div className="p-6">
-          <form id="update-backorder-form" className="space-y-6" onSubmit={handleSubmit}>
+          <form id="update-backorder-form" className="space-y-6" onSubmit={handleSubmit} noValidate>
             {loadingData ? (
               <div className="flex items-center justify-center py-16">
                 <div className="flex flex-col items-center gap-3">
@@ -354,7 +354,6 @@ export default function UpdateBackOrderModal({ isOpen, onClose, onSuccess, backO
                             value={formData.packageQuantity}
                             onChange={(e) => setFormData({ ...formData, packageQuantity: e.target.value })}
                             className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                            required
                           />
                         </div>
 

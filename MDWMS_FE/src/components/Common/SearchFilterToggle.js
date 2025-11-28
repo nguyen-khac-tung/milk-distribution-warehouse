@@ -187,7 +187,7 @@ export default function SearchFilterToggle({
     if (externalFilteredStatusOptions) return externalFilteredStatusOptions;
     if (!enableStatusSearch || !statusSearchQuery) return statusOptions;
     const query = statusSearchQuery.toLowerCase();
-    return statusOptions.filter(option => 
+    return statusOptions.filter(option =>
       option.label.toLowerCase().includes(query)
     );
   }, [statusOptions, statusSearchQuery, enableStatusSearch, externalFilteredStatusOptions]);
@@ -263,7 +263,7 @@ export default function SearchFilterToggle({
     if (externalFilteredConditionOptions) return externalFilteredConditionOptions;
     if (!enableConditionSearch || !conditionSearchQuery) return conditionOptions;
     const query = conditionSearchQuery.toLowerCase();
-    return conditionOptions.filter(option => 
+    return conditionOptions.filter(option =>
       option.label.toLowerCase().includes(query)
     );
   }, [conditionOptions, conditionSearchQuery, enableConditionSearch, externalFilteredConditionOptions]);
@@ -392,7 +392,7 @@ export default function SearchFilterToggle({
                 <Input
                   placeholder={searchPlaceholder}
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => setSearchQuery(e.target.value.trim())}
                   className="pl-9 h-[38px] text-sm border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                 />
               </div>

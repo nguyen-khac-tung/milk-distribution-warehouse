@@ -133,7 +133,7 @@ export default function UpdateLocationModal({ isOpen, onClose, onSuccess, locati
 
         {/* Body */}
         <div className="p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6" noValidate>
             {/* Grid fields */}
             <div className="flex flex-col gap-4">
               {/* Nhóm 1: Area + Availability */}
@@ -189,7 +189,6 @@ export default function UpdateLocationModal({ isOpen, onClose, onSuccess, locati
                     value={formData.rack}
                     onChange={(e) => setFormData({ ...formData, rack: e.target.value })}
                     className="h-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg"
-                    required
                   />
                 </div>
 
@@ -206,7 +205,6 @@ export default function UpdateLocationModal({ isOpen, onClose, onSuccess, locati
                     value={formData.row}
                     onChange={(e) => setFormData({ ...formData, row: e.target.value })}
                     className="h-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg"
-                    required
                   />
                 </div>
 
@@ -223,7 +221,6 @@ export default function UpdateLocationModal({ isOpen, onClose, onSuccess, locati
                     value={formData.column}
                     onChange={(e) => setFormData({ ...formData, column: e.target.value })}
                     className="h-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg"
-                    required
                   />
                 </div>
               </div>

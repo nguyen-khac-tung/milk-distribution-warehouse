@@ -265,7 +265,7 @@ export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess, fo
 
                     {/* Khu vực & Kệ */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
+                        <div className="space-y-2">
                             <Label className="text-sm font-medium text-slate-700">
                                 Khu vực <span className="text-red-500">*</span>
                             </Label>
@@ -282,7 +282,7 @@ export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess, fo
                                 loading={loadingData}
                             />
                         </div>
-                        <div>
+                        <div className="space-y-2">
                             <Label className="text-sm font-medium text-slate-700">
                                 Kệ <span className="text-red-500">*</span>
                             </Label>
