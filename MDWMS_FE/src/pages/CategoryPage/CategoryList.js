@@ -233,7 +233,6 @@ export default function CategoriesPage() {
 
   const handleDeleteConfirm = async () => {
     try {
-      console.log("Deleting category:", itemToDelete)
       await deleteCategory(itemToDelete?.categoryId)
       window.showToast(`Đã xóa danh mục: ${itemToDelete?.categoryName || ''}`, "success")
       setShowDeleteModal(false)

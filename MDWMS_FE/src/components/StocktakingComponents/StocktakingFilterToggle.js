@@ -163,7 +163,7 @@ export default function StocktakingFilterToggle({
               {/* Page Size Filter */}
               {showPageSizeButton && (
                 <div className="relative page-size-filter-dropdown" ref={pageSizeFilterRef}>
-                  <button
+                  {/* <button
                     onClick={() => setShowPageSizeFilter(!showPageSizeFilter)}
                     className="flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706] transition-colors bg-white text-slate-700"
                   >
@@ -171,9 +171,9 @@ export default function StocktakingFilterToggle({
                       {pageSize} / trang
                     </span>
                     <ChevronDown className="h-4 w-4" />
-                  </button>
+                  </button> */}
 
-                  {showPageSizeFilter && (
+                  {/* {showPageSizeFilter && (
                     <div className="absolute top-full right-0 mt-1 w-32 bg-white rounded-md shadow-lg border z-50 max-h-48 overflow-y-auto dropdown-scroll" style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 #f1f5f9' }}>
                       <div className="py-1">
                         {pageSizeOptions.map((size) => (
@@ -190,7 +190,7 @@ export default function StocktakingFilterToggle({
                         ))}
                       </div>
                     </div>
-                  )}
+                  )} */}
                 </div>
               )}
             </div>

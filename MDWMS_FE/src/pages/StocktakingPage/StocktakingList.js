@@ -111,14 +111,23 @@ export default function StocktakingList() {
         }
     };
 
-    // Helper function để tạo request params
     const createRequestParams = (overrides = {}) => {
-        // Format date filter: chỉ cần 1 ngày, format "date~date" để filter đúng ngày đó
         let startTimeFilter = "";
+
         const selectedDate = dateRangeFilter.fromDate || dateRangeFilter.toDate;
+
         if (selectedDate) {
-            // Format: "date~date" để filter đúng ngày đó (từ đầu ngày đến cuối ngày)
-            startTimeFilter = `${selectedDate}~${selectedDate}`;
+            // selectedDate KHẢ NĂNG CAO là dạng "2025-11-27"
+            const start = `${selectedDate}T00:00:00`;
+            
+            // Tăng 1 ngày bằng cách tách string
+            const d = new Date(selectedDate);
+            d.setDate(d.getDate() + 1);
+
+            const nextDate = d.toISOString().substring(0, 10); // "2025-11-28"
+            const end = `${nextDate}T00:00:00`;
+
+            startTimeFilter = `${start}~${end}`;
         }
 
         return {

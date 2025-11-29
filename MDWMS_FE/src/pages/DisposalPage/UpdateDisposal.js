@@ -129,7 +129,6 @@ const UpdateDisposal = () => {
         const fetchExpiredGoods = async () => {
             try {
                 const response = await getExpiredGoodsForDisposal();
-                console.log("expire: ", response)
                 // Handle response format: { success, data, message } or direct array
                 let goodsData = [];
                 if (response) {

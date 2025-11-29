@@ -1064,7 +1064,7 @@ const StocktakingArea = () => {
                                                     <TableCell colSpan={6} className="px-0 py-0">
                                                         <div className="border-t border-gray-200 p-4 bg-gray-50">
                                                             <h4 className="text-sm font-semibold text-gray-700 mb-4">
-                                                                Kệ kê hàng tại vị trí này
+                                                                Pallet tại vị trí này
                                                             </h4>
                                                             {isLoading ? (
                                                                 <div className="flex justify-center items-center py-8">
@@ -1075,13 +1075,13 @@ const StocktakingArea = () => {
                                                                     <Table className="w-full">
                                                                         <TableHeader>
                                                                             <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
-                                                                                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
+                                                                                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left min-w-[140px]">
                                                                                     Mã pallet
                                                                                 </TableHead>
-                                                                                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
+                                                                                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left min-w-[140px]">
                                                                                     Mã hàng hóa
                                                                                 </TableHead>
-                                                                                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
+                                                                                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left min-w-[140px]">
                                                                                     Tên hàng hóa
                                                                                 </TableHead>
                                                                                 <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">

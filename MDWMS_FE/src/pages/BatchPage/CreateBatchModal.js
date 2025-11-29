@@ -84,11 +84,11 @@ const CreateBatchModal = ({ isOpen, onClose, onSuccess }) => {
 
                 {/* Content */}
                 <div className="p-6">
-                    <form className="space-y-6" onSubmit={handleSubmit}>
+                    <form className="space-y-6" onSubmit={handleSubmit} noValidate>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <Label htmlFor="batchCode" className="text-sm font-medium text-slate-700">Mã lô hàng <span className="text-red-500">*</span></Label>
-                                <Input id="batchCode" placeholder="Nhập mã lô..." value={formData.batchCode} onChange={(e) => setFormData({ ...formData, batchCode: e.target.value })} className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg" required />
+                                <Input id="batchCode" placeholder="Nhập mã lô..." value={formData.batchCode} onChange={(e) => setFormData({ ...formData, batchCode: e.target.value })} className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg" />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="areaId" className="text-sm font-medium text-slate-700">

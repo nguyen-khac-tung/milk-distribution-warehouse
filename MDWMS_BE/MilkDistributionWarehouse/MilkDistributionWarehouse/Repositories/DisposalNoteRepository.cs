@@ -42,6 +42,10 @@ namespace MilkDistributionWarehouse.Repositories
                         .ThenInclude(pa => pa.Pallet)
                             .ThenInclude(p => p.Location)
                                 .ThenInclude(l => l.Area)
+                .Include(dn => dn.DisposalNoteDetails)
+                    .ThenInclude(d => d.PickAllocations)
+                        .ThenInclude(pa => pa.Pallet)
+                            .ThenInclude(p => p.Batch)
                 .FirstOrDefaultAsync();
         }
 

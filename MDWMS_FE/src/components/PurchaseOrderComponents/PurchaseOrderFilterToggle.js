@@ -268,7 +268,7 @@ export default function PurchaseOrderFilterToggle({
               {/* Page Size Filter */}
               {showPageSizeButton && (
                 <div className="relative page-size-filter-dropdown">
-                  <button
+                  {/* <button
                     onClick={() => {
                       closeAllDropdownsExcept('pageSize');
                       setShowPageSizeFilter(!showPageSizeFilter);
@@ -279,9 +279,9 @@ export default function PurchaseOrderFilterToggle({
                       {pageSize} / trang
                     </span>
                     <ChevronDown className="h-4 w-4" />
-                  </button>
+                  </button> */}
 
-                  {showPageSizeFilter && (
+                  {/* {showPageSizeFilter && (
                     <div className="absolute top-full right-0 mt-1 w-32 bg-white rounded-md shadow-lg border z-50 max-h-48 overflow-y-auto dropdown-scroll" style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 #f1f5f9' }}>
                       <div className="py-1">
                         {pageSizeOptions.map((size) => (
@@ -298,7 +298,7 @@ export default function PurchaseOrderFilterToggle({
                         ))}
                       </div>
                     </div>
-                  )}
+                  )} */}
                 </div>
               )}
             </div>

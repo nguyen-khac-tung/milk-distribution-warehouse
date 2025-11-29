@@ -34,13 +34,6 @@ const ProtectedRoute = ({
     }, []);
 
     const hasAccess = () => {
-        // // Debug tạm thời
-        // console.log("=== PROTECTED ROUTE DEBUG ===");
-        // console.log("Required permission:", requiredPermission);
-        // console.log("User roles:", userRoles);
-        // console.log("Has PURCHASE_ORDER_VIEW:", hasPermission('PurchaseOrder.View'));
-        // console.log("Has PURCHASE_ORDER_VIEW_RS:", hasPermission('PurchaseOrder.ViewListRS'));
-        // console.log("Has PURCHASE_ORDER_VIEW_SM:", hasPermission('PurchaseOrder.ViewListSM'));
 
         // Kiểm tra role
         if (requiredRole) {

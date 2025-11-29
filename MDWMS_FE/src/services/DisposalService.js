@@ -1,3 +1,4 @@
+import { getFileNameFromHeader } from "../utils/Validation";
 import api from "./api";
 
 //
@@ -364,6 +365,33 @@ export const rePickDisposalNoteDetailList = async (items) => {
         if (error.response?.data?.message) {
             throw new Error(error.response.data.message);
         }
+        throw error;
+    }
+};
+
+// Xuất phiếu xuất hủy ra file Word
+export const exportDisposalNoteWord = async (disposalRequestId) => {
+    try {
+        const response = await api.get(
+            `/DisposalNote/ExportDisposalNoteWord/${disposalRequestId}`,
+            { responseType: "blob" }
+        );
+
+        const cd = response.headers["content-disposition"];
+        const fileName = getFileNameFromHeader(cd) || `phieu-xuat-huy.docx`;
+
+        return { file: response.data, fileName };
+    } catch (error) {
+
+        // đọc lỗi từ blob (ApiResponse)
+        if (error.response?.data instanceof Blob) {
+            const text = await error.response.data.text();
+            try {
+                const parsed = JSON.parse(text);
+                if (parsed?.message) throw new Error(parsed.message);
+            } catch { }
+        }
+
         throw error;
     }
 };

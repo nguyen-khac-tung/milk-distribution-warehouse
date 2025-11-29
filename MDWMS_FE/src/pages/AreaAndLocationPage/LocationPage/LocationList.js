@@ -161,16 +161,6 @@ const LocationList = () => {
     const fetchLocations = async (page = 1, pageSize = 10, params = {}) => {
         try {
             setLoading(true);
-            console.log("Fetching with params:", {
-                pageNumber: page,
-                pageSize,
-                search: params.search,
-                isAvailable: params.filters?.isAvailable,
-                areaId: params.filters?.areaId,
-                status: params.filters?.status,
-                sortField: params.sortField ?? sortField,
-                sortAscending: typeof (params.sortAscending ?? sortAscending) === 'boolean' ? (params.sortAscending ?? sortAscending) : undefined,
-            });
             const res = await getLocations({
                 pageNumber: page,
                 pageSize,
@@ -531,7 +521,6 @@ const LocationList = () => {
 
     // Open modal for update
     const handleOpenEdit = (record) => {
-        console.log("Editing record:", record);
         setEditingLocation(record);
         setUpdateLocationId(record.locationId);
         setShowUpdateModal(true);

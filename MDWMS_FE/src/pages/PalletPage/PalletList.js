@@ -135,7 +135,6 @@ export default function PalletList() {
         }
     }
     const fetchData = async (searchParams = {}) => {
-        console.log("fetchData called with params:", searchParams)
         try {
             setLoading(true)
             const response = await getPallets({
@@ -150,7 +149,6 @@ export default function PalletList() {
 
             if (response && response.data) {
                 const dataArray = Array.isArray(response.data.items) ? response.data.items : []
-                console.log("fetchData success - received:", dataArray.length, "items")
                 setPallets(dataArray)
                 setPagination(prev => ({
                     ...prev,
@@ -158,12 +156,10 @@ export default function PalletList() {
                 }))
                 // Không tính stats từ dữ liệu đã filter
             } else {
-                console.log("fetchData - no data received")
                 setPallets([])
                 setPagination(prev => ({ ...prev, totalCount: 0 }))
             }
         } catch (error) {
-            console.log("fetchData error:", error)
             setPallets([])
             setPagination(prev => ({ ...prev, totalCount: 0 }))
         } finally {
@@ -172,9 +168,7 @@ export default function PalletList() {
         }
     }
     useEffect(() => {
-        console.log("Component mounted - initializing data")
         const initializeData = async () => {
-            console.log("initializeData started")
             // Reset tất cả filter và sort về mặc định
             setSearchQuery("")
             setStatusFilter("")
@@ -212,7 +206,6 @@ export default function PalletList() {
             })
 
             // Mark as initialized after all data is loaded
-            console.log("initializeData completed")
             setIsInitialized(true)
         }
 
@@ -240,17 +233,14 @@ export default function PalletList() {
 
     useEffect(() => {
         if (!isInitialized) {
-            console.log("Search effect skipped - not initialized yet")
             return
         }
 
         // Skip if this is the first time after initialization and no user interaction yet
         if (!hasUserInteracted) {
-            console.log("Search effect skipped - no user interaction yet")
             return
         }
 
-        console.log("Search effect triggered by:", { searchQuery, statusFilter, creatorFilter, sortField, sortAscending })
         const timeoutId = setTimeout(() => {
             setSearchLoading(true)
             const params = {
@@ -262,13 +252,11 @@ export default function PalletList() {
                 status: statusFilter,
                 creatorId: creatorFilter
             }
-            console.log("Search timeout triggered - calling fetchData")
             fetchData(params)
             setPagination(prev => ({ ...prev, pageNumber: 1 }))
         }, searchQuery ? 500 : 0)
 
         return () => {
-            console.log("Search effect cleanup - clearing timeout")
             clearTimeout(timeoutId)
         }
     }, [searchQuery, statusFilter, creatorFilter, sortField, sortAscending, isInitialized, hasUserInteracted])
@@ -276,7 +264,6 @@ export default function PalletList() {
     // Track search query changes to detect user interaction
     useEffect(() => {
         if (isInitialized && searchQuery !== "") {
-            console.log("User typed in search:", searchQuery)
             setHasUserInteracted(true)
         }
     }, [searchQuery, isInitialized])
@@ -347,7 +334,6 @@ export default function PalletList() {
     }
 
     const handleUpdateSuccess = () => {
-        console.log("handleUpdateSuccess called - refreshing data")
         setShowUpdateModal(false)
         setUpdatePalletId(null)
         // Refresh the pallet list and stats
@@ -372,7 +358,6 @@ export default function PalletList() {
         setUpdatePalletId(null)
     }
     const handleDeleteConfirm = async () => {
-        console.log("handleDeleteConfirm called for pallet:", itemToDelete?.palletId)
         try {
             await deletePallet(itemToDelete?.palletId)
 
@@ -389,7 +374,6 @@ export default function PalletList() {
             }
 
             // Refresh data after deletion, keeping current page or going to previous page if needed
-            console.log("Refreshing data after deletion")
             await fetchStatsData()
             await fetchData({
                 pageNumber: targetPage,
@@ -455,35 +439,30 @@ export default function PalletList() {
     }, [creators, creatorSearchQuery])
 
     const handleStatusFilter = (status) => {
-        console.log("User selected status filter:", status)
         setHasUserInteracted(true)
         setStatusFilter(status)
         setShowStatusFilter(false)
         setStatusSearchQuery("")
     }
     const clearStatusFilter = () => {
-        console.log("User cleared status filter")
         setHasUserInteracted(true)
         setStatusFilter("")
         setShowStatusFilter(false)
         setStatusSearchQuery("")
     }
     const handleCreatorFilter = (creatorId) => {
-        console.log("User selected creator filter:", creatorId)
         setHasUserInteracted(true)
         setCreatorFilter(creatorId)
         setShowCreatorFilter(false)
         setCreatorSearchQuery("")
     }
     const clearCreatorFilter = () => {
-        console.log("User cleared creator filter")
         setHasUserInteracted(true)
         setCreatorFilter("")
         setShowCreatorFilter(false)
         setCreatorSearchQuery("")
     }
     const handleClearAllFilters = () => {
-        console.log("User cleared all filters")
         setHasUserInteracted(true)
         setSearchQuery("")
         setStatusFilter("")
@@ -495,7 +474,6 @@ export default function PalletList() {
     }
     const clearAllFilters = handleClearAllFilters
     const handlePageSizeChange = (newPageSize) => {
-        console.log("handlePageSizeChange called with:", newPageSize)
         setHasUserInteracted(true)
         setPagination(prev => ({ ...prev, pageSize: newPageSize, pageNumber: 1 }))
         setShowPageSizeFilter(false)
@@ -510,7 +488,6 @@ export default function PalletList() {
         })
     }
     const handleSort = (field) => {
-        console.log("handleSort called with field:", field)
         setHasUserInteracted(true)
         if (sortField === field) {
             setSortAscending(!sortAscending)
@@ -635,7 +612,7 @@ export default function PalletList() {
                                         </TableHead>
                                         <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                                             <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("batchCode")}>
-                                                <span>Mã lô hàng</span>
+                                                <span>Mã lô</span>
                                                 {sortField === "batchCode" ? (
                                                     sortAscending ? (
                                                         <ArrowUp className="h-4 w-4 text-orange-500" />
@@ -647,16 +624,16 @@ export default function PalletList() {
                                                 )}
                                             </div>
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left min-w-[120px]">
                                             Mã vị trí
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left min-w-[120px]">
                                             Số lượng thùng
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left min-w-[140px]">
                                             Đơn vị/thùng
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left min-w-[120px]">
                                             Người tạo
                                         </TableHead>
                                         <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-48">

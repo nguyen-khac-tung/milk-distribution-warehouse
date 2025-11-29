@@ -576,32 +576,38 @@ const Sidebar = memo(({ collapsed, isMobile }) => {
                 zIndex: 99,
             }}>
                 {!collapsed && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <img
-                            src="/logo.png"
-                            alt="Logo"
-                            style={{ width: 80, height: 80, objectFit: 'contain' }}
-                        />
-                        <div>
-                            <div style={{ fontWeight: 700, fontSize: 16, color: "#1f2937", lineHeight: 1.2 }}>
-                                Kho Phân Phối Sữa
+                    <Link to="/">
+                        <div style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
+                            <img
+                                src="/logo.png"
+                                alt="Logo"
+                                style={{ width: 80, height: 80, objectFit: 'contain' }}
+                            />
+                            <div>
+                                <div style={{ fontWeight: 700, fontSize: 16, color: "#1f2937", lineHeight: 1.2 }}>
+                                    Kho Phân Phối Sữa
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </Link>
                 )}
+
                 {collapsed && (
-                    <div style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        margin: "0 auto"
-                    }}>
-                        <img
-                            src="/logo.png"
-                            alt="Logo"
-                            style={{ width: 28, height: 28, objectFit: 'contain' }}
-                        />
-                    </div>
+                    <Link to="/">
+                        <div style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            margin: "0 auto",
+                            cursor: "pointer"
+                        }}>
+                            <img
+                                src="/logo.png"
+                                alt="Logo"
+                                style={{ width: 28, height: 28, objectFit: 'contain' }}
+                            />
+                        </div>
+                    </Link>
                 )}
             </div>
 

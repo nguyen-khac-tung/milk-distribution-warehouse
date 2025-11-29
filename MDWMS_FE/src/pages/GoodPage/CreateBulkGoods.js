@@ -171,11 +171,9 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
   }
 
   const removeGoodsRow = (index) => {
-    console.log('Removing goods at index:', index, 'Current goodsList length:', goodsList.length)
 
     if (goodsList.length > 1) {
       const newList = goodsList.filter((_, i) => i !== index)
-      console.log('New list after removal:', newList)
       setGoodsList(newList)
 
       // Update successfulGoods set to remove the deleted index and re-index remaining indices
@@ -190,7 +188,6 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
         }
         // Skip the removed row (successIndex === index)
       })
-      console.log('Updated successfulGoods:', newSuccessfulGoods)
       setSuccessfulGoods(newSuccessfulGoods)
 
       // Clear errors for removed row and re-index remaining errors
@@ -752,7 +749,6 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                     ? goods.goodsPackingCreates
                     : [{ unitPerPackage: "" }]
                 }
-                console.log(`Rendering goods ${index + 1}:`, goodsWithPacking, 'isSuccessful:', isSuccessful)
                 return (
                   <Card key={index} className={`p-6 border ${isSuccessful ? 'border-green-200 bg-green-50' : 'border-slate-200'}`}>
                     <div className="flex items-center justify-between mb-4">
@@ -773,7 +769,6 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              console.log('Clicking remove for successful goods at index:', index)
                               removeGoodsRow(index)
                             }}
                             className="text-green-600 hover:text-green-700 hover:bg-green-50"
@@ -788,7 +783,6 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              console.log('Clicking remove for unsuccessful goods at index:', index)
                               removeGoodsRow(index)
                             }}
                             className="text-red-500 hover:text-red-700 hover:bg-red-50"
