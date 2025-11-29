@@ -592,7 +592,7 @@ namespace MilkDistributionWarehouse.Services
                             {
                                 UserId = userId,
                                 Title = "Phiếu kiểm kê được phân công",
-                                Content = $"Bạn đã được phân công kiểm kê trong phiếu kiểm kê {sheet.StocktakingSheetId}. Vui lòng kiểm tra và thực hiện đúng thời gian quy định.",
+                                Content = $"Bạn đã được phân công kiểm kê trong phiếu kiểm kê '{sheet.StocktakingSheetId}'. Vui lòng kiểm tra và thực hiện đúng thời gian quy định.",
                                 EntityType = NotificationEntityType.StocktakingSheet,
                                 EntityId = sheet.StocktakingSheetId,
                             });
@@ -611,7 +611,7 @@ namespace MilkDistributionWarehouse.Services
                             {
                                 UserId = userId,
                                 Title = "Phiếu kiểm kê được phân công",
-                                Content = $"Bạn đã được phân công kiểm kê trong phiếu kiểm kê {sheet.StocktakingSheetId}. Vui lòng kiểm tra và thực hiện đúng thời gian quy định.",
+                                Content = $"Bạn đã được phân công kiểm kê trong phiếu kiểm kê '{sheet.StocktakingSheetId}'. Vui lòng kiểm tra và thực hiện đúng thời gian quy định.",
                                 EntityType = NotificationEntityType.StocktakingSheet,
                                 EntityId = sheet.StocktakingSheetId,
                             });
@@ -633,7 +633,7 @@ namespace MilkDistributionWarehouse.Services
                             {
                                 UserId = userId,
                                 Title = "Phiếu kiểm kê thay đổi phân công",
-                                Content = $"Bạn đã được gỡ khỏi phiếu kiểm kê {sheet.StocktakingSheetId}. Vui lòng liên hệ quản lý kho nếu cần thêm thông tin.",
+                                Content = $"Bạn đã được gỡ khỏi phiếu kiểm kê '{sheet.StocktakingSheetId}'. Vui lòng liên hệ quản lý kho nếu cần thêm thông tin.",
                                 EntityType = NotificationEntityType.NoNavigation,
                             });
                         }
@@ -647,7 +647,7 @@ namespace MilkDistributionWarehouse.Services
                         {
                             UserId = staffId,
                             Title = "Phiếu kiểm kê bị huỷ",
-                            Content = $"Phiếu kiểm kê {sheet.StocktakingSheetId} đã bị huỷ. Vui lòng liên hệ quản lý kho để biết thêm chi tiết.",
+                            Content = $"Phiếu kiểm kê '{sheet.StocktakingSheetId}' đã bị huỷ. Vui lòng liên hệ quản lý kho để biết thêm chi tiết.",
                             EntityType = NotificationEntityType.StocktakingSheet,
                             EntityId = sheet.StocktakingSheetId,
                             Category = NotificationCategory.Important
@@ -659,7 +659,7 @@ namespace MilkDistributionWarehouse.Services
                     {
                         UserId = sheet.CreatedBy,
                         Title = "Phiếu kiểm kê đã hoàn thành",
-                        Content = $"Phiếu kiểm kê {sheet.StocktakingSheetId} đã hoàn thành kiểm kê.",
+                        Content = $"Phiếu kiểm kê '{sheet.StocktakingSheetId}' đã hoàn thành kiểm kê.",
                         EntityType = NotificationEntityType.StocktakingSheet,
                         EntityId = sheet.StocktakingSheetId,
                     });
@@ -671,7 +671,7 @@ namespace MilkDistributionWarehouse.Services
                         {
                             UserId = staffId,
                             Title = "Phiếu kiểm kê đã hoàn thành",
-                            Content = $"Phiếu kiểm kê {sheet.StocktakingSheetId} đã hoàn thành kiểm kê. Cảm ơn bạn đã hoàn thành nhiệm vụ được giao.",
+                            Content = $"Phiếu kiểm kê '{sheet.StocktakingSheetId}' đã hoàn thành kiểm kê. Cảm ơn bạn đã hoàn thành nhiệm vụ được giao.",
                             EntityType = NotificationEntityType.StocktakingSheet,
                             EntityId = sheet.StocktakingSheetId,
                         });

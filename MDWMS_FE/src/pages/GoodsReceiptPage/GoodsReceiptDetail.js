@@ -737,8 +737,8 @@ export default function GoodsReceiptDetail() {
                       <Table>
                         <TableHeader>
                           <TableRow className="bg-gray-100">
-                            <TableHead className="font-semibold text-gray-700">Mã hàng</TableHead>
-                            <TableHead className="font-semibold text-gray-700">Tên hàng</TableHead>
+                            <TableHead className="font-semibold text-gray-700 min-w-[120px]">Mã hàng hóa</TableHead>
+                            <TableHead className="font-semibold text-gray-700 min-w-[120px]">Tên hàng hóa</TableHead>
                             <TableHead className="font-semibold text-gray-700 text-center">Đơn vị tính</TableHead>
                             <TableHead className="font-semibold text-gray-700 text-center">Quy cách đóng gói</TableHead>
                             <TableHead className="font-semibold text-gray-700 text-center">SL thùng dự kiến</TableHead>
@@ -1137,8 +1137,8 @@ export default function GoodsReceiptDetail() {
                                 })()}
                               </TableHead>
                             )}
-                            <TableHead className="font-semibold text-green-900">Mã hàng</TableHead>
-                            <TableHead className="font-semibold text-green-900">Tên hàng</TableHead>
+                            <TableHead className="font-semibold text-green-900 min-w-[120px]">Mã hàng hóa</TableHead>
+                            <TableHead className="font-semibold text-green-900 min-w-[120px]">Tên hàng hóa</TableHead>
                             <TableHead className="font-semibold text-green-900 text-center">Đơn vị tính</TableHead>
                             <TableHead className="font-semibold text-green-900 text-center">Quy cách đóng gói</TableHead>
                             <TableHead className="font-semibold text-green-900 text-center">SL thùng dự kiến</TableHead>
@@ -1459,7 +1459,7 @@ export default function GoodsReceiptDetail() {
                               )}
                               <TableHead className="font-semibold text-purple-900">Mã pallet</TableHead>
                               <TableHead className="font-semibold text-purple-900">Tên hàng hóa</TableHead>
-                              <TableHead className="font-semibold text-purple-900">Mã hàng</TableHead>
+                              <TableHead className="font-semibold text-purple-900 min-w-[120px]">Mã hàng hóa</TableHead>
                               <TableHead className="font-semibold text-purple-900 text-center">Số lô</TableHead>
                               <TableHead className="font-semibold text-purple-900 text-center">Số thùng</TableHead>
                               <TableHead className="font-semibold text-purple-900">Vị trí</TableHead>

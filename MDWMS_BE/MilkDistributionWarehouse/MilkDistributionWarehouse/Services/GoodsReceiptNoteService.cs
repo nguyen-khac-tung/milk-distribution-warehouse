@@ -255,14 +255,14 @@ namespace MilkDistributionWarehouse.Services
                 case GoodsReceiptNoteStatus.PendingApproval:
                     notificationToCreate.UserId = grn.PurchaseOder.ArrivalConfirmedBy;
                     notificationToCreate.Title = "Phiếu nhập kho chờ duyệt";
-                    notificationToCreate.Content = $"Phiếu nhập kho {grn.GoodsReceiptNoteId} đang chờ duyệt.";
+                    notificationToCreate.Content = $"Phiếu nhập kho '{grn.GoodsReceiptNoteId}' đang chờ duyệt.";
                     notificationToCreate.EntityType = NotificationEntityType.GoodsReceiptNote;
                     notificationToCreate.EntityId = grn.PurchaseOderId;
                     break;
                 case GoodsReceiptNoteStatus.Completed:
                     notificationToCreate.UserId = grn.PurchaseOder.AssignTo;
                     notificationToCreate.Title = "Phiếu nhập kho hoàn tất kiểm tra";
-                    notificationToCreate.Content = $"Phiếu nhập kho {grn.GoodsReceiptNoteId} đã được hoàn thành kiểm tra.";
+                    notificationToCreate.Content = $"Phiếu nhập kho '{grn.GoodsReceiptNoteId}' đã được hoàn thành kiểm tra.";
                     notificationToCreate.EntityType = NotificationEntityType.GoodsReceiptNote;
                     notificationToCreate.EntityId = grn.PurchaseOderId;
                     notificationToCreate.Category = NotificationCategory.Important;
@@ -285,7 +285,7 @@ namespace MilkDistributionWarehouse.Services
                     {
                         UserId = purchaseOder.ArrivalConfirmedBy,
                         Title = "Đơn đặt hàng đã được kiểm tra",
-                        Content = $"Đơn đặt hàng {purchaseOder.PurchaseOderId} đã được kiểm tra.",
+                        Content = $"Đơn đặt hàng '{purchaseOder.PurchaseOderId}' đã được kiểm tra.",
                         EntityType = NotificationEntityType.PurchaseOrder,
                         EntityId = purchaseOder.PurchaseOderId
                     });

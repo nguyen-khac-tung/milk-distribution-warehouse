@@ -33,13 +33,11 @@ export default function CreateBackOrderModal({ isOpen, onClose, onSuccess, selec
   // Set retailerId từ props khi modal mở hoặc retailerId thay đổi
   useEffect(() => {
     if (isOpen && retailerId) {
-      console.log("Setting retailerId in modal:", retailerId);
       setFormData(prev => ({
         ...prev,
         retailerId: retailerId.toString()
       }))
     } else if (isOpen && !retailerId) {
-      console.log("No retailerId provided, clearing form");
       setFormData(prev => ({
         ...prev,
         retailerId: ""
@@ -150,7 +148,6 @@ export default function CreateBackOrderModal({ isOpen, onClose, onSuccess, selec
         goodsId: parseInt(formData.goodsId),
         quantity: quantity
       })
-      console.log("BackOrder created:", response)
       window.showToast("Thêm đơn đặt hàng thành công!", "success")
       onSuccess && onSuccess()
       onClose && onClose()
@@ -263,8 +260,6 @@ export default function CreateBackOrderModal({ isOpen, onClose, onSuccess, selec
                   </div>
                 );
               }
-              // Fallback: hiển thị retailerId nếu không tìm thấy
-              console.log("Retailer not found in modal. retailerId:", retailerId, "retailers:", retailers);
               return null;
             })()}
 

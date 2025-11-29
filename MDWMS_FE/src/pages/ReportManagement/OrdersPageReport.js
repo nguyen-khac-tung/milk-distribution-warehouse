@@ -28,6 +28,8 @@ import Loading from "../../components/Common/Loading"
 import Pagination from "../../components/Common/Pagination"
 import ExportPurchaseOrdersReport from "../../components/PurchaseOrderComponents/ExportPurchaseOrdersReport"
 import ExportSalesOrdersReport from "../../components/SaleOrderCompoents/ExportSalesOrdersReport"
+import PermissionWrapper from "../../components/Common/PermissionWrapper"
+import { PERMISSIONS } from "../../utils/permissions"
 
 export default function OrdersPage({ onClose }) {
   const navigate = useNavigate()
@@ -514,19 +516,21 @@ export default function OrdersPage({ onClose }) {
                 sortAscending={sortAscending}
               />
             )}
-            <Button
-              className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
-              onClick={() => {
-                if (activeOrderType === "purchase") {
-                  navigate("/purchase-orders/create")
-                } else {
-                  navigate("/sales-orders/create")
-                }
-              }}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              {activeOrderType === "purchase" ? "Tạo đơn nhập kho" : "Tạo đơn xuất kho"}
-            </Button>
+            <PermissionWrapper requiredPermission={activeOrderType === "purchase" ? PERMISSIONS.PURCHASE_ORDER_CREATE : PERMISSIONS.SALES_ORDER_CREATE}>
+              <Button
+                className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
+                onClick={() => {
+                  if (activeOrderType === "purchase") {
+                    navigate("/purchase-orders/create")
+                  } else {
+                    navigate("/sales-orders/create")
+                  }
+                }}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {activeOrderType === "purchase" ? "Tạo đơn nhập kho" : "Tạo đơn xuất kho"}
+              </Button>
+            </PermissionWrapper>
             {onClose && (
               <Button
                 variant="outline"
@@ -546,11 +550,11 @@ export default function OrdersPage({ onClose }) {
               <TabsList className="grid w-full max-w-md grid-cols-2">
                 <TabsTrigger value="purchase" className="flex items-center gap-2">
                   <Package className="h-4 w-4" />
-                  Đơn nhập kho
+                  Nhập kho
                 </TabsTrigger>
                 <TabsTrigger value="sales" className="flex items-center gap-2">
                   <ShoppingCart className="h-4 w-4" />
-                  Đơn xuất kho
+                  Xuất kho
                 </TabsTrigger>
               </TabsList>
             </Tabs>

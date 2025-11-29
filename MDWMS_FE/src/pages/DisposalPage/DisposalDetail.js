@@ -51,7 +51,6 @@ const DisposalDetail = () => {
             try {
                 setLoading(true);
                 const response = await getDisposalRequestDetail(id);
-                // console.log("22222;", response)
                 if (response && response.success) {
                     setDisposalRequest(response.data);
                     // Check if disposal note exists

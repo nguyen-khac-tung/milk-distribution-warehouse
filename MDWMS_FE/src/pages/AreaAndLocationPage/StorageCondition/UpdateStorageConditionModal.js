@@ -22,7 +22,6 @@ export default function UpdateStorageCondition({ isOpen, onClose, onSuccess, sto
   // Load data when modal opens
   React.useEffect(() => {
     if (isOpen && storageConditionData) {
-      console.log("Loading storage condition data for update:", storageConditionData)
       setFormData({
         temperatureMin: storageConditionData.temperatureMin ?? 0,
         temperatureMax: storageConditionData.temperatureMax ?? 0,
@@ -64,10 +63,6 @@ export default function UpdateStorageCondition({ isOpen, onClose, onSuccess, sto
         humidityMax: isNaN(parseFloat(formData.humidityMax)) ? 0 : parseFloat(formData.humidityMax),
         lightLevel: formData.lightLevel
       }
-
-      console.log("Update data:", updateData)
-      console.log("Storage condition ID:", storageConditionData.storageConditionId)
-      console.log("Form data before processing:", formData)
 
       const response = await updateStorageCondition(storageConditionData.storageConditionId, updateData)
       console.log("Storage condition updated:", response)

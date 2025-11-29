@@ -1382,7 +1382,7 @@ const StocktakingAreaDetailForOther = () => {
                                                                 {isExpanded && (
                                                                     <div className="border-t border-gray-200 p-4">
                                                                         <h4 className="text-sm font-semibold text-gray-700 mb-4">
-                                                                            Kệ kê hàng tại vị trí này
+                                                                            Pallet tại vị trí này
                                                                         </h4>
                                                                         {isLoading ? (
                                                                             <div className="flex justify-center items-center py-8">
@@ -1396,10 +1396,10 @@ const StocktakingAreaDetailForOther = () => {
                                                                                             <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
                                                                                                 Mã pallet
                                                                                             </TableHead>
-                                                                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
+                                                                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left min-w-[140px]">
                                                                                                 Mã hàng hóa
                                                                                             </TableHead>
-                                                                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
+                                                                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left min-w-[140px]">
                                                                                                 Tên hàng hóa
                                                                                             </TableHead>
                                                                                             <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">

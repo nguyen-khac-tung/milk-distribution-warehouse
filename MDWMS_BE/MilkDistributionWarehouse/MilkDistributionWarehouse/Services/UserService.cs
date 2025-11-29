@@ -317,7 +317,7 @@ namespace MilkDistributionWarehouse.Services
                         <p>Tài khoản của bạn đã được tạo thành công. Dưới đây là thông tin đăng nhập của bạn:</p>
                         <p><strong>Email (Tên đăng nhập):</strong> {email}</p>
                         <p><strong>Mật khẩu:</strong> <h2>{password}</h2></p>
-                        <p>Vui lòng đăng nhập vào hệ thống theo đường link http://localhost:3000/login và đổi mật khẩu của bạn để đảm bảo an toàn.</p>
+                        <p>Vui lòng đăng nhập vào hệ thống theo đường link http://khophanphoisua.id.vn/login và đổi mật khẩu của bạn để đảm bảo an toàn.</p>
                         <br>
                         <p>Trân trọng,</p>
                         <p>Đội ngũ quản trị hệ thống kho sữa Hoàng Hà.</p>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Play, AlertCircle } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -60,9 +61,20 @@ const StartStocktakingModal = ({
 
     if (!isOpen) return null;
 
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+    return createPortal(
+        <div
+            className="fixed inset-0 z-[100000] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+            style={{ top: 0, left: 0, right: 0, bottom: 0 }}
+            onClick={(e) => {
+                if (e.target === e.currentTarget && !loading && !isSubmitting) {
+                    handleClose();
+                }
+            }}
+        >
+            <div
+                className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4"
+                onClick={(e) => e.stopPropagation()}
+            >
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200">
                     <div className="flex items-center space-x-3">
@@ -165,7 +177,8 @@ const StartStocktakingModal = ({
                     </div>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 

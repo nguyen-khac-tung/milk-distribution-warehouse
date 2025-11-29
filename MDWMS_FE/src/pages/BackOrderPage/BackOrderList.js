@@ -95,7 +95,6 @@ export default function BackOrderList() {
                 sortAscending: true,
                 status: "" // Không filter theo status
             })
-            console.log("BackOrder: ", response)
 
             if (response) {
                 const payload = response.data ?? response
@@ -134,13 +133,11 @@ export default function BackOrderList() {
                 }
             })
 
-            console.log("BackOrder response: ", response)
 
             if (response) {
                 // Support response either wrapped in .data or direct
                 const payload = response.data ?? response
                 const dataArray = Array.isArray(payload.items) ? payload.items : []
-                console.log("BackOrder items: ", dataArray)
                 setBackOrders(dataArray)
                 setPagination(prev => ({
                     ...prev,
@@ -324,7 +321,6 @@ export default function BackOrderList() {
 
     const handleDeleteConfirm = async () => {
         try {
-            console.log("Deleting backOrder:", itemToDelete)
             const deletedBackOrderId = itemToDelete?.backOrderId
 
             await deleteBackOrder(deletedBackOrderId)

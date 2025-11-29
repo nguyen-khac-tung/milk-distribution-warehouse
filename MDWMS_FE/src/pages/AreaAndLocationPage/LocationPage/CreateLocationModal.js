@@ -96,7 +96,7 @@ export default function CreateLocationModal({ isOpen, onClose, onSuccess }) {
 
         {/* Body */}
         <div className="p-6">
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <form className="space-y-6" onSubmit={handleSubmit} noValidate>
             {/* Row 1: Area */}
             <div className="grid grid-cols-1">
               <div className="flex flex-col gap-2">
@@ -134,7 +134,6 @@ export default function CreateLocationModal({ isOpen, onClose, onSuccess }) {
                     setFormData({ ...formData, rack: e.target.value })
                   }
                   className="h-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg"
-                  required
                 />
               </div>
 
@@ -153,7 +152,6 @@ export default function CreateLocationModal({ isOpen, onClose, onSuccess }) {
                     setFormData({ ...formData, row: e.target.value })
                   }
                   className="h-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg"
-                  required
                 />
               </div>
 
@@ -172,7 +170,6 @@ export default function CreateLocationModal({ isOpen, onClose, onSuccess }) {
                     setFormData({ ...formData, column: e.target.value })
                   }
                   className="h-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg"
-                  required
                 />
               </div>
             </div>

@@ -65,14 +65,25 @@ export default function SelectAreaModal({
 
         if (selectedArea) {
             const areaName = selectedArea.areaDetail?.areaName || "Unknown";
-            console.log("Confirming area selection:", {
+            console.log("SelectAreaModal - Confirming area selection:", {
                 areaName: areaName,
                 stocktakingAreaId: selectedAreaId,
+                areaDetailAreaId: selectedArea.areaDetail?.areaId,
                 fullArea: selectedArea
+            });
+        } else {
+            console.error("SelectAreaModal - Selected area not found!", {
+                selectedAreaId: selectedAreaId,
+                availableAreas: areas.map(a => ({
+                    stocktakingAreaId: a.stocktakingAreaId,
+                    areaName: a.areaDetail?.areaName,
+                    areaDetailAreaId: a.areaDetail?.areaId
+                }))
             });
         }
 
         if (onConfirm) {
+            console.log("SelectAreaModal - Calling onConfirm with stocktakingAreaId:", selectedAreaId);
             onConfirm(selectedAreaId);
         }
     };

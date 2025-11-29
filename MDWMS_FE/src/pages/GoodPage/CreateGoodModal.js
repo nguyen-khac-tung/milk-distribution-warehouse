@@ -121,7 +121,6 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
       }
 
       const response = await createGood(submitData)
-      console.log("Good created:", response)
       window.showToast("Thêm hàng hóa thành công!", "success")
       onSuccess && onSuccess()
       onClose && onClose()

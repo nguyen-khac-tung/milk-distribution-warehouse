@@ -20,10 +20,10 @@ export default function CreateRetailer({ isOpen, onClose, onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
+
     // Basic validation - check if required fields are filled
-    if (!formData.retailerName?.trim() || !formData.taxCode?.trim() || 
-        !formData.email?.trim() || !formData.address?.trim() || !formData.phone?.trim()) {
+    if (!formData.retailerName?.trim() || !formData.taxCode?.trim() ||
+      !formData.email?.trim() || !formData.address?.trim() || !formData.phone?.trim()) {
       window.showToast("Vui lòng điền đầy đủ thông tin", "error")
       return
     }
@@ -45,7 +45,6 @@ export default function CreateRetailer({ isOpen, onClose, onSuccess }) {
     try {
       setLoading(true)
       const response = await createRetailer(formData)
-      console.log("Retailer created:", response)
       window.showToast("Thêm nhà bán lẻ thành công!", "success")
       onSuccess && onSuccess()
       onClose && onClose()
@@ -72,7 +71,7 @@ export default function CreateRetailer({ isOpen, onClose, onSuccess }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-sm" style={{zIndex: 99999}}>
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-sm" style={{ zIndex: 99999 }}>
       <div className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -84,7 +83,7 @@ export default function CreateRetailer({ isOpen, onClose, onSuccess }) {
             <X className="h-5 w-5 text-gray-500" />
           </button>
         </div>
-        
+
         {/* Content */}
         <div className="p-6">
           <form className="space-y-6" onSubmit={handleSubmit}>

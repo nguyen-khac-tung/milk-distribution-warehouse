@@ -70,6 +70,10 @@ const UpdateBatchModal = ({ isOpen, onClose, onSuccess, batchId, batchData }) =>
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!formData.goodsId) {
+            window.showToast("Vui lòng chọn hàng hóa!", "error");
+            return;
+        }
         try {
             setLoading(true);
             await updateBatch({
@@ -103,7 +107,7 @@ const UpdateBatchModal = ({ isOpen, onClose, onSuccess, batchId, batchData }) =>
 
                 {/* Content */}
                 <div className="p-6">
-                    <form className="space-y-6" onSubmit={handleSubmit}>
+                    <form className="space-y-6" onSubmit={handleSubmit} noValidate>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <Label htmlFor="batchCode" className="text-sm font-medium text-slate-700">Mã lô hàng <span className="text-red-500">*</span></Label>

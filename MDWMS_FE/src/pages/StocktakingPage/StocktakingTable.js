@@ -269,17 +269,10 @@ const StocktakingTable = ({
                                                     </button>
                                                 </PermissionWrapper>
                                                 {/* Icon xem chi tiết đơn kiểm kê kho - hiển thị cho các trạng thái khác (có permission, trừ nhân viên kho ở các trạng thái đã xử lý riêng) */}
-                                                {(!isWarehouseStaff ||
-                                                    (stocktaking.status !== STOCKTAKING_STATUS.PendingApproval &&
-                                                        stocktaking.status !== 5 &&
-                                                        stocktaking.status !== '5' &&
-                                                        stocktaking.status !== STOCKTAKING_STATUS.Approved &&
-                                                        stocktaking.status !== 6 &&
-                                                        stocktaking.status !== '6' &&
-                                                        stocktaking.status !== STOCKTAKING_STATUS.Completed &&
-                                                        stocktaking.status !== 7 &&
-                                                        stocktaking.status !== '7')) &&
-                                                    (stocktaking.status === STOCKTAKING_STATUS.InProgress ||
+                                                {/* Quản lý kho có thể xem chi tiết đơn kiểm kê kho ở trạng thái đã hủy */}
+                                                {(() => {
+                                                    const isCancelled = stocktaking.status === STOCKTAKING_STATUS.Cancelled || stocktaking.status === 3 || stocktaking.status === '3';
+                                                    const isOtherStatus = stocktaking.status === STOCKTAKING_STATUS.InProgress ||
                                                         stocktaking.status === 4 ||
                                                         stocktaking.status === '4' ||
                                                         stocktaking.status === STOCKTAKING_STATUS.PendingApproval ||
@@ -290,7 +283,22 @@ const StocktakingTable = ({
                                                         stocktaking.status === '6' ||
                                                         stocktaking.status === STOCKTAKING_STATUS.Completed ||
                                                         stocktaking.status === 7 ||
-                                                        stocktaking.status === '7') && (
+                                                        stocktaking.status === '7';
+                                                    
+                                                    const canViewForOtherStatus = !isWarehouseStaff ||
+                                                        (stocktaking.status !== STOCKTAKING_STATUS.PendingApproval &&
+                                                            stocktaking.status !== 5 &&
+                                                            stocktaking.status !== '5' &&
+                                                            stocktaking.status !== STOCKTAKING_STATUS.Approved &&
+                                                            stocktaking.status !== 6 &&
+                                                            stocktaking.status !== '6' &&
+                                                            stocktaking.status !== STOCKTAKING_STATUS.Completed &&
+                                                            stocktaking.status !== 7 &&
+                                                            stocktaking.status !== '7');
+                                                    
+                                                    const shouldShow = (isWarehouseManager && isCancelled) || (canViewForOtherStatus && isOtherStatus);
+                                                    
+                                                    return shouldShow && (
                                                         <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_AREA_VIEW_DETAILS_FOR_OTHER}>
                                                             <button
                                                                 className="p-1.5 hover:bg-slate-100 rounded transition-colors"
@@ -300,7 +308,8 @@ const StocktakingTable = ({
                                                                 <FileText className="h-4 w-4 text-blue-500" />
                                                             </button>
                                                         </PermissionWrapper>
-                                                    )}
+                                                    );
+                                                })()}
                                                 {isWarehouseManager && (stocktaking.status === STOCKTAKING_STATUS.Draft || stocktaking.status === 1 || stocktaking.status === '1') && (
                                                     <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_UPDATE}>
                                                         <button

@@ -1,3 +1,4 @@
+import { getFileNameFromHeader } from "../utils/Validation";
 import api from "./api";
 
 // Tạo mới phiếu xuất kho theo salesOrderId
@@ -98,3 +99,29 @@ export const rePickGoodsIssueNoteDetailList = async (items) => {
     }
 };
 
+// Xuất phiếu xuất kho ra file Word
+export const exportGoodsIssueNoteWord = async (salesOrderId) => {
+    try {
+        const response = await api.get(
+            `/GoodsIssueNote/ExportGoodsIssueNoteWord/${salesOrderId}`,
+            { responseType: "blob" }
+        );
+
+        const cd = response.headers["content-disposition"];
+        const fileName = getFileNameFromHeader(cd) || `phieu-xuat-kho.docx`;
+
+        return { file: response.data, fileName };
+    } catch (error) {
+
+        // đọc lỗi từ blob (ApiResponse)
+        if (error.response?.data instanceof Blob) {
+            const text = await error.response.data.text();
+            try {
+                const parsed = JSON.parse(text);
+                if (parsed?.message) throw new Error(parsed.message);
+            } catch { }
+        }
+
+        throw error;
+    }
+};

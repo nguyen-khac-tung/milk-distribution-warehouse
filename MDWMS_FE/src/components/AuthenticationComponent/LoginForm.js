@@ -26,7 +26,6 @@ export function LoginForm() {
         setLoading(true);
         try {
             const res = await login({ email, password });
-            console.log("Login response:", res);
 
             if (res.success) {
                 if (res.isFirstLogin === true) {
@@ -76,7 +75,7 @@ export function LoginForm() {
             </div>
 
             {/* Form đăng nhập */}
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6" noValidate>
                 <div className="space-y-2">
                     <Label htmlFor="email" className="text-sm font-medium text-foreground">
                         Email <span style={{ color: "red" }}>*</span>
