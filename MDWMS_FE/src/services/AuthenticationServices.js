@@ -205,7 +205,7 @@ export const validateAndRefreshToken = async () => {
 export const logout = async () => {
     try {
         const token = localStorage.getItem("accessToken");
-        await api.get("/Authentication/Logout", {
+        await api.put("/Authentication/Logout", {
             headers: {
                 Authorization: `Bearer ${token}`,
             },
