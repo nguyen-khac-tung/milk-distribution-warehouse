@@ -16,7 +16,7 @@ import {
 import { useReactToPrint } from "react-to-print";
 import { PrintablePalletLabel, PrintableMultiplePalletLabels } from "../../components/PalletComponents/PrintPalletLabel";
 import Loading from "../../components/Common/Loading";
-import { getGoodsReceiptNoteByPurchaseOrderId, verifyRecord, cancelGoodsReceiptNoteDetail, submitGoodsReceiptNote, approveGoodsReceiptNote, rejectGoodsReceiptNoteDetail, rejectGoodsReceiptNoteDetailList, getPalletByGRNID, getLocationSuggest } from "../../services/GoodsReceiptService";
+import { getGoodsReceiptNoteByPurchaseOrderId, verifyRecord, cancelGoodsReceiptNoteDetail, submitGoodsReceiptNote, approveGoodsReceiptNote, rejectGoodsReceiptNoteDetail, rejectGoodsReceiptNoteDetailList, getPalletByGRNID, getLocationSuggest, exportGoodsReceiptNoteWord } from "../../services/GoodsReceiptService";
 import { completePurchaseOrder, getPurchaseOrderDetail } from "../../services/PurchaseOrderService";
 import { PERMISSIONS, PURCHASE_ORDER_STATUS } from "../../utils/permissions";
 import { usePermissions } from "../../hooks/usePermissions";
@@ -458,9 +458,31 @@ export default function GoodsReceiptDetail() {
     }
   };
 
-  const handlePrintReceipt = () => {
-    // Implement print functionality
-    window.print();
+  const handlePrintReceipt = async () => {
+    if (!goodsReceiptNote?.purchaseOderId) {
+      window.showToast?.("Không tìm thấy mã đơn mua hàng", "error");
+      return;
+    }
+
+    try {
+      const blob = await exportGoodsReceiptNoteWord(goodsReceiptNote.purchaseOderId);
+
+      // Tạo URL từ blob và tải xuống
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `PhieuNhapKho_${goodsReceiptNote.purchaseOderId}.docx`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      window.showToast?.("Xuất phiếu thành công!", "success");
+    } catch (error) {
+      console.error("Error exporting goods receipt note:", error);
+      const msg = extractErrorMessage(error, "Xuất phiếu thất bại, vui lòng thử lại!");
+      window.showToast?.(msg, "error");
+    }
   };
 
   const openRejectModal = (detailId) => {
@@ -609,7 +631,7 @@ export default function GoodsReceiptDetail() {
           <div className="flex items-center gap-2">
             <Button onClick={handlePrintReceipt} className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 h-[38px] px-4 text-white">
               <Printer className="w-4 h-4" />
-              In Phiếu
+              Xuất Phiếu
             </Button>
           </div>
         </div>

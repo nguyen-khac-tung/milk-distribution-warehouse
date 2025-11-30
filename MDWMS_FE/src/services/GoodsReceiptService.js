@@ -119,5 +119,20 @@ export const getLocationSuggest = async (palletId) => {
     }
 };
 
+// Xuất phiếu nhập kho ra file Word
+export const exportGoodsReceiptNoteWord = async (purchaseOrderId) => {
+    try {
+        const res = await api.get(`/GoodsReceiptNote/ExportGoodsReceiptNoteWord/${purchaseOrderId}`, {
+            responseType: 'blob'
+        });
+        return res.data;
+    } catch (error) {
+        console.error('Error exporting goods receipt note to Word:', error);
+        throw error;
+    }
+};
+
+
+
 
 

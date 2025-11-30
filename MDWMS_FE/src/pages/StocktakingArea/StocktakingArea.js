@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, MapPin, Clock, Calendar, User, Thermometer, Droplets, Sun, Check, RotateCcw, Search, Package } from 'lucide-react';
+import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, MapPin, Clock, Calendar, User, Thermometer, Droplets, Sun, Check, RotateCcw, Search, Package, Printer } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
-import { getStocktakingAreaDetailBySheetId, getStocktakingDetail, confirmStocktakingLocationCounted, submitStocktakingArea, cancelStocktakingLocationRecord, getStocktakingPalletDetail } from '../../services/StocktakingService';
+import { getStocktakingAreaDetailBySheetId, getStocktakingDetail, confirmStocktakingLocationCounted, submitStocktakingArea, cancelStocktakingLocationRecord, getStocktakingPalletDetail, exportStocktakingAreaWord } from '../../services/StocktakingService';
 import { extractErrorMessage } from '../../utils/Validation';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
 import StatusDisplay from '../../components/StocktakingComponents/StatusDisplay';
@@ -665,6 +665,33 @@ const StocktakingArea = () => {
         }
     };
 
+    const handleExportReceipt = async (stocktakingAreaId) => {
+        if (!stocktakingAreaId) {
+            window.showToast?.("Không tìm thấy mã khu vực kiểm kê", "error");
+            return;
+        }
+
+        try {
+            const blob = await exportStocktakingAreaWord(stocktakingAreaId);
+
+            // Tạo URL từ blob và tải xuống
+            const url = window.URL.createObjectURL(new Blob([blob]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `PhieuKiemKe_${stocktakingAreaId}.docx`);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            window.showToast?.("Xuất phiếu thành công!", "success");
+        } catch (error) {
+            console.error("Error exporting stocktaking area:", error);
+            const errorMessage = extractErrorMessage(error, "Xuất phiếu thất bại, vui lòng thử lại!");
+            window.showToast?.(errorMessage, "error");
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen">
@@ -714,6 +741,17 @@ const StocktakingArea = () => {
                                     Chi Tiết Kiểm Kê Kho
                                 </h1>
                             </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {stocktakingAreas.length > 0 && stocktakingAreas[0]?.stocktakingAreaId && (
+                                <Button
+                                    onClick={() => handleExportReceipt(stocktakingAreas[0].stocktakingAreaId)}
+                                    className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 h-[38px] px-4 text-white"
+                                >
+                                    <Printer className="w-4 h-4" />
+                                    Xuất Phiếu
+                                </Button>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, Calendar, User, MapPin, Clock, Thermometer, Droplets, Sun, RotateCcw, CheckCircle2, AlertTriangle, Edit2, Save, X, Search, Package } from 'lucide-react';
+import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, Calendar, User, MapPin, Clock, Thermometer, Droplets, Sun, RotateCcw, CheckCircle2, AlertTriangle, Edit2, Save, X, Search, Package, Printer } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
-import { getStocktakingAreaDetailForOtherRoleBySheetId, getStocktakingDetail, getStocktakingPalletDetail, rejectStocktakingLocationRecords, approveStocktakingArea, completeStocktaking, updateStocktakingLocationRecords } from '../../services/StocktakingService';
+import { getStocktakingAreaDetailForOtherRoleBySheetId, getStocktakingDetail, getStocktakingPalletDetail, rejectStocktakingLocationRecords, approveStocktakingArea, completeStocktaking, updateStocktakingLocationRecords, exportStocktakingAreaWord } from '../../services/StocktakingService';
 import { usePermissions } from '../../hooks/usePermissions';
 import { extractErrorMessage } from '../../utils/Validation';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
@@ -561,6 +561,33 @@ const StocktakingAreaDetailForOther = () => {
         }
     };
 
+    const handleExportReceipt = async (stocktakingAreaId) => {
+        if (!stocktakingAreaId) {
+            window.showToast?.("Không tìm thấy mã khu vực kiểm kê", "error");
+            return;
+        }
+
+        try {
+            const blob = await exportStocktakingAreaWord(stocktakingAreaId);
+
+            // Tạo URL từ blob và tải xuống
+            const url = window.URL.createObjectURL(new Blob([blob]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `PhieuKiemKe_${stocktakingAreaId}.docx`);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            window.showToast?.("Xuất phiếu thành công!", "success");
+        } catch (error) {
+            console.error("Error exporting stocktaking area:", error);
+            const errorMessage = extractErrorMessage(error, "Xuất phiếu thất bại, vui lòng thử lại!");
+            window.showToast?.(errorMessage, "error");
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen">
@@ -812,6 +839,17 @@ const StocktakingAreaDetailForOther = () => {
                                     Chi tiết đơn kiểm kê kho
                                 </h1>
                             </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {stocktakingAreas.length > 0 && stocktakingAreas[0]?.stocktakingAreaId && (
+                                <Button
+                                    onClick={() => handleExportReceipt(stocktakingAreas[0].stocktakingAreaId)}
+                                    className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 h-[38px] px-4 text-white"
+                                >
+                                    <Printer className="w-4 h-4" />
+                                    Xuất Phiếu
+                                </Button>
+                            )}
                         </div>
                     </div>
                 </div>

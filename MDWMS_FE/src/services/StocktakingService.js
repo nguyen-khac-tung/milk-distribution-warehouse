@@ -571,3 +571,21 @@ export const updateStocktakingLocationRecords = async (data) => {
         throw error;
     }
 };
+
+// Xuất biên bản kiểm kê khu vực ra file Word
+export const exportStocktakingAreaWord = async (stocktakingAreaId) => {
+    try {
+        if (!stocktakingAreaId) {
+            throw new Error("stocktakingAreaId is required");
+        }
+        const res = await api.get(`/StocktakingArea/ExportStocktakingAreaWord/${stocktakingAreaId}`, {
+            responseType: 'blob'
+        });
+        return res.data;
+    } catch (error) {
+        console.error("Error exporting stocktaking area to Word:", error);
+        throw error;
+    }
+};
+
+
