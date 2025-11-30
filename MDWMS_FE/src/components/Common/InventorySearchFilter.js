@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Search, ChevronDown, ChevronUp, Settings, X, Building2 } from "lucide-react";
+import { Search, ChevronDown, ChevronUp, Settings, X, Building2, ArrowUp, ArrowDown } from "lucide-react";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 
@@ -31,7 +31,14 @@ export default function InventorySearchFilter({
   setSupplierSearchTerm,
   suppliers = [],
   filteredSuppliers = [],
-  reportType = "current" // "current" or "period"
+  reportType = "current", // "current" or "period"
+  // Additional filters for current inventory report
+  quantityRange,
+  setQuantityRange,
+  remainingDaysRange,
+  setRemainingDaysRange,
+  statusFilter,
+  setStatusFilter
 }) {
   const [showSearchFilter, setShowSearchFilter] = useState(defaultOpen);
   const [showTimeRangeFilter, setShowTimeRangeFilter] = useState(false);
@@ -40,6 +47,9 @@ export default function InventorySearchFilter({
   const [supplierDropdownPosition, setSupplierDropdownPosition] = useState({ top: 0, left: 0 });
   const areaFilterRef = useRef(null);
   const [areaDropdownPosition, setAreaDropdownPosition] = useState({ top: 0, left: 0 });
+  const [showStatusFilter, setShowStatusFilter] = useState(false);
+  const statusFilterRef = useRef(null);
+  const [statusDropdownPosition, setStatusDropdownPosition] = useState({ top: 0, left: 0 });
 
   // Calculate dropdown position for fixed positioning
   const updateSupplierPosition = () => {
@@ -56,6 +66,16 @@ export default function InventorySearchFilter({
     if (areaFilterRef.current) {
       const rect = areaFilterRef.current.getBoundingClientRect();
       setAreaDropdownPosition({
+        top: rect.bottom + 4,
+        left: rect.left
+      });
+    }
+  };
+
+  const updateStatusPosition = () => {
+    if (statusFilterRef.current) {
+      const rect = statusFilterRef.current.getBoundingClientRect();
+      setStatusDropdownPosition({
         top: rect.bottom + 4,
         left: rect.left
       });
@@ -90,6 +110,20 @@ export default function InventorySearchFilter({
     }
   }, [showAreaFilter]);
 
+  useEffect(() => {
+    if (showStatusFilter) {
+      updateStatusPosition();
+      const handleScroll = () => updateStatusPosition();
+      const handleResize = () => updateStatusPosition();
+      window.addEventListener('scroll', handleScroll, true);
+      window.addEventListener('resize', handleResize);
+      return () => {
+        window.removeEventListener('scroll', handleScroll, true);
+        window.removeEventListener('resize', handleResize);
+      };
+    }
+  }, [showStatusFilter]);
+
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -103,13 +137,16 @@ export default function InventorySearchFilter({
         setShowSupplierFilter && setShowSupplierFilter(false);
         setSupplierSearchTerm && setSupplierSearchTerm("");
       }
+      if (showStatusFilter && !event.target.closest('.status-filter-dropdown')) {
+        setShowStatusFilter(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showTimeRangeFilter, showAreaFilter, showSupplierFilter]);
+  }, [showTimeRangeFilter, showAreaFilter, showSupplierFilter, showStatusFilter]);
 
   const handleToggle = () => {
     setShowSearchFilter(!showSearchFilter);
@@ -120,14 +157,23 @@ export default function InventorySearchFilter({
       onClearAll();
     } else {
       setSearchQuery("");
-      setTimeRange("week");
-      setAreaId("");
+      setTimeRange && setTimeRange("week");
+      setAreaId && setAreaId("");
       setSupplierFilter && setSupplierFilter("");
       setSupplierSearchTerm && setSupplierSearchTerm("");
+      setQuantityRange && setQuantityRange({ value: "", type: "", min: "", max: "" });
+      setRemainingDaysRange && setRemainingDaysRange({ value: "", type: "", min: "", max: "" });
+      setStatusFilter && setStatusFilter("");
     }
   };
 
-  const hasActiveFilters = searchQuery || (timeRange && timeRange !== "week") || areaId || supplierFilter;
+  const hasActiveFilters = searchQuery ||
+    (timeRange && timeRange !== "week") ||
+    areaId ||
+    supplierFilter ||
+    (quantityRange && quantityRange.value) ||
+    (remainingDaysRange && remainingDaysRange.value !== undefined && remainingDaysRange.value !== "") ||
+    statusFilter;
 
   // const currentTimeRangeLabel = timeRangeOptions.find(opt => opt.value === timeRange)?.label || timeRangeOptions[0].label;
 
@@ -173,9 +219,11 @@ export default function InventorySearchFilter({
 
       {/* Search and Filter Bar */}
       {showSearchFilter && (
-        <div className="bg-gray-50 border-b border-slate-200 px-6 py-4 relative" style={{ overflow: 'visible' }}>
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-2 sm:gap-4 relative" style={{ overflow: 'visible' }}>
+        <div className="bg-gray-50 border-b border-slate-200 px-6 py-2 relative" style={{ overflow: 'visible' }}>
+          <div className="flex flex-row gap-4 items-start">
+            <div className="flex flex-col gap-1 flex-1">
+              {/* First Row: Search and Supplier Filter */}
+              <div className="flex flex-wrap items-center gap-[30px] relative" style={{ overflow: 'visible' }}>
               {/* Search Bar */}
               <div className={`relative ${searchWidth}`}>
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -385,9 +433,271 @@ export default function InventorySearchFilter({
               )}
             </div>
 
-            {/* Clear Filters Button */}
+              {/* Second Row: Additional Filters for Current Inventory Report */}
+              {reportType === "current" && (
+                <div className="flex flex-wrap items-center gap-[30px] mt-1">
+                  {/* Quantity Range Filter */}
+                  <div className="flex items-center gap-[10px]">
+                    <label className="text-sm font-medium text-slate-700 whitespace-nowrap">Số lượng thùng:</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        placeholder="Nhập số lượng"
+                        min="0"
+                        value={quantityRange?.value || ""}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value === "" || (parseFloat(value) >= 0 && !isNaN(value))) {
+                            const numValue = value === "" ? "" : parseFloat(value);
+                            if (numValue === "") {
+                              setQuantityRange && setQuantityRange({ value: "", type: "", min: "", max: "" })
+                            } else {
+                              // Giữ nguyên type nếu đã có, nếu không thì mặc định là "below"
+                              const currentType = quantityRange?.type || "below";
+                              if (currentType === "below") {
+                                setQuantityRange && setQuantityRange({ 
+                                  value: value, 
+                                  type: "below",
+                                  min: "1", 
+                                  max: value 
+                                })
+                              } else {
+                                setQuantityRange && setQuantityRange({ 
+                                  value: value, 
+                                  type: "above",
+                                  min: value, 
+                                  max: "" 
+                                })
+                              }
+                            }
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+                            e.preventDefault();
+                          }
+                        }}
+                        className="w-32 px-2 h-[38px] text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      />
+                      {quantityRange?.value && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentType = quantityRange?.type || "below";
+                            const newType = currentType === "below" ? "above" : "below";
+                            const numValue = parseFloat(quantityRange.value);
+                            if (newType === "below") {
+                              setQuantityRange && setQuantityRange({ 
+                                value: quantityRange.value, 
+                                type: "below",
+                                min: "1", 
+                                max: quantityRange.value 
+                              })
+                            } else {
+                              setQuantityRange && setQuantityRange({ 
+                                value: quantityRange.value, 
+                                type: "above",
+                                min: quantityRange.value, 
+                                max: "" 
+                              })
+                            }
+                          }}
+                          className={`flex items-center justify-center w-[38px] h-[38px] border rounded-md transition-colors ${
+                            quantityRange?.type === "above"
+                              ? 'bg-[#d97706] text-white border-[#d97706] hover:bg-[#d97706]'
+                              : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+                          }`}
+                          title={quantityRange?.type === "above" ? "Trên" : "Dưới"}
+                        >
+                          {quantityRange?.type === "above" ? (
+                            <ArrowUp className="h-4 w-4" />
+                          ) : (
+                            <ArrowDown className="h-4 w-4" />
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Remaining Days Range Filter */}
+                  <div className="flex items-center gap-[10px]">
+                    <label className="text-sm font-medium text-slate-700 whitespace-nowrap">Hạn sử dụng còn (ngày):</label>
+                    <div className="flex items-center gap-[10px]">
+                      <input
+                        type="number"
+                        placeholder="Nhập số ngày"
+                        value={remainingDaysRange?.value !== undefined ? remainingDaysRange.value : ""}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value === "" || (!isNaN(value) && value !== '-')) {
+                            const numValue = value === "" ? "" : parseFloat(value);
+                            if (numValue === "") {
+                              setRemainingDaysRange && setRemainingDaysRange({ value: "", type: "", min: "", max: "" })
+                            } else {
+                              // Giữ nguyên type nếu đã có, nếu không thì mặc định là "below"
+                              const currentType = remainingDaysRange?.type || "below";
+                              if (currentType === "below") {
+                                setRemainingDaysRange && setRemainingDaysRange({ 
+                                  value: value, 
+                                  type: "below",
+                                  min: "", 
+                                  max: value 
+                                })
+                              } else {
+                                setRemainingDaysRange && setRemainingDaysRange({ 
+                                  value: value, 
+                                  type: "above",
+                                  min: value, 
+                                  max: "" 
+                                })
+                              }
+                            }
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'e' || e.key === 'E' || e.key === '+') {
+                            e.preventDefault();
+                          }
+                        }}
+                        className="w-32 px-2 h-[38px] text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      />
+                      {remainingDaysRange?.value !== undefined && remainingDaysRange.value !== "" && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentType = remainingDaysRange?.type || "below";
+                            const newType = currentType === "below" ? "above" : "below";
+                            if (newType === "below") {
+                              setRemainingDaysRange && setRemainingDaysRange({ 
+                                value: remainingDaysRange.value, 
+                                type: "below",
+                                min: "", 
+                                max: remainingDaysRange.value 
+                              })
+                            } else {
+                              setRemainingDaysRange && setRemainingDaysRange({ 
+                                value: remainingDaysRange.value, 
+                                type: "above",
+                                min: remainingDaysRange.value, 
+                                max: "" 
+                              })
+                            }
+                          }}
+                          className={`flex items-center justify-center w-[38px] h-[38px] border rounded-md transition-colors ${
+                            remainingDaysRange?.type === "above"
+                              ? 'bg-[#d97706] text-white border-[#d97706] hover:bg-[#d97706]'
+                              : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+                          }`}
+                          title={remainingDaysRange?.type === "above" ? "Trên" : "Dưới"}
+                        >
+                          {remainingDaysRange?.type === "above" ? (
+                            <ArrowUp className="h-4 w-4" />
+                          ) : (
+                            <ArrowDown className="h-4 w-4" />
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Status Filter */}
+                  <div className="flex items-center gap-[10px]">
+                    <label className="text-sm font-medium text-slate-700 whitespace-nowrap">Trạng thái:</label>
+                    <div className="relative status-filter-dropdown" ref={statusFilterRef}>
+                      <button
+                        onClick={() => setShowStatusFilter(!showStatusFilter)}
+                        className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors min-w-0 max-w-48
+                        focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
+                        ${statusFilter
+                            ? 'bg-[#d97706] text-white hover:bg-[#d97706]'
+                            : 'bg-white text-slate-700 hover:bg-white'
+                          }`}
+                      >
+                        <span className="text-sm font-medium truncate">
+                          {statusFilter === "expired"
+                            ? "Hết hạn"
+                            : statusFilter === "expiringSoon"
+                              ? "Sắp hết hạn"
+                              : statusFilter === "valid"
+                                ? "Còn hạn"
+                                : "Tất cả"
+                          }
+                        </span>
+                        <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                      </button>
+
+                      {showStatusFilter && (
+                        <div
+                          className="fixed w-48 bg-white rounded-md shadow-lg border z-[9999] overflow-hidden flex flex-col"
+                          style={{
+                            top: `${statusDropdownPosition.top}px`,
+                            left: `${statusDropdownPosition.left}px`,
+                            maxHeight: '400px'
+                          }}
+                        >
+                          {/* Dropdown List */}
+                          <div className="py-1 overflow-y-auto flex-1 dropdown-scroll" style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 #f1f5f9', maxHeight: '350px' }}>
+                            <button
+                              onClick={() => {
+                                setStatusFilter && setStatusFilter("")
+                                setShowStatusFilter(false)
+                              }}
+                              className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center justify-between"
+                            >
+                              Tất cả
+                              {!statusFilter && <span className="text-[#d97706]">✓</span>}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setStatusFilter && setStatusFilter("expired")
+                                setShowStatusFilter(false)
+                              }}
+                              className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-100 flex items-center justify-between ${statusFilter === "expired"
+                                ? 'bg-[#d97706] text-white hover:bg-[#d97706]'
+                                : 'text-slate-700'
+                                }`}
+                            >
+                              <span>Hết hạn</span>
+                              {statusFilter === "expired" && <span className="text-white">✓</span>}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setStatusFilter && setStatusFilter("expiringSoon")
+                                setShowStatusFilter(false)
+                              }}
+                              className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-100 flex items-center justify-between ${statusFilter === "expiringSoon"
+                                ? 'bg-[#d97706] text-white hover:bg-[#d97706]'
+                                : 'text-slate-700'
+                                }`}
+                            >
+                              <span>Sắp hết hạn</span>
+                              {statusFilter === "expiringSoon" && <span className="text-white">✓</span>}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setStatusFilter && setStatusFilter("valid")
+                                setShowStatusFilter(false)
+                              }}
+                              className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-100 flex items-center justify-between ${statusFilter === "valid"
+                                ? 'bg-[#d97706] text-white hover:bg-[#d97706]'
+                                : 'text-slate-700'
+                                }`}
+                            >
+                              <span>Còn hạn</span>
+                              {statusFilter === "valid" && <span className="text-white">✓</span>}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Clear Filters Button - Positioned between the two rows */}
             {showClearButton && (
-              <div className="flex justify-end lg:justify-start">
+              <div className="flex items-center">
                 <Button
                   onClick={handleClearAll}
                   variant="outline"
