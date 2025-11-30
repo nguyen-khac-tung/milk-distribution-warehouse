@@ -77,5 +77,13 @@ namespace MilkDistributionWarehouse.Controllers
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<StocktakingAreaApprovalResponse>.ToResultOk(stocktakingArea);
         }
+
+        [HttpGet("ExportStocktakingAreaWord/{stocktakingAreaId}")]
+        public async Task<IActionResult> ExportStocktakingAreaWord(Guid stocktakingAreaId)
+        {
+            var (msg, fileBytes, fileName) = await _stocktakingAreaService.ExportStocktakingAreaWord(stocktakingAreaId);
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+            return File(fileBytes, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", fileName);
+        }
     }
 }
