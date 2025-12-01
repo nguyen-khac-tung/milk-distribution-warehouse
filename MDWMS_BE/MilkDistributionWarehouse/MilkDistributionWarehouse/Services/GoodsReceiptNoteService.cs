@@ -15,6 +15,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, GoodsReceiptNoteDto?)> GetGRNByPurchaseOrderId(string purchaseOrderId);
         Task<(string, GoodsReceiptNoteDto?)> CreateGoodsReceiptNote(GoodsReceiptNoteCreate create, int? userId);
         Task<(string, T?)> UpdateGRNStatus<T>(T update, int? userId) where T : GoodsReceiptNoteUpdateStatus;
+        Task<(string, byte[]?, string?)> ExportGoodsReceiptNoteWord(string purchaseOrderId);
     }
 
     public class GoodsReceiptNoteService : IGoodsReceiptNoteService
@@ -29,6 +30,7 @@ namespace MilkDistributionWarehouse.Services
         private readonly IInventoryLedgerService _inventoryLedgerService;
         private readonly IStocktakingSheetRepository _stocktakingSheetRepository;
         private readonly INotificationService _notificationService;
+        private readonly IWebHostEnvironment _env;
 
         public GoodsReceiptNoteService(IGoodsReceiptNoteRepository goodsReceiptNoteRepository,
             IMapper mapper, IPurchaseOrderDetailRepository purchaseOrderDetailRepository,
@@ -37,7 +39,7 @@ namespace MilkDistributionWarehouse.Services
             IPurchaseOrderRepositoy purchaseOrderRepository,
             IInventoryLedgerService inventoryLedgerService,
             IStocktakingSheetRepository stocktakingSheetRepository,
-            INotificationService notificationService)
+            INotificationService notificationService, IWebHostEnvironment env)
         {
             _goodsReceiptNoteRepository = goodsReceiptNoteRepository;
             _mapper = mapper;
@@ -49,6 +51,7 @@ namespace MilkDistributionWarehouse.Services
             _inventoryLedgerService = inventoryLedgerService;
             _stocktakingSheetRepository = stocktakingSheetRepository;
             _notificationService = notificationService;
+            _env = env;
         }
 
         public async Task<(string, GoodsReceiptNoteDto?)> CreateGoodsReceiptNote(GoodsReceiptNoteCreate create, int? userId)
@@ -187,6 +190,59 @@ namespace MilkDistributionWarehouse.Services
             {
                 await _unitOfWork.RollbackTransactionAsync();
                 return ($"{ex.Message}", default);
+            }
+        }
+
+        public async Task<(string, byte[]?, string?)> ExportGoodsReceiptNoteWord(string purchaseOrderId)
+        {
+            var grnDetail = await _goodsReceiptNoteRepository.GetGRNByPurchaseOrderId(purchaseOrderId);
+
+            if (grnDetail == null) return ("Không tìm thấy phiếu nhập kho.".ToMessageForUser(), null, null);
+
+            var simpleData = new Dictionary<string, string>
+            {
+                { "$Ngay_Tao_Phieu", grnDetail.CreatedAt?.Day.ToString("00") ?? "..." },
+                { "$Thang_Tao_Phieu", grnDetail.CreatedAt?.Month.ToString("00") ?? "..." },
+                { "$Nam_Tao_Phieu", grnDetail.CreatedAt?.Year.ToString() ?? "..." },
+                { "$So_Phieu", grnDetail.GoodsReceiptNoteId.ToString() ?? "..." },
+                { "$Nguoi_Giao", grnDetail.PurchaseOder.Supplier.CompanyName ?? "" },
+                { "$Ten_Kho", WarehouseInformation.Name ?? ""},
+                { "$Dia_Chi", WarehouseInformation.Address ?? "" },
+                { "$Theo_So", grnDetail.PurchaseOderId.ToString() ?? "...." },
+                { "$Theo_Ngay", grnDetail.PurchaseOder.CreatedAt?.Day.ToString("00") ?? "..." },
+                { "$Theo_Thang", grnDetail.PurchaseOder.CreatedAt?.Month.ToString("00") ?? "..."},
+                { "$Theo_Nam", grnDetail.PurchaseOder.CreatedAt?.Year.ToString() ?? "..."}
+            };
+
+            var tableData = new List<Dictionary<string, string>>();
+            int stt = 1;
+            if (grnDetail.GoodsReceiptNoteDetails != null)
+            {
+                foreach (var grnd in grnDetail.GoodsReceiptNoteDetails)
+                {
+                    tableData.Add(new Dictionary<string, string>
+                    {
+                        { "$STT", stt++.ToString() },
+                        { "$Ten_Hang_Hoa", grnd.Goods.GoodsName ?? "" },
+                        { "$Ma_Hang_Hoa", grnd.Goods.GoodsCode ?? "" },
+                        { "$Don_Vi_Tinh", "Thùng"},
+                        { "$So_Luong", grnd.ExpectedPackageQuantity?.ToString() ?? "0" }
+                    });
+                }
+            }
+
+            string templatePath = Path.Combine(_env.ContentRootPath, "Templates", "phieu-nhap-kho.docx");
+
+            try
+            {
+                var fileBytes = WordExportUtility.FillTemplate(templatePath, simpleData, tableData);
+                string fileName = $"Phieu_Nhap_Kho_{grnDetail.GoodsReceiptNoteId}.docx";
+
+                return ("", fileBytes, fileName);
+            }
+            catch (Exception ex)
+            {
+                return ($"Xảy ra lỗi khi xuất file.".ToMessageForUser(), null, null);
             }
         }
 

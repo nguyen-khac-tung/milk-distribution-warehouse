@@ -282,4 +282,12 @@
         public const int LowStockThreshold = 10;       // Cảnh báo dưới 10 thùng
     }
 
+    /// <summary>
+    /// Địa chỉ của kho phân phối sữa
+    /// </summary>
+    public static class WarehouseInformation
+    {
+        public const string Name = "Kho Phân Phối Sữa";
+        public const string Address = "Hà Nội";
+    }
 }

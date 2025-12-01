@@ -13,6 +13,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<List<Guid>> GetAreaIdsBySheetId(string stocktakingSheetId);
         Task<List<StocktakingArea>> GetStocktakingAreasByStocktakingSheetId(string stocktakingSheetId);
         Task<StocktakingArea?> GetStocktakingAreaByStocktakingAreaId(Guid stocktakingAreaId);
+        Task<StocktakingArea?> GetStocktakingAreaByStockAreaId(Guid stocktakingAreaId);
         Task<int?> CreateStocktakingAreaBulk(List<StocktakingArea> creates);
         Task<int> UpdateStocktakingArea(StocktakingArea stocktakingArea);
         Task<int?> UpdateStocktakingAreaBulk(List<StocktakingArea> updates);
@@ -37,6 +38,14 @@ namespace MilkDistributionWarehouse.Repositories
                 .Include(sa => sa.StocktakingSheet)
                 .Include(sa => sa.Area)
                 .Include(sa => sa.StocktakingLocations)
+                .FirstOrDefaultAsync(sa => sa.StocktakingAreaId == stocktakingAreaId);
+        }
+
+        public async Task<StocktakingArea?> GetStocktakingAreaByStockAreaId(Guid stocktakingAreaId)
+        {
+            return await _context.StocktakingAreas
+                .Include(sa => sa.StocktakingSheet)
+                .ThenInclude(sa => sa.CreatedByNavigation)
                 .FirstOrDefaultAsync(sa => sa.StocktakingAreaId == stocktakingAreaId);
         }
 

@@ -822,6 +822,9 @@ export default function OrdersPage({ onClose }) {
                           )}
                         </div>
                       </TableHead>
+                      <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center min-w-[120px]">
+                        {activeOrderType === "purchase" ? "Ngày nhập" : "Ngày xuất"}
+                      </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center min-w-[140px]">
                         Đơn vị/thùng
                       </TableHead>
@@ -844,9 +847,6 @@ export default function OrdersPage({ onClose }) {
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center min-w-[110px]">
                         Đơn vị tính
-                      </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center min-w-[120px]">
-                        {activeOrderType === "purchase" ? "Ngày nhập" : "Ngày xuất"}
                       </TableHead>
                     </TableRow>
                   </TableHeader>
@@ -882,6 +882,12 @@ export default function OrdersPage({ onClose }) {
                               </p>
                             </TableCell>
                             <TableCell className="px-6 py-4 text-center text-slate-700">
+                              {activeOrderType === "purchase"
+                                ? (order.receiptDate ? dayjs(order.receiptDate).format('DD/MM/YYYY') : '-')
+                                : (order.issueDate ? dayjs(order.issueDate).format('DD/MM/YYYY') : '-')
+                              }
+                            </TableCell>
+                            <TableCell className="px-6 py-4 text-center text-slate-700">
                               {order.unitPerPackage || '-'}
                             </TableCell>
                             <TableCell className="px-6 py-4 text-center text-slate-700">
@@ -892,12 +898,6 @@ export default function OrdersPage({ onClose }) {
                             </TableCell>
                             <TableCell className="px-6 py-4 text-center text-slate-700">
                               {order.unitOfMeasure || '-'}
-                            </TableCell>
-                            <TableCell className="px-6 py-4 text-center text-slate-700">
-                              {activeOrderType === "purchase"
-                                ? (order.receiptDate ? dayjs(order.receiptDate).format('DD/MM/YYYY') : '-')
-                                : (order.issueDate ? dayjs(order.issueDate).format('DD/MM/YYYY') : '-')
-                              }
                             </TableCell>
                           </TableRow>
                         )
