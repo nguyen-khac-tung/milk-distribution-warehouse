@@ -41,8 +41,13 @@ const RoleBasedRedirect = () => {
 
     // Định nghĩa trang mặc định cho từng role
     const getDefaultRoute = () => {
-        // Admin và Business Owner -> Dashboard
-        if (isAdministrator || isBusinessOwner) {
+        // Admin -> Accounts (trang quản lý tài khoản)
+        if (isAdministrator) {
+            return '/accounts';
+        }
+
+        // Business Owner -> Dashboard
+        if (isBusinessOwner) {
             return '/dashboard';
         }
 
@@ -68,6 +73,7 @@ const RoleBasedRedirect = () => {
 
         // Fallback: kiểm tra permission có sẵn
         const availableRoutes = [
+            { path: '/accounts', permission: 'ACCOUNT_VIEW' },
             { path: '/dashboard', permission: 'DASHBOARD_VIEW' },
             { path: '/reports/orders', permission: 'REPORT_VIEW' }
         ];
