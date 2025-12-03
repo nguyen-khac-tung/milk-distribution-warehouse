@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.Entities;
+using MilkDistributionWarehouse.Utilities;
 
 namespace MilkDistributionWarehouse.Repositories
 {
@@ -47,7 +48,7 @@ namespace MilkDistributionWarehouse.Repositories
         {
             return await _context.Batchs
                 .Where(b => b.GoodsId == goodsId 
-                    && b.ExpiryDate > DateOnly.FromDateTime(DateTime.Now) 
+                    && b.ExpiryDate > DateOnly.FromDateTime(DateTimeUtility.Now()) 
                     && b.Status == CommonStatus.Active)
                 .OrderByDescending(b => b.ExpiryDate)
                 .AsNoTracking()
@@ -88,7 +89,7 @@ namespace MilkDistributionWarehouse.Repositories
 
         public async Task<List<Batch>> GetExpiringBatches(int daysThreshold)
         {
-            var today = DateOnly.FromDateTime(DateTime.Now);
+            var today = DateOnly.FromDateTime(DateTimeUtility.Now());
             var targetDate = today.AddDays(daysThreshold);
 
             return await _context.Batchs

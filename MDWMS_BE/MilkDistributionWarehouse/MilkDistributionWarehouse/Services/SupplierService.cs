@@ -138,7 +138,7 @@ namespace MilkDistributionWarehouse.Services
             supplierExist.ContactPersonName = update.ContactPersonName;
             supplierExist.ContactPersonPhone = update.ContactPersonPhone;
             supplierExist.ContactPersonEmail = update.ContactPersonEmail;
-            supplierExist.UpdatedAt = DateTime.Now;
+            supplierExist.UpdatedAt = DateTimeUtility.Now();
 
             var updateResult = await _supplierRepository.UpdateSupplier(supplierExist);
 
@@ -169,7 +169,7 @@ namespace MilkDistributionWarehouse.Services
             }
 
             supplierExist.Status = update.Status;
-            supplierExist.UpdatedAt = DateTime.Now;
+            supplierExist.UpdatedAt = DateTimeUtility.Now();
 
             var updateStatusResult = await _supplierRepository.UpdateSupplier(supplierExist);
             if (updateStatusResult == null)
@@ -195,7 +195,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Không thể xoá nhà cung cấp do đang có sản phẩm đang hoạt động hoặc vô hiệu hoá.".ToMessageForUser(), new SupplierDetail());
 
             supplierExist.Status = CommonStatus.Deleted;
-            supplierExist.UpdatedAt = DateTime.Now;
+            supplierExist.UpdatedAt = DateTimeUtility.Now();
 
             var deleteResult = await _supplierRepository.UpdateSupplier(supplierExist);
             if (deleteResult == null) return ("Xoá nhà cung cấp thất bại.".ToMessageForUser(), new SupplierDetail());

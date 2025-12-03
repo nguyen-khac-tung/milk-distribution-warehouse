@@ -55,7 +55,7 @@ namespace MilkDistributionWarehouse.Services
         {
             if (!fromDate.HasValue && !toDate.HasValue)
             {
-                var now = DateTime.Now;
+                var now = DateTimeUtility.Now();
                 fromDate = new DateTime(now.Year, now.Month, 1);
                 toDate = now;
             }
@@ -72,7 +72,7 @@ namespace MilkDistributionWarehouse.Services
         {
             if (!fromDate.HasValue && !toDate.HasValue)
             {
-                var now = DateTime.Now;
+                var now = DateTimeUtility.Now();
                 fromDate = new DateTime(now.Year, now.Month, 1);
                 toDate = now;
             }
@@ -89,7 +89,7 @@ namespace MilkDistributionWarehouse.Services
         {
             if (!fromDate.HasValue && !toDate.HasValue)
             {
-                var now = DateTime.Now;
+                var now = DateTimeUtility.Now();
                 fromDate = new DateTime(now.Year, now.Month, 1);
                 toDate = now;
             }

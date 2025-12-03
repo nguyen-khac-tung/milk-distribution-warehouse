@@ -157,7 +157,7 @@ namespace MilkDistributionWarehouse.Services
             {
                 await _unitOfWork.BeginTransactionAsync();
 
-                if (create.StartTime <= DateTime.Now)
+                if (create.StartTime <= DateTimeUtility.Now())
                     throw new Exception("Thời gian bắt đầu phải là thời gian trong tương lai.".ToMessageForUser());
 
                 var isDuplicationStartTime = await _stocktakingSheetRepository.IsDuplicationStartTimeStocktakingSheet(null, create.StartTime);
@@ -209,7 +209,7 @@ namespace MilkDistributionWarehouse.Services
             if (!string.IsNullOrEmpty(update.Note))
                 stocktakingSheetExist.Note = update.Note;
 
-            stocktakingSheetExist.UpdateAt = DateTime.Now;
+            stocktakingSheetExist.UpdateAt = DateTimeUtility.Now();
             var resultUpdate = await _stocktakingSheetRepository.UpdateStockingtakingSheet(stocktakingSheetExist);
             if (resultUpdate == 0)
                 return ("Cập nhật phiếu kiểm kê thất bại.".ToMessageForUser(), default);
@@ -326,7 +326,7 @@ namespace MilkDistributionWarehouse.Services
                 if (stocktakingPallet.ActualPackageQuantity.HasValue)
                 {
                     pallet.PackageQuantity = stocktakingPallet.ActualPackageQuantity.Value;
-                    pallet.UpdateAt = DateTime.Now;
+                    pallet.UpdateAt = DateTimeUtility.Now();
 
                     if (pallet.PackageQuantity < 0)
                         return $"Số lượng pallet {stocktakingPallet.PalletId} không được âm.".ToMessageForUser();
@@ -338,7 +338,7 @@ namespace MilkDistributionWarehouse.Services
                             return ("Cập nhật trạng thái vị trí khi pallet hết hàng thất bại.".ToMessageForUser());
                         pallet.Status = CommonStatus.Deleted;
                     }
-                    pallet.UpdateAt = DateTime.Now;
+                    pallet.UpdateAt = DateTimeUtility.Now();
 
                     var updatedPallet = await _palletRepository.UpdatePallet(pallet);
                     if (updatedPallet == null)
@@ -374,7 +374,7 @@ namespace MilkDistributionWarehouse.Services
         private bool IsBeforeEditDeadline(DateTime? startTime)
         {
             if (!startTime.HasValue) return false;
-            return DateTime.Now < startTime.Value.AddHours(-_hoursBeforeStartTime);
+            return DateTimeUtility.Now() < startTime.Value.AddHours(-_hoursBeforeStartTime);
         }
 
         private bool IsWarehouseManager(StocktakingSheet sheet, int? userId)
@@ -457,9 +457,9 @@ namespace MilkDistributionWarehouse.Services
             if (!IsWarehouseStaff(sheet, userId))
                 return "Bạn không có quyền thực hiện chức năng cập nhật trạng thái trong phiếu kiểm kê.".ToMessageForUser();
 
-            //if (sheet.StartTime.HasValue && DateTime.Now < sheet.StartTime.Value)
+            //if (sheet.StartTime.HasValue && DateTimeUtility.Now() < sheet.StartTime.Value)
             //{
-            //    var remaining = sheet.StartTime.Value - DateTime.Now;
+            //    var remaining = sheet.StartTime.Value - DateTimeUtility.Now();
             //    return $"Còn {remaining.Hours} giờ {remaining.Minutes} phút nữa đến thời gian bắt đầu kiểm kê.".ToMessageForUser();
             //}
 
@@ -524,7 +524,7 @@ namespace MilkDistributionWarehouse.Services
             foreach (var area in stocktakingAreas)
             {
                 area.Status = StockAreaStatus.Cancelled;
-                area.UpdateAt = DateTime.Now;
+                area.UpdateAt = DateTimeUtility.Now();
             }
 
             var updateAreaResult = await _stocktakingAreaRepository.UpdateStocktakingAreaBulk(stocktakingAreas);
@@ -550,7 +550,7 @@ namespace MilkDistributionWarehouse.Services
             foreach (var location in stocktakingLocations)
             {
                 location.Status = StockLocationStatus.Cancelled;
-                location.UpdateAt = DateTime.Now;
+                location.UpdateAt = DateTimeUtility.Now();
             }
 
             var updateLocationResult = await _stocktakingLocationRepository.UpdateStocktakingLocationBulk(stocktakingLocations);

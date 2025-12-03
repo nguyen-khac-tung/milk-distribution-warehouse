@@ -267,7 +267,7 @@ namespace MilkDistributionWarehouse.Services
             var entity = _mapper.Map<BackOrder>(dto);
             entity.BackOrderId = Guid.NewGuid();
             entity.CreatedBy = userId;
-            entity.CreatedAt = DateTime.Now;
+            entity.CreatedAt = DateTimeUtility.Now();
 
             var (createdBackOrder, isNew, previousQty) = await _backOrderRepository.CreateBackOrder(entity);
             if (createdBackOrder == null)
@@ -304,7 +304,7 @@ namespace MilkDistributionWarehouse.Services
             backOrder.GoodsId = dto.GoodsId;
             backOrder.GoodsPackingId = dto.GoodsPackingId;
             backOrder.PackageQuantity = dto.PackageQuantity;
-            backOrder.UpdateAt = DateTime.Now;
+            backOrder.UpdateAt = DateTimeUtility.Now();
 
             var updated = await _backOrderRepository.UpdateBackOrder(backOrder);
             var updateResponse = await _backOrderRepository.GetBackOrderById(updated.BackOrderId);
@@ -362,7 +362,7 @@ namespace MilkDistributionWarehouse.Services
                     var entity = _mapper.Map<BackOrder>(dto);
                     entity.BackOrderId = Guid.NewGuid();
                     entity.CreatedBy = userId;
-                    entity.CreatedAt = DateTime.Now;
+                    entity.CreatedAt = DateTimeUtility.Now();
 
                     var (createdBackOrder, isNew, previousQty) = await _backOrderRepository.CreateBackOrder(entity);
                     if (createdBackOrder == null)

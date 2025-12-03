@@ -760,11 +760,11 @@ export default function GoodsPage() {
                 <Table className="w-full">
                   <TableHeader>
                     <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-16">
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left min-w-[30px]">
                         STT
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                        <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("goodsCode")}>
+                        <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1 min-w-[140px]" onClick={() => handleSort("goodsCode")}>
                           <span>Mã hàng hóa</span>
                           {sortField === "goodsCode" ? (
                             sortAscending ? (
@@ -791,7 +791,7 @@ export default function GoodsPage() {
                           )}
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left min-w-[120px]">
                         Danh mục
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
@@ -808,7 +808,7 @@ export default function GoodsPage() {
                           )}
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left min-w-[120px]">
                         Đơn vị tính
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-48">
