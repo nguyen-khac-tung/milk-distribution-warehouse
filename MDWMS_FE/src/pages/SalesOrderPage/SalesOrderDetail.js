@@ -332,9 +332,9 @@ const SalesOrderDetail = () => {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
+                <div className="grid grid-cols-1 lg:grid-cols-[2.2fr_0.8fr] gap-6 mt-4">
                     {/* Main Content - Left Side */}
-                    <div className="lg:col-span-2">
+                    <div>
                         <div className="bg-white border-2 border-gray-400 rounded-lg p-6 h-full flex flex-col">
                             {/* Title */}
                             <div className="text-center mb-6">
