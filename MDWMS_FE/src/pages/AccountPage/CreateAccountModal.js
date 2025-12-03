@@ -22,6 +22,7 @@ export default function CreateAccount({ isOpen, onClose, onSuccess }) {
   })
   const [loading, setLoading] = useState(false)
   const [roles, setRoles] = useState([])
+  const [validationErrors, setValidationErrors] = useState({})
 
   // Fetch roles on component mount
   useEffect(() => {
@@ -44,11 +45,36 @@ export default function CreateAccount({ isOpen, onClose, onSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    // Basic validation
-    if (!formData.email || !formData.fullName || !formData.phone || !formData.roleId) {
-      window.showToast("Vui lòng điền đầy đủ thông tin bắt buộc", "error")
+    // Validate all required fields
+    const errors = {}
+
+    if (!formData.email || formData.email.trim() === "") {
+      errors.email = "Vui lòng nhập email"
+    }
+
+    if (!formData.fullName || formData.fullName.trim() === "") {
+      errors.fullName = "Vui lòng nhập họ và tên"
+    }
+
+    if (!formData.phone || formData.phone.trim() === "") {
+      errors.phone = "Vui lòng nhập số điện thoại"
+    }
+
+    if (!formData.address || formData.address.trim() === "") {
+      errors.address = "Vui lòng nhập địa chỉ"
+    }
+
+    if (!formData.roleId || formData.roleId === 0) {
+      errors.roleId = "Vui lòng chọn chức vụ"
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors)
       return
     }
+
+    // Clear validation errors if validation passes
+    setValidationErrors({})
 
     try {
       setLoading(true)
@@ -83,6 +109,7 @@ export default function CreateAccount({ isOpen, onClose, onSuccess }) {
       address: "",
       roleId: 0,
     })
+    setValidationErrors({})
     onClose && onClose()
   }
 
@@ -116,10 +143,17 @@ export default function CreateAccount({ isOpen, onClose, onSuccess }) {
                   type="email"
                   placeholder="Nhập email..."
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, email: e.target.value })
+                    if (validationErrors.email) {
+                      setValidationErrors({ ...validationErrors, email: undefined })
+                    }
+                  }}
                   className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                  required
                 />
+                {validationErrors.email && (
+                  <p className="text-sm text-red-500 font-medium">{validationErrors.email}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -131,10 +165,17 @@ export default function CreateAccount({ isOpen, onClose, onSuccess }) {
                   type="text"
                   placeholder="Nhập họ và tên..."
                   value={formData.fullName}
-                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, fullName: e.target.value })
+                    if (validationErrors.fullName) {
+                      setValidationErrors({ ...validationErrors, fullName: undefined })
+                    }
+                  }}
                   className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                  required
                 />
+                {validationErrors.fullName && (
+                  <p className="text-sm text-red-500 font-medium">{validationErrors.fullName}</p>
+                )}
               </div>
             </div>
 
@@ -180,10 +221,17 @@ export default function CreateAccount({ isOpen, onClose, onSuccess }) {
                   type="tel"
                   placeholder="Nhập số điện thoại..."
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, phone: e.target.value })
+                    if (validationErrors.phone) {
+                      setValidationErrors({ ...validationErrors, phone: undefined })
+                    }
+                  }}
                   className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                  required
                 />
+                {validationErrors.phone && (
+                  <p className="text-sm text-red-500 font-medium">{validationErrors.phone}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -195,9 +243,17 @@ export default function CreateAccount({ isOpen, onClose, onSuccess }) {
                   type="text"
                   placeholder="Nhập địa chỉ..."
                   value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, address: e.target.value })
+                    if (validationErrors.address) {
+                      setValidationErrors({ ...validationErrors, address: undefined })
+                    }
+                  }}
                   className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                 />
+                {validationErrors.address && (
+                  <p className="text-sm text-red-500 font-medium">{validationErrors.address}</p>
+                )}
               </div>
             </div>
 
@@ -209,7 +265,12 @@ export default function CreateAccount({ isOpen, onClose, onSuccess }) {
                 </Label>
                 <CustomDropdown
                   value={formData.roleId}
-                  onChange={(value) => setFormData({ ...formData, roleId: parseInt(value) })}
+                  onChange={(value) => {
+                    setFormData({ ...formData, roleId: parseInt(value) })
+                    if (validationErrors.roleId) {
+                      setValidationErrors({ ...validationErrors, roleId: undefined })
+                    }
+                  }}
                   options={[
                     { value: 0, label: "Chọn chức vụ..." },
                     ...roles.map(role => ({
@@ -219,6 +280,9 @@ export default function CreateAccount({ isOpen, onClose, onSuccess }) {
                   ]}
                   placeholder="Chọn chức vụ..."
                 />
+                {validationErrors.roleId && (
+                  <p className="text-sm text-red-500 font-medium">{validationErrors.roleId}</p>
+                )}
               </div>
             </div>
 

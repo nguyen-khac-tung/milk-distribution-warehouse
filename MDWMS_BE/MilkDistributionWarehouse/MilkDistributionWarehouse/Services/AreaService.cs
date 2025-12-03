@@ -88,7 +88,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Điều kiện bảo quản không tồn tại hoặc đã bị xoá.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
             var entity = _mapper.Map<Area>(dto);
-            entity.CreatedAt = DateTime.Now;
+            entity.CreatedAt = DateTimeUtility.Now();
             entity.Status = CommonStatus.Active;
 
             var createdEntity = await _areaRepository.CreateArea(entity);
@@ -119,7 +119,7 @@ namespace MilkDistributionWarehouse.Services
 
             _mapper.Map(dto, area);
             area.StorageConditionId = dto.StorageConditionId;
-            area.UpdateAt = DateTime.Now;
+            area.UpdateAt = DateTimeUtility.Now();
 
             var updatedEntity = await _areaRepository.UpdateArea(area);
             if (updatedEntity == null)
@@ -141,7 +141,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Không thể xoá khu vực vì đang được sử dụng trong vị trí hoặc kiểm kê.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
             area.Status = CommonStatus.Deleted;
-            area.UpdateAt = DateTime.Now;
+            area.UpdateAt = DateTimeUtility.Now();
 
             var deletedEntity = await _areaRepository.UpdateArea(area);
             if (deletedEntity == null)
@@ -171,7 +171,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Trạng thái khu vực đã ở trạng thái này.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
             area.Status = status;
-            area.UpdateAt = DateTime.Now;
+            area.UpdateAt = DateTimeUtility.Now();
 
             var updated = await _areaRepository.UpdateArea(area);
             if (updated == null)

@@ -31,6 +31,8 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
   const [storageConditions, setStorageConditions] = useState([])
   const [unitMeasures, setUnitMeasures] = useState([])
   const [loadingData, setLoadingData] = useState(false)
+  const [validationErrors, setValidationErrors] = useState({})
+  const [packingErrors, setPackingErrors] = useState({})
 
   // Load data for dropdowns and good details
   useEffect(() => {
@@ -45,6 +47,8 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
         unitMeasureId: 0,
       })
       setGoodsPackingUpdates([{ goodsPackingId: 0, unitPerPackage: "" }])
+      setValidationErrors({})
+      setPackingErrors({})
 
       loadDropdownData().then(() => {
         // Đợi một chút để đảm bảo state đã được update
@@ -81,6 +85,8 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
           unitMeasureId: good.unitMeasureId || 0,
         }
         setFormData(newFormData)
+        setValidationErrors({})
+        setPackingErrors({})
 
         // Load existing goodsPacking data
         if (good.goodsPackings && good.goodsPackings.length > 0) {
@@ -135,6 +141,15 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
   const removePackingItem = (index) => {
     if (goodsPackingUpdates.length > 1) {
       setGoodsPackingUpdates(goodsPackingUpdates.filter((_, i) => i !== index))
+      // Remove error for this index and reindex remaining errors
+      const newPackingErrors = {}
+      goodsPackingUpdates.forEach((_, i) => {
+        if (i !== index && packingErrors[i]) {
+          const newIndex = i > index ? i - 1 : i
+          newPackingErrors[newIndex] = packingErrors[i]
+        }
+      })
+      setPackingErrors(newPackingErrors)
     }
   }
 
@@ -143,37 +158,73 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
       i === index ? { ...item, unitPerPackage: value } : item
     )
     setGoodsPackingUpdates(updatedPackings)
+    // Clear error for this packing item when user starts typing
+    if (packingErrors[index]) {
+      setPackingErrors({ ...packingErrors, [index]: undefined })
+    }
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    // Validate required fields
-    if (!formData.goodsName || !formData.categoryId ||
-      !formData.supplierId || !formData.storageConditionId || !formData.unitMeasureId) {
-      window.showToast("Vui lòng điền đầy đủ thông tin", "error")
+    if (!formData.goodsId) {
+      window.showToast("Không tìm thấy thông tin hàng hóa", "error")
       return
+    }
+
+    // Validate all required fields
+    const errors = {}
+    const packingErrs = {}
+
+    if (!formData.goodsName?.trim()) {
+      errors.goodsName = "Vui lòng nhập tên hàng hóa"
+    }
+
+    if (!formData.categoryId || formData.categoryId === 0) {
+      errors.categoryId = "Vui lòng chọn danh mục"
+    }
+
+    if (!formData.supplierId || formData.supplierId === 0) {
+      errors.supplierId = "Vui lòng chọn nhà cung cấp"
+    }
+
+    if (!formData.storageConditionId || formData.storageConditionId === 0) {
+      errors.storageConditionId = "Vui lòng chọn điều kiện bảo quản"
+    }
+
+    if (!formData.unitMeasureId || formData.unitMeasureId === 0) {
+      errors.unitMeasureId = "Vui lòng chọn đơn vị đo"
     }
 
     // Validate goodsPackingUpdates
+    let hasPackingError = false
+    goodsPackingUpdates.forEach((packing, index) => {
+      if (!packing.unitPerPackage || packing.unitPerPackage === "" || isNaN(packing.unitPerPackage) || parseInt(packing.unitPerPackage) <= 0) {
+        packingErrs[index] = "Vui lòng nhập số lượng hợp lệ (> 0)"
+        hasPackingError = true
+      }
+    })
+
+    if (hasPackingError || goodsPackingUpdates.length === 0) {
+      if (goodsPackingUpdates.length === 0) {
+        errors.packing = "Vui lòng nhập ít nhất một thông tin đóng gói"
+      }
+      setPackingErrors(packingErrs)
+    }
+
+    if (Object.keys(errors).length > 0 || hasPackingError) {
+      setValidationErrors(errors)
+      return
+    }
+
+    // Clear validation errors if validation passes
+    setValidationErrors({})
+    setPackingErrors({})
+
+    // Filter valid packings for submission
     const validPackings = goodsPackingUpdates.filter(packing =>
       packing.unitPerPackage && !isNaN(packing.unitPerPackage) && parseInt(packing.unitPerPackage) > 0
     )
-
-    if (validPackings.length === 0) {
-      window.showToast("Vui lòng nhập ít nhất một thông tin đóng gói hợp lệ", "error")
-      return
-    }
-
-    // Check if all packing items have valid unitPerPackage
-    const hasEmptyPacking = goodsPackingUpdates.some(packing =>
-      !packing.unitPerPackage || packing.unitPerPackage === "" || isNaN(packing.unitPerPackage) || parseInt(packing.unitPerPackage) <= 0
-    )
-
-    if (hasEmptyPacking) {
-      window.showToast("Vui lòng nhập đầy đủ số lượng cho tất cả các thông tin đóng gói", "error")
-      return
-    }
 
     try {
       setLoading(true)
@@ -211,6 +262,8 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
       unitMeasureId: 0,
     })
     setGoodsPackingUpdates([{ goodsPackingId: 0, unitPerPackage: "" }])
+    setValidationErrors({})
+    setPackingErrors({})
     onClose && onClose()
   }
 
@@ -245,10 +298,17 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
                   id="goodsName"
                   placeholder="Nhập tên hàng hóa..."
                   value={formData.goodsName}
-                  onChange={(e) => setFormData({ ...formData, goodsName: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, goodsName: e.target.value })
+                    if (validationErrors.goodsName) {
+                      setValidationErrors({ ...validationErrors, goodsName: undefined })
+                    }
+                  }}
                   className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                  required
                 />
+                {validationErrors.goodsName && (
+                  <p className="text-sm text-red-500 font-medium">{validationErrors.goodsName}</p>
+                )}
               </div>
             </div>
 
@@ -260,7 +320,12 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
                 </Label>
                 <CustomDropdown
                   value={formData.categoryId}
-                  onChange={(value) => setFormData({ ...formData, categoryId: parseInt(value) })}
+                  onChange={(value) => {
+                    setFormData({ ...formData, categoryId: parseInt(value) })
+                    if (validationErrors.categoryId) {
+                      setValidationErrors({ ...validationErrors, categoryId: undefined })
+                    }
+                  }}
                   options={[
                     { value: 0, label: "Chọn danh mục..." },
                     ...categories.map((category) => ({
@@ -271,6 +336,9 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
                   placeholder="Chọn danh mục..."
                   loading={loadingData}
                 />
+                {validationErrors.categoryId && (
+                  <p className="text-sm text-red-500 font-medium">{validationErrors.categoryId}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -279,7 +347,12 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
                 </Label>
                 <CustomDropdown
                   value={formData.supplierId}
-                  onChange={(value) => setFormData({ ...formData, supplierId: parseInt(value) })}
+                  onChange={(value) => {
+                    setFormData({ ...formData, supplierId: parseInt(value) })
+                    if (validationErrors.supplierId) {
+                      setValidationErrors({ ...validationErrors, supplierId: undefined })
+                    }
+                  }}
                   options={[
                     { value: 0, label: "Chọn nhà cung cấp..." },
                     ...suppliers.map((supplier) => ({
@@ -290,6 +363,9 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
                   placeholder="Chọn nhà cung cấp..."
                   loading={loadingData}
                 />
+                {validationErrors.supplierId && (
+                  <p className="text-sm text-red-500 font-medium">{validationErrors.supplierId}</p>
+                )}
               </div>
             </div>
 
@@ -301,7 +377,12 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
                 </Label>
                 <CustomDropdown
                   value={formData.storageConditionId}
-                  onChange={(value) => setFormData({ ...formData, storageConditionId: parseInt(value) })}
+                  onChange={(value) => {
+                    setFormData({ ...formData, storageConditionId: parseInt(value) })
+                    if (validationErrors.storageConditionId) {
+                      setValidationErrors({ ...validationErrors, storageConditionId: undefined })
+                    }
+                  }}
                   options={[
                     { value: 0, label: "Chọn điều kiện bảo quản..." },
                     ...storageConditions.map((condition) => ({
@@ -312,6 +393,9 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
                   placeholder="Chọn điều kiện bảo quản..."
                   loading={loadingData}
                 />
+                {validationErrors.storageConditionId && (
+                  <p className="text-sm text-red-500 font-medium">{validationErrors.storageConditionId}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -320,7 +404,12 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
                 </Label>
                 <CustomDropdown
                   value={formData.unitMeasureId}
-                  onChange={(value) => setFormData({ ...formData, unitMeasureId: parseInt(value) })}
+                  onChange={(value) => {
+                    setFormData({ ...formData, unitMeasureId: parseInt(value) })
+                    if (validationErrors.unitMeasureId) {
+                      setValidationErrors({ ...validationErrors, unitMeasureId: undefined })
+                    }
+                  }}
                   options={[
                     { value: 0, label: "Chọn đơn vị đo..." },
                     ...unitMeasures.map((unit) => ({
@@ -331,6 +420,9 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
                   placeholder="Chọn đơn vị đo..."
                   loading={loadingData}
                 />
+                {validationErrors.unitMeasureId && (
+                  <p className="text-sm text-red-500 font-medium">{validationErrors.unitMeasureId}</p>
+                )}
               </div>
             </div>
 
@@ -354,7 +446,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {goodsPackingUpdates.map((packing, index) => (
                     <div key={index} className="flex items-end gap-2">
-                      <div className="flex-1">
+                      <div className="flex-1 space-y-2">
                         <Label className="text-sm font-medium text-slate-600">
                           Số {unitMeasures.find(unit => unit.unitMeasureId === formData.unitMeasureId)?.name || 'đơn vị'} trên 1 thùng
                         </Label>
@@ -363,9 +455,12 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
                           placeholder="Nhập số lượng..."
                           value={packing.unitPerPackage}
                           onChange={(e) => updatePackingItem(index, e.target.value)}
-                          className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg mt-1"
+                          className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                           min="1"
                         />
+                        {packingErrors[index] && (
+                          <p className="text-sm text-red-500 font-medium">{packingErrors[index]}</p>
+                        )}
                       </div>
                       {goodsPackingUpdates.length > 1 && (
                         <Button
@@ -379,6 +474,10 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
                     </div>
                   ))}
                 </div>
+
+                {validationErrors.packing && (
+                  <p className="text-sm text-red-500 font-medium mt-3">{validationErrors.packing}</p>
+                )}
 
                 <p className="text-xs text-slate-500 mt-3">
                   * Nhập số lượng {unitMeasures.find(unit => unit.unitMeasureId === formData.unitMeasureId)?.name || 'đơn vị'} có trong mỗi thùng đóng gói

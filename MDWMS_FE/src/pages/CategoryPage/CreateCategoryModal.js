@@ -7,7 +7,7 @@ import { Card } from "../../components/ui/card"
 import { Textarea } from "../../components/ui/textarea"
 import { X } from "lucide-react"
 import { createCategory } from "../../services/CategoryService/CategoryServices"
-import { validateAndShowError, extractErrorMessage } from "../../utils/Validation"
+import { extractErrorMessage } from "../../utils/Validation"
 
 export default function CreateCategory({ isOpen, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -15,14 +15,25 @@ export default function CreateCategory({ isOpen, onClose, onSuccess }) {
     description: "",
   })
   const [loading, setLoading] = useState(false)
+  const [validationErrors, setValidationErrors] = useState({})
 
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    // Validate form data using utility function
-    if (!validateAndShowError(formData)) {
+    // Validate form data
+    const errors = {}
+
+    if (!formData.categoryName || formData.categoryName.trim() === "") {
+      errors.categoryName = "Vui lòng nhập tên danh mục"
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors)
       return
     }
+
+    // Clear validation errors if validation passes
+    setValidationErrors({})
 
     try {
       setLoading(true)
@@ -45,6 +56,7 @@ export default function CreateCategory({ isOpen, onClose, onSuccess }) {
       categoryName: "",
       description: "",
     })
+    setValidationErrors({})
     onClose && onClose()
   }
 
@@ -78,10 +90,15 @@ export default function CreateCategory({ isOpen, onClose, onSuccess }) {
                   id="categoryName"
                   placeholder="Nhập tên danh mục..."
                   value={formData.categoryName}
-                  onChange={(e) => setFormData({ ...formData, categoryName: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, categoryName: e.target.value })
+                    setValidationErrors(prev => ({ ...prev, categoryName: '' }))
+                  }}
                   className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                  required
                 />
+                {validationErrors.categoryName && (
+                  <p className="text-sm text-red-500 font-medium">{validationErrors.categoryName}</p>
+                )}
               </div>
 
               {/* Description */}
