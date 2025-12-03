@@ -124,11 +124,11 @@ const PurchaseOrderTable = ({
           <Table className="w-full">
             <TableHeader>
               <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
-                <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-16">
+                <TableHead className="font-semibold text-slate-900 px-4 py-2 text-center w-10">
                   STT
                 </TableHead>
                 <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                  <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("supplierId")}>
+                  <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1 min-w-[140px]" onClick={() => handleSort("supplierId")}>
                     <span>Tên nhà cung cấp</span>
                     {sortField === "supplierId" ? (
                       sortAscending ? (
@@ -175,7 +175,7 @@ const PurchaseOrderTable = ({
                 )}
                 {availableFields.hasArrivalConfirmedByName && (
                   <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                    <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("arrivalConfirmedBy")}>
+                    <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1 min-w-[140px]" onClick={() => handleSort("arrivalConfirmedBy")}>
                       <span>Người xác nhận đến</span>
                       {sortField === "arrivalConfirmedBy" ? (
                         sortAscending ? (
@@ -191,7 +191,7 @@ const PurchaseOrderTable = ({
                 )}
                 {availableFields.hasAssignToName && (
                   <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                    <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("assignTo")}>
+                    <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1 min-w-[100px]" onClick={() => handleSort("assignTo")}>
                       <span>Giao cho</span>
                       {sortField === "assignTo" ? (
                         sortAscending ? (
@@ -206,7 +206,7 @@ const PurchaseOrderTable = ({
                   </TableHead>
                 )}
                 <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                  <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("createdAt")}>
+                  <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1 min-w-[120px]" onClick={() => handleSort("createdAt")}>
                     <span>Thời gian tạo</span>
                     {sortField === "createdAt" ? (
                       sortAscending ? (
@@ -219,7 +219,7 @@ const PurchaseOrderTable = ({
                     )}
                   </div>
                 </TableHead>
-                <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center min-w-[120px]">
                   <span>Trạng thái</span>
                 </TableHead>
                 <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
