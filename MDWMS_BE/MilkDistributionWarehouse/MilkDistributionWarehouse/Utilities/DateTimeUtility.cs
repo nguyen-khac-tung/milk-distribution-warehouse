@@ -4,10 +4,11 @@ namespace MilkDistributionWarehouse.Utilities
 {
     public static class DateTimeUtility
     {
-        
+
         public static DateTime Now()
         {
-            return DateTime.UtcNow;
+            TimeZoneInfo timeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+            return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZone);
         }
     }
 }
