@@ -120,7 +120,7 @@ namespace MilkDistributionWarehouse.Services
             }
 
             categoryExist.Status = update.Status;
-            categoryExist.UpdateAt = DateTime.Now;
+            categoryExist.UpdateAt = DateTimeUtility.Now();
 
             var updateResult = await _categoryRepository.UpdateCategory(categoryExist);
 
@@ -144,7 +144,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Không thể xoá danh mục, danh mục đang được liên kết với sản phẩm".ToMessageForUser(), new CategoryDto());
 
             categoryExist.Status = CommonStatus.Deleted;
-            categoryExist.UpdateAt = DateTime.Now;
+            categoryExist.UpdateAt = DateTimeUtility.Now();
 
             var resultDelete = await _categoryRepository.UpdateCategory(categoryExist);
             if (resultDelete == null)

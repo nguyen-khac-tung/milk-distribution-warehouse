@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.Entities;
+using MilkDistributionWarehouse.Utilities;
 
 namespace MilkDistributionWarehouse.Repositories
 {
@@ -78,7 +79,7 @@ namespace MilkDistributionWarehouse.Repositories
                 if (entity == null) return false;
 
                 entity.Status = CommonStatus.Deleted;
-                entity.UpdateAt = DateTime.Now;
+                entity.UpdateAt = DateTimeUtility.Now();
                 await _context.SaveChangesAsync();
                 return true;
             }

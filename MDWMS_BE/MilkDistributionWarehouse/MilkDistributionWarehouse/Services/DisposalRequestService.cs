@@ -143,7 +143,7 @@ namespace MilkDistributionWarehouse.Services
         {
             if (createDto == null) return ("Data disposal request create is null.", null);
 
-            if (createDto.EstimatedTimeDeparture <= DateOnly.FromDateTime(DateTime.Now))
+            if (createDto.EstimatedTimeDeparture <= DateOnly.FromDateTime(DateTimeUtility.Now()))
                 return ("Ngày xuất hủy không hợp lệ. Vui lòng chọn một ngày trong tương lai.".ToMessageForUser(), null);
 
             if (createDto.DisposalRequestItems.IsNullOrEmpty())
@@ -173,7 +173,7 @@ namespace MilkDistributionWarehouse.Services
         {
             if (updateDto == null) return ("Data disposal request update is null.", null);
 
-            if (updateDto.EstimatedTimeDeparture <= DateOnly.FromDateTime(DateTime.Now))
+            if (updateDto.EstimatedTimeDeparture <= DateOnly.FromDateTime(DateTimeUtility.Now()))
                 return ("Ngày xuất hủy không hợp lệ. Vui lòng chọn một ngày trong tương lai.".ToMessageForUser(), null);
 
             if (updateDto.DisposalRequestItems.IsNullOrEmpty())
@@ -192,7 +192,7 @@ namespace MilkDistributionWarehouse.Services
                 await _unitOfWork.BeginTransactionAsync();
 
                 _mapper.Map(updateDto, existingRequest);
-                existingRequest.UpdateAt = DateTime.Now;
+                existingRequest.UpdateAt = DateTimeUtility.Now();
 
                 var updateDetails = updateDto.DisposalRequestItems;
                 var existingDetails = existingRequest.DisposalRequestDetails.ToList();
@@ -289,7 +289,7 @@ namespace MilkDistributionWarehouse.Services
                     disposalRequest.Status = DisposalRequestStatus.Rejected;
                     disposalRequest.ApprovalBy = userId;
                     disposalRequest.RejectionReason = rejectDto.RejectionReason;
-                    disposalRequest.ApprovalAt = DateTime.Now;
+                    disposalRequest.ApprovalAt = DateTimeUtility.Now();
                 }
 
                 if (updateStatusDto is DisposalRequestApprovalDto)
@@ -299,7 +299,7 @@ namespace MilkDistributionWarehouse.Services
                     disposalRequest.Status = DisposalRequestStatus.Approved;
                     disposalRequest.ApprovalBy = userId;
                     disposalRequest.RejectionReason = "";
-                    disposalRequest.ApprovalAt = DateTime.Now;
+                    disposalRequest.ApprovalAt = DateTimeUtility.Now();
                 }
 
                 if (updateStatusDto is DisposalRequestAssignedForPickingDto assignedDto)
@@ -308,10 +308,10 @@ namespace MilkDistributionWarehouse.Services
                         return ("Chỉ được phân công khi yêu cầu ở trạng thái Đã duyệt hoặc Đã phân công.".ToMessageForUser(), null);
                     disposalRequest.Status = DisposalRequestStatus.AssignedForPicking;
                     disposalRequest.AssignTo = assignedDto.AssignTo;
-                    disposalRequest.AssignAt = DateTime.Now;
+                    disposalRequest.AssignAt = DateTimeUtility.Now();
                 }
 
-                disposalRequest.UpdateAt = DateTime.Now;
+                disposalRequest.UpdateAt = DateTimeUtility.Now();
                 await _disposalRequestRepository.UpdateDisposalRequest(disposalRequest);
                 await _unitOfWork.CommitTransactionAsync();
 

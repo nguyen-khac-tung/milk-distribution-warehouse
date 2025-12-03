@@ -10,6 +10,7 @@ using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 using static MilkDistributionWarehouse.Models.DTOs.PalletDto;
 using static MilkDistributionWarehouse.Models.DTOs.LocationDto;
+using MilkDistributionWarehouse.Utilities;
 
 namespace MilkDistributionWarehouse.Repositories
 {
@@ -780,7 +781,7 @@ namespace MilkDistributionWarehouse.Repositories
             // normalize dates
             if (!fromDate.HasValue && !toDate.HasValue)
             {
-                var now = DateTime.Now;
+                var now = DateTimeUtility.Now();
                 fromDate = new DateTime(now.Year, now.Month, 1);
                 toDate = now;
             }

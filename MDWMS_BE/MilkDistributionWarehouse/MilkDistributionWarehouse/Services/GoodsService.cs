@@ -116,7 +116,7 @@ namespace MilkDistributionWarehouse.Services
                     var packageQuantityOnHand = goods?.Batches.SelectMany(b => b.Pallets)
                                                       .Where(p => p.GoodsPackingId == packing.GoodsPackingId
                                                                 && p.Status == CommonStatus.Active
-                                                                && p.Batch.ExpiryDate >= DateOnly.FromDateTime(DateTime.Now))
+                                                                && p.Batch.ExpiryDate >= DateOnly.FromDateTime(DateTimeUtility.Now()))
                                                       .Sum(p => p.PackageQuantity) ?? 0;
                     var packageQuantityCommitted = goodsCommittedList.Where(g => g.GoodsId == goodsDto.GoodsId
                                                         && g.GoodsPackingId == packing.GoodsPackingId)
@@ -210,7 +210,7 @@ namespace MilkDistributionWarehouse.Services
                     {
                         GoodsId = createResult.GoodsId,
                         GoodPackingId = p.GoodsPackingId,
-                        EventDate = DateTime.Now,
+                        EventDate = DateTimeUtility.Now(),
                         InQty = 0,
                         OutQty = 0,
                         BalanceAfter = 0,
@@ -300,7 +300,7 @@ namespace MilkDistributionWarehouse.Services
                                 {
                                     GoodsId = g.GoodsId,
                                     GoodPackingId = p.GoodsPackingId,
-                                    EventDate = DateTime.Now,
+                                    EventDate = DateTimeUtility.Now(),
                                     InQty = 0,
                                     OutQty = 0,
                                     BalanceAfter = 0,
@@ -406,7 +406,7 @@ namespace MilkDistributionWarehouse.Services
             _cacheService.InvalidateDropdownCache("Goods", "Supplier", goodsExist.SupplierId);
 
             goodsExist.Status = update.Status;
-            goodsExist.UpdateAt = DateTime.Now;
+            goodsExist.UpdateAt = DateTimeUtility.Now();
 
             var updateResult = await _goodRepository.UpdateGoods(goodsExist);
             if (updateResult == null)
@@ -431,7 +431,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Không thể xoá hàng hoá vì đang được sử dụng trong lô hàng, đơn nhập hoặc đơn mua hàng đang hoạt động.".ToMessageForUser(), default);
 
             goodsExist.Status = CommonStatus.Deleted;
-            goodsExist.UpdateAt = DateTime.Now;
+            goodsExist.UpdateAt = DateTimeUtility.Now();
 
             var resultDelete = await _goodRepository.UpdateGoods(goodsExist);
 

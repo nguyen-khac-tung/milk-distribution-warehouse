@@ -95,7 +95,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Kiểm kê vị trí không tồn tại trong hệ thống.", default);
 
             stocktakingLocationExist.Note = update.Note;
-            stocktakingLocationExist.UpdateAt = DateTime.Now;
+            stocktakingLocationExist.UpdateAt = DateTimeUtility.Now();
 
             var updateResult = await _stocktakingLocationRepository.UpdateStocktakingLocation(stocktakingLocationExist);
             if (updateResult == 0)
@@ -279,7 +279,7 @@ namespace MilkDistributionWarehouse.Services
                     return ("Chỉ được kiểm kê lại vị trí khi kiểm kê vị trí ở trạng thái Đã kiểm.".ToMessageForUser(), default);
 
                 stocktakingLocation.Status = StockLocationStatus.Pending;
-                stocktakingLocation.UpdateAt = DateTime.Now;
+                stocktakingLocation.UpdateAt = DateTimeUtility.Now();
                 stocktakingLocations.Add(stocktakingLocation);
             }
             return ("", stocktakingLocations);

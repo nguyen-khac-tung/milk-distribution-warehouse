@@ -113,7 +113,7 @@ namespace MilkDistributionWarehouse.Services
             if (salesOrderCreate.RetailerId != null && (await _retailerRepository.GetRetailerByRetailerId((int)salesOrderCreate.RetailerId)) == null)
                 return ("Nhà bán lẻ không hợp lệ.".ToMessageForUser(), null);
 
-            if (salesOrderCreate.EstimatedTimeDeparture <= DateOnly.FromDateTime(DateTime.Now))
+            if (salesOrderCreate.EstimatedTimeDeparture <= DateOnly.FromDateTime(DateTimeUtility.Now()))
                 return ("Ngày giao hàng không hợp lệ. Vui lòng chọn một ngày trong tương lai.".ToMessageForUser(), null);
 
             if (salesOrderCreate.SalesOrderItemDetailCreateDtos.IsNullOrEmpty())
@@ -145,7 +145,7 @@ namespace MilkDistributionWarehouse.Services
             if (salesOrderUpdate.RetailerId != null && (await _retailerRepository.GetRetailerByRetailerId((int)salesOrderUpdate.RetailerId)) == null)
                 return ("Nhà bán lẻ không hợp lệ.".ToMessageForUser(), null);
 
-            if (salesOrderUpdate.EstimatedTimeDeparture <= DateOnly.FromDateTime(DateTime.Now))
+            if (salesOrderUpdate.EstimatedTimeDeparture <= DateOnly.FromDateTime(DateTimeUtility.Now()))
                 return ("Ngày giao hàng không hợp lệ. Vui lòng chọn một ngày trong tương lai.".ToMessageForUser(), null);
 
             if (salesOrderUpdate.SalesOrderItemDetailUpdateDtos.IsNullOrEmpty())
@@ -261,7 +261,7 @@ namespace MilkDistributionWarehouse.Services
                     salesOrder.Status = SalesOrderStatus.Rejected;
                     salesOrder.ApprovalBy = userId;
                     salesOrder.RejectionReason = rejectDto.RejectionReason;
-                    salesOrder.ApprovalAt = DateTime.Now;
+                    salesOrder.ApprovalAt = DateTimeUtility.Now();
                 }
 
                 if (salesOrderUpdateStatus is SalesOrderApprovalDto)
@@ -271,7 +271,7 @@ namespace MilkDistributionWarehouse.Services
                     salesOrder.Status = SalesOrderStatus.Approved;
                     salesOrder.ApprovalBy = userId;
                     salesOrder.RejectionReason = "";
-                    salesOrder.ApprovalAt = DateTime.Now;
+                    salesOrder.ApprovalAt = DateTimeUtility.Now();
                 }
 
                 if (salesOrderUpdateStatus is SalesOrderAssignedForPickingDto assignedForPickingDto)
@@ -281,10 +281,10 @@ namespace MilkDistributionWarehouse.Services
                     salesOrder.Status = SalesOrderStatus.AssignedForPicking;
                     salesOrder.AcknowledgedBy = userId;
                     salesOrder.AssignTo = assignedForPickingDto.AssignTo;
-                    salesOrder.AcknowledgeAt = DateTime.Now;
+                    salesOrder.AcknowledgeAt = DateTimeUtility.Now();
                 }
 
-                salesOrder.UpdateAt = DateTime.Now;
+                salesOrder.UpdateAt = DateTimeUtility.Now();
                 await _salesOrderRepository.UpdateSalesOrder(salesOrder);
                 await _unitOfWork.CommitTransactionAsync();
 
