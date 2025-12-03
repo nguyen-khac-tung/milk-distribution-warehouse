@@ -66,7 +66,7 @@ namespace MilkDistributionWarehouse.Services
         public async Task<(string, JwtTokenDto?)> GetNewJwtToken(RefreshTokenDto refreshTokenDto)
         {
             var refreshToken = await _refreshTokenRepository.GetRefreshTokenByToken(refreshTokenDto.Token);
-            if (refreshToken == null || refreshToken.ExpiryDate < DateTime.Now || refreshToken.IsRevoked == true)
+            if (refreshToken == null || refreshToken.ExpiryDate < DateTimeUtility.Now() || refreshToken.IsRevoked == true)
                 return ("Refresh Token is not valid", null);
 
             var jwtDto = new JwtTokenDto
@@ -99,10 +99,10 @@ namespace MilkDistributionWarehouse.Services
             var userOtp = await _userOtpRepository.GetUserOtpByEmail(verifyOtp.Email);
             if (userOtp == null || userOtp.OtpCode != verifyOtp.OtpCode || userOtp.UsedAt != null)
                 return "Mã OTP không hợp lệ. Vui lòng thử lại!".ToMessageForUser();
-            if (userOtp.ExpiresAt < DateTime.Now)
+            if (userOtp.ExpiresAt < DateTimeUtility.Now())
                 return "Mã OTP đã hết hạn. Vui lòng thử lại!".ToMessageForUser();
             
-            userOtp.UsedAt = DateTime.Now;
+            userOtp.UsedAt = DateTimeUtility.Now();
             var msg = await _userOtpRepository.UpdateUserOtp(userOtp);
             if (msg.Length > 0) return msg;
 
@@ -162,7 +162,7 @@ namespace MilkDistributionWarehouse.Services
         {
             var msg = string.Empty;
             var otpCode = new Random().Next(000000, 999999).ToString("D6");
-            var otpExpires = DateTime.Now.AddMinutes(double.Parse(_iConfig["OtpCode:ExpireMinutes"]));
+            var otpExpires = DateTimeUtility.Now().AddMinutes(double.Parse(_iConfig["OtpCode:ExpireMinutes"]));
             var oldUserOtp = await _userOtpRepository.GetUserOtpByEmail(email);
             if (oldUserOtp == null)
             {
@@ -171,7 +171,7 @@ namespace MilkDistributionWarehouse.Services
                     Email = email,
                     OtpCode = otpCode,
                     ExpiresAt = otpExpires,
-                    CreatedAt = DateTime.Now,
+                    CreatedAt = DateTimeUtility.Now(),
                 };
                 msg = await _userOtpRepository.CreateUserOtp(userOtp);
             }
@@ -222,20 +222,20 @@ namespace MilkDistributionWarehouse.Services
                 var newRefreshToken = new RefreshToken
                 {
                     Token = token,
-                    ExpiryDate = DateTime.Now.AddDays(double.Parse(_iConfig["Refresh:ExpireDays"])),
+                    ExpiryDate = DateTimeUtility.Now().AddDays(double.Parse(_iConfig["Refresh:ExpireDays"])),
                     IsRevoked = false,
-                    UpdateAt = DateTime.Now,
+                    UpdateAt = DateTimeUtility.Now(),
                     UserId = user.UserId,
-                    CreateAt = DateTime.Now
+                    CreateAt = DateTimeUtility.Now()
                 };
                 msg = await _refreshTokenRepository.CreateRefreshToken(newRefreshToken);
             }
             else
             {
                 oldRefreshToken.Token = token;
-                oldRefreshToken.ExpiryDate = DateTime.Now.AddDays(double.Parse(_iConfig["Refresh:ExpireDays"]));
+                oldRefreshToken.ExpiryDate = DateTimeUtility.Now().AddDays(double.Parse(_iConfig["Refresh:ExpireDays"]));
                 oldRefreshToken.IsRevoked = false;
-                oldRefreshToken.UpdateAt = DateTime.Now;
+                oldRefreshToken.UpdateAt = DateTimeUtility.Now();
                 msg = await _refreshTokenRepository.UpdateRefreshToken(oldRefreshToken);
             }
 
@@ -267,7 +267,7 @@ namespace MilkDistributionWarehouse.Services
                 issuer: _iConfig["Jwt:Issuer"],
                 audience: _iConfig["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.Now.AddMinutes(double.Parse(_iConfig["Jwt:ExpireMinutes"])),
+                expires: DateTimeUtility.Now().AddMinutes(double.Parse(_iConfig["Jwt:ExpireMinutes"])),
                 signingCredentials: credentials
                 );
 
@@ -276,7 +276,7 @@ namespace MilkDistributionWarehouse.Services
 
         private async Task SendOtpByEmail(string toEmail, string otpCode)
         {
-            string uniqueId = DateTime.Now.Ticks.ToString();
+            string uniqueId = DateTimeUtility.Now().Ticks.ToString();
             string emailBody = $@"
                 <table cellpadding=""0"" cellspacing=""0"" border=""0"">
                     <tr>

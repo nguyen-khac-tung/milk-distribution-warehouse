@@ -1,4 +1,5 @@
 ﻿using MilkDistributionWarehouse.Constants;
+using MilkDistributionWarehouse.Utilities;
 
 namespace MilkDistributionWarehouse.Services
 {
@@ -15,7 +16,7 @@ namespace MilkDistributionWarehouse.Services
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                var now = DateTime.Now;
+                var now = DateTimeUtility.Now();
                 var nextRun = DateTime.Today.AddHours(InventoryConfig.NotificationHour);
                 if (now > nextRun) nextRun = nextRun.AddDays(1);
                 var delay = nextRun - now;

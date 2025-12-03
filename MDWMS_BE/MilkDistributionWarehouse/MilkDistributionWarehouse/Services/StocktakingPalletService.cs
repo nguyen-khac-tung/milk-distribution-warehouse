@@ -119,7 +119,7 @@ namespace MilkDistributionWarehouse.Services
                     return ($"Kệ kê hàng đã được quét ở vị trí có mã vị trí {palletInOther.StocktakingLocation.Location.LocationCode}".ToMessageForUser(), default);
 
                 stocktakingPalletExist.Status = StockPalletStatus.Matched;
-                stocktakingPalletExist.UpdateAt = DateTime.Now;
+                stocktakingPalletExist.UpdateAt = DateTimeUtility.Now();
 
                 var updateResult = await _stocktakingPalletRepository.UpdateStocktakingPallet(stocktakingPalletExist);
                 if (updateResult == 0)
@@ -249,7 +249,7 @@ namespace MilkDistributionWarehouse.Services
                 return "Số lượng thực tế hàng hoá trong kệ kê hàng không được nhỏ hơn 0.";
 
             _mapper.Map(mislocatedStatus, stocktakingPalletExist);
-            stocktakingPalletExist.UpdateAt = DateTime.Now;
+            stocktakingPalletExist.UpdateAt = DateTimeUtility.Now();
 
             return await MarkLocationAsCounted(stocktakingPalletExist);
         }
@@ -260,7 +260,7 @@ namespace MilkDistributionWarehouse.Services
                 return "Số lượng thực tế hàng hoá trong kệ kê hàng không được nhỏ hơn 0.";
 
             _mapper.Map(suplusStatus, stocktakingPalletExist);
-            stocktakingPalletExist.UpdateAt = DateTime.Now;
+            stocktakingPalletExist.UpdateAt = DateTimeUtility.Now();
 
             return await MarkLocationAsCounted(stocktakingPalletExist);
         }
@@ -271,7 +271,7 @@ namespace MilkDistributionWarehouse.Services
                 return "Số lượng thực tế hàng hoá trong kệ kê hàng không được nhỏ hơn 0.";
 
             _mapper.Map(matchStatus, stocktakingPalletExist);
-            stocktakingPalletExist.UpdateAt = DateTime.Now;
+            stocktakingPalletExist.UpdateAt = DateTimeUtility.Now();
 
             return await MarkLocationAsCounted(stocktakingPalletExist);
         }
@@ -279,7 +279,7 @@ namespace MilkDistributionWarehouse.Services
         private async Task<string> HandleStocktakingPalletMissing(StocktakingPallet stocktakingPalletExist, StocktakingPalletMissingStatus missingStatus)
         {
             _mapper.Map(missingStatus, stocktakingPalletExist);
-            stocktakingPalletExist.UpdateAt = DateTime.Now;
+            stocktakingPalletExist.UpdateAt = DateTimeUtility.Now();
 
             return await MarkLocationAsCounted(stocktakingPalletExist);
         }

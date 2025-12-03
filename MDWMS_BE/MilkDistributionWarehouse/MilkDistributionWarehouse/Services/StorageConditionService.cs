@@ -64,7 +64,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Điều kiện lưu trữ này đã tồn tại.".ToMessageForUser(), null);
 
             var entity = _mapper.Map<StorageCondition>(dto);
-            entity.CreatedAt = DateTime.Now;
+            entity.CreatedAt = DateTimeUtility.Now();
             entity.Status = (int)CommonStatus.Active;
 
             var createdEntity = await _storageConditionRepository.CreateStorageCondition(entity);
@@ -95,7 +95,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Điều kiện lưu trữ này đã tồn tại.".ToMessageForUser(), null);
 
             _mapper.Map(dto, entity);
-            entity.UpdateAt = DateTime.Now;
+            entity.UpdateAt = DateTimeUtility.Now();
 
             var updatedEntity = await _storageConditionRepository.UpdateStorageCondition(entity);
             if (updatedEntity == null)
@@ -142,7 +142,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Không thể cập nhật trạng thái vì điều kiện lưu trữ này đang được sử dụng.".ToMessageForUser(), new StorageConditionDto.StorageConditionResponseDto());
 
             entity.Status = status;
-            entity.UpdateAt = DateTime.Now;
+            entity.UpdateAt = DateTimeUtility.Now();
 
             var updated = await _storageConditionRepository.UpdateStorageCondition(entity);
             if (updated == null)

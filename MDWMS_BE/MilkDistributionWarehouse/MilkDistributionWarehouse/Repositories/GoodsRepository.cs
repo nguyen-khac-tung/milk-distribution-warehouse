@@ -5,6 +5,7 @@ using Microsoft.VisualBasic;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
+using MilkDistributionWarehouse.Utilities;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -119,7 +120,7 @@ namespace MilkDistributionWarehouse.Repositories
 
         public async Task<IEnumerable<dynamic>> GetExpiredGoodsForDisposal()
         {
-            var today = DateOnly.FromDateTime(DateTime.Now);
+            var today = DateOnly.FromDateTime(DateTimeUtility.Now());
 
             var groupedPallets = await _warehouseContext.Pallets
                                 .Include(p => p.Batch)
@@ -189,7 +190,7 @@ namespace MilkDistributionWarehouse.Repositories
 
         public async Task<bool> HasGoodsUsedInBatchNotExpiry(int goodsId)
         {
-            return await _warehouseContext.Batchs.AnyAsync(b => b.GoodsId == goodsId && b.ExpiryDate > DateOnly.FromDateTime(DateTime.Now));
+            return await _warehouseContext.Batchs.AnyAsync(b => b.GoodsId == goodsId && b.ExpiryDate > DateOnly.FromDateTime(DateTimeUtility.Now()));
         }
 
         public async Task<bool> IsGoodsUsedInPurchaseOrderWithExcludedStatusesAsync(int goodsId, params int[] excludedStatuses)

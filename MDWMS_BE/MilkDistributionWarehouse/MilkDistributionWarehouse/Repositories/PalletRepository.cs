@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.Entities;
+using MilkDistributionWarehouse.Utilities;
 using System.Threading.Tasks;
 
 namespace MilkDistributionWarehouse.Repositories
@@ -155,13 +156,13 @@ namespace MilkDistributionWarehouse.Repositories
                             p.GoodsPackingId == goodsPackingId &&
                             p.PackageQuantity > 0 &&
                             p.Status == CommonStatus.Active &&
-                            p.Batch.ExpiryDate >= DateOnly.FromDateTime(DateTime.Now))
+                            p.Batch.ExpiryDate >= DateOnly.FromDateTime(DateTimeUtility.Now()))
                 .ToListAsync();
         }
 
         public async Task<List<Pallet>> GetExpiredPalletsForPicking(int? goodsId, int? goodsPackingId)
         {
-            var today = DateOnly.FromDateTime(DateTime.Now);
+            var today = DateOnly.FromDateTime(DateTimeUtility.Now());
             return await _context.Pallets
                 .Include(p => p.Batch)
                 .Where(p => p.Batch.GoodsId == goodsId &&

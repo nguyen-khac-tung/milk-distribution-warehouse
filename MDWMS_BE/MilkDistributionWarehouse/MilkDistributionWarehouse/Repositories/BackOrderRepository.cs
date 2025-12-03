@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.Entities;
+using MilkDistributionWarehouse.Utilities;
 using System.Linq;
 
 namespace MilkDistributionWarehouse.Repositories
@@ -67,7 +68,7 @@ namespace MilkDistributionWarehouse.Repositories
                 .AsNoTracking()
                 .Where(p => p.Batch.GoodsId == goodsId
                         && p.GoodsPackingId == goodsPackingId
-                        && p.Batch.ExpiryDate >= DateOnly.FromDateTime(DateTime.Now)
+                        && p.Batch.ExpiryDate >= DateOnly.FromDateTime(DateTimeUtility.Now())
                         && p.Status == CommonStatus.Active)
                 .SumAsync(p => p.PackageQuantity) ?? 0;
 
@@ -106,7 +107,7 @@ namespace MilkDistributionWarehouse.Repositories
                         && goodsIds.Contains(p.Batch.GoodsId.Value)
                         && p.GoodsPackingId.HasValue
                         && packingIds.Contains(p.GoodsPackingId.Value)
-                        && p.Batch.ExpiryDate >= DateOnly.FromDateTime(DateTime.Now))
+                        && p.Batch.ExpiryDate >= DateOnly.FromDateTime(DateTimeUtility.Now()))
                 .GroupBy(p => new { p.Batch.GoodsId, p.GoodsPackingId })
                 .Select(g => new
                 {
@@ -184,7 +185,7 @@ namespace MilkDistributionWarehouse.Repositories
                 var previousQty = existing.PackageQuantity;
                 var addQty = entity.PackageQuantity ?? 0;
                 existing.PackageQuantity = (existing.PackageQuantity ?? 0) + addQty;
-                existing.UpdateAt = DateTime.Now;
+                existing.UpdateAt = DateTimeUtility.Now();
 
                 _context.BackOrders.Update(existing);
                 await _context.SaveChangesAsync();
