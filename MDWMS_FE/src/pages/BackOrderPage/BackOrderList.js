@@ -766,7 +766,7 @@ export default function BackOrderList() {
                                             </TableHead>
 
                                             {/* Quy cách đóng gói */}
-                                            <TableHead className="font-semibold text-slate-900 px-0.5 py-2 text-left hidden md:table-cell w-[80px]">
+                                            <TableHead className="font-semibold text-slate-900 px-2 py-2 text-left hidden md:table-cell w-[100px]">
                                                 <span className="break-words whitespace-normal">Quy cách đóng gói</span>
                                             </TableHead>
 
@@ -868,7 +868,7 @@ export default function BackOrderList() {
                                                     </TableCell>
 
                                                     {/* Quy cách đóng gói */}
-                                                    <TableCell className="px-0.5 py-4 text-slate-700 hidden md:table-cell w-[80px]">
+                                                    <TableCell className="px-2 py-4 text-slate-700 hidden md:table-cell w-[100px]">
                                                         <span className="break-words whitespace-normal">{backOrder?.unitPerPackage ?? ''}</span>
                                                         {backOrder?.unitMeasureName ? ' ' + backOrder.unitMeasureName : ''}/thùng
                                                     </TableCell>
