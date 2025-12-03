@@ -38,6 +38,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<List<string>> GetExistingGoodsCode(List<string> goodsCode);
         Task<int> CreateGoodsBulk(List<Good> goods);
         Task<bool> IsDuplicationNameAndSupplier(string goodsName, int supplierId);
+        Task<bool> AreActiveGoods(List<PurchaseOrderDetailCreate> purchaseOrderDetails);
     }
     public class GoodsRepository : IGoodsRepository
     {
@@ -258,6 +259,13 @@ namespace MilkDistributionWarehouse.Repositories
             {
                 return 0;
             }
+        }
+
+        public async Task<bool> AreActiveGoods(List<PurchaseOrderDetailCreate> purchaseOrderDetails)
+        {
+            var goodsIds = purchaseOrderDetails.Select(pod => pod.GoodsId).Distinct().ToList();
+            return await _warehouseContext.Goods
+                .AnyAsync(g => goodsIds.Contains(g.GoodsId) && g.Status == CommonStatus.Inactive);
         }
     }
 }
