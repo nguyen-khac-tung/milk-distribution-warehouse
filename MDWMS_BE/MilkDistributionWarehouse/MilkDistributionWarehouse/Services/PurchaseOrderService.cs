@@ -37,11 +37,12 @@ namespace MilkDistributionWarehouse.Services
         private readonly ISalesOrderRepository _saleOrderRepository;
         private readonly ISupplierRepository _supplierRepository;
         private readonly INotificationService _notificationService;
+        private readonly IGoodsRepository _goodRepository;
         public PurchaseOrderService(IPurchaseOrderRepositoy purchaseOrderRepository, IMapper mapper, IPurchaseOrderDetailService purchaseOrderDetailService,
             IPurchaseOrderDetailRepository purchaseOrderDetailRepository, IUnitOfWork unitOfWork, IGoodsReceiptNoteService goodsReceiptNoteService,
             IUserRepository userRepository, IPalletRepository palletRepository,
             ISalesOrderRepository salesOrderRepository, ISupplierRepository supplierRepository, 
-            INotificationService notificationService)
+            INotificationService notificationService, IGoodsRepository goodsRepository)
         {
             _purchaseOrderRepository = purchaseOrderRepository;
             _mapper = mapper;
@@ -54,6 +55,7 @@ namespace MilkDistributionWarehouse.Services
             _saleOrderRepository = salesOrderRepository;
             _supplierRepository = supplierRepository;
             _notificationService = notificationService;
+            _goodRepository = goodsRepository;
         }
 
         private async Task<(string, PageResult<TDto>?)> GetPurchaseOrdersAsync<TDto>(PagedRequest request, int? userId, string? userRole, params int[] excludedStatuses)
@@ -235,6 +237,10 @@ namespace MilkDistributionWarehouse.Services
                 {
                     poDetail.PurchaseOderId = resultPOCreate.PurchaseOderId;
                 }
+
+                var areActiveGoods = await _goodRepository.AreActiveGoods(create.PurchaseOrderDetailCreate);
+                if (areActiveGoods)
+                    throw new Exception("Một hoặc nhiều hàng hoá trong đơn đặt hàng không tồn tại hoặc không hoạt động.".ToMessageForUser());
 
                 var resultPODetailCreate = await _purchaseOrderDetailRepository.CreatePODetailBulk(purchaseOrderDetailCreate);
 

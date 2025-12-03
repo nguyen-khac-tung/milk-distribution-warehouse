@@ -595,7 +595,7 @@ export default function PalletList() {
                                 <TableHeader>
                                     <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
                                         {hasPrintPermission && (
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-12">
+                                            <TableHead className="font-semibold text-slate-900 px-2 py-2 text-center w-10">
                                                 <input
                                                     type="checkbox"
                                                     checked={selectAll}
@@ -604,14 +604,14 @@ export default function PalletList() {
                                                 />
                                             </TableHead>
                                         )}
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-16">
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-2 text-left w-10">
                                             STT
                                         </TableHead>
                                         <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left max-w-[150px]">
                                             Mã Pallet
                                         </TableHead>
                                         <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                                            <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("batchCode")}>
+                                            <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1 min-w-[100px]" onClick={() => handleSort("batchCode")}>
                                                 <span>Mã lô</span>
                                                 {sortField === "batchCode" ? (
                                                     sortAscending ? (
@@ -627,7 +627,7 @@ export default function PalletList() {
                                         <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left min-w-[120px]">
                                             Mã vị trí
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left min-w-[120px]">
+                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left min-w-[160px]">
                                             Số lượng thùng
                                         </TableHead>
                                         <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left min-w-[140px]">

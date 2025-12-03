@@ -713,7 +713,7 @@ export default function BackOrderList() {
                                         <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
 
                                             {/* Checkbox - luôn hiển thị */}
-                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left w-12">
+                                            <TableHead className="font-semibold text-slate-900 px-2 py-2 text-left w-10">
                                                 <Checkbox
                                                     checked={allAvailableSelected}
                                                     onChange={(e) => handleSelectAll(e.target.checked)}
@@ -722,14 +722,14 @@ export default function BackOrderList() {
                                             </TableHead>
 
                                             {/* STT - luôn hiển thị */}
-                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left w-16">
+                                            <TableHead className="font-semibold text-slate-900 px-2 py-2 text-left w-10">
                                                 STT
                                             </TableHead>
 
                                             {/* Tên nhà bán lẻ - rất quan trọng */}
                                             <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left min-w-[220px]">
                                                 <div
-                                                    className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                                    className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1 min-w-[140px]"
                                                     onClick={() => handleSort("retailerName")}
                                                 >
                                                     <span >Tên nhà bán lẻ</span>
@@ -766,12 +766,12 @@ export default function BackOrderList() {
                                             </TableHead>
 
                                             {/* Quy cách đóng gói */}
-                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left hidden md:table-cell min-w-[150px]">
-                                                Quy cách đóng gói
+                                            <TableHead className="font-semibold text-slate-900 px-0.5 py-2 text-left hidden md:table-cell w-[80px]">
+                                                <span className="break-words whitespace-normal">Quy cách đóng gói</span>
                                             </TableHead>
 
                                             {/* Số thùng */}
-                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left hidden md:table-cell w-[90px]">
+                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left hidden md:table-cell w-[120px]">
 
                                                 <div
                                                     className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
@@ -801,7 +801,7 @@ export default function BackOrderList() {
                                             </TableHead>
 
                                             {/* Người tạo - ẩn mobile */}
-                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left hidden lg:table-cell w-[120px]">
+                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left hidden lg:table-cell w-[140px]">
                                                 <div
                                                     className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
                                                     onClick={() => handleSort("createdByName")}
@@ -868,8 +868,8 @@ export default function BackOrderList() {
                                                     </TableCell>
 
                                                     {/* Quy cách đóng gói */}
-                                                    <TableCell className="px-4 py-4 text-slate-700 hidden md:table-cell">
-                                                        {backOrder?.unitPerPackage ?? ''}
+                                                    <TableCell className="px-0.5 py-4 text-slate-700 hidden md:table-cell w-[80px]">
+                                                        <span className="break-words whitespace-normal">{backOrder?.unitPerPackage ?? ''}</span>
                                                         {backOrder?.unitMeasureName ? ' ' + backOrder.unitMeasureName : ''}/thùng
                                                     </TableCell>
 
