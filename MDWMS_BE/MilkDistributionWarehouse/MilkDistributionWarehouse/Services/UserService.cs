@@ -98,6 +98,9 @@ namespace MilkDistributionWarehouse.Services
             var userExist = await _userRepository.GetUserByEmail(userCreate.Email);
             if (userExist != null) return ("Email người dùng đã tồn tại trong hệ thống.".ToMessageForUser(), null);
 
+            userExist = await _userRepository.GetUserByPhone(userCreate.Phone);
+            if (userExist != null) return ("Số điện thoại người dùng đã tồn tại trong hệ thống.".ToMessageForUser(), null);
+
             var userRole = await _roleRepository.GetRoleById(userCreate.RoleId);
             if (userRole == null) return ("Selected role is null.", null);
 
@@ -122,6 +125,10 @@ namespace MilkDistributionWarehouse.Services
             var userDuplicatedEmail = await _userRepository.GetUserByEmail(userUpdate.Email);
             if (userDuplicatedEmail != null && userUpdate.UserId != userDuplicatedEmail.UserId)
                 return ("Email này đã có người dùng khác sử dụng.".ToMessageForUser(), null);
+
+            var userDuplicatedPhone = await _userRepository.GetUserByPhone(userUpdate.Phone);
+            if (userDuplicatedPhone != null && userUpdate.UserId != userDuplicatedPhone.UserId)
+                return ("Số điện thoại này đã có người dùng khác sử dụng.".ToMessageForUser(), null);
 
             var userRole = await _roleRepository.GetRoleById(userUpdate.RoleId);
             if (userRole == null) return ("Selected role is null.", null);

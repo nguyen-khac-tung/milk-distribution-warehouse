@@ -13,7 +13,7 @@ export const Newsletter = () => {
 
             <div className="flex flex-col items-center min-h-0 shrink -mt-4">
                 <div className="login-form-container">
-                    <h2 className="login-main-title">Đăng nhập vào tài khoản của bạn</h2>
+                    <h2 className="login-main-title">Đăng nhập tài khoản</h2>
                     <p className="login-description">Nhập thông tin đăng nhập để truy cập vào không gian làm việc</p>
                     <LoginFormWithLogic
                         input={(props) => (

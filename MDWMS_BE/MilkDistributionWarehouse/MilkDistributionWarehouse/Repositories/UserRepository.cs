@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using DocumentFormat.OpenXml.Spreadsheet;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.Entities;
@@ -11,6 +12,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<User?> GetUserById(int? userId);
         Task<User?> GetUserByIdWithAssociations(int? userId);
         Task<User?> GetUserByEmail(string email);
+        Task<User?> GetUserByPhone(string phone);
         Task<List<User>?> GetUsersByRoleId(int? roleId);
         Task<User?> GetAssignToStockArea(string stocktakingSheetId, int areaId);
         Task<string> CreateUser(User user);
@@ -45,6 +47,13 @@ namespace MilkDistributionWarehouse.Repositories
                 .FirstOrDefaultAsync();
         }
 
+        public async Task<User?> GetUserByPhone(string phone)
+        {
+            if (phone.IsNullOrEmpty()) return null;
+            return await _context.Users
+                .Where(u => u.Phone == phone && u.Status != CommonStatus.Deleted)
+                .FirstOrDefaultAsync();
+        }
         public async Task<User?> GetUserById(int? userId)
         {
             return await _context.Users

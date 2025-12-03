@@ -103,6 +103,9 @@ namespace MilkDistributionWarehouse.Services
             if (updateDto.ExpiryDate <= updateDto.ManufacturingDate)
                 return ("Ngày hết hạn phải sau ngày sản xuất.".ToMessageForUser(), null);
 
+            if (updateDto.ManufacturingDate > DateOnly.FromDateTime(DateTime.Now))
+                return ("Ngày sản xuất phải là ngày trong quá khứ.".ToMessageForUser(), null);
+
             var (msg, isDuplicate) = await _batchRepository.IsBatchCodeDuplicate(updateDto.BatchId, updateDto.GoodsId, updateDto.BatchCode);
             if (msg.Length > 0) return (msg, null);
             if (isDuplicate) return ("Mã lô đã tồn tại trong nhà cung cấp của sản phẩm này.".ToMessageForUser(), null);
