@@ -78,7 +78,7 @@ const SalesOrderTable = ({
                         <TableHeader>
                             <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
                                 {/* STT */}
-                                <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-16">
+                                <TableHead className="font-semibold text-slate-900 px-2 py-2 text-center w-10">
                                     STT
                                 </TableHead>
 
@@ -87,7 +87,7 @@ const SalesOrderTable = ({
                                     className="font-semibold text-slate-900 px-6 py-3 text-left"
                                     onClick={() => handleSort("retailerName")}
                                 >
-                                    <div className="flex items-center space-x-2 cursor-pointer">
+                                    <div className="flex items-center space-x-2 cursor-pointer min-w-[100px]">
                                         <span>Nhà bán lẻ</span>
                                         {sortField === "retailerName" ? (
                                             sortAscending ? (
@@ -131,14 +131,14 @@ const SalesOrderTable = ({
 
                                 {/* Người xác nhận */}
                                 {availableFields.hasAcknowledgedByName && (
-                                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center min-w-[150px]">
                                         Người xác nhận
                                     </TableHead>
                                 )}
 
                                 {/* Giao cho */}
                                 {availableFields.hasAssignToName && (
-                                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center min-w-[100px]">
                                         Giao cho
                                     </TableHead>
                                 )}
@@ -148,7 +148,7 @@ const SalesOrderTable = ({
                                     className="font-semibold text-slate-900 px-6 py-3 text-center"
                                     onClick={() => handleSort("estimatedTimeDeparture")}
                                 >
-                                    <div className="flex items-center justify-center space-x-2 cursor-pointer">
+                                    <div className="flex items-center justify-center space-x-2 cursor-pointer max-w-[100px]">
                                         <span>Thời gian xuất kho</span>
                                         {sortField === "estimatedTimeDeparture" ? (
                                             sortAscending ? (
@@ -182,7 +182,7 @@ const SalesOrderTable = ({
                                 </TableHead>
 
                                 {/* Trạng thái */}
-                                <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                                <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center min-w-[100px]">
                                     Trạng thái
                                 </TableHead>
 
