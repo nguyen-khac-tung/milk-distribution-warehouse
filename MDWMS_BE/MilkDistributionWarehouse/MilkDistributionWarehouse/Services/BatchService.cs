@@ -70,10 +70,10 @@ namespace MilkDistributionWarehouse.Services
             if (createDto.ExpiryDate <= createDto.ManufacturingDate)
                 return ("Ngày hết hạn phải sau ngày sản xuất.".ToMessageForUser(), null);
 
-            if (createDto.ManufacturingDate > DateOnly.FromDateTime(DateTime.Now))
+            if (createDto.ManufacturingDate > DateOnly.FromDateTime(DateTimeUtility.Now()))
                 return ("Ngày sản xuất phải là ngày trong quá khứ.".ToMessageForUser(), null);
 
-            if (createDto.ExpiryDate <= DateOnly.FromDateTime(DateTime.Now))
+            if (createDto.ExpiryDate <= DateOnly.FromDateTime(DateTimeUtility.Now()))
                 return ("Ngày hết hạn phải là ngày trong tương lai.".ToMessageForUser(), null);
 
             var goodsExist = await _goodsRepository.GetGoodsByGoodsId(createDto.GoodsId);
@@ -128,7 +128,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Không thể vô hiệu hóa lô hàng vì đang được sử dụng trên pallet.".ToMessageForUser(), null);
 
             batchExist.Status = updateDto.Status;
-            batchExist.UpdateAt = DateTime.Now;
+            batchExist.UpdateAt = DateTimeUtility.Now();
 
             var result = await _batchRepository.UpdateBatch(batchExist);
             if (result == null)
@@ -147,7 +147,7 @@ namespace MilkDistributionWarehouse.Services
                 return "Không thể xóa lô hàng vì đang được liên kết với pallet.".ToMessageForUser();
 
             batchExist.Status = CommonStatus.Deleted;
-            batchExist.UpdateAt = DateTime.Now;
+            batchExist.UpdateAt = DateTimeUtility.Now();
 
             var result = await _batchRepository.UpdateBatch(batchExist);
             if (result == null)

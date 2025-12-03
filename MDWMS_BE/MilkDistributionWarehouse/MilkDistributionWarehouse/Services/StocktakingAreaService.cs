@@ -366,7 +366,7 @@ namespace MilkDistributionWarehouse.Services
             foreach (var location in stocktakingLocations)
             {
                 location.Status = StockLocationStatus.Completed;
-                location.UpdateAt = DateTime.Now;
+                location.UpdateAt = DateTimeUtility.Now();
             }
         }
 
@@ -400,7 +400,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Nhân viên này đã được phân công kiểm kê ở khu vực khác.".ToMessageForUser(), default);
 
             stocktakingArea.AssignTo = update.AssignTo;
-            stocktakingArea.UpdateAt = DateTime.Now;
+            stocktakingArea.UpdateAt = DateTimeUtility.Now();
 
             var updateResult = await _stocktakingAreaRepository.UpdateStocktakingArea(stocktakingArea);
             if (updateResult == 0) return ("Cập nhật kiểm kê khu vực thất bại.", default);
@@ -696,7 +696,7 @@ namespace MilkDistributionWarehouse.Services
                     return $"Kiểm kê vị trí [{stockLocation.LocationId}] đang ở trạng thái khác trạng thái đã kiểm tra.";
 
                 stockLocation.Status = StockLocationStatus.PendingApproval;
-                stockLocation.UpdateAt = DateTime.Now;
+                stockLocation.UpdateAt = DateTimeUtility.Now();
             }
 
             return message;

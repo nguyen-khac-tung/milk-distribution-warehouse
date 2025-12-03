@@ -131,7 +131,7 @@ namespace MilkDistributionWarehouse.Services
 
             retailerExist.Email = update.Email;
             retailerExist.Phone = update.Phone;
-            retailerExist.UpdatedAt = DateTime.Now;
+            retailerExist.UpdatedAt = DateTimeUtility.Now();
 
             var updateResult = await _retailerRepository.UpdateRetailer(retailerExist);
             if (updateResult == null)
@@ -159,7 +159,7 @@ namespace MilkDistributionWarehouse.Services
                 return (validationMessage.ToMessageForUser(), new RetailerUpdateStatus());
 
             retailerExist.Status = update.Status;
-            retailerExist.UpdatedAt = DateTime.Now;
+            retailerExist.UpdatedAt = DateTimeUtility.Now();
 
             var updateResult = await _retailerRepository.UpdateRetailer(retailerExist);
             if (updateResult == null) return ("Cập nhật trạng thái nhà bán lẻ thất bại.", new RetailerUpdateStatus());
@@ -179,7 +179,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Không thể xoá nhà bán lẻ vì tồn tại đơn mua hàng đang xử lý.".ToMessageForUser(), new RetailerDetail());
 
             retailerExist.Status = CommonStatus.Deleted;
-            retailerExist.UpdatedAt = DateTime.Now;
+            retailerExist.UpdatedAt = DateTimeUtility.Now();
 
             var deleteResult = await _retailerRepository.UpdateRetailer(retailerExist);
             if (deleteResult == null) return ("Xoá nhà bán lẻ thất bại.".ToMessageForUser(), new RetailerDetail());

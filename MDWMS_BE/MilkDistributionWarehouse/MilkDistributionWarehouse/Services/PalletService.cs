@@ -85,7 +85,7 @@ namespace MilkDistributionWarehouse.Services
             var entity = _mapper.Map<Pallet>(dto);
             entity.PalletId = Ulid.NewUlid().ToString();
             entity.CreateBy = userId;
-            entity.CreateAt = DateTime.Now;
+            entity.CreateAt = DateTimeUtility.Now();
             entity.Status = CommonStatus.Inactive;
 
             // Only update location availability when a location is provided
@@ -166,7 +166,7 @@ namespace MilkDistributionWarehouse.Services
                     var entity = _mapper.Map<Pallet>(dto);
                     entity.PalletId = Ulid.NewUlid().ToString();
                     entity.CreateBy = userId;
-                    entity.CreateAt = DateTime.Now;
+                    entity.CreateAt = DateTimeUtility.Now();
                     entity.Status = dto.LocationId.HasValue ? CommonStatus.Active : CommonStatus.Inactive;
 
                     if (dto.LocationId.HasValue)
@@ -240,7 +240,7 @@ namespace MilkDistributionWarehouse.Services
             }
             _mapper.Map(dto, pallet);
 
-            pallet.UpdateAt = DateTime.Now;
+            pallet.UpdateAt = DateTimeUtility.Now();
 
             if (dto.LocationId.HasValue)
                 pallet.Status = CommonStatus.Active;
@@ -272,7 +272,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Không thể xóa pallet còn hàng.".ToMessageForUser(), new PalletDto.PalletResponseDto());
 
             pallet.Status = CommonStatus.Deleted;
-            pallet.UpdateAt = DateTime.Now;
+            pallet.UpdateAt = DateTimeUtility.Now();
 
             if (pallet.LocationId.HasValue)
             {
@@ -340,7 +340,7 @@ namespace MilkDistributionWarehouse.Services
             }
 
             palletExist.Status = update.Status;
-            palletExist.UpdateAt = DateTime.Now;
+            palletExist.UpdateAt = DateTimeUtility.Now();
 
             var updatedPallet = await _palletRepository.UpdatePallet(palletExist);
             if (updatedPallet == null)
@@ -372,7 +372,7 @@ namespace MilkDistributionWarehouse.Services
                     return ("Cập nhật trạng thái vị trí khi pallet hết hàng thất bại.".ToMessageForUser(), new PalletDto.PalletUpdateStatusDto());
                 pallet.Status = CommonStatus.Deleted;
             }
-            pallet.UpdateAt = DateTime.Now;
+            pallet.UpdateAt = DateTimeUtility.Now();
             var updated = await _palletRepository.UpdatePallet(pallet);
             if (updated == null)
                 return ("Update pallet quantity failed.", new PalletDto.PalletUpdateStatusDto());

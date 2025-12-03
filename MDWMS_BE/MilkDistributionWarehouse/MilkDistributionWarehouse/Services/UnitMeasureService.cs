@@ -120,7 +120,7 @@ namespace MilkDistributionWarehouse.Services
             }
 
             unitMeasureExist.Status = update.Status;
-            unitMeasureExist.UpdateAt = DateTime.Now;
+            unitMeasureExist.UpdateAt = DateTimeUtility.Now();
             
             var updateResult = await _unitMeasureRepository.UpdateUnitMeasure(unitMeasureExist);
 
@@ -147,7 +147,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Không thể xoá đơn vị này vì đang được liên kết với sản phẩm được sử dụng".ToMessageForUser(), new UnitMeasureDto());
 
             unitMeasureExist.Status = CommonStatus.Deleted;
-            unitMeasureExist.UpdateAt = DateTime.Now;
+            unitMeasureExist.UpdateAt = DateTimeUtility.Now();
 
             var deleteResult = await _unitMeasureRepository.UpdateUnitMeasure(unitMeasureExist);
             if (deleteResult == null)

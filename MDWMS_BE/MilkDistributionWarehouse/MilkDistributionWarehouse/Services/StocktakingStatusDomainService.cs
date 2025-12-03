@@ -1,6 +1,7 @@
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
+using MilkDistributionWarehouse.Utilities;
 using System;
 using System.Threading.Tasks;
 
@@ -42,7 +43,7 @@ namespace MilkDistributionWarehouse.Services
                 return string.Empty;
 
             stocktakingLocationExist.Status = statusChange;
-            stocktakingLocationExist.UpdateAt = DateTime.Now;
+            stocktakingLocationExist.UpdateAt = DateTimeUtility.Now();
 
             var updateResult = await _stocktakingLocationRepository.UpdateStocktakingLocation(stocktakingLocationExist);
             if (updateResult == 0)
@@ -58,7 +59,7 @@ namespace MilkDistributionWarehouse.Services
                 return "Kiểm kê khu vực trống.";
 
             stocktakingArea.Status = statusChange;
-            stocktakingArea.UpdateAt = DateTime.Now;
+            stocktakingArea.UpdateAt = DateTimeUtility.Now();
 
             var updateResult = await _stocktakingAreaRepository.UpdateStocktakingArea(stocktakingArea);
             if (updateResult == 0)
@@ -77,7 +78,7 @@ namespace MilkDistributionWarehouse.Services
             if (stocktakingArea.Status != statusChange)
                 stocktakingArea.Status = statusChange;
 
-            stocktakingArea.UpdateAt = DateTime.Now;
+            stocktakingArea.UpdateAt = DateTimeUtility.Now();
 
             var updateResult = await _stocktakingAreaRepository.UpdateStocktakingArea(stocktakingArea);
             if (updateResult == 0)
@@ -98,7 +99,7 @@ namespace MilkDistributionWarehouse.Services
             if (!string.IsNullOrEmpty(note))
                 stocktakingSheet.Note = note;
 
-            stocktakingSheet.UpdateAt = DateTime.Now;
+            stocktakingSheet.UpdateAt = DateTimeUtility.Now();
 
             var updateResult = await _stocktakingSheetRepository.UpdateStockingtakingSheet(stocktakingSheet);
             if (updateResult == 0)
@@ -124,7 +125,7 @@ namespace MilkDistributionWarehouse.Services
                 return;
 
             stockSheet.Status = StocktakingStatus.InProgress;
-            stockSheet.UpdateAt = DateTime.Now;
+            stockSheet.UpdateAt = DateTimeUtility.Now();
 
             await _stocktakingSheetRepository.UpdateStockingtakingSheet(stockSheet);
         }

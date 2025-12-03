@@ -67,7 +67,7 @@ namespace MilkDistributionWarehouse.Services
 
             if (salesOrder.AssignTo != userId) return "Người dùng hiện tại không được phân công cho đơn hàng này.".ToMessageForUser();
 
-            //if (salesOrder.EstimatedTimeDeparture > DateOnly.FromDateTime(DateTime.Now))
+            //if (salesOrder.EstimatedTimeDeparture > DateOnly.FromDateTime(DateTimeUtility.Now()))
             //    return "Không tạo được phiếu xuất kho trước ngày dự kiến xuất kho.".ToMessageForUser();
 
             if (salesOrder.Status != SalesOrderStatus.AssignedForPicking)
@@ -133,7 +133,7 @@ namespace MilkDistributionWarehouse.Services
                 await _goodsIssueNoteRepository.CreateGoodsIssueNote(goodsIssueNote);
 
                 salesOrder.Status = SalesOrderStatus.Picking;
-                salesOrder.PickingAt = DateTime.Now;
+                salesOrder.PickingAt = DateTimeUtility.Now();
                 await _salesOrderRepository.UpdateSalesOrder(salesOrder);
 
                 await _unitOfWork.CommitTransactionAsync();
@@ -188,12 +188,12 @@ namespace MilkDistributionWarehouse.Services
                     {
                         issueNoteDetail.Status = IssueItemStatus.PendingApproval;
                         issueNoteDetail.RejectionReason = "";
-                        issueNoteDetail.UpdatedAt = DateTime.Now;
+                        issueNoteDetail.UpdatedAt = DateTimeUtility.Now();
                     }
                 }
 
                 goodsIssueNote.Status = GoodsIssueNoteStatus.PendingApproval;
-                goodsIssueNote.UpdatedAt = DateTime.Now;
+                goodsIssueNote.UpdatedAt = DateTimeUtility.Now();
 
                 await _goodsIssueNoteRepository.UpdateGoodsIssueNote(goodsIssueNote);
                 await _unitOfWork.CommitTransactionAsync();
@@ -227,15 +227,15 @@ namespace MilkDistributionWarehouse.Services
 
                 goodsIssueNote.Status = GoodsIssueNoteStatus.Completed;
                 goodsIssueNote.ApprovalBy = userId;
-                goodsIssueNote.UpdatedAt = DateTime.Now;
+                goodsIssueNote.UpdatedAt = DateTimeUtility.Now();
 
                 goodsIssueNote.SalesOder.Status = SalesOrderStatus.Completed;
-                goodsIssueNote.SalesOder.UpdateAt = DateTime.Now;
+                goodsIssueNote.SalesOder.UpdateAt = DateTimeUtility.Now();
 
                 foreach (var issueNoteDetail in goodsIssueNote.GoodsIssueNoteDetails)
                 {
                     issueNoteDetail.Status = IssueItemStatus.Completed;
-                    issueNoteDetail.UpdatedAt = DateTime.Now;
+                    issueNoteDetail.UpdatedAt = DateTimeUtility.Now();
                 }
 
                 var pickAllocationList = goodsIssueNote.GoodsIssueNoteDetails.SelectMany(g => g.PickAllocations).ToList();
@@ -248,7 +248,7 @@ namespace MilkDistributionWarehouse.Services
                         throw new Exception($"Thao tác thất bại: Kệ kê hàng '{pick.Pallet.PalletId}' không đủ số lượng để trừ kho (cần {pickPackageQuantity}, chỉ có {palletPackageQuantity}).".ToMessageForUser());
 
                     pick.Pallet.PackageQuantity = palletPackageQuantity - pickPackageQuantity;
-                    pick.Pallet.UpdateAt = DateTime.Now;
+                    pick.Pallet.UpdateAt = DateTimeUtility.Now();
                     if (pick.Pallet.PackageQuantity == 0)
                     {
                         pick.Pallet.Status = CommonStatus.Deleted;
