@@ -319,7 +319,7 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
       } else {
         goods.goodsPackingCreates.forEach((packing, packingIndex) => {
           if (!packing.unitPerPackage || packing.unitPerPackage === "" || Number(packing.unitPerPackage) <= 0) {
-            newErrors[`${index}-packing-${packingIndex}-unitPerPackage`] = "Số đơn vị/bao phải lớn hơn 0"
+            newErrors[`${index}-packing-${packingIndex}-unitPerPackage`] = "Số đơn vị/thùng phải lớn hơn 0"
             isValid = false
           }
         })
@@ -987,11 +987,11 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                           <div key={packingIndex} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
                             <div className="flex-1">
                               <Label className="text-xs font-medium text-slate-600 mb-1 block">
-                                Số đơn vị/bao <span className="text-red-500">*</span>
+                                Số đơn vị/thùng <span className="text-red-500">*</span>
                               </Label>
                               <Input
                                 type="number"
-                                placeholder="Nhập số đơn vị/bao..."
+                                placeholder="Nhập số đơn vị/thùng..."
                                 value={packing.unitPerPackage || ""}
                                 onChange={(e) => {
                                   const value = e.target.value
