@@ -145,7 +145,7 @@ namespace MilkDistributionWarehouse.Services
                         throw new Exception(message.ToMessageForUser());
 
                     grn.Status = GoodsReceiptNoteStatus.PendingApproval;
-                    grn.UpdatedAt = DateTime.Now;
+                    grn.UpdatedAt = DateTimeUtility.Now();
                 }
 
                 if (update is GoodsReceiptNoteCompletedDto)
@@ -159,12 +159,12 @@ namespace MilkDistributionWarehouse.Services
 
                     grn.Status = GoodsReceiptNoteStatus.Completed;
                     grn.ApprovalBy = userId;
-                    grn.UpdatedAt = DateTime.Now;
+                    grn.UpdatedAt = DateTimeUtility.Now();
 
                     if (grn.PurchaseOder.Status != PurchaseOrderStatus.Receiving)
                         throw new Exception("Chỉ được chuyển sang trạng thái Đã kiểm tra khi đơn hàng khi đơn hàng ở trạng thái Đang tiếp nhận.");
                     grn.PurchaseOder.Status = PurchaseOrderStatus.Inspected;
-                    grn.PurchaseOder.UpdatedAt = DateTime.Now;
+                    grn.PurchaseOder.UpdatedAt = DateTimeUtility.Now();
                 }
 
                 var updateResult = await _goodsReceiptNoteRepository.UpdateGoodsReceiptNote(grn);

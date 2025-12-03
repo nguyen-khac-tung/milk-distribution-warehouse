@@ -80,7 +80,7 @@ namespace MilkDistributionWarehouse.Services
                         if (ginDetail != null)
                         {
                             ginDetail.Status = IssueItemStatus.Picked;
-                            ginDetail.UpdatedAt = DateTime.Now;
+                            ginDetail.UpdatedAt = DateTimeUtility.Now();
                             await _goodsIssueNoteDetailRepository.UpdateGoodsIssueNoteDetail(ginDetail);
                         }
                     }
@@ -95,7 +95,7 @@ namespace MilkDistributionWarehouse.Services
                         if (dnDetail != null)
                         {
                             dnDetail.Status = DisposalNoteItemStatus.Picked;
-                            dnDetail.UpdatedAt = DateTime.Now;
+                            dnDetail.UpdatedAt = DateTimeUtility.Now();
                             await _disposalNoteDetailRepository.UpdateDisposalNoteDetail(dnDetail);
                         }
                     }

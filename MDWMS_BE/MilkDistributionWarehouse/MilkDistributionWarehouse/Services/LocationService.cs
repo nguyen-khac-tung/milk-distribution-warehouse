@@ -86,7 +86,7 @@ namespace MilkDistributionWarehouse.Services
 
             var entity = _mapper.Map<Location>(dto);
             entity.LocationCode = locationCode;
-            entity.CreatedAt = DateTime.Now;
+            entity.CreatedAt = DateTimeUtility.Now();
             entity.Status = CommonStatus.Active;
 
             var createdEntity = await _locationRepository.CreateLocation(entity);
@@ -123,7 +123,7 @@ namespace MilkDistributionWarehouse.Services
 
             _mapper.Map(dto, locationExists);
             locationExists.LocationCode = locationCode;
-            locationExists.UpdateAt = DateTime.Now;
+            locationExists.UpdateAt = DateTimeUtility.Now();
 
             var updatedEntity = await _locationRepository.UpdateLocation(locationExists);
             if (updatedEntity == null)
@@ -148,7 +148,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Không thể xoá vì vị trí này đang được sử dụng.".ToMessageForUser(), new LocationResponseDto());
 
             locationExists.Status = CommonStatus.Deleted;
-            locationExists.UpdateAt = DateTime.Now;
+            locationExists.UpdateAt = DateTimeUtility.Now();
 
             var deletedEntity = await _locationRepository.UpdateLocation(locationExists);
             if (deletedEntity == null)
@@ -179,7 +179,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Không thể cập nhật trạng thái vì vị trí này đang được sử dụng cho pallet.".ToMessageForUser(), new LocationResponseDto());
 
             location.Status = status;
-            location.UpdateAt = DateTime.Now;
+            location.UpdateAt = DateTimeUtility.Now();
 
             var updatedEntity = await _locationRepository.UpdateLocation(location);
             if (updatedEntity == null)
@@ -278,7 +278,7 @@ namespace MilkDistributionWarehouse.Services
                     var entity = _mapper.Map<Location>(dto);
                     entity.LocationCode = $"{areaExists.AreaCode}-{dto.Rack}-R{dto.Row:D2}-C{dto.Column:D2}";
                     entity.AreaId = dto.AreaId;
-                    entity.CreatedAt = DateTime.Now;
+                    entity.CreatedAt = DateTimeUtility.Now();
                     entity.Status = (int)CommonStatus.Active;
 
                     validLocations.Add(entity);

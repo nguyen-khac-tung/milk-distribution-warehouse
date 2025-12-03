@@ -185,7 +185,7 @@ namespace MilkDistributionWarehouse.Services
             if (user.StocktakingSheets.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử phiếu kiểm kê.".ToMessageForUser();
 
             user.Status = CommonStatus.Deleted;
-            user.UpdateAt = DateTime.Now;
+            user.UpdateAt = DateTimeUtility.Now();
             var msg = await _userRepository.UpdateUser(user);
             if (msg.Length > 0) return "Xoá người dùng thất bại.".ToMessageForUser();
 

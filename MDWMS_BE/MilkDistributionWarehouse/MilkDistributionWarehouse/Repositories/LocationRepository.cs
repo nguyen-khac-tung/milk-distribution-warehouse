@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.Entities;
+using MilkDistributionWarehouse.Utilities;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -157,7 +158,7 @@ namespace MilkDistributionWarehouse.Repositories
                 return false;
 
             location.IsAvailable = isAvailable;
-            location.UpdateAt = DateTime.Now;
+            location.UpdateAt = DateTimeUtility.Now();
 
             _context.Locations.Update(location);
             await _context.SaveChangesAsync();

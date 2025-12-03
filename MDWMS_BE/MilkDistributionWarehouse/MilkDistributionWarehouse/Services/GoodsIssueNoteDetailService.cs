@@ -58,7 +58,7 @@ namespace MilkDistributionWarehouse.Services
 
                 issueNoteDetail.RejectionReason = rePickGoodsIssue.RejectionReason ?? "";
                 issueNoteDetail.Status = IssueItemStatus.Picking;
-                issueNoteDetail.UpdatedAt = DateTime.Now;
+                issueNoteDetail.UpdatedAt = DateTimeUtility.Now();
 
                 foreach (var pickAllocation in issueNoteDetail.PickAllocations)
                 {
@@ -103,7 +103,7 @@ namespace MilkDistributionWarehouse.Services
                 {
                     issueNoteDetail.RejectionReason = rePickGoodsIssueList.First(r => r.GoodsIssueNoteDetailId == issueNoteDetail.GoodsIssueNoteDetailId).RejectionReason ?? "";
                     issueNoteDetail.Status = IssueItemStatus.Picking;
-                    issueNoteDetail.UpdatedAt = DateTime.Now;
+                    issueNoteDetail.UpdatedAt = DateTimeUtility.Now();
 
                     foreach (var pickAllocation in issueNoteDetail.PickAllocations)
                     {
@@ -115,7 +115,7 @@ namespace MilkDistributionWarehouse.Services
                 if (goodsIssueNote != null && goodsIssueNote.Status == GoodsIssueNoteStatus.PendingApproval)
                 {
                     goodsIssueNote.Status = GoodsIssueNoteStatus.Picking;
-                    goodsIssueNote.UpdatedAt = DateTime.Now;
+                    goodsIssueNote.UpdatedAt = DateTimeUtility.Now();
                 }
 
                 await _goodsIssueNoteDetailRepository.UpdateGoodsIssueNoteDetailList(issueNoteDetails);
