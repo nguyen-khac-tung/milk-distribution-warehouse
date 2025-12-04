@@ -158,13 +158,24 @@ const LocationList = () => {
         setTimeout(() => handlePrint(), 100);
     };
 
+    // Normalize function: lowercase, trim, and collapse multiple spaces into one
+    const normalize = (str) => {
+        if (!str) return "";
+        return str
+            .toLowerCase()
+            .trim()
+            .replace(/\s+/g, " "); // gom nhiều space thành 1 space
+    };
+
     const fetchLocations = async (page = 1, pageSize = 10, params = {}) => {
         try {
             setLoading(true);
+            // Normalize search query trước khi gọi API (nhưng vẫn giữ nguyên giá trị trong input khi đang gõ)
+            const normalizedSearch = normalize(params.search || "");
             const res = await getLocations({
                 pageNumber: page,
                 pageSize,
-                search: params.search,
+                search: normalizedSearch,
                 isAvailable: params.filters?.isAvailable,
                 areaId: params.filters?.areaId,
                 status: params.filters?.status,

@@ -37,13 +37,25 @@ const BatchList = () => {
 
     const [totalStats, setTotalStats] = useState({ total: 0, active: 0, inactive: 0 });
 
+    // Normalize function: lowercase, trim, and collapse multiple spaces into one
+    const normalize = (str) => {
+        if (!str) return "";
+        return str
+            .toLowerCase()
+            .trim()
+            .replace(/\s+/g, " "); // gom nhiều space thành 1 space
+    };
+
     const fetchBatches = async (params = {}) => {
         try {
             setLoading(true);
+            // Normalize search query trước khi gọi API
+            const searchValue = params.search !== undefined ? params.search : searchQuery;
+            const normalizedSearch = normalize(searchValue);
             const res = await getBatches({
                 pageNumber: params.pageNumber ?? pagination.pageNumber,
                 pageSize: params.pageSize ?? pagination.pageSize,
-                search: params.search ?? searchQuery,
+                search: normalizedSearch,
                 sortField: params.sortField ?? sortField,
                 sortAscending: typeof params.sortAscending === 'boolean' ? params.sortAscending : sortAscending,
                 status: params.status ?? statusFilter,
@@ -120,9 +132,9 @@ const BatchList = () => {
             { value: "2", label: "Ngừng hoạt động" }
         ]
         if (!statusSearchQuery) return statusOptions
-        const query = statusSearchQuery.toLowerCase()
+        const normalizedQuery = normalize(statusSearchQuery)
         return statusOptions.filter(option =>
-            option.label.toLowerCase().includes(query)
+            normalize(option.label).includes(normalizedQuery)
         )
     }, [statusSearchQuery])
 

@@ -84,6 +84,15 @@ export default function BackOrderList() {
         inactiveCount: 0
     })
 
+    // Normalize function: lowercase, trim, and collapse multiple spaces into one
+    const normalize = (str) => {
+        if (!str) return "";
+        return str
+            .toLowerCase()
+            .trim()
+            .replace(/\s+/g, " "); // gom nhiều space thành 1 space
+    };
+
     // Fetch tổng thống kê (không có search/filter)
     const fetchTotalStats = async () => {
         try {
@@ -120,11 +129,14 @@ export default function BackOrderList() {
         try {
             setLoading(true)
 
+            // Normalize search query trước khi gọi API
+            const searchValue = searchParams.search !== undefined ? searchParams.search : "";
+            const normalizedSearch = normalize(searchValue);
 
             const response = await getBackOrders({
                 pageNumber: searchParams.pageNumber !== undefined ? searchParams.pageNumber : 1,
                 pageSize: searchParams.pageSize !== undefined ? searchParams.pageSize : 10,
-                search: searchParams.search !== undefined ? searchParams.search : "",
+                search: normalizedSearch,
                 sortField: searchParams.sortField || "",
                 sortAscending: searchParams.sortAscending !== undefined ? searchParams.sortAscending : true,
                 filters: {
@@ -250,10 +262,12 @@ export default function BackOrderList() {
 
         const timeoutId = setTimeout(() => {
             setSearchLoading(true)
+            // Normalize search query trước khi gọi API
+            const normalizedSearch = normalize(searchQuery);
             fetchData({
                 pageNumber: 1,
                 pageSize: pagination.pageSize,
-                search: searchQuery || "",
+                search: normalizedSearch,
                 sortField: sortField,
                 sortAscending: sortAscending,
                 status: statusFilter,
@@ -303,10 +317,11 @@ export default function BackOrderList() {
     const handleUpdateSuccess = () => {
         setShowUpdateModal(false)
         setUpdateBackOrderId(null)
+        const normalizedSearch = normalize(searchQuery);
         fetchData({
             pageNumber: pagination.pageNumber,
             pageSize: pagination.pageSize,
-            search: searchQuery || "",
+            search: normalizedSearch,
             sortField: sortField,
             sortAscending: sortAscending,
             status: statusFilter,
@@ -355,10 +370,11 @@ export default function BackOrderList() {
             fetchTotalStats()
 
             // Refresh data after deletion, keeping current page or going to previous page if needed
+            const normalizedSearch = normalize(searchQuery);
             await fetchData({
                 pageNumber: targetPage,
                 pageSize: pagination.pageSize,
-                search: searchQuery || "",
+                search: normalizedSearch,
                 sortField: sortField,
                 sortAscending: sortAscending,
                 status: statusFilter,
@@ -427,10 +443,10 @@ export default function BackOrderList() {
     // Filter retailers based on search query
     const filteredRetailers = useMemo(() => {
         if (!retailerSearchQuery) return retailers
-        const query = retailerSearchQuery.toLowerCase()
+        const normalizedQuery = normalize(retailerSearchQuery)
         return retailers.filter(retailer => {
-            const retailerName = (retailer.companyName || retailer.retailerName || "").toLowerCase()
-            return retailerName.includes(query)
+            const retailerName = normalize(retailer.companyName || retailer.retailerName || "")
+            return retailerName.includes(normalizedQuery)
         })
     }, [retailers, retailerSearchQuery])
 
@@ -442,9 +458,9 @@ export default function BackOrderList() {
             { value: "Unavailable", label: "Không có sẵn" }
         ]
         if (!statusSearchQuery) return statusOptions
-        const query = statusSearchQuery.toLowerCase()
+        const normalizedQuery = normalize(statusSearchQuery)
         return statusOptions.filter(option =>
-            option.label.toLowerCase().includes(query)
+            normalize(option.label).includes(normalizedQuery)
         )
     }, [statusSearchQuery])
 
@@ -465,10 +481,11 @@ export default function BackOrderList() {
         setShowPageSizeFilter(false)
 
         // Refresh data with new page size
+        const normalizedSearch = normalize(searchQuery);
         fetchData({
             pageNumber: 1,
             pageSize: newPageSize,
-            search: searchQuery || "",
+            search: normalizedSearch,
             sortField: sortField,
             sortAscending: sortAscending,
             status: statusFilter,
@@ -983,10 +1000,11 @@ export default function BackOrderList() {
                                             className="h-[38px]"
                                             onClick={() => {
                                                 if (pagination.pageNumber > 1) {
+                                                    const normalizedSearch = normalize(searchQuery);
                                                     fetchData({
                                                         pageNumber: pagination.pageNumber - 1,
                                                         pageSize: pagination.pageSize,
-                                                        search: searchQuery || "",
+                                                        search: normalizedSearch,
                                                         sortField: sortField,
                                                         sortAscending: sortAscending,
                                                         status: statusFilter,
@@ -1008,10 +1026,11 @@ export default function BackOrderList() {
                                             className="h-[38px]"
                                             onClick={() => {
                                                 if (pagination.pageNumber < Math.ceil(pagination.totalCount / pagination.pageSize)) {
+                                                    const normalizedSearch = normalize(searchQuery);
                                                     fetchData({
                                                         pageNumber: pagination.pageNumber + 1,
                                                         pageSize: pagination.pageSize,
-                                                        search: searchQuery || "",
+                                                        search: normalizedSearch,
                                                         sortField: sortField,
                                                         sortAscending: sortAscending,
                                                         status: statusFilter,

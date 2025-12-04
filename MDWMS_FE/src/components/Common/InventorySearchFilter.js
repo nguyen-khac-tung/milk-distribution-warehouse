@@ -175,6 +175,14 @@ export default function InventorySearchFilter({
     (remainingDaysRange && remainingDaysRange.value !== undefined && remainingDaysRange.value !== "") ||
     statusFilter;
 
+  // 🔧 Thêm ở đầu component
+  const normalizeString = (str) =>
+    str
+      ?.toLowerCase()
+      .trim()
+      .replace(/\s+/g, " ");
+
+
   // const currentTimeRangeLabel = timeRangeOptions.find(opt => opt.value === timeRange)?.label || timeRangeOptions[0].label;
 
   return (
@@ -224,27 +232,27 @@ export default function InventorySearchFilter({
             <div className="flex flex-col gap-1 flex-1">
               {/* First Row: Search and Supplier Filter */}
               <div className="flex flex-wrap items-center gap-[30px] relative" style={{ overflow: 'visible' }}>
-              {/* Search Bar */}
-              <div className={`relative ${searchWidth}`}>
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input
-                  placeholder={searchPlaceholder}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 pr-9 h-[38px] text-sm border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
+                {/* Search Bar */}
+                <div className={`relative ${searchWidth}`}>
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input
+                    placeholder={searchPlaceholder}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 pr-9 h-[38px] text-sm border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
 
-              {/* Time Range Filter */}
-              {/* <div className="relative time-range-filter-dropdown">
+                {/* Time Range Filter */}
+                {/* <div className="relative time-range-filter-dropdown">
                 <button
                   onClick={() => setShowTimeRangeFilter(!showTimeRangeFilter)}
                   className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors min-w-0 max-w-48
@@ -287,151 +295,151 @@ export default function InventorySearchFilter({
                 )}
               </div> */}
 
-              {/* Area Filter - Only show for current report, not period report */}
-              {reportType === "current" && areas && areas.length > 0 && (
-                <div className="relative area-filter-dropdown" ref={areaFilterRef}>
-                  <button
-                    onClick={() => setShowAreaFilter(!showAreaFilter)}
-                    className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors min-w-0 max-w-48
+                {/* Area Filter - Only show for current report, not period report */}
+                {reportType === "current" && areas && areas.length > 0 && (
+                  <div className="relative area-filter-dropdown" ref={areaFilterRef}>
+                    <button
+                      onClick={() => setShowAreaFilter(!showAreaFilter)}
+                      className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors min-w-0 max-w-48
                       focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
                       ${areaId
-                        ? 'bg-[#d97706] text-white hover:bg-[#d97706]'
-                        : 'bg-white text-slate-700 hover:bg-white'
-                      }`}
-                  >
-                    <span className="text-sm font-medium truncate">
-                      {areaId
-                        ? (areas.find(a => String(a.areaId || a.AreaId) === String(areaId))?.areaName || areas.find(a => String(a.areaId || a.AreaId) === String(areaId))?.AreaName || "Chọn khu vực")
-                        : "Tất cả khu vực"
-                      }
-                    </span>
-                    <ChevronDown className="h-4 w-4 flex-shrink-0" />
-                  </button>
-
-                  {showAreaFilter && (
-                    <div
-                      className="fixed w-48 bg-white rounded-md shadow-lg border z-[9999] overflow-hidden flex flex-col"
-                      style={{
-                        top: `${areaDropdownPosition.top}px`,
-                        left: `${areaDropdownPosition.left}px`,
-                        maxHeight: '400px'
-                      }}
+                          ? 'bg-[#d97706] text-white hover:bg-[#d97706]'
+                          : 'bg-white text-slate-700 hover:bg-white'
+                        }`}
                     >
-                      <div className="py-1 overflow-y-auto flex-1 dropdown-scroll" style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 #f1f5f9', maxHeight: '350px' }}>
-                        <button
-                          onClick={() => {
-                            setAreaId("");
-                            setShowAreaFilter(false);
-                          }}
-                          className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center justify-between"
-                        >
-                          Tất cả khu vực
-                          {!areaId && <span className="text-[#d97706]">✓</span>}
-                        </button>
-                        {areas.map((area) => {
-                          const areaIdValue = String(area.areaId || area.AreaId);
-                          const areaName = area.areaName || area.AreaName;
-                          return (
-                            <button
-                              key={areaIdValue}
-                              onClick={() => {
-                                setAreaId(areaIdValue);
-                                setShowAreaFilter(false);
-                              }}
-                              className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center justify-between"
-                            >
-                              <span className="truncate">{areaName}</span>
-                              {areaId === areaIdValue && <span className="text-[#d97706]">✓</span>}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+                      <span className="text-sm font-medium truncate">
+                        {areaId
+                          ? (areas.find(a => String(a.areaId || a.AreaId) === String(areaId))?.areaName || areas.find(a => String(a.areaId || a.AreaId) === String(areaId))?.AreaName || "Chọn khu vực")
+                          : "Tất cả khu vực"
+                        }
+                      </span>
+                      <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                    </button>
 
-              {/* Supplier Filter */}
-              {suppliers && suppliers.length > 0 && (
-                <div className="relative supplier-filter-dropdown" ref={supplierFilterRef}>
-                  <button
-                    onClick={() => setShowSupplierFilter && setShowSupplierFilter(!showSupplierFilter)}
-                    className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors min-w-0 max-w-64
-                      focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
-                      ${supplierFilter
-                        ? 'bg-[#d97706] text-white hover:bg-[#d97706]'
-                        : 'bg-white text-slate-700 hover:bg-white'
-                      }`}
-                  >
-                    <Building2 className="h-4 w-4 flex-shrink-0" />
-                    <span className="text-sm font-medium truncate">
-                      {supplierFilter
-                        ? (suppliers.find(s => s.supplierId.toString() === supplierFilter)?.companyName || "Chọn nhà cung cấp")
-                        : "Tất cả nhà cung cấp"
-                      }
-                    </span>
-                    <ChevronDown className="h-4 w-4 flex-shrink-0" />
-                  </button>
-
-                  {showSupplierFilter && (
-                    <div
-                      className="fixed w-64 bg-white rounded-md shadow-lg border z-[9999] overflow-hidden flex flex-col"
-                      style={{
-                        top: `${supplierDropdownPosition.top}px`,
-                        left: `${supplierDropdownPosition.left}px`,
-                        maxHeight: '400px'
-                      }}
-                    >
-                      {/* Search Input */}
-                      <div className="p-2 border-b border-slate-200 sticky top-0 bg-white z-10 flex-shrink-0">
-                        <div className="relative">
-                          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                          <input
-                            type="text"
-                            placeholder="Tìm kiếm nhà cung cấp..."
-                            value={supplierSearchTerm || ""}
-                            onChange={(e) => setSupplierSearchTerm && setSupplierSearchTerm(e.target.value)}
-                            className="w-full pl-8 pr-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                            onClick={(e) => e.stopPropagation()}
-                          />
+                    {showAreaFilter && (
+                      <div
+                        className="fixed w-48 bg-white rounded-md shadow-lg border z-[9999] overflow-hidden flex flex-col"
+                        style={{
+                          top: `${areaDropdownPosition.top}px`,
+                          left: `${areaDropdownPosition.left}px`,
+                          maxHeight: '400px'
+                        }}
+                      >
+                        <div className="py-1 overflow-y-auto flex-1 dropdown-scroll" style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 #f1f5f9', maxHeight: '350px' }}>
+                          <button
+                            onClick={() => {
+                              setAreaId("");
+                              setShowAreaFilter(false);
+                            }}
+                            className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center justify-between"
+                          >
+                            Tất cả khu vực
+                            {!areaId && <span className="text-[#d97706]">✓</span>}
+                          </button>
+                          {areas.map((area) => {
+                            const areaIdValue = String(area.areaId || area.AreaId);
+                            const areaName = area.areaName || area.AreaName;
+                            return (
+                              <button
+                                key={areaIdValue}
+                                onClick={() => {
+                                  setAreaId(areaIdValue);
+                                  setShowAreaFilter(false);
+                                }}
+                                className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center justify-between"
+                              >
+                                <span className="truncate">{areaName}</span>
+                                {areaId === areaIdValue && <span className="text-[#d97706]">✓</span>}
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
-                      {/* Dropdown List */}
-                      <div className="py-1 overflow-y-auto flex-1 dropdown-scroll" style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 #f1f5f9', maxHeight: '350px' }}>
-                        <button
-                          onClick={() => {
-                            setSupplierFilter && setSupplierFilter("")
-                            setShowSupplierFilter && setShowSupplierFilter(false)
-                            setSupplierSearchTerm && setSupplierSearchTerm("")
-                          }}
-                          className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center justify-between"
-                        >
-                          Tất cả nhà cung cấp
-                          {!supplierFilter && <span className="text-[#d97706]">✓</span>}
-                        </button>
-                        {(filteredSuppliers && filteredSuppliers.length > 0 ? filteredSuppliers : suppliers).map((supplier) => (
+                    )}
+                  </div>
+                )}
+
+                {/* Supplier Filter */}
+                {suppliers && suppliers.length > 0 && (
+                  <div className="relative supplier-filter-dropdown" ref={supplierFilterRef}>
+                    <button
+                      onClick={() => setShowSupplierFilter && setShowSupplierFilter(!showSupplierFilter)}
+                      className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors min-w-0 max-w-64
+                      focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
+                      ${supplierFilter
+                          ? 'bg-[#d97706] text-white hover:bg-[#d97706]'
+                          : 'bg-white text-slate-700 hover:bg-white'
+                        }`}
+                    >
+                      <Building2 className="h-4 w-4 flex-shrink-0" />
+                      <span className="text-sm font-medium truncate">
+                        {supplierFilter
+                          ? (suppliers.find(s => s.supplierId.toString() === supplierFilter)?.companyName || "Chọn nhà cung cấp")
+                          : "Tất cả nhà cung cấp"
+                        }
+                      </span>
+                      <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                    </button>
+
+                    {showSupplierFilter && (
+                      <div
+                        className="fixed w-64 bg-white rounded-md shadow-lg border z-[9999] overflow-hidden flex flex-col"
+                        style={{
+                          top: `${supplierDropdownPosition.top}px`,
+                          left: `${supplierDropdownPosition.left}px`,
+                          maxHeight: '400px'
+                        }}
+                      >
+                        {/* Search Input */}
+                        <div className="p-2 border-b border-slate-200 sticky top-0 bg-white z-10 flex-shrink-0">
+                          <div className="relative">
+                            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                            <input
+                              type="text"
+                              placeholder="Tìm kiếm nhà cung cấp..."
+                              value={supplierSearchTerm || ""}
+                              onChange={(e) => setSupplierSearchTerm && setSupplierSearchTerm(e.target.value)}
+                              className="w-full pl-8 pr-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          </div>
+                        </div>
+                        {/* Dropdown List */}
+                        <div className="py-1 overflow-y-auto flex-1 dropdown-scroll" style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 #f1f5f9', maxHeight: '350px' }}>
                           <button
-                            key={supplier.supplierId}
                             onClick={() => {
-                              setSupplierFilter && setSupplierFilter(supplier.supplierId.toString())
+                              setSupplierFilter && setSupplierFilter("")
                               setShowSupplierFilter && setShowSupplierFilter(false)
                               setSupplierSearchTerm && setSupplierSearchTerm("")
                             }}
-                            className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-100 flex items-center justify-between ${supplierFilter === supplier.supplierId.toString()
-                              ? 'bg-[#d97706] text-white hover:bg-[#d97706]'
-                              : 'text-slate-700'
-                              }`}
+                            className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center justify-between"
                           >
-                            <span className="truncate">{supplier.companyName}</span>
-                            {supplierFilter === supplier.supplierId.toString() && <span className="text-white">✓</span>}
+                            Tất cả nhà cung cấp
+                            {!supplierFilter && <span className="text-[#d97706]">✓</span>}
                           </button>
-                        ))}
+                          {(filteredSuppliers && filteredSuppliers.length > 0 ? filteredSuppliers : suppliers).map((supplier) => (
+                            <button
+                              key={supplier.supplierId}
+                              onClick={() => {
+                                setSupplierFilter && setSupplierFilter(supplier.supplierId.toString())
+                                setShowSupplierFilter && setShowSupplierFilter(false)
+                                setSupplierSearchTerm && setSupplierSearchTerm("")
+                              }}
+                              className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-100 flex items-center justify-between ${supplierFilter === supplier.supplierId.toString()
+                                ? 'bg-[#d97706] text-white hover:bg-[#d97706]'
+                                : 'text-slate-700'
+                                }`}
+                            >
+                              <span className="truncate">{supplier.companyName}</span>
+                              {supplierFilter === supplier.supplierId.toString() && <span className="text-white">✓</span>}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+                    )}
+                  </div>
+                )}
+              </div>
 
               {/* Second Row: Additional Filters for Current Inventory Report */}
               {reportType === "current" && (
@@ -455,18 +463,18 @@ export default function InventorySearchFilter({
                               // Giữ nguyên type nếu đã có, nếu không thì mặc định là "below"
                               const currentType = quantityRange?.type || "below";
                               if (currentType === "below") {
-                                setQuantityRange && setQuantityRange({ 
-                                  value: value, 
+                                setQuantityRange && setQuantityRange({
+                                  value: value,
                                   type: "below",
-                                  min: "1", 
-                                  max: value 
+                                  min: "1",
+                                  max: value
                                 })
                               } else {
-                                setQuantityRange && setQuantityRange({ 
-                                  value: value, 
+                                setQuantityRange && setQuantityRange({
+                                  value: value,
                                   type: "above",
-                                  min: value, 
-                                  max: "" 
+                                  min: value,
+                                  max: ""
                                 })
                               }
                             }
@@ -487,26 +495,25 @@ export default function InventorySearchFilter({
                             const newType = currentType === "below" ? "above" : "below";
                             const numValue = parseFloat(quantityRange.value);
                             if (newType === "below") {
-                              setQuantityRange && setQuantityRange({ 
-                                value: quantityRange.value, 
+                              setQuantityRange && setQuantityRange({
+                                value: quantityRange.value,
                                 type: "below",
-                                min: "1", 
-                                max: quantityRange.value 
+                                min: "1",
+                                max: quantityRange.value
                               })
                             } else {
-                              setQuantityRange && setQuantityRange({ 
-                                value: quantityRange.value, 
+                              setQuantityRange && setQuantityRange({
+                                value: quantityRange.value,
                                 type: "above",
-                                min: quantityRange.value, 
-                                max: "" 
+                                min: quantityRange.value,
+                                max: ""
                               })
                             }
                           }}
-                          className={`flex items-center justify-center w-[38px] h-[38px] border rounded-md transition-colors ${
-                            quantityRange?.type === "above"
-                              ? 'bg-[#d97706] text-white border-[#d97706] hover:bg-[#d97706]'
-                              : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
-                          }`}
+                          className={`flex items-center justify-center w-[38px] h-[38px] border rounded-md transition-colors ${quantityRange?.type === "above"
+                            ? 'bg-[#d97706] text-white border-[#d97706] hover:bg-[#d97706]'
+                            : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+                            }`}
                           title={quantityRange?.type === "above" ? "Trên" : "Dưới"}
                         >
                           {quantityRange?.type === "above" ? (
@@ -537,18 +544,18 @@ export default function InventorySearchFilter({
                               // Giữ nguyên type nếu đã có, nếu không thì mặc định là "below"
                               const currentType = remainingDaysRange?.type || "below";
                               if (currentType === "below") {
-                                setRemainingDaysRange && setRemainingDaysRange({ 
-                                  value: value, 
+                                setRemainingDaysRange && setRemainingDaysRange({
+                                  value: value,
                                   type: "below",
-                                  min: "", 
-                                  max: value 
+                                  min: "",
+                                  max: value
                                 })
                               } else {
-                                setRemainingDaysRange && setRemainingDaysRange({ 
-                                  value: value, 
+                                setRemainingDaysRange && setRemainingDaysRange({
+                                  value: value,
                                   type: "above",
-                                  min: value, 
-                                  max: "" 
+                                  min: value,
+                                  max: ""
                                 })
                               }
                             }
@@ -568,26 +575,25 @@ export default function InventorySearchFilter({
                             const currentType = remainingDaysRange?.type || "below";
                             const newType = currentType === "below" ? "above" : "below";
                             if (newType === "below") {
-                              setRemainingDaysRange && setRemainingDaysRange({ 
-                                value: remainingDaysRange.value, 
+                              setRemainingDaysRange && setRemainingDaysRange({
+                                value: remainingDaysRange.value,
                                 type: "below",
-                                min: "", 
-                                max: remainingDaysRange.value 
+                                min: "",
+                                max: remainingDaysRange.value
                               })
                             } else {
-                              setRemainingDaysRange && setRemainingDaysRange({ 
-                                value: remainingDaysRange.value, 
+                              setRemainingDaysRange && setRemainingDaysRange({
+                                value: remainingDaysRange.value,
                                 type: "above",
-                                min: remainingDaysRange.value, 
-                                max: "" 
+                                min: remainingDaysRange.value,
+                                max: ""
                               })
                             }
                           }}
-                          className={`flex items-center justify-center w-[38px] h-[38px] border rounded-md transition-colors ${
-                            remainingDaysRange?.type === "above"
-                              ? 'bg-[#d97706] text-white border-[#d97706] hover:bg-[#d97706]'
-                              : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
-                          }`}
+                          className={`flex items-center justify-center w-[38px] h-[38px] border rounded-md transition-colors ${remainingDaysRange?.type === "above"
+                            ? 'bg-[#d97706] text-white border-[#d97706] hover:bg-[#d97706]'
+                            : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+                            }`}
                           title={remainingDaysRange?.type === "above" ? "Trên" : "Dưới"}
                         >
                           {remainingDaysRange?.type === "above" ? (

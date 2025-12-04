@@ -6,8 +6,8 @@ import { Card } from "../../../components/ui/card";
 import { ComponentIcon } from "../../../components/IconComponent/Icon";
 import { getAreaDropdown } from "../../../services/AreaServices";
 import { createMultipleLocations } from "../../../services/LocationServices";
-import CustomDropdown from "../../../components/Common/CustomDropdown";
 import { extractErrorMessage, cleanErrorMessage } from "../../../utils/Validation";
+import FloatingDropdown from "../../../components/Common/FloatingDropdown";
 
 export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess, formData, setFormData }) {
     const [areas, setAreas] = useState([]);
@@ -269,16 +269,16 @@ export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess, fo
                             <Label className="text-sm font-medium text-slate-700">
                                 Khu vực <span className="text-red-500">*</span>
                             </Label>
-                            <CustomDropdown
-                                value={areaId}
-                                onChange={setAreaId}
+                            <FloatingDropdown
+                                value={areaId ? areaId.toString() : null}
+                                onChange={(value) => setAreaId(value ? parseInt(value) : null)}
                                 options={[
-                                    { value: "", label: "Chọn khu vực..." },
                                     ...areas.map((a) => ({
                                         value: a.areaId.toString(),
                                         label: a.areaName,
                                     })),
                                 ]}
+                                placeholder="Chọn khu vực..."
                                 loading={loadingData}
                             />
                         </div>

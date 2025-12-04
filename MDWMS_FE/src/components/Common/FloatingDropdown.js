@@ -24,9 +24,15 @@ const FloatingDropdown = ({
             popupClassName="rounded-md shadow-2xl z-[99999]"
             getPopupContainer={() => document.body}
             optionFilterProp="children"
-            filterOption={(input, option) =>
-                (option?.children ?? "").toLowerCase().includes(input.toLowerCase())
-            }
+            filterOption={(input, option) => {
+                const normalize = (str) =>
+                    str
+                        ?.toLowerCase()
+                        .trim()
+                        .replace(/\s+/g, " ");
+
+                return normalize(option?.children).includes(normalize(input));
+            }}
             notFoundContent={loading ? <Spin size="small" /> : "Không có kết quả"}
             styles={{
                 control: (base, state) => ({

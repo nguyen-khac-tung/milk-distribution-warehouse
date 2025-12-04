@@ -9,6 +9,7 @@ import CustomDropdown from "../../components/Common/CustomDropdown"
 import { createUser } from "../../services/AccountService"
 import { getRoleList } from "../../services/RoleService"
 import { validateAndShowError, extractErrorMessage } from "../../utils/Validation"
+import FloatingDropdown from "../../components/Common/FloatingDropdown"
 
 export default function CreateAccount({ isOpen, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -263,22 +264,28 @@ export default function CreateAccount({ isOpen, onClose, onSuccess }) {
                 <Label htmlFor="roleId" className="text-sm font-medium text-slate-700">
                   Chức vụ <span className="text-red-500">*</span>
                 </Label>
-                <CustomDropdown
-                  value={formData.roleId}
+                <FloatingDropdown
+                  value={formData.roleId !== 0 ? formData.roleId : null}
                   onChange={(value) => {
-                    setFormData({ ...formData, roleId: parseInt(value) })
+                    setFormData({
+                      ...formData,
+                      roleId: value ? parseInt(value) : 0
+                    });
+
                     if (validationErrors.roleId) {
-                      setValidationErrors({ ...validationErrors, roleId: undefined })
+                      setValidationErrors({
+                        ...validationErrors,
+                        roleId: undefined
+                      });
                     }
                   }}
+                  placeholder="Chọn chức vụ..."
                   options={[
-                    { value: 0, label: "Chọn chức vụ..." },
                     ...roles.map(role => ({
                       value: role.roleId,
                       label: role.description
                     }))
                   ]}
-                  placeholder="Chọn chức vụ..."
                 />
                 {validationErrors.roleId && (
                   <p className="text-sm text-red-500 font-medium">{validationErrors.roleId}</p>
