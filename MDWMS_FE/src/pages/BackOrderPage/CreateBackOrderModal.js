@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
 import { Label } from "../../components/ui/label"
@@ -169,14 +170,27 @@ export default function CreateBackOrderModal({ isOpen, onClose, onSuccess, selec
     onClose && onClose()
   }
 
-  // Reset form khi modal đóng
+  // Reset form khi modal đóng và lock/unlock body scroll
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      // Lock body scroll khi modal mở
+      document.body.style.overflow = 'hidden'
+      document.documentElement.style.overflow = 'hidden'
+    } else {
+      // Unlock body scroll khi modal đóng
+      document.body.style.overflow = ''
+      document.documentElement.style.overflow = ''
       setFormData({
         retailerId: "",
         goodsId: "",
         quantity: "",
       })
+    }
+
+    // Cleanup khi component unmount
+    return () => {
+      document.body.style.overflow = ''
+      document.documentElement.style.overflow = ''
     }
   }, [isOpen])
 
@@ -184,9 +198,32 @@ export default function CreateBackOrderModal({ isOpen, onClose, onSuccess, selec
 
   const isBulkMode = selectedItems && selectedItems.length > 0
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-2xl">
+  return createPortal(
+    <div
+      className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100%',
+        height: '100%',
+        margin: 0,
+        padding: 0,
+        zIndex: 99999,
+        overflow: 'hidden'
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose && onClose();
+        }
+      }}
+    >
+      <div
+        className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-2xl relative z-[100000]"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h1 className="text-2xl font-bold text-slate-800">
@@ -377,6 +414,7 @@ export default function CreateBackOrderModal({ isOpen, onClose, onSuccess, selec
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
