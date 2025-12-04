@@ -83,7 +83,7 @@ namespace MilkDistributionWarehouse.Services
             if (await _areaRepository.IsDuplicateAreaCode(dto.AreaCode))
                 return ("Mã khu vực đã tồn tại.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
-            var storageConditionExists = await _storageConditionRepository.GetStorageConditionById(dto.StorageConditionId);
+            var storageConditionExists = await _storageConditionRepository.GetStorageConditionToCreateArea(dto.StorageConditionId);
             if (storageConditionExists == null)
                 return ("Điều kiện bảo quản không tồn tại hoặc đã bị xoá.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 

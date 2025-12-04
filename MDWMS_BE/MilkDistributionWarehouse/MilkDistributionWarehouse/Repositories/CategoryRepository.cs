@@ -2,6 +2,7 @@
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
+using System.Threading.Tasks;
 
 namespace MilkDistributionWarehouse.Repositories
 {
@@ -14,6 +15,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<Category?> UpdateCategory(Category category);
         Task<bool> IsCategoryContainingGoodsAsync(int categoryId); 
         Task<bool> IsCategoryContainingGoodsInActive(int categoryId);
+        Task<bool> IsActiveCategory(int categoryId);
 
     }
     public class CategoryRepository : ICategoryRepository
@@ -79,6 +81,13 @@ namespace MilkDistributionWarehouse.Repositories
             IQueryable<Good> goods = _warehouseContext.Goods.Where(g => g.CategoryId == categoryId && g.Status != CommonStatus.Deleted);
 
             return !(await goods.AnyAsync(g => g.Status != CommonStatus.Inactive));
+        }
+
+        public async Task<bool> IsActiveCategory(int categoryId)
+        {
+            return await _warehouseContext.Categories
+                .AnyAsync(c => c.CategoryId == categoryId &&
+                            c.Status == CommonStatus.Active);
         }
     }
 }
