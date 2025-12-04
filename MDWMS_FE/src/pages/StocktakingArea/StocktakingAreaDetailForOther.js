@@ -568,13 +568,13 @@ const StocktakingAreaDetailForOther = () => {
         }
 
         try {
-            const blob = await exportStocktakingAreaWord(stocktakingAreaId);
+            const { file, fileName } = await exportStocktakingAreaWord(stocktakingAreaId);
 
             // Tạo URL từ blob và tải xuống
-            const url = window.URL.createObjectURL(new Blob([blob]));
+            const url = window.URL.createObjectURL(new Blob([file]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `PhieuKiemKe_${stocktakingAreaId}.docx`);
+            link.setAttribute('download', fileName);
             document.body.appendChild(link);
             link.click();
             link.parentNode.removeChild(link);

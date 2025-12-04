@@ -143,10 +143,14 @@ namespace MilkDistributionWarehouse.Mappers
                 .ForMember(dest => dest.LightLevel, opt => opt.MapFrom(src => src.StorageCondition.LightLevel));
             CreateMap<Area, AreaDto.StocktakingAreaDto>()
                 .ForMember(dest => dest.AvailableLocationCount, opt => opt.MapFrom(src => src.Locations != null 
-                    ? src.Locations.Count(l => l.IsAvailable == true && l.Status != CommonStatus.Inactive) 
+                    ? src.Locations.Count(l => 
+                        l.IsAvailable == true && 
+                        l.Status == CommonStatus.Active) 
                     : 0))
                 .ForMember(dest => dest.UnAvailableLocationCount, opt => opt.MapFrom(src => src.Locations != null 
-                    ? src.Locations.Count(l => l.IsAvailable == false && l.Status != CommonStatus.Inactive) 
+                    ? src.Locations.Count(l => 
+                        l.IsAvailable == false && 
+                        l.Status == CommonStatus.Active) 
                     : 0))
                 .ForMember(dest => dest.TemperatureMin, opt => opt.MapFrom(src => src.StorageCondition.TemperatureMin))
                 .ForMember(dest => dest.TemperatureMax, opt => opt.MapFrom(src => src.StorageCondition.TemperatureMax))
@@ -592,10 +596,14 @@ namespace MilkDistributionWarehouse.Mappers
                 .ForMember(dest => dest.AssignName, opt => opt.MapFrom(src => src.AssignToNavigation.FullName))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
                 .ForMember(dest => dest.AvailableLocationCount, opt => opt.MapFrom(src => src.Area != null && src.Area.Locations != null 
-                    ? src.Area.Locations.Count(l => l.IsAvailable == true && l.Status != CommonStatus.Inactive) 
+                    ? src.Area.Locations.Count(l => 
+                            l.IsAvailable == true && 
+                            l.Status == CommonStatus.Active) 
                     : 0))
                 .ForMember(dest => dest.UnAvailableLocationCount, opt => opt.MapFrom(src => src.Area != null && src.Area.Locations != null 
-                    ? src.Area.Locations.Count(l => l.IsAvailable == false && l.Status != CommonStatus.Inactive) 
+                    ? src.Area.Locations.Count(l => 
+                            l.IsAvailable == false && 
+                            l.Status == CommonStatus.Active) 
                     : 0));
             CreateMap<StocktakingAreaCreateDto, StocktakingArea>()
                 .ForMember(dest => dest.StocktakingAreaId, opt => opt.MapFrom(_ => Guid.NewGuid()))
