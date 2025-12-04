@@ -581,7 +581,10 @@ export const exportStocktakingAreaWord = async (stocktakingAreaId) => {
         const res = await api.get(`/StocktakingArea/ExportStocktakingAreaWord/${stocktakingAreaId}`, {
             responseType: 'blob'
         });
-        return res.data;
+        return {
+            blob: res.data,
+            headers: res.headers
+        };
     } catch (error) {
         console.error("Error exporting stocktaking area to Word:", error);
         throw error;

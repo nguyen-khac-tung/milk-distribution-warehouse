@@ -7,7 +7,7 @@ import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
 import { getStocktakingAreaDetailForOtherRoleBySheetId, getStocktakingDetail, getStocktakingPalletDetail, rejectStocktakingLocationRecords, approveStocktakingArea, completeStocktaking, updateStocktakingLocationRecords, exportStocktakingAreaWord } from '../../services/StocktakingService';
 import { usePermissions } from '../../hooks/usePermissions';
-import { extractErrorMessage } from '../../utils/Validation';
+import { extractErrorMessage, getFileNameFromHeader } from '../../utils/Validation';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
 import StatusDisplay, { STOCKTAKING_STATUS } from '../../components/StocktakingComponents/StatusDisplay';
 import LocationStatusDisplay, { STOCK_LOCATION_STATUS } from './LocationStatusDisplay';
@@ -568,13 +568,19 @@ const StocktakingAreaDetailForOther = () => {
         }
 
         try {
-            const blob = await exportStocktakingAreaWord(stocktakingAreaId);
+            const response = await exportStocktakingAreaWord(stocktakingAreaId);
+            const blob = response.blob;
+            const headers = response.headers;
+
+            // Lấy tên file từ header Content-Disposition
+            const contentDisposition = headers?.['content-disposition'] || headers?.['Content-Disposition'];
+            const fileName = getFileNameFromHeader(contentDisposition) || `PhieuKiemKe_${stocktakingAreaId}.docx`;
 
             // Tạo URL từ blob và tải xuống
             const url = window.URL.createObjectURL(new Blob([blob]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `PhieuKiemKe_${stocktakingAreaId}.docx`);
+            link.setAttribute('download', fileName);
             document.body.appendChild(link);
             link.click();
             link.parentNode.removeChild(link);

@@ -125,7 +125,10 @@ export const exportGoodsReceiptNoteWord = async (purchaseOrderId) => {
         const res = await api.get(`/GoodsReceiptNote/ExportGoodsReceiptNoteWord/${purchaseOrderId}`, {
             responseType: 'blob'
         });
-        return res.data;
+        return {
+            blob: res.data,
+            headers: res.headers
+        };
     } catch (error) {
         console.error('Error exporting goods receipt note to Word:', error);
         throw error;
