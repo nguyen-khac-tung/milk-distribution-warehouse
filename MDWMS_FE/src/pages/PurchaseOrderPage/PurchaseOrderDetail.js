@@ -251,7 +251,8 @@ const PurchaseOrderDetail = () => {
 
     const canConfirmOrdered = () => {
         return hasPermission(PERMISSIONS.PURCHASE_ORDER_CONFIRM_ORDERED) &&
-            purchaseOrder?.status === PURCHASE_ORDER_STATUS.Approved;
+            purchaseOrder?.status === PURCHASE_ORDER_STATUS.Approved &&
+            purchaseOrder?.isDisableButton === false;
     };
 
     const canSubmitDraft = () => {
@@ -275,6 +276,10 @@ const PurchaseOrderDetail = () => {
     const canChangeDeliveryDate = () => {
         // Chỉ nhân viên kinh doanh (Sales Representative) mới có quyền thay đổi ngày dự kiến nhập
         if (!hasPermission(PERMISSIONS.PURCHASE_ORDER_CHANGE_DELIVERY_DATE)) {
+            return false;
+        }
+
+        if (purchaseOrder?.isDisableButton) {
             return false;
         }
 
