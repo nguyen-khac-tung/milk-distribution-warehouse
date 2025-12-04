@@ -246,7 +246,8 @@ const PurchaseOrderDetail = () => {
 
     const canStartReceive = () => {
         return hasPermission(PERMISSIONS.PURCHASE_ORDER_START_RECEIVE) &&
-            purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving;
+            purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving &&
+            purchaseOrder?.isDisableButton === false;
     };
 
     const canConfirmOrdered = () => {
