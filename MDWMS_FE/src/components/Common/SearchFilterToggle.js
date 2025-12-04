@@ -392,7 +392,7 @@ export default function SearchFilterToggle({
                 <Input
                   placeholder={searchPlaceholder}
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value.trim())}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9 h-[38px] text-sm border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                 />
               </div>

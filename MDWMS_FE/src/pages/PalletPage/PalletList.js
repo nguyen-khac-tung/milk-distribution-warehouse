@@ -81,6 +81,15 @@ export default function PalletList() {
     // Kiểm tra quyền in
     const hasPrintPermission = hasAnyPermission([PERMISSIONS.PALLET_PRINT_BARCODE]);
 
+    // Normalize function: lowercase, trim, and collapse multiple spaces into one
+    const normalize = (str) => {
+        if (!str) return "";
+        return str
+            .toLowerCase()
+            .trim()
+            .replace(/\s+/g, " "); // gom nhiều space thành 1 space
+    };
+
     const handlePrint = useReactToPrint({
         contentRef: printRef,
         documentTitle: "Phiếu dán mã pallet",
@@ -137,10 +146,12 @@ export default function PalletList() {
     const fetchData = async (searchParams = {}) => {
         try {
             setLoading(true)
+            // Normalize search query trước khi gọi API
+            const normalizedSearch = searchParams.search !== undefined ? normalize(searchParams.search) : "";
             const response = await getPallets({
                 pageNumber: searchParams.pageNumber !== undefined ? searchParams.pageNumber : 1,
                 pageSize: searchParams.pageSize !== undefined ? searchParams.pageSize : 10,
-                search: searchParams.search !== undefined ? searchParams.search : "",
+                search: normalizedSearch,
                 sortField: searchParams.sortField || "",
                 sortAscending: searchParams.sortAscending !== undefined ? searchParams.sortAscending : true,
                 status: searchParams.status,
@@ -243,10 +254,12 @@ export default function PalletList() {
 
         const timeoutId = setTimeout(() => {
             setSearchLoading(true)
+            // Normalize search query trước khi gọi API
+            const normalizedSearch = normalize(searchQuery);
             const params = {
                 pageNumber: 1,
                 pageSize: pagination.pageSize,
-                search: searchQuery || "",
+                search: normalizedSearch,
                 sortField: sortField,
                 sortAscending: sortAscending,
                 status: statusFilter,
@@ -375,10 +388,11 @@ export default function PalletList() {
 
             // Refresh data after deletion, keeping current page or going to previous page if needed
             await fetchStatsData()
+            const normalizedSearch = normalize(searchQuery);
             await fetchData({
                 pageNumber: targetPage,
                 pageSize: pagination.pageSize,
-                search: searchQuery || "",
+                search: normalizedSearch,
                 sortField: sortField,
                 sortAscending: sortAscending,
                 status: statusFilter,
@@ -423,18 +437,18 @@ export default function PalletList() {
             { value: "2", label: "Chưa đưa vào vị trí" }
         ]
         if (!statusSearchQuery) return statusOptions
-        const query = statusSearchQuery.toLowerCase()
+        const normalizedQuery = normalize(statusSearchQuery)
         return statusOptions.filter(option =>
-            option.label.toLowerCase().includes(query)
+            normalize(option.label).includes(normalizedQuery)
         )
     }, [statusSearchQuery])
 
     const filteredCreators = useMemo(() => {
         if (!creatorSearchQuery) return creators
-        const query = creatorSearchQuery.toLowerCase()
+        const normalizedQuery = normalize(creatorSearchQuery)
         return creators.filter(creator => {
-            const creatorName = (creator.fullName || "").toLowerCase()
-            return creatorName.includes(query)
+            const creatorName = normalize(creator.fullName || "")
+            return creatorName.includes(normalizedQuery)
         })
     }, [creators, creatorSearchQuery])
 
@@ -477,10 +491,11 @@ export default function PalletList() {
         setHasUserInteracted(true)
         setPagination(prev => ({ ...prev, pageSize: newPageSize, pageNumber: 1 }))
         setShowPageSizeFilter(false)
+        const normalizedSearch = normalize(searchQuery);
         fetchData({
             pageNumber: 1,
             pageSize: newPageSize,
-            search: searchQuery || "",
+            search: normalizedSearch,
             sortField: sortField,
             sortAscending: sortAscending,
             status: statusFilter,
@@ -774,10 +789,11 @@ export default function PalletList() {
                                             className="h-[38px]"
                                             onClick={() => {
                                                 if (pagination.pageNumber > 1) {
+                                                    const normalizedSearch = normalize(searchQuery);
                                                     fetchData({
                                                         pageNumber: pagination.pageNumber - 1,
                                                         pageSize: pagination.pageSize,
-                                                        search: searchQuery || "",
+                                                        search: normalizedSearch,
                                                         sortField: sortField,
                                                         sortAscending: sortAscending,
                                                         status: statusFilter,
@@ -799,10 +815,11 @@ export default function PalletList() {
                                             className="h-[38px]"
                                             onClick={() => {
                                                 if (pagination.pageNumber < Math.ceil(pagination.totalCount / pagination.pageSize)) {
+                                                    const normalizedSearch = normalize(searchQuery);
                                                     fetchData({
                                                         pageNumber: pagination.pageNumber + 1,
                                                         pageSize: pagination.pageSize,
-                                                        search: searchQuery || "",
+                                                        search: normalizedSearch,
                                                         sortField: sortField,
                                                         sortAscending: sortAscending,
                                                         status: statusFilter,
