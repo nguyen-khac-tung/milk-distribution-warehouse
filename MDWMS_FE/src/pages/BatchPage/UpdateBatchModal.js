@@ -6,7 +6,6 @@ import { X, Calendar } from "lucide-react";
 import { getBatchDetail, updateBatch } from "../../services/BatchService";
 import { getGoodsDropdown } from "../../services/GoodService";
 import { extractErrorMessage } from "../../utils/Validation";
-import CustomDropdown from "../../components/Common/CustomDropdown";
 import { Textarea } from "../../components/ui/textarea";
 import FloatingDropdown from "../../components/Common/FloatingDropdown";
 

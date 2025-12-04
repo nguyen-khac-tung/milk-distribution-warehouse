@@ -12,6 +12,7 @@ import { getStorageConditionsDropdown } from "../../services/StorageConditionSer
 import { getUnitMeasuresDropdown } from "../../services/UnitMeasureService"
 import { validateAndShowError, extractErrorMessage, cleanErrorMessage } from "../../utils/Validation"
 import Loading from "../../components/Common/Loading"
+import FloatingDropdown from "../../components/Common/FloatingDropdown"
 
 export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
   const [goodsList, setGoodsList] = useState([
@@ -611,17 +612,19 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                         Danh mục mặc định
                       </Label>
                     </div>
-                    <CustomDropdown
-                      value={defaultValues.categoryId}
-                      onChange={(value) => setDefaultValues(prev => ({ ...prev, categoryId: value }))}
-                      disabled={!defaultFields.category}
-                      options={[
-                        { value: "", label: "Chọn danh mục mặc định..." },
-                        ...categories.map((category) => ({
-                          value: category.categoryId.toString(),
-                          label: category.categoryName
+                    <FloatingDropdown
+                      value={defaultValues.categoryId ? defaultValues.categoryId.toString() : null}
+                      onChange={(value) =>
+                        setDefaultValues(prev => ({
+                          ...prev,
+                          categoryId: value ? parseInt(value) : null,
                         }))
-                      ]}
+                      }
+                      disabled={!defaultFields.category}
+                      options={categories.map((category) => ({
+                        value: category.categoryId.toString(),
+                        label: category.categoryName,
+                      }))}
                       placeholder="Chọn danh mục mặc định..."
                       loading={loadingData}
                     />
@@ -641,17 +644,19 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                         Nhà cung cấp mặc định
                       </Label>
                     </div>
-                    <CustomDropdown
-                      value={defaultValues.supplierId}
-                      onChange={(value) => setDefaultValues(prev => ({ ...prev, supplierId: value }))}
-                      disabled={!defaultFields.supplier}
-                      options={[
-                        { value: "", label: "Chọn nhà cung cấp mặc định..." },
-                        ...suppliers.map((supplier) => ({
-                          value: supplier.supplierId.toString(),
-                          label: supplier.companyName
+                    <FloatingDropdown
+                      value={defaultValues.supplierId ? defaultValues.supplierId.toString() : null}
+                      onChange={(value) =>
+                        setDefaultValues(prev => ({
+                          ...prev,
+                          supplierId: value ? parseInt(value) : null,
                         }))
-                      ]}
+                      }
+                      disabled={!defaultFields.supplier}
+                      options={suppliers.map((supplier) => ({
+                        value: supplier.supplierId.toString(),
+                        label: supplier.companyName,
+                      }))}
                       placeholder="Chọn nhà cung cấp mặc định..."
                       loading={loadingData}
                     />
@@ -701,17 +706,19 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                         Đơn vị đo mặc định
                       </Label>
                     </div>
-                    <CustomDropdown
-                      value={defaultValues.unitMeasureId}
-                      onChange={(value) => setDefaultValues(prev => ({ ...prev, unitMeasureId: value }))}
-                      disabled={!defaultFields.unitMeasure}
-                      options={[
-                        { value: "", label: "Chọn đơn vị đo mặc định..." },
-                        ...unitMeasures.map((unit) => ({
-                          value: unit.unitMeasureId.toString(),
-                          label: unit.name
+                    <FloatingDropdown
+                      value={defaultValues.unitMeasureId ? defaultValues.unitMeasureId.toString() : null}
+                      onChange={(value) =>
+                        setDefaultValues(prev => ({
+                          ...prev,
+                          unitMeasureId: value ? parseInt(value) : null,
                         }))
-                      ]}
+                      }
+                      disabled={!defaultFields.unitMeasure}
+                      options={unitMeasures.map((unit) => ({
+                        value: unit.unitMeasureId.toString(),
+                        label: unit.name,
+                      }))}
                       placeholder="Chọn đơn vị đo mặc định..."
                       loading={loadingData}
                     />
@@ -846,17 +853,14 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                         <Label className="text-sm font-medium text-slate-700">
                           Danh mục <span className="text-red-500">*</span>
                         </Label>
-                        <CustomDropdown
-                          value={goods.categoryId}
-                          onChange={(value) => updateGoodsRow(index, 'categoryId', value)}
+                        <FloatingDropdown
+                          value={goods.categoryId ? goods.categoryId.toString() : null}
+                          onChange={(value) => updateGoodsRow(index, 'categoryId', value ? parseInt(value) : null)}
                           disabled={isSuccessful}
-                          options={[
-                            { value: "", label: "Chọn danh mục..." },
-                            ...categories.map((category) => ({
-                              value: category.categoryId.toString(),
-                              label: category.categoryName
-                            }))
-                          ]}
+                          options={categories.map((category) => ({
+                            value: category.categoryId.toString(),
+                            label: category.categoryName,
+                          }))}
                           placeholder="Chọn danh mục..."
                           loading={loadingData}
                         />
@@ -875,17 +879,14 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                         <Label className="text-sm font-medium text-slate-700">
                           Nhà cung cấp <span className="text-red-500">*</span>
                         </Label>
-                        <CustomDropdown
-                          value={goods.supplierId}
-                          onChange={(value) => updateGoodsRow(index, 'supplierId', value)}
+                        <FloatingDropdown
+                          value={goods.supplierId ? goods.supplierId.toString() : null}
+                          onChange={(value) => updateGoodsRow(index, 'supplierId', value ? parseInt(value) : null)}
                           disabled={isSuccessful}
-                          options={[
-                            { value: "", label: "Chọn nhà cung cấp..." },
-                            ...suppliers.map((supplier) => ({
-                              value: supplier.supplierId.toString(),
-                              label: supplier.companyName
-                            }))
-                          ]}
+                          options={suppliers.map((supplier) => ({
+                            value: supplier.supplierId.toString(),
+                            label: supplier.companyName,
+                          }))}
                           placeholder="Chọn nhà cung cấp..."
                           loading={loadingData}
                         />
@@ -933,17 +934,14 @@ export default function CreateBulkGoods({ isOpen, onClose, onSuccess }) {
                         <Label className="text-sm font-medium text-slate-700">
                           Đơn vị đo <span className="text-red-500">*</span>
                         </Label>
-                        <CustomDropdown
-                          value={goods.unitMeasureId}
-                          onChange={(value) => updateGoodsRow(index, 'unitMeasureId', value)}
+                        <FloatingDropdown
+                          value={goods.unitMeasureId ? goods.unitMeasureId.toString() : null}
+                          onChange={(value) => updateGoodsRow(index, 'unitMeasureId', value ? parseInt(value) : null)}
                           disabled={isSuccessful}
-                          options={[
-                            { value: "", label: "Chọn đơn vị đo..." },
-                            ...unitMeasures.map((unit) => ({
-                              value: unit.unitMeasureId.toString(),
-                              label: unit.name
-                            }))
-                          ]}
+                          options={unitMeasures.map((unit) => ({
+                            value: unit.unitMeasureId.toString(),
+                            label: unit.name,
+                          }))}
                           placeholder="Chọn đơn vị đo..."
                           loading={loadingData}
                         />

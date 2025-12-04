@@ -923,16 +923,25 @@ export default function InventoryReport({ onClose }) {
     }
   }, [showSupplierFilter])
 
-  // Filter suppliers based on search term
   const filteredSuppliers = useMemo(() => {
+
+    const normalizeString = (str) =>
+      str
+        ?.toLowerCase()
+        .trim()
+        .replace(/\s+/g, " ");
+
     if (!supplierSearchTerm.trim()) {
-      return suppliers
+      return suppliers;
     }
-    const query = supplierSearchTerm.toLowerCase().trim()
+
+    const query = normalizeString(supplierSearchTerm);
+
     return suppliers.filter(supplier =>
-      (supplier.companyName || '').toLowerCase().includes(query)
-    )
-  }, [suppliers, supplierSearchTerm])
+      normalizeString(supplier.companyName || "").includes(query)
+    );
+
+  }, [suppliers, supplierSearchTerm]);
 
   const handleClearAllFilters = () => {
     setSearchQuery("")

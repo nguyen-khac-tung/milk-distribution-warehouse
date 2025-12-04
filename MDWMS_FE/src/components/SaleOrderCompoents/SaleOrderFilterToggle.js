@@ -615,7 +615,7 @@ export default function SaleOrderFilterToggle({
                                                             >
                                                                 Tất cả người phân công
                                                             </button>
-                                                            {filterOptions(assignees, assigneeSearch, 'name').map((assignee) => (
+                                                            {filterOptions(assignees, assigneeSearch, 'fullName').map((assignee) => (
                                                                 <button
                                                                     key={assignee.userId}
                                                                     onClick={() => {
@@ -632,7 +632,7 @@ export default function SaleOrderFilterToggle({
                                                                     {assignee.fullName}
                                                                 </button>
                                                             ))}
-                                                            {filterOptions(assignees, assigneeSearch, 'name').length === 0 && (
+                                                            {filterOptions(assignees, assigneeSearch, 'fullName').length === 0 && (
                                                                 <div className="px-3 py-2 text-sm text-gray-500 text-center">
                                                                     Không tìm thấy kết quả
                                                                 </div>
@@ -705,7 +705,7 @@ export default function SaleOrderFilterToggle({
                                                             >
                                                                 Tất cả người duyệt
                                                             </button>
-                                                            {filterOptions(approvers, approverSearch, 'name').map((approver) => (
+                                                            {filterOptions(approvers, approverSearch, 'fullName').map((approver) => (
                                                                 <button
                                                                     key={approver.userId}
                                                                     onClick={() => {
@@ -721,7 +721,7 @@ export default function SaleOrderFilterToggle({
                                                                     {approver.fullName}
                                                                 </button>
                                                             ))}
-                                                            {filterOptions(approvers, approverSearch, 'name').length === 0 && (
+                                                            {filterOptions(approvers, approverSearch, 'fullName').length === 0 && (
                                                                 <div className="px-3 py-2 text-sm text-gray-500 text-center">
                                                                     Không tìm thấy kết quả
                                                                 </div>
@@ -790,7 +790,7 @@ export default function SaleOrderFilterToggle({
                                                             >
                                                                 Tất cả nhân viên bán hàng
                                                             </button>
-                                                            {filterOptions(sellers, sellerSearch, 'name').map((seller) => (
+                                                            {filterOptions(sellers, sellerSearch, 'fullName').map((seller) => (
                                                                 <button
                                                                     key={seller.userId}
                                                                     onClick={() => {
@@ -806,7 +806,7 @@ export default function SaleOrderFilterToggle({
                                                                     {seller.fullName}
                                                                 </button>
                                                             ))}
-                                                            {filterOptions(sellers, sellerSearch, 'name').length === 0 && (
+                                                            {filterOptions(sellers, sellerSearch, 'fullName').length === 0 && (
                                                                 <div className="px-3 py-2 text-sm text-gray-500 text-center">
                                                                     Không tìm thấy kết quả
                                                                 </div>
@@ -875,7 +875,7 @@ export default function SaleOrderFilterToggle({
                                                             >
                                                                 Tất cả người xác nhận
                                                             </button>
-                                                            {filterOptions(confirmers, confirmerSearch, 'name').map((confirmer) => (
+                                                            {filterOptions(confirmers, confirmerSearch, 'fullName').map((confirmer) => (
                                                                 <button
                                                                     key={confirmer.userId}
                                                                     onClick={() => {
@@ -894,7 +894,7 @@ export default function SaleOrderFilterToggle({
                                                                     {confirmer.fullName}
                                                                 </button>
                                                             ))}
-                                                            {filterOptions(confirmers, confirmerSearch, 'name').length === 0 && (
+                                                            {filterOptions(confirmers, confirmerSearch, 'fullName').length === 0 && (
                                                                 <div className="px-3 py-2 text-sm text-gray-500 text-center">
                                                                     Không tìm thấy kết quả
                                                                 </div>

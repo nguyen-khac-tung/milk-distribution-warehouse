@@ -12,6 +12,7 @@ import { getSuppliersDropdown } from "../../services/SupplierService"
 import { getStorageConditionsDropdown } from "../../services/StorageConditionService"
 import { getUnitMeasuresDropdown } from "../../services/UnitMeasureService"
 import { validateAndShowError, extractErrorMessage } from "../../utils/Validation"
+import FloatingDropdown from "../../components/Common/FloatingDropdown"
 
 export default function CreateGood({ isOpen, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -267,21 +268,18 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
                 <Label htmlFor="categoryId" className="text-sm font-medium text-slate-700">
                   Danh mục <span className="text-red-500">*</span>
                 </Label>
-                <CustomDropdown
-                  value={formData.categoryId}
+                <FloatingDropdown
+                  value={formData.categoryId ? formData.categoryId.toString() : null}
                   onChange={(value) => {
-                    setFormData({ ...formData, categoryId: value })
+                    setFormData({ ...formData, categoryId: value ? parseInt(value) : null });
                     if (validationErrors.categoryId) {
-                      setValidationErrors({ ...validationErrors, categoryId: undefined })
+                      setValidationErrors({ ...validationErrors, categoryId: undefined });
                     }
                   }}
-                  options={[
-                    { value: "", label: "Chọn danh mục..." },
-                    ...categories.map((category) => ({
-                      value: category.categoryId.toString(),
-                      label: category.categoryName
-                    }))
-                  ]}
+                  options={categories.map((category) => ({
+                    value: category.categoryId.toString(),
+                    label: category.categoryName,
+                  }))}
                   placeholder="Chọn danh mục..."
                   loading={loadingData}
                 />
@@ -294,21 +292,18 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
                 <Label htmlFor="supplierId" className="text-sm font-medium text-slate-700">
                   Nhà cung cấp <span className="text-red-500">*</span>
                 </Label>
-                <CustomDropdown
-                  value={formData.supplierId}
+                <FloatingDropdown
+                  value={formData.supplierId ? formData.supplierId.toString() : null}
                   onChange={(value) => {
-                    setFormData({ ...formData, supplierId: value })
+                    setFormData({ ...formData, supplierId: value ? parseInt(value) : null });
                     if (validationErrors.supplierId) {
-                      setValidationErrors({ ...validationErrors, supplierId: undefined })
+                      setValidationErrors({ ...validationErrors, supplierId: undefined });
                     }
                   }}
-                  options={[
-                    { value: "", label: "Chọn nhà cung cấp..." },
-                    ...suppliers.map((supplier) => ({
-                      value: supplier.supplierId.toString(),
-                      label: supplier.companyName
-                    }))
-                  ]}
+                  options={suppliers.map((supplier) => ({
+                    value: supplier.supplierId.toString(),
+                    label: supplier.companyName,
+                  }))}
                   placeholder="Chọn nhà cung cấp..."
                   loading={loadingData}
                 />
@@ -351,21 +346,18 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
                 <Label htmlFor="unitMeasureId" className="text-sm font-medium text-slate-700">
                   Đơn vị đo <span className="text-red-500">*</span>
                 </Label>
-                <CustomDropdown
-                  value={formData.unitMeasureId}
+                <FloatingDropdown
+                  value={formData.unitMeasureId ? formData.unitMeasureId.toString() : null}
                   onChange={(value) => {
-                    setFormData({ ...formData, unitMeasureId: value })
+                    setFormData({ ...formData, unitMeasureId: value ? parseInt(value) : null });
                     if (validationErrors.unitMeasureId) {
-                      setValidationErrors({ ...validationErrors, unitMeasureId: undefined })
+                      setValidationErrors({ ...validationErrors, unitMeasureId: undefined });
                     }
                   }}
-                  options={[
-                    { value: "", label: "Chọn đơn vị đo..." },
-                    ...unitMeasures.map((unit) => ({
-                      value: unit.unitMeasureId.toString(),
-                      label: unit.name
-                    }))
-                  ]}
+                  options={unitMeasures.map((unit) => ({
+                    value: unit.unitMeasureId.toString(),
+                    label: unit.name,
+                  }))}
                   placeholder="Chọn đơn vị đo..."
                   loading={loadingData}
                 />
