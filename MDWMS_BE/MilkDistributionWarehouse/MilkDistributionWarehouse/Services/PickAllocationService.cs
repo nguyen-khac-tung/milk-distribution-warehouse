@@ -10,7 +10,7 @@ namespace MilkDistributionWarehouse.Services
     public interface IPickAllocationService
     {
         Task<(string, PickAllocationDetailDto?)> GetPickAllocationDetailById(int? pickAllocationId);
-        Task<string> ConfirmPickAllocation(ConfirmPickAllocationDto confirmPickAllocation);
+        Task<string> ConfirmPickAllocation(ConfirmPickAllocationDto confirmPickAllocation, int? userId);
     }
 
     public class PickAllocationService : IPickAllocationService
@@ -51,7 +51,7 @@ namespace MilkDistributionWarehouse.Services
             return ("", pickDetailDto);
         }
 
-        public async Task<string> ConfirmPickAllocation(ConfirmPickAllocationDto confirmPickAllocation)
+        public async Task<string> ConfirmPickAllocation(ConfirmPickAllocationDto confirmPickAllocation, int? userId)
         {
             var pickAllocation = await _pickAllocationRepository.GetPickAllocationDetailById(confirmPickAllocation.PickAllocationId);
             if (pickAllocation == null) return "Pick Allocation exist is null";
@@ -63,7 +63,13 @@ namespace MilkDistributionWarehouse.Services
                 return "Mã kệ kê hàng được quét không khớp với kệ kê hàng được chỉ định.".ToMessageForUser();
 
             if (pickAllocation.Status != PickAllocationStatus.UnScanned)
-                return "Không thể xác nhận lần lấy hàng ở trạng thái hiện tại.".ToMessageForUser();
+                return "Không thể xác nhận lần lấy hàng này.".ToMessageForUser();
+
+            if (pickAllocation.GoodsIssueNoteDetail != null && pickAllocation.GoodsIssueNoteDetail.GoodsIssueNote.CreatedBy != userId)
+                return "Người dùng hiện tại không được phân công cho phiếu xuất kho này.".ToMessageForUser();
+
+            if (pickAllocation.DisposalNoteDetail != null && pickAllocation.DisposalNoteDetail.DisposalNote.CreatedBy != userId)
+                return "Người dùng hiện tại không được phân công cho phiếu xuất hủy này.".ToMessageForUser();
             try
             {
                 await _unitOfWork.BeginTransactionAsync();

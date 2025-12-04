@@ -110,8 +110,9 @@ namespace MilkDistributionWarehouse.Services
         {
             if (salesOrderCreate == null) return ("Data sales order create is null.", null);
 
-            if (salesOrderCreate.RetailerId != null && (await _retailerRepository.GetRetailerByRetailerId((int)salesOrderCreate.RetailerId)) == null)
-                return ("Nhà bán lẻ không hợp lệ.".ToMessageForUser(), null);
+            var retailer = await _retailerRepository.GetRetailerByRetailerId(salesOrderCreate.RetailerId ?? 0);
+            if (retailer == null) return ("Nhà bán lẻ không hợp lệ.".ToMessageForUser(), null);
+            if (retailer.Status == CommonStatus.Inactive) return ("Nhà bán lẻ này không còn hoạt động.".ToMessageForUser(), null);
 
             if (salesOrderCreate.EstimatedTimeDeparture <= DateOnly.FromDateTime(DateTimeUtility.Now()))
                 return ("Ngày giao hàng không hợp lệ. Vui lòng chọn một ngày trong tương lai.".ToMessageForUser(), null);
@@ -142,8 +143,9 @@ namespace MilkDistributionWarehouse.Services
         {
             if (salesOrderUpdate == null) return ("Data sales order update is null.", null);
 
-            if (salesOrderUpdate.RetailerId != null && (await _retailerRepository.GetRetailerByRetailerId((int)salesOrderUpdate.RetailerId)) == null)
-                return ("Nhà bán lẻ không hợp lệ.".ToMessageForUser(), null);
+            var retailer = await _retailerRepository.GetRetailerByRetailerId(salesOrderUpdate.RetailerId ?? 0);
+            if (retailer == null) return ("Nhà bán lẻ không hợp lệ.".ToMessageForUser(), null);
+            if (retailer.Status == CommonStatus.Inactive) return ("Nhà bán lẻ này không còn hoạt động.".ToMessageForUser(), null);
 
             if (salesOrderUpdate.EstimatedTimeDeparture <= DateOnly.FromDateTime(DateTimeUtility.Now()))
                 return ("Ngày giao hàng không hợp lệ. Vui lòng chọn một ngày trong tương lai.".ToMessageForUser(), null);
@@ -239,6 +241,7 @@ namespace MilkDistributionWarehouse.Services
             var salesOrder = await _salesOrderRepository.GetSalesOrderById(salesOrderUpdateStatus.SalesOrderId);
             if (salesOrder == null) return ("Sales order exist is null", null);
 
+            int? previousAssignee = null;
             try
             {
                 await _unitOfWork.BeginTransactionAsync();
@@ -280,6 +283,7 @@ namespace MilkDistributionWarehouse.Services
                         return ("Chỉ được phân công khi đơn hàng ở trạng thái Đã duyệt hoặc Đã phân công".ToMessageForUser(), null);
                     salesOrder.Status = SalesOrderStatus.AssignedForPicking;
                     salesOrder.AcknowledgedBy = userId;
+                    previousAssignee = salesOrder.AssignTo;
                     salesOrder.AssignTo = assignedForPickingDto.AssignTo;
                     salesOrder.AcknowledgeAt = DateTimeUtility.Now();
                 }
@@ -288,7 +292,7 @@ namespace MilkDistributionWarehouse.Services
                 await _salesOrderRepository.UpdateSalesOrder(salesOrder);
                 await _unitOfWork.CommitTransactionAsync();
 
-                await HandleStatusChangeNotification(salesOrder);
+                await HandleStatusChangeNotification(salesOrder, previousAssignee);
 
                 return ("", salesOrderUpdateStatus);
             }
@@ -338,7 +342,7 @@ namespace MilkDistributionWarehouse.Services
                 dictionary2.TryGetValue(kvp.Key, out var count) && count == kvp.Value);
         }
 
-        private async Task HandleStatusChangeNotification(SalesOrder salesOrder)
+        private async Task HandleStatusChangeNotification(SalesOrder salesOrder, int? previousAssignee)
         {
             var notificationsToCreate = new List<NotificationCreateDto>();
 
@@ -404,6 +408,19 @@ namespace MilkDistributionWarehouse.Services
                         EntityId = salesOrder.SalesOrderId,
                         Category = NotificationCategory.Important
                     });
+
+                    if(previousAssignee != null)
+                    {
+                        notificationsToCreate.Add(new NotificationCreateDto()
+                        {
+                            UserId = previousAssignee,
+                            Title = "Đơn bán hàng đã gỡ phân công",
+                            Content = $"Bạn không còn được phân công nhận đơn bán hàng '{salesOrder.SalesOrderId}'.",
+                            EntityType = NotificationEntityType.SaleOrder,
+                            EntityId = salesOrder.SalesOrderId,
+                            Category = NotificationCategory.Important
+                        });
+                    }
                     break;
 
                 default: break;

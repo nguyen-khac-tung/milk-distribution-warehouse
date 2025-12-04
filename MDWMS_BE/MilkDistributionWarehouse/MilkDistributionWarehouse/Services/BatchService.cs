@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Microsoft.AspNetCore.Http.HttpResults;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
@@ -77,8 +78,8 @@ namespace MilkDistributionWarehouse.Services
                 return ("Ngày hết hạn phải là ngày trong tương lai.".ToMessageForUser(), null);
 
             var goodsExist = await _goodsRepository.GetGoodsByGoodsId(createDto.GoodsId);
-            if (goodsExist == null)
-                return ("Sản phẩm được chọn không tồn tại.".ToMessageForUser(), null);
+            if (goodsExist == null) return ("Sản phẩm được chọn không tồn tại.".ToMessageForUser(), null);
+            if (goodsExist != null && goodsExist.Status == CommonStatus.Inactive) return ("Sản phẩm được chọn đã ngừng phân phối.".ToMessageForUser(), null);
 
             var (msg, isDuplicate) = await _batchRepository.IsBatchCodeDuplicate(null, createDto.GoodsId, createDto.BatchCode);
             if (msg.Length > 0) return (msg, null);
@@ -99,12 +100,16 @@ namespace MilkDistributionWarehouse.Services
             var batchExist = await _batchRepository.GetBatchById(updateDto.BatchId);
             if (batchExist == null)
                 return ("Lô hàng không tồn tại.".ToMessageForUser(), null);
-
+             
             if (updateDto.ExpiryDate <= updateDto.ManufacturingDate)
                 return ("Ngày hết hạn phải sau ngày sản xuất.".ToMessageForUser(), null);
 
             if (updateDto.ManufacturingDate > DateOnly.FromDateTime(DateTime.Now))
                 return ("Ngày sản xuất phải là ngày trong quá khứ.".ToMessageForUser(), null);
+
+            var goodsExist = await _goodsRepository.GetGoodsByGoodsId(updateDto.GoodsId);
+            if (goodsExist == null) return ("Sản phẩm được chọn không tồn tại.".ToMessageForUser(), null);
+            if (goodsExist != null && goodsExist.Status == CommonStatus.Inactive) return ("Sản phẩm được chọn đã ngừng phân phối.".ToMessageForUser(), null);
 
             var (msg, isDuplicate) = await _batchRepository.IsBatchCodeDuplicate(updateDto.BatchId, updateDto.GoodsId, updateDto.BatchCode);
             if (msg.Length > 0) return (msg, null);
