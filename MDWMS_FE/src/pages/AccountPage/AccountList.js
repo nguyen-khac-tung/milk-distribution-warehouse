@@ -94,6 +94,11 @@ export default function AdminPage() {
   const [statusSearchQuery, setStatusSearchQuery] = useState("")
   const [roleSearchQuery, setRoleSearchQuery] = useState("")
 
+  // Handler để xử lý search query
+  const handleSearchQueryChange = (value) => {
+    setSearchQuery(value)
+  }
+
   const [sortColumn, setSortColumn] = useState(null)
   const [sortDirection, setSortDirection] = useState("asc")
 
@@ -227,6 +232,15 @@ export default function AdminPage() {
     setShowDeleteModal(true)
   }
 
+  // Normalize function: lowercase, trim, and collapse multiple spaces into one
+  const normalize = (str) => {
+    if (!str) return "";
+    return str
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, " "); // gom nhiều space thành 1 space
+  };
+
   // Fetch data from API
   const fetchData = async (searchParams = {}) => {
     try {
@@ -242,10 +256,14 @@ export default function AdminPage() {
         filters.roleId = String(roleFilter)
       }
 
+      // Normalize search query trước khi gọi API (nhưng vẫn giữ nguyên giá trị trong input khi đang gõ)
+      const searchValue = searchParams.search !== undefined ? searchParams.search : searchQuery
+      const normalizedSearch = normalize(searchValue)
+
       const response = await getUserList({
         pageNumber: searchParams.pageNumber !== undefined ? searchParams.pageNumber : pagination.pageNumber,
         pageSize: searchParams.pageSize !== undefined ? searchParams.pageSize : pagination.pageSize,
-        search: searchParams.search !== undefined ? searchParams.search : searchQuery,
+        search: normalizedSearch,
         sortField: searchParams.sortField || sortColumn || "",
         sortAscending: searchParams.sortAscending !== undefined ? searchParams.sortAscending : sortDirection === "asc",
         filters,
@@ -411,17 +429,20 @@ export default function AdminPage() {
   const filterAndSortEmployees = () => {
     if (!Array.isArray(allEmployees)) return []
 
+    // Normalize search query để filter chính xác (nhưng vẫn giữ nguyên giá trị trong input khi đang gõ)
+    const normalizedSearchQuery = normalize(searchQuery)
+
     return allEmployees
       .filter((employee) => {
         const roles = employee.roles || []
-        const rolesString = roles.join(" ").toLowerCase()
+        const rolesString = roles.join(" ")
         const fullName = employee.fullName || ""
         const email = employee.email || ""
 
         const matchesSearch =
-          fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          rolesString.includes(searchQuery.toLowerCase())
+          normalize(fullName).includes(normalizedSearchQuery) ||
+          normalize(email).includes(normalizedSearchQuery) ||
+          normalize(rolesString).includes(normalizedSearchQuery)
 
         let matchesStatus = true
         if (statusFilter) {
@@ -618,7 +639,7 @@ export default function AdminPage() {
         <Card className="shadow-sm border border-slate-200 overflow-visible bg-gray-50">
           <SearchFilterToggle
             searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
+            setSearchQuery={handleSearchQueryChange}
             searchPlaceholder="Tìm kiếm theo tên, email"
             statusFilter={statusFilter}
             setStatusFilter={setStatusFilter}

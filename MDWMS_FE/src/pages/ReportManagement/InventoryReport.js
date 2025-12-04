@@ -397,6 +397,15 @@ export default function InventoryReport({ onClose }) {
   // Report type: "current" (tồn kho hiện tại) or "period" (tồn kho theo kỳ)
   const [reportType, setReportType] = useState("current")
 
+  // Normalize function: lowercase, trim, and collapse multiple spaces into one
+  const normalize = (str) => {
+    if (!str) return "";
+    return str
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, " "); // gom nhiều space thành 1 space
+  };
+
   // Data states - store all raw data from API
   const [allInventoryData, setAllInventoryData] = useState([])
   const [allLedgerData, setAllLedgerData] = useState([])
@@ -731,15 +740,15 @@ export default function InventoryReport({ onClose }) {
     let filtered = [...sourceData]
 
     // Filter by search query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim()
+    const normalizedSearchQuery = normalize(searchQuery);
+    if (normalizedSearchQuery) {
       filtered = filtered.filter(item => {
-        const goodsCode = (item.goodsCode || "").toLowerCase()
-        const goodsName = (item.goodName || item.goodsName || "").toLowerCase()
-        const batchCode = (item.batchCode || "").toLowerCase()
-        return goodsCode.includes(query) ||
-          goodsName.includes(query) ||
-          batchCode.includes(query)
+        const goodsCode = normalize(item.goodsCode || "")
+        const goodsName = normalize(item.goodName || item.goodsName || "")
+        const batchCode = normalize(item.batchCode || "")
+        return goodsCode.includes(normalizedSearchQuery) ||
+          goodsName.includes(normalizedSearchQuery) ||
+          batchCode.includes(normalizedSearchQuery)
       })
     }
 
@@ -924,24 +933,14 @@ export default function InventoryReport({ onClose }) {
   }, [showSupplierFilter])
 
   const filteredSuppliers = useMemo(() => {
-
-    const normalizeString = (str) =>
-      str
-        ?.toLowerCase()
-        .trim()
-        .replace(/\s+/g, " ");
-
-    if (!supplierSearchTerm.trim()) {
-      return suppliers;
+    const normalizedSearch = normalize(supplierSearchTerm);
+    if (!normalizedSearch) {
+      return suppliers
     }
-
-    const query = normalizeString(supplierSearchTerm);
-
     return suppliers.filter(supplier =>
-      normalizeString(supplier.companyName || "").includes(query)
-    );
-
-  }, [suppliers, supplierSearchTerm]);
+      normalize(supplier.companyName || '').includes(normalizedSearch)
+    )
+  }, [suppliers, supplierSearchTerm])
 
   const handleClearAllFilters = () => {
     setSearchQuery("")

@@ -36,6 +36,15 @@ export default function OrdersPage({ onClose }) {
   const [activeOrderType, setActiveOrderType] = useState("purchase") // "purchase" or "sales"
   const [searchQuery, setSearchQuery] = useState("")
   const [loading, setLoading] = useState(false)
+
+  // Normalize function: lowercase, trim, and collapse multiple spaces into one
+  const normalize = (str) => {
+    if (!str) return "";
+    return str
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, " "); // gom nhiều space thành 1 space
+  };
   // Store all raw data from API (no filtering/sorting)
   const [allPurchaseOrders, setAllPurchaseOrders] = useState([])
   const [allSalesOrders, setAllSalesOrders] = useState([])
@@ -219,23 +228,23 @@ export default function OrdersPage({ onClose }) {
 
   // Filter suppliers based on search term
   const filteredSuppliers = useMemo(() => {
-    if (!supplierSearchTerm.trim()) {
+    const normalizedSearch = normalize(supplierSearchTerm);
+    if (!normalizedSearch) {
       return suppliers
     }
-    const query = supplierSearchTerm.toLowerCase().trim()
     return suppliers.filter(supplier =>
-      (supplier.companyName || '').toLowerCase().includes(query)
+      normalize(supplier.companyName || '').includes(normalizedSearch)
     )
   }, [suppliers, supplierSearchTerm])
 
   // Filter retailers based on search term
   const filteredRetailers = useMemo(() => {
-    if (!retailerSearchTerm.trim()) {
+    const normalizedSearch = normalize(retailerSearchTerm);
+    if (!normalizedSearch) {
       return retailers
     }
-    const query = retailerSearchTerm.toLowerCase().trim()
     return retailers.filter(retailer =>
-      (retailer.retailerName || '').toLowerCase().includes(query)
+      normalize(retailer.retailerName || '').includes(normalizedSearch)
     )
   }, [retailers, retailerSearchTerm])
 
@@ -287,17 +296,17 @@ export default function OrdersPage({ onClose }) {
     let filtered = [...sourceData]
 
     // Filter by search query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim()
+    const normalizedSearchQuery = normalize(searchQuery);
+    if (normalizedSearchQuery) {
       filtered = filtered.filter(order => {
-        const supplierName = (order.supplierName || "").toLowerCase()
-        const retailerName = (order.retailerName || "").toLowerCase()
-        const goodsCode = (order.goodsCode || "").toLowerCase()
-        const goodsName = (order.goodsName || "").toLowerCase()
-        return supplierName.includes(query) ||
-          retailerName.includes(query) ||
-          goodsCode.includes(query) ||
-          goodsName.includes(query)
+        const supplierName = normalize(order.supplierName || "")
+        const retailerName = normalize(order.retailerName || "")
+        const goodsCode = normalize(order.goodsCode || "")
+        const goodsName = normalize(order.goodsName || "")
+        return supplierName.includes(normalizedSearchQuery) ||
+          retailerName.includes(normalizedSearchQuery) ||
+          goodsCode.includes(normalizedSearchQuery) ||
+          goodsName.includes(normalizedSearchQuery)
       })
     }
 

@@ -84,14 +84,25 @@ const AreaLists = () => {
         }
     };
 
+    // Normalize function: lowercase, trim, and collapse multiple spaces into one
+    const normalize = (str) => {
+        if (!str) return "";
+        return str
+            .toLowerCase()
+            .trim()
+            .replace(/\s+/g, " "); // gom nhiều space thành 1 space
+    };
+
     // Fetch list areas
     const fetchAreas = async (page = 1, pageSize = 10, params = {}) => {
         try {
             setLoading(true);
+            // Normalize search query trước khi gọi API (nhưng vẫn giữ nguyên giá trị trong input khi đang gõ)
+            const normalizedSearch = normalize(params.search || "");
             const res = await getAreas({
                 pageNumber: page,
                 pageSize,
-                search: params.search,
+                search: normalizedSearch,
                 filters: params.filters,
                 sortField: params.sortField || "",
                 sortAscending: typeof params.sortAscending === 'boolean' ? params.sortAscending : undefined,
