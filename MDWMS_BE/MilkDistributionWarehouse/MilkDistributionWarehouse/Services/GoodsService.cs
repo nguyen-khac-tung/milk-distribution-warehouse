@@ -42,11 +42,13 @@ namespace MilkDistributionWarehouse.Services
         private readonly IUserRepository _userRepository;
         private readonly INotificationService _notificationService;
         private readonly IInventoryLedgerService _inventoryLedgerService;
+        private readonly ISupplierRepository _supplierRepository;
 
         public GoodsService(IGoodsRepository goodRepository, IMapper mapper, ICategoryRepository categoryRepository, ISalesOrderRepository salesOrderRepository,
             IUserRepository userRepository, IUnitMeasureRepository unitMeasureRepository, IStorageConditionRepository storageConditionRepository,
             IPalletRepository palletRepository, IUnitOfWork unitOfWork, ICacheService cacheService, IGoodsPackingService goodsPackingService,
-            IBatchRepository batchRepository, INotificationService notificationService, IInventoryLedgerService inventoryLedgerService)
+            IBatchRepository batchRepository, INotificationService notificationService, IInventoryLedgerService inventoryLedgerService,
+            ISupplierRepository supplierRepository)
         {
             _goodRepository = goodRepository;
             _mapper = mapper;
@@ -62,6 +64,7 @@ namespace MilkDistributionWarehouse.Services
             _userRepository = userRepository;
             _notificationService = notificationService;
             _inventoryLedgerService = inventoryLedgerService;
+            _supplierRepository = supplierRepository;
         }
 
         public async Task<(string, PageResult<GoodsDto>?)> GetGoods(PagedRequest request)
@@ -195,6 +198,10 @@ namespace MilkDistributionWarehouse.Services
                 goods.GoodsPackings = _mapper.Map<List<GoodsPacking>>(goodsCreate.GoodsPackingCreates);
             }
 
+            string validation = await AreMasterDataValidForGoodsCreationAsync(goodsCreate);
+            if (!string.IsNullOrEmpty(validation))
+                return (validation.ToMessageForUser(), default);
+
             var createResult = await _goodRepository.CreateGoods(goods);
 
             if (createResult == null)
@@ -250,7 +257,7 @@ namespace MilkDistributionWarehouse.Services
                 {
                     var goodDto = create.Goods[i];
 
-                    var validation = ValidationGoods(goodDto, existingCodesSet);
+                    var validation = await ValidationGoods(goodDto, existingCodesSet);
 
                     if (validation != null)
                     {
@@ -350,6 +357,10 @@ namespace MilkDistributionWarehouse.Services
 
                 _cacheService.InvalidateDropdownCache("Goods", "Supplier", goodsExist.SupplierId);
 
+                var validation = await AreMasterDataValidForGoodsCreationAsync(_mapper.Map<GoodsCreate>(update));
+                if (!string.IsNullOrEmpty(validation))
+                    return (validation.ToMessageForUser(), default);
+
                 var updateResult = await _goodRepository.UpdateGoods(goodsExist);
 
                 if (updateResult == null)
@@ -443,7 +454,7 @@ namespace MilkDistributionWarehouse.Services
             return ("", _mapper.Map<GoodsDto>(goodsExist));
         }
 
-        private string? ValidationGoods(GoodsCreateBulkDto create, HashSet<string> existingGoodsCode)
+        private async Task<string?> ValidationGoods(GoodsCreateBulkDto create, HashSet<string> existingGoodsCode)
         {
             if (existingGoodsCode.Contains(create.GoodsCode))
                 return "Mã sản phẩm đã tồn tại trong hệ thống";
@@ -478,6 +489,10 @@ namespace MilkDistributionWarehouse.Services
             {
                 return "Danh sách đóng gói hàng hoá trống.";
             }
+
+            var validation = await AreMasterDataValidForGoodsCreationAsync(_mapper.Map<GoodsCreate>(create));
+            if (!string.IsNullOrEmpty(validation))
+                return validation;
 
             return null;
         }
@@ -600,6 +615,23 @@ namespace MilkDistributionWarehouse.Services
             return goodsPackingCreate
                 .GroupBy(x => x.UnitPerPackage)
                 .Any(g => g.Count() > 1);
+        }
+
+        private async Task<string> AreMasterDataValidForGoodsCreationAsync(GoodsCreate goodsCreate)
+        {
+            var isActiveSupplier = await _supplierRepository.IsActiveSupplier(goodsCreate.SupplierId);
+            if (!isActiveSupplier) return "Nhà cung cấp không tồn tại hoặc đã bị vô hiệu hoá.";
+
+            var isActiveCategory = await _categoryRepository.IsActiveCategory(goodsCreate.CategoryId);
+            if (!isActiveCategory) return "Danh mục không tồn tại hoặc đã bị vô hiệu hoá.";
+
+            var isActiveStorageCondition = await _storageConditionRepository.IsActiveStorageCondition(goodsCreate.StorageConditionId);
+            if (!isActiveStorageCondition) return "Điều kiện bảo quản không tồn tại hoặc đã bị vô hiệu hoá.";
+
+            var isActiveUnitMeasure = await _unitMeasureRepository.IsActiveUnitMeasure(goodsCreate.UnitMeasureId);
+            if (!isActiveUnitMeasure) return "Đơn vị không tồn tại hoặc đã bị vô hiệu hoá.";
+
+            return "";
         }
     }
 }

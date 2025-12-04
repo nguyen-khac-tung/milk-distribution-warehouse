@@ -16,6 +16,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> IsDuplicationTaxCode(int? supplierId, string taxCode);
         Task<bool> IsDuplicationEmail(int? supplierId, string email);
         Task<bool> IsDuplicationPhone(int? supplierId, string phone);
+        Task<bool> IsActiveSupplier(int supplierId);
 
     }
     public class SupplierRepository : ISupplierRepository
@@ -101,6 +102,13 @@ namespace MilkDistributionWarehouse.Repositories
             return await _context.Suppliers
                 .AnyAsync(s => (supplierId == null || s.SupplierId != supplierId)
                 && s.Phone.ToLower().Trim().Equals(phone.ToLower().Trim()));
+        }
+        public async Task<bool> IsActiveSupplier(int supplierId)
+        {
+            return await _context.Suppliers
+                .AnyAsync(s => s.SupplierId == supplierId &&
+                            s.Status == CommonStatus.Active
+            );
         }
     }
 }
