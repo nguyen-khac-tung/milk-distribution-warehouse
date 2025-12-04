@@ -389,11 +389,15 @@ namespace MilkDistributionWarehouse.Services
                         });
                     }
                 }
-
+                if (create.BackOrders.Count == 1 && result.TotalFailed == 1 && result.TotalInserted == 0 && result.TotalUpdated == 0)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ("Tạo backorder thất bại.".ToMessageForUser(), result);
+                }
                 await _unitOfWork.CommitTransactionAsync();
                 return ("", result);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 await _unitOfWork.RollbackTransactionAsync();
                 throw;

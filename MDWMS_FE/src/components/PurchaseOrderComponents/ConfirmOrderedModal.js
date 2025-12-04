@@ -166,7 +166,7 @@ const ConfirmOrderedModal = ({
                     <div className="mb-4">
                         <Label htmlFor="estimatedTimeArrival" className="flex items-center space-x-2 mb-2">
                             <Calendar className="h-4 w-4 text-gray-600" />
-                            <span className="text-sm font-medium text-gray-700">Ngày dự kiến nhập *</span>
+                            <span className="text-sm font-medium text-gray-700">Ngày dự kiến nhập <span className="text-red-500">*</span></span>
                         </Label>
                         <Input
                             id="estimatedTimeArrival"
@@ -191,7 +191,7 @@ const ConfirmOrderedModal = ({
                         <div className="mb-4">
                             <Label htmlFor="reason" className="flex items-center space-x-2 mb-2">
                                 <AlertCircle className="h-4 w-4 text-gray-600" />
-                                <span className="text-sm font-medium text-gray-700">Lý do thay đổi *</span>
+                                <span className="text-sm font-medium text-gray-700">Lý do thay đổi <span className="text-red-500">*</span></span>
                             </Label>
                             <Textarea
                                 id="reason"

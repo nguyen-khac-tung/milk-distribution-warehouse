@@ -13,7 +13,7 @@ namespace MilkDistributionWarehouse.Repositories
         IQueryable<SalesOrder> GetListSalesOrdersByStatus(int status);
         Task<SalesOrder?> GetSalesOrderById(string? id);
         Task<bool> HasActiveSalesOrder(int retailerId);
-        Task<bool> IsAllSalesOrderDraffOrEmpty(int retailerId);
+        Task<bool> IsAllSalesOrderDraftOrEmpty(int retailerId);
         Task CreateSalesOrder(SalesOrder salesOrder);
         Task UpdateSalesOrder(SalesOrder salesOrder);
         Task DeleteSalesOrder(SalesOrder salesOrder);
@@ -74,10 +74,14 @@ namespace MilkDistributionWarehouse.Repositories
                 && so.Status != SalesOrderStatus.Completed);
         }
 
-        public async Task<bool> IsAllSalesOrderDraffOrEmpty(int retailerId)
+        public async Task<bool> IsAllSalesOrderDraftOrEmpty(int retailerId)
         {
-            var salesOrder = _context.SalesOrders.Where(so => so.RetailerId == retailerId);
-            return !await salesOrder.AnyAsync(so => so.Status != SalesOrderStatus.Draft);
+            var salesOrders = _context.SalesOrders.Where(so => so.RetailerId == retailerId);
+
+            bool hasAny = await salesOrders.AnyAsync();
+            if (!hasAny) return true; 
+
+            return !await salesOrders.AnyAsync(so => so.Status != SalesOrderStatus.Draft);
         }
 
         public async Task CreateSalesOrder(SalesOrder salesOrder)

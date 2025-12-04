@@ -1420,7 +1420,7 @@ export default function GoodsReceiptDetail() {
                     </div>
                     <div>
                       <h2 className="text-lg font-semibold text-gray-900">Sắp xếp</h2>
-                      <p className="text-sm text-gray-500">Sắp xếp hàng hóa trong kho</p>
+                      <p className="text-sm text-gray-500">Sắp xếp hàng hóa vòa vị trí trong kho</p>
                     </div>
                   </div>
                   {expandedSections.arranging ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
