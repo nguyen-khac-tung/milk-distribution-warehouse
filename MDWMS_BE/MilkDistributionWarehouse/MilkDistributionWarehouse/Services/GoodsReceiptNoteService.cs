@@ -31,6 +31,7 @@ namespace MilkDistributionWarehouse.Services
         private readonly IStocktakingSheetRepository _stocktakingSheetRepository;
         private readonly INotificationService _notificationService;
         private readonly IWebHostEnvironment _env;
+        private readonly IUserRepository _userRepository;
 
         public GoodsReceiptNoteService(IGoodsReceiptNoteRepository goodsReceiptNoteRepository,
             IMapper mapper, IPurchaseOrderDetailRepository purchaseOrderDetailRepository,
@@ -39,7 +40,7 @@ namespace MilkDistributionWarehouse.Services
             IPurchaseOrderRepositoy purchaseOrderRepository,
             IInventoryLedgerService inventoryLedgerService,
             IStocktakingSheetRepository stocktakingSheetRepository,
-            INotificationService notificationService, IWebHostEnvironment env)
+            INotificationService notificationService, IWebHostEnvironment env, IUserRepository userRepository)
         {
             _goodsReceiptNoteRepository = goodsReceiptNoteRepository;
             _mapper = mapper;
@@ -52,6 +53,7 @@ namespace MilkDistributionWarehouse.Services
             _stocktakingSheetRepository = stocktakingSheetRepository;
             _notificationService = notificationService;
             _env = env;
+            _userRepository = userRepository;
         }
 
         public async Task<(string, GoodsReceiptNoteDto?)> CreateGoodsReceiptNote(GoodsReceiptNoteCreate create, int? userId)
@@ -73,6 +75,9 @@ namespace MilkDistributionWarehouse.Services
 
                 if (purchaseOrder == null)
                     throw new Exception("Đơn đặt hàng không tồn tại.".ToMessageForUser());
+
+                if (purchaseOrder.AssignTo != userId)
+                    throw new Exception("Bạn không có quyền thực hiện chức năng này.".ToMessageForUser());
 
                 var grn = _mapper.Map<GoodsReceiptNote>(create);
 
@@ -138,7 +143,7 @@ namespace MilkDistributionWarehouse.Services
                         throw new Exception("Chỉ được chuyển sang trạng thái Chờ duyệt khi đơn ở trạng thái Đang tiếp nhận.".ToMessageForUser());
 
                     if (grn.CreatedBy != userId)
-                        throw new Exception("Current User has no permission to update.");
+                        throw new Exception("Bạn không có quyền thực hiện chức năng này.".ToMessageForUser());
 
                     string message = await UpdateStatusGRNDetail(grn, GoodsReceiptNoteStatus.PendingApproval, userId);
                     if (!string.IsNullOrEmpty(message))
@@ -152,6 +157,12 @@ namespace MilkDistributionWarehouse.Services
                 {
                     if (currentStatus != GoodsReceiptNoteStatus.PendingApproval)
                         throw new Exception("Chỉ được chuyển sang trạng thái Hoàn thành khi đơn ở trạng thái Chờ duyệt.".ToMessageForUser());
+
+                    await EnsureRolePermission(
+                            RoleType.WarehouseManager,
+                            userId,
+                            "Tài khoản quản lý kho không tồn tại hoặc đã bị vô hiệu hoá.",
+                            "Bạn không có quyền thực hiện chức năng này");
 
                     string message = await UpdateStatusGRNDetail(grn, GoodsReceiptNoteStatus.Completed, userId);
                     if (!string.IsNullOrEmpty(message))
@@ -353,5 +364,15 @@ namespace MilkDistributionWarehouse.Services
                 await _notificationService.CreateNotificationBulk(notificationList);
         }
 
+        private async Task EnsureRolePermission(int roleType, int? userId, string missingRoleMessage, string noPermissionMessage)
+        {
+            var users = await _userRepository.GetUsersByRoleId(roleType);
+
+            if (!users.Any())
+                throw new Exception(missingRoleMessage.ToMessageForUser(), default);
+
+            if (userId == null || !users.Any(user => user.UserId == userId))
+                throw new Exception(noPermissionMessage.ToMessageForUser(), default);
+        }
     }
 }
