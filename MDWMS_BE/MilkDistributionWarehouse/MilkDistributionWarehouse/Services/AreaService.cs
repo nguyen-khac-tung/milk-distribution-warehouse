@@ -213,8 +213,12 @@ namespace MilkDistributionWarehouse.Services
                 {
                     AreaId = a.AreaId,
                     AreaName = a.AreaName,
-                    AvailableLocationCount = a.Locations.Count(l => l.IsAvailable == true && l.Status != CommonStatus.Inactive),
-                    UnAvailableLocationCount = a.Locations.Count(l => l.IsAvailable == false && l.Status != CommonStatus.Inactive),
+                    AvailableLocationCount = a.Locations.Count(l => 
+                        l.IsAvailable == true && 
+                        l.Status == CommonStatus.Active),
+                    UnAvailableLocationCount = a.Locations.Count(l => 
+                        l.IsAvailable == false && 
+                        l.Status == CommonStatus.Active),
                     TemperatureMax = a.StorageCondition.TemperatureMax,
                     TemperatureMin = a.StorageCondition.TemperatureMin,
                     HumidityMax = a.StorageCondition?.HumidityMax,

@@ -14,6 +14,7 @@ import { updateStocktaking, getStocktakingDetail } from '../../services/Stocktak
 import { extractErrorMessage } from '../../utils/Validation';
 import { getAreaDropdown } from '../../services/AreaServices';
 import AssignAreaModal from '../../components/StocktakingComponents/AssignAreaModal';
+import AssignSingleAreaModalForCreate from '../../components/StocktakingComponents/AssignSingleAreaModalForCreate';
 import PermissionWrapper from '../../components/Common/PermissionWrapper';
 import { PERMISSIONS } from '../../utils/permissions';
 
@@ -45,6 +46,7 @@ const UpdateStocktaking = () => {
     const [updateLoading, setUpdateLoading] = useState(false);
     const [loading, setLoading] = useState(true);
     const [showAssignModal, setShowAssignModal] = useState(false);
+    const [showSingleAreaModal, setShowSingleAreaModal] = useState(false);
 
     // Area dropdown states
     const [areas, setAreas] = useState([]);
@@ -311,20 +313,33 @@ const UpdateStocktaking = () => {
     const handleOpenAssignModal = (e) => {
         e.preventDefault();
 
-        // Chỉ validate form, không gọi API
+        // Validate form trước
         if (!validateForm()) {
             window.showToast('Vui lòng điền đầy đủ thông tin bắt buộc', 'error');
             return;
         }
 
-        // Chỉ mở modal, chưa lưu gì cả
-        setShowAssignModal(true);
+        // Kiểm tra số lượng khu vực đã chọn
+        if (selectedAreas.length === 0) {
+            window.showToast('Vui lòng chọn ít nhất một khu vực kiểm kê', 'error');
+            return;
+        }
+
+        // Kiểm tra số lượng khu vực để quyết định mở modal nào
+        if (selectedAreas.length === 1) {
+            // Nếu chỉ có 1 khu vực, mở modal phân công 1 khu vực
+            setShowSingleAreaModal(true);
+        } else {
+            // Nếu có 2+ khu vực, mở modal phân công nhiều khu vực
+            setShowAssignModal(true);
+        }
     };
 
     const handleAssignmentSuccess = () => {
         // Sau khi phân công thành công, navigate về danh sách
         // Toast đã được hiển thị trong modal
         setShowAssignModal(false);
+        setShowSingleAreaModal(false);
         navigate('/stocktakings');
     };
 
@@ -606,7 +621,7 @@ const UpdateStocktaking = () => {
                 </Card>
             </div>
 
-            {/* Assign Area Modal - Hiển thị khi click nút Phân công */}
+            {/* Assign Area Modal - Hiển thị khi click nút Phân công và có 2+ khu vực */}
             <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_VIEW_WM}>
                 <AssignAreaModal
                     isOpen={showAssignModal}
@@ -619,6 +634,21 @@ const UpdateStocktaking = () => {
                     isReassign={false}
                     stocktaking={null}
                     formData={formData} // Truyền formData để modal tự cập nhật khi confirm
+                />
+            </PermissionWrapper>
+
+            {/* Assign Single Area Modal - Hiển thị khi click nút Phân công và có 1 khu vực */}
+            <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_VIEW_WM}>
+                <AssignSingleAreaModalForCreate
+                    isOpen={showSingleAreaModal}
+                    onClose={() => {
+                        // Chỉ đóng modal, không làm gì cả, form vẫn giữ nguyên
+                        setShowSingleAreaModal(false);
+                    }}
+                    onSuccess={handleAssignmentSuccess}
+                    stocktakingSheetId={formData.stocktakingSheetId || id}
+                    formData={formData} // Truyền formData để modal có thể sử dụng nếu cần
+                    areaId={selectedAreas.length === 1 ? selectedAreas[0] : null} // areaId của khu vực duy nhất
                 />
             </PermissionWrapper>
         </div>

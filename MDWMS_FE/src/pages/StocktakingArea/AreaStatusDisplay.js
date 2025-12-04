@@ -29,7 +29,12 @@ export const AREA_STATUS_COLORS = {
 
 // Component hiển thị trạng thái khu vực
 const AreaStatusDisplay = ({ status, className = '' }) => {
-    const statusLabel = AREA_STATUS_LABELS[status] || 'Không xác định';
+    // Không hiển thị nếu status là null, undefined hoặc không hợp lệ
+    if (status === null || status === undefined || !AREA_STATUS_LABELS[status]) {
+        return null;
+    }
+
+    const statusLabel = AREA_STATUS_LABELS[status];
     const statusColor = AREA_STATUS_COLORS[status] || 'bg-gray-100 text-gray-800';
 
     return (
