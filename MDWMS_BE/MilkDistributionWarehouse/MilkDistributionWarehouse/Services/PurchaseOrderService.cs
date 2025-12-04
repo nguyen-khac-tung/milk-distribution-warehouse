@@ -42,7 +42,7 @@ namespace MilkDistributionWarehouse.Services
         public PurchaseOrderService(IPurchaseOrderRepositoy purchaseOrderRepository, IMapper mapper, IPurchaseOrderDetailService purchaseOrderDetailService,
             IPurchaseOrderDetailRepository purchaseOrderDetailRepository, IUnitOfWork unitOfWork, IGoodsReceiptNoteService goodsReceiptNoteService,
             IUserRepository userRepository, IPalletRepository palletRepository,
-            ISalesOrderRepository salesOrderRepository, ISupplierRepository supplierRepository, 
+            ISalesOrderRepository salesOrderRepository, ISupplierRepository supplierRepository,
             INotificationService notificationService, IGoodsRepository goodsRepository)
         {
             _purchaseOrderRepository = purchaseOrderRepository;
@@ -171,8 +171,7 @@ namespace MilkDistributionWarehouse.Services
             if (purchaseOrderMapDetal == null)
                 return ("PurchaseOrder is not found.", default);
 
-            bool isDisableButton = false;
-
+            bool isDisableButton = true;
             if (role != null)
             {
                 switch (role)
@@ -189,7 +188,7 @@ namespace MilkDistributionWarehouse.Services
                         isDisableButton = false;
                         break;
                     case RoleNames.WarehouseStaff:
-                        isDisableButton = purchaseOrderMapDetal.AssignTo == userId;
+                        isDisableButton = purchaseOrderMapDetal.AssignTo != userId;
                         break;
                     default:
                         break;
@@ -347,7 +346,7 @@ namespace MilkDistributionWarehouse.Services
                         throw new Exception("Chỉ được nộp đơn khi đơn hàng ở trạng thái Nháp hoặc Bị từ chối.".ToMessageForUser());
 
                     if (purchaseOrder.CreatedBy != userId)
-                        throw new Exception("Current User has no permission to update.");
+                        throw new Exception("Bạn không có quyền thực hiện chức năng này.".ToMessageForUser());
 
                     var msg = await CheckPendingPurchaseOrderValidation(purchaseOrder, userId);
 
@@ -363,6 +362,12 @@ namespace MilkDistributionWarehouse.Services
                     if (currentStatus != PurchaseOrderStatus.PendingApproval)
                         throw new Exception("Chỉ được từ chối đơn khi đơn hàng ở trạng thái Chờ duyệt.".ToMessageForUser());
 
+                    await EnsureRolePermission(
+                        RoleType.SaleManager,
+                        userId,
+                        "Tài khoản quản lý kinh doanh không tồn tại hoặc đã bị vô hiệu hoá.",
+                        "Bạn không có quyền thực hiện chức năng này");
+
                     if (string.IsNullOrEmpty(rejectDto.RejectionReason))
                         throw new Exception("Từ chối đơn phải có lý do.".ToMessageForUser());
 
@@ -377,6 +382,12 @@ namespace MilkDistributionWarehouse.Services
                     if (currentStatus != PurchaseOrderStatus.PendingApproval)
                         throw new Exception("Chỉ được duyệt đơn khi đơn hàng ở trạng thái Chờ duyệt.".ToMessageForUser());
 
+                    await EnsureRolePermission(
+                        RoleType.SaleManager,
+                        userId,
+                        "Tài khoản quản lý kinh doanh không tồn tại hoặc đã bị vô hiệu hoá.",
+                        "Bạn không có quyền thực hiện chức năng này");
+
                     purchaseOrder.Status = PurchaseOrderStatus.Approved;
                     purchaseOrder.ApprovalBy = userId;
                     purchaseOrder.RejectionReason = "";
@@ -387,6 +398,9 @@ namespace MilkDistributionWarehouse.Services
                 {
                     if (currentStatus != PurchaseOrderStatus.Approved)
                         throw new Exception("Chỉ được chuyển trạng thái đã đặt đơn khi đơn mua hàng ở trạng thái Đã duyệt".ToMessageForUser());
+
+                    if (purchaseOrder.CreatedBy != userId)
+                        throw new Exception("Bạn không có quyền thực hiện chức năng này.".ToMessageForUser());
 
                     var today = DateTimeUtility.Now();
                     if (purchaseOrderOrderedDto.EstimatedTimeArrival < today)
@@ -405,6 +419,9 @@ namespace MilkDistributionWarehouse.Services
                     if (purchaseOrder.ArrivalConfirmedBy != null)
                         throw new Exception("Đơn hàng đã giao đến. Không thể thay đổi ngày dự kiến giao hàng.".ToMessageForUser());
 
+                    if (purchaseOrder.CreatedBy != userId)
+                        throw new Exception("Bạn không có quyền thực hiện chức năng này.".ToMessageForUser());
+
                     var today = DateTimeUtility.Now();
                     if (orderOrderedUpdateDto.EstimatedTimeArrival < today)
                         throw new Exception("Ngày dự kiến giao hàng phải là ngày trong tương lai.".ToMessageForUser());
@@ -420,6 +437,12 @@ namespace MilkDistributionWarehouse.Services
 
                 if (purchaseOrdersUpdateStatus is PurchaseOrderGoodsReceivedDto)
                 {
+                    await EnsureRolePermission(
+                        RoleType.WarehouseManager,
+                        userId,
+                        "Tài khoản quản lý kho không tồn tại hoặc đã bị vô hiệu hoá.",
+                        "Bạn không có quyền thực hiện chức năng này");
+
                     var estimatedTimeArrival = purchaseOrder.EstimatedTimeArrival;
                     var today = DateTimeUtility.Now();
 
@@ -445,6 +468,12 @@ namespace MilkDistributionWarehouse.Services
                     if (assignedForReceivingDto.AssignTo <= 0)
                         throw new Exception("Vui lòng chọn nhân viên kho để phân công.".ToMessageForUser());
 
+                    await EnsureRolePermission(
+                        RoleType.WarehouseManager,
+                        userId,
+                        "Tài khoản quản lý kho không tồn tại hoặc đã bị vô hiệu hoá.",
+                        "Bạn không có quyền thực hiện chức năng này");
+
                     purchaseOrder.Status = purchaseOrder.ArrivalConfirmedBy == null ?
                         PurchaseOrderStatus.AwaitingArrival : PurchaseOrderStatus.AssignedForReceiving;
 
@@ -459,6 +488,12 @@ namespace MilkDistributionWarehouse.Services
 
                     if (purchaseOrder.AssignTo != null && purchaseOrder.AssignTo == reAssignForReceivingDto.ReAssignTo)
                         throw new Exception("Phải phân công cho người khác khi phân công lại.".ToMessageForUser());
+
+                    await EnsureRolePermission(
+                        RoleType.WarehouseManager,
+                        userId,
+                        "Tài khoản quản lý kho không tồn tại hoặc đã bị vô hiệu hoá.",
+                        "Bạn không có quyền thực hiện chức năng này");
 
                     //var msg = await CheckAssignedForReceivingPO(reAssignForReceivingDto.ReAssignTo, purchaseOrder);
                     //if (!string.IsNullOrEmpty(msg))
@@ -485,6 +520,9 @@ namespace MilkDistributionWarehouse.Services
                     if (currentStatus != PurchaseOrderStatus.AssignedForReceiving)
                         throw new Exception("Chỉ được tiếp nhận đơn hàng khi đơn hàng ở trạng thái Đã phân công.".ToMessageForUser());
 
+                    if (purchaseOrder.AssignTo != userId)
+                        throw new Exception("Bạn không có quyền thực hiện chức năng này.".ToMessageForUser());
+
                     purchaseOrder.Status = PurchaseOrderStatus.Receiving;
                     purchaseOrder.UpdatedAt = DateTimeUtility.Now();
 
@@ -499,6 +537,9 @@ namespace MilkDistributionWarehouse.Services
                 {
                     if (currentStatus != PurchaseOrderStatus.Inspected)
                         throw new Exception("Chỉ được Hoàn thành đơn hàng khi đơn hàng ở trạng thái Đã kiểm tra.".ToMessageForUser());
+
+                    if (purchaseOrder.AssignTo != userId)
+                        throw new Exception("Bạn không có quyền thực hiện chức năng này.".ToMessageForUser());
 
                     string msg = await CheckCompletedPO(purchaseOrder.GoodsReceiptNotes.FirstOrDefault(g => g.PurchaseOderId.Equals(purchaseOrder.PurchaseOderId)));
                     if (!string.IsNullOrEmpty(msg))
@@ -861,6 +902,17 @@ namespace MilkDistributionWarehouse.Services
             }
             if (notificationStatusChange.Any())
                 await _notificationService.CreateNotificationBulk(notificationStatusChange);
+        }
+
+        private async Task EnsureRolePermission(int roleType, int? userId, string missingRoleMessage, string noPermissionMessage)
+        {
+            var users = await _userRepository.GetUsersByRoleId(roleType);
+
+            if (!users.Any())
+                throw new Exception(missingRoleMessage.ToMessageForUser(), default);
+
+            if (userId == null || !users.Any(user => user.UserId == userId))
+                throw new Exception(noPermissionMessage.ToMessageForUser(), default);
         }
     }
 }

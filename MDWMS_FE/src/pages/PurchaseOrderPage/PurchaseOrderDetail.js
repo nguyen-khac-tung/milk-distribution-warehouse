@@ -246,12 +246,14 @@ const PurchaseOrderDetail = () => {
 
     const canStartReceive = () => {
         return hasPermission(PERMISSIONS.PURCHASE_ORDER_START_RECEIVE) &&
-            purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving;
+            purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving &&
+            purchaseOrder?.isDisableButton === false;
     };
 
     const canConfirmOrdered = () => {
         return hasPermission(PERMISSIONS.PURCHASE_ORDER_CONFIRM_ORDERED) &&
-            purchaseOrder?.status === PURCHASE_ORDER_STATUS.Approved;
+            purchaseOrder?.status === PURCHASE_ORDER_STATUS.Approved &&
+            purchaseOrder?.isDisableButton === false;
     };
 
     const canSubmitDraft = () => {
@@ -275,6 +277,10 @@ const PurchaseOrderDetail = () => {
     const canChangeDeliveryDate = () => {
         // Chỉ nhân viên kinh doanh (Sales Representative) mới có quyền thay đổi ngày dự kiến nhập
         if (!hasPermission(PERMISSIONS.PURCHASE_ORDER_CHANGE_DELIVERY_DATE)) {
+            return false;
+        }
+
+        if (purchaseOrder?.isDisableButton) {
             return false;
         }
 
