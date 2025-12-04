@@ -121,7 +121,7 @@ const BatchList = () => {
         ]
         if (!statusSearchQuery) return statusOptions
         const query = statusSearchQuery.toLowerCase()
-        return statusOptions.filter(option => 
+        return statusOptions.filter(option =>
             option.label.toLowerCase().includes(query)
         )
     }, [statusSearchQuery])
@@ -348,7 +348,10 @@ const BatchList = () => {
                                                 <TableRow key={batch.batchId} className="hover:bg-slate-50 border-b border-slate-200">
                                                     <TableCell className="px-6 py-4 text-slate-600 font-medium">{index + 1}</TableCell>
                                                     <TableCell className="font-medium text-slate-900 px-6 py-3 text-left">{batch?.batchCode || ''}</TableCell>
-                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">
+                                                    <TableCell
+                                                        className="text-slate-700 px-6 py-3 text-left"
+                                                        title={batch?.goodsName || ""}
+                                                    >
                                                         {batch?.goodsName
                                                             ? batch.goodsName.length > 20
                                                                 ? batch.goodsName.slice(0, 20) + "..."

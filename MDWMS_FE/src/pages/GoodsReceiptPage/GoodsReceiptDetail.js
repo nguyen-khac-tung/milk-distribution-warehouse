@@ -465,13 +465,13 @@ export default function GoodsReceiptDetail() {
     }
 
     try {
-      const blob = await exportGoodsReceiptNoteWord(goodsReceiptNote.purchaseOderId);
+      const { file, fileName } = await exportGoodsReceiptNoteWord(goodsReceiptNote.purchaseOderId);
 
       // Tạo URL từ blob và tải xuống
-      const url = window.URL.createObjectURL(new Blob([blob]));
+      const url = window.URL.createObjectURL(new Blob([file]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `PhieuNhapKho_${goodsReceiptNote.purchaseOderId}.docx`);
+      link.setAttribute('download', fileName);
       document.body.appendChild(link);
       link.click();
       link.parentNode.removeChild(link);

@@ -414,9 +414,7 @@ const StocktakingDetail = () => {
                                                                 {area.areaName || '-'}
                                                             </CardTitle>
                                                         </div>
-                                                        {area.status && (
-                                                            <AreaStatusDisplay status={area.status} />
-                                                        )}
+                                                        <AreaStatusDisplay status={area.status} />
                                                     </div>
                                                 </CardHeader>
                                                 <CardContent className="p-5 space-y-4">
