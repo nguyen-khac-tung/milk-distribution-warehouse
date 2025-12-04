@@ -265,14 +265,7 @@ namespace MilkDistributionWarehouse.Services
                     var areaExists = await _areaRepository.GetAreaToCreateLocation(dto.AreaId);
                     if (areaExists == null)
                     {
-                        result.FailedItems.Add(new LocationDto.FailedItem
-                        {
-                            Index = i,
-                            Code = $"{areaExists.AreaCode}-{dto.Rack}-R{dto.Row:D2}-C{dto.Column:D2}",
-                            Error = "Khu vực được chọn không tồn tại hoặc đã bị xoá.".ToMessageForUser()
-                        });
-                        result.TotalFailed++;
-                        continue;
+                        return ("Không thể thêm mới vị trí khi khu vực đang không hoạt động.".ToMessageForUser(), result);
                     }
 
                     var entity = _mapper.Map<Location>(dto);
