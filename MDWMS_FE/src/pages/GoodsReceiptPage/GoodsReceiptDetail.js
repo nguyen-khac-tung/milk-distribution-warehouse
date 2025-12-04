@@ -24,7 +24,7 @@ import PermissionWrapper from "../../components/Common/PermissionWrapper";
 import { GOODS_RECEIPT_NOTE_STATUS, RECEIPT_ITEM_STATUS, getGoodsReceiptNoteStatusMeta } from "./goodsReceiptNoteStatus";
 import { getReceiptItemStatusMeta } from "./goodsReceiptNoteStatus";
 import RejectReasonModal from "./RejectReasonModal";
-import { extractErrorMessage, getFileNameFromHeader } from "../../utils/Validation";
+import { extractErrorMessage } from "../../utils/Validation";
 import CreateBatchModal from "./CreateBatchModal";
 import PalletManager from "./CreatePallet";
 import AddLocationToPalletModal from "./AddLocationToPalletModal";
@@ -465,16 +465,10 @@ export default function GoodsReceiptDetail() {
     }
 
     try {
-      const response = await exportGoodsReceiptNoteWord(goodsReceiptNote.purchaseOderId);
-      const blob = response.blob;
-      const headers = response.headers;
-
-      // Lấy tên file từ header Content-Disposition
-      const contentDisposition = headers?.['content-disposition'] || headers?.['Content-Disposition'];
-      const fileName = getFileNameFromHeader(contentDisposition) || `PhieuNhapKho_${goodsReceiptNote.purchaseOderId}.docx`;
+      const { file, fileName } = await exportGoodsReceiptNoteWord(goodsReceiptNote.purchaseOderId);
 
       // Tạo URL từ blob và tải xuống
-      const url = window.URL.createObjectURL(new Blob([blob]));
+      const url = window.URL.createObjectURL(new Blob([file]));
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', fileName);

@@ -1,4 +1,5 @@
 import api from "./api";
+import { getFileNameFromHeader } from "../utils/Validation";
 
 // Lấy danh sách Stocktaking Sheet cho Warehouse Manager
 export const getStocktakingListForWarehouseManager = async (searchParams = {}) => {
@@ -578,14 +579,25 @@ export const exportStocktakingAreaWord = async (stocktakingAreaId) => {
         if (!stocktakingAreaId) {
             throw new Error("stocktakingAreaId is required");
         }
-        const res = await api.get(`/StocktakingArea/ExportStocktakingAreaWord/${stocktakingAreaId}`, {
-            responseType: 'blob'
-        });
-        return {
-            blob: res.data,
-            headers: res.headers
-        };
+        const response = await api.get(
+            `/StocktakingArea/ExportStocktakingAreaWord/${stocktakingAreaId}`,
+            { responseType: "blob" }
+        );
+
+        const cd = response.headers["content-disposition"];
+        const fileName = getFileNameFromHeader(cd) || `phieu-kiem-ke.docx`;
+
+        return { file: response.data, fileName };
     } catch (error) {
+        // đọc lỗi từ blob (ApiResponse)
+        if (error.response?.data instanceof Blob) {
+            const text = await error.response.data.text();
+            try {
+                const parsed = JSON.parse(text);
+                if (parsed?.message) throw new Error(parsed.message);
+            } catch { }
+        }
+
         console.error("Error exporting stocktaking area to Word:", error);
         throw error;
     }
