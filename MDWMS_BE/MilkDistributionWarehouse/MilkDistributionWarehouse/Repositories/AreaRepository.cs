@@ -10,6 +10,7 @@ namespace MilkDistributionWarehouse.Repositories
     {
         IQueryable<Area>? GetAreas();
         Task<Area?> GetAreaById(int areaId);
+        Task<Area?> GetAreaToCreateLocation(int areaId);
         Task<List<AreaDto.AreaLocationAvailableDto>> GetAvailableLocationCountByAreaAsync();
         Task<Area?> CreateArea(Area entity);
         Task<Area?> UpdateArea(Area entity);
@@ -42,6 +43,13 @@ namespace MilkDistributionWarehouse.Repositories
         {
             return await _context.Areas.Include(a => a.StorageCondition)
                 .Where(a => a.AreaId == areaId && a.Status != CommonStatus.Deleted)
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
+        }
+        public async Task<Area?> GetAreaToCreateLocation(int areaId)
+        {
+            return await _context.Areas.Include(a => a.StorageCondition)
+                .Where(a => a.AreaId == areaId && a.Status == CommonStatus.Active)
                 .AsNoTracking()
                 .FirstOrDefaultAsync();
         }

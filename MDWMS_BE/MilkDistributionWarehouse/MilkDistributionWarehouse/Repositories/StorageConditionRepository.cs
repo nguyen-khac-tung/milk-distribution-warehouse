@@ -9,6 +9,7 @@ namespace MilkDistributionWarehouse.Repositories
     {
         IQueryable<StorageCondition> GetStorageConditions();
         Task<StorageCondition?> GetStorageConditionById(int storageConditionId);
+        Task<StorageCondition?> GetStorageConditionToCreateArea(int storageConditionId);
         Task<StorageCondition?> CreateStorageCondition(StorageCondition entity);
         Task<StorageCondition?> UpdateStorageCondition(StorageCondition entity);
         Task<bool> IsDuplicateStorageConditionAsync(int? storageConditionId, decimal? temperatureMin, decimal? temperatureMax, decimal? humidityMin, decimal? humidityMax, string lightLevel);
@@ -37,6 +38,12 @@ namespace MilkDistributionWarehouse.Repositories
         {
             return await _context.StorageConditions
                 .Where(sc => sc.StorageConditionId == storageConditionId && sc.Status != CommonStatus.Deleted)
+                .FirstOrDefaultAsync();
+        }
+        public async Task<StorageCondition?> GetStorageConditionToCreateArea(int storageConditionId)
+        {
+            return await _context.StorageConditions
+                .Where(sc => sc.StorageConditionId == storageConditionId && sc.Status == CommonStatus.Active)
                 .FirstOrDefaultAsync();
         }
 

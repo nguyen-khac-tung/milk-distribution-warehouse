@@ -76,7 +76,7 @@ namespace MilkDistributionWarehouse.Services
             if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
                 return ("Không thể thêm mới vị trí khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser(), new LocationResponseDto());
 
-            var areaExists = await _areaRepository.GetAreaById(dto.AreaId);
+            var areaExists = await _areaRepository.GetAreaToCreateLocation(dto.AreaId);
             if (areaExists == null)
                 return ("Khu vực được chọn không tồn tại hoặc đã bị xoá.".ToMessageForUser(), new LocationResponseDto());
 
@@ -113,7 +113,7 @@ namespace MilkDistributionWarehouse.Services
             if (locationExists.Status == CommonStatus.Deleted)
                 return ("Vị trí này đã bị xóa, không thể cập nhật thông tin.".ToMessageForUser(), new LocationResponseDto());
 
-            var areaExists = await _areaRepository.GetAreaById(dto.AreaId);
+            var areaExists = await _areaRepository.GetAreaToCreateLocation(dto.AreaId);
             if (areaExists == null)
                 return ("Khu vực được chọn không tồn tại hoặc đã bị xoá.".ToMessageForUser(), new LocationResponseDto());
 
@@ -262,7 +262,7 @@ namespace MilkDistributionWarehouse.Services
                         continue;
                     }
 
-                    var areaExists = await _areaRepository.GetAreaById(dto.AreaId);
+                    var areaExists = await _areaRepository.GetAreaToCreateLocation(dto.AreaId);
                     if (areaExists == null)
                     {
                         result.FailedItems.Add(new LocationDto.FailedItem
