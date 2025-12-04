@@ -82,7 +82,7 @@ namespace MilkDistributionWarehouse.Repositories
             try
             {
                 var entity = await _context.StorageConditions
-                    .Where(sc => sc.StorageConditionId == storageConditionId && sc.Status != CommonStatus.Inactive)
+                    .Where(sc => sc.StorageConditionId == storageConditionId && sc.Status != CommonStatus.Deleted)
                     .FirstOrDefaultAsync();
 
                 if (entity == null) return false;
