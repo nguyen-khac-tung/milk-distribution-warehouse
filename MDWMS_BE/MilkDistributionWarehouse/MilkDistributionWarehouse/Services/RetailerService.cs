@@ -86,7 +86,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Không tìm thấy nhà bán lẻ.".ToMessageForUser(), new RetailerDetail());
 
             var retailerDetail = _mapper.Map<RetailerDetail>(retailer);
-            retailerDetail.IsDisable = !await _salesOrderRepository.IsAllSalesOrderDraffOrEmpty(retailerId);
+            retailerDetail.IsDisable = !await _salesOrderRepository.IsAllSalesOrderDraftOrEmpty(retailerId);
 
             return ("", retailerDetail);
         }
@@ -119,7 +119,7 @@ namespace MilkDistributionWarehouse.Services
             if (!string.IsNullOrEmpty(validationRetailer))
                 return (("Không thể cập nhật nhà bán lẻ. " + validationRetailer).ToMessageForUser(), new RetailerDetail());
 
-            var canUpdate = await _salesOrderRepository.IsAllSalesOrderDraffOrEmpty(update.RetailerId);
+            var canUpdate = await _salesOrderRepository.IsAllSalesOrderDraftOrEmpty(update.RetailerId);
             if (canUpdate)
             {
                 retailerExist.RetailerName = update.RetailerName;
