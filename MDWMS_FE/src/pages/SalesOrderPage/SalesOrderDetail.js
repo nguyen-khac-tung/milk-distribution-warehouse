@@ -415,8 +415,8 @@ const SalesOrderDetail = () => {
                                     <TableHeader>
                                         <TableRow className="bg-gray-100">
                                             <TableHead className="w-16 text-center font-semibold">STT</TableHead>
-                                            <TableHead className="font-semibold">Tên hàng hóa</TableHead>
                                             <TableHead className="font-semibold">Mã hàng</TableHead>
+                                            <TableHead className="font-semibold">Tên hàng hóa</TableHead>
                                             <TableHead className="text-center font-semibold leading-tight">
                                                 <div className="flex flex-col items-center">
                                                     <span className="whitespace-nowrap">Đơn vị</span>
@@ -433,8 +433,8 @@ const SalesOrderDetail = () => {
                                             salesOrder.salesOrderItemDetails.map((item, index) => (
                                                 <TableRow key={item.salesOrderDetailId} className="border-b">
                                                     <TableCell className="text-center font-medium">{index + 1}</TableCell>
+                                                    <TableCell className="font-medium">{item.goods.goodsCode}</TableCell>
                                                     <TableCell className="font-medium">{item.goods.goodsName}</TableCell>
-                                                    <TableCell className="text-gray-600">{item.goods.goodsCode}</TableCell>
                                                     <TableCell className="text-center font-semibold">{item.goodsPacking.unitPerPackage}</TableCell>
                                                     <TableCell className="text-center font-semibold">{item.packageQuantity}</TableCell>
                                                     <TableCell className="text-center font-semibold">{item.packageQuantity * item.goodsPacking.unitPerPackage}</TableCell>
