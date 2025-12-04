@@ -191,7 +191,8 @@ namespace MilkDistributionWarehouse.Mappers
             CreateMap<Good, GoodsInventoryDto>()
                 .ForMember(dest => dest.UnitMeasureName, opt => opt.MapFrom(src => src.UnitMeasure.Name))
                 .ForMember(dest => dest.GoodsPackings, opt => opt.MapFrom(src => src.GoodsPackings));
-
+            CreateMap<GoodsCreateBulkDto, GoodsCreate>();
+            CreateMap<GoodsUpdate, GoodsCreate>();
 
             //Map Supplier
             CreateMap<Supplier, SupplierDto>();
@@ -277,6 +278,7 @@ namespace MilkDistributionWarehouse.Mappers
             CreateMap<PurchaseOrderDetailUpdate, PurchaseOderDetail>()
                 .IncludeBase<PurchaseOrderDetailCreate, PurchaseOderDetail>()
                 .ForMember(dest => dest.PurchaseOrderDetailId, opt => opt.Ignore());
+            CreateMap<PurchaseOrderDetailUpdate, PurchaseOrderDetailCreate>();
 
             //Map Pallet
             CreateMap<Pallet, PalletResponseDto>()

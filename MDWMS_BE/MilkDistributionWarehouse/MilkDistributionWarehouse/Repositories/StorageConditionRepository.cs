@@ -2,6 +2,7 @@
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Utilities;
+using System.Threading.Tasks;
 
 namespace MilkDistributionWarehouse.Repositories
 {
@@ -15,6 +16,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> IsDuplicateStorageConditionAsync(int? storageConditionId, decimal? temperatureMin, decimal? temperatureMax, decimal? humidityMin, decimal? humidityMax, string lightLevel);
         Task<bool> DeleteStorageCondition(int storageConditionId);
         Task<List<StorageCondition>> GetActiveStorageConditionsAsync();
+        Task<bool> IsActiveStorageCondition(int storageConditionId);
     }
 
     public class StorageConditionRepository : IStorageConditionRepository
@@ -116,6 +118,13 @@ namespace MilkDistributionWarehouse.Repositories
                 .OrderByDescending(sc => sc.CreatedAt)
                 .AsNoTracking()
                 .ToListAsync();
+        }
+
+        public async Task<bool> IsActiveStorageCondition(int storageConditionId)
+        {
+            return await _context.StorageConditions
+                .AnyAsync(sc => sc.StorageConditionId == storageConditionId &&
+                            sc.Status == CommonStatus.Active);
         }
     }
 }
