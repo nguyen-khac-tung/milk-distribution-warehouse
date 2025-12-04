@@ -47,10 +47,28 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
             {
                 if (TemperatureMin >= TemperatureMax)
-                    yield return new ValidationResult("Nhiệt độ tối thiểu không được lớn hơn hoặc bằng nhiệt độ tối đa!", new[] { nameof(TemperatureMin), nameof(TemperatureMax) });
+                    yield return new ValidationResult(
+                        "Nhiệt độ tối thiểu không được lớn hơn hoặc bằng nhiệt độ tối đa!",
+                        new[] { nameof(TemperatureMin), nameof(TemperatureMax) }
+                    );
+
+                if (TemperatureMax - TemperatureMin < 0.1m)
+                    yield return new ValidationResult(
+                        "Nhiệt độ tối đa phải lớn hơn tối thiểu ít nhất 0.1°C!",
+                        new[] { nameof(TemperatureMin), nameof(TemperatureMax) }
+                    );
 
                 if (HumidityMin >= HumidityMax)
-                    yield return new ValidationResult("Độ ẩm tối thiểu không được lớn hơn hoặc bằng độ ẩm tối đa!", new[] { nameof(HumidityMin), nameof(HumidityMax) });
+                    yield return new ValidationResult(
+                        "Độ ẩm tối thiểu không được lớn hơn hoặc bằng độ ẩm tối đa!",
+                        new[] { nameof(HumidityMin), nameof(HumidityMax) }
+                    );
+
+                if (HumidityMax - HumidityMin < 0.1m)
+                    yield return new ValidationResult(
+                        "Độ ẩm tối đa phải lớn hơn tối thiểu ít nhất 0.1%!",
+                        new[] { nameof(HumidityMin), nameof(HumidityMax) }
+                    );
             }
         }
 
