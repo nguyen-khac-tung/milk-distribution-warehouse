@@ -512,7 +512,7 @@ export default function UpdatePurchaseOrder() {
                                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                                     <div className="space-y-2">
                                         <Label htmlFor="supplier" className="text-slate-600 font-medium">
-                                            Nhà Cung Cấp *
+                                            Nhà Cung Cấp <span className="text-red-500">*</span>
                                         </Label>
                                         <FloatingDropdown
                                             value={formData.supplierName || undefined}

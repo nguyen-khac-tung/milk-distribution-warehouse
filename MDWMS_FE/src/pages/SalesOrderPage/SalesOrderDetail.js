@@ -415,7 +415,7 @@ const SalesOrderDetail = () => {
                                     <TableHeader>
                                         <TableRow className="bg-gray-100">
                                             <TableHead className="w-16 text-center font-semibold">STT</TableHead>
-                                            <TableHead className="font-semibold">Mã hàng</TableHead>
+                                            <TableHead className="font-semibold">Mã hàng hóa</TableHead>
                                             <TableHead className="font-semibold">Tên hàng hóa</TableHead>
                                             <TableHead className="text-center font-semibold leading-tight">
                                                 <div className="flex flex-col items-center">
@@ -424,7 +424,7 @@ const SalesOrderDetail = () => {
                                                 </div>
                                             </TableHead>
                                             <TableHead className="text-center font-semibold">Số thùng</TableHead>
-                                            <TableHead className="text-center font-semibold">Tổng số đơn vị</TableHead>
+                                            <TableHead className="text-center font-semibold max-w-[100px]">Tổng số đơn vị</TableHead>
                                             <TableHead className="text-center font-semibold whitespace-nowrap">Đơn vị</TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -488,7 +488,7 @@ const SalesOrderDetail = () => {
                                     <>
                                         <Button
                                             onClick={() => navigate(`/sales-orders/update/${salesOrder.salesOrderId}`)}
-                                            className="bg-amber-500 hover:bg-amber-600 text-white h-[38px] px-8"
+                                            className="bg-blue-500 hover:bg-blue-600 text-white h-[38px] px-8"
                                         >
                                             <Pencil className="h-4 w-4 mr-2" />
                                             Cập nhật
