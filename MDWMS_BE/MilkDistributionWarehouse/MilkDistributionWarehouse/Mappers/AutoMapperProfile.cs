@@ -277,6 +277,7 @@ namespace MilkDistributionWarehouse.Mappers
             CreateMap<PurchaseOrderDetailUpdate, PurchaseOderDetail>()
                 .IncludeBase<PurchaseOrderDetailCreate, PurchaseOderDetail>()
                 .ForMember(dest => dest.PurchaseOrderDetailId, opt => opt.Ignore());
+            CreateMap<PurchaseOrderDetailUpdate, PurchaseOrderDetailCreate>();
 
             //Map Pallet
             CreateMap<Pallet, PalletResponseDto>()

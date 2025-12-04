@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc.TagHelpers;
 using Microsoft.EntityFrameworkCore;
 using MilkDistributionWarehouse.Constants;
@@ -238,8 +239,8 @@ namespace MilkDistributionWarehouse.Services
                     poDetail.PurchaseOderId = resultPOCreate.PurchaseOderId;
                 }
 
-                var areActiveGoods = await _goodRepository.AreActiveGoods(create.PurchaseOrderDetailCreate);
-                if (areActiveGoods)
+                var areInActiveGoods = await _goodRepository.AreInActiveGoods(create.PurchaseOrderDetailCreate);
+                if (areInActiveGoods)
                     throw new Exception("Một hoặc nhiều hàng hoá trong đơn đặt hàng không tồn tại hoặc không hoạt động.".ToMessageForUser());
 
                 var resultPODetailCreate = await _purchaseOrderDetailRepository.CreatePODetailBulk(purchaseOrderDetailCreate);
@@ -297,6 +298,10 @@ namespace MilkDistributionWarehouse.Services
                     pod.PurchaseOderId = update.PurchaseOderId;
                     pod.PurchaseOrderDetailId = 0;
                 });
+
+                var areInActiveGoods = await _goodRepository.AreInActiveGoods(_mapper.Map<List<PurchaseOrderDetailCreate>>(update.PurchaseOrderDetailUpdates));
+                if (areInActiveGoods)
+                    throw new Exception("Một hoặc nhiều hàng hoá trong đơn đặt hàng không tồn tại hoặc không hoạt động.".ToMessageForUser());
 
                 var resultCreatePODetail = await _purchaseOrderDetailRepository.CreatePODetailBulk(newDetails);
 
