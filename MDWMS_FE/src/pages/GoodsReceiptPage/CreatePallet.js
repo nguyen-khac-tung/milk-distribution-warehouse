@@ -7,7 +7,7 @@ import { getBatchDropdown } from "../../services/BatchService";
 import FloatingDropdown from "../../components/Common/FloatingDropdown";
 import { createPalletsBulk } from "../../services/PalletService";
 
-export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDetails = [], onRegisterSubmit, onPalletCreated, hasExistingPallets = false, onSubmittingChange, onBatchCreated }) {
+export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDetails = [], onRegisterSubmit, onPalletCreated, hasExistingPallets = false, onSubmittingChange, onBatchCreated, purchaseOrderStatus }) {
   const [showPalletTable, setShowPalletTable] = useState(false);
   const [palletRows, setPalletRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -537,9 +537,9 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
           <div className="mt-3">
             <Button
               variant="outline"
-              className="border-orange-300 text-orange-600 hover:bg-orange-50 h-[38px]"
+              className="border-orange-300 text-orange-600 hover:bg-orange-50 h-[38px] disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={ensureTableVisibleWithDefaultRow}
-              disabled={hasExistingPallets || !hasAnyActualQuantity}
+              disabled={hasExistingPallets || !hasAnyActualQuantity || purchaseOrderStatus === 9}
             >
               <Plus className="w-4 h-4 mr-2" />
               Thêm pallet

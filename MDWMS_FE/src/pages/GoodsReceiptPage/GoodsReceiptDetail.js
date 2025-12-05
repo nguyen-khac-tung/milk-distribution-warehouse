@@ -1344,7 +1344,11 @@ export default function GoodsReceiptDetail() {
                 <div className="flex gap-3">
                   {/* Ẩn nút "Thêm Lô Mới" cho nhân viên kho khi đã tạo pallet */}
                   {!(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CHECK) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && palletCreated) && (
-                    <Button className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 h-[38px] flex items-center gap-2" onClick={() => setShowCreateBatchModal(true)}>
+                    <Button 
+                      className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 h-[38px] flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" 
+                      onClick={() => setShowCreateBatchModal(true)}
+                      disabled={goodsReceiptNote?.purchaseOrderStatus === 9}
+                    >
                       <Plus className="w-4 h-4 mr-3" />
                       Thêm Lô Mới
                     </Button>
@@ -1359,14 +1363,15 @@ export default function GoodsReceiptDetail() {
                   hasExistingPallets={pallets.length > 0}
                   onSubmittingChange={handleSubmittingChange}
                   onBatchCreated={handleBatchCreated}
+                  purchaseOrderStatus={goodsReceiptNote?.purchaseOrderStatus}
                 />
 
                 <div className="flex justify-end gap-2 pt-4 border-t border-gray-200">
                   {!palletCreated && (
                     <Button
-                      className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 h-[38px]"
+                      className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 h-[38px] disabled:opacity-50 disabled:cursor-not-allowed"
                       onClick={() => submitPalletsFn && submitPalletsFn()}
-                      disabled={!submitPalletsFn || isSubmittingPallet}
+                      disabled={!submitPalletsFn || isSubmittingPallet || goodsReceiptNote?.purchaseOrderStatus === 9}
                     >
                       {isSubmittingPallet ? (
                         <>
