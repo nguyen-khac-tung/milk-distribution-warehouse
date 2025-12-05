@@ -44,6 +44,15 @@ const SearchBar = () => {
   const searchRef = useRef(null);
   const inputRef = useRef(null);
 
+  // Normalize function: lowercase, trim, and collapse multiple spaces into one
+  const normalize = (str) => {
+    if (!str) return "";
+    return str
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, " "); // gom nhiều space thành 1 space
+  };
+
   // Danh sách các chức năng có thể tìm kiếm (dựa trên Sidebar)
   const searchItems = [
     // Dashboard
@@ -306,15 +315,18 @@ const SearchBar = () => {
       return hasAnyPermission(item.permissions);
     });
 
-    if (searchQuery.trim() === "") {
+    // Normalize search query để kiểm tra
+    const normalizedSearchQuery = normalize(searchQuery);
+
+    if (!normalizedSearchQuery) {
       setFilteredItems(visibleItems);
       return;
     }
 
     const filtered = visibleItems.filter(item =>
-      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.category.toLowerCase().includes(searchQuery.toLowerCase())
+      normalize(item.title).includes(normalizedSearchQuery) ||
+      normalize(item.description).includes(normalizedSearchQuery) ||
+      normalize(item.category).includes(normalizedSearchQuery)
     );
 
     setFilteredItems(filtered);
