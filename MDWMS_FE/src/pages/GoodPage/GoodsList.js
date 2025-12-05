@@ -141,34 +141,6 @@ export default function GoodsPage() {
     }
   }
 
-  // Fetch isDisable status for all goods in current list
-  const fetchGoodsDisableStatus = async (goodsList) => {
-    if (!goodsList || goodsList.length === 0) return goodsList
-
-    try {
-      // Gọi API detail cho từng item để lấy isDisable (song song)
-      const enrichedData = await Promise.all(
-        goodsList.map(async (good) => {
-          try {
-            const detailResponse = await getGoodDetail(good.goodsId)
-            if (detailResponse && detailResponse.status === 200 && detailResponse.data) {
-              return {
-                ...good,
-                isDisable: detailResponse.data.isDisable
-              }
-            }
-          } catch (error) {
-            console.error(`Error fetching detail for ${good.goodsName}:`, error)
-          }
-          return good
-        })
-      )
-      return enrichedData
-    } catch (error) {
-      console.error("Error fetching goods disable status:", error)
-      return goodsList
-    }
-  }
 
   // Normalize function: lowercase, trim, and collapse multiple spaces into one
   const normalize = (str) => {
@@ -206,13 +178,10 @@ export default function GoodsPage() {
         // API returns response.data.items (array) and response.data.totalCount
         const dataArray = Array.isArray(response.data.items) ? response.data.items : []
 
-        // Load isDisable status cho tất cả items để ẩn/hiện nút edit đúng
-        const enrichedData = await fetchGoodsDisableStatus(dataArray)
-
-        setGoods(enrichedData)
+        setGoods(dataArray)
         setPagination(prev => ({
           ...prev,
-          totalCount: response.data.totalCount || enrichedData.length
+          totalCount: response.data.totalCount || dataArray.length
         }))
       } else {
         setGoods([])
@@ -375,15 +344,6 @@ export default function GoodsPage() {
       if (response && response.status === 200 && response.data) {
         const goodDetail = response.data
         setGoodDetail(goodDetail)
-
-        // Update isDisable status in the goods list để cache cho lần sau
-        setGoods(prevGoods =>
-          prevGoods.map(item =>
-            item.goodsId === good.goodsId
-              ? { ...item, isDisable: goodDetail.isDisable }
-              : item
-          )
-        )
       } else {
         window.showToast("Không thể tải chi tiết hàng hóa", "error")
         setShowViewModal(false)
