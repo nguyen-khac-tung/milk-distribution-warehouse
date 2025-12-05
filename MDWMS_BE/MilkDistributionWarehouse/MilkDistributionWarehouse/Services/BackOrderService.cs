@@ -259,10 +259,10 @@ namespace MilkDistributionWarehouse.Services
                 return ("The user is not logged into the system.".ToMessageForUser(), new BackOrderDto.BackOrderResponseCreateDto());
 
             if (!await _backOrderRepository.ExistsRetailer(dto.RetailerId))
-                return ("Retailer do not exist.", new BackOrderDto.BackOrderResponseCreateDto());
+                return ("Nhà bán lẻ không tồn tại.".ToMessageForUser(), new BackOrderDto.BackOrderResponseCreateDto());
 
             if (!await _backOrderRepository.ExistsGoods(dto.GoodsId))
-                return ("Goods do not exist.", new BackOrderDto.BackOrderResponseCreateDto());
+                return ("Hàng hóa không tồn tại.".ToMessageForUser(), new BackOrderDto.BackOrderResponseCreateDto());
 
             var entity = _mapper.Map<BackOrder>(dto);
             entity.BackOrderId = Guid.NewGuid();
@@ -292,13 +292,13 @@ namespace MilkDistributionWarehouse.Services
         {
             var backOrder = await _backOrderRepository.GetBackOrderById(backOrderId);
             if (backOrder == null)
-                return ("Back order do not exist.", new BackOrderDto.BackOrderResponseDto());
+                return ("Đơn đặt hàng bổ sung không tồn tại.".ToMessageForUser(), new BackOrderDto.BackOrderResponseDto());
 
             if (!await _backOrderRepository.ExistsRetailer(dto.RetailerId))
-                return ("Retailer do not exist.", new BackOrderDto.BackOrderResponseDto());
+                return ("Nhà bán lẻ không tồn tại.".ToMessageForUser(), new BackOrderDto.BackOrderResponseDto());
 
             if (!await _backOrderRepository.ExistsGoods(dto.GoodsId))
-                return ("Goods do not exist.", new BackOrderDto.BackOrderResponseDto());
+                return ("Hàng hóa không tồn tại.".ToMessageForUser(), new BackOrderDto.BackOrderResponseDto());
 
             backOrder.RetailerId = dto.RetailerId;
             backOrder.GoodsId = dto.GoodsId;
@@ -347,14 +347,14 @@ namespace MilkDistributionWarehouse.Services
 
                     if (!await _backOrderRepository.ExistsRetailer(dto.RetailerId))
                     {
-                        result.FailedItems.Add(new BackOrderDto.FailedItem { Index = i, Code = dto.RetailerId.ToString(), Error = "Retailer do not exist.".ToMessageForUser() });
+                        result.FailedItems.Add(new BackOrderDto.FailedItem { Index = i, Code = dto.RetailerId.ToString(), Error = "Nhà bán lẻ không tồn tại.".ToMessageForUser() });
                         result.TotalFailed++;
                         continue;
                     }
 
                     if (!await _backOrderRepository.ExistsGoods(dto.GoodsId))
                     {
-                        result.FailedItems.Add(new BackOrderDto.FailedItem { Index = i, Code = dto.GoodsId.ToString(), Error = "Goods do not exist.".ToMessageForUser() });
+                        result.FailedItems.Add(new BackOrderDto.FailedItem { Index = i, Code = dto.GoodsId.ToString(), Error = "Hàng hóa không tồn tại.".ToMessageForUser() });
                         result.TotalFailed++;
                         continue;
                     }
