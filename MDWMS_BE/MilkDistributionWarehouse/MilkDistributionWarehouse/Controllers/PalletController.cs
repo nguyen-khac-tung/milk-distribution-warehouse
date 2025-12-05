@@ -57,6 +57,9 @@ namespace MilkDistributionWarehouse.Controllers
             var (msg, result) = await _palletService.CreatePalletBulk(create, userId);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
+            // If any item failed, return HTTP 400 with the bulk result so front-end gets success = false
+            if (result != null && result.TotalFailed > 0)
+                return ApiResponse<PalletBulkResponse>.ToResultError(string.Empty, 400, result);
             return ApiResponse<PalletBulkResponse>.ToResultOk(result);
         }
 
@@ -64,7 +67,8 @@ namespace MilkDistributionWarehouse.Controllers
         [HttpPut("Update/{id}")]
         public async Task<IActionResult> UpdatePallet(string id, [FromBody] PalletRequestDto dto)
         {
-            var (msg, updated) = await _palletService.UpdatePallet(id, dto);
+            int? userId = User.GetUserId();
+            var (msg, updated) = await _palletService.UpdatePallet(id, dto, userId);
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<PalletResponseDto>.ToResultOk(updated);
