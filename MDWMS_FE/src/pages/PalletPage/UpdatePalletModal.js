@@ -91,12 +91,18 @@ const UpdatePalletModal = ({
       const palletIdRaw = pallet?.palletId || pallet?.id;
       const palletId = palletIdRaw != null ? String(palletIdRaw) : "";
       const result = await validateLocationCode(locationCode, palletId);
-      setLocationValidationResult(result);
 
-      // Lấy message từ result - chỉ hiển thị toast nếu là message từ API (không phải default "Mã vị trí hợp lệ")
+      // Xử lý message qua extractErrorMessage
       const message = result.message || "";
-      const isDefaultMessage = message === "Mã vị trí hợp lệ";
-      const processedMessage = message ? extractErrorMessage({ response: { data: { message } } }, message) : (result.success ? "Mã vị trí hợp lệ" : "Mã vị trí không tồn tại");
+      const processedMessage = message 
+        ? extractErrorMessage({ response: { data: { message } } }, message) 
+        : (result.success ? "Mã vị trí hợp lệ" : "Mã vị trí không tồn tại");
+
+      // Lưu kết quả với message đã được xử lý
+      setLocationValidationResult({
+        ...result,
+        message: processedMessage
+      });
 
       if (result.success) {
         // Lưu locationId từ response
@@ -104,13 +110,9 @@ const UpdatePalletModal = ({
           ...prev,
           locationId: result.data?.locationId || ''
         }));
-        // Chỉ hiển thị toast khi có message từ API (cảnh báo), không hiển thị default message "Mã vị trí hợp lệ"
-        if (message && !isDefaultMessage) {
-          window.showToast?.(processedMessage, "error");
-        }
-        // Không hiển thị toast khi validate thành công với default message (đã có hiển thị trong modal)
+        // Không hiển thị toast, chỉ hiển thị message dưới input
       } else {
-        window.showToast?.(processedMessage, "error");
+        // Không hiển thị toast, chỉ hiển thị message dưới input
       }
     } catch (error) {
       console.error("Error validating location:", error);
@@ -119,7 +121,7 @@ const UpdatePalletModal = ({
         success: false,
         message: errorMessage
       });
-      window.showToast?.(errorMessage, "error");
+      // Không hiển thị toast, chỉ hiển thị message dưới input
     } finally {
       setLocationValidating(false);
     }
@@ -214,7 +216,7 @@ const UpdatePalletModal = ({
             ...prev,
             locationCode: processedMessage
           }));
-          window.showToast?.(processedMessage, "error");
+          // Không hiển thị toast, chỉ hiển thị message dưới input
           setLocationValidating(false);
           return;
         }
@@ -226,10 +228,12 @@ const UpdatePalletModal = ({
         }));
       } catch (error) {
         console.error("Error validating location:", error);
+        const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi kiểm tra mã vị trí");
         setErrors(prev => ({
           ...prev,
-          locationCode: "Có lỗi xảy ra khi kiểm tra mã vị trí"
+          locationCode: errorMessage
         }));
+        // Không hiển thị toast, chỉ hiển thị message dưới input
         setLocationValidating(false);
         return;
       } finally {
@@ -382,7 +386,7 @@ const UpdatePalletModal = ({
 
                 <div className="space-y-2">
                   <Label htmlFor="locationCode" className="text-sm font-medium text-slate-700">
-                    Mã vị trí <span className="text-red-500">*</span>
+                     Quét mã vị trí <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative">
                     <Input
@@ -390,6 +394,21 @@ const UpdatePalletModal = ({
                       placeholder="Nhập mã vị trí..."
                       value={formData.locationCode}
                       onChange={(e) => handleInputChange('locationCode', e.target.value)}
+                      onBlur={(e) => {
+                        // Khi blur (rời khỏi input), chỉ validate, không update
+                        if (e.target.value && e.target.value.trim() !== '') {
+                          validateLocation(e.target.value);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        // Khi nhấn Enter trong input locationCode, chỉ validate, không submit form
+                        if (e.key === 'Enter') {
+                          e.preventDefault(); // Ngăn form submit
+                          if (formData.locationCode && formData.locationCode.trim() !== '') {
+                            validateLocation(formData.locationCode);
+                          }
+                        }
+                      }}
                       className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg pr-10 ${errors.locationCode ? 'border-red-500' :
                         locationValidationResult && !locationValidationResult.success ? 'border-red-500' :
                           locationValidationResult && locationValidationResult.success ? 'border-green-500' : ''

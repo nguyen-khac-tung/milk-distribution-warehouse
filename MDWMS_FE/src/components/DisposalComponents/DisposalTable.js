@@ -101,22 +101,8 @@ const DisposalTable = ({
 
                                 {/* Người tạo */}
                                 {availableFields.hasCreatedByName && (
-                                    <TableHead
-                                        className="font-semibold text-slate-900 px-6 py-3 text-center"
-                                        onClick={() => handleSort("createdByName")}
-                                    >
-                                        <div className="flex items-center justify-center space-x-2 cursor-pointer">
-                                            <span>Người tạo</span>
-                                            {sortField === "createdByName" ? (
-                                                sortAscending ? (
-                                                    <ArrowUp className="h-4 w-4 text-orange-500" />
-                                                ) : (
-                                                    <ArrowDown className="h-4 w-4 text-orange-500" />
-                                                )
-                                            ) : (
-                                                <ArrowUpDown className="h-4 w-4 text-slate-400" />
-                                            )}
-                                        </div>
+                                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                                        Người tạo
                                     </TableHead>
                                 )}
 
@@ -197,7 +183,7 @@ const DisposalTable = ({
                                         </TableCell>
 
                                         {/* Mã yêu cầu */}
-                                        <TableCell className="text-left px-6 py-4 max-w-[180px] break-words whitespace-normal">
+                                        <TableCell className="text-left px-6 py-4 max-w-[200px] break-words whitespace-normal">
                                             {request?.disposalRequestId || "-"}
                                         </TableCell>
 
@@ -272,17 +258,17 @@ const DisposalTable = ({
                                                 </PermissionWrapper>
 
                                                 {/* View Disposal Note Button - Warehouse Manager and Warehouse Staff - Only show when disposal note exists (status >= Picking, because disposal note is created when warehouse staff clicks "Tạo phiếu xuất hủy") */}
-                                                {(isWarehouseManager || isWarehouseStaff) && 
-                                                 request.status && 
-                                                 request.status >= DISPOSAL_REQUEST_STATUS.Picking && (
-                                                    <button
-                                                        className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                        title="Xem phiếu xuất hủy"
-                                                        onClick={() => handleViewDisposalNoteClick(request)}
-                                                    >
-                                                        <FileText className="h-4 w-4 text-green-600" />
-                                                    </button>
-                                                )}
+                                                {(isWarehouseManager || isWarehouseStaff) &&
+                                                    request.status &&
+                                                    request.status >= DISPOSAL_REQUEST_STATUS.Picking && (
+                                                        <button
+                                                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                            title="Xem phiếu xuất hủy"
+                                                            onClick={() => handleViewDisposalNoteClick(request)}
+                                                        >
+                                                            <FileText className="h-4 w-4 text-green-600" />
+                                                        </button>
+                                                    )}
 
                                                 {/* Edit Button - Warehouse Manager for Draft/Rejected */}
                                                 {(request.status === 1 || request.status === 3) && (

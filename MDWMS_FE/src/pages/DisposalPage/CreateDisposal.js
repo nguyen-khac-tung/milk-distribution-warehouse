@@ -7,7 +7,7 @@ import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
 import { Checkbox } from '../../components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
-import { Save, FileText, AlertCircle, Calendar, Search, Building2, ChevronDown, X } from 'lucide-react';
+import { AlertCircle, Calendar, Search, Building2, ChevronDown, X } from 'lucide-react';
 import { getExpiredGoodsForDisposal, createDisposalRequest, updateDisposalRequestStatusPendingApproval, getDisposalRequestListWarehouseManager } from '../../services/DisposalService';
 import { getSuppliersDropdown } from '../../services/SupplierService';
 import { extractErrorMessage } from '../../utils/Validation';
@@ -48,6 +48,14 @@ const CreateDisposal = () => {
         const dd = String(d.getDate()).padStart(2, '0');
         return `${yyyy}-${mm}-${dd}`;
     })();
+
+    const normalize = (str) => {
+        if (!str) return "";
+        return str
+            .toLowerCase()
+            .trim()
+            .replace(/\s+/g, " "); // gom nhiều space thành 1 space
+    };
 
     // Load suppliers on mount
     useEffect(() => {
@@ -107,9 +115,11 @@ const CreateDisposal = () => {
         if (!supplierSearchTerm.trim()) {
             return suppliers;
         }
-        const query = supplierSearchTerm.toLowerCase().trim();
+
+        const query = normalize(supplierSearchTerm);
+
         return suppliers.filter(supplier =>
-            supplier.companyName?.toLowerCase().includes(query)
+            normalize(supplier.companyName).includes(query)
         );
     }, [suppliers, supplierSearchTerm]);
 
@@ -127,12 +137,18 @@ const CreateDisposal = () => {
 
         // Filter by search query
         if (searchQuery.trim()) {
-            const query = searchQuery.toLowerCase().trim();
+            const query = normalize(searchQuery);
+
             filtered = filtered.filter(item => {
-                const goodsName = (item.goods?.goodsName || '').toLowerCase();
-                const goodsCode = (item.goods?.goodsCode || '').toLowerCase();
-                const companyName = (item.goods?.companyName || '').toLowerCase();
-                return goodsName.includes(query) || goodsCode.includes(query) || companyName.includes(query);
+                const goodsName = normalize(item.goods?.goodsName || '');
+                const goodsCode = normalize(item.goods?.goodsCode || '');
+                const companyName = normalize(item.goods?.companyName || '');
+
+                return (
+                    goodsName.includes(query) ||
+                    goodsCode.includes(query) ||
+                    companyName.includes(query)
+                );
             });
         }
 
@@ -318,7 +334,47 @@ const CreateDisposal = () => {
         }
     };
 
-    // Validate form before submit
+    // Scroll to first error field
+    const scrollToFirstError = (errors) => {
+        // Scroll to date field if it has error
+        if (errors.estimatedTimeDeparture) {
+            const dateInput = document.getElementById('estimatedTimeDeparture');
+            if (dateInput) {
+                dateInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                dateInput.focus();
+                return;
+            }
+        }
+
+        // Scroll to first item with error
+        const firstErrorKey = Object.keys(errors).find(key =>
+            key !== 'estimatedTimeDeparture' && key !== 'selectedItems'
+        );
+        if (firstErrorKey) {
+            // Try to find the input field for this error
+            setTimeout(() => {
+                const errorInput = document.querySelector(`input[data-key="${firstErrorKey}"]`);
+                if (errorInput) {
+                    errorInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    errorInput.focus();
+                } else {
+                    // Fallback: scroll to table
+                    const table = document.querySelector('table');
+                    if (table) {
+                        table.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }
+            }, 100);
+        } else if (errors.selectedItems) {
+            // Scroll to table if no items selected
+            const table = document.querySelector('table');
+            if (table) {
+                table.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+    };
+
+    // Validate form before submit - returns { isValid: boolean, errors: object }
     const validateForm = () => {
         const errors = {};
 
@@ -353,17 +409,22 @@ const CreateDisposal = () => {
         });
 
         setFieldErrors(errors);
-        return Object.keys(errors).length === 0;
+
+        // Scroll to first error if validation fails
+        if (Object.keys(errors).length > 0) {
+            setTimeout(() => scrollToFirstError(errors), 100);
+        }
+
+        return { isValid: Object.keys(errors).length === 0, errors };
     };
 
     // Lưu lại thành bản nháp
     const handleSaveAsDraft = async (e) => {
         e.preventDefault();
 
-        if (!validateForm()) {
-            if (window.showToast) {
-                window.showToast("Vui lòng kiểm tra lại thông tin đã nhập", "error");
-            }
+        const validation = validateForm();
+        if (!validation.isValid) {
+            // Không hiển thị toast vì các lỗi đã được hiển thị trên form
             return;
         }
 
@@ -411,10 +472,9 @@ const CreateDisposal = () => {
     const handleSubmitForApproval = async (e) => {
         e.preventDefault();
 
-        if (!validateForm()) {
-            if (window.showToast) {
-                window.showToast("Vui lòng kiểm tra lại thông tin đã nhập", "error");
-            }
+        const validation = validateForm();
+        if (!validation.isValid) {
+            // Không hiển thị toast vì các lỗi đã được hiển thị trên form
             return;
         }
 
@@ -700,20 +760,25 @@ const CreateDisposal = () => {
                                                         {/* 2. STT*/}
                                                         <TableHead className="text-slate-600 font-semibold w-12 text-center">STT</TableHead>
 
+                                                        {/* 5. Mã Hàng*/}
+                                                        <TableHead className="text-slate-600 font-semibold w-[12%]">Mã hàng hóa</TableHead>
+
                                                         {/* 3. Tên nhà cung cấp*/}
                                                         <TableHead className="text-slate-600 font-semibold w-[13%]">Tên nhà cung cấp</TableHead>
 
                                                         {/* 4. Tên hàng hóa */}
                                                         <TableHead className="text-slate-600 font-semibold w-[17%]">Tên hàng hóa</TableHead>
 
-                                                        {/* 5. Mã Hàng*/}
-                                                        <TableHead className="text-slate-600 font-semibold w-[14%]">Mã hàng hóa</TableHead>
-
                                                         {/* 6. Quy Cách Đóng Gói*/}
                                                         <TableHead className="text-slate-600 font-semibold w-[10%]">Quy cách đóng gói</TableHead>
 
                                                         {/* 7. SỐ THÙNG CẦN XUẤT HỦY (INPUT) */}
-                                                        <TableHead className="text-slate-600 font-semibold text-center w-[120px] lg:w-[12%] min-w-[140px]">Số thùng xuất hủy</TableHead>
+                                                        <TableHead className="text-slate-600 font-semibold text-center w-[120px] lg:w-[12%] min-w-[140px]">
+                                                            <div className="flex flex-col items-center">
+                                                                <span className="whitespace-nowrap">Số thùng</span>
+                                                                <span className="whitespace-nowrap">xuất hủy</span>
+                                                            </div>
+                                                        </TableHead>
 
                                                         {/* 8. Tổng Số Đơn Vị/} */}
                                                         <TableHead className="text-slate-600 font-semibold text-center w-[100px] min-w-[100px]">Tổng số đơn vị</TableHead>
@@ -749,6 +814,10 @@ const CreateDisposal = () => {
                                                                 <TableCell className="text-center text-slate-700 align-top pb-6 w-12">
                                                                     {globalIndex}
                                                                 </TableCell>
+                                                                {/* 5. Mã Hàng*/}
+                                                                <TableCell className="text-slate-700 align-top pb-6 w-[12%]">
+                                                                    {item.goods?.goodsCode || '-'}
+                                                                </TableCell>
                                                                 {/* 3. Tên nhà cung cấp*/}
                                                                 <TableCell className="text-slate-700 font-medium align-top pb-6 w-[13%]">
                                                                     {item.goods?.companyName || '-'}
@@ -756,10 +825,6 @@ const CreateDisposal = () => {
                                                                 {/* 4. Tên hàng hóa*/}
                                                                 <TableCell className="text-slate-700 font-medium align-top pb-6 w-[17%]">
                                                                     {item.goods?.goodsName || '-'}
-                                                                </TableCell>
-                                                                {/* 5. Mã Hàng*/}
-                                                                <TableCell className="text-slate-700 align-top pb-6 w-[14%]">
-                                                                    {item.goods?.goodsCode || '-'}
                                                                 </TableCell>
                                                                 {/* 6. Quy Cách Đóng Gói*/}
                                                                 <TableCell className="text-slate-700 align-top pb-6 w-[10%]">
@@ -776,6 +841,7 @@ const CreateDisposal = () => {
                                                                                 max={item.totalExpiredPackageQuantity}
                                                                                 value={selectedItem.packageQuantity || ''}
                                                                                 onChange={(e) => handlePackageQuantityChange(key, e.target.value)}
+                                                                                data-key={key}
                                                                                 className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${fieldErrors[key] ? 'border-red-500' : ''}`}
                                                                                 disabled={saveDraftLoading || submitApprovalLoading}
                                                                             />
