@@ -260,7 +260,7 @@ const BatchList = () => {
                         <h1 className="text-2xl font-bold text-slate-600">Quản lý Lô hàng</h1>
                         <p className="text-slate-600 mt-1">Quản lý các lô hàng trong hệ thống</p>
                     </div>
-                    <Button className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white" onClick={handleOpenCreate}>
+                    <Button className="bg-orange-500 hover:bg-orange-600 h-[38px] px-5 text-white" onClick={handleOpenCreate}>
                         <Plus className="mr-2 h-4 w-4 text-white" />
                         Thêm lô hàng
                     </Button>
@@ -314,10 +314,10 @@ const BatchList = () => {
                                 <CustomTable className="w-full">
                                     <TableHeader>
                                         <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-16">
+                                            <TableHead className="font-semibold text-slate-900 px-5 py-3 text-left w-16">
                                                 STT
                                             </TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                            <TableHead className="font-semibold text-slate-900 px-5 py-3 text-left">
                                                 <div
                                                     className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
                                                     onClick={() => handleSort("batchCode")}
@@ -334,22 +334,53 @@ const BatchList = () => {
                                                     )}
                                                 </div>
                                             </TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                            <TableHead className="font-semibold text-slate-900 px-5 py-3 text-left">
                                                 Tên hàng hóa
                                             </TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                            <TableHead className="font-semibold text-slate-900 px-5 py-3 text-left">
                                                 Mô tả
                                             </TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                                                Ngày sản xuất
+                                            {/* Ngày sản xuất */}
+                                            <TableHead className="font-semibold text-slate-900 px-5 py-3 text-left">
+                                                <div
+                                                    className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                                    onClick={() => handleSort("manufacturingDate")}
+                                                >
+                                                    <span>Ngày sản xuất</span>
+                                                    {sortField === "manufacturingDate" ? (
+                                                        sortAscending ? (
+                                                            <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                        ) : (
+                                                            <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                        )
+                                                    ) : (
+                                                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                    )}
+                                                </div>
                                             </TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                                                Ngày hết hạn
+
+                                            {/* Ngày hết hạn */}
+                                            <TableHead className="font-semibold text-slate-900 px-5 py-3 text-left">
+                                                <div
+                                                    className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                                    onClick={() => handleSort("expiryDate")}
+                                                >
+                                                    <span>Ngày hết hạn</span>
+                                                    {sortField === "expiryDate" ? (
+                                                        sortAscending ? (
+                                                            <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                        ) : (
+                                                            <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                        )
+                                                    ) : (
+                                                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                    )}
+                                                </div>
                                             </TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-22">
+                                            <TableHead className="font-semibold text-slate-900 px-5 py-3 text-center w-22">
                                                 Trạng thái
                                             </TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
+                                            <TableHead className="font-semibold text-slate-900 px-5 py-3 text-center w-32">
                                                 Hoạt động
                                             </TableHead>
                                         </TableRow>
@@ -358,37 +389,38 @@ const BatchList = () => {
                                         {Array.isArray(batches) && batches.length > 0 ? (
                                             batches.map((batch, index) => (
                                                 <TableRow key={batch.batchId} className="hover:bg-slate-50 border-b border-slate-200">
-                                                    <TableCell className="px-6 py-4 text-slate-600 font-medium">{index + 1}</TableCell>
-                                                    <TableCell className="font-medium text-slate-900 px-6 py-3 text-left">{batch?.batchCode || ''}</TableCell>
+                                                    <TableCell className="px-5 py-2 text-slate-600 font-medium">{index + 1}</TableCell>
+                                                    <TableCell className="font-medium text-slate-900 px-5 py-3 text-left">{batch?.batchCode || ''}</TableCell>
                                                     <TableCell
-                                                        className="text-slate-700 px-6 py-3 text-left"
+                                                        className="text-slate-700 px-5 py-3 text-left"
                                                         title={batch?.goodsName || ""}
                                                     >
                                                         {batch?.goodsName
-                                                            ? batch.goodsName.length > 20
-                                                                ? batch.goodsName.slice(0, 20) + "..."
+                                                            ? batch.goodsName.length > 17
+                                                                ? batch.goodsName.slice(0, 17) + "..."
                                                                 : batch.goodsName
                                                             : ""}
                                                     </TableCell>
 
-                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">
+                                                    <TableCell className="text-slate-700 px-5 py-3 text-left"
+                                                        title={batch?.description || ""}>
                                                         {batch?.description
-                                                            ? batch.description.length > 30
-                                                                ? batch.description.slice(0, 30) + "..."
+                                                            ? batch.description.length > 20
+                                                                ? batch.description.slice(0, 20) + "..."
                                                                 : batch.description
                                                             : ""}
                                                     </TableCell>
-                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">
+                                                    <TableCell className="text-slate-700 px-5 py-3 text-left">
                                                         {batch?.manufacturingDate
                                                             ? new Date(batch.manufacturingDate).toLocaleDateString('vi-VN')
                                                             : ''}
                                                     </TableCell>
-                                                    <TableCell className="text-slate-700 px-6 py-3 text-left">
+                                                    <TableCell className="text-slate-700 px-5 py-3 text-left">
                                                         {batch?.expiryDate
                                                             ? new Date(batch.expiryDate).toLocaleDateString('vi-VN')
                                                             : ''}
                                                     </TableCell>
-                                                    <TableCell className="px-6 py-4 text-center w-22">
+                                                    <TableCell className="px-5 py-2 text-center w-22">
                                                         <div className="flex justify-center">
                                                             <StatusToggle
                                                                 status={batch?.status}
@@ -399,7 +431,7 @@ const BatchList = () => {
                                                             />
                                                         </div>
                                                     </TableCell>
-                                                    <TableCell className="px-6 py-4 text-center">
+                                                    <TableCell className="px-5 py-2 text-center">
                                                         <div className="flex items-center justify-center space-x-1">
                                                             <button className="p-1.5 hover:bg-slate-100 rounded transition-colors" title="Chỉnh sửa" onClick={() => handleOpenEdit(batch)}>
                                                                 <Edit className="h-4 w-4 text-orange-500" />

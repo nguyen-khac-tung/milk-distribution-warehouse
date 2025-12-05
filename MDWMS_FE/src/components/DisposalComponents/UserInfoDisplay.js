@@ -10,17 +10,21 @@ const UserInfoDisplay = ({ request, formatDate, hasPermission, userInfo }) => {
 
     const status = request.status;
 
+    // Approved or later states (used to hide "Duyệt bởi" when chỉ mới chờ duyệt)
+    const isApprovedStatus =
+        status === DISPOSAL_REQUEST_STATUS.Approved ||
+        status === DISPOSAL_REQUEST_STATUS.AssignedForPicking ||
+        status === DISPOSAL_REQUEST_STATUS.Picking ||
+        status === DISPOSAL_REQUEST_STATUS.Completed;
+
     const canViewApprovalInfo = () => {
-        // Warehouse Manager: ẩn khi Rejected
+        // Warehouse Manager: chỉ hiển thị khi đã được duyệt trở lên
         if (hasPermission(PERMISSIONS.DISPOSAL_REQUEST_VIEW_WM)) {
-            return status !== DISPOSAL_REQUEST_STATUS.Rejected;
+            return isApprovedStatus;
         }
         // Sale Manager: hiển thị khi Approved trở lên
         if (hasPermission(PERMISSIONS.DISPOSAL_REQUEST_VIEW_SM)) {
-            return status === DISPOSAL_REQUEST_STATUS.Approved ||
-                status === DISPOSAL_REQUEST_STATUS.AssignedForPicking ||
-                status === DISPOSAL_REQUEST_STATUS.Picking ||
-                status === DISPOSAL_REQUEST_STATUS.Completed;
+            return isApprovedStatus;
         }
         // Warehouse Staff: hiển thị khi Assigned trở lên
         if (hasPermission(PERMISSIONS.DISPOSAL_REQUEST_VIEW_WS)) {
@@ -28,7 +32,7 @@ const UserInfoDisplay = ({ request, formatDate, hasPermission, userInfo }) => {
                 status === DISPOSAL_REQUEST_STATUS.Picking ||
                 status === DISPOSAL_REQUEST_STATUS.Completed;
         }
-        return true;
+        return isApprovedStatus;
     };
 
     const canViewRejectionInfo = () => {
@@ -63,8 +67,8 @@ const UserInfoDisplay = ({ request, formatDate, hasPermission, userInfo }) => {
     const getCreatedByName = () => request.createdBy?.fullName || request.createdByName || 'Chưa có thông tin';
     const getCreatedAt = () => formatDate(request.createdAt);
 
-    const getApprovedByName = () => request.approvalBy?.fullName || request.approvalByName || 'Chưa có thông tin';
-    const getApprovedAt = () => request.approvalBy ? formatDate(request.approvalAt || request.updateAt) : 'Chưa có thông tin';
+    const getApprovedByName = () => request.approvalBy?.fullName || request.approvalByName || 'Chưa duyệt';
+    const getApprovedAt = () => request.approvalBy ? formatDate(request.approvalAt || request.updateAt) : 'Chưa duyệt';
 
     const getRejectedByName = () => request.approvalBy?.fullName || request.approvalByName || 'Chưa có thông tin';
 
@@ -100,8 +104,18 @@ const UserInfoDisplay = ({ request, formatDate, hasPermission, userInfo }) => {
                         </div>
                     </div>
                     <div className="space-y-1">
-                        <input type="text" value={status === DISPOSAL_REQUEST_STATUS.Rejected ? 'Chưa duyệt' : getApprovedByName()} readOnly className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm" />
-                        <input type="text" value={status === DISPOSAL_REQUEST_STATUS.Rejected ? 'Chưa duyệt' : getApprovedAt()} readOnly className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm" />
+                        <input
+                            type="text"
+                            value={isApprovedStatus ? getApprovedByName() : 'Chưa duyệt'}
+                            readOnly
+                            className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
+                        />
+                        <input
+                            type="text"
+                            value={isApprovedStatus ? getApprovedAt() : 'Chưa duyệt'}
+                            readOnly
+                            className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
+                        />
                     </div>
                 </div>
             )}
