@@ -31,6 +31,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> HasGoodsUsedInBatchNotExpiry(int goodsId);
         Task<bool> IsGoodsUsedInPurchaseOrderWithExcludedStatusesAsync(int goodsId, params int[] excludedStatuses);
         Task<bool> IsGoodsUsedInSalesOrderWithExcludedStatusesAsync(int goodsId, params int[] excludedStatuses);
+        Task<bool> IsGoodsUsedInDisposalRequestWithExcludedStatuses(int goodsId, params int[] excludedStatuses);
         Task<bool> VerifyStorageConditionUsage(int storageConditionId);
         Task<bool> HasActiveGoods(int supplierId);
         Task<bool> IsGoodsActiveOrInActive(int supplierId);
@@ -206,6 +207,13 @@ namespace MilkDistributionWarehouse.Repositories
             return await _warehouseContext.SalesOrderDetails
                  .AnyAsync(so => so.GoodsId == goodsId
                  && !excludedStatuses.Contains((int)so.SalesOrder.Status));
+        }
+
+        public async Task<bool> IsGoodsUsedInDisposalRequestWithExcludedStatuses(int goodsId, params int[] excludedStatuses)
+        {
+            return await _warehouseContext.DisposalRequestDetails
+                .AnyAsync(drd => drd.GoodsId == goodsId
+                && !excludedStatuses.Contains((int)drd.DisposalRequest.Status));
         }
 
         public async Task<bool> IsGoodUsedInPurchaseOrder(int goodsId)

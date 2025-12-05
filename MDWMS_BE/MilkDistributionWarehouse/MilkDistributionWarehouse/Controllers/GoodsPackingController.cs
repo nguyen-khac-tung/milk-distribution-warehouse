@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Services;
 using MilkDistributionWarehouse.Utilities;
@@ -26,6 +28,16 @@ namespace MilkDistributionWarehouse.Controllers
                 return ApiResponse<string>.ToResultError(msg);
 
             return ApiResponse<List<GoodsPackingDto>>.ToResultOk(goodsPackings);
+        }
+
+        [HttpPut("UpdateGoodsPacking/{goodsId}")]
+        [Authorize(Roles = RoleNames.WarehouseManager)]
+        public async Task<IActionResult> UpdateGoodsPacking(int goodsId, [FromBody] List<GoodsPackingUpdate> updates)
+        {
+            var(msg, updatedGoodsPackings) = await _goodsPackingService.UpdateGoodsPacking(goodsId, updates);
+            if(!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<List<GoodsPackingUpdate>>.ToResultOk(updatedGoodsPackings);
         }
     }
 }
