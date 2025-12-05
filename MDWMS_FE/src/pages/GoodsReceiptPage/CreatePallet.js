@@ -398,21 +398,25 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
     }
 
     // Lọc và chỉ lấy các row hợp lệ (có hàng hóa với số lượng thực nhận > 0 và có goodsPackingId)
-    const validPallets = palletRows.filter(r => {
+    // Tạo mapping từ validPallets index về palletRows index
+    const validPalletsWithIndex = [];
+    palletRows.forEach((r, originalIdx) => {
       if (!r.productId || !(Number(r.numPackages) || 0) > 0) {
-        return false;
+        return;
       }
       const actualQuantity = actualPackageQuantityByDetailId[r.productId] || 0;
       // Phải có số lượng thực nhận > 0 và có goodsPackingId
-      return actualQuantity > 0 && r.goodsPackingId != null;
+      if (actualQuantity > 0 && r.goodsPackingId != null) {
+        validPalletsWithIndex.push({ pallet: r, originalIndex: originalIdx });
+      }
     });
 
-    if (validPallets.length === 0) {
+    if (validPalletsWithIndex.length === 0) {
       window.showToast?.("Không có pallet hợp lệ để tạo! Vui lòng kiểm tra lại các hàng hóa có số lượng thực nhận > 0.", "error");
       return;
     }
 
-    const pallets = validPallets.map(r => {
+    const pallets = validPalletsWithIndex.map(({ pallet: r }) => {
       // Đảm bảo goodsPackingId luôn có giá trị (không được null)
       const goodsPackingId = r.goodsPackingId != null ? parseInt(r.goodsPackingId) : null;
       if (goodsPackingId === null) {
@@ -434,7 +438,50 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
     }
     try {
       const res = await createPalletsBulk(pallets);
+
+      // Kiểm tra nếu có lỗi từ server (failedItems)
+      // Cấu trúc ApiResponse: { status, message, data: PalletBulkResponse, success }
+      const bulkData = res?.data;
+      if (bulkData?.failedItems && Array.isArray(bulkData.failedItems) && bulkData.failedItems.length > 0) {
+        // Map lỗi từ API về rowErrors theo index của palletRows
+        const newRowErrors = { ...rowErrors };
+
+        bulkData.failedItems.forEach(failedItem => {
+          // failedItem.index là index trong mảng validPallets (0-based)
+          // Cần map về originalIndex trong palletRows
+          const validPalletIndex = failedItem.index;
+          if (validPalletIndex >= 0 && validPalletIndex < validPalletsWithIndex.length) {
+            const originalRowIndex = validPalletsWithIndex[validPalletIndex].originalIndex;
+
+            // Thêm lỗi vào rowErrors
+            if (!newRowErrors[originalRowIndex]) {
+              newRowErrors[originalRowIndex] = [];
+            }
+
+            // Lấy message từ error, loại bỏ prefix "[User]" nếu có
+            const errorMessage = failedItem.error?.replace(/^\[User\]\s*/, '') || failedItem.error || "Lỗi không xác định";
+
+            // Chỉ thêm nếu chưa có lỗi này
+            if (!newRowErrors[originalRowIndex].includes(errorMessage)) {
+              newRowErrors[originalRowIndex].push(errorMessage);
+            }
+          }
+        });
+
+        setRowErrors(newRowErrors);
+
+        // Hiển thị thông báo lỗi
+        const totalFailed = bulkData.totalFailed || bulkData.failedItems.length;
+        window.showToast?.(`Có ${totalFailed} pallet bị lỗi. Vui lòng kiểm tra và sửa các lỗi trong bảng.`, "error");
+
+        // Không tiếp tục xử lý, chặn việc tạo pallet
+        return;
+      }
+
+      // Nếu không có lỗi và thành công
       if (res?.success) {
+        // Xóa tất cả lỗi khi thành công
+        setRowErrors({});
         window.showToast?.("Tạo pallet hàng loạt thành công", "success");
         // Gọi callback để thông báo cho parent component
         if (typeof onPalletCreated === 'function') {
@@ -445,7 +492,39 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
       }
     } catch (e) {
       console.error(e);
-      window.showToast?.("Tạo pallet thất bại, vui lòng thử lại", "error");
+
+      // Kiểm tra nếu error response có failedItems
+      // Cấu trúc ApiResponse trong error: e.response.data = { status, message, data: PalletBulkResponse, success }
+      const errorResponseData = e?.response?.data;
+      const bulkData = errorResponseData?.data;
+
+      if (bulkData?.failedItems && Array.isArray(bulkData.failedItems) && bulkData.failedItems.length > 0) {
+        const newRowErrors = { ...rowErrors };
+
+        bulkData.failedItems.forEach(failedItem => {
+          const validPalletIndex = failedItem.index;
+          if (validPalletIndex >= 0 && validPalletIndex < validPalletsWithIndex.length) {
+            const originalRowIndex = validPalletsWithIndex[validPalletIndex].originalIndex;
+
+            if (!newRowErrors[originalRowIndex]) {
+              newRowErrors[originalRowIndex] = [];
+            }
+
+            const errorMessage = failedItem.error?.replace(/^\[User\]\s*/, '') || failedItem.error || "Lỗi không xác định";
+
+            if (!newRowErrors[originalRowIndex].includes(errorMessage)) {
+              newRowErrors[originalRowIndex].push(errorMessage);
+            }
+          }
+        });
+
+        setRowErrors(newRowErrors);
+
+        const totalFailed = bulkData.totalFailed || bulkData.failedItems.length;
+        window.showToast?.(`Có ${totalFailed} pallet bị lỗi. Vui lòng kiểm tra và sửa các lỗi trong bảng.`, "error");
+      } else {
+        window.showToast?.("Tạo pallet thất bại, vui lòng thử lại", "error");
+      }
     } finally {
       setSubmitting(false);
       // Thông báo cho parent component biết đã xong submitting
