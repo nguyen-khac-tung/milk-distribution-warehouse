@@ -454,6 +454,7 @@ namespace MilkDistributionWarehouse.Mappers
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTimeUtility.Now()))
                 .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(_ => (DateTime?)null));
             CreateMap<GoodsReceiptNote, GoodsReceiptNoteDto>()
+                .ForMember(dest => dest.PurchaseOrderStatus, opt => opt.MapFrom(src => src.PurchaseOder.Status))
                 .ForMember(dest => dest.ApprovalByName, opt => opt.MapFrom(src => src.ApprovalByNavigation.FullName))
                 .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => src.CreatedByNavigation.FullName))
                 .ForMember(dest => dest.GoodsReceiptNoteDetails, opt => opt.MapFrom(src => src.GoodsReceiptNoteDetails));
