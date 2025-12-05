@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
-import { getPallets, updatePalletStatus, deletePallet } from "../../services/PalletService";
+import { getPallets, deletePallet } from "../../services/PalletService";
 import { getUserDropDownByRoleName } from "../../services/AccountService";
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
@@ -12,7 +12,6 @@ import EmptyState from "../../components/Common/EmptyState";
 import PermissionWrapper from "../../components/Common/PermissionWrapper";
 import { PERMISSIONS } from "../../utils/permissions";
 import StatsCards from "../../components/Common/StatsCards";
-import { StatusToggle } from "../../components/Common/SwitchToggle/StatusToggle";
 import { PalletDetail } from "./ViewPalletModal";
 import DeleteModal from "../../components/Common/DeleteModal";
 import UpdatePalletModal from "./UpdatePalletModal";
@@ -410,25 +409,6 @@ export default function PalletList() {
         setItemToDelete(null)
     }
 
-    const handleStatusChange = async (palletId, newStatus) => {
-        try {
-            await updatePalletStatus(palletId, newStatus)
-            setPallets(prevPallets =>
-                prevPallets.map(pallet =>
-                    pallet.palletId === palletId
-                        ? { ...pallet, status: newStatus }
-                        : pallet
-                )
-            )
-
-            const statusText = newStatus === 1 ? "còn sử dụng" : "không còn sử dụng"
-            window.showToast(`Đã cập nhật pallet thành ${statusText}`, "success")
-        } catch (error) {
-            console.error("Error updating pallet status:", error)
-            const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật trạng thái")
-            window.showToast(errorMessage, "error")
-        }
-    }
     // Filter status and creator options based on search queries
     const filteredStatusOptions = useMemo(() => {
         const statusOptions = [
@@ -552,8 +532,8 @@ export default function PalletList() {
                     activeCount={totalStats.activeCount}
                     inactiveCount={totalStats.inactiveCount}
                     totalLabel="Tổng pallet"
-                    activeLabel="Còn sử dụng"
-                    inactiveLabel="Không còn sử dụng"
+                    activeLabel="Đã đưa vào vị trí"
+                    inactiveLabel="Chưa đưa vào vị trí"
                 />
 
                 {/* Search and Table Combined */}
@@ -568,8 +548,8 @@ export default function PalletList() {
                         setShowStatusFilter={setShowStatusFilter}
                         statusOptions={[
                             { value: "", label: "Tất cả trạng thái" },
-                            { value: "1", label: "Còn sử dụng" },
-                            { value: "2", label: "Không còn sử dụng" }
+                            { value: "1", label: "Đã đưa vào vị trí" },
+                            { value: "2", label: "Chưa đưa vào vị trí" }
                         ]}
                         onStatusFilter={handleStatusFilter}
                         clearStatusFilter={clearStatusFilter}
@@ -692,28 +672,14 @@ export default function PalletList() {
                                                 <TableCell className="px-6 py-4 text-slate-700">{pallet?.createByName || ''}</TableCell>
                                                 <TableCell className="px-6 py-4 text-center">
                                                     <div className="flex justify-center">
-                                                        <PermissionWrapper
-                                                            requiredPermission={PERMISSIONS.PALLET_UPDATE_STATUS}
-                                                            hide={false}
-                                                            fallback={
-                                                                <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center justify-center gap-1 ${pallet?.status === 1
-                                                                    ? 'bg-green-100 text-green-800'
-                                                                    : 'bg-red-100 text-red-800'
-                                                                    }`}>
-                                                                    <span className={`w-2 h-2 rounded-full ${pallet?.status === 1 ? 'bg-green-500' : 'bg-red-500'
-                                                                        }`}></span>
-                                                                    {pallet?.status === 1 ? 'Còn sử dụng' : 'Không còn sử dụng'}
-                                                                </span>
-                                                            }
-                                                        >
-                                                            <StatusToggle
-                                                                status={pallet?.status}
-                                                                onStatusChange={handleStatusChange}
-                                                                palletId={pallet?.palletId}
-                                                                palletName={pallet?.batchCode}
-                                                                entityType="pallet"
-                                                            />
-                                                        </PermissionWrapper>
+                                                        <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center justify-center gap-1 ${pallet?.status === 1
+                                                            ? 'bg-green-100 text-green-800'
+                                                            : 'bg-red-100 text-red-800'
+                                                            }`}>
+                                                            <span className={`w-2 h-2 rounded-full ${pallet?.status === 1 ? 'bg-green-500' : 'bg-red-500'
+                                                                }`}></span>
+                                                            {pallet?.status === 1 ? 'Đã đưa vào vị trí' : 'Chưa đưa vào vị trí'}
+                                                        </span>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="px-6 py-4 text-center">
