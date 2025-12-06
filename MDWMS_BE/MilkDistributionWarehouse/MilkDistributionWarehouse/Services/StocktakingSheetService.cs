@@ -366,7 +366,7 @@ namespace MilkDistributionWarehouse.Services
             if (string.IsNullOrEmpty(stocktakingSheetId))
                 return ("Mã phiếu kiểm kê không hợp lệ.".ToMessageForUser(), default);
 
-            var stocktakingSheetExist = await _stocktakingSheetRepository.GetStocktakingSheetById(stocktakingSheetId);
+            var stocktakingSheetExist = await _stocktakingSheetRepository.GetStocktakingSheetForDeleteById(stocktakingSheetId);
             if (stocktakingSheetExist == null)
                 return ("Phiếu kiểm kê không tồn tại.".ToMessageForUser(), default);
 
