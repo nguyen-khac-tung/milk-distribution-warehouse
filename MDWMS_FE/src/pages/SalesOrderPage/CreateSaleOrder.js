@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Plus, Trash2, CheckCircle, BarChart3, ArrowRightLeft, Calendar } from "lucide-react"
 import { createSaleOrder, updateSaleOrderStatusPendingApproval, getSalesOrderListSalesRepresentatives } from "../../services/SalesOrderService"
 import { getRetailersDropdown } from "../../services/RetailerService"
-import { getSuppliersDropdown } from "../../services/SupplierService"
+import { getSupplierWithGoodsDropDown } from "../../services/SupplierService"
 import { getGoodsPackingByGoodsId } from "../../services/PurchaseOrderService"
 import { getGoodsInventoryBySupplierId } from "../../services/GoodService"
 import { extractErrorMessage } from "../../utils/Validation"
@@ -135,7 +135,7 @@ function CreateSaleOrder({
             try {
                 const [retailersResponse, suppliersResponse] = await Promise.all([
                     getRetailersDropdown(),
-                    getSuppliersDropdown()
+                    getSupplierWithGoodsDropDown()
                 ]);
 
                 const retailersData = retailersResponse?.data || retailersResponse?.items || retailersResponse || [];
@@ -377,11 +377,11 @@ function CreateSaleOrder({
     // Lọc nhà cung cấp - chỉ hiện những nhà cung cấp còn hàng hóa có quy cách đóng gói chưa được chọn
     const getAvailableSupplierOptions = (currentItemId) => {
         const selectedPairs = getSelectedGoodsPackingPairs(currentItemId);
-        
+
         return suppliers
             .filter(supplier => {
                 const goods = goodsBySupplier[supplier.supplierId];
-                
+
                 // Nếu chưa load goods cho nhà cung cấp này, vẫn hiển thị (có thể đang load hoặc chưa load)
                 if (!goods || goods.length === 0) {
                     return true; // Hiển thị để người dùng có thể chọn và trigger load
@@ -390,12 +390,12 @@ function CreateSaleOrder({
                 // Nếu đã có goods, kiểm tra xem nhà cung cấp này còn hàng hóa có quy cách đóng gói chưa được chọn không
                 return goods.some(good => {
                     const goodsPackings = goodsPackingsMap[good.goodsId];
-                    
+
                     // Nếu chưa load packings cho hàng hóa này, vẫn cho phép chọn (có thể đang load)
                     if (!goodsPackings || goodsPackings.length === 0) {
                         return true;
                     }
-                    
+
                     // Nếu đã có packings, kiểm tra xem còn quy cách đóng gói chưa được chọn không
                     return goodsPackings.some(packing => {
                         const pair = `${good.goodsName}_${packing.goodsPackingId}`;
@@ -423,22 +423,22 @@ function CreateSaleOrder({
 
         const goods = goodsBySupplier[selectedSupplier.supplierId];
         const selectedPairs = getSelectedGoodsPackingPairs(currentItemId);
-        
+
         // Nếu chưa load goods, trả về empty
         if (!goods || goods.length === 0) {
             return [{ value: "", label: "Đang tải..." }];
         }
-        
+
         // Chỉ hiện những hàng hóa còn quy cách đóng gói chưa được chọn
         return goods
             .filter(good => {
                 const goodsPackings = goodsPackingsMap[good.goodsId];
-                
+
                 // Nếu chưa load packings cho hàng hóa này, vẫn cho phép chọn (có thể đang load)
                 if (!goodsPackings || goodsPackings.length === 0) {
                     return true;
                 }
-                
+
                 // Kiểm tra xem hàng hóa này còn quy cách đóng gói chưa được chọn không
                 return goodsPackings.some(packing => {
                     const pair = `${good.goodsName}_${packing.goodsPackingId}`;
@@ -1408,7 +1408,7 @@ function CreateSaleOrder({
                                                                     onChange={(value) => updateItem(item.id, "supplierName", value)}
                                                                     options={(() => {
                                                                         const availableOptions = getAvailableSupplierOptions(item.id);
-                                                                        
+
                                                                         // Fallback: Nếu không có option nào và suppliers có dữ liệu, hiển thị tất cả suppliers
                                                                         if (availableOptions.length === 0 && suppliers.length > 0) {
                                                                             return suppliers.map(supplier => ({
@@ -1416,7 +1416,7 @@ function CreateSaleOrder({
                                                                                 label: supplier.companyName
                                                                             }));
                                                                         }
-                                                                        
+
                                                                         // Nếu nhà cung cấp đã được chọn nhưng không có trong danh sách available, vẫn thêm vào để hiển thị
                                                                         if (item.supplierName) {
                                                                             const exists = availableOptions.some(opt => opt.value === item.supplierName);
@@ -1507,15 +1507,15 @@ function CreateSaleOrder({
                                                                                     const selectedGood = goods.find(g => g.goodsName === item.goodsName);
                                                                                     if (selectedGood) {
                                                                                         const goodsPackings = goodsPackingsMap[selectedGood.goodsId] || [];
-                                                                                        const selectedPacking = goodsPackings.find(p => 
-                                                                                            p.goodsPackingId?.toString() === packingIdStr || 
+                                                                                        const selectedPacking = goodsPackings.find(p =>
+                                                                                            p.goodsPackingId?.toString() === packingIdStr ||
                                                                                             p.goodsPackingId === parseInt(packingIdStr)
                                                                                         );
                                                                                         if (selectedPacking) {
                                                                                             const unitMeasureName = selectedGood?.unitMeasureName || "đơn vị";
-                                                                                            return [{ 
-                                                                                                value: packingIdStr, 
-                                                                                                label: `${selectedPacking.unitPerPackage} ${unitMeasureName}/thùng` 
+                                                                                            return [{
+                                                                                                value: packingIdStr,
+                                                                                                label: `${selectedPacking.unitPerPackage} ${unitMeasureName}/thùng`
                                                                                             }, ...availableOptions];
                                                                                         }
                                                                                     }
