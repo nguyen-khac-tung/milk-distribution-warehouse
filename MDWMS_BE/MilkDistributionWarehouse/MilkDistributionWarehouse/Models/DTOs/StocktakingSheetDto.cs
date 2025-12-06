@@ -42,6 +42,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
     {
         public string? Note { get; set; }
         public List<StocktakingAreaUpdateDto> StocktakingAreas { get; set; }
+        public bool IsDiableButtonInProgress { get; set; }
     }
 
     public class StocktakingSheetStatusUpdate
