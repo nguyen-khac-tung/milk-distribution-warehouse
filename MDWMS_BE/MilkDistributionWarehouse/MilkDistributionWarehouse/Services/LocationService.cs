@@ -121,6 +121,9 @@ namespace MilkDistributionWarehouse.Services
             if (await _locationRepository.IsDuplicateLocationCodeInAreaAsync(locationCode, dto.AreaId, locationId))
                 return ("Đã tồn tại vị trí có cùng mã trong khu vực này.".ToMessageForUser(), new LocationResponseDto());
 
+            if (await _locationRepository.HasDependentPalletsAsync(locationId))
+                return ("Không thể cập nhật trạng thái vì vị trí này đang được sử dụng.".ToMessageForUser(), new LocationResponseDto());
+
             _mapper.Map(dto, locationExists);
             locationExists.LocationCode = locationCode;
             locationExists.UpdateAt = DateTimeUtility.Now();

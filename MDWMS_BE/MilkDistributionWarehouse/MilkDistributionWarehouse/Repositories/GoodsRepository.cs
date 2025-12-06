@@ -31,6 +31,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> HasGoodsUsedInBatchNotExpiry(int goodsId);
         Task<bool> IsGoodsUsedInPurchaseOrderWithExcludedStatusesAsync(int goodsId, params int[] excludedStatuses);
         Task<bool> IsGoodsUsedInSalesOrderWithExcludedStatusesAsync(int goodsId, params int[] excludedStatuses);
+        Task<bool> IsGoodsUsedInDisposalRequestWithExcludedStatuses(int goodsId, params int[] excludedStatuses);
         Task<bool> VerifyStorageConditionUsage(int storageConditionId);
         Task<bool> HasActiveGoods(int supplierId);
         Task<bool> IsGoodsActiveOrInActive(int supplierId);
@@ -146,23 +147,26 @@ namespace MilkDistributionWarehouse.Repositories
 
         public async Task<IEnumerable<LowStockGoodsDto>> GetLowStockGoods(int quantityThreshold)
         {
-            var groups = await _warehouseContext.Pallets
-                .Include(p => p.Batch).ThenInclude(b => b.Goods).ThenInclude(g => g.UnitMeasure)
-                .Include(p => p.GoodsPacking)
+            return await _warehouseContext.Pallets
                 .Where(p => p.Status == CommonStatus.Active && p.PackageQuantity > 0)
-                .GroupBy(p => new { p.Batch.GoodsId, p.GoodsPackingId })
-                .Where(g => g.Sum(p => p.PackageQuantity) < quantityThreshold)
+                .GroupBy(p => new
+                {
+                    p.Batch.Goods.GoodsCode,
+                    p.Batch.Goods.GoodsName,
+                    UnitMeasureName = p.Batch.Goods.UnitMeasure.Name,
+                    p.GoodsPacking.UnitPerPackage,
+                })
+                .Select(g => new LowStockGoodsDto
+                {
+                    GoodsCode = g.Key.GoodsCode,
+                    GoodsName = g.Key.GoodsName,
+                    UnitMeasureName = g.Key.UnitMeasureName,
+                    UnitPerPackage = g.Key.UnitPerPackage,
+                    TotalPackage = g.Sum(p => p.PackageQuantity ?? 0)
+                })
+                .Where(x => x.TotalPackage < quantityThreshold)
                 .AsNoTracking()
                 .ToListAsync();
-
-            return groups.Select(g => new LowStockGoodsDto
-            {
-                GoodsCode = g.FirstOrDefault()?.Batch.Goods.GoodsCode,
-                GoodsName = g.FirstOrDefault()?.Batch.Goods.GoodsName,
-                UnitMeasureName = g.FirstOrDefault()?.Batch.Goods.UnitMeasure.Name,
-                UnitPerPackage = g.FirstOrDefault()?.GoodsPacking.UnitPerPackage,
-                TotalPackage = g.Sum(p => p.PackageQuantity ?? 0)
-            });
         }
 
         public async Task<Category?> GetInactiveCategoryByGoodsIdAsync(int goodsId)
@@ -206,6 +210,13 @@ namespace MilkDistributionWarehouse.Repositories
             return await _warehouseContext.SalesOrderDetails
                  .AnyAsync(so => so.GoodsId == goodsId
                  && !excludedStatuses.Contains((int)so.SalesOrder.Status));
+        }
+
+        public async Task<bool> IsGoodsUsedInDisposalRequestWithExcludedStatuses(int goodsId, params int[] excludedStatuses)
+        {
+            return await _warehouseContext.DisposalRequestDetails
+                .AnyAsync(drd => drd.GoodsId == goodsId
+                && !excludedStatuses.Contains((int)drd.DisposalRequest.Status));
         }
 
         public async Task<bool> IsGoodUsedInPurchaseOrder(int goodsId)

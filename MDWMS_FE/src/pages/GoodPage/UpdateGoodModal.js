@@ -6,7 +6,7 @@ import { Label } from "../../components/ui/label"
 import { Card } from "../../components/ui/card"
 import { X, Plus, Trash2 } from "lucide-react"
 import CustomDropdown from "../../components/Common/CustomDropdown"
-import { updateGood, getGoodDetail } from "../../services/GoodService"
+import { updateGood, getGoodDetail, updateGoodsPacking } from "../../services/GoodService"
 import { getCategoriesDropdown } from "../../services/CategoryService/CategoryServices"
 import { getSuppliersDropdown } from "../../services/SupplierService"
 import { getStorageConditionsDropdown } from "../../services/StorageConditionService"
@@ -34,6 +34,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
   const [loadingData, setLoadingData] = useState(false)
   const [validationErrors, setValidationErrors] = useState({})
   const [packingErrors, setPackingErrors] = useState({})
+  const [isDisable, setIsDisable] = useState(false)
 
   // Load data for dropdowns and good details
   useEffect(() => {
@@ -50,6 +51,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
       setGoodsPackingUpdates([{ goodsPackingId: 0, unitPerPackage: "" }])
       setValidationErrors({})
       setPackingErrors({})
+      setIsDisable(false)
 
       loadDropdownData().then(() => {
         // Đợi một chút để đảm bảo state đã được update
@@ -86,6 +88,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
           unitMeasureId: good.unitMeasureId || 0,
         }
         setFormData(newFormData)
+        setIsDisable(good.isDisable === true)
         setValidationErrors({})
         setPackingErrors({})
 
@@ -173,9 +176,58 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
       return
     }
 
-    // Validate all required fields
-    const errors = {}
+    // Validate goodsPackingUpdates (luôn validate phần đóng gói)
     const packingErrs = {}
+    let hasPackingError = false
+    goodsPackingUpdates.forEach((packing, index) => {
+      if (!packing.unitPerPackage || packing.unitPerPackage === "" || isNaN(packing.unitPerPackage) || parseInt(packing.unitPerPackage) <= 0) {
+        packingErrs[index] = "Vui lòng nhập số lượng hợp lệ (> 0)"
+        hasPackingError = true
+      }
+    })
+
+    // Nếu isDisable === true, chỉ validate và update packing
+    if (isDisable === true) {
+      if (hasPackingError || goodsPackingUpdates.length === 0) {
+        if (goodsPackingUpdates.length === 0) {
+          setPackingErrors({ ...packingErrs, general: "Vui lòng nhập ít nhất một thông tin đóng gói" })
+        } else {
+          setPackingErrors(packingErrs)
+        }
+        return
+      }
+
+      // Clear validation errors if validation passes
+      setPackingErrors({})
+
+      // Filter valid packings for submission
+      const validPackings = goodsPackingUpdates.filter(packing =>
+        packing.unitPerPackage && !isNaN(packing.unitPerPackage) && parseInt(packing.unitPerPackage) > 0
+      )
+
+      try {
+        setLoading(true)
+        const updates = validPackings.map(packing => ({
+          goodsPackingId: packing.goodsPackingId,
+          unitPerPackage: parseInt(packing.unitPerPackage)
+        }))
+
+        await updateGoodsPacking(formData.goodsId, updates)
+        window.showToast("Cập nhật thông tin đóng gói thành công!", "success")
+        onSuccess && onSuccess()
+        onClose && onClose()
+      } catch (error) {
+        console.error("Error updating goods packing:", error)
+        const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật thông tin đóng gói")
+        window.showToast(`Lỗi: ${errorMessage}`, "error")
+      } finally {
+        setLoading(false)
+      }
+      return
+    }
+
+    // Nếu isDisable === false, validate tất cả và update như bình thường
+    const errors = {}
 
     if (!formData.goodsName?.trim()) {
       errors.goodsName = "Vui lòng nhập tên hàng hóa"
@@ -196,15 +248,6 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
     if (!formData.unitMeasureId || formData.unitMeasureId === 0) {
       errors.unitMeasureId = "Vui lòng chọn đơn vị đo"
     }
-
-    // Validate goodsPackingUpdates
-    let hasPackingError = false
-    goodsPackingUpdates.forEach((packing, index) => {
-      if (!packing.unitPerPackage || packing.unitPerPackage === "" || isNaN(packing.unitPerPackage) || parseInt(packing.unitPerPackage) <= 0) {
-        packingErrs[index] = "Vui lòng nhập số lượng hợp lệ (> 0)"
-        hasPackingError = true
-      }
-    })
 
     if (hasPackingError || goodsPackingUpdates.length === 0) {
       if (goodsPackingUpdates.length === 0) {
@@ -305,7 +348,8 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
                       setValidationErrors({ ...validationErrors, goodsName: undefined })
                     }
                   }}
-                  className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
+                  disabled={isDisable}
+                  className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg disabled:bg-gray-100 disabled:cursor-not-allowed"
                 />
                 {validationErrors.goodsName && (
                   <p className="text-sm text-red-500 font-medium">{validationErrors.goodsName}</p>
@@ -336,6 +380,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
                   }))}
                   placeholder="Chọn danh mục..."
                   loading={loadingData}
+                  disabled={isDisable}
                 />
                 {validationErrors.categoryId && (
                   <p className="text-sm text-red-500 font-medium">{validationErrors.categoryId}</p>
@@ -363,6 +408,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
                   }))}
                   placeholder="Chọn nhà cung cấp..."
                   loading={loadingData}
+                  disabled={isDisable}
                 />
                 {validationErrors.supplierId && (
                   <p className="text-sm text-red-500 font-medium">{validationErrors.supplierId}</p>
@@ -393,6 +439,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
                   ]}
                   placeholder="Chọn điều kiện bảo quản..."
                   loading={loadingData}
+                  disabled={isDisable}
                 />
                 {validationErrors.storageConditionId && (
                   <p className="text-sm text-red-500 font-medium">{validationErrors.storageConditionId}</p>
@@ -420,6 +467,7 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
                   }))}
                   placeholder="Chọn đơn vị đo..."
                   loading={loadingData}
+                  disabled={isDisable}
                 />
                 {validationErrors.unitMeasureId && (
                   <p className="text-sm text-red-500 font-medium">{validationErrors.unitMeasureId}</p>
@@ -436,7 +484,8 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
                 <Button
                   type="button"
                   onClick={addPackingItem}
-                  className="h-8 px-3 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg flex items-center gap-1"
+                  disabled={isDisable && false}
+                  className="h-8 px-3 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg flex items-center gap-1 disabled:opacity-50"
                 >
                   <Plus className="h-4 w-4" />
                   Thêm đóng gói
@@ -478,6 +527,9 @@ export default function UpdateGoodModal({ isOpen, onClose, onSuccess, goodId }) 
 
                 {validationErrors.packing && (
                   <p className="text-sm text-red-500 font-medium mt-3">{validationErrors.packing}</p>
+                )}
+                {packingErrors.general && (
+                  <p className="text-sm text-red-500 font-medium mt-3">{packingErrors.general}</p>
                 )}
 
                 <p className="text-xs text-slate-500 mt-3">

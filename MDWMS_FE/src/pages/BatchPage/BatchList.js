@@ -28,6 +28,10 @@ const BatchList = () => {
     const [showPageSizeFilter, setShowPageSizeFilter] = useState(false);
     const [statusSearchQuery, setStatusSearchQuery] = useState("");
 
+    // Date filters
+    const [expiryDateFilter, setExpiryDateFilter] = useState({ fromDate: '', toDate: '' });
+    const [showExpiryDateFilter, setShowExpiryDateFilter] = useState(false);
+
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showUpdateModal, setShowUpdateModal] = useState(false);
     const [updateBatchId, setUpdateBatchId] = useState(null);
@@ -59,6 +63,8 @@ const BatchList = () => {
                 sortField: params.sortField ?? sortField,
                 sortAscending: typeof params.sortAscending === 'boolean' ? params.sortAscending : sortAscending,
                 status: params.status ?? statusFilter,
+                fromExpiryDate: params.fromExpiryDate ?? expiryDateFilter.fromDate,
+                toExpiryDate: params.toExpiryDate ?? expiryDateFilter.toDate,
             });
 
             const payload = res ?? {};
@@ -75,7 +81,15 @@ const BatchList = () => {
             setPagination(prev => ({ ...prev, pageNumber: params.pageNumber ?? prev.pageNumber, pageSize: params.pageSize ?? prev.pageSize, totalCount: total }));
         } catch (error) {
             console.error("Không thể tải danh sách lô hàng:", error);
-            window.showToast("Không thể tải danh sách lô hàng", "error");
+            // Chỉ hiển thị toast cho lỗi thực sự, không phải khi filter không có kết quả
+            const errorMessage = error.message || "";
+            if (!errorMessage.toLowerCase().includes("danh sách") ||
+                (!errorMessage.toLowerCase().includes("trống") && !errorMessage.toLowerCase().includes("rỗng"))) {
+                window.showToast("Không thể tải danh sách lô hàng", "error");
+            }
+            // Set empty state để hiển thị table rỗng
+            setBatches([]);
+            setPagination(prev => ({ ...prev, totalCount: 0 }));
         } finally {
             setLoading(false);
             setSearchLoading(false);
@@ -109,11 +123,14 @@ const BatchList = () => {
             if (showPageSizeFilter && !event.target.closest('.page-size-filter-dropdown')) {
                 setShowPageSizeFilter(false);
             }
+            if (showExpiryDateFilter && !event.target.closest('.date-filter-dropdown')) {
+                setShowExpiryDateFilter(false);
+            }
         }
 
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [showStatusFilter, showPageSizeFilter]);
+    }, [showStatusFilter, showPageSizeFilter, showExpiryDateFilter]);
 
     // Debounced search
     useEffect(() => {
@@ -153,6 +170,28 @@ const BatchList = () => {
         fetchBatches({ pageNumber: 1, status: "" });
     };
 
+    // Expiry Date Filter handlers
+    const handleExpiryDateFilter = (value) => {
+        setExpiryDateFilter(value);
+    };
+
+    const applyExpiryDateFilter = () => {
+        setSearchLoading(true);
+        fetchBatches({
+            pageNumber: 1,
+            fromExpiryDate: expiryDateFilter.fromDate,
+            toExpiryDate: expiryDateFilter.toDate,
+        });
+        setShowExpiryDateFilter(false);
+    };
+
+    const clearExpiryDateFilter = () => {
+        setExpiryDateFilter({ fromDate: '', toDate: '' });
+        setSearchLoading(true);
+        fetchBatches({ pageNumber: 1, fromExpiryDate: "", toExpiryDate: "" });
+        setShowExpiryDateFilter(false);
+    };
+
     const handlePageChange = (newPage) => {
         setPagination(prev => ({ ...prev, pageNumber: newPage }));
         fetchBatches({ pageNumber: newPage });
@@ -168,6 +207,10 @@ const BatchList = () => {
         setStatusFilter("")
         setStatusSearchQuery("")
         setShowStatusFilter(false)
+        setExpiryDateFilter({ fromDate: '', toDate: '' })
+        setShowExpiryDateFilter(false)
+        setSearchLoading(true);
+        fetchBatches({ pageNumber: 1, search: "", status: "", fromExpiryDate: "", toExpiryDate: "" });
     }
 
     const clearAllFilters = handleClearAllFilters
@@ -177,8 +220,10 @@ const BatchList = () => {
         setStatusFilter("");
         setStatusSearchQuery("");
         setShowStatusFilter(false);
+        setExpiryDateFilter({ fromDate: '', toDate: '' });
+        setShowExpiryDateFilter(false);
         setSearchLoading(true);
-        fetchBatches({ pageNumber: 1, search: "", status: "" });
+        fetchBatches({ pageNumber: 1, search: "", status: "", fromExpiryDate: "", toExpiryDate: "" });
     };
 
     const handleSort = (field) => {
@@ -277,7 +322,7 @@ const BatchList = () => {
                 />
 
                 {/* Search + Table */}
-                <Card className="shadow-sm border border-slate-200 overflow-hidden bg-gray-50">
+                <Card className="shadow-sm border border-slate-200 overflow-visible bg-gray-50">
                     <SearchFilterToggle
                         searchQuery={searchQuery}
                         setSearchQuery={setSearchQuery}
@@ -299,6 +344,16 @@ const BatchList = () => {
                         filteredStatusOptions={filteredStatusOptions}
                         onClearAll={handleClearAll}
                         searchWidth="w-80"
+                        enableDateFilter={true}
+                        dateFilter={expiryDateFilter}
+                        setDateFilter={setExpiryDateFilter}
+                        showDateFilter={showExpiryDateFilter}
+                        setShowDateFilter={setShowExpiryDateFilter}
+                        dateFilterLabel="Ngày hết hạn"
+                        dateFilterFromLabel="Từ ngày hết hạn"
+                        dateFilterToLabel="Đến ngày hết hạn"
+                        onApplyDateFilter={applyExpiryDateFilter}
+                        onClearDateFilter={clearExpiryDateFilter}
                         showToggle={true}
                         defaultOpen={true}
                         showClearButton={true}
@@ -334,8 +389,39 @@ const BatchList = () => {
                                                     )}
                                                 </div>
                                             </TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-5 py-3 text-left">
-                                                Tên hàng hóa
+                                            <TableHead className="font-semibold text-slate-900 px-5 py-3 text-left w-[14%]">
+                                                <div
+                                                    className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                                    onClick={() => handleSort("supplierName")}
+                                                >
+                                                    <span>Nhà cung cấp</span>
+                                                    {sortField === "supplierName" ? (
+                                                        sortAscending ? (
+                                                            <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                        ) : (
+                                                            <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                        )
+                                                    ) : (
+                                                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                    )}
+                                                </div>
+                                            </TableHead>
+                                            <TableHead className="font-semibold text-slate-900 px-5 py-3 text-left w-[17%]">
+                                                <div
+                                                    className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                                    onClick={() => handleSort("goodsName")}
+                                                >
+                                                    <span>Tên hàng hóa</span>
+                                                    {sortField === "goodsName" ? (
+                                                        sortAscending ? (
+                                                            <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                        ) : (
+                                                            <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                        )
+                                                    ) : (
+                                                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                    )}
+                                                </div>
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-5 py-3 text-left">
                                                 Mô tả
@@ -389,24 +475,21 @@ const BatchList = () => {
                                         {Array.isArray(batches) && batches.length > 0 ? (
                                             batches.map((batch, index) => (
                                                 <TableRow key={batch.batchId} className="hover:bg-slate-50 border-b border-slate-200">
-                                                    <TableCell className="px-5 py-2 text-slate-600 font-medium">{index + 1}</TableCell>
+                                                    <TableCell className="px-5 py-2 text-slate-600 font-medium">{(pagination.pageNumber - 1) * pagination.pageSize + index + 1}</TableCell>
                                                     <TableCell className="font-medium text-slate-900 px-5 py-3 text-left">{batch?.batchCode || ''}</TableCell>
+                                                    <TableCell className="font-medium text-slate-900 px-5 py-3 text-left  w-[14%]">{batch?.supplierName || ''}</TableCell>
                                                     <TableCell
-                                                        className="text-slate-700 px-5 py-3 text-left"
+                                                        className="text-slate-700 px-5 py-3 text-left w-[17%]"
                                                         title={batch?.goodsName || ""}
                                                     >
-                                                        {batch?.goodsName
-                                                            ? batch.goodsName.length > 17
-                                                                ? batch.goodsName.slice(0, 17) + "..."
-                                                                : batch.goodsName
-                                                            : ""}
+                                                        {batch?.goodsName || ""}
                                                     </TableCell>
 
                                                     <TableCell className="text-slate-700 px-5 py-3 text-left"
                                                         title={batch?.description || ""}>
                                                         {batch?.description
-                                                            ? batch.description.length > 20
-                                                                ? batch.description.slice(0, 20) + "..."
+                                                            ? batch.description.length > 30
+                                                                ? batch.description.slice(0, 30) + "..."
                                                                 : batch.description
                                                             : ""}
                                                     </TableCell>
@@ -449,20 +532,20 @@ const BatchList = () => {
                                             ))
                                         ) : (
                                             <TableRow>
-                                                <TableCell colSpan={7} className="p-0">
-                                                    <div className="flex items-center justify-center text-center h-[300px] w-full">
+                                                <TableCell colSpan={10} className="p-0">
+                                                    <div className="flex flex-col items-center justify-center text-center h-[300px] w-full">
                                                         <EmptyState
                                                             icon={Folder}
-                                                            title="Không tìm lô hàng nào"
-                                                            description={
-                                                                searchQuery || statusFilter
-                                                                    ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
-                                                                    : "Chưa có lô hàng nào trong hệ thống"
-                                                            }
-                                                            actionText="Xóa bộ lọc"
-                                                            onAction={clearAllFilters}
-                                                            showAction={!!(searchQuery || statusFilter)}
+                                                            title="Không tìm thấy lô hàng nào"
+                                                            description="Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
                                                         />
+
+                                                        <button
+                                                            className="-mt-10 text-gray-700 hover:text-gray-900 font-medium"
+                                                            onClick={clearAllFilters}
+                                                        >
+                                                            Xóa bộ lọc
+                                                        </button>
                                                     </div>
                                                 </TableCell>
                                             </TableRow>

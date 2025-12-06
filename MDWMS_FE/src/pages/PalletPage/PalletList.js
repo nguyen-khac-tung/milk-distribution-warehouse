@@ -537,7 +537,7 @@ export default function PalletList() {
                 />
 
                 {/* Search and Table Combined */}
-                <Card className="shadow-sm border border-slate-200 overflow-hidden bg-gray-50">
+                <Card className="shadow-sm border border-slate-200 bg-gray-50">
                     <SearchFilterToggle
                         searchQuery={searchQuery}
                         setSearchQuery={setSearchQuery}
@@ -585,12 +585,12 @@ export default function PalletList() {
                             <Loading size="medium" text="Đang tìm kiếm..." />
                         </div>
                     ) : (
-                        <div className="w-full overflow-x-auto">
+                        <div className="overflow-x-auto w-full">
                             <Table className="w-full">
                                 <TableHeader>
                                     <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
                                         {hasPrintPermission && (
-                                            <TableHead className="font-semibold text-slate-900 px-2 py-2 text-center w-10">
+                                            <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center w-8">
                                                 <input
                                                     type="checkbox"
                                                     checked={selectAll}
@@ -599,14 +599,14 @@ export default function PalletList() {
                                                 />
                                             </TableHead>
                                         )}
-                                        <TableHead className="font-semibold text-slate-900 px-2 py-2 text-left w-10">
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center w-8">
                                             STT
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left max-w-[150px]">
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left">
                                             Mã Pallet
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                                            <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1 min-w-[100px]" onClick={() => handleSort("batchCode")}>
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left">
+                                            <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("batchCode")}>
                                                 <span>Mã lô</span>
                                                 {sortField === "batchCode" ? (
                                                     sortAscending ? (
@@ -619,22 +619,22 @@ export default function PalletList() {
                                                 )}
                                             </div>
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left min-w-[120px]">
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left">
                                             Mã vị trí
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left min-w-[160px]">
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center">
                                             Số lượng thùng
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left min-w-[140px]">
-                                            Đơn vị/thùng
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center">
+                                            Đơn vị /thùng
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left min-w-[120px]">
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left min-w-[100px]">
                                             Người tạo
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-48">
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center">
                                             Trạng thái
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center">
                                             Hoạt động
                                         </TableHead>
                                     </TableRow>
@@ -647,7 +647,7 @@ export default function PalletList() {
                                                 className="hover:bg-slate-50 border-b border-slate-200"
                                             >
                                                 {hasPrintPermission && (
-                                                    <TableCell className="px-6 py-4 text-center">
+                                                    <TableCell className="px-2 py-4 text-center">
                                                         <input
                                                             type="checkbox"
                                                             checked={isPalletSelected(pallet)}
@@ -656,29 +656,44 @@ export default function PalletList() {
                                                         />
                                                     </TableCell>
                                                 )}
-                                                <TableCell className="px-6 py-4 text-slate-600 font-medium">
-                                                    {index + 1}
+                                                <TableCell className="px-2 py-4 text-center text-slate-700">
+                                                    {(pagination.pageNumber - 1) * pagination.pageSize + index + 1}
                                                 </TableCell>
-                                                <TableCell
-                                                    className="px-6 py-4 text-slate-700 font-medium max-w-[150px] truncate"
-                                                    title={pallet?.palletId || ''}
-                                                >
-                                                    {pallet?.palletId || ''}
+                                                <TableCell className="px-6 py-4 text-slate-700 font-medium">
+                                                    <div className="break-words whitespace-normal">
+                                                        {pallet?.palletId || ''}
+                                                    </div>
                                                 </TableCell>
-                                                <TableCell className="px-6 py-4 text-slate-700 font-medium">{pallet?.batchCode || ''}</TableCell>
-                                                <TableCell className="px-6 py-4 text-slate-700">{pallet?.locationCode || ''}</TableCell>
-                                                <TableCell className="px-6 py-4 text-slate-700">{pallet?.packageQuantity || 0}</TableCell>
-                                                <TableCell className="px-6 py-4 text-slate-700">{pallet?.unitPerPackage || 0}</TableCell>
-                                                <TableCell className="px-6 py-4 text-slate-700">{pallet?.createByName || ''}</TableCell>
+                                                <TableCell className="px-4 py-4 text-slate-700 font-medium">
+                                                    <div className="break-words whitespace-normal">
+                                                        {pallet?.batchCode || ''}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="px-4 py-4 text-slate-700">
+                                                    <div className="break-words whitespace-normal">
+                                                        {pallet?.locationCode || ''}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="px-6 py-4 text-center text-slate-700">
+                                                    {pallet?.packageQuantity || 0}
+                                                </TableCell>
+                                                <TableCell className="px-6 py-4 text-center text-slate-700">
+                                                    {pallet?.unitPerPackage || 0}
+                                                </TableCell>
+                                                <TableCell className="px-4 py-4 text-slate-700">
+                                                    <div className="break-words whitespace-normal">
+                                                        {pallet?.createByName || ''}
+                                                    </div>
+                                                </TableCell>
                                                 <TableCell className="px-6 py-4 text-center">
                                                     <div className="flex justify-center">
-                                                        <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center justify-center gap-1 ${pallet?.status === 1
+                                                        <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center justify-center gap-1 break-words whitespace-normal ${pallet?.status === 1
                                                             ? 'bg-green-100 text-green-800'
                                                             : 'bg-red-100 text-red-800'
                                                             }`}>
-                                                            <span className={`w-2 h-2 rounded-full ${pallet?.status === 1 ? 'bg-green-500' : 'bg-red-500'
+                                                            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${pallet?.status === 1 ? 'bg-green-500' : 'bg-red-500'
                                                                 }`}></span>
-                                                            {pallet?.status === 1 ? 'Đã đưa vào vị trí' : 'Chưa đưa vào vị trí'}
+                                                            <span>{pallet?.status === 1 ? 'Đã đưa vào vị trí' : 'Chưa đưa vào vị trí'}</span>
                                                         </span>
                                                     </div>
                                                 </TableCell>

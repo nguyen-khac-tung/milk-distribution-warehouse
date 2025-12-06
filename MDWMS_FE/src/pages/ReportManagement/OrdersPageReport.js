@@ -26,6 +26,7 @@ import { DatePicker, ConfigProvider } from 'antd'
 import locale from 'antd/locale/vi_VN'
 import Loading from "../../components/Common/Loading"
 import Pagination from "../../components/Common/Pagination"
+import EmptyState from "../../components/Common/EmptyState"
 import ExportPurchaseOrdersReport from "../../components/PurchaseOrderComponents/ExportPurchaseOrdersReport"
 import ExportSalesOrdersReport from "../../components/SaleOrderCompoents/ExportSalesOrdersReport"
 import PermissionWrapper from "../../components/Common/PermissionWrapper"
@@ -861,11 +862,12 @@ export default function OrdersPage({ onClose }) {
                   </TableHeader>
                   <TableBody>
                     {displayOrders.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={10} className="text-center text-gray-500 py-8">
-                          Không có dữ liệu nào
-                        </TableCell>
-                      </TableRow>
+                      <EmptyState
+                        icon={Package}
+                        title="Không tìm thấy đơn hàng nào"
+                        description="Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
+                        colSpan={10}
+                      />
                     ) : (
                       displayOrders.map((order, index) => {
                         const stt = (pagination.current - 1) * pagination.pageSize + index + 1

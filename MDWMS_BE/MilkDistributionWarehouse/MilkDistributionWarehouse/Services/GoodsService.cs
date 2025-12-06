@@ -353,6 +353,8 @@ namespace MilkDistributionWarehouse.Services
                 if (await IsGoodInUseAnyTransactionToUpdate(update.GoodsId))
                     return ("Không thể cập nhật thông tin hàng hoá vì hàng hoá đang được sử dụng.".ToMessageForUser(), default);
 
+                var existingPackingIds = goodsExist.GoodsPackings?.Select(p => p.GoodsPackingId).ToHashSet() ?? new HashSet<int>();
+
                 _mapper.Map(update, goodsExist);
 
                 _cacheService.InvalidateDropdownCache("Goods", "Supplier", goodsExist.SupplierId);
@@ -373,6 +375,39 @@ namespace MilkDistributionWarehouse.Services
                 if (!string.IsNullOrEmpty(msg))
                     throw new Exception(msg);
 
+                try
+                {
+                    var goodsAfterPackingUpdate = await _goodRepository.GetGoodsByGoodsId(update.GoodsId);
+                    var newPackings = goodsAfterPackingUpdate?.GoodsPackings?
+                        .Where(p => !existingPackingIds.Contains(p.GoodsPackingId))
+                        .ToList();
+
+                    if (newPackings != null && newPackings.Any())
+                    {
+                        var ledgerDtos = newPackings.Select(p => new InventoryLedgerRequestDto
+                        {
+                            GoodsId = update.GoodsId,
+                            GoodPackingId = p.GoodsPackingId,
+                            EventDate = DateTimeUtility.Now(),
+                            InQty = 0,
+                            OutQty = 0,
+                            BalanceAfter = 0,
+                            TypeChange = null
+                        }).ToList();
+
+                        if (ledgerDtos.Any())
+                        {
+                            var (invErr, _) = await _inventoryLedgerService.CreateInventoryLedgerBulk(ledgerDtos);
+                            if (!string.IsNullOrEmpty(invErr))
+                                throw new Exception(invErr);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception($"Tạo sổ cái thất bại: {ex.Message}");
+                }
+
                 await _unitOfWork.CommitTransactionAsync();
 
                 return ("", _mapper.Map<GoodsDto>(goodsExist));
@@ -380,7 +415,7 @@ namespace MilkDistributionWarehouse.Services
             catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                return ($"{ex.Message}".ToMessageForUser(), default);
+                return ($"{ex.Message}", default);
             }
         }
 
@@ -510,7 +545,7 @@ namespace MilkDistributionWarehouse.Services
                 {
                     UserId = warehouseManagers?.FirstOrDefault()?.UserId,
                     Title = "Cảnh báo hàng sắp hết hạn",
-                    Content = $"Lô '{batch.BatchCode}' ({batch.Goods.GoodsName}) hết hạn ngày {batch.ExpiryDate:dd/MM/yyyy}. Còn dưới {InventoryConfig.DaysBeforeExpiryWarning} ngày.",
+                    Content = $"Lô '{batch.BatchCode}' ({batch.Goods.GoodsName} - {batch.Goods.GoodsCode}) hết hạn ngày {batch.ExpiryDate:dd/MM/yyyy}. Còn dưới {InventoryConfig.DaysBeforeExpiryWarning} ngày.",
                     Category = NotificationCategory.Important,
                     EntityType = NotificationEntityType.InventoryReport
                 });
@@ -575,7 +610,9 @@ namespace MilkDistributionWarehouse.Services
 
             var checkSalesOrder = await _goodRepository.IsGoodsUsedInSalesOrderWithExcludedStatusesAsync(goodsId, SalesOrderStatus.Draft);
 
-            return checkBatch || checkPurchaseOrder || checkSalesOrder;
+            var checkDisposalRequest = await _goodRepository.IsGoodsUsedInDisposalRequestWithExcludedStatuses(goodsId, DisposalRequestStatus.Draft);
+
+            return checkBatch || checkPurchaseOrder || checkSalesOrder || checkDisposalRequest;
         }
 
         private async Task<string> ActivateLinkedEntitiesAsync(int goodsId)

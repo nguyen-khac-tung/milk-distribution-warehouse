@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Card } from '../../components/ui/card';
-import { X, Loader2, ChevronDown } from 'lucide-react';
+import { X, Loader2, ChevronDown, Search } from 'lucide-react';
 import { updatePallet } from '../../services/PalletService';
 import { getBatchDropdown } from '../../services/BatchService';
 import { validateLocationCode } from '../../services/LocationServices';
@@ -32,12 +32,19 @@ const UpdatePalletModal = ({
   const [batchOptions, setBatchOptions] = useState([]);
   const [batchLoading, setBatchLoading] = useState(false);
   const [showBatchDropdown, setShowBatchDropdown] = useState(false);
+  const [batchSearchQuery, setBatchSearchQuery] = useState('');
   const [locationValidating, setLocationValidating] = useState(false);
   const [locationValidationResult, setLocationValidationResult] = useState(null);
 
-  // Debug batchOptions changes
-  useEffect(() => {
-  }, [batchOptions]);
+  // Filter batch options based on search query
+  const filteredBatchOptions = useMemo(() => {
+    if (!batchSearchQuery) return batchOptions;
+    const query = batchSearchQuery.toLowerCase().trim();
+    return batchOptions.filter(batch => {
+      const batchCode = (batch.batchCode || '').toLowerCase();
+      return batchCode.includes(query);
+    });
+  }, [batchOptions, batchSearchQuery]);
 
   // Initialize form data when pallet changes
   useEffect(() => {
@@ -53,6 +60,7 @@ const UpdatePalletModal = ({
         goodsReceiptNoteId: pallet.goodsReceiptNoteId || ''
       });
       setErrors({});
+      setBatchSearchQuery('');
 
       // Load batch dropdown if goodsId exists
       if (goodsId) {
@@ -94,8 +102,8 @@ const UpdatePalletModal = ({
 
       // Xử lý message qua extractErrorMessage
       const message = result.message || "";
-      const processedMessage = message 
-        ? extractErrorMessage({ response: { data: { message } } }, message) 
+      const processedMessage = message
+        ? extractErrorMessage({ response: { data: { message } } }, message)
         : (result.success ? "Mã vị trí hợp lệ" : "Mã vị trí không tồn tại");
 
       // Lưu kết quả với message đã được xử lý
@@ -155,6 +163,7 @@ const UpdatePalletModal = ({
       batchCode: batch.batchCode
     }));
     setShowBatchDropdown(false);
+    setBatchSearchQuery(''); // Clear search when selecting
 
     // Clear error when user selects
     if (errors.batchCode) {
@@ -289,6 +298,7 @@ const UpdatePalletModal = ({
     setErrors({});
     setBatchOptions([]);
     setShowBatchDropdown(false);
+    setBatchSearchQuery('');
     onClose && onClose();
   };
 
@@ -350,32 +360,64 @@ const UpdatePalletModal = ({
                     </button>
 
                     {showBatchDropdown && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border border-slate-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                        {batchLoading ? (
-                          <div className="px-3 py-2 text-slate-500 text-sm flex items-center gap-2">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Đang tải...
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-slate-300 rounded-lg shadow-lg max-h-60 overflow-hidden flex flex-col">
+                        {/* Search Input */}
+                        <div className="p-2 border-b border-slate-200 sticky top-0 bg-white z-10 flex-shrink-0">
+                          <div className="relative">
+                            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                            <Input
+                              type="text"
+                              placeholder="Tìm kiếm mã lô hàng..."
+                              value={batchSearchQuery}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                setBatchSearchQuery(e.target.value);
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              onKeyDown={(e) => e.stopPropagation()}
+                              className="pl-8 pr-8 h-8 text-sm border-slate-300 focus:border-orange-500 focus:ring-orange-500"
+                            />
+                            {batchSearchQuery && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setBatchSearchQuery('');
+                                }}
+                                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            )}
                           </div>
-                        ) : batchOptions.length > 0 ? (
-                          batchOptions.map((batch) => (
-                            <button
-                              key={batch.batchId}
-                              type="button"
-                              onClick={() => handleBatchSelect(batch)}
-                              className={`w-full px-3 py-2 text-left hover:bg-slate-50 flex items-center justify-between ${formData.batchId === batch.batchId ? 'bg-orange-50 text-orange-600' : 'text-slate-900'
-                                }`}
-                            >
-                              <span>{batch.batchCode}</span>
-                              {formData.batchId === batch.batchId && (
-                                <span className="text-orange-600">✓</span>
-                              )}
-                            </button>
-                          ))
-                        ) : (
-                          <div className="px-3 py-2 text-slate-500 text-sm">
-                            Không có dữ liệu batch
-                          </div>
-                        )}
+                        </div>
+                        {/* Dropdown List */}
+                        <div className="overflow-y-auto flex-1">
+                          {batchLoading ? (
+                            <div className="px-3 py-2 text-slate-500 text-sm flex items-center gap-2">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Đang tải...
+                            </div>
+                          ) : filteredBatchOptions.length > 0 ? (
+                            filteredBatchOptions.map((batch) => (
+                              <button
+                                key={batch.batchId}
+                                type="button"
+                                onClick={() => handleBatchSelect(batch)}
+                                className={`w-full px-3 py-2 text-left hover:bg-slate-50 flex items-center justify-between ${formData.batchId === batch.batchId ? 'bg-orange-50 text-orange-600' : 'text-slate-900'
+                                  }`}
+                              >
+                                <span>{batch.batchCode}</span>
+                                {formData.batchId === batch.batchId && (
+                                  <span className="text-orange-600">✓</span>
+                                )}
+                              </button>
+                            ))
+                          ) : (
+                            <div className="px-3 py-2 text-slate-500 text-sm">
+                              {batchSearchQuery ? 'Không tìm thấy kết quả' : 'Không có dữ liệu batch'}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -386,7 +428,7 @@ const UpdatePalletModal = ({
 
                 <div className="space-y-2">
                   <Label htmlFor="locationCode" className="text-sm font-medium text-slate-700">
-                     Quét mã vị trí <span className="text-red-500">*</span>
+                    Quét mã vị trí <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative">
                     <Input

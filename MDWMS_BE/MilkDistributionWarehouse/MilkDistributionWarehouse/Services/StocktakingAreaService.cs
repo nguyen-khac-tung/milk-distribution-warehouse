@@ -65,17 +65,17 @@ namespace MilkDistributionWarehouse.Services
             if (string.IsNullOrEmpty(stoctakingSheetId))
                 return ("Mã phiếu kiểm kê không hợp lệ.", default);
 
-            var stocktakingArea = new List<StocktakingArea>();
+            var stocktakingAreas = new List<StocktakingArea>();
 
             if (userId.HasValue && stocktakingAreaId != Guid.NewGuid())
-                stocktakingArea = await _stocktakingAreaRepository.GetStocktakingAreaByStocktakingSheetIdAndAssignTo(stoctakingSheetId, stocktakingAreaId, userId.Value);
+                stocktakingAreas = await _stocktakingAreaRepository.GetStocktakingAreaByStocktakingSheetIdAndAssignTo(stoctakingSheetId, stocktakingAreaId, userId.Value);
             else
-                stocktakingArea = await _stocktakingAreaRepository.GetStocktakingAreaByStocktakingSheetIdAndAssignTo(stoctakingSheetId, null, null);
+                stocktakingAreas = await _stocktakingAreaRepository.GetStocktakingAreaByStocktakingSheetIdAndAssignTo(stoctakingSheetId, null, null);
 
-            if (stocktakingArea == null)
-                return ("Phiếu kiểm kê khu vực không tồn tại.", default);
+            if (!stocktakingAreas.Any())
+                return ("Phiếu kiểm kê khu vực không tồn tại.".ToMessageForUser(), default);
 
-            var stocktakingAreaMap = _mapper.Map<List<StocktakingAreaDetailDto>>(stocktakingArea);
+            var stocktakingAreaMap = _mapper.Map<List<StocktakingAreaDetailDto>>(stocktakingAreas);
 
             return ("", stocktakingAreaMap);
         }

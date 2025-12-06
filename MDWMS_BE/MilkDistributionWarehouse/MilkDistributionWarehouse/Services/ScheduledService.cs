@@ -17,7 +17,7 @@ namespace MilkDistributionWarehouse.Services
             while (!stoppingToken.IsCancellationRequested)
             {
                 var now = DateTimeUtility.Now();
-                var nextRun = DateTime.Today.AddHours(InventoryConfig.NotificationHour);
+                var nextRun = DateTimeUtility.Now().Date.AddHours(InventoryConfig.NotificationHour);
                 if (now > nextRun) nextRun = nextRun.AddDays(1);
                 var delay = nextRun - now;
 

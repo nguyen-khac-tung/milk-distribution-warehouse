@@ -229,6 +229,7 @@ namespace MilkDistributionWarehouse.Mappers
             CreateMap<Batch, BatchDropDownDto>();
             CreateMap<Batch, BatchDto>()
                 .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Goods != null ? src.Goods.GoodsName : null))
+                .ForMember(dest => dest.SupplierName, opt => opt.MapFrom(src => src.Goods != null ? src.Goods.Supplier.CompanyName : null))
                 .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description != null ? src.Description.Trim() : null));
             CreateMap<BatchCreateDto, Batch>()
                 .ForMember(dest => dest.BatchId, opt => opt.MapFrom(_ => Guid.NewGuid()))
@@ -454,6 +455,7 @@ namespace MilkDistributionWarehouse.Mappers
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTimeUtility.Now()))
                 .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(_ => (DateTime?)null));
             CreateMap<GoodsReceiptNote, GoodsReceiptNoteDto>()
+                .ForMember(dest => dest.PurchaseOrderStatus, opt => opt.MapFrom(src => src.PurchaseOder.Status))
                 .ForMember(dest => dest.ApprovalByName, opt => opt.MapFrom(src => src.ApprovalByNavigation.FullName))
                 .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => src.CreatedByNavigation.FullName))
                 .ForMember(dest => dest.GoodsReceiptNoteDetails, opt => opt.MapFrom(src => src.GoodsReceiptNoteDetails));

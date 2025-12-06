@@ -16,7 +16,8 @@ const AssignAreaModal = ({
     isReassign = false,
     stocktaking = null,
     formData = null, // Form data để tạo phiếu kiểm kê (chỉ dùng khi chưa có stocktakingSheetId)
-    areasToReassign = [] // Danh sách khu vực cần phân công lại (nếu chỉ có 1 khu vực)
+    areasToReassign = [], // Danh sách khu vực cần phân công lại (nếu chỉ có 1 khu vực)
+    selectedAreaIds = [] // Danh sách areaIds đã chọn trong form (để cập nhật vào stocktaking)
 }) => {
     const [areas, setAreas] = useState([]);
     const [employees, setEmployees] = useState([]);
@@ -150,10 +151,18 @@ const AssignAreaModal = ({
                         startTimeISO = date.format('YYYY-MM-DDTHH:mm:ss');
                     }
 
+                    // Format areaIds từ selectedAreaIds hoặc areasToReassign
+                    const areaIdsToUpdate = selectedAreaIds.length > 0 
+                        ? selectedAreaIds.map(areaId => ({ areaId: areaId }))
+                        : (areasToReassign.length > 0 
+                            ? areasToReassign.map(areaId => ({ areaId: areaId }))
+                            : []);
+
                     const submitData = {
                         stocktakingSheetId: stocktakingSheetId,
                         startTime: startTimeISO,
-                        note: formData.reason?.trim() || ''
+                        note: formData.reason?.trim() || '',
+                        areaIds: areaIdsToUpdate
                     };
 
                     await updateStocktaking(submitData);
