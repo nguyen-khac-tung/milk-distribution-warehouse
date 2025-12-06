@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, MapPin, Clock, Calendar, User, Thermometer, Droplets, Sun, Check, RotateCcw, Search, Package, Printer } from 'lucide-react';
+import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, MapPin, Clock, Calendar, User, Thermometer, Droplets, Sun, Check, RotateCcw, Search, Package, Printer, FileText } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
 import { getStocktakingAreaDetailBySheetId, getStocktakingDetail, confirmStocktakingLocationCounted, submitStocktakingArea, cancelStocktakingLocationRecord, getStocktakingPalletDetail, exportStocktakingAreaWord } from '../../services/StocktakingService';
@@ -849,6 +849,21 @@ const StocktakingArea = () => {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Ghi chú */}
+                            {stocktakingDetail?.note && (
+                                <div>
+                                    <h3 className="text-xs font-medium text-gray-500 mb-3">Ghi chú</h3>
+                                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                        <div className="flex items-start gap-2">
+                                            <FileText className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" />
+                                            <div className="text-sm text-gray-900 whitespace-pre-wrap">
+                                                {stocktakingDetail.note}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Điều kiện bảo quản */}
                             <div>

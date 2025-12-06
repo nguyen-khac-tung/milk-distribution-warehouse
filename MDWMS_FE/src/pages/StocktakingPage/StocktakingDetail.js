@@ -654,7 +654,9 @@ const StocktakingDetail = () => {
 
                         {/* Assignment Button - Only visible for Warehouse Manager */}
                         {/* Show "Bắt đầu phân công" button when status is Draft (1) */}
-                        {stocktaking.status === STOCKTAKING_STATUS.Draft && (
+                        {/* Ẩn nút nếu chỉ có 1 khu vực chưa phân công */}
+                        {stocktaking.status === STOCKTAKING_STATUS.Draft && 
+                         stocktaking.stocktakingAreas?.length !== 1 && (
                             <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_VIEW_WM}>
                                 <div className="flex justify-center">
                                     <Button
