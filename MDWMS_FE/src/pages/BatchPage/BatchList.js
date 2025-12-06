@@ -565,6 +565,9 @@ const BatchList = () => {
                                                     )}
                                                 </div>
                                             </TableHead>
+                                            <TableHead className="font-semibold text-slate-900 px-5 py-3 text-left w-[14%]">
+                                                Nhà cung cấp
+                                            </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-5 py-3 text-left w-[17%]">
                                                 Tên hàng hóa
                                             </TableHead>
@@ -622,6 +625,7 @@ const BatchList = () => {
                                                 <TableRow key={batch.batchId} className="hover:bg-slate-50 border-b border-slate-200">
                                                     <TableCell className="px-5 py-2 text-slate-600 font-medium">{index + 1}</TableCell>
                                                     <TableCell className="font-medium text-slate-900 px-5 py-3 text-left">{batch?.batchCode || ''}</TableCell>
+                                                    <TableCell className="font-medium text-slate-900 px-5 py-3 text-left  w-[14%]">{batch?.supplierName || ''}</TableCell>
                                                     <TableCell
                                                         className="text-slate-700 px-5 py-3 text-left w-[17%]"
                                                         title={batch?.goodsName || ""}
