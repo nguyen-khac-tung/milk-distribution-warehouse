@@ -225,8 +225,10 @@ const DisposalTable = ({
                                         </TableCell>
 
                                         {/* Mã yêu cầu */}
-                                        <TableCell className="text-left px-6 py-4 max-w-[200px] break-words whitespace-normal">
-                                            {request?.disposalRequestId || "-"}
+                                        <TableCell className="text-left text-slate-700 max-w-[200px] break-words whitespace-normal">
+                                            <span className="font-bold">
+                                                {request.disposalRequestId || '-'}
+                                            </span>
                                         </TableCell>
 
                                         {/* Người tạo */}
