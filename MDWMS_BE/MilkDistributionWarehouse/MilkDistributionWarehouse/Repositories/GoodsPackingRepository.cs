@@ -10,6 +10,7 @@ namespace MilkDistributionWarehouse.Repositories
     {
         Task<GoodsPacking?> CreateGoodsPacking(GoodsPacking create);
         Task<List<GoodsPacking>?> GetGoodsPackingsByGoodsId(int goodsId);
+        Task<int> UpdateGoodsPacking(GoodsPacking goodsPacking);
         Task<List<GoodsPacking>?> DeleteGoodsPackingsBulk(List<GoodsPacking> goodsPackings);
         Task<GoodsPacking?> DeleteGoodsPacking(GoodsPacking goodsPacking);
         Task<bool> HasActivePurchaseOrder(int goodsPackingId);
@@ -59,6 +60,19 @@ namespace MilkDistributionWarehouse.Repositories
             return await _context.GoodsPackings
                 .Where(gp => gp.GoodsId == goodsId && gp.Status == CommonStatus.Active)
                 .ToListAsync();
+        }
+
+        public async Task<int> UpdateGoodsPacking(GoodsPacking goodsPacking)
+        {
+            try
+            {
+                _context.GoodsPackings.Update(goodsPacking);
+                await _context.SaveChangesAsync();
+                return 1;
+            }catch
+            {
+                return 0;
+            }
         }
 
         public async Task<List<GoodsPacking>?> DeleteGoodsPackingsBulk(List<GoodsPacking> goodsPackings)

@@ -75,6 +75,10 @@ namespace MilkDistributionWarehouse.Services
                                 throw new Exception("Cập nhật số lượng đóng gói hàng hoá thất bại." + hasRelatedTransaction);
 
                             existingGoodsPacking.UnitPerPackage = p.UnitPerPackage;
+
+                            var resultUpdate = await _goodPackingRepository.UpdateGoodsPacking(existingGoodsPacking);
+                            if (resultUpdate == 0)
+                                throw new Exception("Cập nhật quy cách đóng gói thất bại.");
                         }
                     }
                     else
