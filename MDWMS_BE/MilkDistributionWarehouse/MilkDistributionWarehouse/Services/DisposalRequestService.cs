@@ -7,6 +7,7 @@ using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
 using MilkDistributionWarehouse.Utilities;
+using System.Collections.Generic;
 
 namespace MilkDistributionWarehouse.Services
 {
@@ -150,6 +151,10 @@ namespace MilkDistributionWarehouse.Services
             if (createDto.DisposalRequestItems.IsNullOrEmpty())
                 return ("Danh sách hàng hóa không được bỏ trống.".ToMessageForUser(), null);
 
+            var itemsToCheck = _mapper.Map<List<DisposalRequestDetail>>(createDto.DisposalRequestItems);
+            var message = await ValidateDisposalRequestItem(itemsToCheck);
+            if (message.Length > 0) return (message, null);
+
             try
             {
                 await _unitOfWork.BeginTransactionAsync();
@@ -187,6 +192,10 @@ namespace MilkDistributionWarehouse.Services
                 return ("Chỉ được cập nhật khi yêu cầu ở trạng thái Nháp hoặc Bị từ chối.".ToMessageForUser(), null);
 
             if (existingRequest.CreatedBy != userId) return ("Bạn không có quyền cập nhật yêu cầu này.".ToMessageForUser(), null);
+
+            var itemsToCheck = _mapper.Map<List<DisposalRequestDetail>>(updateDto.DisposalRequestItems);
+            var message = await ValidateDisposalRequestItem(itemsToCheck);
+            if (message.Length > 0) return (message, null);
 
             try
             {
@@ -279,6 +288,9 @@ namespace MilkDistributionWarehouse.Services
                     if (disposalRequest.Status != DisposalRequestStatus.Draft && disposalRequest.Status != DisposalRequestStatus.Rejected)
                         return ("Chỉ được nộp khi yêu cầu ở trạng thái Nháp hoặc Bị từ chối.".ToMessageForUser(), null);
                     if (disposalRequest.CreatedBy != userId) return ("Bạn không có quyền thực hiện thao tác này.".ToMessageForUser(), null);
+                    
+                    var message = await ValidateDisposalRequestItem(disposalRequest.DisposalRequestDetails);
+                    if (message.Length > 0) return (message, null);
 
                     disposalRequest.Status = DisposalRequestStatus.PendingApproval;
                 }
@@ -324,6 +336,38 @@ namespace MilkDistributionWarehouse.Services
                 await _unitOfWork.RollbackTransactionAsync();
                 return ("Cập nhật trạng thái yêu cầu xuất hủy thất bại.".ToMessageForUser(), null);
             }
+        }
+
+        private async Task<string> ValidateDisposalRequestItem(IEnumerable<DisposalRequestDetail> itemsToCheck)
+        {
+            var expiredGoodsList = await _goodsRepository.GetExpiredGoodsForDisposal();
+
+            if ((expiredGoodsList == null || !expiredGoodsList.Any()) && itemsToCheck.Any())
+                return "Kho không có sản phẩm hết hạn nào để xuất hủy.".ToMessageForUser();
+
+            var committedDetails = await _disposalRequestRepository.GetCommittedDisposalQuantities();
+
+            foreach (var item in itemsToCheck)
+            {
+                var expiredItem = expiredGoodsList.FirstOrDefault(x =>
+                    x.Goods.GoodsId == item.GoodsId &&
+                    x.GoodsPacking.GoodsPackingId == item.GoodsPackingId);
+                var totalExpiredOnHand = expiredItem != null ? (int)expiredItem.TotalExpiredPackageQuantity : 0;
+
+                var totalCommitted = committedDetails?
+                    .Where(c => c.GoodsId == item.GoodsId && c.GoodsPackingId == item.GoodsPackingId)
+                    .Sum(c => c.PackageQuantity) ?? 0;
+
+                var availableQuantity = totalExpiredOnHand - totalCommitted;
+
+                if (item.PackageQuantity > availableQuantity)
+                {
+                    var goodsName = expiredItem?.Goods?.GoodsName ?? $"ID {item.GoodsId}";
+                    return $"Sản phẩm '{goodsName}' không đủ số lượng. Yêu cầu: {item.PackageQuantity}, Khả dụng: {availableQuantity} (Tồn hết hạn: {totalExpiredOnHand}, Đang giữ chỗ: {totalCommitted})".ToMessageForUser();
+                }
+            }
+
+            return "";
         }
 
         private async Task HandleStatusChangeNotification(DisposalRequest disposalRequest)

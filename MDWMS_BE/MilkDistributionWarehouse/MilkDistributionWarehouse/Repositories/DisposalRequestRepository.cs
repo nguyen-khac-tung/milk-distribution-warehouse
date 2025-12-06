@@ -52,6 +52,7 @@ namespace MilkDistributionWarehouse.Repositories
         public async Task<List<DisposalRequestDetail>> GetCommittedDisposalQuantities()
         {
             int[] inProgressStatuses = {
+                DisposalRequestStatus.PendingApproval,
                 DisposalRequestStatus.Approved,
                 DisposalRequestStatus.AssignedForPicking,
                 DisposalRequestStatus.Picking
