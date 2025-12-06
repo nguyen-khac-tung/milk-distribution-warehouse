@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Plus, Trash2, Warehouse } from "lucide-react"
 import { createPurchaseOrder, getGoodsDropDownBySupplierId, getGoodsPackingByGoodsId, submitPurchaseOrder } from "../../services/PurchaseOrderService"
 import { extractErrorMessage } from '../../utils/Validation';
-import { getSuppliersDropdown } from "../../services/SupplierService"
+import { getSupplierWithGoodsDropDown } from "../../services/SupplierService"
 import { getAvailableLocationQuantity } from "../../services/AreaServices"
 import { ComponentIcon } from '../../components/IconComponent/Icon';
 import WarehouseLocationModal from "../../components/PurchaseOrderComponents/WarehouseLocationModal"
@@ -47,7 +47,7 @@ export default function CreatePurchaseOrder({
         const loadSuppliers = async () => {
             setSuppliersLoading(true);
             try {
-                const response = await getSuppliersDropdown();
+                const response = await getSupplierWithGoodsDropDown();
                 const suppliersData = response?.data || response?.items || response || [];
                 setSuppliers(suppliersData);
             } catch (error) {

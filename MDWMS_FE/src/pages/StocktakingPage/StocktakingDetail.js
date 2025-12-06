@@ -692,7 +692,7 @@ const StocktakingDetail = () => {
                                 </PermissionWrapper>
 
                                 {/* Show "Bắt đầu kiểm kê" button for Warehouse Staff */}
-                                {hasPermission(PERMISSIONS.STOCKTAKING_IN_PROGRESS) && (
+                                {hasPermission(PERMISSIONS.STOCKTAKING_IN_PROGRESS) && stocktaking?.isDiableButtonInProgress === true && (
                                     <div className="flex justify-center mt-4">
                                         <Button
                                             onClick={handleStartStocktaking}
