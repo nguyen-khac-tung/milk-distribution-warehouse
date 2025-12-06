@@ -236,12 +236,12 @@ namespace MilkDistributionWarehouse.Services
 
             if (!string.IsNullOrEmpty(dto.GoodsReceiptNoteId) && !await _palletRepository.ExistsGoodRecieveNote(dto.GoodsReceiptNoteId))
                 return ("Phiếu nhận hàng không tồn tại.", new PalletDto.PalletResponseDto());
-            
-            //if(pallet.Status == CommonStatus.Inactive)
-            //{
-            //    if (!await _palletRepository.CheckUserCreatePallet(dto.GoodsReceiptNoteId, userId))
-            //        return ("Người dùng không có quyền sắp xếp pallet cho phiếu nhận hàng này.".ToMessageForUser(), new PalletDto.PalletResponseDto());
-            //}
+
+            if (pallet.Location == null)
+            {
+                if (!await _palletRepository.CheckUserCreatePallet(dto.GoodsReceiptNoteId, userId))
+                    return ("Pallet đang trong quá trình kiểm nhập, chỉ có người được giao mới có quyền sắp xếp pallet.".ToMessageForUser(), new PalletDto.PalletResponseDto());
+            }
 
             if (!await _palletRepository.ExistsBatch(dto.BatchId))
                 return ("Lô hàng không tồn tại.", new PalletDto.PalletResponseDto());
