@@ -188,7 +188,7 @@ const AreaLists = () => {
         ]
         if (!statusSearchQuery) return statusOptions
         const query = statusSearchQuery.toLowerCase()
-        return statusOptions.filter(option => 
+        return statusOptions.filter(option =>
             option.label.toLowerCase().includes(query)
         )
     }, [statusSearchQuery])
@@ -231,6 +231,17 @@ const AreaLists = () => {
         setStatusFilter("")
         setStatusSearchQuery("")
         setShowStatusFilter(false)
+        setSearchLoading(true);
+        fetchAreas(
+            1,
+            pagination.pageSize,
+            {
+                search: "",
+                filters: {},
+                sortField: "",
+                sortAscending: true,
+            }
+        );
     }
 
     const clearAllFilters = handleClearAllFilters
@@ -337,22 +348,31 @@ const AreaLists = () => {
         fetchTotalStats();
     };
 
-    // Handle clear all filters
     const handleClearAll = () => {
+        // Reset UI states
         setSearchQuery("");
         setStatusFilter("");
         setStatusSearchQuery("");
         setShowStatusFilter(false);
+        setSortField("");
+        setSortAscending(true);
+
+        // Reset về trang 1
+        setPagination(prev => ({ ...prev, current: 1 }));
+
         setSearchLoading(true);
 
-        fetchAreas(1, pagination.pageSize, {
-            search: "",
-            filters: {},
-            sortField: "",
-            sortAscending: true,
-        });
-
-        setPagination((p) => ({ ...p, current: 1 }));
+        // Gọi API load lại danh sách ban đầu TRANG 1
+        fetchAreas(
+            1,
+            pagination.pageSize,
+            {
+                search: "",
+                filters: {},
+                sortField: "",
+                sortAscending: true,
+            }
+        );
     };
 
     // Handle update cancel
@@ -574,7 +594,7 @@ const AreaLists = () => {
                                                     className="hover:bg-slate-50 border-b border-slate-200"
                                                 >
                                                     <TableCell className="px-6 py-4 text-slate-600 font-medium">
-                                                        {index + 1}
+                                                        {(pagination.current - 1) * pagination.pageSize + index + 1}
                                                     </TableCell>
                                                     <TableCell className="px-6 py-4 text-slate-700 font-medium">{area?.areaCode || ''}</TableCell>
                                                     <TableCell className="px-6 py-4 text-slate-700">{area?.areaName || "—"}</TableCell>

@@ -67,7 +67,7 @@ export default function SaleOrderFilterToggle({
     clearSellerFilter,
     showSeller = true,
 
-    // Confirmer (người xác nhận đơn bán)
+    // Confirmer (người phân công đơn bán)
     confirmerFilter,
     setConfirmerFilter,
     showConfirmerFilter,
@@ -77,7 +77,7 @@ export default function SaleOrderFilterToggle({
     clearConfirmerFilter,
     showConfirmer = true,
 
-    // Assignee (người phân công)
+    // Assignee (người được giao)
     assigneeFilter,
     setAssigneeFilter,
     showAssigneeFilter,
@@ -583,8 +583,8 @@ export default function SaleOrderFilterToggle({
                                                     {assigneeFilter
                                                         ? assignees.find(
                                                             (a) => a.userId.toString() === assigneeFilter
-                                                        )?.fullName || "Chọn người phân công"
-                                                        : "Tất cả người phân công"}
+                                                        )?.fullName || "Chọn người được giao"
+                                                        : "Tất cả người được giao"}
                                                 </span>
                                                 <ChevronDown className="h-4 w-4 flex-shrink-0" />
                                             </button>
@@ -595,7 +595,7 @@ export default function SaleOrderFilterToggle({
                                                         <div className="relative">
                                                             <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                                                             <Input
-                                                                placeholder="Tìm kiếm người phân công..."
+                                                                placeholder="Tìm kiếm người được giao"
                                                                 value={assigneeSearch}
                                                                 onChange={(e) => setAssigneeSearch(e.target.value)}
                                                                 className="pl-8 h-8 text-sm border-gray-300 focus:border-orange-500 focus:ring-orange-500"
@@ -613,7 +613,7 @@ export default function SaleOrderFilterToggle({
                                                                 }}
                                                                 className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 text-slate-700"
                                                             >
-                                                                Tất cả người phân công
+                                                                Tất cả người được giao
                                                             </button>
                                                             {filterOptions(assignees, assigneeSearch, 'fullName').map((assignee) => (
                                                                 <button
@@ -788,7 +788,7 @@ export default function SaleOrderFilterToggle({
                                                                 }}
                                                                 className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 text-slate-700"
                                                             >
-                                                                Tất cả nhân viên bán hàng
+                                                                Tất cả người tạo đơn
                                                             </button>
                                                             {filterOptions(sellers, sellerSearch, 'fullName').map((seller) => (
                                                                 <button
@@ -843,8 +843,8 @@ export default function SaleOrderFilterToggle({
                                                     {confirmerFilter
                                                         ? confirmers.find(
                                                             (c) => c.userId.toString() === confirmerFilter
-                                                        )?.fullName || "Chọn người xác nhận"
-                                                        : "Tất cả người xác nhận"}
+                                                        )?.fullName || "Chọn người phân công"
+                                                        : "Tất cả người phân công"}
                                                 </span>
                                                 <ChevronDown className="h-4 w-4 flex-shrink-0" />
                                             </button>
@@ -855,7 +855,7 @@ export default function SaleOrderFilterToggle({
                                                         <div className="relative">
                                                             <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                                                             <Input
-                                                                placeholder="Tìm kiếm người xác nhận..."
+                                                                placeholder="Tìm kiếm người phân công"
                                                                 value={confirmerSearch}
                                                                 onChange={(e) => setConfirmerSearch(e.target.value)}
                                                                 className="pl-8 h-8 text-sm border-gray-300 focus:border-orange-500 focus:ring-orange-500"
@@ -873,7 +873,7 @@ export default function SaleOrderFilterToggle({
                                                                 }}
                                                                 className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 text-slate-700"
                                                             >
-                                                                Tất cả người xác nhận
+                                                                Tất cả người phân công
                                                             </button>
                                                             {filterOptions(confirmers, confirmerSearch, 'fullName').map((confirmer) => (
                                                                 <button
