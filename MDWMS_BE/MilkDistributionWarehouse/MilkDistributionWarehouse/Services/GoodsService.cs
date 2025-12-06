@@ -353,6 +353,8 @@ namespace MilkDistributionWarehouse.Services
                 if (await IsGoodInUseAnyTransactionToUpdate(update.GoodsId))
                     return ("Không thể cập nhật thông tin hàng hoá vì hàng hoá đang được sử dụng.".ToMessageForUser(), default);
 
+                var existingPackingIds = goodsExist.GoodsPackings?.Select(p => p.GoodsPackingId).ToHashSet() ?? new HashSet<int>();
+
                 _mapper.Map(update, goodsExist);
 
                 _cacheService.InvalidateDropdownCache("Goods", "Supplier", goodsExist.SupplierId);
@@ -372,6 +374,39 @@ namespace MilkDistributionWarehouse.Services
 
                 if (!string.IsNullOrEmpty(msg))
                     throw new Exception(msg);
+
+                try
+                {
+                    var goodsAfterPackingUpdate = await _goodRepository.GetGoodsByGoodsId(update.GoodsId);
+                    var newPackings = goodsAfterPackingUpdate?.GoodsPackings?
+                        .Where(p => !existingPackingIds.Contains(p.GoodsPackingId))
+                        .ToList();
+
+                    if (newPackings != null && newPackings.Any())
+                    {
+                        var ledgerDtos = newPackings.Select(p => new InventoryLedgerRequestDto
+                        {
+                            GoodsId = update.GoodsId,
+                            GoodPackingId = p.GoodsPackingId,
+                            EventDate = DateTimeUtility.Now(),
+                            InQty = 0,
+                            OutQty = 0,
+                            BalanceAfter = 0,
+                            TypeChange = null
+                        }).ToList();
+
+                        if (ledgerDtos.Any())
+                        {
+                            var (invErr, _) = await _inventoryLedgerService.CreateInventoryLedgerBulk(ledgerDtos);
+                            if (!string.IsNullOrEmpty(invErr))
+                                throw new Exception(invErr);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception($"Tạo sổ cái thất bại: {ex.Message}");
+                }
 
                 await _unitOfWork.CommitTransactionAsync();
 

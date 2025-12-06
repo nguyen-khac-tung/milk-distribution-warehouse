@@ -839,6 +839,14 @@ namespace MilkDistributionWarehouse.Repositories
                 })
                 .ToList();
 
+            // Remove records where all quantities are zero (beginning, in, out, ending)
+            grouped = grouped
+                .Where(r => !(r.BeginningInventoryPackages == 0
+                              && r.InQuantityPackages == 0
+                              && r.OutQuantityPackages == 0
+                              && r.EndingInventoryPackages == 0))
+                .ToList();
+
             // Apply filters from request
             if (request.Filters != null && request.Filters.Count > 0)
             {
