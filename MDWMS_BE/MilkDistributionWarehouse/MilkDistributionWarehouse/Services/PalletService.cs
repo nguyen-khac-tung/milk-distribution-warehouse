@@ -237,6 +237,9 @@ namespace MilkDistributionWarehouse.Services
             if (!string.IsNullOrEmpty(dto.GoodsReceiptNoteId) && !await _palletRepository.ExistsGoodRecieveNote(dto.GoodsReceiptNoteId))
                 return ("Phiếu nhận hàng không tồn tại.", new PalletDto.PalletResponseDto());
             
+            if(await _palletRepository.IsPalletInSalesPickingOrDisposalPicking(palletId))
+                return ("Không thể cập nhật pallet này do pallet đang trong quá trình lấy hàng.", new PalletDto.PalletResponseDto());
+
             //if(pallet.Status == CommonStatus.Inactive)
             //{
             //    if (!await _palletRepository.CheckUserCreatePallet(dto.GoodsReceiptNoteId, userId))
@@ -244,7 +247,7 @@ namespace MilkDistributionWarehouse.Services
             //}
 
             if (!await _palletRepository.ExistsBatch(dto.BatchId))
-                return ("Lô hàng không tồn tại.", new PalletDto.PalletResponseDto());
+                return ("Lô hàng không hợp lệ.", new PalletDto.PalletResponseDto());
 
             var location = await _locationRepository.GetLocationById(dto.LocationId.Value);
             if (location == null)

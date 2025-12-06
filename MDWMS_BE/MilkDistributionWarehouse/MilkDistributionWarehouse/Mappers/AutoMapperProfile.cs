@@ -229,6 +229,7 @@ namespace MilkDistributionWarehouse.Mappers
             CreateMap<Batch, BatchDropDownDto>();
             CreateMap<Batch, BatchDto>()
                 .ForMember(dest => dest.GoodsName, opt => opt.MapFrom(src => src.Goods != null ? src.Goods.GoodsName : null))
+                .ForMember(dest => dest.SupplierName, opt => opt.MapFrom(src => src.Goods != null ? src.Goods.Supplier.CompanyName : null))
                 .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description != null ? src.Description.Trim() : null));
             CreateMap<BatchCreateDto, Batch>()
                 .ForMember(dest => dest.BatchId, opt => opt.MapFrom(_ => Guid.NewGuid()))
