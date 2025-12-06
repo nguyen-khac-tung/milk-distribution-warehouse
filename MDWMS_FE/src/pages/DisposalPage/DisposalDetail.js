@@ -452,8 +452,8 @@ const DisposalDetail = () => {
                                             disposalRequest.disposalRequestDetails.map((item, index) => (
                                                 <TableRow key={item.disposalRequestDetailId} className="border-b">
                                                     <TableCell className="text-center font-medium">{index + 1}</TableCell>
-                                                    <TableCell className="text-gray-600">{item.goods?.goodsCode || '-'}</TableCell>
-                                                    <TableCell className="font-medium">{item.goods?.goodsName || '-'}</TableCell>
+                                                    <TableCell className="text-gray-600 font-medium">{item.goods?.goodsCode || '-'}</TableCell>
+                                                    <TableCell className="text-gray-600">{item.goods?.goodsName || '-'}</TableCell>
                                                     <TableCell className="text-gray-600">{item.goods?.companyName || '-'}</TableCell>
                                                     <TableCell className="text-center font-semibold">{item.goodsPacking?.unitPerPackage || '-'}</TableCell>
                                                     <TableCell className="text-center font-semibold">{item.packageQuantity || '-'}</TableCell>

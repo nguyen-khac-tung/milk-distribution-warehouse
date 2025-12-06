@@ -22,6 +22,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, SupplierDetail)> DeleteSupplier(int supplierId);
         Task<(string, SupplierUpdateStatusDto)> UpdateSupplierStatus(SupplierUpdateStatusDto update);
         Task<(string, List<SupplierDropDown>)> GetSupplierDropDown();
+        Task<(string, List<SupplierDropDown>)> GetSupplierWithGoodsDropDown();
     }
     public class SupplierService : ISupplierService
     {
@@ -56,6 +57,21 @@ namespace MilkDistributionWarehouse.Services
         {
             var query = await _supplierRepository.GetSuppliers()
                 .Where(s => s.Status == CommonStatus.Active)
+                .ToListAsync();
+
+            var supplierDropDown = _mapper.Map<List<SupplierDropDown>>(query);
+
+            if (!supplierDropDown.Any()) return ("Danh sách nhà cung cấp trống.".ToMessageForUser(), new List<SupplierDropDown>());
+            return ("", supplierDropDown);
+        }
+
+        public async Task<(string, List<SupplierDropDown>)> GetSupplierWithGoodsDropDown()
+        {
+            var query = await _supplierRepository.GetSuppliers()
+                .Where(s => 
+                    s.Status == CommonStatus.Active &&
+                    s.Goods.Any(g => g.Status == CommonStatus.Active)
+                        )
                 .ToListAsync();
 
             var supplierDropDown = _mapper.Map<List<SupplierDropDown>>(query);

@@ -26,7 +26,6 @@ function CreateSaleOrder({
     // Minimum selectable date: tomorrow (force future date)
     const minDate = (() => {
         const d = new Date();
-        d.setDate(d.getDate() + 1);
         const yyyy = d.getFullYear();
         const mm = String(d.getMonth() + 1).padStart(2, '0');
         const dd = String(d.getDate()).padStart(2, '0');
@@ -774,8 +773,8 @@ function CreateSaleOrder({
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             selectedDate.setHours(0, 0, 0, 0);
-            if (selectedDate <= today) {
-                blockingErrors.estimatedTimeDeparture = "Ngày giao hàng phải trong tương lai";
+            if (selectedDate < today) {
+                blockingErrors.estimatedTimeDeparture = "Ngày giao hàng không thể trong quá khứ";
             }
         }
 
@@ -969,8 +968,8 @@ function CreateSaleOrder({
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             selectedDate.setHours(0, 0, 0, 0);
-            if (selectedDate <= today) {
-                blockingErrors.estimatedTimeDeparture = "Ngày giao hàng phải trong tương lai";
+            if (selectedDate < today) {
+                blockingErrors.estimatedTimeDeparture = "Ngày giao hàng không thể trong quá khứ";
             }
         }
 
@@ -1195,7 +1194,7 @@ function CreateSaleOrder({
                                                     value={formData.estimatedTimeDeparture}
                                                     onChange={(e) => handleInputChange("estimatedTimeDeparture", e.target.value)}
                                                     ref={dateInputRef}
-                                                    // min={minDate}
+                                                    min={minDate}
                                                     className={`date-picker-input h-[37px] pr-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg w-full ${fieldErrors.estimatedTimeDeparture ? 'border-red-500' : ''}`}
                                                 />
                                                 {fieldErrors.estimatedTimeDeparture && (

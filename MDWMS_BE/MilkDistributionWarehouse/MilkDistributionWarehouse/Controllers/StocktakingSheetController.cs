@@ -23,9 +23,10 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpGet("GetDetail/{stocktakingSheetId}")]
+        [Authorize(Roles = RoleNames.WarehouseManager + "," + RoleNames.WarehouseStaff + "," + RoleNames.SalesManager)]
         public async Task<IActionResult> GetStocktakingSheetDetail(string stocktakingSheetId)
         {
-            var (msg, stocktakingDetail) = await _stocktakingSheetService.GetStocktakingSheetDetail(stocktakingSheetId);
+            var (msg, stocktakingDetail) = await _stocktakingSheetService.GetStocktakingSheetDetail(stocktakingSheetId, User.GetUserId(), User.GetUserRole());
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<StocktakingSheetDetail>.ToResultOk(stocktakingDetail);

@@ -131,10 +131,10 @@ export default function StocktakingList() {
             
             // Tăng 1 ngày bằng cách tách string
             const d = new Date(selectedDate);
-            d.setDate(d.getDate() + 1);
+            d.setDate(d.getDate());
 
             const nextDate = d.toISOString().substring(0, 10); // "2025-11-28"
-            const end = `${nextDate}T00:00:00`;
+            const end = `${nextDate}T23:59:59`;
 
             startTimeFilter = `${start}~${end}`;
         }

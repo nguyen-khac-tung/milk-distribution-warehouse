@@ -22,7 +22,6 @@ function UpdateSaleOrder() {
     const navigate = useNavigate();
     const minDate = (() => {
         const d = new Date();
-        d.setDate(d.getDate() + 1);
         const yyyy = d.getFullYear();
         const mm = String(d.getMonth() + 1).padStart(2, '0');
         const dd = String(d.getDate()).padStart(2, '0');
@@ -771,6 +770,14 @@ function UpdateSaleOrder() {
 
         if (!formData.estimatedTimeDeparture) {
             blockingErrors.estimatedTimeDeparture = "Vui lòng chọn ngày dự kiến giao hàng";
+        } else {
+            const selectedDate = new Date(formData.estimatedTimeDeparture);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            selectedDate.setHours(0, 0, 0, 0);
+            if (selectedDate < today) {
+                blockingErrors.estimatedTimeDeparture = "Ngày giao hàng không thể trong quá khứ";
+            }
         }
 
         // Set cả warnings và blocking errors để hiển thị
@@ -948,6 +955,14 @@ function UpdateSaleOrder() {
 
         if (!formData.estimatedTimeDeparture) {
             blockingErrors.estimatedTimeDeparture = "Vui lòng chọn ngày dự kiến giao hàng";
+        } else {
+            const selectedDate = new Date(formData.estimatedTimeDeparture);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            selectedDate.setHours(0, 0, 0, 0);
+            if (selectedDate < today) {
+                blockingErrors.estimatedTimeDeparture = "Ngày giao hàng không thể trong quá khứ";
+            }
         }
 
         // Set cả warnings và blocking errors để hiển thị
@@ -1145,6 +1160,7 @@ function UpdateSaleOrder() {
                                                 <Input
                                                     id="estimatedTimeDeparture"
                                                     type="date"
+                                                    min={minDate}
                                                     value={formData.estimatedTimeDeparture}
                                                     onChange={(e) => handleInputChange("estimatedTimeDeparture", e.target.value)}
                                                     className={`date-picker-input h-[37px] pr-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg w-full ${fieldErrors.estimatedTimeDeparture ? 'border-red-500' : ''}`}
