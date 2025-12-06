@@ -38,6 +38,18 @@ namespace MilkDistributionWarehouse.Services
         {
             var batchs = _batchRepository.GetBatchs();
 
+            if (request.Filters != null && request.Filters.Any())
+            {
+                var fromDate = request.Filters.FirstOrDefault(f => f.Key.ToLower() == "fromdate");
+                var toDate = request.Filters.FirstOrDefault(f => f.Key.ToLower() == "todate");
+                DateOnly.TryParse(fromDate.Value, out DateOnly startDate);
+                DateOnly.TryParse(toDate.Value, out DateOnly endDate);
+                batchs = batchs.Where(b => (startDate == default || b.ExpiryDate >= startDate) &&
+                                                     (endDate == default || b.ExpiryDate <= endDate));
+                if (fromDate.Key != null) request.Filters.Remove(fromDate.Key);
+                if (toDate.Key != null) request.Filters.Remove(toDate.Key);
+            }
+
             var batchDtos = batchs.ProjectTo<BatchDto>(_mapper.ConfigurationProvider);
 
             var batchDtosResult = await batchDtos.ToPagedResultAsync(request);
