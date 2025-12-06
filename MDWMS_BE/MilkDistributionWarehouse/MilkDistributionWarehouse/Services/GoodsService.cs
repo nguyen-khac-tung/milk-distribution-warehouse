@@ -380,7 +380,7 @@ namespace MilkDistributionWarehouse.Services
             catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                return ($"{ex.Message}".ToMessageForUser(), default);
+                return ($"{ex.Message}", default);
             }
         }
 
