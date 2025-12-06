@@ -575,7 +575,9 @@ namespace MilkDistributionWarehouse.Services
 
             var checkSalesOrder = await _goodRepository.IsGoodsUsedInSalesOrderWithExcludedStatusesAsync(goodsId, SalesOrderStatus.Draft);
 
-            return checkBatch || checkPurchaseOrder || checkSalesOrder;
+            var checkDisposalRequest = await _goodRepository.IsGoodsUsedInDisposalRequestWithExcludedStatuses(goodsId, DisposalRequestStatus.Draft);
+
+            return checkBatch || checkPurchaseOrder || checkSalesOrder || checkDisposalRequest;
         }
 
         private async Task<string> ActivateLinkedEntitiesAsync(int goodsId)

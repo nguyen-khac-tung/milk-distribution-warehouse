@@ -15,10 +15,11 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> HasDependencies(string palletId);
         Task<List<Pallet>> GetActivePalletsAsync();
         Task<List<Pallet>> GetPalletsByGRNID(string grnId);
-        Task<bool> IsLocationAvailable(int? locationId);
+        Task<bool> IsLocationAvailable(int? locationId, string? palletID = null);
         Task<bool> ExistsBatch(Guid? batchId);
         Task<bool> ExistsLocation(int? locationId);
         Task<bool> ExistsGoodRecieveNote(string? goodRcNoteId);
+        Task<bool> CheckUserCreatePallet(string? goodRcNoteId, int? userID);
         Task<List<Pallet>> GetPotentiallyPalletsForPicking(int? goodsId, int? goodsPackingId);
         Task<List<Pallet>> GetExpiredPalletsForPicking(int? goodsId, int? goodsPackingId);
         Task<bool> IsAnyDiffActivePalletByGRNId(string grndId);
@@ -103,13 +104,25 @@ namespace MilkDistributionWarehouse.Repositories
                 .ToListAsync();
         }
 
-        public Task<bool> IsLocationAvailable(int? locationId)
+        public async Task<bool> IsLocationAvailable(int? locationId, string? palletID = null)
         {
-            if (!locationId.HasValue) return Task.FromResult(false);
+            if (!locationId.HasValue) return false;
 
-            return _context.Locations
+            var location = await _context.Locations
                 .AsNoTracking()
-                .AnyAsync(l => l.LocationId == locationId.Value && l.IsAvailable == true && l.Status == CommonStatus.Active);
+                .FirstOrDefaultAsync(l => l.LocationId == locationId.Value && l.Status == CommonStatus.Active);
+
+            if (location == null) return false;
+
+            if (location.IsAvailable == true) return true;
+
+            if (string.IsNullOrEmpty(palletID)) return false;
+
+            var existingPallet = await _context.Pallets
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.PalletId == palletID && p.LocationId == locationId.Value && p.Status != CommonStatus.Deleted);
+
+            return existingPallet != null;
         }
 
         public Task<bool> ExistsBatch(Guid? batchId)
@@ -137,6 +150,18 @@ namespace MilkDistributionWarehouse.Repositories
             return _context.GoodsReceiptNotes
                 .AsNoTracking()
                 .AnyAsync(po => po.GoodsReceiptNoteId.Equals(goodRcNoteId));
+        }
+        public async Task<bool> CheckUserCreatePallet(string? goodRcNoteId, int? userID)
+        {
+            if (string.IsNullOrEmpty(goodRcNoteId) || userID == null)
+                return false;
+
+            return await _context.GoodsReceiptNotes
+                .AsNoTracking()
+                .AnyAsync(x =>
+                    x.GoodsReceiptNoteId == goodRcNoteId
+                    && x.CreatedBy == userID
+                );
         }
 
         public Task<bool> ExistsGoodPackage(int? gpId)

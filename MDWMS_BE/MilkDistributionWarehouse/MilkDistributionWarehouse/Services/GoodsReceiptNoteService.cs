@@ -172,9 +172,15 @@ namespace MilkDistributionWarehouse.Services
                     grn.ApprovalBy = userId;
                     grn.UpdatedAt = DateTimeUtility.Now();
 
+
                     if (grn.PurchaseOder.Status != PurchaseOrderStatus.Receiving)
-                        throw new Exception("Chỉ được chuyển sang trạng thái Đã kiểm tra khi đơn hàng khi đơn hàng ở trạng thái Đang tiếp nhận.");
-                    grn.PurchaseOder.Status = PurchaseOrderStatus.Inspected;
+                        throw new Exception("Chỉ được chuyển trạng thái đơn mua hàng khi đơn hàng ở trạng thái Đang tiếp nhận.");
+
+                    var checkAllGRNDetailZeroReceivedQuantity = IsAllGRNDetailZeroActualReceivedQuantity(grn);
+                    if (checkAllGRNDetailZeroReceivedQuantity)
+                        grn.PurchaseOder.Status = PurchaseOrderStatus.Completed;
+                    else grn.PurchaseOder.Status = PurchaseOrderStatus.Inspected;
+
                     grn.PurchaseOder.UpdatedAt = DateTimeUtility.Now();
                 }
 
@@ -202,6 +208,16 @@ namespace MilkDistributionWarehouse.Services
                 await _unitOfWork.RollbackTransactionAsync();
                 return ($"{ex.Message}", default);
             }
+        }
+
+        private bool IsAllGRNDetailZeroActualReceivedQuantity(GoodsReceiptNote grn)
+        {
+            var grnDetails = grn.GoodsReceiptNoteDetails.ToList();
+
+            if (grnDetails.All(grnd => grnd.ActualPackageQuantity == 0))
+                return true;
+
+            return false;
         }
 
         public async Task<(string, byte[]?, string?)> ExportGoodsReceiptNoteWord(string purchaseOrderId)
@@ -317,28 +333,66 @@ namespace MilkDistributionWarehouse.Services
         private async Task HandleGRNStatusChangeNotification(GoodsReceiptNote grn)
         {
             var notificationToCreate = new NotificationCreateDto();
+            var listNotification = new List<NotificationCreateDto>();
             switch (grn.Status)
             {
                 case GoodsReceiptNoteStatus.PendingApproval:
-                    notificationToCreate.UserId = grn.PurchaseOder.ArrivalConfirmedBy;
-                    notificationToCreate.Title = "Phiếu nhập kho chờ duyệt";
-                    notificationToCreate.Content = $"Phiếu nhập kho '{grn.GoodsReceiptNoteId}' đang chờ duyệt.";
-                    notificationToCreate.EntityType = NotificationEntityType.GoodsReceiptNote;
-                    notificationToCreate.EntityId = grn.PurchaseOderId;
+                    listNotification.Add(new NotificationCreateDto
+                    {
+                        UserId = grn.PurchaseOder.ArrivalConfirmedBy,
+                        Title = "Phiếu nhập kho chờ duyệt",
+                        Content = $"Phiếu nhập kho '{grn.GoodsReceiptNoteId}' đã được nộp và đang chờ duyệt.",
+                        EntityType = NotificationEntityType.GoodsReceiptNote,
+                        EntityId = grn.PurchaseOderId,
+                    });
                     break;
                 case GoodsReceiptNoteStatus.Completed:
-                    notificationToCreate.UserId = grn.PurchaseOder.AssignTo;
-                    notificationToCreate.Title = "Phiếu nhập kho hoàn tất kiểm tra";
-                    notificationToCreate.Content = $"Phiếu nhập kho '{grn.GoodsReceiptNoteId}' đã được hoàn thành kiểm tra.";
-                    notificationToCreate.EntityType = NotificationEntityType.GoodsReceiptNote;
-                    notificationToCreate.EntityId = grn.PurchaseOderId;
-                    notificationToCreate.Category = NotificationCategory.Important;
+                    listNotification.Add(new NotificationCreateDto
+                    {
+                        UserId = grn.PurchaseOder.AssignTo,
+                        Title = "Phiếu nhập kho đã hoàn tất kiểm tra",
+                        Content = $"Phiếu nhập kho '{grn.GoodsReceiptNoteId}' đã được hoàn thành kiểm tra.",
+                        EntityType = NotificationEntityType.GoodsReceiptNote,
+                        EntityId = grn.PurchaseOderId,
+                        Category = NotificationCategory.Important,
+                    }
+                    );
+                    if (grn.PurchaseOder.Status == PurchaseOrderStatus.Completed)
+                    {
+                        listNotification.AddRange(new List<NotificationCreateDto>
+                        {
+                            new NotificationCreateDto
+                            {
+                                UserId = grn.PurchaseOder.CreatedBy,
+                                Title = "Đơn mua hàng đã hoàn thành",
+                                Content = $"Đơn mua hàng '{grn.PurchaseOderId}' đã hoàn thànhh.",
+                                EntityType = NotificationEntityType.PurchaseOrder,
+                                EntityId = grn.PurchaseOderId,
+                            },
+                            new NotificationCreateDto
+                            {
+                                UserId = grn.PurchaseOder.ApprovalBy,
+                                Title = "Đơn mua hàng đã hoàn thành",
+                                Content = $"Đơn mua hàng '{grn.PurchaseOderId}' đã hoàn thànhh.",
+                                EntityType = NotificationEntityType.PurchaseOrder,
+                                EntityId = grn.PurchaseOderId,
+                            },
+                            new NotificationCreateDto
+                            {
+                                UserId = grn.PurchaseOder.AssignTo,
+                                Title = "Đơn mua hàng đã hoàn thành",
+                                Content = $"Đơn mua hàng '{grn.PurchaseOderId}' đã hoàn thànhh.",
+                                EntityType = NotificationEntityType.PurchaseOrder,
+                                EntityId = grn.PurchaseOderId,
+                            }
+                        });
+                    }
                     break;
                 default:
                     break;
             }
-            if (notificationToCreate != null && notificationToCreate.UserId != null)
-                await _notificationService.CreateNotification(notificationToCreate);
+            if(listNotification.Any())
+                await _notificationService.CreateNotificationBulk(listNotification);
         }
 
         private async Task HandleStatusChangeNotification(PurchaseOrder purchaseOder)

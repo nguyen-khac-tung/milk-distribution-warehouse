@@ -14,14 +14,18 @@ namespace MilkDistributionWarehouse.Repositories
         Task<GoodsPacking?> DeleteGoodsPacking(GoodsPacking goodsPacking);
         Task<bool> HasActivePurchaseOrder(int goodsPackingId);
         Task<bool> HasActiveSaleOrder(int goodsPackingId);
+        Task<bool> HasActiveDisposalRequest(int goodsPackingId);
         Task<bool> HasActiveGoodsReceiptNote(int goodsPackingId);
         Task<bool> HasActiveGoodsIssueNote(int goodsPackingId);
+        Task<bool> HasActiveDisposalNote(int goodsPackingId);
         Task<bool> HasActiveAndDeletedPallet(int goodsPackingId);
         Task<bool> IsPurchaseOrderByGoodsPackingId(int goodsPackingId);
         Task<bool> IsSalesOrderByGoodsPackingId(int goodsPackingId);
         Task<bool> IsGoodsReceiptNoteByGoodsPackingId(int goodsPackingId);
         Task<bool> IsGoodsIssueNoteByGoodsPackingId(int goodPackingId);
         Task<bool> IsPalletByGoodsPackingId(int goodsPackingId);
+        Task<bool> IsDisposalRequestByGoodsPackingId(int goodsPackingId);
+        Task<bool> IsDisposalNoteByGoodsPackingId(int goodsPackingId);
     }
 
     public class GoodsPackingRepository : IGoodsPackingRepository
@@ -95,6 +99,13 @@ namespace MilkDistributionWarehouse.Repositories
                 .Any(pod => pod.GoodsPackingId == goodsPackingId));
         }
 
+        public async Task<bool> HasActiveDisposalRequest(int goodsPackingId)
+        {
+            return await _context.DisposalRequests
+                .AnyAsync(dr => dr.Status != DisposalRequestStatus.Draft && dr.DisposalRequestDetails
+                .Any(drd => drd.GoodsPackingId == goodsPackingId));
+        }
+
         public async Task<bool> HasActiveGoodsReceiptNote(int goodsPackingId)
         {
             return await _context.GoodsReceiptNotes
@@ -109,10 +120,18 @@ namespace MilkDistributionWarehouse.Repositories
                 .Any(gin => gin.GoodsPackingId == goodsPackingId));
         }
 
+        public async Task<bool> HasActiveDisposalNote(int goodsPackingId)
+        {
+            return await _context.DisposalNotes
+                .AnyAsync(dn => dn.Status != DisposalNoteStatus.Picking && dn.DisposalNoteDetails
+                .Any(dnd => dnd.GoodsPackingId == goodsPackingId));
+        }
+
         public async Task<bool> HasActiveAndDeletedPallet(int goodsPackingId)
         {
             return await _context.Pallets
-                .AnyAsync(p => p.Status != CommonStatus.Inactive && p.GoodsPackingId == goodsPackingId);
+                //.AnyAsync(p => p.Status != CommonStatus.Inactive && p.GoodsPackingId == goodsPackingId);
+                .AnyAsync(p => p.GoodsPackingId == goodsPackingId);
         }
 
         public async Task<bool> IsPurchaseOrderByGoodsPackingId(int goodsPackingId)
@@ -127,6 +146,12 @@ namespace MilkDistributionWarehouse.Repositories
                 .AnyAsync(sod => sod.GoodsPackingId == goodsPackingId);
         }
 
+        public async Task<bool> IsDisposalRequestByGoodsPackingId(int goodsPackingId)
+        {
+            return await _context.DisposalRequestDetails
+                .AnyAsync(drd => drd.GoodsPackingId == goodsPackingId);
+        }
+
         public async Task<bool> IsGoodsReceiptNoteByGoodsPackingId(int goodsPackingId)
         {
             return await _context.GoodsReceiptNoteDetails
@@ -137,6 +162,12 @@ namespace MilkDistributionWarehouse.Repositories
         {
             return await _context.GoodsIssueNoteDetails
                 .AnyAsync(gind => gind.GoodsPackingId == goodPackingId);
+        }
+
+        public async Task<bool> IsDisposalNoteByGoodsPackingId(int goodsPackingId)
+        {
+            return await _context.DisposalNoteDetails
+                .AnyAsync(dnd => dnd.GoodsPackingId == goodsPackingId);
         }
 
         public async Task<bool> IsPalletByGoodsPackingId(int goodsPackingId)
