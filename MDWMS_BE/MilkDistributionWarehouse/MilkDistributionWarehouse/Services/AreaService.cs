@@ -21,6 +21,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, AreaDto.AreaResponseDto)> UpdateStatus(int areaId, int status);
         Task<(string, List<AreaDto.AreaActiveDto>)> GetAreaDropdown();
         Task<(string, List<AreaDto.StocktakingAreaDto>?)> GetStocktakingArea(string? stocktakingSheetId);
+        Task<(string, List<AreaDto.AreaActiveDto>)> GetAreasWithLocationsForDropdown();
     }
 
     public class AreaService : IAreaService
@@ -183,6 +184,17 @@ namespace MilkDistributionWarehouse.Services
         public async Task<(string, List<AreaDto.AreaActiveDto>)> GetAreaDropdown()
         {
             var areas = await _areaRepository.GetActiveAreasAsync();
+
+            if (areas == null || !areas.Any())
+                return ("Không có khu vực nào đang hoạt động.".ToMessageForUser(), new List<AreaDto.AreaActiveDto>());
+
+            var areaDtos = _mapper.Map<List<AreaDto.AreaActiveDto>>(areas);
+            return ("", areaDtos);
+        }
+
+        public async Task<(string, List<AreaDto.AreaActiveDto>)> GetAreasWithLocationsForDropdown()
+        {
+            var areas = await _areaRepository.GetActiveAreasByStocktakingId();
 
             if (areas == null || !areas.Any())
                 return ("Không có khu vực nào đang hoạt động.".ToMessageForUser(), new List<AreaDto.AreaActiveDto>());

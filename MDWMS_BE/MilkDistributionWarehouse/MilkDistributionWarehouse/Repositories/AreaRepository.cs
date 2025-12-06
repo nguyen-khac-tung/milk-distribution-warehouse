@@ -142,6 +142,7 @@ namespace MilkDistributionWarehouse.Repositories
                 .Where(a => a.Status == CommonStatus.Active)
                 .Include(a => a.StorageCondition)
                 .Include(a => a.Locations)
+                .Where(a => a.Status == CommonStatus.Active && a.Locations.Any())
                 .AsNoTracking()
                 .ToListAsync();
         }

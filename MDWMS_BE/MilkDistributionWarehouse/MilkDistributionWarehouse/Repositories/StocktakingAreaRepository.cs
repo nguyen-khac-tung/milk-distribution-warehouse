@@ -70,7 +70,9 @@ namespace MilkDistributionWarehouse.Repositories
                 .Where(sa => 
                                 sa.StocktakingSheetId.Equals(stocktakingSheetId) &&
                                 (stocktakingAreaId == null || sa.StocktakingAreaId == stocktakingAreaId) &&
-                                (assignTo == null || sa.AssignTo == assignTo))
+                                (assignTo == null || sa.AssignTo == assignTo) &&
+                                    sa.Area.Locations.Any()
+                        )
                 .ToListAsync();
         }
 
