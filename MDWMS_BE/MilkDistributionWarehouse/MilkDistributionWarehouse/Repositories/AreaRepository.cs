@@ -15,6 +15,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<Area?> CreateArea(Area entity);
         Task<Area?> UpdateArea(Area entity);
         Task<bool> IsDuplicateAreaCode(string areaCode);
+        Task<bool> LocationUsed(int areaID);
         Task<bool> IsDuplicationByIdAndCode(int areaId, string areaCode);
         Task<bool> HasDependentLocationsOrStocktakingsAsync(int areaId);
         Task<bool> VerifyStorageConditionUsage(int storageConditionId);
@@ -103,6 +104,11 @@ namespace MilkDistributionWarehouse.Repositories
             return await _context.Areas.AnyAsync(a =>
                 a.AreaCode.ToLower().Trim() == areaCode.ToLower().Trim() &&
                 a.Status != CommonStatus.Deleted);
+        }
+
+        public async Task<bool> LocationUsed(int areaId)
+        {
+            return true;
         }
 
         public async Task<bool> IsDuplicationByIdAndCode(int areaId, string areaCode)

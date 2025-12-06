@@ -28,16 +28,16 @@ namespace MilkDistributionWarehouse.Services
         private readonly IAreaRepository _areaRepository;
         private readonly IStorageConditionRepository _storageConditionRepository;
         private readonly IMapper _mapper;
-        private readonly IStocktakingAreaRepository _stocktakingAreaRepository;
+        private readonly IStocktakingSheetRepository _stocktakingSheetRepository;
         private readonly IUserRepository _userRepository;
 
         public AreaService(IAreaRepository areaRepository, IStorageConditionRepository storageConditionRepository, 
-            IMapper mapper, IStocktakingAreaRepository stocktakingAreaRepository, IUserRepository userRepository)
+            IMapper mapper, IStocktakingSheetRepository stocktakingSheetRepository, IUserRepository userRepository)
         {
             _areaRepository = areaRepository;
             _storageConditionRepository = storageConditionRepository;
             _mapper = mapper;
-            _stocktakingAreaRepository = stocktakingAreaRepository;
+            _stocktakingSheetRepository = stocktakingSheetRepository;
             _userRepository = userRepository;
         }
 
@@ -110,8 +110,14 @@ namespace MilkDistributionWarehouse.Services
             if (area == null)
                 return ("Không tìm thấy khu vực để cập nhật.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                return ("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
             if (await _areaRepository.IsDuplicationByIdAndCode(areaId, dto.AreaCode))
                 return ("Mã khu vực đã tồn tại.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
+            //if (await _areaRepository.LocationUsed(areaId))
+            //    return ("Các vị trí trong khu vực này vẫn đang chứa hàng, không thể thay đổi thông tin.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
             var storageConditionExists = await _storageConditionRepository.GetStorageConditionToCreateArea(dto.StorageConditionId);
             if (storageConditionExists == null)
