@@ -143,8 +143,8 @@ namespace MilkDistributionWarehouse.Services
         {
             if (createDto == null) return ("Data disposal request create is null.", null);
 
-            if (createDto.EstimatedTimeDeparture <= DateOnly.FromDateTime(DateTimeUtility.Now()))
-                return ("Ngày xuất hủy không hợp lệ. Vui lòng chọn một ngày trong tương lai.".ToMessageForUser(), null);
+            if (createDto.EstimatedTimeDeparture < DateOnly.FromDateTime(DateTimeUtility.Now()))
+                return ("Ngày xuất hủy không thể trong quá khứ.".ToMessageForUser(), null);
 
             if (createDto.DisposalRequestItems.IsNullOrEmpty())
                 return ("Danh sách hàng hóa không được bỏ trống.".ToMessageForUser(), null);
