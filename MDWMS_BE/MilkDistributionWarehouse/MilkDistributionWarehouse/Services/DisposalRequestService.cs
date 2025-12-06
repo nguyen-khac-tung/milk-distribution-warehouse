@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.IdentityModel.Tokens;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
@@ -173,8 +174,8 @@ namespace MilkDistributionWarehouse.Services
         {
             if (updateDto == null) return ("Data disposal request update is null.", null);
 
-            if (updateDto.EstimatedTimeDeparture <= DateOnly.FromDateTime(DateTimeUtility.Now()))
-                return ("Ngày xuất hủy không hợp lệ. Vui lòng chọn một ngày trong tương lai.".ToMessageForUser(), null);
+            if (updateDto.EstimatedTimeDeparture < DateOnly.FromDateTime(DateTimeUtility.Now()))
+                return ("Ngày xuất hủy không thể trong quá khứ.".ToMessageForUser(), null);
 
             if (updateDto.DisposalRequestItems.IsNullOrEmpty())
                 return ("Danh sách hàng hóa không được bỏ trống.".ToMessageForUser(), null);

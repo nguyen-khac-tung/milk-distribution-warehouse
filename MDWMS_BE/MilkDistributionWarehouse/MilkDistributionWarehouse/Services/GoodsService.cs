@@ -545,7 +545,7 @@ namespace MilkDistributionWarehouse.Services
                 {
                     UserId = warehouseManagers?.FirstOrDefault()?.UserId,
                     Title = "Cảnh báo hàng sắp hết hạn",
-                    Content = $"Lô '{batch.BatchCode}' ({batch.Goods.GoodsName}) hết hạn ngày {batch.ExpiryDate:dd/MM/yyyy}. Còn dưới {InventoryConfig.DaysBeforeExpiryWarning} ngày.",
+                    Content = $"Lô '{batch.BatchCode}' ({batch.Goods.GoodsName} - {batch.Goods.GoodsCode}) hết hạn ngày {batch.ExpiryDate:dd/MM/yyyy}. Còn dưới {InventoryConfig.DaysBeforeExpiryWarning} ngày.",
                     Category = NotificationCategory.Important,
                     EntityType = NotificationEntityType.InventoryReport
                 });
