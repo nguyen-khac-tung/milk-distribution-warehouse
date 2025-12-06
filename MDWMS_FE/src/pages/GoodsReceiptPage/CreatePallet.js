@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { Button } from "../../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
-import { Plus, Trash2, AlertCircle } from "lucide-react";
+import { Input } from "../../components/ui/input";
+import { Plus, Trash2, AlertCircle, ChevronDown, Search, X } from "lucide-react";
 import { getGoodRNDPallet } from "../../services/GoodsReceiptService";
 import { getBatchDropdown } from "../../services/BatchService";
 import FloatingDropdown from "../../components/Common/FloatingDropdown";
@@ -17,6 +18,8 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
   const refreshBatchOptionsRef = useRef(null);
   const [rowErrors, setRowErrors] = useState({}); // Lưu lỗi theo index của row
   const [missingProducts, setMissingProducts] = useState([]); // Danh sách hàng hóa còn thiếu
+  const [showBatchDropdown, setShowBatchDropdown] = useState({}); // State cho dropdown của mỗi row: { rowIndex: true/false }
+  const [batchSearchQueries, setBatchSearchQueries] = useState({}); // State cho search query của mỗi row: { rowIndex: "search text" }
 
   // Tạo danh sách hàng hóa từ goodsReceiptNoteDetails
   const productOptions = useMemo(() => {
@@ -83,6 +86,17 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
     return [];
   };
 
+  // Filter batch options based on search query for a specific row
+  const getFilteredBatchOptions = (rowIndex, batchOptions = []) => {
+    const searchQuery = batchSearchQueries[rowIndex] || '';
+    if (!searchQuery) return batchOptions;
+    const query = searchQuery.toLowerCase().trim();
+    return batchOptions.filter(batch => {
+      const batchCode = (batch.label || batch.batchCode || '').toLowerCase();
+      return batchCode.includes(query);
+    });
+  };
+
   const handleProductSelect = async (idx, goodsReceiptNoteDetailId) => {
     const selectedProduct = filteredProductOptions.find(p => p.value === goodsReceiptNoteDetailId);
 
@@ -111,6 +125,10 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
         batchOptions
       } : r
     ));
+
+    // Clear batch search query and close dropdown when product changes
+    setBatchSearchQueries(prev => ({ ...prev, [idx]: '' }));
+    setShowBatchDropdown(prev => ({ ...prev, [idx]: false }));
   };
 
   const ensureTableVisibleWithDefaultRow = async () => {
@@ -586,6 +604,21 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [palletRows, showPalletTable]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      const hasOpenDropdown = Object.values(showBatchDropdown).some(open => open);
+      if (hasOpenDropdown && !event.target.closest('.batch-dropdown-container')) {
+        setShowBatchDropdown({});
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showBatchDropdown]);
+
   return (
     <div>
       {hasExistingPallets && (
@@ -740,15 +773,79 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
                         </TableCell>
                         <TableCell>
                           {row.batchOptions && row.batchOptions.length > 0 ? (
-                            <FloatingDropdown
-                              value={row.batchId || undefined}
-                              onChange={(val) => {
-                                const selected = row.batchOptions.find(o => o.value === val);
-                                setPalletRows(prev => prev.map((r, i) => i === idx ? { ...r, batchId: val || '', batchCode: selected?.label || '' } : r));
-                              }}
-                              options={row.batchOptions}
-                              placeholder="Chọn số lô..."
-                            />
+                            <div className="relative batch-dropdown-container">
+                              <button
+                                type="button"
+                                onClick={() => setShowBatchDropdown(prev => ({ ...prev, [idx]: !prev[idx] }))}
+                                className="w-full h-[38px] px-3 py-2 text-left border border-slate-300 rounded-lg bg-white flex items-center justify-between focus:border-orange-500 focus:ring-orange-500 hover:border-orange-500"
+                              >
+                                <span className={row.batchCode ? 'text-slate-900' : 'text-slate-500'}>
+                                  {row.batchCode || 'Chọn số lô...'}
+                                </span>
+                                <ChevronDown className="h-4 w-4 text-slate-400" />
+                              </button>
+
+                              {showBatchDropdown[idx] && (
+                                <div className="absolute z-10 w-full mt-1 bg-white border border-slate-300 rounded-lg shadow-lg max-h-60 overflow-hidden flex flex-col">
+                                  {/* Search Input */}
+                                  <div className="p-2 border-b border-slate-200 sticky top-0 bg-white z-10 flex-shrink-0">
+                                    <div className="relative">
+                                      <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                      <Input
+                                        type="text"
+                                        placeholder="Tìm kiếm mã lô hàng..."
+                                        value={batchSearchQueries[idx] || ''}
+                                        onChange={(e) => {
+                                          e.stopPropagation();
+                                          setBatchSearchQueries(prev => ({ ...prev, [idx]: e.target.value }));
+                                        }}
+                                        onClick={(e) => e.stopPropagation()}
+                                        onKeyDown={(e) => e.stopPropagation()}
+                                        className="pl-8 pr-8 h-8 text-sm border-slate-300 focus:border-orange-500 focus:ring-orange-500"
+                                      />
+                                      {batchSearchQueries[idx] && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setBatchSearchQueries(prev => ({ ...prev, [idx]: '' }));
+                                          }}
+                                          className="absolute right-2 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                        >
+                                          <X className="h-4 w-4" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                  {/* Dropdown List */}
+                                  <div className="overflow-y-auto flex-1">
+                                    {getFilteredBatchOptions(idx, row.batchOptions).length > 0 ? (
+                                      getFilteredBatchOptions(idx, row.batchOptions).map((batch) => (
+                                        <button
+                                          key={batch.value}
+                                          type="button"
+                                          onClick={() => {
+                                            setPalletRows(prev => prev.map((r, i) => i === idx ? { ...r, batchId: batch.value || '', batchCode: batch.label || '' } : r));
+                                            setShowBatchDropdown(prev => ({ ...prev, [idx]: false }));
+                                            setBatchSearchQueries(prev => ({ ...prev, [idx]: '' }));
+                                          }}
+                                          className={`w-full px-3 py-2 text-left hover:bg-slate-50 flex items-center justify-between ${row.batchId === batch.value ? 'bg-orange-50 text-orange-600' : 'text-slate-900'
+                                            }`}
+                                        >
+                                          <span>{batch.label}</span>
+                                          {row.batchId === batch.value && (
+                                            <span className="text-orange-600">✓</span>
+                                          )}
+                                        </button>
+                                      ))
+                                    ) : (
+                                      <div className="px-3 py-2 text-slate-500 text-sm">
+                                        {batchSearchQueries[idx] ? 'Không tìm thấy kết quả' : 'Không có dữ liệu batch'}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           ) : (
                             <input
                               type="text"

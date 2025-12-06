@@ -138,7 +138,8 @@ export default function SearchFilterToggle({
   filteredRoles: externalFilteredRoles = null,
   filteredAreas: externalFilteredAreas = null,
   filteredCreators: externalFilteredCreators = null,
-  filteredConditionOptions: externalFilteredConditionOptions = null
+  filteredConditionOptions: externalFilteredConditionOptions = null,
+  extraControls = null
 }) {
   const [showSearchFilter, setShowSearchFilter] = useState(defaultOpen);
   const [internalRetailerSearchQuery, setInternalRetailerSearchQuery] = useState("");
@@ -396,6 +397,13 @@ export default function SearchFilterToggle({
                   className="pl-9 h-[38px] text-sm border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                 />
               </div>
+
+              {/* Extra controls injected by parent (e.g. date filters) */}
+              {extraControls && (
+                <div className="flex items-center gap-3">
+                  {extraControls}
+                </div>
+              )}
 
               {/* Status Filter */}
               <div className="relative status-filter-dropdown">

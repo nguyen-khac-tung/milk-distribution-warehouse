@@ -1,41 +1,34 @@
 import api from "./api";
 
 // Lấy danh sách Batch (phân trang, tìm kiếm, sort, filter)
-export const getBatches = async (searchParams = {}) => {
+export const getBatches = async (params = {}) => {
     try {
-        const body = {
-            pageNumber: searchParams.pageNumber || 1,
-            pageSize: searchParams.pageSize || 10,
-            search: searchParams.search || "",
-            sortField: searchParams.sortField || "",
-            sortAscending:
-                searchParams.sortAscending !== undefined
-                    ? searchParams.sortAscending
-                    : true,
-            // Build filters object: support status
-            filters: {},
+        const payload = {
+            pageNumber: params.pageNumber || 1,
+            pageSize: params.pageSize || 10,
+            search: params.search || "",
+            sortField: params.sortField || "",
+            sortAscending: params.sortAscending ?? true,
+            filters: {
+                ...(params.status && { status: params.status }),
+                ...(params.goodsId && { goodsId: params.goodsId }),
+                ...(params.manufacturingDate && { manufacturingDate: params.manufacturingDate }),
+                ...(params.expiryDate && { expiryDate: params.expiryDate }),
+                ...(params.dateRange && { dateRange: params.dateRange }),
+            },
         };
 
-        // Handle filters from searchParams.filters object
-        if (searchParams.filters) {
-            if (searchParams.filters.status !== undefined && searchParams.filters.status !== "") {
-                body.filters.status = searchParams.filters.status.toString();
-            }
-        }
+        const res = await api.post("/Batch/GetBatchList", payload);
 
-        // Also support direct status parameter for backward compatibility
-        if (searchParams.status !== undefined && searchParams.status !== "") {
-            body.filters.status = searchParams.status.toString();
-        }
-
-        const res = await api.post("/Batch/GetBatchList", body);
         return res?.data?.data ?? res?.data ?? { items: [], totalCount: 0 };
+
     } catch (error) {
-        console.error("Error fetching Batchs:", error);
-        if (error.response) {
-            console.error("Error response data:", error.response.data);
-            console.error("Error response status:", error.response.status);
+        console.error("Error fetching Batches:", error);
+
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
         }
+
         return { items: [], totalCount: 0 };
     }
 };

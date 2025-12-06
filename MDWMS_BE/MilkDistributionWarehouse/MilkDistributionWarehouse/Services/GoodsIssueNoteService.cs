@@ -359,6 +359,14 @@ namespace MilkDistributionWarehouse.Services
                         EntityType = NotificationEntityType.SaleOrder,
                         EntityId = salesOrder.SalesOrderId
                     });
+                    notificationsToCreate.Add(new NotificationCreateDto()
+                    {
+                        UserId = salesOrder.CreatedBy,
+                        Title = "Đơn bán hàng đã hoàn thành",
+                        Content = $"Đơn bán hàng '{salesOrder.SalesOrderId}' đã hoàn thành.",
+                        EntityType = NotificationEntityType.SaleOrder,
+                        EntityId = salesOrder.SalesOrderId
+                    });
                     break;
 
                 default: break;

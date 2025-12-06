@@ -1171,11 +1171,11 @@ export default function GoodsReceiptDetail() {
                             <TableHead className="font-semibold text-green-900 min-w-[120px]">Mã hàng hóa</TableHead>
                             <TableHead className="font-semibold text-green-900 min-w-[120px]">Tên hàng hóa</TableHead>
                             <TableHead className="font-semibold text-green-900 text-center">Đơn vị tính</TableHead>
-                            <TableHead className="font-semibold text-green-900 text-center">Quy cách đóng gói</TableHead>
-                            <TableHead className="font-semibold text-green-900 text-center">SL thùng dự kiến</TableHead>
-                            <TableHead className="font-semibold text-green-900 text-center">SL thùng giao đến</TableHead>
-                            <TableHead className="font-semibold text-green-900 text-center">SL thùng trả lại</TableHead>
-                            <TableHead className="font-semibold text-green-900 text-center">SL thùng thực nhận</TableHead>
+                            <TableHead className="font-semibold text-green-900 text-center max-w-[90px]">Quy cách đóng gói</TableHead>
+                            <TableHead className="font-semibold text-green-900 text-center max-w-[90px]">SL thùng dự kiến</TableHead>
+                            <TableHead className="font-semibold text-green-900 text-center max-w-[90px]">SL thùng giao đến</TableHead>
+                            <TableHead className="font-semibold text-green-900 text-center max-w-[90px]">SL thùng trả lại</TableHead>
+                            <TableHead className="font-semibold text-green-900 text-center max-w-[90px]">SL thùng thực nhận</TableHead>
                             <TableHead className="font-semibold text-green-900">Ghi chú</TableHead>
                             <TableHead className="font-semibold text-green-900 text-center">Trạng thái</TableHead>
                             {/* Cột Hành động: chỉ hiển thị cho nhân viên kho (không phải quản lý kho) */}
@@ -1502,7 +1502,7 @@ export default function GoodsReceiptDetail() {
                                 </TableHead>
                               )}
                               <TableHead className="font-semibold text-purple-900">Mã pallet</TableHead>
-                              <TableHead className="font-semibold text-purple-900">Tên hàng hóa</TableHead>
+                              <TableHead className="font-semibold text-purple-900 min-w-[140px]">Tên hàng hóa</TableHead>
                               <TableHead className="font-semibold text-purple-900 min-w-[120px]">Mã hàng hóa</TableHead>
                               <TableHead className="font-semibold text-purple-900 text-center">Số lô</TableHead>
                               <TableHead className="font-semibold text-purple-900 text-center">Số thùng</TableHead>

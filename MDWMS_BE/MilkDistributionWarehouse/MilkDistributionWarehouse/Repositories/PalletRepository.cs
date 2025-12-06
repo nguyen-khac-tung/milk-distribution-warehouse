@@ -23,6 +23,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<List<Pallet>> GetPotentiallyPalletsForPicking(int? goodsId, int? goodsPackingId);
         Task<List<Pallet>> GetExpiredPalletsForPicking(int? goodsId, int? goodsPackingId);
         Task<bool> IsAnyDiffActivePalletByGRNId(string grndId);
+        Task<bool> IsPalletInSalesPickingOrDisposalPicking(string palletId);
         Task<List<Pallet>> GetActivePalletIdsByLocationId(List<int> locationIds);
         Task<List<Pallet>> GetMisstoredPallets();
     }
@@ -224,6 +225,15 @@ namespace MilkDistributionWarehouse.Repositories
                        && p.Batch.Goods.StorageConditionId != p.Location.Area.StorageConditionId)
                 .AsNoTracking()
                 .ToListAsync();
+        }
+
+        public async Task<bool> IsPalletInSalesPickingOrDisposalPicking(string palletId)
+        {
+            var isInSalesPickingOrDisposalPicking = _context.PickAllocations
+                .Any(p => p.PalletId == palletId
+                && ((p.GoodsIssueNoteDetail != null && p.GoodsIssueNoteDetail.GoodsIssueNote.SalesOder.Status == SalesOrderStatus.Picking
+                    || p.DisposalNoteDetail != null && p.DisposalNoteDetail.DisposalNote.DisposalRequest.Status == DisposalRequestStatus.Picking)));
+            return isInSalesPickingOrDisposalPicking;
         }
     }
 }

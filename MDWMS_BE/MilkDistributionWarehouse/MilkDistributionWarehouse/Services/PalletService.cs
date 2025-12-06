@@ -242,9 +242,18 @@ namespace MilkDistributionWarehouse.Services
                 if (!await _palletRepository.CheckUserCreatePallet(dto.GoodsReceiptNoteId, userId))
                     return ("Pallet đang trong quá trình kiểm nhập, chỉ có người được giao mới có quyền sắp xếp pallet.".ToMessageForUser(), new PalletDto.PalletResponseDto());
             }
+            
+            if(await _palletRepository.IsPalletInSalesPickingOrDisposalPicking(palletId))
+                return ("Không thể cập nhật pallet này do pallet đang trong quá trình lấy hàng.", new PalletDto.PalletResponseDto());
+
+            if (pallet.Status == CommonStatus.Inactive)
+            {
+                if (!await _palletRepository.CheckUserCreatePallet(dto.GoodsReceiptNoteId, userId))
+                    return ("Người dùng không có quyền sắp xếp pallet cho phiếu nhận hàng này.".ToMessageForUser(), new PalletDto.PalletResponseDto());
+            }
 
             if (!await _palletRepository.ExistsBatch(dto.BatchId))
-                return ("Lô hàng không tồn tại.", new PalletDto.PalletResponseDto());
+                return ("Lô hàng không hợp lệ.", new PalletDto.PalletResponseDto());
 
             var location = await _locationRepository.GetLocationById(dto.LocationId.Value);
             if (location == null)

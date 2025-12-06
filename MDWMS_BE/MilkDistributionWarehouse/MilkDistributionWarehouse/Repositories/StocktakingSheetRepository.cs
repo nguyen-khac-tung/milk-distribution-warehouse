@@ -126,10 +126,11 @@ namespace MilkDistributionWarehouse.Repositories
 
         public async Task<bool> HasActiveStocktakingInProgressAsync()
         {
-            return await _context.StocktakingSheets
-                .AnyAsync(ss => ss.Status == StocktakingStatus.InProgress 
-                    || ss.Status == StocktakingStatus.PendingApproval 
-                    || ss.Status == StocktakingStatus.Approved);
+            //return await _context.StocktakingSheets
+            //    .AnyAsync(ss => ss.Status == StocktakingStatus.InProgress 
+            //        || ss.Status == StocktakingStatus.PendingApproval 
+            //        || ss.Status == StocktakingStatus.Approved);
+            return false;
         }
     }
 }
