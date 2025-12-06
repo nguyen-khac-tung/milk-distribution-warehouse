@@ -9,7 +9,7 @@ namespace MilkDistributionWarehouse.Services
 {
     public interface IStocktakingStatusDomainService
     {
-        Task<string> UpdateLocationStatusAsync(Guid stocktakingLocationId, int statusChange);
+        Task<string> UpdateLocationStatusAsync(Guid stocktakingLocationId, int statusChange, int? statusCheck);
         Task<string> UpdateAreaStatusAsync(Guid stocktakingAreaId, int statusChange);
         Task<string> UpdateAreaStatusAsync(StocktakingArea stocktakingArea, int statusChange);
         Task<string> UpdateSheetStatusAsync(StocktakingSheet stocktakingSheet, int statusChange, string? note = null);
@@ -30,7 +30,7 @@ namespace MilkDistributionWarehouse.Services
             _stocktakingSheetRepository = stocktakingSheetRepository;
         }
 
-        public async Task<string> UpdateLocationStatusAsync(Guid stocktakingLocationId, int statusChange)
+        public async Task<string> UpdateLocationStatusAsync(Guid stocktakingLocationId, int statusChange, int? statusCheck)
         {
             if (stocktakingLocationId == Guid.Empty)
                 return "Mã kiểm kê vị trí không hợp lệ.";
@@ -38,6 +38,9 @@ namespace MilkDistributionWarehouse.Services
             var stocktakingLocationExist = await _stocktakingLocationRepository.GetStocktakingLocationById(stocktakingLocationId);
             if (stocktakingLocationExist == null)
                 return "Kiểm kê vị trí không tồn tại trong hệ thống.";
+
+            if (statusCheck.HasValue && stocktakingLocationExist.Status != statusCheck.Value)
+                return "Không thể cập nhật trạng thái của kiểm kê vị trí.";
 
             if (stocktakingLocationExist.Status == statusChange)
                 return string.Empty;

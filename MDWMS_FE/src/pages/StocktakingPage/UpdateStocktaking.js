@@ -102,7 +102,6 @@ const UpdateStocktaking = () => {
 
                     if (areaIds.length > 0) {
                         setSelectedAreas(areaIds);
-                    } else {
                     }
                 }
             } catch (error) {
@@ -268,6 +267,7 @@ const UpdateStocktaking = () => {
             window.showToast('Không tìm thấy mã phiếu kiểm kê', 'error');
             return;
         }
+
 
         setUpdateLoading(true);
         try {
@@ -634,6 +634,8 @@ const UpdateStocktaking = () => {
                     isReassign={false}
                     stocktaking={null}
                     formData={formData} // Truyền formData để modal tự cập nhật khi confirm
+                    areasToReassign={selectedAreas} // Truyền selectedAreas để filter các khu vực cần phân công
+                    selectedAreaIds={selectedAreas} // Truyền selectedAreas để cập nhật vào stocktaking
                 />
             </PermissionWrapper>
 
