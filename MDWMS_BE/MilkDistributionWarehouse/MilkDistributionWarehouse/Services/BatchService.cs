@@ -6,6 +6,7 @@ using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
 using MilkDistributionWarehouse.Utilities;
+using System.Threading.Tasks;
 
 namespace MilkDistributionWarehouse.Services
 {
@@ -23,14 +24,17 @@ namespace MilkDistributionWarehouse.Services
     {
         private readonly IBatchRepository _batchRepository;
         private readonly IGoodsRepository _goodsRepository;
+        private readonly IStocktakingSheetRepository _stocktakingSheetRepository;
         private readonly IMapper _mapper;
 
         public BatchService(IBatchRepository batchRepository,
                             IGoodsRepository goodsRepository,
+                            IStocktakingSheetRepository stocktakingSheetRepository,
                             IMapper mapper)
         {
             _batchRepository = batchRepository;
             _goodsRepository = goodsRepository;
+            _stocktakingSheetRepository = stocktakingSheetRepository;
             _mapper = mapper;
         }
 
@@ -77,8 +81,15 @@ namespace MilkDistributionWarehouse.Services
 
         public async Task<(string, BatchDto?)> CreateBatch(BatchCreateDto createDto)
         {
-            if (createDto == null)
-                return ("Batch create is null.", null);
+            if (createDto == null) return ("Batch create is null.", null);
+
+            var goodsExist = await _goodsRepository.GetGoodsByGoodsId(createDto.GoodsId);
+            if (goodsExist == null) return ("Sản phẩm được chọn không tồn tại.".ToMessageForUser(), null);
+            if (goodsExist != null && goodsExist.Status == CommonStatus.Inactive) return ("Sản phẩm được chọn đã ngừng phân phối.".ToMessageForUser(), null);
+
+            var (msg, isDuplicate) = await _batchRepository.IsBatchCodeDuplicate(null, createDto.GoodsId, createDto.BatchCode);
+            if (msg.Length > 0) return (msg, null);
+            if (isDuplicate) return ("Mã lô đã tồn tại trong nhà cung cấp của sản phẩm này.".ToMessageForUser(), null);
 
             if (createDto.ExpiryDate <= createDto.ManufacturingDate)
                 return ("Ngày hết hạn phải sau ngày sản xuất.".ToMessageForUser(), null);
@@ -89,14 +100,6 @@ namespace MilkDistributionWarehouse.Services
             if (createDto.ExpiryDate <= DateOnly.FromDateTime(DateTimeUtility.Now()))
                 return ("Ngày hết hạn phải là ngày trong tương lai.".ToMessageForUser(), null);
 
-            var goodsExist = await _goodsRepository.GetGoodsByGoodsId(createDto.GoodsId);
-            if (goodsExist == null) return ("Sản phẩm được chọn không tồn tại.".ToMessageForUser(), null);
-            if (goodsExist != null && goodsExist.Status == CommonStatus.Inactive) return ("Sản phẩm được chọn đã ngừng phân phối.".ToMessageForUser(), null);
-
-            var (msg, isDuplicate) = await _batchRepository.IsBatchCodeDuplicate(null, createDto.GoodsId, createDto.BatchCode);
-            if (msg.Length > 0) return (msg, null);
-            if (isDuplicate) return ("Mã lô đã tồn tại trong nhà cung cấp của sản phẩm này.".ToMessageForUser(), null);
-
             var batchEntity = _mapper.Map<Batch>(createDto);
             var message = await _batchRepository.CreateBatch(batchEntity);
             if (message.Length > 0) return ("Tạo mới lô hàng thất bại.".ToMessageForUser(), null);
@@ -106,18 +109,14 @@ namespace MilkDistributionWarehouse.Services
 
         public async Task<(string, BatchDto?)> UpdateBatch(BatchUpdateDto updateDto)
         {
-            if (updateDto == null)
-                return ("Batch update is null.", null);
+            var message = "";
+            if (updateDto == null) return ("Batch update is null.", null);
+
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                return ("Không thể cập nhật lô hàng khi đang có đợt kiểm kê đang diễn ra.".ToMessageForUser(), null);
 
             var batchExist = await _batchRepository.GetBatchById(updateDto.BatchId);
-            if (batchExist == null)
-                return ("Lô hàng không tồn tại.".ToMessageForUser(), null);
-             
-            if (updateDto.ExpiryDate <= updateDto.ManufacturingDate)
-                return ("Ngày hết hạn phải sau ngày sản xuất.".ToMessageForUser(), null);
-
-            if (updateDto.ManufacturingDate > DateOnly.FromDateTime(DateTime.Now))
-                return ("Ngày sản xuất phải là ngày trong quá khứ.".ToMessageForUser(), null);
+            if (batchExist == null) return ("Lô hàng không tồn tại.".ToMessageForUser(), null);
 
             var goodsExist = await _goodsRepository.GetGoodsByGoodsId(updateDto.GoodsId);
             if (goodsExist == null) return ("Sản phẩm được chọn không tồn tại.".ToMessageForUser(), null);
@@ -127,9 +126,24 @@ namespace MilkDistributionWarehouse.Services
             if (msg.Length > 0) return (msg, null);
             if (isDuplicate) return ("Mã lô đã tồn tại trong nhà cung cấp của sản phẩm này.".ToMessageForUser(), null);
 
+            if (await _batchRepository.IsBatchOnPallet(batchExist.BatchId))
+            {
+                message = await ValidateUpdateBatchCondition(batchExist, updateDto);
+                if (message.Length > 0) return (message, null);
+            }
+
+            if (updateDto.ExpiryDate <= updateDto.ManufacturingDate)
+                return ("Ngày hết hạn phải sau ngày sản xuất.".ToMessageForUser(), null);
+
+            if (updateDto.ManufacturingDate > DateOnly.FromDateTime(DateTimeUtility.Now()))
+                return ("Ngày sản xuất phải là ngày trong quá khứ.".ToMessageForUser(), null);
+
+            if (updateDto.ExpiryDate <= DateOnly.FromDateTime(DateTimeUtility.Now()))
+                return ("Ngày hết hạn phải là ngày trong tương lai.".ToMessageForUser(), null);
+
             _mapper.Map(updateDto, batchExist);
-            var message = await _batchRepository.UpdateBatch(batchExist);
-            if (message.Length>0 ) return ("Cập nhật lô hàng thất bại.".ToMessageForUser(), null);
+            message = await _batchRepository.UpdateBatch(batchExist);
+            if (message.Length > 0) return ("Cập nhật lô hàng thất bại.".ToMessageForUser(), null);
 
             return ("", _mapper.Map<BatchDto>(batchExist));
         }
@@ -137,8 +151,10 @@ namespace MilkDistributionWarehouse.Services
         public async Task<(string, BatchUpdateStatusDto?)> UpdateBatchStatus(BatchUpdateStatusDto updateDto)
         {
             var batchExist = await _batchRepository.GetBatchById(updateDto.BatchId);
-            if (batchExist == null)
-                return ("Batch update is null.", null);
+            if (batchExist == null) return ("Batch update is null.", null);
+
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                return ("Không thể cập nhật lô hàng khi đang có đợt kiểm kê đang diễn ra.".ToMessageForUser(), null);
 
             if (batchExist.Status == CommonStatus.Deleted || updateDto.Status == CommonStatus.Deleted)
                 return ("Không thể cập nhật trạng thái của lô đã xóa hoặc chuyển sang trạng thái đã xóa.".ToMessageForUser(), null);
@@ -160,11 +176,13 @@ namespace MilkDistributionWarehouse.Services
         public async Task<string> DeleteBatch(Guid batchId)
         {
             var batchExist = await _batchRepository.GetBatchById(batchId);
-            if (batchExist == null)
-                return "Batch update is null.";
+            if (batchExist == null) return "Batch update is null.";
+
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                return "Không thể cập nhật lô hàng khi đang có đợt kiểm kê đang diễn ra.".ToMessageForUser();
 
             if (await _batchRepository.IsBatchOnPallet(batchId))
-                return "Không thể xóa lô hàng vì đang được liên kết với pallet.".ToMessageForUser();
+                return "Không thể xóa lô hàng vì lô đã được sử dụng".ToMessageForUser();
 
             batchExist.Status = CommonStatus.Deleted;
             batchExist.UpdateAt = DateTimeUtility.Now();
@@ -172,6 +190,31 @@ namespace MilkDistributionWarehouse.Services
             var result = await _batchRepository.UpdateBatch(batchExist);
             if (result == null)
                 return "Xóa lô hàng thất bại.".ToMessageForUser();
+
+            return "";
+        }
+
+        private async Task<string> ValidateUpdateBatchCondition(Batch oldBatch, BatchUpdateDto newBatch)
+        {
+            var today = DateOnly.FromDateTime(DateTimeUtility.Now());
+
+            if (oldBatch.ExpiryDate <= today)
+                return "Không thể cập nhật lô hàng đã hết hạn".ToMessageForUser();
+
+            var isBatchInGRN = await _batchRepository.IsBatchInGoodReceiptNote(oldBatch.BatchId);
+            var isBatchInGIN = await _batchRepository.IsBatchInGoodIssueNote(oldBatch.BatchId);
+
+            if (oldBatch.BatchCode != newBatch.BatchCode && (isBatchInGRN || isBatchInGIN))
+                return "Không thể cập nhật mã lô hàng vì lô hàng đang được sử dụng".ToMessageForUser();
+
+            if (oldBatch.GoodsId != newBatch.GoodsId && (isBatchInGRN || isBatchInGIN))
+                return "Không thể cập nhật mã hàng hóa vì lô hàng đang được sử dụng".ToMessageForUser();
+
+            if (oldBatch.ManufacturingDate != newBatch.ManufacturingDate && isBatchInGIN)
+                return "Không thể cập nhật ngày sản xuất vì lô hàng đang được sử dụng.".ToMessageForUser();
+
+            if (oldBatch.ExpiryDate != newBatch.ExpiryDate && isBatchInGIN)
+                return "Không thể cập nhật ngày hết hạn vì lô hàng đang được sử dụng.".ToMessageForUser();
 
             return "";
         }
