@@ -31,7 +31,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPut("UpdateGoodsPacking/{goodsId}")]
-        [Authorize(Roles = RoleNames.WarehouseManager)]
+        [Authorize(Roles = RoleNames.SalesManager)]
         public async Task<IActionResult> UpdateGoodsPacking(int goodsId, [FromBody] List<GoodsPackingUpdate> updates)
         {
             var(msg, updatedGoodsPackings) = await _goodsPackingService.UpdateGoodsPacking(goodsId, updates);
