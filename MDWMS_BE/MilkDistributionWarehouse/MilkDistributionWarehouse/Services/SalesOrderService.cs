@@ -114,8 +114,8 @@ namespace MilkDistributionWarehouse.Services
             if (retailer == null) return ("Nhà bán lẻ không hợp lệ.".ToMessageForUser(), null);
             if (retailer.Status == CommonStatus.Inactive) return ("Nhà bán lẻ này không còn hoạt động.".ToMessageForUser(), null);
 
-            if (salesOrderCreate.EstimatedTimeDeparture <= DateOnly.FromDateTime(DateTimeUtility.Now()))
-                return ("Ngày giao hàng không hợp lệ. Vui lòng chọn một ngày trong tương lai.".ToMessageForUser(), null);
+            if (salesOrderCreate.EstimatedTimeDeparture < DateOnly.FromDateTime(DateTimeUtility.Now()))
+                return ("Ngày giao hàng không thể trong quá khứ.".ToMessageForUser(), null);
 
             if (salesOrderCreate.SalesOrderItemDetailCreateDtos.IsNullOrEmpty())
                 return ("Danh sách hàng hóa không được bỏ trống.".ToMessageForUser(), null);
@@ -147,8 +147,8 @@ namespace MilkDistributionWarehouse.Services
             if (retailer == null) return ("Nhà bán lẻ không hợp lệ.".ToMessageForUser(), null);
             if (retailer.Status == CommonStatus.Inactive) return ("Nhà bán lẻ này không còn hoạt động.".ToMessageForUser(), null);
 
-            if (salesOrderUpdate.EstimatedTimeDeparture <= DateOnly.FromDateTime(DateTimeUtility.Now()))
-                return ("Ngày giao hàng không hợp lệ. Vui lòng chọn một ngày trong tương lai.".ToMessageForUser(), null);
+            if (salesOrderUpdate.EstimatedTimeDeparture < DateOnly.FromDateTime(DateTimeUtility.Now()))
+                return ("Ngày giao hàng không thể trong quá khứ.".ToMessageForUser(), null);
 
             if (salesOrderUpdate.SalesOrderItemDetailUpdateDtos.IsNullOrEmpty())
                 return ("Danh sách hàng hóa không được bỏ trống.".ToMessageForUser(), null);

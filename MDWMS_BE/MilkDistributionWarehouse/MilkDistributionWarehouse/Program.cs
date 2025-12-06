@@ -6,6 +6,7 @@ using MilkDistributionWarehouse.Configurations;
 using MilkDistributionWarehouse.Hubs;
 using MilkDistributionWarehouse.Mappers;
 using MilkDistributionWarehouse.Models.Entities;
+using MilkDistributionWarehouse.Services;
 using MilkDistributionWarehouse.Utilities;
 using System.Text;
 
@@ -30,8 +31,6 @@ namespace MilkDistributionWarehouse
             {
                 option.SuppressModelStateInvalidFilter = true;
             });
-
-            builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
             builder.Services.AddAuthentication(option =>
             {
@@ -107,9 +106,15 @@ namespace MilkDistributionWarehouse
                 });
             });
 
+            builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
+
             builder.Services.AddDependencyInjection();
 
             builder.Services.AddMemoryCache();
+
+            builder.Services.AddSignalR();
+
+            builder.Services.AddHostedService<ScheduledService>();
 
             builder.Services.AddCors(options =>
             {
@@ -122,8 +127,6 @@ namespace MilkDistributionWarehouse
                                .WithExposedHeaders("Content-Disposition");
                 });
             });
-
-            builder.Services.AddSignalR();
 
             #endregion
 

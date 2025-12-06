@@ -12,9 +12,8 @@ export const getBatches = async (params = {}) => {
             filters: {
                 ...(params.status && { status: params.status }),
                 ...(params.goodsId && { goodsId: params.goodsId }),
-                ...(params.manufacturingDate && { manufacturingDate: params.manufacturingDate }),
-                ...(params.expiryDate && { expiryDate: params.expiryDate }),
-                ...(params.dateRange && { dateRange: params.dateRange }),
+                ...(params.fromExpiryDate && { fromDate: params.fromExpiryDate }),
+                ...(params.toExpiryDate && { toDate: params.toExpiryDate }),
             },
         };
 
@@ -24,6 +23,12 @@ export const getBatches = async (params = {}) => {
 
     } catch (error) {
         console.error("Error fetching Batches:", error);
+
+        const errorMessage = error.response?.data?.message || error.message || "";
+        if (errorMessage.toLowerCase().includes("danh sách") && 
+            (errorMessage.toLowerCase().includes("trống") || errorMessage.toLowerCase().includes("rỗng"))) {
+            return { items: [], totalCount: 0 };
+        }
 
         if (error.response?.data?.message) {
             throw new Error(error.response.data.message);
