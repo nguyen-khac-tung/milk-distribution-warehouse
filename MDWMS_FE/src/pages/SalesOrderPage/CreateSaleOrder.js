@@ -229,14 +229,33 @@ function CreateSaleOrder({
                     ? { ...item, [field]: value, goodsName: "", quantity: "", goodsPackingId: "" }
                     : item
             );
-            // Apply reset immediately and stop further processing for this change
+            // Apply reset immediately
             setItems(updatedItems);
+
+            // Xóa lỗi validation khi người dùng chọn nhà cung cấp
+            const newErrors = { ...fieldErrors };
+            // Xóa lỗi của supplierName
+            if (newErrors[`${id}-${field}`]) {
+                delete newErrors[`${id}-${field}`];
+            }
+            // Xóa lỗi của các field liên quan
+            ['goodsName', 'goodsPackingId', 'quantity'].forEach(relatedField => {
+                if (newErrors[`${id}-${relatedField}`]) {
+                    delete newErrors[`${id}-${relatedField}`];
+                }
+            });
+            setFieldErrors(newErrors);
+
             return;
         } else if (field === "goodsName") {
             // Kiểm tra xem hàng hóa đã được chọn ở hàng khác chưa
             const isDuplicate = items.some(item => item.id !== id && item.goodsName === value && value !== "");
             if (isDuplicate) {
-                window.showToast("Hàng hóa này đã được thêm vào danh sách!", "error");
+                // Hiển thị lỗi dưới input thay vì toast
+                setFieldErrors(prev => ({
+                    ...prev,
+                    [`${id}-${field}`]: "Hàng hóa này đã được thêm vào danh sách!"
+                }));
                 return;
             }
 
@@ -596,6 +615,52 @@ function CreateSaleOrder({
         };
     };
 
+    // Scroll to first error field
+    const scrollToFirstError = (errors) => {
+        // Scroll to retailer field if it has error
+        if (errors.retailerName) {
+            setTimeout(() => {
+                const retailerInput = document.querySelector('[data-field="retailerName"]');
+                if (retailerInput) {
+                    retailerInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    retailerInput.focus();
+                    return;
+                }
+            }, 100);
+        }
+
+        // Scroll to date field if it has error
+        if (errors.estimatedTimeDeparture) {
+            const dateInput = document.getElementById('estimatedTimeDeparture');
+            if (dateInput) {
+                dateInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                dateInput.focus();
+                return;
+            }
+        }
+
+        // Scroll to first item with error
+        const firstErrorKey = Object.keys(errors).find(key =>
+            key !== 'retailerName' && key !== 'estimatedTimeDeparture'
+        );
+        if (firstErrorKey) {
+            // Try to find the input field for this error
+            setTimeout(() => {
+                const errorInput = document.querySelector(`[data-key="${firstErrorKey}"]`);
+                if (errorInput) {
+                    errorInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    errorInput.focus();
+                } else {
+                    // Fallback: scroll to table
+                    const table = document.querySelector('table');
+                    if (table) {
+                        table.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }
+            }, 100);
+        }
+    };
+
     // Tính toán danh sách hàng hóa thiếu để tạo BackOrder
     const getInsufficientItemsForBackOrder = () => {
         const validItems = items.filter(item =>
@@ -697,42 +762,49 @@ function CreateSaleOrder({
             }
         });
 
-        // Set cả warnings và blocking errors để hiển thị
-        setFieldErrors({ ...blockingErrors, ...warnings });
-
+        // Validate form fields
         if (!formData.retailerName) {
-            window.showToast("Vui lòng chọn nhà bán lẻ", "error");
-            if (Object.keys(blockingErrors).length > 0) return;
+            blockingErrors.retailerName = "Vui lòng chọn nhà bán lẻ";
         }
 
         if (!formData.estimatedTimeDeparture) {
-            window.showToast("Vui lòng chọn ngày dự kiến giao hàng", "error");
-            if (Object.keys(blockingErrors).length > 0) return;
+            blockingErrors.estimatedTimeDeparture = "Vui lòng chọn ngày dự kiến giao hàng";
+        } else {
+            const selectedDate = new Date(formData.estimatedTimeDeparture);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            selectedDate.setHours(0, 0, 0, 0);
+            if (selectedDate <= today) {
+                blockingErrors.estimatedTimeDeparture = "Ngày giao hàng phải trong tương lai";
+            }
         }
 
-        const selectedDate = new Date(formData.estimatedTimeDeparture);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        selectedDate.setHours(0, 0, 0, 0);
-        if (selectedDate <= today) {
-            window.showToast("Ngày giao hàng phải trong tương lai", "error");
-            if (Object.keys(blockingErrors).length > 0) return;
-        }
+        // Set cả warnings và blocking errors để hiển thị
+        setFieldErrors({ ...blockingErrors, ...warnings });
 
-        // Chỉ block validation nếu có blocking errors
+        // Scroll to first error if validation fails
         if (Object.keys(blockingErrors).length > 0) {
+            setTimeout(() => scrollToFirstError(blockingErrors), 100);
             return;
         }
 
         const selectedRetailer = retailers.find(retailer => retailer.retailerName === formData.retailerName);
         if (!selectedRetailer) {
-            window.showToast("Không tìm thấy nhà bán lẻ", "error");
+            blockingErrors.retailerName = "Không tìm thấy nhà bán lẻ";
+            setFieldErrors({ ...blockingErrors, ...warnings });
+            setTimeout(() => scrollToFirstError(blockingErrors), 100);
             return;
         }
 
         const validItems = items.filter(item => item.supplierName && item.goodsName && item.quantity && item.goodsPackingId);
         if (validItems.length === 0) {
-            window.showToast("Vui lòng thêm ít nhất một hàng hóa với đầy đủ thông tin", "error");
+            // Thêm lỗi vào item đầu tiên
+            if (items.length > 0) {
+                const firstItemId = items[0].id;
+                blockingErrors[`${firstItemId}-supplierName`] = "Vui lòng thêm ít nhất một hàng hóa với đầy đủ thông tin";
+                setFieldErrors({ ...blockingErrors, ...warnings });
+                setTimeout(() => scrollToFirstError(blockingErrors), 100);
+            }
             return;
         }
 
@@ -757,18 +829,24 @@ function CreateSaleOrder({
             // Lưu thông tin các items vượt quá tồn kho để hiển thị viền đỏ
             setItemsExceedingStock(itemsExceedingStockMap);
 
-            // Hiển thị thông báo lỗi và CHẶN submit
+            // Thêm lỗi vào field quantity của item đầu tiên vượt quá tồn kho
             const firstItem = insufficientItems[0];
-            const message = insufficientItems.length === 1
-                ? `Hàng hóa "${firstItem.goodsName}" vượt quá tồn kho. Vui lòng điều chỉnh số lượng.`
-                : `Có ${insufficientItems.length} hàng hóa vượt quá tồn kho. Vui lòng điều chỉnh số lượng.`;
+            const stockInfo = getItemStockInfo(firstItem);
+            const errorMessage = insufficientItems.length === 1
+                ? `Vượt quá tồn kho (Có sẵn: ${stockInfo?.availableQuantity || 0} thùng)`
+                : `Vượt quá tồn kho (Có sẵn: ${stockInfo?.availableQuantity || 0} thùng). Có ${insufficientItems.length} hàng hóa thiếu tồn kho.`;
 
-            // Đảm bảo toast được hiển thị và CHẶN submit
-            if (typeof window !== 'undefined' && window.showToast) {
-                window.showToast(message, "error");
-            } else if (typeof window !== 'undefined' && window.showToast) {
-                window.showToast(message);
-            }
+            blockingErrors[`${firstItem.id}-quantity`] = errorMessage;
+            setFieldErrors({ ...blockingErrors, ...warnings });
+
+            // Focus vào trường quantity của item đầu tiên
+            setTimeout(() => {
+                const errorInput = document.querySelector(`[data-key="${firstItem.id}-quantity"]`);
+                if (errorInput) {
+                    errorInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    errorInput.focus();
+                }
+            }, 100);
 
             // CHẶN submit khi vượt quá tồn kho
             return;
@@ -796,7 +874,13 @@ function CreateSaleOrder({
             }).filter(item => item !== null);
 
             if (itemsWithIds.length === 0) {
-                window.showToast("Không tìm thấy hàng hóa hợp lệ!", "error");
+                // Thêm lỗi vào item đầu tiên
+                if (items.length > 0) {
+                    const firstItemId = items[0].id;
+                    blockingErrors[`${firstItemId}-supplierName`] = "Không tìm thấy hàng hóa hợp lệ";
+                    setFieldErrors({ ...blockingErrors, ...warnings });
+                    setTimeout(() => scrollToFirstError(blockingErrors), 100);
+                }
                 return;
             }
 
@@ -873,42 +957,49 @@ function CreateSaleOrder({
             }
         });
 
-        // Set cả warnings và blocking errors để hiển thị
-        setFieldErrors({ ...blockingErrors, ...warnings });
-
+        // Validate form fields
         if (!formData.retailerName) {
-            window.showToast("Vui lòng chọn nhà bán lẻ", "error");
-            if (Object.keys(blockingErrors).length > 0) return;
+            blockingErrors.retailerName = "Vui lòng chọn nhà bán lẻ";
         }
 
         if (!formData.estimatedTimeDeparture) {
-            window.showToast("Vui lòng chọn ngày dự kiến giao hàng", "error");
-            if (Object.keys(blockingErrors).length > 0) return;
+            blockingErrors.estimatedTimeDeparture = "Vui lòng chọn ngày dự kiến giao hàng";
+        } else {
+            const selectedDate = new Date(formData.estimatedTimeDeparture);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            selectedDate.setHours(0, 0, 0, 0);
+            if (selectedDate <= today) {
+                blockingErrors.estimatedTimeDeparture = "Ngày giao hàng phải trong tương lai";
+            }
         }
 
-        const selectedDate = new Date(formData.estimatedTimeDeparture);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        selectedDate.setHours(0, 0, 0, 0);
-        if (selectedDate <= today) {
-            window.showToast("Ngày giao hàng phải trong tương lai", "error");
-            if (Object.keys(blockingErrors).length > 0) return;
-        }
+        // Set cả warnings và blocking errors để hiển thị
+        setFieldErrors({ ...blockingErrors, ...warnings });
 
-        // Chỉ block validation nếu có blocking errors
+        // Scroll to first error if validation fails
         if (Object.keys(blockingErrors).length > 0) {
+            setTimeout(() => scrollToFirstError(blockingErrors), 100);
             return;
         }
 
         const selectedRetailer = retailers.find(retailer => retailer.retailerName === formData.retailerName);
         if (!selectedRetailer) {
-            window.showToast("Không tìm thấy nhà bán lẻ", "error");
+            blockingErrors.retailerName = "Không tìm thấy nhà bán lẻ";
+            setFieldErrors({ ...blockingErrors, ...warnings });
+            setTimeout(() => scrollToFirstError(blockingErrors), 100);
             return;
         }
 
         const validItems = items.filter(item => item.supplierName && item.goodsName && item.quantity && item.goodsPackingId);
         if (validItems.length === 0) {
-            window.showToast("Vui lòng thêm ít nhất một hàng hóa với đầy đủ thông tin", "error");
+            // Thêm lỗi vào item đầu tiên
+            if (items.length > 0) {
+                const firstItemId = items[0].id;
+                blockingErrors[`${firstItemId}-supplierName`] = "Vui lòng thêm ít nhất một hàng hóa với đầy đủ thông tin";
+                setFieldErrors({ ...blockingErrors, ...warnings });
+                setTimeout(() => scrollToFirstError(blockingErrors), 100);
+            }
             return;
         }
 
@@ -933,17 +1024,25 @@ function CreateSaleOrder({
             // Lưu thông tin các items vượt quá tồn kho để hiển thị viền đỏ
             setItemsExceedingStock(itemsExceedingStockMap);
 
+            // Thêm lỗi vào field quantity của item đầu tiên vượt quá tồn kho
             const firstItem = insufficientItems[0];
-            const message = insufficientItems.length === 1
-                ? `Hàng hóa "${firstItem.goodsName}" vượt quá tồn kho. Vui lòng kiểm tra lại số lượng.`
-                : `Có ${insufficientItems.length} hàng hóa vượt quá tồn kho. Vui lòng kiểm tra lại số lượng.`;
+            const stockInfo = getItemStockInfo(firstItem);
+            const errorMessage = insufficientItems.length === 1
+                ? `Vượt quá tồn kho (Có sẵn: ${stockInfo?.availableQuantity || 0} thùng)`
+                : `Vượt quá tồn kho (Có sẵn: ${stockInfo?.availableQuantity || 0} thùng). Có ${insufficientItems.length} hàng hóa thiếu tồn kho.`;
 
-            // Đảm bảo toast được hiển thị
-            if (typeof window !== 'undefined' && window.showToast) {
-                window.showToast(message, "error");
-            } else if (typeof window !== 'undefined' && window.showToast) {
-                window.showToast(message);
-            }
+            blockingErrors[`${firstItem.id}-quantity`] = errorMessage;
+            setFieldErrors({ ...blockingErrors, ...warnings });
+
+            // Focus vào trường quantity của item đầu tiên
+            setTimeout(() => {
+                const errorInput = document.querySelector(`[data-key="${firstItem.id}-quantity"]`);
+                if (errorInput) {
+                    errorInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    errorInput.focus();
+                }
+            }, 100);
+
             return;
         }
 
@@ -970,7 +1069,13 @@ function CreateSaleOrder({
             }).filter(item => item !== null);
 
             if (itemsWithIds.length === 0) {
-                window.showToast("Không tìm thấy hàng hóa hợp lệ!", "error");
+                // Thêm lỗi vào item đầu tiên
+                if (items.length > 0) {
+                    const firstItemId = items[0].id;
+                    blockingErrors[`${firstItemId}-supplierName`] = "Không tìm thấy hàng hóa hợp lệ";
+                    setFieldErrors({ ...blockingErrors, ...warnings });
+                    setTimeout(() => scrollToFirstError(blockingErrors), 100);
+                }
                 return;
             }
 
@@ -1061,29 +1166,44 @@ function CreateSaleOrder({
                                         <Label htmlFor="retailer" className="text-slate-600 font-medium">
                                             Nhà Bán Lẻ <span className="text-red-500">*</span>
                                         </Label>
-                                        <FloatingDropdown
-                                            value={formData.retailerName || undefined}
-                                            onChange={(value) => handleInputChange("retailerName", value)}
-                                            options={retailerOptions}
-                                            placeholder="Chọn nhà bán lẻ"
-                                            loading={retailersLoading}
-                                        />
+                                        <div className="relative">
+                                            <FloatingDropdown
+                                                value={formData.retailerName || undefined}
+                                                onChange={(value) => handleInputChange("retailerName", value)}
+                                                options={retailerOptions}
+                                                placeholder="Chọn nhà bán lẻ"
+                                                loading={retailersLoading}
+                                                data-field="retailerName"
+                                            />
+                                            {fieldErrors.retailerName && (
+                                                <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">
+                                                    {fieldErrors.retailerName}
+                                                </p>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="estimatedTimeDeparture" className="text-sm font-medium text-slate-600">
                                             Ngày Dự Kiến Giao <span className="text-red-500">*</span>
                                         </Label>
                                         {/* Giới hạn chiều rộng container */}
-                                        <div className="relative w-[180px]">
-                                            <Input
-                                                id="estimatedTimeDeparture"
-                                                type="date"
-                                                value={formData.estimatedTimeDeparture}
-                                                onChange={(e) => handleInputChange("estimatedTimeDeparture", e.target.value)}
-                                                ref={dateInputRef}
-                                                // min={minDate}
-                                                className="date-picker-input h-[37px] pr-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg w-full"
-                                            />
+                                        <div className="relative w-[220px]">
+                                            <div className="relative">
+                                                <Input
+                                                    id="estimatedTimeDeparture"
+                                                    type="date"
+                                                    value={formData.estimatedTimeDeparture}
+                                                    onChange={(e) => handleInputChange("estimatedTimeDeparture", e.target.value)}
+                                                    ref={dateInputRef}
+                                                    // min={minDate}
+                                                    className={`date-picker-input h-[37px] pr-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg w-full ${fieldErrors.estimatedTimeDeparture ? 'border-red-500' : ''}`}
+                                                />
+                                                {fieldErrors.estimatedTimeDeparture && (
+                                                    <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">
+                                                        {fieldErrors.estimatedTimeDeparture}
+                                                    </p>
+                                                )}
+                                            </div>
                                             <Calendar
                                                 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-600 cursor-pointer"
                                                 onClick={() => {
@@ -1179,8 +1299,9 @@ function CreateSaleOrder({
                                                                     options={supplierOptions}
                                                                     placeholder="Chọn nhà cung cấp"
                                                                     loading={suppliersLoading}
-                                                                    className="truncate w-full"
+                                                                    className={`truncate w-full ${fieldErrors[`${item.id}-supplierName`] ? 'border-red-500' : ''}`}
                                                                     title={item.supplierName || ""}
+                                                                    data-key={`${item.id}-supplierName`}
                                                                 />
                                                                 {fieldErrors[`${item.id}-supplierName`] && (
                                                                     <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">
@@ -1212,8 +1333,9 @@ function CreateSaleOrder({
                                                                             : false;
                                                                     })()}
                                                                     disabled={!item.supplierName}
-                                                                    className="truncate w-full"
+                                                                    className={`truncate w-full ${fieldErrors[`${item.id}-goodsName`] ? 'border-red-500' : ''}`}
                                                                     title={item.goodsName || ""}
+                                                                    data-key={`${item.id}-goodsName`}
                                                                 />
                                                                 {fieldErrors[`${item.id}-goodsName`] && (
                                                                     <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">
@@ -1235,8 +1357,9 @@ function CreateSaleOrder({
                                                                     }
                                                                     loading={packingLoading}
                                                                     disabled={!item.goodsName}
-                                                                    className="truncate w-full"
+                                                                    className={`truncate w-full ${fieldErrors[`${item.id}-goodsPackingId`] ? 'border-red-500' : ''}`}
                                                                     title={item.goodsPackingId ? item.goodsPackingId.toString() : ""}
+                                                                    data-key={`${item.id}-goodsPackingId`}
                                                                 />
                                                                 {fieldErrors[`${item.id}-goodsPackingId`] && (
                                                                     <p className="absolute left-0 top-full mt-1 text-red-500 text-xs">
@@ -1257,6 +1380,7 @@ function CreateSaleOrder({
                                                                     onChange={(e) =>
                                                                         updateItem(item.id, "quantity", e.target.value)
                                                                     }
+                                                                    data-key={`${item.id}-quantity`}
                                                                     className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${fieldErrors[`${item.id}-quantity`] ? "border-red-500" : ""
                                                                         }`}
                                                                 />
@@ -1376,7 +1500,7 @@ function CreateSaleOrder({
                                 <Button
                                     type="button"
                                     onClick={handleSaveAsDraft}
-                                    disabled={saveDraftLoading || submitApprovalLoading}
+                                    disabled={saveDraftLoading || submitApprovalLoading || items.filter(item => item.supplierName && item.goodsName && item.quantity && item.goodsPackingId).length === 0}
                                     className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {saveDraftLoading ? "Đang lưu..." : "Lưu nháp"}
@@ -1384,7 +1508,7 @@ function CreateSaleOrder({
                                 <Button
                                     type="button"
                                     onClick={handleSubmitForApproval}
-                                    disabled={saveDraftLoading || submitApprovalLoading}
+                                    disabled={saveDraftLoading || submitApprovalLoading || items.filter(item => item.supplierName && item.goodsName && item.quantity && item.goodsPackingId).length === 0}
                                     className="h-[38px] px-6 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {submitApprovalLoading ? "Đang xử lý..." : "Gửi phê duyệt"}
