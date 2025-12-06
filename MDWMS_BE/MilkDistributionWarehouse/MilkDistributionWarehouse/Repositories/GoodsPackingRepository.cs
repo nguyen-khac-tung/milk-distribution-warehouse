@@ -19,6 +19,8 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> HasActiveGoodsIssueNote(int goodsPackingId);
         Task<bool> HasActiveDisposalNote(int goodsPackingId);
         Task<bool> HasActiveAndDeletedPallet(int goodsPackingId);
+        Task<bool> HasInventoryLedgers(int goodsPackingId);
+        Task<bool> HasBackOrder(int goodsPackingId);
         Task<bool> IsPurchaseOrderByGoodsPackingId(int goodsPackingId);
         Task<bool> IsSalesOrderByGoodsPackingId(int goodsPackingId);
         Task<bool> IsGoodsReceiptNoteByGoodsPackingId(int goodsPackingId);
@@ -26,6 +28,8 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> IsPalletByGoodsPackingId(int goodsPackingId);
         Task<bool> IsDisposalRequestByGoodsPackingId(int goodsPackingId);
         Task<bool> IsDisposalNoteByGoodsPackingId(int goodsPackingId);
+        Task<bool> IsInventoryLedgers(int goodsPackingId);
+        Task<bool> IsExistBackOrder(int goodsPackingId);
     }
 
     public class GoodsPackingRepository : IGoodsPackingRepository
@@ -133,6 +137,16 @@ namespace MilkDistributionWarehouse.Repositories
                 //.AnyAsync(p => p.Status != CommonStatus.Inactive && p.GoodsPackingId == goodsPackingId);
                 .AnyAsync(p => p.GoodsPackingId == goodsPackingId);
         }
+        public async Task<bool> HasInventoryLedgers(int goodsPackingId)
+        {
+            return await _context.InventoryLedgers
+                .AnyAsync(il => il.GoodPackingId == goodsPackingId);
+        }
+        public async Task<bool> HasBackOrder(int goodsPackingId)
+        {
+            return await _context.BackOrders
+                .AnyAsync(bo => bo.GoodsPackingId == goodsPackingId);
+        }
 
         public async Task<bool> IsPurchaseOrderByGoodsPackingId(int goodsPackingId)
         {
@@ -176,5 +190,15 @@ namespace MilkDistributionWarehouse.Repositories
                 .AnyAsync(p => p.GoodsPackingId == goodsPackingId);
         }
 
+        public async Task<bool> IsInventoryLedgers(int goodsPackingId)
+        {
+            return await _context.InventoryLedgers
+                .AnyAsync(il => il.GoodPackingId == goodsPackingId);
+        }
+        public async Task<bool> IsExistBackOrder(int goodsPackingId)
+        {
+            return await _context.BackOrders
+                .AnyAsync(bo => bo.GoodsPackingId == goodsPackingId);
+        }
     }
 }
