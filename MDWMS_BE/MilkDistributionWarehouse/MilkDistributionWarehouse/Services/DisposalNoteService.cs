@@ -66,8 +66,8 @@ namespace MilkDistributionWarehouse.Services
 
             if (disposalRequest.AssignTo != userId) return "Bạn không được phân công cho yêu cầu này.".ToMessageForUser();
 
-            //if (disposalRequest.EstimatedTimeDeparture > DateOnly.FromDateTime(DateTimeUtility.Now()))
-            //    return "Không tạo được phiếu xuất hủy trước ngày dự kiến xuất.".ToMessageForUser();
+            if (disposalRequest.EstimatedTimeDeparture > DateOnly.FromDateTime(DateTimeUtility.Now()))
+                return "Không tạo được phiếu xuất hủy trước ngày dự kiến xuất.".ToMessageForUser();
 
             if (disposalRequest.Status != DisposalRequestStatus.AssignedForPicking)
                 return "Chỉ có thể tạo phiếu xuất hủy cho yêu cầu ở trạng thái 'Đã phân công'.".ToMessageForUser();
