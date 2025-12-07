@@ -7,6 +7,7 @@ using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
 using MilkDistributionWarehouse.Utilities;
 using System.Threading.Tasks;
+using static MilkDistributionWarehouse.Models.DTOs.AreaDto;
 
 namespace MilkDistributionWarehouse.Services
 {
@@ -22,7 +23,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, List<AreaDto.AreaActiveDto>)> GetAreaDropdown();
         Task<(string, List<AreaDto.StocktakingAreaDto>?)> GetStocktakingArea(string? stocktakingSheetId);
         Task<(string, List<AreaDto.AreaActiveDto>)> GetAreasWithLocationsForDropdown();
-        Task<(string, List<AreaDto.StocktakingAreaDto>?)> GetAreasByAreaIds(List<int> areaIds, string? stocktakingSheetId);
+        Task<(string, List<AreaDto.StocktakingAreaDto>?)> GetAreasByAreaIds(AreaRequestStocktaking areaRequestStocktaking);
     }
 
     public class AreaService : IAreaService
@@ -272,9 +273,9 @@ namespace MilkDistributionWarehouse.Services
             return ("", results);
         }
 
-        public async Task<(string, List<AreaDto.StocktakingAreaDto>?)> GetAreasByAreaIds(List<int> areaIds, string? stocktakingSheetId)
+        public async Task<(string, List<AreaDto.StocktakingAreaDto>?)> GetAreasByAreaIds(AreaRequestStocktaking areaRequestStocktaking)
         {
-            var areas = await _areaRepository.GetAreasByIds(areaIds, stocktakingSheetId);
+            var areas = await _areaRepository.GetAreasByIds(areaRequestStocktaking.AreaIds, areaRequestStocktaking.StocktakingSheetId);
 
             if (areas == null || !areas.Any())
                 return ("Không có khu vực nào đang hoạt động.".ToMessageForUser(), default);
@@ -283,8 +284,8 @@ namespace MilkDistributionWarehouse.Services
 
             foreach (var a in areas)
             {
-                var assignTo = !string.IsNullOrEmpty(stocktakingSheetId) 
-                    ? await _userRepository.GetAssignToStockArea(stocktakingSheetId, a.AreaId)
+                var assignTo = !string.IsNullOrEmpty(areaRequestStocktaking.StocktakingSheetId) 
+                    ? await _userRepository.GetAssignToStockArea(areaRequestStocktaking.StocktakingSheetId, a.AreaId)
                     : null;
 
                 results.Add(new AreaDto.StocktakingAreaDto
