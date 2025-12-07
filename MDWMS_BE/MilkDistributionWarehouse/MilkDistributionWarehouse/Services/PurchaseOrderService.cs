@@ -352,6 +352,7 @@ namespace MilkDistributionWarehouse.Services
 
                     if (!string.IsNullOrEmpty(msg)) throw new Exception(msg);
 
+                    purchaseOrder.ApprovalBy = null;
                     purchaseOrder.Status = PurchaseOrderStatus.PendingApproval;
                 }
 

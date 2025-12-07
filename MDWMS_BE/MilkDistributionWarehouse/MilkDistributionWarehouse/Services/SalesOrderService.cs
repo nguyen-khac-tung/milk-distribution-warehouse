@@ -262,13 +262,17 @@ namespace MilkDistributionWarehouse.Services
                     if (salesOrder.Status != SalesOrderStatus.Draft && salesOrder.Status != SalesOrderStatus.Rejected)
                         return ("Chỉ được nộp đơn khi đơn hàng ở trạng thái Nháp hoặc Bị từ chối.".ToMessageForUser(), null);
                     if (salesOrder.CreatedBy != userId) return ("Current User has no permission to update.", null);
-                    
+
+                    if (salesOrder.EstimatedTimeDeparture < DateOnly.FromDateTime(DateTimeUtility.Now()))
+                        return ("Ngày giao hàng không thể trong quá khứ.".ToMessageForUser(), null);
+
                     var message = await ValidateSalesOrderItems(salesOrder.SalesOrderDetails.ToList());
-                    if (message.Length>0) return (message, null);
+                    if (message.Length > 0) return (message, null);
 
                     message = await CheckPendingSalesOrderValidation(salesOrder);
                     if (message.Length > 0) return (message, null);
 
+                    salesOrder.ApprovalBy = null;
                     salesOrder.Status = SalesOrderStatus.PendingApproval;
                 }
 
