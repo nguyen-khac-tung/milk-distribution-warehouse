@@ -68,7 +68,6 @@ namespace MilkDistributionWarehouse.Repositories
         public async Task<InventoryLedger?> GetLastInventoryLedgerAsync(int goodsId, int goodsPackingId)
         {
             return await _context.InventoryLedgers
-                .AsNoTracking()
                 .Where(l => l.GoodsId == goodsId && l.GoodPackingId == goodsPackingId)
                 .OrderByDescending(l => l.EventDate)
                 .FirstOrDefaultAsync();

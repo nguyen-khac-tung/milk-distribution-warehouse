@@ -360,6 +360,8 @@ namespace MilkDistributionWarehouse.Services
                 if (!string.IsNullOrEmpty(msg))
                     throw new Exception(msg);
 
+                await _unitOfWork.CommitTransactionAsync();
+
                 try
                 {
                     var goodsAfterPackingUpdate = await _goodRepository.GetGoodsByGoodsId(update.GoodsId);
@@ -384,16 +386,16 @@ namespace MilkDistributionWarehouse.Services
                         {
                             var (invErr, _) = await _inventoryLedgerService.CreateInventoryLedgerBulk(ledgerDtos);
                             if (!string.IsNullOrEmpty(invErr))
-                                throw new Exception(invErr);
+                            {
+                                throw new Exception($"Tạo sổ cái thất bại: {invErr}");
+                            }
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"Tạo sổ cái thất bại: {ex.Message}");
+                    return ($"Cập nhật hàng hoá thành công nhưng tạo sổ cái thất bại: {ex.Message}", _mapper.Map<GoodsDto>(goodsExist));
                 }
-
-                await _unitOfWork.CommitTransactionAsync();
 
                 return ("", _mapper.Map<GoodsDto>(goodsExist));
             }
