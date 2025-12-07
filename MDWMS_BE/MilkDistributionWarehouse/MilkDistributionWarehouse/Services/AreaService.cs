@@ -117,6 +117,12 @@ namespace MilkDistributionWarehouse.Services
             if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
                 return ("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
+            if (await _areaRepository.HavePalletInSODPPicking(areaId))
+                return ("Không thể thực hiện thao tác này khi đang có phiếu kiểm nhập, kiểm xuất, xuất hủy thực hiện.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
+            if (await _areaRepository.HasPalletNotArranged())
+                return ("Không thể cập nhật thông tin khu vực khi có pallet chưa được sắp xếp.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
             if (await _areaRepository.IsDuplicationByIdAndCode(areaId, dto.AreaCode))
                 return ("Mã khu vực đã tồn tại.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
@@ -164,6 +170,12 @@ namespace MilkDistributionWarehouse.Services
         {
             if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
                 return ("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
+            if (await _areaRepository.HavePalletInSODPPicking(areaId))
+                return ("Không thể thực hiện thao tác này khi đang có phiếu kiểm nhập, kiểm xuất, xuất hủy thực hiện.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
+            if (await _areaRepository.HasPalletNotArranged())
+                return ("Không thể cập nhật thông tin khu vực khi có pallet chưa được sắp xếp.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
             var area = await _areaRepository.GetAreaById(areaId);
             if (area == null)

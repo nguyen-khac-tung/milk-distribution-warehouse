@@ -369,6 +369,9 @@ namespace MilkDistributionWarehouse.Services
                 return ("Pallet đã được xếp vào vị trí rồi không thể xếp ra.".ToMessageForUser(), new PalletDto.PalletUpdateStatusDto());
             }
 
+            if (await _palletRepository.IsPalletInSalesPickingOrDisposalPicking(update.PalletId))
+                return ("Không thể cập nhật pallet này do pallet đang trong quá trình lấy hàng.", new PalletDto.PalletUpdateStatusDto());
+
             if (update.Status == CommonStatus.Deleted && palletExist.LocationId.HasValue)
             {
                 if (palletExist.PackageQuantity > 0)

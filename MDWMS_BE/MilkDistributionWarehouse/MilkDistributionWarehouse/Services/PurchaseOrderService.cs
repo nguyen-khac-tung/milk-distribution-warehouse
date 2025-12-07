@@ -804,6 +804,27 @@ namespace MilkDistributionWarehouse.Services
                             Category = NotificationCategory.Important
                         });
                     }
+
+                    notificationStatusChange.AddRange(new List<NotificationCreateDto>
+                    {
+                        new NotificationCreateDto
+                        {
+                            UserId = purchaseOrder.CreatedBy,
+                            Title = "Đơn mua hàng đã được xác nhận đến",
+                            Content = $"Đơn mua hàng '{purchaseOrder.PurchaseOderId}' đã được xác nhận đến.",
+                            EntityType = NotificationEntityType.PurchaseOrder,
+                            EntityId = purchaseOrder.PurchaseOderId,
+                        },
+                        new NotificationCreateDto
+                        {
+                            UserId = purchaseOrder.ApprovalBy,
+                            Title = "Đơn mua hàng đã được xác nhận đến",
+                            Content = $"Đơn mua hàng '{purchaseOrder.PurchaseOderId}' đã được xác nhận đến.",
+                            EntityType = NotificationEntityType.PurchaseOrder,
+                            EntityId = purchaseOrder.PurchaseOderId,
+                        }
+                    });
+                    
                     break;
                 case PurchaseOrderStatus.AssignedForReceiving:
                     if (!isReassignment)
