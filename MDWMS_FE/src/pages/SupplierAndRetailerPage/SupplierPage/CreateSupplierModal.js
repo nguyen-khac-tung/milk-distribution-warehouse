@@ -1,5 +1,5 @@
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Button } from "../../../components/ui/button"
 import { Input } from "../../../components/ui/input"
 import { Label } from "../../../components/ui/label"
@@ -87,6 +87,19 @@ export default function CreateSupplier({ isOpen, onClose, onSuccess }) {
       setLoading(true)
       const response = await createSupplier(formData)
       window.showToast("Thêm nhà cung cấp thành công!", "success")
+      // Reset form data after successful creation
+      setFormData({
+        companyName: "",
+        brandName: "",
+        email: "",
+        phone: "",
+        taxCode: "",
+        address: "",
+        contactPersonName: "",
+        contactPersonPhone: "",
+        contactPersonEmail: "",
+      })
+      setValidationErrors({})
       onSuccess && onSuccess()
       onClose && onClose()
     } catch (error) {

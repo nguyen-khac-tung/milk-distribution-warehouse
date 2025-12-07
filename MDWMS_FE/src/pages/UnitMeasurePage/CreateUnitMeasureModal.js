@@ -1,5 +1,5 @@
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
 import { Label } from "../../components/ui/label"
@@ -16,6 +16,17 @@ export default function CreateUnitMeasure({ isOpen, onClose, onSuccess }) {
   })
   const [loading, setLoading] = useState(false)
   const [validationErrors, setValidationErrors] = useState({})
+
+  // Reset form when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        name: "",
+        description: "",
+      })
+      setValidationErrors({})
+    }
+  }, [isOpen])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -39,6 +50,12 @@ export default function CreateUnitMeasure({ isOpen, onClose, onSuccess }) {
       setLoading(true)
       const response = await createUnitMeasure(formData)
       window.showToast("Thêm đơn vị đo thành công!", "success")
+      // Reset form data after successful creation
+      setFormData({
+        name: "",
+        description: "",
+      })
+      setValidationErrors({})
       onSuccess && onSuccess()
       onClose && onClose()
     } catch (error) {
