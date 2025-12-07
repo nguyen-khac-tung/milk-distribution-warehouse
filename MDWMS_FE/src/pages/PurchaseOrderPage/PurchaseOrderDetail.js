@@ -7,7 +7,7 @@ import { ArrowLeft, Package, User, Calendar, CheckCircle, XCircle, Clock, Truck,
 import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
 import { getPurchaseOrderDetail, submitPurchaseOrder, approvePurchaseOrder, rejectPurchaseOrder, confirmGoodsReceived, assignForReceiving, startReceive, reAssignForReceiving, updatePurchaseOrderAsOrdered, changeDeliveryDate } from '../../services/PurchaseOrderService';
-import { extractErrorMessage } from '../../utils/Validation';
+import { cleanErrorMessage, extractErrorMessage } from '../../utils/Validation';
 import ApprovalConfirmationModal from '../../components/PurchaseOrderComponents/ApprovalConfirmationModal';
 import RejectionConfirmationModal from '../../components/PurchaseOrderComponents/RejectionConfirmationModal';
 import SubmitDraftConfirmationModal from '../../components/PurchaseOrderComponents/SubmitDraftConfirmationModal';
@@ -518,19 +518,57 @@ const PurchaseOrderDetail = () => {
 
     if (error) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <Card className="w-full max-w-md">
-                    <CardContent className="p-6 text-center">
-                        <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Lỗi</h3>
-                        <p className="text-gray-600 mb-4">{error}</p>
-                        <div className="text-xs text-gray-500 mb-4">
-                            <p>ID: {id}</p>
-                            <p>URL: /PurchaseOrder/GetPurchaseOrder/{id}</p>
+            // <div className="min-h-screen flex items-center justify-center">
+            //     <Card className="w-full max-w-md">
+            //         <CardContent className="p-6 text-center">
+            //             <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            //             <h3 className="text-lg font-semibold text-gray-900 mb-2">Lỗi</h3>
+            //             <p className="text-gray-600 mb-4">{error}</p>
+            //             <div className="text-xs text-gray-500 mb-4">
+            //                 <p>ID: {id}</p>
+            //                 <p>URL: /PurchaseOrder/GetPurchaseOrder/{id}</p>
+            //             </div>
+            //             <Button onClick={() => navigate('/purchase-orders')} variant="outline">
+            //                 <ComponentIcon name="arrowBackCircleOutline" size={18} />
+            //                 <span className="ml-2">Quay lại</span>
+            //             </Button>
+            //         </CardContent>
+            //     </Card>
+            // </div>
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+                <Card className="w-full max-w-lg shadow-lg rounded-xl border border-gray-200 bg-white">
+                    <CardContent className="p-8 text-center">
+
+                        {/* Icon lỗi nổi bật */}
+                        <div className="flex justify-center mb-4 mt-5">
+                            <div className="bg-red-100 p-4 rounded-full shadow-inner">
+                                <XCircle className="h-14 w-14 text-red-600" />
+                            </div>
                         </div>
-                        <Button onClick={() => navigate('/purchase-orders')} variant="outline">
-                            <ComponentIcon name="arrowBackCircleOutline" size={18} />
-                            <span className="ml-2">Quay lại</span>
+
+                        {/* Tiêu đề */}
+                        <h3 className="text-xl font-bold text-gray-800 mb-2">
+                            Đã xảy ra lỗi
+                        </h3>
+
+                        {/* Mô tả lỗi */}
+                        <p className="text-gray-600 mb-6 leading-relaxed">
+                            {cleanErrorMessage(error, "Không thể tải dữ liệu. Vui lòng thử lại sau.")}
+                        </p>
+
+                        {/* Thông tin kỹ thuật – nhỏ, tinh tế */}
+                        <div className="text-xs text-gray-500 bg-gray-100 rounded-lg px-4 py-3 mb-6">
+                            <p><span className="font-semibold">ID:</span> {id}</p>
+                            <p><span className="font-semibold">URL:</span> /PurchaseOrder/GetPurchaseOrder/{id}</p>
+                        </div>
+
+                        {/* Nút quay lại */}
+                        <Button
+                            onClick={() => navigate('/sales-orders')}
+                            className="w-full h-[42px] flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg transition-all"
+                        >
+                            <ComponentIcon name="arrowBackCircleOutline" size={22} color="#fff" />
+                            <span>Quay lại danh sách đơn mua hàng</span>
                         </Button>
                     </CardContent>
                 </Card>
