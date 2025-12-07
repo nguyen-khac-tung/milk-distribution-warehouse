@@ -354,6 +354,7 @@ namespace MilkDistributionWarehouse.Services
 
                     purchaseOrder.ApprovalBy = null;
                     purchaseOrder.Status = PurchaseOrderStatus.PendingApproval;
+                    purchaseOrder.ApprovalBy = null;
                 }
 
                 if (purchaseOrdersUpdateStatus is PurchaseOrderRejectDto rejectDto)
