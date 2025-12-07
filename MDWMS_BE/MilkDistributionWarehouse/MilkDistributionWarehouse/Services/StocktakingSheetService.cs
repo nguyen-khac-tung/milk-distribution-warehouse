@@ -213,8 +213,8 @@ namespace MilkDistributionWarehouse.Services
             if (currentStatus == StocktakingStatus.Assigned && !IsBeforeEditDeadline(stocktakingSheetExist.StartTime))
                 return ($"Không thể cập nhật thông tin. Vui lòng thực hiện chỉnh sửa trong vòng {_hoursBeforeStartTime} tiếng trước thời điểm bắt đầu kiểm kê.".ToMessageForUser(), default);
 
-            if(currentStatus != StocktakingStatus.Draft||
-               currentStatus != StockAreaStatus.Assigned)
+            if(currentStatus != StocktakingStatus.Draft &&
+               currentStatus != StocktakingStatus.Assigned)
                 return ("Chỉ được phép cập nhật phiếu kiểm kê khi phiếu kiểm kê ở trạng thái Nháp hoặc Đã phân công.".ToMessageForUser(), default);
 
             var isDuplicationStartTime = await _stocktakingSheetRepository.IsDuplicationStartTimeStocktakingSheet(update.StocktakingSheetId, update.StartTime);
@@ -748,7 +748,7 @@ namespace MilkDistributionWarehouse.Services
         private async Task CheckAndSendNotificationStocktakingArea(StocktakingSheet stocktakingSheetExist, List<StocktakingAreaCreateDto> areaIds)
         {
             Dictionary<int, int> areaDict = stocktakingSheetExist.StocktakingAreas
-                .Where(sa => sa.AreaId.HasValue)
+                .Where(sa => sa.AreaId.HasValue && sa.AssignTo.HasValue)
                 .ToDictionary(sa => sa.AreaId!.Value, sa => sa.AssignTo!.Value);
 
             var updateAreaIds = areaIds.Select(a => a.AreaId).ToHashSet();
