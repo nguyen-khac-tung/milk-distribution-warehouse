@@ -399,7 +399,14 @@ const StocktakingDetail = () => {
                                         <FileText className="h-5 w-5 text-orange-500" />
                                         Thông Tin Phiếu Kiểm Kê
                                     </div>
-                                    {stocktaking.status === STOCKTAKING_STATUS.Draft && (
+                                    {(
+                                        stocktaking.status === STOCKTAKING_STATUS.Draft || 
+                                        stocktaking.status === STOCKTAKING_STATUS.Assigned ||
+                                        stocktaking.status === 1 || 
+                                        stocktaking.status === '1' ||
+                                        stocktaking.status === 2 || 
+                                        stocktaking.status === '2'
+                                    ) && (
                                         <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_VIEW_WM}>
                                             <button
                                                 onClick={() => navigate(`/stocktakings/update/${stocktaking.stocktakingSheetId}`)}
