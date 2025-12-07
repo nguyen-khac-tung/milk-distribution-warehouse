@@ -25,6 +25,22 @@ export default function CreateAccount({ isOpen, onClose, onSuccess }) {
   const [roles, setRoles] = useState([])
   const [validationErrors, setValidationErrors] = useState({})
 
+  // Reset form when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        email: "",
+        fullName: "",
+        doB: "",
+        gender: true,
+        phone: "",
+        address: "",
+        roleId: 0,
+      })
+      setValidationErrors({})
+    }
+  }, [isOpen])
+
   // Fetch roles on component mount
   useEffect(() => {
     const fetchRoles = async () => {
@@ -85,6 +101,17 @@ export default function CreateAccount({ isOpen, onClose, onSuccess }) {
       // Check if response is successful
       if (response && (response.success !== false && response.status !== 500)) {
         window.showToast("Thêm người dùng thành công!", "success")
+        // Reset form data after successful creation
+        setFormData({
+          email: "",
+          fullName: "",
+          doB: "",
+          gender: true,
+          phone: "",
+          address: "",
+          roleId: 0,
+        })
+        setValidationErrors({})
         onSuccess && onSuccess()
         onClose && onClose()
       } else {

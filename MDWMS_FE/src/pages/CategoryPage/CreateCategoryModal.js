@@ -1,5 +1,5 @@
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
 import { Label } from "../../components/ui/label"
@@ -16,6 +16,17 @@ export default function CreateCategory({ isOpen, onClose, onSuccess }) {
   })
   const [loading, setLoading] = useState(false)
   const [validationErrors, setValidationErrors] = useState({})
+
+  // Reset form when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        categoryName: "",
+        description: "",
+      })
+      setValidationErrors({})
+    }
+  }, [isOpen])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -40,6 +51,12 @@ export default function CreateCategory({ isOpen, onClose, onSuccess }) {
       const response = await createCategory(formData)
       console.log("Category created:", response)
       window.showToast("Thêm danh mục thành công!", "success")
+      // Reset form data after successful creation
+      setFormData({
+        categoryName: "",
+        description: "",
+      })
+      setValidationErrors({})
       onSuccess && onSuccess()
       onClose && onClose()
     } catch (error) {
