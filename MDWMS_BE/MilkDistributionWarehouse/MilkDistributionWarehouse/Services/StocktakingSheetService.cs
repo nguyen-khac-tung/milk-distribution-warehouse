@@ -252,6 +252,15 @@ namespace MilkDistributionWarehouse.Services
                 stocktakingSheetExist.Status = StocktakingStatus.Draft;
             }
 
+            bool allUnassigned = stocktakingSheetExist.StocktakingAreas
+                .Where(sa => sa.AreaId.HasValue && updateAreaIds.Contains(sa.AreaId.Value))
+                .All(sa => !sa.AssignTo.HasValue);
+
+            if (allUnassigned)
+            {
+                stocktakingSheetExist.Status = StocktakingStatus.Draft;
+            }
+
             stocktakingSheetExist.StartTime = update.StartTime;
 
             if (!string.IsNullOrEmpty(update.Note))
