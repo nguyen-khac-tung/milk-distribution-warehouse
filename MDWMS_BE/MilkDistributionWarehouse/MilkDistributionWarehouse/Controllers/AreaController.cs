@@ -74,6 +74,15 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<List<AreaDto.StocktakingAreaDto>>.ToResultOk(stocktakingArea);
         }
 
+        [HttpGet("GetAreaByAreaIds")]
+        public async Task<IActionResult> GetAreaByAreaIds([FromQuery] List<int> areaIds, string? stocktakingSheetId)
+        {
+            var (msg, areas) = await _areaService.GetAreasByAreaIds(areaIds, stocktakingSheetId);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<List<AreaDto.StocktakingAreaDto>>.ToResultOk(areas);
+        }
+
         [Authorize(Roles = "Business Owner, Administrator")]
         [HttpPost("Create")]
         public async Task<IActionResult> CreateArea([FromBody] AreaDto.AreaRequestDto dto)

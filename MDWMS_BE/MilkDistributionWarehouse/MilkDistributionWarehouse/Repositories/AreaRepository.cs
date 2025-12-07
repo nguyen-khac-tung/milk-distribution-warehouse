@@ -23,6 +23,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<List<Area>> GetActiveAreasAsync();
         Task<List<Area>> GetActiveAreasByStocktakingId();
         Task<List<Area>> GetActiveAreasByStocktakingId(string stocktakingSheetId);
+        Task<List<Area>> GetAreasByIds(List<int> areaIds, string? stocktakingSheetId);
     }
 
     public class AreaRepository : IAreaRepository
@@ -162,6 +163,25 @@ namespace MilkDistributionWarehouse.Repositories
                         a.Locations.Any() &&
                         a.StocktakingAreas.Any(sta => sta.StocktakingSheetId == stocktakingSheetId)
                         )
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        public async Task<List<Area>> GetAreasByIds(List<int> areaIds, string? stocktakingSheetId)
+        {
+            var query = _context.Areas
+                .Where(a => areaIds.Contains(a.AreaId) &&
+                        a.Status == CommonStatus.Active && 
+                        a.Locations.Any());
+
+            if (!string.IsNullOrEmpty(stocktakingSheetId))
+            {
+                query = query.Where(a => a.StocktakingAreas.Any(sta => sta.StocktakingSheetId == stocktakingSheetId));
+            }
+
+            return await query
+                .Include(a => a.StorageCondition)
+                .Include(a => a.Locations)
                 .AsNoTracking()
                 .ToListAsync();
         }

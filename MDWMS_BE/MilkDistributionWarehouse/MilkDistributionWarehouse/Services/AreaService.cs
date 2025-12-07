@@ -22,6 +22,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, List<AreaDto.AreaActiveDto>)> GetAreaDropdown();
         Task<(string, List<AreaDto.StocktakingAreaDto>?)> GetStocktakingArea(string? stocktakingSheetId);
         Task<(string, List<AreaDto.AreaActiveDto>)> GetAreasWithLocationsForDropdown();
+        Task<(string, List<AreaDto.StocktakingAreaDto>?)> GetAreasByAreaIds(List<int> areaIds, string? stocktakingSheetId);
     }
 
     public class AreaService : IAreaService
@@ -271,5 +272,42 @@ namespace MilkDistributionWarehouse.Services
             return ("", results);
         }
 
+        public async Task<(string, List<AreaDto.StocktakingAreaDto>?)> GetAreasByAreaIds(List<int> areaIds, string? stocktakingSheetId)
+        {
+            var areas = await _areaRepository.GetAreasByIds(areaIds, stocktakingSheetId);
+
+            if (areas == null || !areas.Any())
+                return ("Không có khu vực nào đang hoạt động.".ToMessageForUser(), default);
+
+            var results = new List<AreaDto.StocktakingAreaDto>();
+
+            foreach (var a in areas)
+            {
+                var assignTo = !string.IsNullOrEmpty(stocktakingSheetId) 
+                    ? await _userRepository.GetAssignToStockArea(stocktakingSheetId, a.AreaId)
+                    : null;
+
+                results.Add(new AreaDto.StocktakingAreaDto
+                {
+                    AreaId = a.AreaId,
+                    AreaName = a.AreaName,
+                    AvailableLocationCount = a.Locations.Count(l => 
+                        l.IsAvailable == true && 
+                        l.Status == CommonStatus.Active),
+                    UnAvailableLocationCount = a.Locations.Count(l => 
+                        l.IsAvailable == false && 
+                        l.Status == CommonStatus.Active),
+                    TemperatureMax = a.StorageCondition?.TemperatureMax,
+                    TemperatureMin = a.StorageCondition?.TemperatureMin,
+                    HumidityMax = a.StorageCondition?.HumidityMax,
+                    HumidityMin = a.StorageCondition?.HumidityMin,
+                    LightLevel = a.StorageCondition?.LightLevel,
+                    AssignTo = assignTo?.UserId,
+                    AssignName = assignTo?.FullName
+                });
+            }
+
+            return ("", results);
+        }
     }
 }
