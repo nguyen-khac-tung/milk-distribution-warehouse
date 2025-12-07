@@ -621,6 +621,9 @@ namespace MilkDistributionWarehouse.Mappers
             CreateMap<StocktakingArea, StocktakingLocationCreate>();
             CreateMap<StocktakingLocation, StocktakingLocationDto>()
                 .ForMember(dest => dest.LocationCode, opt => opt.MapFrom(src => src.Location.LocationCode))
+                .ForMember(dest => dest.Rack, opt => opt.MapFrom(src => src.Location.Rack))
+                .ForMember(dest => dest.Row, opt => opt.MapFrom(src => src.Location.Row))
+                .ForMember(dest => dest.Column, opt => opt.MapFrom(src => src.Location.Column))
                 .ForMember(dest => dest.IsAvailable, opt => opt.MapFrom(src => src.Location.IsAvailable));
             CreateMap<StocktakingLocationRejectStatus, StocktakingLocation>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => StockLocationStatus.Pending))

@@ -65,7 +65,7 @@ namespace MilkDistributionWarehouse.Repositories
                 .Include(sa => sa.Area)
                     .ThenInclude(a => a.Locations)
                 .Include(sa => sa.AssignToNavigation)
-                .Include(sa => sa.StocktakingLocations.OrderBy(sl => sl.Location.IsAvailable))
+                .Include(sa => sa.StocktakingLocations.OrderBy(sl => sl.Location.LocationCode))
                     .ThenInclude(sl => sl.Location)
                 .Where(sa => 
                                 sa.StocktakingSheetId.Equals(stocktakingSheetId) &&
