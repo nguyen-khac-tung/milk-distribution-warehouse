@@ -248,8 +248,10 @@ const SalesOrderTable = ({
                                         </TableCell>
 
                                         {/* Nhà bán lẻ */}
-                                        <TableCell className="text-left px-6 py-4 max-w-[180px] break-words whitespace-normal">
-                                            {order?.retailerName || "-"}
+                                        <TableCell className="text-left text-slate-700 px-6 py-4 max-w-[180px] break-words whitespace-normal">
+                                            <span className="font-bold">
+                                                {order.retailerName || order.retailerId || '-'}
+                                            </span>
                                         </TableCell>
 
                                         {/* Người tạo */}

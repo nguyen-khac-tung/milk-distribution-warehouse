@@ -27,6 +27,7 @@ namespace MilkDistributionWarehouse.Services
         private readonly ISalesOrderRepository _salesOrderRepository;
         private readonly ISalesOrderDetailRepository _salesOrderDetailRepository;
         private readonly IRetailerRepository _retailerRepository;
+        private readonly IGoodsRepository _goodsRepository;
         private readonly IUserRepository _userRepository;
         private readonly INotificationService _notificationService;
         private readonly IUnitOfWork _unitOfWork;
@@ -35,6 +36,7 @@ namespace MilkDistributionWarehouse.Services
         public SalesOrderService(ISalesOrderRepository salesOrderRepository,
                                  ISalesOrderDetailRepository salesOrderDetailRepository,
                                  IRetailerRepository retailerRepository,
+                                 IGoodsRepository goodsRepository,
                                  IUserRepository userRepository,
                                  INotificationService notificationService,
                                  IUnitOfWork unitOfWork,
@@ -43,6 +45,7 @@ namespace MilkDistributionWarehouse.Services
             _salesOrderRepository = salesOrderRepository;
             _salesOrderDetailRepository = salesOrderDetailRepository;
             _retailerRepository = retailerRepository;
+            _goodsRepository = goodsRepository;
             _userRepository = userRepository;
             _notificationService = notificationService;
             _unitOfWork = unitOfWork;
@@ -120,6 +123,10 @@ namespace MilkDistributionWarehouse.Services
             if (salesOrderCreate.SalesOrderItemDetailCreateDtos.IsNullOrEmpty())
                 return ("Danh sách hàng hóa không được bỏ trống.".ToMessageForUser(), null);
 
+            var itemsToCheck = _mapper.Map<List<SalesOrderDetail>>(salesOrderCreate.SalesOrderItemDetailCreateDtos);
+            var message = await ValidateSalesOrderItems(itemsToCheck);
+            if (message.Length > 0) return (message, null);
+
             try
             {
                 await _unitOfWork.BeginTransactionAsync();
@@ -160,6 +167,10 @@ namespace MilkDistributionWarehouse.Services
                 return ("Chỉ được cập nhật khi đơn hàng ở trạng thái Nháp hoặc Bị từ chối.".ToMessageForUser(), null);
 
             if (salesOrderExist.CreatedBy != userId) return ("Current User has no permission to update.", null);
+
+            var itemsToCheck = _mapper.Map<List<SalesOrderDetail>>(salesOrderUpdate.SalesOrderItemDetailUpdateDtos);
+            var message = await ValidateSalesOrderItems(itemsToCheck);
+            if (message.Length > 0) return (message, null);
 
             try
             {
@@ -251,8 +262,13 @@ namespace MilkDistributionWarehouse.Services
                     if (salesOrder.Status != SalesOrderStatus.Draft && salesOrder.Status != SalesOrderStatus.Rejected)
                         return ("Chỉ được nộp đơn khi đơn hàng ở trạng thái Nháp hoặc Bị từ chối.".ToMessageForUser(), null);
                     if (salesOrder.CreatedBy != userId) return ("Current User has no permission to update.", null);
-                    var msg = await CheckPendingSalesOrderValidation(salesOrder);
-                    if (msg.Length > 0) return (msg, null);
+                    
+                    var message = await ValidateSalesOrderItems(salesOrder.SalesOrderDetails.ToList());
+                    if (message.Length>0) return (message, null);
+
+                    message = await CheckPendingSalesOrderValidation(salesOrder);
+                    if (message.Length > 0) return (message, null);
+
                     salesOrder.Status = SalesOrderStatus.PendingApproval;
                 }
 
@@ -301,6 +317,42 @@ namespace MilkDistributionWarehouse.Services
                 await _unitOfWork.RollbackTransactionAsync();
                 return ("Cập nhật trạng thái đơn hàng thất bại.".ToMessageForUser(), null);
             }
+        }
+
+        private async Task<string> ValidateSalesOrderItems(List<SalesOrderDetail> itemsToCheck)
+        {
+            if (itemsToCheck == null || !itemsToCheck.Any()) return "";
+
+            var goodsIds = itemsToCheck.Select(x => x.GoodsId ?? 0).Distinct().ToList();
+
+            var goodsList = await _goodsRepository.GetGoodsForSalesOrder(goodsIds);
+
+            var committedList = await _salesOrderRepository.GetCommittedSaleOrderQuantities(goodsIds);
+
+            foreach (var item in itemsToCheck)
+            {
+                var goods = goodsList.FirstOrDefault(s =>
+                    s.Goods?.GoodsId == item.GoodsId &&
+                    s.GoodsPacking?.GoodsPackingId == item.GoodsPackingId);
+
+                var totalOnHand = goods != null ? goods.TotalPackageQuantity : 0;
+
+                var totalCommitted = committedList
+                    .Where(c => c.GoodsId == item.GoodsId && c.GoodsPackingId == item.GoodsPackingId)
+                    .Sum(c => c.PackageQuantity ?? 0);
+
+                var availableQuantity = totalOnHand - totalCommitted;
+
+                if (item.PackageQuantity > availableQuantity)
+                {
+                    var goodsName = goods?.Goods?.GoodsName ?? $"ID {item.GoodsId}";
+                    return $"Sản phẩm '{goodsName}' không đủ số lượng." +
+                           $"Yêu cầu: {item.PackageQuantity}, Khả dụng: {availableQuantity} " +
+                           $"(Tồn kho: {totalOnHand}, Đang giữ chỗ: {totalCommitted})".ToMessageForUser();
+                }
+            }
+
+            return "";
         }
 
         private async Task<string> CheckPendingSalesOrderValidation(SalesOrder salesOrderUpdate)
@@ -409,7 +461,7 @@ namespace MilkDistributionWarehouse.Services
                         Category = NotificationCategory.Important
                     });
 
-                    if(previousAssignee != null)
+                    if (previousAssignee != null)
                     {
                         notificationsToCreate.Add(new NotificationCreateDto()
                         {

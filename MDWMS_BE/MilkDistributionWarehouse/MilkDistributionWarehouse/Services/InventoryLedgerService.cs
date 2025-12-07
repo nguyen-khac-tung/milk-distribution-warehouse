@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using System.Linq;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
@@ -31,6 +32,14 @@ namespace MilkDistributionWarehouse.Services
         {
             try
             {
+                // If there is already any ledger record for this goods + packing, skip creating an initial zero-entry ledger
+                var existing = await _inventoryLedgerRepository.GetLastInventoryLedgerAsync(dto.GoodsId, dto.GoodPackingId);
+                if (existing != null)
+                {
+                    // nothing to create, return success (no-op)
+                    return ("", dto);
+                }
+
                 var entity = new InventoryLedger
                 {
                     GoodsId = dto.GoodsId,
@@ -66,6 +75,14 @@ namespace MilkDistributionWarehouse.Services
                 {
                     try
                     {
+                        // Skip if ledger already exists for this goods+packing (avoid duplicate initial entries)
+                        var existing = await _inventoryLedgerRepository.GetLastInventoryLedgerAsync(dto.GoodsId, dto.GoodPackingId);
+                        if (existing != null)
+                        {
+                            // skip creation for this dto
+                            continue;
+                        }
+
                         var entity = new InventoryLedger
                         {
                             GoodsId = dto.GoodsId,

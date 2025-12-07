@@ -310,7 +310,10 @@ const StocktakingTable = ({
                                                         </PermissionWrapper>
                                                     );
                                                 })()}
-                                                {isWarehouseManager && (stocktaking.status === STOCKTAKING_STATUS.Draft || stocktaking.status === 1 || stocktaking.status === '1') && (
+                                                {isWarehouseManager && (
+                                                    (stocktaking.status === STOCKTAKING_STATUS.Draft || stocktaking.status === 1 || stocktaking.status === '1') ||
+                                                    (stocktaking.status === STOCKTAKING_STATUS.Assigned || stocktaking.status === 2 || stocktaking.status === '2')
+                                                ) && (
                                                     <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_UPDATE}>
                                                         <button
                                                             className="p-1.5 hover:bg-slate-100 rounded transition-colors"

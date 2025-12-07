@@ -35,7 +35,6 @@ namespace MilkDistributionWarehouse.Services
         private readonly ISalesOrderRepository _salesOrderRepository;
         private readonly IMapper _mapper;
         private readonly IUnitOfWork _unitOfWork;
-        private readonly ICacheService _cacheService;
         private readonly IGoodsPackingService _goodsPackingService;
         private readonly IPalletRepository _palletRepository;
         private readonly IBatchRepository _batchRepository;
@@ -46,7 +45,7 @@ namespace MilkDistributionWarehouse.Services
 
         public GoodsService(IGoodsRepository goodRepository, IMapper mapper, ICategoryRepository categoryRepository, ISalesOrderRepository salesOrderRepository,
             IUserRepository userRepository, IUnitMeasureRepository unitMeasureRepository, IStorageConditionRepository storageConditionRepository,
-            IPalletRepository palletRepository, IUnitOfWork unitOfWork, ICacheService cacheService, IGoodsPackingService goodsPackingService,
+            IPalletRepository palletRepository, IUnitOfWork unitOfWork, IGoodsPackingService goodsPackingService,
             IBatchRepository batchRepository, INotificationService notificationService, IInventoryLedgerService inventoryLedgerService,
             ISupplierRepository supplierRepository)
         {
@@ -57,7 +56,6 @@ namespace MilkDistributionWarehouse.Services
             _storageConditionRepository = storageConditionRepository;
             _salesOrderRepository = salesOrderRepository;
             _unitOfWork = unitOfWork;
-            _cacheService = cacheService;
             _goodsPackingService = goodsPackingService;
             _palletRepository = palletRepository;
             _batchRepository = batchRepository;
@@ -101,13 +99,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Danh sách sản phẩm trống.".ToMessageForUser(), default);
             var goodsIds = goodsList.Select(g => g.GoodsId).ToList();
 
-            var goodsCommittedList = await _salesOrderRepository.GetAllSalesOrders()
-                .Where(s => s.Status == SalesOrderStatus.Approved
-                       || s.Status == SalesOrderStatus.AssignedForPicking
-                       || s.Status == SalesOrderStatus.Picking)
-                .SelectMany(s => s.SalesOrderDetails)
-                .Where(sd => goodsIds.Contains(sd.GoodsId ?? 0))
-                .ToListAsync();
+            var goodsCommittedList = await _salesOrderRepository.GetCommittedSaleOrderQuantities(goodsIds);
 
             var goodsInventoryDtos = _mapper.Map<List<GoodsInventoryDto>>(goodsList);
 
@@ -159,17 +151,16 @@ namespace MilkDistributionWarehouse.Services
 
         public async Task<(string, List<GoodsDropDownAndUnitMeasure>?)> GetGoodsDropDownBySupplierId(int supplierId)
         {
-            var cacheKey = _cacheService.GenerateDropdownCacheKey("Goods", "Supplier", supplierId);
+            var goodsQuery = _goodRepository.GetGoods()
+                .Where(g => 
+                    g.Status == CommonStatus.Active && 
+                    g.SupplierId == supplierId &&
+                    g.GoodsPackings.Any(p => p.Status == CommonStatus.Active)
+                    );
 
-            var result = await _cacheService.GetOrCreatedAsync(cacheKey, async () =>
-            {
-                var goodsQuery = _goodRepository.GetGoods()
-                    .Where(g => g.Status == CommonStatus.Active && g.SupplierId == supplierId);
+            var goodsDropDowns = goodsQuery.ProjectTo<GoodsDropDownAndUnitMeasure>(_mapper.ConfigurationProvider);
 
-                var goodsDropDowns = goodsQuery.ProjectTo<GoodsDropDownAndUnitMeasure>(_mapper.ConfigurationProvider);
-
-                return await goodsDropDowns.ToListAsync();
-            }, 30, 10);
+            var result = await goodsDropDowns.ToListAsync();
 
             if (!result.Any())
                 return ("Danh sách thả xuống hàng hoá trống.".ToMessageForUser(), default);
@@ -206,8 +197,6 @@ namespace MilkDistributionWarehouse.Services
 
             if (createResult == null)
                 return ("Tạo mới sản phẩm thất bại.".ToMessageForUser(), default);
-
-            _cacheService.InvalidateDropdownCache("Goods", "Supplier", createResult.SupplierId);
 
             try
             {
@@ -357,8 +346,6 @@ namespace MilkDistributionWarehouse.Services
 
                 _mapper.Map(update, goodsExist);
 
-                _cacheService.InvalidateDropdownCache("Goods", "Supplier", goodsExist.SupplierId);
-
                 var validation = await AreMasterDataValidForGoodsCreationAsync(_mapper.Map<GoodsCreate>(update));
                 if (!string.IsNullOrEmpty(validation))
                     return (validation.ToMessageForUser(), default);
@@ -367,8 +354,6 @@ namespace MilkDistributionWarehouse.Services
 
                 if (updateResult == null)
                     return ("Cập nhật hàng hoá thất bại.".ToMessageForUser(), default);
-
-                _cacheService.InvalidateDropdownCache("Goods", "Supplier", updateResult.SupplierId);
 
                 var (msg, goodsPackingUpdates) = await _goodsPackingService.UpdateGoodsPacking(update.GoodsId, update.GoodsPackingUpdates);
 
@@ -449,16 +434,12 @@ namespace MilkDistributionWarehouse.Services
                     return (activateError, default);
             }
 
-            _cacheService.InvalidateDropdownCache("Goods", "Supplier", goodsExist.SupplierId);
-
             goodsExist.Status = update.Status;
             goodsExist.UpdateAt = DateTimeUtility.Now();
 
             var updateResult = await _goodRepository.UpdateGoods(goodsExist);
             if (updateResult == null)
                 return ("Cập nhật hàng hoá thất bại.".ToMessageForUser(), default);
-
-            _cacheService.InvalidateDropdownCache("Goods", "Supplier", updateResult.SupplierId);
 
             return ("", update);
         }
@@ -483,8 +464,6 @@ namespace MilkDistributionWarehouse.Services
 
             if (resultDelete == null)
                 return ("Xoá hàng hoá thất bại.".ToMessageForUser(), default);
-
-            _cacheService.InvalidateDropdownCache("Goods", "Supplier", goodsExist.SupplierId);
 
             return ("", _mapper.Map<GoodsDto>(goodsExist));
         }

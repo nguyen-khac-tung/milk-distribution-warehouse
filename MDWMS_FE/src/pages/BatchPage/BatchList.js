@@ -389,13 +389,13 @@ const BatchList = () => {
                                                     )}
                                                 </div>
                                             </TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-5 py-3 text-left w-[14%]">
+                                            <TableHead className="font-semibold text-slate-900 px-5 py-3 text-left w-[17%]">
                                                 <div
                                                     className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
-                                                    onClick={() => handleSort("supplierName")}
+                                                    onClick={() => handleSort("goodsName")}
                                                 >
-                                                    <span>Nhà cung cấp</span>
-                                                    {sortField === "supplierName" ? (
+                                                    <span>Tên hàng hóa</span>
+                                                    {sortField === "goodsName" ? (
                                                         sortAscending ? (
                                                             <ArrowUp className="h-4 w-4 text-orange-500" />
                                                         ) : (
@@ -406,13 +406,13 @@ const BatchList = () => {
                                                     )}
                                                 </div>
                                             </TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-5 py-3 text-left w-[17%]">
+                                            <TableHead className="font-semibold text-slate-900 px-5 py-3 text-left w-[14%]">
                                                 <div
                                                     className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
-                                                    onClick={() => handleSort("goodsName")}
+                                                    onClick={() => handleSort("supplierName")}
                                                 >
-                                                    <span>Tên hàng hóa</span>
-                                                    {sortField === "goodsName" ? (
+                                                    <span>Nhà cung cấp</span>
+                                                    {sortField === "supplierName" ? (
                                                         sortAscending ? (
                                                             <ArrowUp className="h-4 w-4 text-orange-500" />
                                                         ) : (
@@ -477,14 +477,13 @@ const BatchList = () => {
                                                 <TableRow key={batch.batchId} className="hover:bg-slate-50 border-b border-slate-200">
                                                     <TableCell className="px-5 py-2 text-slate-600 font-medium">{(pagination.pageNumber - 1) * pagination.pageSize + index + 1}</TableCell>
                                                     <TableCell className="font-medium text-slate-900 px-5 py-3 text-left">{batch?.batchCode || ''}</TableCell>
-                                                    <TableCell className="font-medium text-slate-900 px-5 py-3 text-left  w-[14%]">{batch?.supplierName || ''}</TableCell>
                                                     <TableCell
                                                         className="text-slate-700 px-5 py-3 text-left w-[17%]"
                                                         title={batch?.goodsName || ""}
                                                     >
                                                         {batch?.goodsName || ""}
                                                     </TableCell>
-
+                                                    <TableCell className="text-slate-900 px-5 py-3 text-left  w-[14%]">{batch?.supplierName || ''}</TableCell>
                                                     <TableCell className="text-slate-700 px-5 py-3 text-left"
                                                         title={batch?.description || ""}>
                                                         {batch?.description

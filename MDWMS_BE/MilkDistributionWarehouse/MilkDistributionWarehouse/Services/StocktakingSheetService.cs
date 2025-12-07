@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using MilkDistributionWarehouse.Constants;
@@ -17,7 +18,7 @@ namespace MilkDistributionWarehouse.Services
     public interface IStocktakingSheetService
     {
         Task<(string, PageResult<StocktakingSheetDto>?)> GetStocktakingSheets(PagedRequest request, string roleName, int? userId);
-        Task<(string, StocktakingSheetDetail?)> GetStocktakingSheetDetail(string stocktakingSheetId);
+        Task<(string, StocktakingSheetDetail?)> GetStocktakingSheetDetail(string stocktakingSheetId, int? userId, List<string>? userRole);
         Task<(string, StocktakingSheeteResponse?)> CreateStocktakingSheet(StocktakingSheetCreate create, int? userId);
         Task<(string, StocktakingSheeteResponse?)> DeleteStocktakingSheet(string stocktakingSheetId, int? userId);
         Task<(string, StocktakingSheeteResponse?)> UpdateStocktakingSheet(StocktakingSheetUpdate update, int? userId);
@@ -133,7 +134,7 @@ namespace MilkDistributionWarehouse.Services
             return ("", items);
         }
 
-        public async Task<(string, StocktakingSheetDetail?)> GetStocktakingSheetDetail(string stocktakingSheetId)
+        public async Task<(string, StocktakingSheetDetail?)> GetStocktakingSheetDetail(string stocktakingSheetId, int? userId, List<string>? userRole)
         {
             if (string.IsNullOrEmpty(stocktakingSheetId))
                 return ("Mã phiếu kiểm kê không hợp lệ.".ToMessageForUser(), default);
@@ -143,6 +144,18 @@ namespace MilkDistributionWarehouse.Services
                 return ("Phiếu kiểm kê không tồn tại.".ToMessageForUser(), default);
 
             var stocktakingSheetMap = _mapper.Map<StocktakingSheetDetail>(stocktakingSheetDetail);
+
+            if (userRole != null &&
+                (userRole.Contains(RoleNames.WarehouseManager) || userRole.Contains(RoleNames.SalesManager)))
+            {
+                stocktakingSheetMap.IsDiableButtonInProgress = false;
+            }
+            else
+            {
+                stocktakingSheetMap.IsDiableButtonInProgress =
+                    stocktakingSheetMap.StocktakingAreas.Any(sa => sa.AssignTo == userId && sa.Status == StockAreaStatus.Assigned)
+                    || !IsBeforeEditDeadline(stocktakingSheetMap.StartTime);
+            }
 
             return ("", stocktakingSheetMap);
         }
@@ -200,9 +213,35 @@ namespace MilkDistributionWarehouse.Services
             if (currentStatus == StocktakingStatus.Assigned && !IsBeforeEditDeadline(stocktakingSheetExist.StartTime))
                 return ($"Không thể cập nhật thông tin. Vui lòng thực hiện chỉnh sửa trong vòng {_hoursBeforeStartTime} tiếng trước thời điểm bắt đầu kiểm kê.".ToMessageForUser(), default);
 
+            if(currentStatus != StocktakingStatus.Draft &&
+               currentStatus != StocktakingStatus.Assigned)
+                return ("Chỉ được phép cập nhật phiếu kiểm kê khi phiếu kiểm kê ở trạng thái Nháp hoặc Đã phân công.".ToMessageForUser(), default);
+
             var isDuplicationStartTime = await _stocktakingSheetRepository.IsDuplicationStartTimeStocktakingSheet(update.StocktakingSheetId, update.StartTime);
             if (isDuplicationStartTime)
                 return ("Thời gian bắt đầu kiểm kê đã tồn tại ở một phiếu kiểm kê khác.".ToMessageForUser(), default);
+
+            Dictionary<int, int?> existingAreaDict = stocktakingSheetExist.StocktakingAreas
+                .Where(sa => sa.AreaId.HasValue)
+                .ToDictionary(sa => sa.AreaId!.Value, sa => sa.AssignTo);
+
+            var updateAreaIds = update.AreaIds.Select(a => a.AreaId).ToHashSet();
+
+            if(existingAreaDict.Keys.Except(updateAreaIds).Any())
+            {
+                var hasStartedAreas = stocktakingSheetExist.StocktakingAreas
+                    .Where(sa => sa.AreaId.HasValue && sa.AssignTo.HasValue && !updateAreaIds.Contains(sa.AreaId.Value))
+                    .Any(sa => sa.Status != StockAreaStatus.Assigned);
+                if (hasStartedAreas)
+                    return ("Chỉ được xoá khu vực kiểm kê khi khu vực kiểm kê ở trạng thái đã phân công.".ToMessageForUser(), default);
+            }
+
+            bool allRemoved = existingAreaDict.Keys.All(areaId => !updateAreaIds.Contains(areaId));
+
+            if (allRemoved)
+            {
+                stocktakingSheetExist.Status = StocktakingStatus.Draft;
+            }
 
             stocktakingSheetExist.StartTime = update.StartTime;
 
@@ -215,8 +254,10 @@ namespace MilkDistributionWarehouse.Services
                 return ("Cập nhật phiếu kiểm kê thất bại.".ToMessageForUser(), default);
 
             var (msg, _) = await _stocktakingAreaService.UpdateStocktakingAreaBulk(update.StocktakingSheetId, update.AreaIds);
-            if(!string.IsNullOrEmpty(msg))
+            if (!string.IsNullOrEmpty(msg))
                 return (msg, default);
+
+            await CheckAndSendNotificationStocktakingArea(stocktakingSheetExist, update.AreaIds);
 
             return ("", new StocktakingSheeteResponse { StocktakingSheetId = stocktakingSheetExist.StocktakingSheetId });
         }
@@ -354,7 +395,7 @@ namespace MilkDistributionWarehouse.Services
             if (string.IsNullOrEmpty(stocktakingSheetId))
                 return ("Mã phiếu kiểm kê không hợp lệ.".ToMessageForUser(), default);
 
-            var stocktakingSheetExist = await _stocktakingSheetRepository.GetStocktakingSheetById(stocktakingSheetId);
+            var stocktakingSheetExist = await _stocktakingSheetRepository.GetStocktakingSheetForDeleteById(stocktakingSheetId);
             if (stocktakingSheetExist == null)
                 return ("Phiếu kiểm kê không tồn tại.".ToMessageForUser(), default);
 
@@ -392,8 +433,25 @@ namespace MilkDistributionWarehouse.Services
             if (!IsWarehouseManager(sheet, userId))
                 return "Bạn không có quyền thực hiện chức năng cập nhật trạng thái trong phiếu kiểm kê.".ToMessageForUser();
 
-            if (sheet.Status != StocktakingStatus.Draft)
-                return "Chỉ đươc chuyển sang trạng thái Đã phân công khi phiếu kiểm kê ở trạng thái Nháp.".ToMessageForUser();
+            if (sheet.Status == StocktakingStatus.Cancelled)
+            {
+                return "Không thể phân công phiếu kiểm kê đã bị huỷ.".ToMessageForUser();
+            }
+
+            if (sheet.Status == StocktakingStatus.Assigned)
+            {
+                var HasAreasUnassigned = sheet.StocktakingAreas.Any(sa => !sa.AssignTo.HasValue);
+                if (!HasAreasUnassigned)
+                {
+                    return "Phiếu kiểm kê đã được phân công đầy đủ.".ToMessageForUser();
+                }
+
+            }
+            else
+            {
+                if (sheet.Status != StocktakingStatus.Draft)
+                    return "Chỉ đươc chuyển sang trạng thái Đã phân công khi phiếu kiểm kê ở trạng thái Nháp.".ToMessageForUser();
+            }
 
             var (msg, _) = await _stocktakingAreaService.UpdateStocktakingAreaBulk(assignStatus.StocktakingSheetId, assignStatus.StocktakingAreaAssign, "Assign");
             if (!string.IsNullOrEmpty(msg))
@@ -684,6 +742,48 @@ namespace MilkDistributionWarehouse.Services
             if (notificationToCreates.Any())
             {
                 await _notificationService.CreateNotificationBulk(notificationToCreates);
+            }
+        }
+
+        private async Task CheckAndSendNotificationStocktakingArea(StocktakingSheet stocktakingSheetExist, List<StocktakingAreaCreateDto> areaIds)
+        {
+            Dictionary<int, int> areaDict = stocktakingSheetExist.StocktakingAreas
+                .Where(sa => sa.AreaId.HasValue && sa.AssignTo.HasValue)
+                .ToDictionary(sa => sa.AreaId!.Value, sa => sa.AssignTo!.Value);
+
+            var updateAreaIds = areaIds.Select(a => a.AreaId).ToHashSet();
+
+            foreach (var kv in areaDict)
+            {
+                var key = kv.Key;
+                int? assignedTo = kv.Value;
+
+                if (!assignedTo.HasValue)
+                    continue;
+
+                if (updateAreaIds.Contains(key))
+                {
+                    var notificationToCreate = new NotificationCreateDto
+                    {
+                        UserId = assignedTo.Value,
+                        Title = "Cập nhật khu vực kiểm kê",
+                        Content = $"Khu vực kiểm kê của bạn trong phiếu kiểm kê '{stocktakingSheetExist.StocktakingSheetId}' đã được cập nhật. Vui lòng kiểm tra lại thông tin khu vực kiểm kê.",
+                        EntityType = NotificationEntityType.StocktakingSheet,
+                        EntityId = stocktakingSheetExist.StocktakingSheetId,
+                    };
+                    await _notificationService.CreateNotification(notificationToCreate);
+                    continue;
+                }
+
+                var notificationToRemoved = new NotificationCreateDto
+                {
+                    UserId = assignedTo.Value,
+                    Title = "Phiếu kiểm kê thay đổi phân công",
+                    Content = $"Bạn đã được gỡ khỏi phiếu kiểm kê '{stocktakingSheetExist.StocktakingSheetId}'. Vui lòng liên hệ quản lý kho nếu cần thêm thông tin.",
+                    EntityType = NotificationEntityType.NoNavigation
+                };
+
+                await _notificationService.CreateNotification(notificationToRemoved);
             }
         }
     }
