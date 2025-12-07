@@ -213,7 +213,7 @@ namespace MilkDistributionWarehouse.Services
             if (currentStatus == StocktakingStatus.Assigned && !IsBeforeEditDeadline(stocktakingSheetExist.StartTime))
                 return ($"Không thể cập nhật thông tin. Vui lòng thực hiện chỉnh sửa trong vòng {_hoursBeforeStartTime} tiếng trước thời điểm bắt đầu kiểm kê.".ToMessageForUser(), default);
 
-            if(currentStatus != StocktakingStatus.Draft &&
+            if (currentStatus != StocktakingStatus.Draft &&
                currentStatus != StocktakingStatus.Assigned)
                 return ("Chỉ được phép cập nhật phiếu kiểm kê khi phiếu kiểm kê ở trạng thái Nháp hoặc Đã phân công.".ToMessageForUser(), default);
 
@@ -227,13 +227,22 @@ namespace MilkDistributionWarehouse.Services
 
             var updateAreaIds = update.AreaIds.Select(a => a.AreaId).ToHashSet();
 
-            if(existingAreaDict.Keys.Except(updateAreaIds).Any())
+            if (existingAreaDict.Keys.Except(updateAreaIds).Any())
             {
                 var hasStartedAreas = stocktakingSheetExist.StocktakingAreas
                     .Where(sa => sa.AreaId.HasValue && sa.AssignTo.HasValue && !updateAreaIds.Contains(sa.AreaId.Value))
                     .Any(sa => sa.Status != StockAreaStatus.Assigned);
                 if (hasStartedAreas)
                     return ("Chỉ được xoá khu vực kiểm kê khi khu vực kiểm kê ở trạng thái đã phân công.".ToMessageForUser(), default);
+            }
+
+            bool allStocktakingAreaPending = stocktakingSheetExist.StocktakingAreas
+                .Where(sa => sa.AreaId.HasValue && updateAreaIds.Contains(sa.AreaId.Value))
+                .All(sa => sa.Status == StockAreaStatus.Pending);
+
+            if (allStocktakingAreaPending)
+            {
+                stocktakingSheetExist.Status = StocktakingStatus.InProgress;
             }
 
             bool allRemoved = existingAreaDict.Keys.All(areaId => !updateAreaIds.Contains(areaId));
