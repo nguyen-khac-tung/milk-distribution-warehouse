@@ -1,5 +1,5 @@
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Button } from "../../../components/ui/button"
 import { Input } from "../../../components/ui/input"
 import { Label } from "../../../components/ui/label"
@@ -18,6 +18,20 @@ export default function CreateRetailer({ isOpen, onClose, onSuccess }) {
   })
   const [loading, setLoading] = useState(false)
   const [validationErrors, setValidationErrors] = useState({})
+
+  // Reset form when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        retailerName: "",
+        taxCode: "",
+        email: "",
+        address: "",
+        phone: "",
+      })
+      setValidationErrors({})
+    }
+  }, [isOpen])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -63,6 +77,15 @@ export default function CreateRetailer({ isOpen, onClose, onSuccess }) {
       setLoading(true)
       const response = await createRetailer(formData)
       window.showToast("Thêm nhà bán lẻ thành công!", "success")
+      // Reset form data after successful creation
+      setFormData({
+        retailerName: "",
+        taxCode: "",
+        email: "",
+        address: "",
+        phone: "",
+      })
+      setValidationErrors({})
       onSuccess && onSuccess()
       onClose && onClose()
     } catch (error) {

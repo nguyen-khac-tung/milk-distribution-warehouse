@@ -40,6 +40,16 @@ export default function CreateLocationModal({ isOpen, onClose, onSuccess }) {
     }
   };
 
+  const resetForm = () => {
+    setFormData({
+      areaId: "",
+      rack: "",
+      row: "",
+      column: "",
+      isAvailable: true,
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -62,6 +72,7 @@ export default function CreateLocationModal({ isOpen, onClose, onSuccess }) {
       const response = await createLocation(payload);
       console.log("Location created:", response);
       window.showToast("Thêm vị trí thành công!", "success");
+      resetForm()
       onSuccess && onSuccess();
       onClose && onClose();
     } catch (error) {

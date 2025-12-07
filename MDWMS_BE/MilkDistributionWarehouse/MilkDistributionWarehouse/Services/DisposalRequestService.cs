@@ -288,10 +288,14 @@ namespace MilkDistributionWarehouse.Services
                     if (disposalRequest.Status != DisposalRequestStatus.Draft && disposalRequest.Status != DisposalRequestStatus.Rejected)
                         return ("Chỉ được nộp khi yêu cầu ở trạng thái Nháp hoặc Bị từ chối.".ToMessageForUser(), null);
                     if (disposalRequest.CreatedBy != userId) return ("Bạn không có quyền thực hiện thao tác này.".ToMessageForUser(), null);
-                    
+
+                    if (disposalRequest.EstimatedTimeDeparture < DateOnly.FromDateTime(DateTimeUtility.Now()))
+                        return ("Ngày xuất hủy không thể trong quá khứ.".ToMessageForUser(), null);
+
                     var message = await ValidateDisposalRequestItem(disposalRequest.DisposalRequestDetails);
                     if (message.Length > 0) return (message, null);
 
+                    disposalRequest.ApprovalBy = null;
                     disposalRequest.Status = DisposalRequestStatus.PendingApproval;
                 }
 

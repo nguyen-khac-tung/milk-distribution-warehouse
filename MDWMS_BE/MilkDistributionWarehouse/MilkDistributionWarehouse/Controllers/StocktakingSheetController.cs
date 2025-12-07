@@ -72,6 +72,16 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<StocktakingSheeteResponse?>.ToResultOk(stocktaking);
         }
 
+        [HttpPost("Create_1")]
+        [Authorize(Roles = RoleNames.WarehouseManager)]
+        public async Task<IActionResult> CreateStocktakingSheet_1([FromBody] StocktakingSheetCreateDto create)
+        {
+            var (msg, stocktaking) = await _stocktakingSheetService.CreateStoctakingSheet_1(create, User.GetUserId());
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<StocktakingSheeteResponse?>.ToResultOk(stocktaking);
+        }
+
         [HttpPut("Update")]
         [Authorize(Roles = RoleNames.WarehouseManager)]
         public async Task<IActionResult> UpdateStocktakingSheet([FromBody] StocktakingSheetUpdate update)

@@ -568,6 +568,9 @@ namespace MilkDistributionWarehouse.Mappers
                 .ForMember(dest => dest.StocktakingSheetId, opt => opt.MapFrom(_ => PrimaryKeyUtility.GenerateStocktakingKey(null)))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => StocktakingStatus.Draft))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTimeUtility.Now()));
+            CreateMap<StocktakingSheetCreateDto, StocktakingSheet>()
+                .ForMember(dest => dest.StocktakingSheetId, opt => opt.MapFrom(_ => PrimaryKeyUtility.GenerateStocktakingKey(null)))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTimeUtility.Now())); ;
             CreateMap<StocktakingSheet, StocktakingSheetDetail>()
                 .IncludeBase<StocktakingSheet, StocktakingSheetDto>()
                 .ForMember(dest => dest.StocktakingAreas, opt => opt.MapFrom(src => src.StocktakingAreas));
@@ -575,6 +578,7 @@ namespace MilkDistributionWarehouse.Mappers
             //Map StocktakingArea
             CreateMap<StocktakingAreaCreate, StocktakingArea>()
                 .ForMember(dest => dest.StocktakingAreaId, opt => opt.MapFrom(_ => Guid.NewGuid()))
+                .ForMember(dest => dest.AssignTo, opt => opt.MapFrom(src => src.AssignTo))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => StockAreaStatus.Assigned))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTimeUtility.Now()));
             CreateMap<StocktakingArea, StocktakingAreaDetail>()

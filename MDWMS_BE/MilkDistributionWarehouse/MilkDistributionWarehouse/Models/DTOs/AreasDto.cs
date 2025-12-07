@@ -53,6 +53,12 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public int StorageConditionId { get; set; }
         }
 
+        public class AreaRequestStocktaking
+        {
+            public List<int> AreaIds { get; set; }
+            public string? StocktakingSheetId { get; set; } = null;
+        }
+
         public class AreaNameDto
         {
             public string AreaName { get; set; }

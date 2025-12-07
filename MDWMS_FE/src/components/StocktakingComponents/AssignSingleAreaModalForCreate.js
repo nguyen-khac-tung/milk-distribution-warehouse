@@ -14,7 +14,8 @@ const AssignSingleAreaModalForCreate = ({
     onSuccess,
     stocktakingSheetId,
     formData = null, // Form data để tạo phiếu kiểm kê (chỉ dùng khi chưa có stocktakingSheetId)
-    areaId // areaId (int) của khu vực cần phân công
+    areaId, // areaId (int) của khu vực cần phân công
+    isFromUpdateAndAssign = false // Modal được gọi từ handleUpdateAndAssign
 }) => {
     const [area, setArea] = useState(null);
     const [employees, setEmployees] = useState([]);
@@ -350,7 +351,7 @@ const AssignSingleAreaModalForCreate = ({
                             ) : (
                                 <>
                                     <CheckCircle2 className="mr-2 h-4 w-4" />
-                                    Xác nhận phân công
+                                    {isFromUpdateAndAssign ? 'Xác nhận' : 'Xác nhận phân công'}
                                 </>
                             )}
                         </Button>

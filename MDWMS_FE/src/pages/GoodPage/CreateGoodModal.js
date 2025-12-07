@@ -35,6 +35,23 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
   const [validationErrors, setValidationErrors] = useState({})
   const [packingErrors, setPackingErrors] = useState({})
 
+  // Reset form when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        goodsCode: "",
+        goodsName: "",
+        categoryId: "",
+        supplierId: "",
+        storageConditionId: "",
+        unitMeasureId: "",
+      })
+      setGoodsPackingCreates([{ unitPerPackage: "" }])
+      setValidationErrors({})
+      setPackingErrors({})
+    }
+  }, [isOpen])
+
   // Load data for dropdowns
   useEffect(() => {
     if (isOpen) {
@@ -169,6 +186,18 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
 
       const response = await createGood(submitData)
       window.showToast("Thêm hàng hóa thành công!", "success")
+      // Reset form data after successful creation
+      setFormData({
+        goodsCode: "",
+        goodsName: "",
+        categoryId: "",
+        supplierId: "",
+        storageConditionId: "",
+        unitMeasureId: "",
+      })
+      setGoodsPackingCreates([{ unitPerPackage: "" }])
+      setValidationErrors({})
+      setPackingErrors({})
       onSuccess && onSuccess()
       onClose && onClose()
     } catch (error) {

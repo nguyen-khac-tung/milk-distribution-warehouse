@@ -10,7 +10,7 @@ import EmptyState from "../../components/Common/EmptyState"
 import { StatusToggle } from "../../components/Common/SwitchToggle/StatusToggle"
 import { getUserList, updateUserStatus, deleteUser } from "../../services/AccountService"
 import { getRoleList } from "../../services/RoleService"
-import { extractErrorMessage } from "../../utils/Validation"
+import { extractErrorMessage, cleanErrorMessage } from "../../utils/Validation"
 import CreateAccountModal from "./CreateAccountModal"
 import UpdateAccountModal from "./UpdateAccountModal"
 import { AccountDetail } from "./ViewAccountModal"
@@ -199,17 +199,11 @@ export default function AdminPage() {
         })
       } else {
         // Hiển thị thông báo lỗi từ backend
-        let errorMessage = response?.message || response?.data?.message || "Có lỗi xảy ra khi cập nhật trạng thái người dùng"
-
-        // Kiểm tra nếu lỗi liên quan đến việc không thể vô hiệu hóa người dùng quan trọng
-        if (errorMessage.includes("Failed to update user status") ||
-          errorMessage.includes("không thể") ||
-          errorMessage.includes("quản lý") ||
-          errorMessage.includes("admin") ||
-          errorMessage.includes("business owner")) {
-          errorMessage = "Không thể cập nhật trạng thái người dùng khi đã có đủ các vai trò quan trọng (quản lý kho, quản lý kinh doanh, admin, business owner)"
-        }
-
+        // Response có cấu trúc: { status, message, data, success }
+        // Lấy message trực tiếp từ response và clean nó
+        const errorMessage = response?.message 
+          ? cleanErrorMessage(response.message)
+          : extractErrorMessage({ response: { data: response } }, "Có lỗi xảy ra khi cập nhật trạng thái người dùng")
         window.showToast(errorMessage, "error")
         // console.error(`Failed to update user ${name} status:`, response?.message)
       }

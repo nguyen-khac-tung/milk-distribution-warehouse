@@ -17,9 +17,13 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> IsDuplicateAreaCode(string areaCode);
         Task<bool> IsDuplicationByIdAndCode(int areaId, string areaCode);
         Task<bool> HasDependentLocationsOrStocktakingsAsync(int areaId);
+        Task<bool> HavePalletInSODPPicking(int areaId);
+        Task<bool> HasPalletNotArranged();
         Task<bool> VerifyStorageConditionUsage(int storageConditionId);
         Task<List<Area>> GetActiveAreasAsync();
         Task<List<Area>> GetActiveAreasByStocktakingId();
+        Task<List<Area>> GetActiveAreasByStocktakingId(string stocktakingSheetId);
+        Task<List<Area>> GetAreasByIds(List<int> areaIds, string? stocktakingSheetId);
     }
 
     public class AreaRepository : IAreaRepository
@@ -147,5 +151,61 @@ namespace MilkDistributionWarehouse.Repositories
                 .ToListAsync();
         }
 
+        public async Task<List<Area>> GetActiveAreasByStocktakingId(string stocktakingSheetId)
+        {
+            return await _context.Areas
+                .Where(a => a.Status == CommonStatus.Active)
+                .Include(a => a.StorageCondition)
+                .Include(a => a.Locations)
+                .Include(a => a.StocktakingAreas)
+                .Where(a => 
+                        a.Status == CommonStatus.Active && 
+                        a.Locations.Any() &&
+                        a.StocktakingAreas.Any(sta => sta.StocktakingSheetId == stocktakingSheetId)
+                        )
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        public async Task<List<Area>> GetAreasByIds(List<int> areaIds, string? stocktakingSheetId)
+        {
+            var query = _context.Areas
+                .Where(a => areaIds.Contains(a.AreaId) &&
+                        a.Status == CommonStatus.Active && 
+                        a.Locations.Any());
+
+            if (!string.IsNullOrEmpty(stocktakingSheetId))
+            {
+                query = query.Where(a => a.StocktakingAreas.Any(sta => sta.StocktakingSheetId == stocktakingSheetId));
+            }
+
+            return await query
+                .Include(a => a.StorageCondition)
+                .Include(a => a.Locations)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        public async Task<bool> HavePalletInSODPPicking(int areaId)
+        {
+            var hasPickingAllocationInArea = await _context.PickAllocations
+                .Join(_context.Pallets,
+                      pa => pa.PalletId,
+                      pal => pal.PalletId,
+                      (pa, pal) => new { Allocation = pa, Pallet = pal })
+                .Where(x => x.Pallet.Location != null && x.Pallet.Location.AreaId == areaId && x.Pallet.Status == CommonStatus.Active)
+                .AnyAsync(x =>
+                    (x.Allocation.GoodsIssueNoteDetail != null && x.Allocation.GoodsIssueNoteDetail.GoodsIssueNote != null && x.Allocation.GoodsIssueNoteDetail.GoodsIssueNote.SalesOder != null && x.Allocation.GoodsIssueNoteDetail.GoodsIssueNote.SalesOder.Status == SalesOrderStatus.Picking)
+                    ||
+                    (x.Allocation.DisposalNoteDetail != null && x.Allocation.DisposalNoteDetail.DisposalNote != null && x.Allocation.DisposalNoteDetail.DisposalNote.DisposalRequest != null && x.Allocation.DisposalNoteDetail.DisposalNote.DisposalRequest.Status == DisposalRequestStatus.Picking)
+                );
+
+            return hasPickingAllocationInArea;
+        }
+
+        public async Task<bool> HasPalletNotArranged()
+        {
+            return await _context.Pallets.AnyAsync(p => p.Status == CommonStatus.Inactive);
+        }
     }
 }

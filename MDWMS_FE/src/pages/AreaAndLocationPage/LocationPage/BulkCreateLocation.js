@@ -161,6 +161,18 @@ export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess, fo
 
             if (failedItems.length === 0) {
                 window.showToast(`Tạo thành công ${locations.length} vị trí mới!`, "success");
+
+                // RESET toàn bộ state tại đây
+                setFormData({
+                    areaId: "",
+                    rack: "",
+                    rows: [{ rowName: "", columns: [""] }],
+                });
+                setErrors({});
+                setHasBackendErrors(false);
+                setSuccessfulLocations(new Set());
+                setFailedLocations(new Map());
+
                 onSuccess?.();
                 onClose?.();
             } else {

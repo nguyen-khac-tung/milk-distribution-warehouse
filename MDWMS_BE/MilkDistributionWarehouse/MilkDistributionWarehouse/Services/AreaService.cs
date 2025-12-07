@@ -7,6 +7,7 @@ using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
 using MilkDistributionWarehouse.Utilities;
 using System.Threading.Tasks;
+using static MilkDistributionWarehouse.Models.DTOs.AreaDto;
 
 namespace MilkDistributionWarehouse.Services
 {
@@ -22,6 +23,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, List<AreaDto.AreaActiveDto>)> GetAreaDropdown();
         Task<(string, List<AreaDto.StocktakingAreaDto>?)> GetStocktakingArea(string? stocktakingSheetId);
         Task<(string, List<AreaDto.AreaActiveDto>)> GetAreasWithLocationsForDropdown();
+        Task<(string, List<AreaDto.StocktakingAreaDto>?)> GetAreasByAreaIds(AreaRequestStocktaking areaRequestStocktaking);
     }
 
     public class AreaService : IAreaService
@@ -117,6 +119,12 @@ namespace MilkDistributionWarehouse.Services
             if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
                 return ("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
+            if (await _areaRepository.HavePalletInSODPPicking(areaId))
+                return ("Không thể thực hiện thao tác này khi đang có phiếu kiểm nhập, kiểm xuất, xuất hủy thực hiện.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
+            if (await _areaRepository.HasPalletNotArranged())
+                return ("Không thể cập nhật thông tin khu vực khi có pallet chưa được sắp xếp.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
             if (await _areaRepository.IsDuplicationByIdAndCode(areaId, dto.AreaCode))
                 return ("Mã khu vực đã tồn tại.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
@@ -164,6 +172,12 @@ namespace MilkDistributionWarehouse.Services
         {
             if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
                 return ("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
+            if (await _areaRepository.HavePalletInSODPPicking(areaId))
+                return ("Không thể thực hiện thao tác này khi đang có phiếu kiểm nhập, kiểm xuất, xuất hủy thực hiện.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
+            if (await _areaRepository.HasPalletNotArranged())
+                return ("Không thể cập nhật thông tin khu vực khi có pallet chưa được sắp xếp.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
             var area = await _areaRepository.GetAreaById(areaId);
             if (area == null)
@@ -217,7 +231,7 @@ namespace MilkDistributionWarehouse.Services
 
         public async Task<(string, List<AreaDto.StocktakingAreaDto>?)> GetStocktakingArea(string? stocktakingSheetId)
         {
-            var areas = await _areaRepository.GetActiveAreasByStocktakingId();
+            var areas = await _areaRepository.GetActiveAreasByStocktakingId(stocktakingSheetId);
 
             var results = new List<AreaDto.StocktakingAreaDto>();
 
@@ -259,5 +273,42 @@ namespace MilkDistributionWarehouse.Services
             return ("", results);
         }
 
+        public async Task<(string, List<AreaDto.StocktakingAreaDto>?)> GetAreasByAreaIds(AreaRequestStocktaking areaRequestStocktaking)
+        {
+            var areas = await _areaRepository.GetAreasByIds(areaRequestStocktaking.AreaIds, areaRequestStocktaking.StocktakingSheetId);
+
+            if (areas == null || !areas.Any())
+                return ("Không có khu vực nào đang hoạt động.".ToMessageForUser(), default);
+
+            var results = new List<AreaDto.StocktakingAreaDto>();
+
+            foreach (var a in areas)
+            {
+                var assignTo = !string.IsNullOrEmpty(areaRequestStocktaking.StocktakingSheetId) 
+                    ? await _userRepository.GetAssignToStockArea(areaRequestStocktaking.StocktakingSheetId, a.AreaId)
+                    : null;
+
+                results.Add(new AreaDto.StocktakingAreaDto
+                {
+                    AreaId = a.AreaId,
+                    AreaName = a.AreaName,
+                    AvailableLocationCount = a.Locations.Count(l => 
+                        l.IsAvailable == true && 
+                        l.Status == CommonStatus.Active),
+                    UnAvailableLocationCount = a.Locations.Count(l => 
+                        l.IsAvailable == false && 
+                        l.Status == CommonStatus.Active),
+                    TemperatureMax = a.StorageCondition?.TemperatureMax,
+                    TemperatureMin = a.StorageCondition?.TemperatureMin,
+                    HumidityMax = a.StorageCondition?.HumidityMax,
+                    HumidityMin = a.StorageCondition?.HumidityMin,
+                    LightLevel = a.StorageCondition?.LightLevel,
+                    AssignTo = assignTo?.UserId,
+                    AssignName = assignTo?.FullName
+                });
+            }
+
+            return ("", results);
+        }
     }
 }

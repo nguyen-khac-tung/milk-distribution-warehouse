@@ -1,5 +1,5 @@
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Button } from "../../../components/ui/button"
 import { Input } from "../../../components/ui/input"
 import { Label } from "../../../components/ui/label"
@@ -20,6 +20,21 @@ export default function CreateStorageCondition({ isOpen, onClose, onSuccess }) {
   })
   const [loading, setLoading] = useState(false)
   const [validationErrors, setValidationErrors] = useState({})
+
+  // Reset form when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        temperatureMin: 0,
+        temperatureMax: 0,
+        humidityMin: 0,
+        humidityMax: 0,
+        lightLevel: "",
+        status: 1,
+      })
+      setValidationErrors({})
+    }
+  }, [isOpen])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -60,6 +75,16 @@ export default function CreateStorageCondition({ isOpen, onClose, onSuccess }) {
       const response = await createStorageCondition(formData)
       console.log("Storage condition created:", response)
       window.showToast("Thêm điều kiện bảo quản thành công!", "success")
+      // Reset form data after successful creation
+      setFormData({
+        temperatureMin: 0,
+        temperatureMax: 0,
+        humidityMin: 0,
+        humidityMax: 0,
+        lightLevel: "",
+        status: 1,
+      })
+      setValidationErrors({})
       onSuccess && onSuccess()
       onClose && onClose()
     } catch (error) {
