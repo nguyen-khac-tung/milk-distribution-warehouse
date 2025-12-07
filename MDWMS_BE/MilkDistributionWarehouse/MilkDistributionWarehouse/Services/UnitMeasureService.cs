@@ -85,6 +85,13 @@ namespace MilkDistributionWarehouse.Services
             if (await _unitMeasureRepository.IsDuplicationUnitMeasureName(unitMeasureUpdate.UnitMeasureId, unitMeasureUpdate.Name))
                 return ("Tên đơn vị đã tồn tại trong hệ thống".ToMessageForUser(), new UnitMeasureDto()); 
 
+            var checkUnitMeasureInUse = await _unitMeasureRepository.HasUnitMeasureInUse(unitMeasureUpdate.UnitMeasureId);
+            if (checkUnitMeasureInUse)
+            {
+                if (unitMeasureExist.Name != unitMeasureUpdate.Name)
+                    return ("Đơn vị đang được sử dụng, không thể thay đổi tên đơn vị.".ToMessageForUser(), new UnitMeasureDto());
+            }
+
             _mapper.Map(unitMeasureUpdate, unitMeasureExist);
 
             var updateResult = await _unitMeasureRepository.UpdateUnitMeasure(unitMeasureExist);

@@ -16,6 +16,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> IsDuplicationUnitMeasureName(int? unitMeasureId, string name);
         Task<bool> IsUnitMeasureContainGooddAllInActice(int unitMeasureId);
         Task<bool> IsActiveUnitMeasure(int unitMeasureId);
+        Task<bool> HasUnitMeasureInUse(int unitMeasureId);
     }
     public class UnitMeasureRepository : IUnitMeasureRepository
     {
@@ -88,6 +89,59 @@ namespace MilkDistributionWarehouse.Repositories
             return await _warehouseContext.UnitMeasures
                 .AnyAsync(um => um.UnitMeasureId == unitMeasureId &&
                         um.Status == CommonStatus.Active);
+        }
+
+        public async Task<bool> HasUnitMeasureInUse(int unitMeasureId)
+        {
+            bool hasInPurchaseOrder = await _warehouseContext.PurchaseOderDetails
+                .Join(_warehouseContext.Goods,
+                    pod => pod.GoodsId,
+                    g => g.GoodsId,
+                    (pod, g) => new { pod, g })
+                .Join(_warehouseContext.PurchaseOrders,
+                    x => x.pod.PurchaseOderId,
+                    po => po.PurchaseOderId,
+                    (x, po) => new { x.g, po })
+                .AnyAsync(x => x.g.UnitMeasureId == unitMeasureId 
+                    && x.g.Status != CommonStatus.Deleted
+                    && x.po.Status != PurchaseOrderStatus.Draft 
+                    && x.po.Status != PurchaseOrderStatus.Rejected);
+
+            if (hasInPurchaseOrder) return true;
+
+            bool hasInSalesOrder = await _warehouseContext.SalesOrderDetails
+                .Where(sod => sod.GoodsId.HasValue)
+                .Join(_warehouseContext.Goods,
+                    sod => sod.GoodsId.Value,
+                    g => g.GoodsId,
+                    (sod, g) => new { sod, g })
+                .Join(_warehouseContext.SalesOrders,
+                    x => x.sod.SalesOrderId,
+                    so => so.SalesOrderId,
+                    (x, so) => new { x.g, so })
+                .AnyAsync(x => x.g.UnitMeasureId == unitMeasureId 
+                    && x.g.Status != CommonStatus.Deleted
+                    && x.so.Status != SalesOrderStatus.Draft 
+                    && x.so.Status != SalesOrderStatus.Rejected);
+
+            if (hasInSalesOrder) return true;
+
+            bool hasInDisposalRequest = await _warehouseContext.DisposalRequestDetails
+                .Where(drd => drd.GoodsId.HasValue)
+                .Join(_warehouseContext.Goods,
+                    drd => drd.GoodsId.Value,
+                    g => g.GoodsId,
+                    (drd, g) => new { drd, g })
+                .Join(_warehouseContext.DisposalRequests,
+                    x => x.drd.DisposalRequestId,
+                    dr => dr.DisposalRequestId,
+                    (x, dr) => new { x.g, dr })
+                .AnyAsync(x => x.g.UnitMeasureId == unitMeasureId 
+                    && x.g.Status != CommonStatus.Deleted
+                    && x.dr.Status != DisposalRequestStatus.Draft 
+                    && x.dr.Status != DisposalRequestStatus.Rejected);
+
+            return hasInDisposalRequest;
         }
     }
 }

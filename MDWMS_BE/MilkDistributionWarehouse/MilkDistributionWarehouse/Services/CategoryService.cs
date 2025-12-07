@@ -82,9 +82,15 @@ namespace MilkDistributionWarehouse.Services
             if (categoryExist == null)
                 return ("Category is not exist", new CategoryDto());
 
-
             if (await _categoryRepository.IsDuplicationByName(categoryUpdate.CategoryId, categoryUpdate.CategoryName))
                 return ("Tên danh mục đã tồn tại trong hệ thống".ToMessageForUser(), new CategoryDto());
+
+            var checkCategoryInUse = await _categoryRepository.HasCategoryInUse(categoryUpdate.CategoryId);
+            if(checkCategoryInUse)
+            {
+                if (!categoryExist.CategoryName.Equals(categoryUpdate.CategoryName))
+                    return ("Danh mục đang được sử dụng, không thể thay đổi tên danh mục.", new CategoryDto());
+            }
 
             _mapper.Map(categoryUpdate, categoryExist);
 

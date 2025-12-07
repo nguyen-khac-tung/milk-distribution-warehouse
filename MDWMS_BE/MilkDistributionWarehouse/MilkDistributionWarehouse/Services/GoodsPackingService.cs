@@ -36,6 +36,8 @@ namespace MilkDistributionWarehouse.Services
         {
             try
             {
+                if (IsCheckDuplicationGoodsPackingUpdate(updates))
+                    throw new Exception("Cập nhật số lượng đóng gói hàng hoá thất bại. Có trùng lặp số lượng đơn vị đóng gói.");
 
                 var goodsPackingsExist = await _goodPackingRepository.GetGoodsPackingsByGoodsId(goodsId);
 
@@ -168,6 +170,16 @@ namespace MilkDistributionWarehouse.Services
             if (isBackOrder) return "Có phiếu bổ sung đang liên kết.";
 
             return "";
+        }
+
+        private bool IsCheckDuplicationGoodsPackingUpdate(List<GoodsPackingUpdate> goodsPackingUpdate)
+        {
+            if (goodsPackingUpdate == null || goodsPackingUpdate.Count == 0)
+                return false;
+
+            return goodsPackingUpdate
+                .GroupBy(x => x.UnitPerPackage)
+                .Any(g => g.Count() > 1);
         }
     }
 }
