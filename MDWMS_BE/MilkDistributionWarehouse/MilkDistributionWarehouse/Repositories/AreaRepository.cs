@@ -17,6 +17,8 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> IsDuplicateAreaCode(string areaCode);
         Task<bool> IsDuplicationByIdAndCode(int areaId, string areaCode);
         Task<bool> HasDependentLocationsOrStocktakingsAsync(int areaId);
+        Task<bool> HavePalletInSODPPicking(int areaId);
+        Task<bool> HasPalletNotArranged();
         Task<bool> VerifyStorageConditionUsage(int storageConditionId);
         Task<List<Area>> GetActiveAreasAsync();
         Task<List<Area>> GetActiveAreasByStocktakingId();
@@ -147,5 +149,26 @@ namespace MilkDistributionWarehouse.Repositories
                 .ToListAsync();
         }
 
+        public async Task<bool> HavePalletInSODPPicking(int areaId)
+        {
+            var hasPickingAllocationInArea = await _context.PickAllocations
+                .Join(_context.Pallets,
+                      pa => pa.PalletId,
+                      pal => pal.PalletId,
+                      (pa, pal) => new { Allocation = pa, Pallet = pal })
+                .Where(x => x.Pallet.Location != null && x.Pallet.Location.AreaId == areaId && x.Pallet.Status == CommonStatus.Active)
+                .AnyAsync(x =>
+                    (x.Allocation.GoodsIssueNoteDetail != null && x.Allocation.GoodsIssueNoteDetail.GoodsIssueNote != null && x.Allocation.GoodsIssueNoteDetail.GoodsIssueNote.SalesOder != null && x.Allocation.GoodsIssueNoteDetail.GoodsIssueNote.SalesOder.Status == SalesOrderStatus.Picking)
+                    ||
+                    (x.Allocation.DisposalNoteDetail != null && x.Allocation.DisposalNoteDetail.DisposalNote != null && x.Allocation.DisposalNoteDetail.DisposalNote.DisposalRequest != null && x.Allocation.DisposalNoteDetail.DisposalNote.DisposalRequest.Status == DisposalRequestStatus.Picking)
+                );
+
+            return hasPickingAllocationInArea;
+        }
+
+        public async Task<bool> HasPalletNotArranged()
+        {
+            return await _context.Pallets.AnyAsync(p => p.Status == CommonStatus.Inactive);
+        }
     }
 }
