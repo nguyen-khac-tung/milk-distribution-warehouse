@@ -114,7 +114,7 @@ namespace MilkDistributionWarehouse.Services
             var resultDtoList = new List<ExpiredGoodsDisposalDto>();
             foreach (var item in expiredGoodsList)
             {
-                int onHandQuantity = item.TotalExpiredPackageQuantity;
+                int onHandQuantity = item.TotalPackageQuantity;
 
                 int committedQuantity = committedDetails
                     .Where(d => d.GoodsId == item.Goods.GoodsId && d.GoodsPackingId == item.GoodsPacking.GoodsPackingId)
@@ -350,9 +350,9 @@ namespace MilkDistributionWarehouse.Services
             foreach (var item in itemsToCheck)
             {
                 var expiredItem = expiredGoodsList.FirstOrDefault(x =>
-                    x.Goods.GoodsId == item.GoodsId &&
-                    x.GoodsPacking.GoodsPackingId == item.GoodsPackingId);
-                var totalExpiredOnHand = expiredItem != null ? (int)expiredItem.TotalExpiredPackageQuantity : 0;
+                    x.Goods?.GoodsId == item.GoodsId &&
+                    x.GoodsPacking?.GoodsPackingId == item.GoodsPackingId);
+                var totalExpiredOnHand = expiredItem != null ? (int)expiredItem.TotalPackageQuantity : 0;
 
                 var totalCommitted = committedDetails?
                     .Where(c => c.GoodsId == item.GoodsId && c.GoodsPackingId == item.GoodsPackingId)

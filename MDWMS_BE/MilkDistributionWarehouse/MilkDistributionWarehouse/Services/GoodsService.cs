@@ -99,13 +99,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Danh sách sản phẩm trống.".ToMessageForUser(), default);
             var goodsIds = goodsList.Select(g => g.GoodsId).ToList();
 
-            var goodsCommittedList = await _salesOrderRepository.GetAllSalesOrders()
-                .Where(s => s.Status == SalesOrderStatus.Approved
-                       || s.Status == SalesOrderStatus.AssignedForPicking
-                       || s.Status == SalesOrderStatus.Picking)
-                .SelectMany(s => s.SalesOrderDetails)
-                .Where(sd => goodsIds.Contains(sd.GoodsId ?? 0))
-                .ToListAsync();
+            var goodsCommittedList = await _salesOrderRepository.GetCommittedSaleOrderQuantities(goodsIds);
 
             var goodsInventoryDtos = _mapper.Map<List<GoodsInventoryDto>>(goodsList);
 

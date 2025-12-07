@@ -820,7 +820,7 @@ const CreateDisposal = () => {
                                                                     {globalIndex}
                                                                 </TableCell>
                                                                 {/* 5. Mã Hàng*/}
-                                                                <TableCell className="text-slate-700 align-top pb-6 w-[12%]">
+                                                                <TableCell className="text-slate-700 font-medium align-top pb-6 w-[12%]">
                                                                     {item.goods?.goodsCode || '-'}
                                                                 </TableCell>
                                                                 {/* 4. Tên hàng hóa*/}
