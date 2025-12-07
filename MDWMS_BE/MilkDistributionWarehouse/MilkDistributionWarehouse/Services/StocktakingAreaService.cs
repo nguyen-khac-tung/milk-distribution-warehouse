@@ -18,7 +18,6 @@ namespace MilkDistributionWarehouse.Services
     {
         Task<(string, List<StocktakingAreaDetail>?)> GetStocktakingAreaByStocktakingSheetIdSync(string stoctakingSheetId, int? userId);
         Task<(string, List<StocktakingAreaDetailDto>?)> GetStocktakingAreaByStocktakingSheetId(string stoctakingSheetId, Guid? stocktakingAreaId, int? userId);
-        Task<(string, List<StocktakingAreaDetail>?)> GetStocktakingAreaForAssignToByStocktakingSheetIdSync(string stoctakingSheetId);
         Task<(string, StocktakingSheeteResponse?)> CreateStocktakingAreaBulk(string stocktakingSheetId, List<StocktakingAreaCreateDto> creates);
         Task<(string, StocktakingSheeteResponse?)> UpdateStocktakingAreaBulk(string stocktakingSheetId, List<StocktakingAreaUpdate> updates, string updateType);
         Task<(string, StocktakingAreaReAssignStatus?)> UpdateStocktakingReAssignTo(StocktakingAreaReAssignStatus update);
@@ -91,17 +90,6 @@ namespace MilkDistributionWarehouse.Services
             else
                 return ("Mã nhân viên không hợp lệ.", default);
 
-            if (stocktakingArea == null)
-                return ("Phiếu kiểm kê khu vực không tồn tại.", default);
-            var stocktakingAreaMap = _mapper.Map<List<StocktakingAreaDetail>>(stocktakingArea);
-            return ("", stocktakingAreaMap);
-        }
-
-        public async Task<(string, List<StocktakingAreaDetail>?)> GetStocktakingAreaForAssignToByStocktakingSheetIdSync(string stoctakingSheetId)
-        {
-            if (string.IsNullOrEmpty(stoctakingSheetId))
-                return ("Mã phiếu kiểm kê không hợp lệ.", default);
-            var stocktakingArea = await _stocktakingAreaRepository.GetStocktakingAreaByStocktakingSheetIdAndAssignTo(stoctakingSheetId, null, null);
             if (stocktakingArea == null)
                 return ("Phiếu kiểm kê khu vực không tồn tại.", default);
             var stocktakingAreaMap = _mapper.Map<List<StocktakingAreaDetail>>(stocktakingArea);

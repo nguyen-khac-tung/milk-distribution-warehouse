@@ -229,7 +229,7 @@ namespace MilkDistributionWarehouse.Services
 
         public async Task<(string, List<AreaDto.StocktakingAreaDto>?)> GetStocktakingArea(string? stocktakingSheetId)
         {
-            var areas = await _areaRepository.GetActiveAreasByStocktakingId();
+            var areas = await _areaRepository.GetActiveAreasByStocktakingId(stocktakingSheetId);
 
             var results = new List<AreaDto.StocktakingAreaDto>();
 
