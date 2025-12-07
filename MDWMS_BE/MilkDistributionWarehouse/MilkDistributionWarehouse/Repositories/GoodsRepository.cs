@@ -22,7 +22,8 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> IsDuplicationCode(int? goodIds, string goodsCode);
         Task<List<Good>?> GetActiveGoodsBySupplierId(int supplierId);
         Task<Category?> GetInactiveCategoryByGoodsIdAsync(int goodsId);
-        Task<IEnumerable<dynamic>> GetExpiredGoodsForDisposal();
+        Task<IEnumerable<GoodsQuantityDto>> GetExpiredGoodsForDisposal();
+        Task<IEnumerable<GoodsQuantityDto>> GetGoodsForSalesOrder(List<int>? goodsIds);
         Task<UnitMeasure?> GetInactiveUnitMeasureByGoodsIdAsync(int goodsId);
         Task<StorageCondition?> GetInactiveStorageConditionByGoodsIdAsync(int goodsId);
         Task<bool> IsGoodsUsedInBatch(int goodsId);
@@ -120,7 +121,30 @@ namespace MilkDistributionWarehouse.Repositories
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<dynamic>> GetExpiredGoodsForDisposal()
+        public async Task<IEnumerable<GoodsQuantityDto>> GetGoodsForSalesOrder(List<int>? goodsIds)
+        {
+            var today = DateOnly.FromDateTime(DateTimeUtility.Now());
+
+            var groupedPallets = await _warehouseContext.Pallets
+                .Include(p => p.Batch).ThenInclude(b => b.Goods)
+                .Include(p => p.GoodsPacking)
+                .Where(p => p.Status == CommonStatus.Active
+                         && p.PackageQuantity > 0
+                         && p.Batch.ExpiryDate >= today
+                         && (goodsIds == null || goodsIds.Contains(p.Batch.GoodsId ?? 0)))
+                .GroupBy(p => new { p.Batch.GoodsId, p.GoodsPackingId })
+                .AsNoTracking()
+                .ToListAsync();
+
+            return groupedPallets.Select(g => new GoodsQuantityDto
+            {
+                Goods = g.FirstOrDefault()?.Batch?.Goods,
+                GoodsPacking = g.FirstOrDefault()?.GoodsPacking,
+                TotalPackageQuantity = g.Sum(p => p.PackageQuantity ?? 0)
+            });
+        }
+
+        public async Task<IEnumerable<GoodsQuantityDto>> GetExpiredGoodsForDisposal()
         {
             var today = DateOnly.FromDateTime(DateTimeUtility.Now());
 
@@ -133,15 +157,15 @@ namespace MilkDistributionWarehouse.Repositories
                                         .ThenInclude(g => g.Supplier)
                                 .Include(p => p.GoodsPacking)
                                 .Where(p => p.Batch.ExpiryDate <= today && p.PackageQuantity > 0 && p.Status == CommonStatus.Active)
-                                .GroupBy(p => new { p.Batch.Goods.GoodsId, p.GoodsPacking.GoodsPackingId })
+                                .GroupBy(p => new { p.Batch.GoodsId, p.GoodsPacking.GoodsPackingId })
                                 .AsNoTracking()
                                 .ToListAsync();
 
-            return groupedPallets.Select(g => new
+            return groupedPallets.Select(g => new GoodsQuantityDto
             {
                 Goods = g.FirstOrDefault()?.Batch?.Goods,
                 GoodsPacking = g.FirstOrDefault()?.GoodsPacking,
-                TotalExpiredPackageQuantity = g.Sum(p => p.PackageQuantity ?? 0)
+                TotalPackageQuantity = g.Sum(p => p.PackageQuantity ?? 0)
             });
         }
 
