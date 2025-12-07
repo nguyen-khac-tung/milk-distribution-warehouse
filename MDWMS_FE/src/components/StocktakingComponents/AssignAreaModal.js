@@ -17,7 +17,8 @@ const AssignAreaModal = ({
     stocktaking = null,
     formData = null, // Form data để tạo phiếu kiểm kê (chỉ dùng khi chưa có stocktakingSheetId)
     areasToReassign = [], // Danh sách khu vực cần phân công lại (nếu chỉ có 1 khu vực)
-    selectedAreaIds = [] // Danh sách areaIds đã chọn trong form (để cập nhật vào stocktaking)
+    selectedAreaIds = [], // Danh sách areaIds đã chọn trong form (để cập nhật vào stocktaking)
+    isFromUpdateAndAssign = false // Modal được gọi từ handleUpdateAndAssign
 }) => {
     const [areas, setAreas] = useState([]);
     const [employees, setEmployees] = useState([]);
@@ -31,13 +32,12 @@ const AssignAreaModal = ({
         if (isOpen && !isFetchingRef.current) {
             isFetchingRef.current = true;
             fetchAreasAndEmployees();
-            // Pre-select current assignments if reassigning
-            if (isReassign && stocktaking?.stocktakingAreas) {
+            // Pre-select current assignments nếu có stocktaking data
+            if (stocktaking?.stocktakingAreas) {
                 const currentAssignments = {};
                 stocktaking.stocktakingAreas.forEach((sa) => {
                     const areaId = sa.areaId || sa.stocktakingAreaId;
-                    // Chỉ pre-select nếu khu vực này nằm trong danh sách cần phân công lại
-                    // hoặc nếu không có areasToReassign (tức là phân công lại tất cả)
+                    // Pre-select nếu khu vực này nằm trong danh sách areasToReassign và đã được phân công
                     if (areaId && sa.assignTo && (areasToReassign.length === 0 || areasToReassign.includes(areaId))) {
                         currentAssignments[areaId] = sa.assignTo;
                     }
@@ -62,13 +62,14 @@ const AssignAreaModal = ({
 
     // Separate effect để update assignments khi stocktaking thay đổi (chỉ khi modal đã mở)
     useEffect(() => {
-        if (isOpen && isReassign && stocktakingAreasStr) {
+        if (isOpen && stocktakingAreasStr) {
             try {
                 const currentAssignments = {};
                 const areasToReassignArray = JSON.parse(areasToReassignStr);
                 const stocktakingAreas = JSON.parse(stocktakingAreasStr);
                 stocktakingAreas.forEach((sa) => {
                     const areaId = sa.areaId || sa.stocktakingAreaId;
+                    // Pre-select cho tất cả khu vực trong areasToReassign nếu đã được phân công
                     if (areaId && sa.assignTo && (areasToReassignArray.length === 0 || areasToReassignArray.includes(areaId))) {
                         currentAssignments[areaId] = sa.assignTo;
                     }
@@ -78,7 +79,7 @@ const AssignAreaModal = ({
                 console.error('Error parsing stocktaking areas:', error);
             }
         }
-    }, [isOpen, isReassign, stocktakingAreasStr, areasToReassignStr]);
+    }, [isOpen, stocktakingAreasStr, areasToReassignStr]);
 
     const fetchAreasAndEmployees = async () => {
         setLoadingAreas(true);
@@ -181,68 +182,79 @@ const AssignAreaModal = ({
                 throw new Error('Không tìm thấy ID phiếu kiểm kê');
             }
 
-            // Tiến hành phân công
-            if (isReassign) {
-                // Dùng API reAssignAreaConfirm cho tất cả khu vực
-                const assignmentData = displayAreas?.map(area => {
-                    const areaId = area.areaId || area.id;
-                    return {
+            // Phân loại khu vực: đã phân công (reassign) và chưa phân công (assign)
+            const reassignAreas = [];
+            const assignAreas = [];
+
+            displayAreas.forEach(area => {
+                const areaId = area.areaId || area.id;
+                // Kiểm tra xem khu vực này đã được phân công chưa
+                const currentAssignment = stocktaking?.stocktakingAreas?.find(
+                    sa => (sa.areaId === areaId || sa.AreaId === areaId)
+                );
+                const isAssigned = currentAssignment && (currentAssignment.assignTo || currentAssignment.AssignTo);
+
+                if (isAssigned) {
+                    // Đã phân công → dùng reassign
+                    reassignAreas.push({
                         areaId: areaId,
                         assignTo: areaAssignments[areaId]
-                    };
-                });
+                    });
+                } else {
+                    // Chưa phân công → dùng assign
+                    assignAreas.push({
+                        areaId: areaId,
+                        assignTo: areaAssignments[areaId]
+                    });
+                }
+            });
 
+            // Nếu đang tạo mới (có formData nhưng chưa có stocktakingSheetId), tạo phiếu trước khi phân công
+            if (formData && !finalStocktakingSheetId) {
+                try {
+                    // Format date
+                    let startTimeISO = null;
+                    if (formData.startTime) {
+                        const date = dayjs(formData.startTime);
+                        startTimeISO = date.format('YYYY-MM-DDTHH:mm:ss');
+                    }
+
+                    const submitData = {
+                        startTime: startTimeISO,
+                        note: formData.reason?.trim() || ''
+                    };
+
+                    const createResponse = await createStocktaking(submitData);
+                    finalStocktakingSheetId = createResponse?.data?.stocktakingSheetId ||
+                        createResponse?.stocktakingSheetId ||
+                        createResponse?.data?.data?.stocktakingSheetId;
+
+                    if (!finalStocktakingSheetId) {
+                        throw new Error('Không thể lấy ID phiếu kiểm kê sau khi tạo');
+                    }
+                } catch (error) {
+                    console.error('Error creating stocktaking:', error);
+                    const errorMessage = extractErrorMessage(error);
+                    if (window.showToast) {
+                        window.showToast(errorMessage || 'Có lỗi xảy ra khi tạo phiếu kiểm kê', 'error');
+                    }
+                    throw error;
+                }
+            }
+
+            // Xử lý phân công lại cho các khu vực đã phân công
+            if (reassignAreas.length > 0) {
                 await reAssignAreaConfirm({
                     stocktakingSheetId: finalStocktakingSheetId,
-                    stocktakingAreaReAssign: assignmentData
+                    stocktakingAreaReAssign: reassignAreas
                 });
-            } else {
-                // Use assignStocktakingAreas API for initial assignment
-                const assignmentData = displayAreas?.map(area => {
-                    const areaId = area.areaId || area.id;
-                    return {
-                        areaId: areaId,
-                        assignTo: areaAssignments[areaId]
-                    };
-                });
+            }
 
-                // Nếu đang tạo mới (có formData nhưng chưa có stocktakingSheetId), tạo phiếu trước khi phân công
-                if (formData && !finalStocktakingSheetId) {
-                    try {
-                        // Format date
-                        let startTimeISO = null;
-                        if (formData.startTime) {
-                            const date = dayjs(formData.startTime);
-                            startTimeISO = date.format('YYYY-MM-DDTHH:mm:ss');
-                        }
-
-                        const submitData = {
-                            startTime: startTimeISO,
-                            note: formData.reason?.trim() || ''
-                        };
-
-                        const createResponse = await createStocktaking(submitData);
-                        finalStocktakingSheetId = createResponse?.data?.stocktakingSheetId ||
-                            createResponse?.stocktakingSheetId ||
-                            createResponse?.data?.data?.stocktakingSheetId;
-
-                        if (!finalStocktakingSheetId) {
-                            throw new Error('Không thể lấy ID phiếu kiểm kê sau khi tạo');
-                        }
-                    } catch (error) {
-                        console.error('Error creating stocktaking:', error);
-                        const errorMessage = extractErrorMessage(error);
-                        if (window.showToast) {
-                            window.showToast(errorMessage || 'Có lỗi xảy ra khi tạo phiếu kiểm kê', 'error');
-                        }
-                        throw error;
-                    }
-                }
-
-                // Phân công sau khi đã có stocktakingSheetId
+            // Xử lý phân công cho các khu vực chưa phân công
+            if (assignAreas.length > 0) {
                 await assignStocktakingAreas({
                     stocktakingSheetId: finalStocktakingSheetId,
-                    stocktakingAreaAssign: assignmentData
+                    stocktakingAreaAssign: assignAreas
                 });
             }
 
@@ -332,14 +344,16 @@ const AssignAreaModal = ({
                                     const areaName = area.areaName || area.name || 'Khu vực';
                                     const selectedEmployeeId = areaAssignments[areaId];
 
-                                    // Get current assignment info for this area
-                                    const currentAssignment = isReassign && stocktaking?.stocktakingAreas
-                                        ? stocktaking.stocktakingAreas.find(sa => sa.areaId === areaId)
+                                    // Get current assignment info for this area (luôn kiểm tra nếu có stocktaking data)
+                                    const currentAssignment = stocktaking?.stocktakingAreas
+                                        ? stocktaking.stocktakingAreas.find(sa => (sa.areaId === areaId || sa.AreaId === areaId))
                                         : null;
                                     const currentEmployeeName = currentAssignment?.assignToName ||
+                                        currentAssignment?.AssignToName ||
                                         currentAssignment?.assignToNavigation?.fullName ||
                                         currentAssignment?.assignToNavigation?.name ||
                                         '';
+                                    const isAreaAssigned = currentAssignment && (currentAssignment.assignTo || currentAssignment.AssignTo);
 
                                     return (
                                         <div
@@ -355,8 +369,8 @@ const AssignAreaModal = ({
                                                     <h4 className="font-bold text-slate-700 text-base">{areaName}</h4>
                                                 </div>
 
-                                                {/* Current Assignment Info - Chỉ hiển thị khi phân công lại */}
-                                                {isReassign && currentAssignment && currentEmployeeName && (
+                                                {/* Current Assignment Info - Hiển thị nếu khu vực đã được phân công */}
+                                                {isAreaAssigned && currentEmployeeName && (
                                                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2 mb-2">
                                                         <div className="flex items-center gap-1.5 mb-1">
                                                             <AlertCircle className="h-3 w-3 text-yellow-600" />
@@ -509,7 +523,7 @@ const AssignAreaModal = ({
                             ) : (
                                 <>
                                     <CheckCircle2 className="mr-2 h-4 w-4" />
-                                    {isReassign ? 'Xác nhận phân công lại' : 'Xác nhận phân công'}
+                                    {isFromUpdateAndAssign ? 'Xác nhận' : (isReassign ? 'Xác nhận phân công lại' : 'Xác nhận phân công')}
                                 </>
                             )}
                         </Button>
