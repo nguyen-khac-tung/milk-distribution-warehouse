@@ -133,3 +133,14 @@ export const getGoodsInventoryBySupplierId = async (supplierId) => {
         throw error;
     }
 };
+
+// Cập nhật đóng gói hàng hóa
+export const updateGoodsPacking = async (goodsId, updates) => {
+    try {
+        const res = await api.put(`/GoodsPacking/UpdateGoodsPacking/${goodsId}`, updates);
+        return res.data;
+    } catch (error) {
+        console.error("Error updating goods packing:", error);
+        throw error;
+    }
+};

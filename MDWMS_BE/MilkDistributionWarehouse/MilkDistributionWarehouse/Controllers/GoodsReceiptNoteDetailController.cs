@@ -65,7 +65,7 @@ namespace MilkDistributionWarehouse.Controllers
         [Authorize(Roles = "Warehouse Manager")]
         public async Task<IActionResult> RejectListGRNDetail([FromBody] List<GoodsReceiptNoteDetailRejectDto> update)
         {
-            var (msg, grnUpdate) = await _gcndService.UpdateGRNReject(update);
+            var (msg, grnUpdate) = await _gcndService.UpdateGRNReject(update, User.GetUserId());
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<List<GoodsReceiptNoteDetailRejectDto>>.ToResultOk(update);

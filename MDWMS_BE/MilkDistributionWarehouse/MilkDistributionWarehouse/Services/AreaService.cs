@@ -21,6 +21,8 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, AreaDto.AreaResponseDto)> UpdateStatus(int areaId, int status);
         Task<(string, List<AreaDto.AreaActiveDto>)> GetAreaDropdown();
         Task<(string, List<AreaDto.StocktakingAreaDto>?)> GetStocktakingArea(string? stocktakingSheetId);
+        Task<(string, List<AreaDto.AreaActiveDto>)> GetAreasWithLocationsForDropdown();
+        Task<(string, List<AreaDto.StocktakingAreaDto>?)> GetAreasByAreaIds(List<int> areaIds, string? stocktakingSheetId);
     }
 
     public class AreaService : IAreaService
@@ -28,16 +30,16 @@ namespace MilkDistributionWarehouse.Services
         private readonly IAreaRepository _areaRepository;
         private readonly IStorageConditionRepository _storageConditionRepository;
         private readonly IMapper _mapper;
-        private readonly IStocktakingAreaRepository _stocktakingAreaRepository;
+        private readonly IStocktakingSheetRepository _stocktakingSheetRepository;
         private readonly IUserRepository _userRepository;
 
         public AreaService(IAreaRepository areaRepository, IStorageConditionRepository storageConditionRepository, 
-            IMapper mapper, IStocktakingAreaRepository stocktakingAreaRepository, IUserRepository userRepository)
+            IMapper mapper, IStocktakingSheetRepository stocktakingSheetRepository, IUserRepository userRepository)
         {
             _areaRepository = areaRepository;
             _storageConditionRepository = storageConditionRepository;
             _mapper = mapper;
-            _stocktakingAreaRepository = stocktakingAreaRepository;
+            _stocktakingSheetRepository = stocktakingSheetRepository;
             _userRepository = userRepository;
         }
 
@@ -80,15 +82,18 @@ namespace MilkDistributionWarehouse.Services
             if (dto == null)
                 return ("Don't have input data.", new AreaDto.AreaResponseDto());
 
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                return ("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
             if (await _areaRepository.IsDuplicateAreaCode(dto.AreaCode))
                 return ("Mã khu vực đã tồn tại.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
-            var storageConditionExists = await _storageConditionRepository.GetStorageConditionById(dto.StorageConditionId);
+            var storageConditionExists = await _storageConditionRepository.GetStorageConditionToCreateArea(dto.StorageConditionId);
             if (storageConditionExists == null)
                 return ("Điều kiện bảo quản không tồn tại hoặc đã bị xoá.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
             var entity = _mapper.Map<Area>(dto);
-            entity.CreatedAt = DateTime.Now;
+            entity.CreatedAt = DateTimeUtility.Now();
             entity.Status = CommonStatus.Active;
 
             var createdEntity = await _areaRepository.CreateArea(entity);
@@ -110,16 +115,25 @@ namespace MilkDistributionWarehouse.Services
             if (area == null)
                 return ("Không tìm thấy khu vực để cập nhật.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                return ("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
+            if (await _areaRepository.HavePalletInSODPPicking(areaId))
+                return ("Không thể thực hiện thao tác này khi đang có phiếu kiểm nhập, kiểm xuất, xuất hủy thực hiện.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
+            if (await _areaRepository.HasPalletNotArranged())
+                return ("Không thể cập nhật thông tin khu vực khi có pallet chưa được sắp xếp.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
             if (await _areaRepository.IsDuplicationByIdAndCode(areaId, dto.AreaCode))
                 return ("Mã khu vực đã tồn tại.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
-            var storageConditionExists = await _storageConditionRepository.GetStorageConditionById(dto.StorageConditionId);
+            var storageConditionExists = await _storageConditionRepository.GetStorageConditionToCreateArea(dto.StorageConditionId);
             if (storageConditionExists == null)
                 return ("Điều kiện bảo quản không tồn tại hoặc đã bị xoá.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
             _mapper.Map(dto, area);
             area.StorageConditionId = dto.StorageConditionId;
-            area.UpdateAt = DateTime.Now;
+            area.UpdateAt = DateTimeUtility.Now();
 
             var updatedEntity = await _areaRepository.UpdateArea(area);
             if (updatedEntity == null)
@@ -133,6 +147,9 @@ namespace MilkDistributionWarehouse.Services
             if (areaId <= 0)
                 return ("Mã khu vực không hợp lệ.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                return ("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
             var area = await _areaRepository.GetAreaById(areaId);
             if (area == null)
                 return ("Không tìm thấy khu vực để xoá.".ToMessageForUser(), new AreaDto.AreaResponseDto());
@@ -141,7 +158,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Không thể xoá khu vực vì đang được sử dụng trong vị trí hoặc kiểm kê.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
             area.Status = CommonStatus.Deleted;
-            area.UpdateAt = DateTime.Now;
+            area.UpdateAt = DateTimeUtility.Now();
 
             var deletedEntity = await _areaRepository.UpdateArea(area);
             if (deletedEntity == null)
@@ -152,6 +169,15 @@ namespace MilkDistributionWarehouse.Services
 
         public async Task<(string, AreaDto.AreaResponseDto)> UpdateStatus(int areaId, int status)
         {
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                return ("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
+            if (await _areaRepository.HavePalletInSODPPicking(areaId))
+                return ("Không thể thực hiện thao tác này khi đang có phiếu kiểm nhập, kiểm xuất, xuất hủy thực hiện.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
+            if (await _areaRepository.HasPalletNotArranged())
+                return ("Không thể cập nhật thông tin khu vực khi có pallet chưa được sắp xếp.".ToMessageForUser(), new AreaDto.AreaResponseDto());
+
             var area = await _areaRepository.GetAreaById(areaId);
             if (area == null)
                 return ("Không tìm thấy khu vực để cập nhật trạng thái.".ToMessageForUser(), new AreaDto.AreaResponseDto());
@@ -171,7 +197,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Trạng thái khu vực đã ở trạng thái này.".ToMessageForUser(), new AreaDto.AreaResponseDto());
 
             area.Status = status;
-            area.UpdateAt = DateTime.Now;
+            area.UpdateAt = DateTimeUtility.Now();
 
             var updated = await _areaRepository.UpdateArea(area);
             if (updated == null)
@@ -191,9 +217,20 @@ namespace MilkDistributionWarehouse.Services
             return ("", areaDtos);
         }
 
-        public async Task<(string, List<AreaDto.StocktakingAreaDto>?)> GetStocktakingArea(string? stocktakingSheetId)
+        public async Task<(string, List<AreaDto.AreaActiveDto>)> GetAreasWithLocationsForDropdown()
         {
             var areas = await _areaRepository.GetActiveAreasByStocktakingId();
+
+            if (areas == null || !areas.Any())
+                return ("Không có khu vực nào đang hoạt động.".ToMessageForUser(), new List<AreaDto.AreaActiveDto>());
+
+            var areaDtos = _mapper.Map<List<AreaDto.AreaActiveDto>>(areas);
+            return ("", areaDtos);
+        }
+
+        public async Task<(string, List<AreaDto.StocktakingAreaDto>?)> GetStocktakingArea(string? stocktakingSheetId)
+        {
+            var areas = await _areaRepository.GetActiveAreasByStocktakingId(stocktakingSheetId);
 
             var results = new List<AreaDto.StocktakingAreaDto>();
 
@@ -213,8 +250,12 @@ namespace MilkDistributionWarehouse.Services
                 {
                     AreaId = a.AreaId,
                     AreaName = a.AreaName,
-                    AvailableLocationCount = a.Locations.Count(l => l.IsAvailable == true && l.Status != CommonStatus.Inactive),
-                    UnAvailableLocationCount = a.Locations.Count(l => l.IsAvailable == false && l.Status != CommonStatus.Inactive),
+                    AvailableLocationCount = a.Locations.Count(l => 
+                        l.IsAvailable == true && 
+                        l.Status == CommonStatus.Active),
+                    UnAvailableLocationCount = a.Locations.Count(l => 
+                        l.IsAvailable == false && 
+                        l.Status == CommonStatus.Active),
                     TemperatureMax = a.StorageCondition.TemperatureMax,
                     TemperatureMin = a.StorageCondition.TemperatureMin,
                     HumidityMax = a.StorageCondition?.HumidityMax,
@@ -231,5 +272,42 @@ namespace MilkDistributionWarehouse.Services
             return ("", results);
         }
 
+        public async Task<(string, List<AreaDto.StocktakingAreaDto>?)> GetAreasByAreaIds(List<int> areaIds, string? stocktakingSheetId)
+        {
+            var areas = await _areaRepository.GetAreasByIds(areaIds, stocktakingSheetId);
+
+            if (areas == null || !areas.Any())
+                return ("Không có khu vực nào đang hoạt động.".ToMessageForUser(), default);
+
+            var results = new List<AreaDto.StocktakingAreaDto>();
+
+            foreach (var a in areas)
+            {
+                var assignTo = !string.IsNullOrEmpty(stocktakingSheetId) 
+                    ? await _userRepository.GetAssignToStockArea(stocktakingSheetId, a.AreaId)
+                    : null;
+
+                results.Add(new AreaDto.StocktakingAreaDto
+                {
+                    AreaId = a.AreaId,
+                    AreaName = a.AreaName,
+                    AvailableLocationCount = a.Locations.Count(l => 
+                        l.IsAvailable == true && 
+                        l.Status == CommonStatus.Active),
+                    UnAvailableLocationCount = a.Locations.Count(l => 
+                        l.IsAvailable == false && 
+                        l.Status == CommonStatus.Active),
+                    TemperatureMax = a.StorageCondition?.TemperatureMax,
+                    TemperatureMin = a.StorageCondition?.TemperatureMin,
+                    HumidityMax = a.StorageCondition?.HumidityMax,
+                    HumidityMin = a.StorageCondition?.HumidityMin,
+                    LightLevel = a.StorageCondition?.LightLevel,
+                    AssignTo = assignTo?.UserId,
+                    AssignName = assignTo?.FullName
+                });
+            }
+
+            return ("", results);
+        }
     }
 }

@@ -15,6 +15,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> IsUnitMeasureContainingGoods(int unitMeasureId);
         Task<bool> IsDuplicationUnitMeasureName(int? unitMeasureId, string name);
         Task<bool> IsUnitMeasureContainGooddAllInActice(int unitMeasureId);
+        Task<bool> IsActiveUnitMeasure(int unitMeasureId);
     }
     public class UnitMeasureRepository : IUnitMeasureRepository
     {
@@ -82,5 +83,11 @@ namespace MilkDistributionWarehouse.Repositories
             return !(await goods.AnyAsync(g => g.Status != CommonStatus.Inactive));
         }
 
+        public async Task<bool> IsActiveUnitMeasure(int unitMeasureId)
+        {
+            return await _warehouseContext.UnitMeasures
+                .AnyAsync(um => um.UnitMeasureId == unitMeasureId &&
+                        um.Status == CommonStatus.Active);
+        }
     }
 }

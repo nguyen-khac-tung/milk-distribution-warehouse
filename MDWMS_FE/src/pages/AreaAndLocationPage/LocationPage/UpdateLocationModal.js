@@ -7,6 +7,7 @@ import { updateLocation, getLocationDetail } from "../../../services/LocationSer
 import { getAreaDropdown } from "../../../services/AreaServices";
 import { extractErrorMessage } from "../../../utils/Validation";
 import CustomDropdown from "../../../components/Common/CustomDropdown";
+import FloatingDropdown from "../../../components/Common/FloatingDropdown";
 
 export default function UpdateLocationModal({ isOpen, onClose, onSuccess, locationId, locationData }) {
   const [formData, setFormData] = useState({
@@ -143,13 +144,18 @@ export default function UpdateLocationModal({ isOpen, onClose, onSuccess, locati
                   <Label htmlFor="areaId" className="text-sm font-medium text-slate-700">
                     Khu vực <span className="text-red-500">*</span>
                   </Label>
-                  <CustomDropdown
-                    value={formData.areaId}
-                    onChange={(value) => setFormData({ ...formData, areaId: value })}
-                    options={[
-                      { value: "", label: "Chọn khu vực..." },
-                      ...areas.map((a) => ({ value: a.areaId.toString(), label: a.areaName })),
-                    ]}
+                  <FloatingDropdown
+                    value={formData.areaId ? formData.areaId.toString() : null}
+                    onChange={(value) =>
+                      setFormData({
+                        ...formData,
+                        areaId: value ? parseInt(value) : null,
+                      })
+                    }
+                    options={areas.map((a) => ({
+                      value: a.areaId.toString(),
+                      label: a.areaName,
+                    }))}
                     placeholder="Chọn khu vực..."
                     loading={loadingData}
                   />

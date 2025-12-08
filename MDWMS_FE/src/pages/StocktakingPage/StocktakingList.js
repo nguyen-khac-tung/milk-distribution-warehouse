@@ -19,6 +19,15 @@ export default function StocktakingList() {
     const navigate = useNavigate();
     const { hasPermission } = usePermissions();
     const [searchQuery, setSearchQuery] = useState("");
+
+    // Normalize function: lowercase, trim, and collapse multiple spaces into one
+    const normalize = (str) => {
+        if (!str) return "";
+        return str
+            .toLowerCase()
+            .trim()
+            .replace(/\s+/g, " "); // gom nhiều space thành 1 space
+    };
     const [sortField, setSortField] = useState("");
     const [sortAscending, setSortAscending] = useState(true);
     const [loading, setLoading] = useState(true);
@@ -122,18 +131,21 @@ export default function StocktakingList() {
             
             // Tăng 1 ngày bằng cách tách string
             const d = new Date(selectedDate);
-            d.setDate(d.getDate() + 1);
+            d.setDate(d.getDate());
 
             const nextDate = d.toISOString().substring(0, 10); // "2025-11-28"
-            const end = `${nextDate}T00:00:00`;
+            const end = `${nextDate}T23:59:59`;
 
             startTimeFilter = `${start}~${end}`;
         }
 
+        // Normalize search query trước khi gọi API
+        const normalizedSearch = normalize(searchQuery);
+
         return {
             pageNumber: pagination.current,
             pageSize: pagination.pageSize,
-            search: searchQuery,
+            search: normalizedSearch,
             sortField: sortField,
             sortAscending: sortAscending,
             filters: {

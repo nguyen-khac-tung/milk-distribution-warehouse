@@ -13,6 +13,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<List<Guid>> GetAreaIdsBySheetId(string stocktakingSheetId);
         Task<List<StocktakingArea>> GetStocktakingAreasByStocktakingSheetId(string stocktakingSheetId);
         Task<StocktakingArea?> GetStocktakingAreaByStocktakingAreaId(Guid stocktakingAreaId);
+        Task<StocktakingArea?> GetStocktakingAreaByStockAreaId(Guid stocktakingAreaId);
         Task<int?> CreateStocktakingAreaBulk(List<StocktakingArea> creates);
         Task<int> UpdateStocktakingArea(StocktakingArea stocktakingArea);
         Task<int?> UpdateStocktakingAreaBulk(List<StocktakingArea> updates);
@@ -40,6 +41,14 @@ namespace MilkDistributionWarehouse.Repositories
                 .FirstOrDefaultAsync(sa => sa.StocktakingAreaId == stocktakingAreaId);
         }
 
+        public async Task<StocktakingArea?> GetStocktakingAreaByStockAreaId(Guid stocktakingAreaId)
+        {
+            return await _context.StocktakingAreas
+                .Include(sa => sa.StocktakingSheet)
+                .ThenInclude(sa => sa.CreatedByNavigation)
+                .FirstOrDefaultAsync(sa => sa.StocktakingAreaId == stocktakingAreaId);
+        }
+
         public async Task<List<Guid>> GetAreaIdsBySheetId(string stocktakingSheetId)
         {
             return await _context.StocktakingAreas
@@ -61,7 +70,9 @@ namespace MilkDistributionWarehouse.Repositories
                 .Where(sa => 
                                 sa.StocktakingSheetId.Equals(stocktakingSheetId) &&
                                 (stocktakingAreaId == null || sa.StocktakingAreaId == stocktakingAreaId) &&
-                                (assignTo == null || sa.AssignTo == assignTo))
+                                (assignTo == null || sa.AssignTo == assignTo) &&
+                                    sa.Area.Locations.Any()
+                        )
                 .ToListAsync();
         }
 

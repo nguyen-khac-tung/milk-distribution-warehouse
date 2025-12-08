@@ -76,7 +76,7 @@ const DisposalTable = ({
                         <TableHeader>
                             <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
                                 {/* STT */}
-                                <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-16">
+                                <TableHead className="font-semibold text-slate-900 px-4 py-2 text-center w-10">
                                     STT
                                 </TableHead>
 
@@ -101,11 +101,11 @@ const DisposalTable = ({
 
                                 {/* Người tạo */}
                                 {availableFields.hasCreatedByName && (
-                                    <TableHead
-                                        className="font-semibold text-slate-900 px-6 py-3 text-center"
-                                        onClick={() => handleSort("createdByName")}
-                                    >
-                                        <div className="flex items-center justify-center space-x-2 cursor-pointer">
+                                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                                        <div
+                                            className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                            onClick={() => handleSort("createdByName")}
+                                        >
                                             <span>Người tạo</span>
                                             {sortField === "createdByName" ? (
                                                 sortAscending ? (
@@ -123,14 +123,42 @@ const DisposalTable = ({
                                 {/* Người duyệt */}
                                 {availableFields.hasApprovalByName && (
                                     <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                                        Người duyệt
+                                        <div
+                                            className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                            onClick={() => handleSort("approvalByName")}
+                                        >
+                                            <span>Người duyệt</span>
+                                            {sortField === "approvalByName" ? (
+                                                sortAscending ? (
+                                                    <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                ) : (
+                                                    <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                )
+                                            ) : (
+                                                <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                            )}
+                                        </div>
                                     </TableHead>
                                 )}
 
                                 {/* Giao cho */}
                                 {availableFields.hasAssignToName && (
                                     <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                                        Giao cho
+                                        <div
+                                            className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                            onClick={() => handleSort("assignToName")}
+                                        >
+                                            <span>Giao cho</span>
+                                            {sortField === "assignToName" ? (
+                                                sortAscending ? (
+                                                    <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                ) : (
+                                                    <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                )
+                                            ) : (
+                                                <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                            )}
+                                        </div>
                                     </TableHead>
                                 )}
 
@@ -139,7 +167,7 @@ const DisposalTable = ({
                                     className="font-semibold text-slate-900 px-6 py-3 text-center"
                                     onClick={() => handleSort("estimatedTimeDeparture")}
                                 >
-                                    <div className="flex items-center justify-center space-x-2 cursor-pointer">
+                                    <div className="flex items-center justify-center space-x-2 cursor-pointer max-w-[100px]">
                                         <span>Thời gian xuất hủy</span>
                                         {sortField === "estimatedTimeDeparture" ? (
                                             sortAscending ? (
@@ -197,8 +225,10 @@ const DisposalTable = ({
                                         </TableCell>
 
                                         {/* Mã yêu cầu */}
-                                        <TableCell className="text-left px-6 py-4 max-w-[180px] break-words whitespace-normal">
-                                            {request?.disposalRequestId || "-"}
+                                        <TableCell className="text-left text-slate-700 max-w-[200px] break-words whitespace-normal">
+                                            <span className="font-bold">
+                                                {request.disposalRequestId || '-'}
+                                            </span>
                                         </TableCell>
 
                                         {/* Người tạo */}
@@ -272,17 +302,17 @@ const DisposalTable = ({
                                                 </PermissionWrapper>
 
                                                 {/* View Disposal Note Button - Warehouse Manager and Warehouse Staff - Only show when disposal note exists (status >= Picking, because disposal note is created when warehouse staff clicks "Tạo phiếu xuất hủy") */}
-                                                {(isWarehouseManager || isWarehouseStaff) && 
-                                                 request.status && 
-                                                 request.status >= DISPOSAL_REQUEST_STATUS.Picking && (
-                                                    <button
-                                                        className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                                        title="Xem phiếu xuất hủy"
-                                                        onClick={() => handleViewDisposalNoteClick(request)}
-                                                    >
-                                                        <FileText className="h-4 w-4 text-green-600" />
-                                                    </button>
-                                                )}
+                                                {(isWarehouseManager || isWarehouseStaff) &&
+                                                    request.status &&
+                                                    request.status >= DISPOSAL_REQUEST_STATUS.Picking && (
+                                                        <button
+                                                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                                            title="Xem phiếu xuất hủy"
+                                                            onClick={() => handleViewDisposalNoteClick(request)}
+                                                        >
+                                                            <FileText className="h-4 w-4 text-green-600" />
+                                                        </button>
+                                                    )}
 
                                                 {/* Edit Button - Warehouse Manager for Draft/Rejected */}
                                                 {(request.status === 1 || request.status === 3) && (

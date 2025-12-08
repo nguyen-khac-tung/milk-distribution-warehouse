@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
-import { getPallets, updatePalletStatus, deletePallet } from "../../services/PalletService";
+import { getPallets, deletePallet } from "../../services/PalletService";
 import { getUserDropDownByRoleName } from "../../services/AccountService";
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
@@ -12,7 +12,6 @@ import EmptyState from "../../components/Common/EmptyState";
 import PermissionWrapper from "../../components/Common/PermissionWrapper";
 import { PERMISSIONS } from "../../utils/permissions";
 import StatsCards from "../../components/Common/StatsCards";
-import { StatusToggle } from "../../components/Common/SwitchToggle/StatusToggle";
 import { PalletDetail } from "./ViewPalletModal";
 import DeleteModal from "../../components/Common/DeleteModal";
 import UpdatePalletModal from "./UpdatePalletModal";
@@ -81,6 +80,15 @@ export default function PalletList() {
     // Kiểm tra quyền in
     const hasPrintPermission = hasAnyPermission([PERMISSIONS.PALLET_PRINT_BARCODE]);
 
+    // Normalize function: lowercase, trim, and collapse multiple spaces into one
+    const normalize = (str) => {
+        if (!str) return "";
+        return str
+            .toLowerCase()
+            .trim()
+            .replace(/\s+/g, " "); // gom nhiều space thành 1 space
+    };
+
     const handlePrint = useReactToPrint({
         contentRef: printRef,
         documentTitle: "Phiếu dán mã pallet",
@@ -137,10 +145,12 @@ export default function PalletList() {
     const fetchData = async (searchParams = {}) => {
         try {
             setLoading(true)
+            // Normalize search query trước khi gọi API
+            const normalizedSearch = searchParams.search !== undefined ? normalize(searchParams.search) : "";
             const response = await getPallets({
                 pageNumber: searchParams.pageNumber !== undefined ? searchParams.pageNumber : 1,
                 pageSize: searchParams.pageSize !== undefined ? searchParams.pageSize : 10,
-                search: searchParams.search !== undefined ? searchParams.search : "",
+                search: normalizedSearch,
                 sortField: searchParams.sortField || "",
                 sortAscending: searchParams.sortAscending !== undefined ? searchParams.sortAscending : true,
                 status: searchParams.status,
@@ -243,10 +253,12 @@ export default function PalletList() {
 
         const timeoutId = setTimeout(() => {
             setSearchLoading(true)
+            // Normalize search query trước khi gọi API
+            const normalizedSearch = normalize(searchQuery);
             const params = {
                 pageNumber: 1,
                 pageSize: pagination.pageSize,
-                search: searchQuery || "",
+                search: normalizedSearch,
                 sortField: sortField,
                 sortAscending: sortAscending,
                 status: statusFilter,
@@ -375,10 +387,11 @@ export default function PalletList() {
 
             // Refresh data after deletion, keeping current page or going to previous page if needed
             await fetchStatsData()
+            const normalizedSearch = normalize(searchQuery);
             await fetchData({
                 pageNumber: targetPage,
                 pageSize: pagination.pageSize,
-                search: searchQuery || "",
+                search: normalizedSearch,
                 sortField: sortField,
                 sortAscending: sortAscending,
                 status: statusFilter,
@@ -396,25 +409,6 @@ export default function PalletList() {
         setItemToDelete(null)
     }
 
-    const handleStatusChange = async (palletId, newStatus) => {
-        try {
-            await updatePalletStatus(palletId, newStatus)
-            setPallets(prevPallets =>
-                prevPallets.map(pallet =>
-                    pallet.palletId === palletId
-                        ? { ...pallet, status: newStatus }
-                        : pallet
-                )
-            )
-
-            const statusText = newStatus === 1 ? "còn sử dụng" : "không còn sử dụng"
-            window.showToast(`Đã cập nhật pallet thành ${statusText}`, "success")
-        } catch (error) {
-            console.error("Error updating pallet status:", error)
-            const errorMessage = extractErrorMessage(error, "Có lỗi xảy ra khi cập nhật trạng thái")
-            window.showToast(errorMessage, "error")
-        }
-    }
     // Filter status and creator options based on search queries
     const filteredStatusOptions = useMemo(() => {
         const statusOptions = [
@@ -423,18 +417,18 @@ export default function PalletList() {
             { value: "2", label: "Chưa đưa vào vị trí" }
         ]
         if (!statusSearchQuery) return statusOptions
-        const query = statusSearchQuery.toLowerCase()
+        const normalizedQuery = normalize(statusSearchQuery)
         return statusOptions.filter(option =>
-            option.label.toLowerCase().includes(query)
+            normalize(option.label).includes(normalizedQuery)
         )
     }, [statusSearchQuery])
 
     const filteredCreators = useMemo(() => {
         if (!creatorSearchQuery) return creators
-        const query = creatorSearchQuery.toLowerCase()
+        const normalizedQuery = normalize(creatorSearchQuery)
         return creators.filter(creator => {
-            const creatorName = (creator.fullName || "").toLowerCase()
-            return creatorName.includes(query)
+            const creatorName = normalize(creator.fullName || "")
+            return creatorName.includes(normalizedQuery)
         })
     }, [creators, creatorSearchQuery])
 
@@ -477,10 +471,11 @@ export default function PalletList() {
         setHasUserInteracted(true)
         setPagination(prev => ({ ...prev, pageSize: newPageSize, pageNumber: 1 }))
         setShowPageSizeFilter(false)
+        const normalizedSearch = normalize(searchQuery);
         fetchData({
             pageNumber: 1,
             pageSize: newPageSize,
-            search: searchQuery || "",
+            search: normalizedSearch,
             sortField: sortField,
             sortAscending: sortAscending,
             status: statusFilter,
@@ -537,12 +532,12 @@ export default function PalletList() {
                     activeCount={totalStats.activeCount}
                     inactiveCount={totalStats.inactiveCount}
                     totalLabel="Tổng pallet"
-                    activeLabel="Còn sử dụng"
-                    inactiveLabel="Không còn sử dụng"
+                    activeLabel="Đã đưa vào vị trí"
+                    inactiveLabel="Chưa đưa vào vị trí"
                 />
 
                 {/* Search and Table Combined */}
-                <Card className="shadow-sm border border-slate-200 overflow-hidden bg-gray-50">
+                <Card className="shadow-sm border border-slate-200 bg-gray-50">
                     <SearchFilterToggle
                         searchQuery={searchQuery}
                         setSearchQuery={setSearchQuery}
@@ -553,8 +548,8 @@ export default function PalletList() {
                         setShowStatusFilter={setShowStatusFilter}
                         statusOptions={[
                             { value: "", label: "Tất cả trạng thái" },
-                            { value: "1", label: "Còn sử dụng" },
-                            { value: "2", label: "Không còn sử dụng" }
+                            { value: "1", label: "Đã đưa vào vị trí" },
+                            { value: "2", label: "Chưa đưa vào vị trí" }
                         ]}
                         onStatusFilter={handleStatusFilter}
                         clearStatusFilter={clearStatusFilter}
@@ -590,12 +585,12 @@ export default function PalletList() {
                             <Loading size="medium" text="Đang tìm kiếm..." />
                         </div>
                     ) : (
-                        <div className="w-full overflow-x-auto">
+                        <div className="overflow-x-auto w-full">
                             <Table className="w-full">
                                 <TableHeader>
                                     <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
                                         {hasPrintPermission && (
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-12">
+                                            <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center w-8">
                                                 <input
                                                     type="checkbox"
                                                     checked={selectAll}
@@ -604,14 +599,14 @@ export default function PalletList() {
                                                 />
                                             </TableHead>
                                         )}
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-16">
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center w-8">
                                             STT
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left max-w-[150px]">
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left">
                                             Mã Pallet
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                                            <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("batchCode")}>
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left">
+                                            <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded px-1 py-1 -mx-1 -my-1" onClick={() => handleSort("batchCode")}>
                                                 <span>Mã lô</span>
                                                 {sortField === "batchCode" ? (
                                                     sortAscending ? (
@@ -624,22 +619,22 @@ export default function PalletList() {
                                                 )}
                                             </div>
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left min-w-[120px]">
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left">
                                             Mã vị trí
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left min-w-[120px]">
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center">
                                             Số lượng thùng
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left min-w-[140px]">
-                                            Đơn vị/thùng
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center">
+                                            Đơn vị /thùng
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left min-w-[120px]">
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-left min-w-[100px]">
                                             Người tạo
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-48">
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center">
                                             Trạng thái
                                         </TableHead>
-                                        <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
+                                        <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center">
                                             Hoạt động
                                         </TableHead>
                                     </TableRow>
@@ -652,7 +647,7 @@ export default function PalletList() {
                                                 className="hover:bg-slate-50 border-b border-slate-200"
                                             >
                                                 {hasPrintPermission && (
-                                                    <TableCell className="px-6 py-4 text-center">
+                                                    <TableCell className="px-2 py-4 text-center">
                                                         <input
                                                             type="checkbox"
                                                             checked={isPalletSelected(pallet)}
@@ -661,44 +656,45 @@ export default function PalletList() {
                                                         />
                                                     </TableCell>
                                                 )}
-                                                <TableCell className="px-6 py-4 text-slate-600 font-medium">
-                                                    {index + 1}
+                                                <TableCell className="px-2 py-4 text-center text-slate-700">
+                                                    {(pagination.pageNumber - 1) * pagination.pageSize + index + 1}
                                                 </TableCell>
-                                                <TableCell
-                                                    className="px-6 py-4 text-slate-700 font-medium max-w-[150px] truncate"
-                                                    title={pallet?.palletId || ''}
-                                                >
-                                                    {pallet?.palletId || ''}
+                                                <TableCell className="px-6 py-4 text-slate-700 font-medium">
+                                                    <div className="break-words whitespace-normal">
+                                                        {pallet?.palletId || ''}
+                                                    </div>
                                                 </TableCell>
-                                                <TableCell className="px-6 py-4 text-slate-700 font-medium">{pallet?.batchCode || ''}</TableCell>
-                                                <TableCell className="px-6 py-4 text-slate-700">{pallet?.locationCode || ''}</TableCell>
-                                                <TableCell className="px-6 py-4 text-slate-700">{pallet?.packageQuantity || 0}</TableCell>
-                                                <TableCell className="px-6 py-4 text-slate-700">{pallet?.unitPerPackage || 0}</TableCell>
-                                                <TableCell className="px-6 py-4 text-slate-700">{pallet?.createByName || ''}</TableCell>
+                                                <TableCell className="px-4 py-4 text-slate-700 font-medium">
+                                                    <div className="break-words whitespace-normal">
+                                                        {pallet?.batchCode || ''}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="px-4 py-4 text-slate-700">
+                                                    <div className="break-words whitespace-normal">
+                                                        {pallet?.locationCode || ''}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="px-6 py-4 text-center text-slate-700">
+                                                    {pallet?.packageQuantity || 0}
+                                                </TableCell>
+                                                <TableCell className="px-6 py-4 text-center text-slate-700">
+                                                    {pallet?.unitPerPackage || 0}
+                                                </TableCell>
+                                                <TableCell className="px-4 py-4 text-slate-700">
+                                                    <div className="break-words whitespace-normal">
+                                                        {pallet?.createByName || ''}
+                                                    </div>
+                                                </TableCell>
                                                 <TableCell className="px-6 py-4 text-center">
                                                     <div className="flex justify-center">
-                                                        <PermissionWrapper
-                                                            requiredPermission={PERMISSIONS.PALLET_UPDATE_STATUS}
-                                                            hide={false}
-                                                            fallback={
-                                                                <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center justify-center gap-1 ${pallet?.status === 1
-                                                                    ? 'bg-green-100 text-green-800'
-                                                                    : 'bg-red-100 text-red-800'
-                                                                    }`}>
-                                                                    <span className={`w-2 h-2 rounded-full ${pallet?.status === 1 ? 'bg-green-500' : 'bg-red-500'
-                                                                        }`}></span>
-                                                                    {pallet?.status === 1 ? 'Còn sử dụng' : 'Không còn sử dụng'}
-                                                                </span>
-                                                            }
-                                                        >
-                                                            <StatusToggle
-                                                                status={pallet?.status}
-                                                                onStatusChange={handleStatusChange}
-                                                                palletId={pallet?.palletId}
-                                                                palletName={pallet?.batchCode}
-                                                                entityType="pallet"
-                                                            />
-                                                        </PermissionWrapper>
+                                                        <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center justify-center gap-1 break-words whitespace-normal ${pallet?.status === 1
+                                                            ? 'bg-green-100 text-green-800'
+                                                            : 'bg-red-100 text-red-800'
+                                                            }`}>
+                                                            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${pallet?.status === 1 ? 'bg-green-500' : 'bg-red-500'
+                                                                }`}></span>
+                                                            <span>{pallet?.status === 1 ? 'Đã đưa vào vị trí' : 'Chưa đưa vào vị trí'}</span>
+                                                        </span>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="px-6 py-4 text-center">
@@ -774,10 +770,11 @@ export default function PalletList() {
                                             className="h-[38px]"
                                             onClick={() => {
                                                 if (pagination.pageNumber > 1) {
+                                                    const normalizedSearch = normalize(searchQuery);
                                                     fetchData({
                                                         pageNumber: pagination.pageNumber - 1,
                                                         pageSize: pagination.pageSize,
-                                                        search: searchQuery || "",
+                                                        search: normalizedSearch,
                                                         sortField: sortField,
                                                         sortAscending: sortAscending,
                                                         status: statusFilter,
@@ -799,10 +796,11 @@ export default function PalletList() {
                                             className="h-[38px]"
                                             onClick={() => {
                                                 if (pagination.pageNumber < Math.ceil(pagination.totalCount / pagination.pageSize)) {
+                                                    const normalizedSearch = normalize(searchQuery);
                                                     fetchData({
                                                         pageNumber: pagination.pageNumber + 1,
                                                         pageSize: pagination.pageSize,
-                                                        search: searchQuery || "",
+                                                        search: normalizedSearch,
                                                         sortField: sortField,
                                                         sortAscending: sortAscending,
                                                         status: statusFilter,

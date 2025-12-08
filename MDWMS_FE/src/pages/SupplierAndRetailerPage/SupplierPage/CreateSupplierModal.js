@@ -1,5 +1,5 @@
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Button } from "../../../components/ui/button"
 import { Input } from "../../../components/ui/input"
 import { Label } from "../../../components/ui/label"
@@ -21,50 +21,85 @@ export default function CreateSupplier({ isOpen, onClose, onSuccess }) {
     contactPersonEmail: "",
   })
   const [loading, setLoading] = useState(false)
+  const [validationErrors, setValidationErrors] = useState({})
 
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    // Basic validation - check if required fields are filled
-    if (!formData.companyName?.trim() || !formData.brandName?.trim() ||
-      !formData.email?.trim() || !formData.phone?.trim() ||
-      !formData.taxCode?.trim() || !formData.address?.trim() ||
-      !formData.contactPersonName?.trim() || !formData.contactPersonPhone?.trim() ||
-      !formData.contactPersonEmail?.trim()) {
-      window.showToast("Vui lòng điền đầy đủ thông tin", "error")
-      return
-    }
-
-    // Email validation
+    // Validate all required fields
+    const errors = {}
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(formData.email)) {
-      window.showToast("Email không hợp lệ", "error")
-      return
-    }
-
-    // Contact person email validation
-    if (!emailRegex.test(formData.contactPersonEmail)) {
-      window.showToast("Email người liên hệ không hợp lệ", "error")
-      return
-    }
-
-    // Phone validation (basic)
     const phoneRegex = /^[0-9+\-\s()]+$/
-    if (!phoneRegex.test(formData.phone)) {
-      window.showToast("Số điện thoại không hợp lệ", "error")
+
+    if (!formData.companyName?.trim()) {
+      errors.companyName = "Vui lòng nhập tên công ty"
+    }
+
+    if (!formData.brandName?.trim()) {
+      errors.brandName = "Vui lòng nhập tên thương hiệu"
+    }
+
+    if (!formData.taxCode?.trim()) {
+      errors.taxCode = "Vui lòng nhập mã số thuế"
+    }
+
+    if (!formData.address?.trim()) {
+      errors.address = "Vui lòng nhập địa chỉ"
+    }
+
+    if (!formData.email?.trim()) {
+      errors.email = "Vui lòng nhập email"
+    } else if (!emailRegex.test(formData.email)) {
+      errors.email = "Email không hợp lệ"
+    }
+
+    if (!formData.phone?.trim()) {
+      errors.phone = "Vui lòng nhập số điện thoại"
+    } else if (!phoneRegex.test(formData.phone)) {
+      errors.phone = "Số điện thoại không hợp lệ"
+    }
+
+    if (!formData.contactPersonName?.trim()) {
+      errors.contactPersonName = "Vui lòng nhập tên người liên hệ"
+    }
+
+    if (!formData.contactPersonPhone?.trim()) {
+      errors.contactPersonPhone = "Vui lòng nhập số điện thoại người liên hệ"
+    } else if (!phoneRegex.test(formData.contactPersonPhone)) {
+      errors.contactPersonPhone = "Số điện thoại người liên hệ không hợp lệ"
+    }
+
+    if (!formData.contactPersonEmail?.trim()) {
+      errors.contactPersonEmail = "Vui lòng nhập email người liên hệ"
+    } else if (!emailRegex.test(formData.contactPersonEmail)) {
+      errors.contactPersonEmail = "Email người liên hệ không hợp lệ"
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors)
       return
     }
 
-    // Contact person phone validation
-    if (!phoneRegex.test(formData.contactPersonPhone)) {
-      window.showToast("Số điện thoại người liên hệ không hợp lệ", "error")
-      return
-    }
+    // Clear validation errors if validation passes
+    setValidationErrors({})
 
     try {
       setLoading(true)
       const response = await createSupplier(formData)
       window.showToast("Thêm nhà cung cấp thành công!", "success")
+      // Reset form data after successful creation
+      setFormData({
+        companyName: "",
+        brandName: "",
+        email: "",
+        phone: "",
+        taxCode: "",
+        address: "",
+        contactPersonName: "",
+        contactPersonPhone: "",
+        contactPersonEmail: "",
+      })
+      setValidationErrors({})
       onSuccess && onSuccess()
       onClose && onClose()
     } catch (error) {
@@ -88,6 +123,7 @@ export default function CreateSupplier({ isOpen, onClose, onSuccess }) {
       contactPersonPhone: "",
       contactPersonEmail: "",
     })
+    setValidationErrors({})
     onClose && onClose()
   }
 
@@ -122,10 +158,17 @@ export default function CreateSupplier({ isOpen, onClose, onSuccess }) {
                     id="companyName"
                     placeholder="Nhập tên công ty..."
                     value={formData.companyName}
-                    onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, companyName: e.target.value })
+                      if (validationErrors.companyName) {
+                        setValidationErrors({ ...validationErrors, companyName: undefined })
+                      }
+                    }}
                     className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                    required
                   />
+                  {validationErrors.companyName && (
+                    <p className="text-sm text-red-500 font-medium">{validationErrors.companyName}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -136,10 +179,17 @@ export default function CreateSupplier({ isOpen, onClose, onSuccess }) {
                     id="brandName"
                     placeholder="Nhập tên thương hiệu..."
                     value={formData.brandName}
-                    onChange={(e) => setFormData({ ...formData, brandName: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, brandName: e.target.value })
+                      if (validationErrors.brandName) {
+                        setValidationErrors({ ...validationErrors, brandName: undefined })
+                      }
+                    }}
                     className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                    required
                   />
+                  {validationErrors.brandName && (
+                    <p className="text-sm text-red-500 font-medium">{validationErrors.brandName}</p>
+                  )}
                 </div>
               </div>
 
@@ -153,10 +203,17 @@ export default function CreateSupplier({ isOpen, onClose, onSuccess }) {
                     id="taxCode"
                     placeholder="Nhập mã số thuế..."
                     value={formData.taxCode}
-                    onChange={(e) => setFormData({ ...formData, taxCode: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, taxCode: e.target.value })
+                      if (validationErrors.taxCode) {
+                        setValidationErrors({ ...validationErrors, taxCode: undefined })
+                      }
+                    }}
                     className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                    required
                   />
+                  {validationErrors.taxCode && (
+                    <p className="text-sm text-red-500 font-medium">{validationErrors.taxCode}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -167,10 +224,17 @@ export default function CreateSupplier({ isOpen, onClose, onSuccess }) {
                     id="address"
                     placeholder="Nhập địa chỉ..."
                     value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, address: e.target.value })
+                      if (validationErrors.address) {
+                        setValidationErrors({ ...validationErrors, address: undefined })
+                      }
+                    }}
                     className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                    required
                   />
+                  {validationErrors.address && (
+                    <p className="text-sm text-red-500 font-medium">{validationErrors.address}</p>
+                  )}
                 </div>
               </div>
 
@@ -185,10 +249,17 @@ export default function CreateSupplier({ isOpen, onClose, onSuccess }) {
                     type="email"
                     placeholder="Nhập email..."
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, email: e.target.value })
+                      if (validationErrors.email) {
+                        setValidationErrors({ ...validationErrors, email: undefined })
+                      }
+                    }}
                     className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                    required
                   />
+                  {validationErrors.email && (
+                    <p className="text-sm text-red-500 font-medium">{validationErrors.email}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -199,10 +270,17 @@ export default function CreateSupplier({ isOpen, onClose, onSuccess }) {
                     id="phone"
                     placeholder="Nhập số điện thoại..."
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, phone: e.target.value })
+                      if (validationErrors.phone) {
+                        setValidationErrors({ ...validationErrors, phone: undefined })
+                      }
+                    }}
                     className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                    required
                   />
+                  {validationErrors.phone && (
+                    <p className="text-sm text-red-500 font-medium">{validationErrors.phone}</p>
+                  )}
                 </div>
               </div>
 
@@ -220,10 +298,17 @@ export default function CreateSupplier({ isOpen, onClose, onSuccess }) {
                       id="contactPersonName"
                       placeholder="Nhập tên người liên hệ..."
                       value={formData.contactPersonName}
-                      onChange={(e) => setFormData({ ...formData, contactPersonName: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, contactPersonName: e.target.value })
+                        if (validationErrors.contactPersonName) {
+                          setValidationErrors({ ...validationErrors, contactPersonName: undefined })
+                        }
+                      }}
                       className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                      required
                     />
+                    {validationErrors.contactPersonName && (
+                      <p className="text-sm text-red-500 font-medium">{validationErrors.contactPersonName}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -234,10 +319,17 @@ export default function CreateSupplier({ isOpen, onClose, onSuccess }) {
                       id="contactPersonPhone"
                       placeholder="Nhập số điện thoại người liên hệ..."
                       value={formData.contactPersonPhone}
-                      onChange={(e) => setFormData({ ...formData, contactPersonPhone: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, contactPersonPhone: e.target.value })
+                        if (validationErrors.contactPersonPhone) {
+                          setValidationErrors({ ...validationErrors, contactPersonPhone: undefined })
+                        }
+                      }}
                       className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                      required
                     />
+                    {validationErrors.contactPersonPhone && (
+                      <p className="text-sm text-red-500 font-medium">{validationErrors.contactPersonPhone}</p>
+                    )}
                   </div>
                 </div>
 
@@ -252,10 +344,17 @@ export default function CreateSupplier({ isOpen, onClose, onSuccess }) {
                       type="email"
                       placeholder="Nhập email người liên hệ..."
                       value={formData.contactPersonEmail}
-                      onChange={(e) => setFormData({ ...formData, contactPersonEmail: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, contactPersonEmail: e.target.value })
+                        if (validationErrors.contactPersonEmail) {
+                          setValidationErrors({ ...validationErrors, contactPersonEmail: undefined })
+                        }
+                      }}
                       className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                      required
                     />
+                    {validationErrors.contactPersonEmail && (
+                      <p className="text-sm text-red-500 font-medium">{validationErrors.contactPersonEmail}</p>
+                    )}
                   </div>
                 </div>
               </div>

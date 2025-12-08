@@ -145,12 +145,24 @@ const SalesOrderList = () => {
         }
     };
 
+    // Normalize function: lowercase, trim, and collapse multiple spaces into one
+    const normalize = (str) => {
+        if (!str) return "";
+        return str
+            .toLowerCase()
+            .trim()
+            .replace(/\s+/g, " "); // gom nhiều space thành 1 space
+    };
+
     // Helper function để tạo request params
     const createRequestParams = (overrides = {}) => {
+        // Normalize search query trước khi gọi API (nhưng vẫn giữ nguyên giá trị trong input khi đang gõ)
+        const normalizedSearch = normalize(searchQuery);
+
         return {
             pageNumber: pagination.current,
             pageSize: pagination.pageSize,
-            search: searchQuery,
+            search: normalizedSearch,
             sortField: sortField,
             sortAscending: sortAscending,
             status: statusFilter,

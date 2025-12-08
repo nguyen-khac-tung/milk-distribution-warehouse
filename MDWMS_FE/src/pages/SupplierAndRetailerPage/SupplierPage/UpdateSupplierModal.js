@@ -6,7 +6,6 @@ import { Card } from "../../../components/ui/card"
 import { X } from "lucide-react"
 import { updateSupplier, getSupplierDetail } from "../../../services/SupplierService"
 import { validateAndShowError, extractErrorMessage } from "../../../utils/Validation"
-import { DisableFieldWrapper } from "../../../components/Common/DisableFieldWrapper"
 
 export default function UpdateSupplierModal({ isOpen, onClose, onSuccess, supplierId }) {
   const [formData, setFormData] = useState({
@@ -24,6 +23,7 @@ export default function UpdateSupplierModal({ isOpen, onClose, onSuccess, suppli
   })
   const [loading, setLoading] = useState(false)
   const [loadingData, setLoadingData] = useState(false)
+  const [validationErrors, setValidationErrors] = useState({})
 
   // Load data when modal opens
   useEffect(() => {
@@ -54,6 +54,7 @@ export default function UpdateSupplierModal({ isOpen, onClose, onSuccess, suppli
           contactPersonEmail: supplierInfo.contactPersonEmail || "",
           isDisable: supplierInfo.isDisable || false,
         })
+        setValidationErrors({})
       }
     } catch (error) {
       console.error("Error loading supplier data:", error)
@@ -67,46 +68,67 @@ export default function UpdateSupplierModal({ isOpen, onClose, onSuccess, suppli
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    // Basic validation - check if required fields are filled
-    if (!formData.companyName?.trim() || !formData.brandName?.trim() || !formData.taxCode?.trim() ||
-      !formData.email?.trim() || !formData.address?.trim() || !formData.phone?.trim() ||
-      !formData.contactPersonName?.trim() || !formData.contactPersonPhone?.trim() ||
-      !formData.contactPersonEmail?.trim()) {
-      window.showToast("Vui lòng điền đầy đủ thông tin", "error")
+    if (!formData.supplierId) {
+      window.showToast("Không tìm thấy thông tin nhà cung cấp", "error")
       return
     }
 
-    // Email validation
+    // Validate all required fields
+    const errors = {}
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(formData.email)) {
-      window.showToast("Email không hợp lệ", "error")
-      return
-    }
-
-    // Contact person email validation
-    if (!emailRegex.test(formData.contactPersonEmail)) {
-      window.showToast("Email người liên hệ không hợp lệ", "error")
-      return
-    }
-
-    // Phone validation (basic)
     const phoneRegex = /^[0-9+\-\s()]+$/
-    if (!phoneRegex.test(formData.phone)) {
-      window.showToast("Số điện thoại không hợp lệ", "error")
+
+    if (!formData.companyName?.trim()) {
+      errors.companyName = "Vui lòng nhập tên công ty"
+    }
+
+    if (!formData.brandName?.trim()) {
+      errors.brandName = "Vui lòng nhập tên thương hiệu"
+    }
+
+    if (!formData.taxCode?.trim()) {
+      errors.taxCode = "Vui lòng nhập mã số thuế"
+    }
+
+    if (!formData.address?.trim()) {
+      errors.address = "Vui lòng nhập địa chỉ"
+    }
+
+    if (!formData.email?.trim()) {
+      errors.email = "Vui lòng nhập email"
+    } else if (!emailRegex.test(formData.email)) {
+      errors.email = "Email không hợp lệ"
+    }
+
+    if (!formData.phone?.trim()) {
+      errors.phone = "Vui lòng nhập số điện thoại"
+    } else if (!phoneRegex.test(formData.phone)) {
+      errors.phone = "Số điện thoại không hợp lệ"
+    }
+
+    if (!formData.contactPersonName?.trim()) {
+      errors.contactPersonName = "Vui lòng nhập tên người liên hệ"
+    }
+
+    if (!formData.contactPersonPhone?.trim()) {
+      errors.contactPersonPhone = "Vui lòng nhập số điện thoại người liên hệ"
+    } else if (!phoneRegex.test(formData.contactPersonPhone)) {
+      errors.contactPersonPhone = "Số điện thoại người liên hệ không hợp lệ"
+    }
+
+    if (!formData.contactPersonEmail?.trim()) {
+      errors.contactPersonEmail = "Vui lòng nhập email người liên hệ"
+    } else if (!emailRegex.test(formData.contactPersonEmail)) {
+      errors.contactPersonEmail = "Email người liên hệ không hợp lệ"
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors)
       return
     }
 
-    // Contact person phone validation
-    if (!phoneRegex.test(formData.contactPersonPhone)) {
-      window.showToast("Số điện thoại người liên hệ không hợp lệ", "error")
-      return
-    }
-
-    // Status validation
-    if (formData.status === 0) {
-      window.showToast("Vui lòng chọn trạng thái", "error")
-      return
-    }
+    // Clear validation errors if validation passes
+    setValidationErrors({})
 
     try {
       setLoading(true)
@@ -137,6 +159,7 @@ export default function UpdateSupplierModal({ isOpen, onClose, onSuccess, suppli
       contactPersonEmail: "",
       isDisable: false,
     })
+    setValidationErrors({})
     onClose && onClose()
   }
 
@@ -163,48 +186,108 @@ export default function UpdateSupplierModal({ isOpen, onClose, onSuccess, suppli
             <div className="space-y-4">
               {/* Row 1: Company Name & Brand Name */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <DisableFieldWrapper
-                  isDisabled={formData.isDisable}
-                  label="Tên công ty"
-                  id="companyName"
-                  placeholder="Nhập tên công ty..."
-                  value={formData.companyName}
-                  onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                  required
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="companyName" className="text-sm font-medium text-slate-700">
+                    Tên công ty <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="companyName"
+                    placeholder={formData.isDisable ? "Không thể chỉnh sửa" : "Nhập tên công ty..."}
+                    value={formData.companyName}
+                    onChange={(e) => {
+                      setFormData({ ...formData, companyName: e.target.value })
+                      if (validationErrors.companyName) {
+                        setValidationErrors({ ...validationErrors, companyName: undefined })
+                      }
+                    }}
+                    disabled={formData.isDisable}
+                    className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${formData.isDisable
+                        ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200"
+                        : ""
+                      }`}
+                  />
+                  {validationErrors.companyName && (
+                    <p className="text-sm text-red-500 font-medium">{validationErrors.companyName}</p>
+                  )}
+                </div>
 
-                <DisableFieldWrapper
-                  isDisabled={formData.isDisable}
-                  label="Tên thương hiệu"
-                  id="brandName"
-                  placeholder="Nhập tên thương hiệu..."
-                  value={formData.brandName}
-                  onChange={(e) => setFormData({ ...formData, brandName: e.target.value })}
-                  required
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="brandName" className="text-sm font-medium text-slate-700">
+                    Tên thương hiệu <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="brandName"
+                    placeholder={formData.isDisable ? "Không thể chỉnh sửa" : "Nhập tên thương hiệu..."}
+                    value={formData.brandName}
+                    onChange={(e) => {
+                      setFormData({ ...formData, brandName: e.target.value })
+                      if (validationErrors.brandName) {
+                        setValidationErrors({ ...validationErrors, brandName: undefined })
+                      }
+                    }}
+                    disabled={formData.isDisable}
+                    className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${formData.isDisable
+                        ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200"
+                        : ""
+                      }`}
+                  />
+                  {validationErrors.brandName && (
+                    <p className="text-sm text-red-500 font-medium">{validationErrors.brandName}</p>
+                  )}
+                </div>
               </div>
 
               {/* Row 2: Tax Code & Address */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <DisableFieldWrapper
-                  isDisabled={formData.isDisable}
-                  label="Mã số thuế"
-                  id="taxCode"
-                  placeholder="Nhập mã số thuế..."
-                  value={formData.taxCode}
-                  onChange={(e) => setFormData({ ...formData, taxCode: e.target.value })}
-                  required
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="taxCode" className="text-sm font-medium text-slate-700">
+                    Mã số thuế <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="taxCode"
+                    placeholder={formData.isDisable ? "Không thể chỉnh sửa" : "Nhập mã số thuế..."}
+                    value={formData.taxCode}
+                    onChange={(e) => {
+                      setFormData({ ...formData, taxCode: e.target.value })
+                      if (validationErrors.taxCode) {
+                        setValidationErrors({ ...validationErrors, taxCode: undefined })
+                      }
+                    }}
+                    disabled={formData.isDisable}
+                    className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${formData.isDisable
+                        ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200"
+                        : ""
+                      }`}
+                  />
+                  {validationErrors.taxCode && (
+                    <p className="text-sm text-red-500 font-medium">{validationErrors.taxCode}</p>
+                  )}
+                </div>
 
-                <DisableFieldWrapper
-                  isDisabled={formData.isDisable}
-                  label="Địa chỉ"
-                  id="address"
-                  placeholder="Nhập địa chỉ..."
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  required
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="address" className="text-sm font-medium text-slate-700">
+                    Địa chỉ <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="address"
+                    placeholder={formData.isDisable ? "Không thể chỉnh sửa" : "Nhập địa chỉ..."}
+                    value={formData.address}
+                    onChange={(e) => {
+                      setFormData({ ...formData, address: e.target.value })
+                      if (validationErrors.address) {
+                        setValidationErrors({ ...validationErrors, address: undefined })
+                      }
+                    }}
+                    disabled={formData.isDisable}
+                    className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${formData.isDisable
+                        ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200"
+                        : ""
+                      }`}
+                  />
+                  {validationErrors.address && (
+                    <p className="text-sm text-red-500 font-medium">{validationErrors.address}</p>
+                  )}
+                </div>
               </div>
 
               {/* Row 3: Email & Phone */}
@@ -218,10 +301,17 @@ export default function UpdateSupplierModal({ isOpen, onClose, onSuccess, suppli
                     type="email"
                     placeholder="Nhập email..."
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, email: e.target.value })
+                      if (validationErrors.email) {
+                        setValidationErrors({ ...validationErrors, email: undefined })
+                      }
+                    }}
                     className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                    required
                   />
+                  {validationErrors.email && (
+                    <p className="text-sm text-red-500 font-medium">{validationErrors.email}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -232,10 +322,17 @@ export default function UpdateSupplierModal({ isOpen, onClose, onSuccess, suppli
                     id="phone"
                     placeholder="Nhập số điện thoại..."
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, phone: e.target.value })
+                      if (validationErrors.phone) {
+                        setValidationErrors({ ...validationErrors, phone: undefined })
+                      }
+                    }}
                     className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                    required
                   />
+                  {validationErrors.phone && (
+                    <p className="text-sm text-red-500 font-medium">{validationErrors.phone}</p>
+                  )}
                 </div>
               </div>
 
@@ -253,10 +350,17 @@ export default function UpdateSupplierModal({ isOpen, onClose, onSuccess, suppli
                       id="contactPersonName"
                       placeholder="Nhập tên người liên hệ..."
                       value={formData.contactPersonName}
-                      onChange={(e) => setFormData({ ...formData, contactPersonName: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, contactPersonName: e.target.value })
+                        if (validationErrors.contactPersonName) {
+                          setValidationErrors({ ...validationErrors, contactPersonName: undefined })
+                        }
+                      }}
                       className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                      required
                     />
+                    {validationErrors.contactPersonName && (
+                      <p className="text-sm text-red-500 font-medium">{validationErrors.contactPersonName}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -267,10 +371,17 @@ export default function UpdateSupplierModal({ isOpen, onClose, onSuccess, suppli
                       id="contactPersonPhone"
                       placeholder="Nhập số điện thoại người liên hệ..."
                       value={formData.contactPersonPhone}
-                      onChange={(e) => setFormData({ ...formData, contactPersonPhone: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, contactPersonPhone: e.target.value })
+                        if (validationErrors.contactPersonPhone) {
+                          setValidationErrors({ ...validationErrors, contactPersonPhone: undefined })
+                        }
+                      }}
                       className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                      required
                     />
+                    {validationErrors.contactPersonPhone && (
+                      <p className="text-sm text-red-500 font-medium">{validationErrors.contactPersonPhone}</p>
+                    )}
                   </div>
                 </div>
 
@@ -285,10 +396,17 @@ export default function UpdateSupplierModal({ isOpen, onClose, onSuccess, suppli
                       type="email"
                       placeholder="Nhập email người liên hệ..."
                       value={formData.contactPersonEmail}
-                      onChange={(e) => setFormData({ ...formData, contactPersonEmail: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, contactPersonEmail: e.target.value })
+                        if (validationErrors.contactPersonEmail) {
+                          setValidationErrors({ ...validationErrors, contactPersonEmail: undefined })
+                        }
+                      }}
                       className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                      required
                     />
+                    {validationErrors.contactPersonEmail && (
+                      <p className="text-sm text-red-500 font-medium">{validationErrors.contactPersonEmail}</p>
+                    )}
                   </div>
                 </div>
               </div>

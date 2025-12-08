@@ -25,13 +25,15 @@ namespace MilkDistributionWarehouse.Services
         private readonly IMapper _mapper;
         private readonly IAreaRepository _areaRepository;
         private readonly IGoodsRepository _goodReposotory;
+        private readonly IStocktakingSheetRepository _stocktakingSheetRepository;
 
-        public StorageConditionService(IStorageConditionRepository storageConditionRepository, IMapper mapper, IAreaRepository areaRepository, IGoodsRepository goodReposotory)
+        public StorageConditionService(IStorageConditionRepository storageConditionRepository, IMapper mapper, IAreaRepository areaRepository, IGoodsRepository goodReposotory, IStocktakingSheetRepository stocktakingSheetRepository)
         {
             _storageConditionRepository = storageConditionRepository;
             _mapper = mapper;
             _areaRepository = areaRepository;
             _goodReposotory = goodReposotory;
+            _stocktakingSheetRepository = stocktakingSheetRepository;
         }
 
         public async Task<(string, PageResult<StorageConditionDto.StorageConditionResponseDto>)> GetStorageConditions(PagedRequest request)
@@ -51,6 +53,9 @@ namespace MilkDistributionWarehouse.Services
         {
             if (dto == null) return ("Dữ liệu tạo điều kiện lưu trữ không hợp lệ.".ToMessageForUser(), null);
 
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                return ("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser(), new StorageConditionDto.StorageConditionResponseDto());
+
             // Kiểm tra trùng lặp toàn bộ điều kiện
             var isDuplicate = await _storageConditionRepository.IsDuplicateStorageConditionAsync(
                 null,
@@ -64,7 +69,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Điều kiện lưu trữ này đã tồn tại.".ToMessageForUser(), null);
 
             var entity = _mapper.Map<StorageCondition>(dto);
-            entity.CreatedAt = DateTime.Now;
+            entity.CreatedAt = DateTimeUtility.Now();
             entity.Status = (int)CommonStatus.Active;
 
             var createdEntity = await _storageConditionRepository.CreateStorageCondition(entity);
@@ -77,6 +82,9 @@ namespace MilkDistributionWarehouse.Services
         public async Task<(string, StorageConditionDto.StorageConditionResponseDto)> UpdateStorageCondition(int storageConditionId, StorageConditionDto.StorageConditionRequestDto dto)
         {
             if (dto == null) return ("Không có dữ liệu để cập nhật điều kiện lưu trữ.".ToMessageForUser(), null);
+
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                return ("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser(), new StorageConditionDto.StorageConditionResponseDto());
 
             var entity = await _storageConditionRepository.GetStorageConditionById(storageConditionId);
             if (entity == null)
@@ -95,7 +103,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Điều kiện lưu trữ này đã tồn tại.".ToMessageForUser(), null);
 
             _mapper.Map(dto, entity);
-            entity.UpdateAt = DateTime.Now;
+            entity.UpdateAt = DateTimeUtility.Now();
 
             var updatedEntity = await _storageConditionRepository.UpdateStorageCondition(entity);
             if (updatedEntity == null)
@@ -106,6 +114,9 @@ namespace MilkDistributionWarehouse.Services
 
         public async Task<(string, bool)> DeleteStorageCondition(int storageConditionId)
         {
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                return ("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser(), false);
+
             var entity = await _storageConditionRepository.GetStorageConditionById(storageConditionId);
             if (entity == null)
                 return ("Không tìm thấy điều kiện lưu trữ để xoá.".ToMessageForUser(), false);
@@ -125,6 +136,9 @@ namespace MilkDistributionWarehouse.Services
 
         public async Task<(string, StorageConditionDto.StorageConditionResponseDto)> UpdateStatus(int storageConditionId, int status)
         {
+            if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
+                return ("Không thể thực hiện thao tác này khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser(), new StorageConditionDto.StorageConditionResponseDto());
+
             var entity = await _storageConditionRepository.GetStorageConditionById(storageConditionId);
             if (entity == null)
                 return ("Không tìm thấy điều kiện lưu trữ cần cập nhật.".ToMessageForUser(), new StorageConditionDto.StorageConditionResponseDto());
@@ -142,7 +156,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Không thể cập nhật trạng thái vì điều kiện lưu trữ này đang được sử dụng.".ToMessageForUser(), new StorageConditionDto.StorageConditionResponseDto());
 
             entity.Status = status;
-            entity.UpdateAt = DateTime.Now;
+            entity.UpdateAt = DateTimeUtility.Now();
 
             var updated = await _storageConditionRepository.UpdateStorageCondition(entity);
             if (updated == null)

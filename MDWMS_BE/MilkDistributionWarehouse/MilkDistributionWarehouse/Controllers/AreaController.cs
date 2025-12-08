@@ -36,6 +36,15 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<List<AreaDto.AreaActiveDto>>.ToResultOk(areas);
         }
 
+        [HttpGet("GetAreaWithLocationsDropDown")]
+        public async Task<IActionResult> GetAreaWithLocationsDropDown()
+        {
+            var (msg, areas) = await _areaService.GetAreasWithLocationsForDropdown();
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<List<AreaDto.AreaActiveDto>>.ToResultOk(areas);
+        }
+
         [Authorize(Roles = "Warehouse Manager, Warehouse Staff, Business Owner, Administrator")]
         [HttpGet("AreaDetail/{id}")]
         public async Task<IActionResult> GetArea(int id)
@@ -63,6 +72,15 @@ namespace MilkDistributionWarehouse.Controllers
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<List<AreaDto.StocktakingAreaDto>>.ToResultOk(stocktakingArea);
+        }
+
+        [HttpGet("GetAreaByAreaIds")]
+        public async Task<IActionResult> GetAreaByAreaIds([FromQuery] List<int> areaIds, string? stocktakingSheetId)
+        {
+            var (msg, areas) = await _areaService.GetAreasByAreaIds(areaIds, stocktakingSheetId);
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<List<AreaDto.StocktakingAreaDto>>.ToResultOk(areas);
         }
 
         [Authorize(Roles = "Business Owner, Administrator")]

@@ -6,8 +6,8 @@ import { X, Calendar } from "lucide-react";
 import { getBatchDetail, updateBatch } from "../../services/BatchService";
 import { getGoodsDropdown } from "../../services/GoodService";
 import { extractErrorMessage } from "../../utils/Validation";
-import CustomDropdown from "../../components/Common/CustomDropdown";
 import { Textarea } from "../../components/ui/textarea";
+import FloatingDropdown from "../../components/Common/FloatingDropdown";
 
 const UpdateBatchModal = ({ isOpen, onClose, onSuccess, batchId, batchData }) => {
     const [formData, setFormData] = useState({
@@ -117,16 +117,14 @@ const UpdateBatchModal = ({ isOpen, onClose, onSuccess, batchId, batchData }) =>
                                 <Label htmlFor="areaId" className="text-sm font-medium text-slate-700">
                                     Chọn hàng hóa <span className="text-red-500">*</span>
                                 </Label>
-                                <CustomDropdown
+                                <FloatingDropdown
                                     value={formData.goodsId?.toString() || ""}
                                     onChange={(value) => setFormData({ ...formData, goodsId: value ? Number(value) : null })}
-                                    options={[
-                                        { value: "", label: "Chọn hàng hóa..." },
-                                        ...goodsOptions.map((a) => ({
-                                            value: a.goodsId.toString(),
-                                            label: a.goodsName,
-                                        })),
-                                    ]}
+                                    placeholder="Chọn hàng hóa..."
+                                    options={goodsOptions.map((a) => ({
+                                        value: a.goodsId.toString(),
+                                        label: a.goodsName,
+                                    }))}
                                 />
                             </div>
                         </div>

@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using DocumentFormat.OpenXml.InkML;
+using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MilkDistributionWarehouse.Constants;
@@ -35,6 +37,7 @@ namespace MilkDistributionWarehouse.Services
         private readonly IPurchaseOrderRepositoy _purchaseOrderRepositoy;
         private readonly ISalesOrderRepository _salesOrderRepository;
         private readonly IDisposalRequestRepository _disposalRequestRepository;
+        private readonly IRefreshTokenRepository _refreshTokenRepository;
         private readonly EmailUtility _emailUtility;
         private readonly IMapper _mapper;
 
@@ -43,6 +46,7 @@ namespace MilkDistributionWarehouse.Services
                            IPurchaseOrderRepositoy purchaseOrderRepositoy,
                            ISalesOrderRepository salesOrderRepository,
                            IDisposalRequestRepository disposalRequestRepository,
+                           IRefreshTokenRepository refreshTokenRepository,
                            EmailUtility emailUtility,
                            IMapper mapper)
         {
@@ -51,6 +55,7 @@ namespace MilkDistributionWarehouse.Services
             _purchaseOrderRepositoy = purchaseOrderRepositoy;
             _salesOrderRepository = salesOrderRepository;
             _disposalRequestRepository = disposalRequestRepository;
+            _refreshTokenRepository = refreshTokenRepository;
             _emailUtility = emailUtility;
             _mapper = mapper;
         }
@@ -98,6 +103,9 @@ namespace MilkDistributionWarehouse.Services
             var userExist = await _userRepository.GetUserByEmail(userCreate.Email);
             if (userExist != null) return ("Email người dùng đã tồn tại trong hệ thống.".ToMessageForUser(), null);
 
+            userExist = await _userRepository.GetUserByPhone(userCreate.Phone);
+            if (userExist != null) return ("Số điện thoại người dùng đã tồn tại trong hệ thống.".ToMessageForUser(), null);
+
             var userRole = await _roleRepository.GetRoleById(userCreate.RoleId);
             if (userRole == null) return ("Selected role is null.", null);
 
@@ -122,6 +130,10 @@ namespace MilkDistributionWarehouse.Services
             var userDuplicatedEmail = await _userRepository.GetUserByEmail(userUpdate.Email);
             if (userDuplicatedEmail != null && userUpdate.UserId != userDuplicatedEmail.UserId)
                 return ("Email này đã có người dùng khác sử dụng.".ToMessageForUser(), null);
+
+            var userDuplicatedPhone = await _userRepository.GetUserByPhone(userUpdate.Phone);
+            if (userDuplicatedPhone != null && userUpdate.UserId != userDuplicatedPhone.UserId)
+                return ("Số điện thoại này đã có người dùng khác sử dụng.".ToMessageForUser(), null);
 
             var userRole = await _roleRepository.GetRoleById(userUpdate.RoleId);
             if (userRole == null) return ("Selected role is null.", null);
@@ -155,6 +167,11 @@ namespace MilkDistributionWarehouse.Services
                 }
             }
 
+            if (userUpdate.Status == CommonStatus.Inactive)
+            {
+                await RevokeUserRefreshToken(userExist.UserId);
+            }
+
             userExist.Status = userUpdate.Status;
             msg = await _userRepository.UpdateUser(userExist);
             if (msg.Length > 0) return "Cập nhật người dùng thất bại.";
@@ -165,30 +182,19 @@ namespace MilkDistributionWarehouse.Services
         public async Task<string> DeleteUser(int? userId)
         {
             if (userId == null) return "UserId is invalid.";
-            var user = await _userRepository.GetUserByIdWithAssociations(userId);
+            var user = await _userRepository.GetUserById(userId);
             if (user == null) return "Không tìm thấy người dùng!".ToMessageForUser();
 
-            if (user.GoodsIssueNoteCreatedByNavigations.Any()
-                || user.GoodsIssueNoteApprovalByNavigations.Any()) 
-                return "Không thể xóa do người dùng này có liên quan đến lịch sử phiếu xuất hàng.".ToMessageForUser();
-            if (user.GoodsIssueNoteCreatedByNavigations.Any() 
-                ||user.GoodsReceiptNoteApprovalByNavigations.Any()) 
-                return "Không thể xóa do người dùng này có liên quan đến lịch sử phiếu nhập hàng.".ToMessageForUser();
-            if (user.PurchaseOrderCreatedByNavigations.Any() || user.PurchaseOrderApprovalByNavigations.Any()
-                || user.PurchaseOrderArrivalConfirmedByNavigations.Any() || user.PurchaseOrderAssignToNavigations.Any())
-                return "Không thể xóa do người dùng này có liên quan đến lịch sử đơn đặt hàng mua.".ToMessageForUser();
-            if (user.SalesOrderCreatedByNavigations.Any() || user.SalesOrderAcknowledgedByNavigations.Any()
-                || user.SalesOrderApprovalByNavigations.Any() || user.SalesOrderAssignToNavigations.Any())
-                return "Không thể xóa do người dùng này có liên quan đến lịch sử đơn hàng bán.".ToMessageForUser();
-            if (user.Batches.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử các lô hàng.".ToMessageForUser();
-            if (user.Pallets.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử các pallet.".ToMessageForUser();
-            if (user.StocktakingSheets.Any()) return "Không thể xóa do người dùng này có liên quan đến lịch sử phiếu kiểm kê.".ToMessageForUser();
+            var message = await _userRepository.CheckUserDependencies(user.UserId);
+            if (message.Length > 0) return message;
 
             user.Status = CommonStatus.Deleted;
-            user.UpdateAt = DateTime.Now;
-            var msg = await _userRepository.UpdateUser(user);
-            if (msg.Length > 0) return "Xoá người dùng thất bại.".ToMessageForUser();
+            user.UpdateAt = DateTimeUtility.Now();
 
+            message = await _userRepository.UpdateUser(user);
+            if (message.Length > 0) return "Xoá người dùng thất bại.".ToMessageForUser();
+
+            await RevokeUserRefreshToken(user.UserId);
             return "";
         }
 
@@ -307,6 +313,17 @@ namespace MilkDistributionWarehouse.Services
                 .Select(chars => chars[random.Next(chars.Length)]).ToArray());
         }
 
+        private async Task RevokeUserRefreshToken(int userId)
+        {
+            var refreshToken = await _refreshTokenRepository.GetRefreshTokenByUserId(userId);
+            if (refreshToken != null)
+            {
+                refreshToken.IsRevoked = true;
+                refreshToken.UpdateAt = DateTimeUtility.Now();
+                await _refreshTokenRepository.UpdateRefreshToken(refreshToken);
+            }
+        }
+
         private async Task SendUserCredentialByEmail(string email, string password)
         {
             string emailBody = $@"
@@ -317,7 +334,7 @@ namespace MilkDistributionWarehouse.Services
                         <p>Tài khoản của bạn đã được tạo thành công. Dưới đây là thông tin đăng nhập của bạn:</p>
                         <p><strong>Email (Tên đăng nhập):</strong> {email}</p>
                         <p><strong>Mật khẩu:</strong> <h2>{password}</h2></p>
-                        <p>Vui lòng đăng nhập vào hệ thống theo đường link http://khophanphoisua.id.vn/login và đổi mật khẩu của bạn để đảm bảo an toàn.</p>
+                        <p>Vui lòng đăng nhập vào hệ thống theo đường link <a href=""http://khophanphoisua.id.vn/login"" style=""color: #007bff; text-decoration: underline;"">Kho Phân Phối Sữa</a> và đổi mật khẩu của bạn để đảm bảo an toàn.</p>
                         <br>
                         <p>Trân trọng,</p>
                         <p>Đội ngũ quản trị hệ thống kho sữa Hoàng Hà.</p>

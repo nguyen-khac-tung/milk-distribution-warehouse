@@ -23,9 +23,10 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpGet("GetDetail/{stocktakingSheetId}")]
+        [Authorize(Roles = RoleNames.WarehouseManager + "," + RoleNames.WarehouseStaff + "," + RoleNames.SalesManager)]
         public async Task<IActionResult> GetStocktakingSheetDetail(string stocktakingSheetId)
         {
-            var (msg, stocktakingDetail) = await _stocktakingSheetService.GetStocktakingSheetDetail(stocktakingSheetId);
+            var (msg, stocktakingDetail) = await _stocktakingSheetService.GetStocktakingSheetDetail(stocktakingSheetId, User.GetUserId(), User.GetUserRole());
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<StocktakingSheetDetail>.ToResultOk(stocktakingDetail);
@@ -66,6 +67,16 @@ namespace MilkDistributionWarehouse.Controllers
         public async Task<IActionResult> CreateStocktakingSheet([FromBody] StocktakingSheetCreate create)
         {
             var (msg, stocktaking) = await _stocktakingSheetService.CreateStocktakingSheet(create, User.GetUserId());
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<StocktakingSheeteResponse?>.ToResultOk(stocktaking);
+        }
+
+        [HttpPost("Create_1")]
+        [Authorize(Roles = RoleNames.WarehouseManager)]
+        public async Task<IActionResult> CreateStocktakingSheet_1([FromBody] StocktakingSheetCreateDto create)
+        {
+            var (msg, stocktaking) = await _stocktakingSheetService.CreateStoctakingSheet_1(create, User.GetUserId());
             if (!string.IsNullOrEmpty(msg))
                 return ApiResponse<string>.ToResultError(msg);
             return ApiResponse<StocktakingSheeteResponse?>.ToResultOk(stocktaking);

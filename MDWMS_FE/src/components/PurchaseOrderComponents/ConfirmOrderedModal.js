@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, ShoppingCart, AlertCircle, Calendar } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -18,6 +18,23 @@ const ConfirmOrderedModal = ({
     const [error, setError] = useState('');
     const [reasonError, setReasonError] = useState('');
 
+    // Khởi tạo estimatedTimeArrival từ purchaseOrder nếu có
+    useEffect(() => {
+        if (isOpen && purchaseOrder?.estimatedTimeArrival) {
+            // Chuyển đổi từ ISO string hoặc Date object sang YYYY-MM-DD format
+            const dateValue = new Date(purchaseOrder.estimatedTimeArrival);
+            if (!isNaN(dateValue.getTime())) {
+                const year = dateValue.getFullYear();
+                const month = String(dateValue.getMonth() + 1).padStart(2, '0');
+                const day = String(dateValue.getDate()).padStart(2, '0');
+                setEstimatedTimeArrival(`${year}-${month}-${day}`);
+            }
+        } else if (isOpen && !purchaseOrder?.estimatedTimeArrival) {
+            // Reset về rỗng nếu không có giá trị
+            setEstimatedTimeArrival('');
+        }
+    }, [isOpen, purchaseOrder?.estimatedTimeArrival]);
+
     const handleConfirm = () => {
         // Validate date
         if (!estimatedTimeArrival) {
@@ -34,7 +51,7 @@ const ConfirmOrderedModal = ({
         // Lấy ngày đã chọn và giờ hiện tại
         const selectedDate = new Date(estimatedTimeArrival);
         const now = new Date();
-        
+
         // So sánh chỉ theo ngày (không tính giờ)
         const selectedDateOnly = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
         const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -46,13 +63,13 @@ const ConfirmOrderedModal = ({
 
         setError('');
         setReasonError('');
-        
+
         // Lấy giờ hiện tại
         const currentHours = now.getHours();
         const currentMinutes = now.getMinutes();
         const currentSeconds = now.getSeconds();
         const currentMilliseconds = now.getMilliseconds();
-        
+
         // Tạo Date object với ngày đã chọn và giờ hiện tại
         const finalDateTime = new Date(
             selectedDate.getFullYear(),
@@ -63,10 +80,10 @@ const ConfirmOrderedModal = ({
             currentSeconds,
             currentMilliseconds
         );
-        
+
         // Convert to ISO string
         const isoString = finalDateTime.toISOString();
-        
+
         // Nếu mode="change", truyền cả reason
         if (mode === 'change') {
             onConfirm(isoString, reason.trim());
@@ -93,7 +110,7 @@ const ConfirmOrderedModal = ({
             <div className="bg-white rounded-lg shadow-xl max-w-xl w-full mx-4">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                        <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-3">
                         <div className={`p-2 rounded-full ${mode === 'change' ? 'bg-blue-100' : 'bg-yellow-100'}`}>
                             {mode === 'change' ? (
                                 <Calendar className="h-6 w-6 text-blue-600" />
@@ -106,7 +123,7 @@ const ConfirmOrderedModal = ({
                                 {mode === 'change' ? 'Thay đổi ngày dự kiến nhập' : 'Xác nhận Đã đặt hàng'}
                             </h3>
                             <p className="text-sm text-gray-500">
-                                {mode === 'change' 
+                                {mode === 'change'
                                     ? 'Thay đổi ngày dự kiến nhập cho đơn hàng'
                                     : 'Xác nhận đơn hàng đã được đặt và nhập ngày dự kiến nhập'}
                             </p>
@@ -149,7 +166,7 @@ const ConfirmOrderedModal = ({
                     <div className="mb-4">
                         <Label htmlFor="estimatedTimeArrival" className="flex items-center space-x-2 mb-2">
                             <Calendar className="h-4 w-4 text-gray-600" />
-                            <span className="text-sm font-medium text-gray-700">Ngày dự kiến nhập *</span>
+                            <span className="text-sm font-medium text-gray-700">Ngày dự kiến nhập <span className="text-red-500">*</span></span>
                         </Label>
                         <Input
                             id="estimatedTimeArrival"
@@ -174,7 +191,7 @@ const ConfirmOrderedModal = ({
                         <div className="mb-4">
                             <Label htmlFor="reason" className="flex items-center space-x-2 mb-2">
                                 <AlertCircle className="h-4 w-4 text-gray-600" />
-                                <span className="text-sm font-medium text-gray-700">Lý do thay đổi *</span>
+                                <span className="text-sm font-medium text-gray-700">Lý do thay đổi <span className="text-red-500">*</span></span>
                             </Label>
                             <Textarea
                                 id="reason"
@@ -202,7 +219,7 @@ const ConfirmOrderedModal = ({
                                     {mode === 'change' ? 'Thay đổi ngày dự kiến nhập' : 'Xác nhận đã đặt hàng'}
                                 </h4>
                                 <p className="text-sm text-yellow-700">
-                                    {mode === 'change' 
+                                    {mode === 'change'
                                         ? 'Bạn có chắc chắn muốn thay đổi ngày dự kiến nhập cho đơn hàng này?'
                                         : 'Bạn có chắc chắn muốn xác nhận đơn hàng này đã được đặt? Hành động này không thể hoàn tác.'}
                                 </p>
@@ -225,11 +242,10 @@ const ConfirmOrderedModal = ({
                             type="button"
                             onClick={handleConfirm}
                             disabled={loading}
-                            className={`h-[38px] px-8 font-medium rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 ${
-                                mode === 'change' 
-                                    ? 'bg-blue-500 hover:bg-blue-600 text-white' 
+                            className={`h-[38px] px-8 font-medium rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 ${mode === 'change'
+                                    ? 'bg-blue-500 hover:bg-blue-600 text-white'
                                     : 'bg-yellow-500 hover:bg-yellow-600 text-white'
-                            }`}
+                                }`}
                         >
                             {loading ? (
                                 <div className="flex items-center gap-2">

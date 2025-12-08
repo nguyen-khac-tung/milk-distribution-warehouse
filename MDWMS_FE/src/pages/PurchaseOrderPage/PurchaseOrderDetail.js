@@ -246,12 +246,14 @@ const PurchaseOrderDetail = () => {
 
     const canStartReceive = () => {
         return hasPermission(PERMISSIONS.PURCHASE_ORDER_START_RECEIVE) &&
-            purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving;
+            purchaseOrder?.status === PURCHASE_ORDER_STATUS.AssignedForReceiving &&
+            purchaseOrder?.isDisableButton === false;
     };
 
     const canConfirmOrdered = () => {
         return hasPermission(PERMISSIONS.PURCHASE_ORDER_CONFIRM_ORDERED) &&
-            purchaseOrder?.status === PURCHASE_ORDER_STATUS.Approved;
+            purchaseOrder?.status === PURCHASE_ORDER_STATUS.Approved &&
+            purchaseOrder?.isDisableButton === false;
     };
 
     const canSubmitDraft = () => {
@@ -275,6 +277,10 @@ const PurchaseOrderDetail = () => {
     const canChangeDeliveryDate = () => {
         // Chỉ nhân viên kinh doanh (Sales Representative) mới có quyền thay đổi ngày dự kiến nhập
         if (!hasPermission(PERMISSIONS.PURCHASE_ORDER_CHANGE_DELIVERY_DATE)) {
+            return false;
+        }
+
+        if (purchaseOrder?.isDisableButton) {
             return false;
         }
 
@@ -564,9 +570,9 @@ const PurchaseOrderDetail = () => {
                         <h1 className="text-2xl font-bold text-slate-600 m-0">ĐƠN MUA HÀNG</h1>
                     </div>
                 </div>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-[2.2fr_0.8fr] gap-6 mt-4">
                     {/* Main Content - Left Side */}
-                    <div className="lg:col-span-2">
+                    <div>
                         <div className="bg-white border-2 border-gray-400 rounded-lg p-6 h-full flex flex-col">
                             {/* Title */}
                             <div className="text-center mb-6">
@@ -578,76 +584,80 @@ const PurchaseOrderDetail = () => {
                                     <FileText className="h-5 w-5 text-blue-600" />
                                     <h3 className="font-bold text-gray-800">Thông tin chung</h3>
                                 </div>
-                                <div className="space-y-3">
-                                    {/* Supplier and Address on same line */}
-                                    <div className="grid grid-cols-[1.2fr_1fr] gap-4">
-                                        {/* Left: Supplier */}
-                                        <div className="grid grid-cols-[160px_1fr] gap-2 items-center">
-                                            <div className="flex items-center space-x-2 min-w-0">
-                                                <Store className="h-4 w-4 text-green-600 flex-shrink-0" />
-                                                <label className="text-sm font-medium text-gray-700 whitespace-nowrap leading-normal">Nhà cung cấp:</label>
+
+                                {/* Grid 2 cột chính giống SalesOrderDetail */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-sm">
+                                    {/* Cột trái */}
+                                    <div className="space-y-2">
+                                        <div className="grid grid-cols-[auto_1fr] gap-x-2">
+                                            <div className="flex items-center space-x-1">
+                                                <Hash className="h-4 w-4 text-gray-600" />
+                                                <label className="font-medium text-gray-700">Mã mua hàng:</label>
                                             </div>
-                                            <span className="text-sm font-semibold text-gray-900 bg-gray-200 px-3 py-1 rounded border break-words leading-normal">
-                                                {purchaseOrder.supplierName || 'Chưa có thông tin'}
+                                            <span className="font-semibold text-gray-900">
+                                                {purchaseOrder.purchaseOderId || '—'}
                                             </span>
                                         </div>
 
-                                        {/* Right: Address */}
-                                        <div className="grid grid-cols-[160px_1fr] gap-2 items-center">
-                                            <div className="flex items-center space-x-2 min-w-0">
-                                                <MapPin className="h-4 w-4 text-red-600 flex-shrink-0" />
-                                                <label className="text-sm font-medium text-gray-700 whitespace-nowrap leading-normal">Địa chỉ:</label>
+                                        <div className="grid grid-cols-[auto_1fr] gap-x-2">
+                                            <div className="flex items-center space-x-1">
+                                                <Store className="h-4 w-4 text-green-600" />
+                                                <label className="font-medium text-gray-700">Nhà cung cấp:</label>
                                             </div>
-                                            <span className="text-sm text-gray-900 bg-gray-200 px-3 py-1 rounded border break-words leading-normal">
-                                                {purchaseOrder.address || 'Chưa có thông tin'}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {/* Email and Phone on same line */}
-                                    <div className="grid grid-cols-[1.2fr_1fr] gap-4">
-                                        {/* Left: Email */}
-                                        <div className="grid grid-cols-[160px_1fr] gap-2 items-center">
-                                            <div className="flex items-center space-x-2 min-w-0">
-                                                <Mail className="h-4 w-4 text-orange-600 flex-shrink-0" />
-                                                <label className="text-sm font-medium text-gray-700 whitespace-nowrap leading-normal">Email:</label>
-                                            </div>
-                                            <span className="text-sm text-gray-900 bg-gray-200 px-3 py-1 rounded border break-words leading-normal">
-                                                {purchaseOrder.email || 'Chưa có thông tin'}
+                                            <span className="font-semibold text-gray-900">
+                                                {purchaseOrder.supplierName || '—'}
                                             </span>
                                         </div>
 
-                                        {/* Right: Phone */}
-                                        <div className="grid grid-cols-[160px_1fr] gap-2 items-center">
-                                            <div className="flex items-center space-x-2 min-w-0">
-                                                <Phone className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                                                <label className="text-sm font-medium text-gray-700 whitespace-nowrap leading-normal">SĐT:</label>
+                                        <div className="grid grid-cols-[auto_1fr] gap-x-2">
+                                            <div className="flex items-center space-x-1">
+                                                <Calendar className="h-4 w-4 text-purple-600" />
+                                                <label className="font-medium text-gray-700">Ngày dự kiến nhập:</label>
                                             </div>
-                                            <span className="text-sm text-gray-900 bg-gray-200 px-3 py-1 rounded border break-words leading-normal">
-                                                {purchaseOrder.phone || 'Chưa có thông tin'}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {/* Estimated Time Arrival */}
-                                    {purchaseOrder.estimatedTimeArrival && (
-                                        <div className="grid grid-cols-[1.2fr_1fr] gap-4">
-                                            <div className="grid grid-cols-[160px_1fr] gap-2 items-center">
-                                                <div className="flex items-center space-x-2 min-w-0">
-                                                    <Calendar className="h-4 w-4 text-purple-600 flex-shrink-0" />
-                                                    <label className="text-sm font-medium text-gray-700 whitespace-nowrap leading-normal">Ngày dự kiến nhập:</label>
-                                                </div>
-                                                <span className="text-sm font-semibold text-gray-900 bg-gray-200 px-3 py-1 rounded border break-words leading-normal">
-                                                    {purchaseOrder.estimatedTimeArrival ? new Date(purchaseOrder.estimatedTimeArrival).toLocaleDateString('vi-VN', {
+                                            <span className="font-semibold text-gray-900">
+                                                {purchaseOrder.estimatedTimeArrival
+                                                    ? new Date(purchaseOrder.estimatedTimeArrival).toLocaleDateString('vi-VN', {
                                                         year: 'numeric',
                                                         month: '2-digit',
                                                         day: '2-digit'
-                                                    }) : 'Chưa có thông tin'}
-                                                </span>
-                                            </div>
-                                            <div></div>
+                                                    })
+                                                    : '—'}
+                                            </span>
                                         </div>
-                                    )}
+                                    </div>
+
+                                    {/* Cột phải */}
+                                    <div className="space-y-2">
+                                        <div className="grid grid-cols-[auto_1fr] gap-x-2">
+                                            <div className="flex items-center space-x-1">
+                                                <Phone className="h-4 w-4 text-blue-600" />
+                                                <label className="font-medium text-gray-700">SĐT:</label>
+                                            </div>
+                                            <span className="font-semibold text-gray-900">
+                                                {purchaseOrder.phone || '—'}
+                                            </span>
+                                        </div>
+
+                                        <div className="grid grid-cols-[auto_1fr] gap-x-2">
+                                            <div className="flex items-center space-x-1">
+                                                <Mail className="h-4 w-4 text-orange-600" />
+                                                <label className="font-medium text-gray-700">Email:</label>
+                                            </div>
+                                            <span className="font-semibold text-gray-900">
+                                                {purchaseOrder.email || '—'}
+                                            </span>
+                                        </div>
+
+                                        <div className="grid grid-cols-[auto_1fr] gap-x-2">
+                                            <div className="flex items-center space-x-1">
+                                                <MapPin className="h-4 w-4 text-red-600" />
+                                                <label className="font-medium text-gray-700">Địa chỉ:</label>
+                                            </div>
+                                            <span className="font-semibold text-gray-900">
+                                                {purchaseOrder.address || '—'}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             {/* Product List Table */}
@@ -660,7 +670,7 @@ const PurchaseOrderDetail = () => {
                                             <TableHead className="font-semibold" style={{ minWidth: '120px' }}>Tên hàng hóa</TableHead>
                                             <TableHead className="text-center font-semibold" style={{ minWidth: '119px' }}>Đơn vị/thùng</TableHead>
                                             <TableHead className="text-center font-semibold">Số thùng</TableHead>
-                                            <TableHead className="text-center font-semibold" style={{ minWidth: '110px' }}>Tổng số đơn vị</TableHead>
+                                            <TableHead className="text-center font-semibold max-w-[100px]" style={{ minWidth: '110px' }}>Tổng số đơn vị</TableHead>
                                             <TableHead className="text-center font-semibold" style={{ minWidth: '110px' }}>Đơn vị</TableHead>
                                         </TableRow>
                                     </TableHeader>

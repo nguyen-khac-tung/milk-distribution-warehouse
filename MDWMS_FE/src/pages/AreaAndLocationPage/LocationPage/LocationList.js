@@ -158,13 +158,24 @@ const LocationList = () => {
         setTimeout(() => handlePrint(), 100);
     };
 
+    // Normalize function: lowercase, trim, and collapse multiple spaces into one
+    const normalize = (str) => {
+        if (!str) return "";
+        return str
+            .toLowerCase()
+            .trim()
+            .replace(/\s+/g, " "); // gom nhiều space thành 1 space
+    };
+
     const fetchLocations = async (page = 1, pageSize = 10, params = {}) => {
         try {
             setLoading(true);
+            // Normalize search query trước khi gọi API (nhưng vẫn giữ nguyên giá trị trong input khi đang gõ)
+            const normalizedSearch = normalize(params.search || "");
             const res = await getLocations({
                 pageNumber: page,
                 pageSize,
-                search: params.search,
+                search: normalizedSearch,
                 isAvailable: params.filters?.isAvailable,
                 areaId: params.filters?.areaId,
                 status: params.filters?.status,
@@ -316,7 +327,7 @@ const LocationList = () => {
         ]
         if (!statusSearchQuery) return statusOptions
         const query = statusSearchQuery.toLowerCase()
-        return statusOptions.filter(option => 
+        return statusOptions.filter(option =>
             option.label.toLowerCase().includes(query)
         )
     }, [statusSearchQuery])
@@ -329,7 +340,7 @@ const LocationList = () => {
         ]
         if (!conditionSearchQuery) return conditionOptions
         const query = conditionSearchQuery.toLowerCase()
-        return conditionOptions.filter(option => 
+        return conditionOptions.filter(option =>
             option.label.toLowerCase().includes(query)
         )
     }, [conditionSearchQuery])
@@ -915,7 +926,7 @@ const LocationList = () => {
                                                         </TableCell>
                                                     )}
                                                     <TableCell className="px-6 py-4 text-slate-600 font-medium">
-                                                        {index + 1}
+                                                        {(pagination.current - 1) * pagination.pageSize + index + 1}
                                                     </TableCell>
                                                     <TableCell className="px-6 py-4 text-slate-700 font-medium">{location?.locationCode || ''}</TableCell>
                                                     <TableCell className="px-6 py-4 text-slate-700">{location?.areaName || "—"}</TableCell>

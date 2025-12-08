@@ -125,12 +125,24 @@ const DisposalList = () => {
         }
     };
 
+    // Normalize function: lowercase, trim, and collapse multiple spaces into one
+    const normalize = (str) => {
+        if (!str) return "";
+        return str
+            .toLowerCase()
+            .trim()
+            .replace(/\s+/g, " "); // gom nhiều space thành 1 space
+    };
+
     // Helper function để tạo request params
     const createRequestParams = (overrides = {}) => {
+        // Normalize search query trước khi gọi API (nhưng vẫn giữ nguyên giá trị trong input khi đang gõ)
+        const normalizedSearch = normalize(searchQuery);
+
         return {
             pageNumber: pagination.current,
             pageSize: pagination.pageSize,
-            search: searchQuery,
+            search: normalizedSearch,
             sortField: sortField,
             sortAscending: sortAscending,
             status: statusFilter,
@@ -164,10 +176,9 @@ const DisposalList = () => {
         // Chỉ gọi API sau khi đã load dữ liệu ban đầu
         if (!hasInitialLoad) return;
 
-        // Chỉ gọi fetchData() khi có search query thực sự active
-        if (searchQuery.trim()) {
-            fetchData();
-        }
+        // Luôn gọi fetchData() khi search query thay đổi
+        // normalize sẽ được áp dụng trong createRequestParams
+        fetchData();
     }, [hasInitialLoad, searchQuery]);
 
     // Filter được xử lý ở backend, không cần filter ở frontend nữa

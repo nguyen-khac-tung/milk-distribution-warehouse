@@ -332,9 +332,9 @@ const SalesOrderDetail = () => {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
+                <div className="grid grid-cols-1 lg:grid-cols-[2.2fr_0.8fr] gap-6 mt-4">
                     {/* Main Content - Left Side */}
-                    <div className="lg:col-span-2">
+                    <div>
                         <div className="bg-white border-2 border-gray-400 rounded-lg p-6 h-full flex flex-col">
                             {/* Title */}
                             <div className="text-center mb-6">
@@ -415,8 +415,8 @@ const SalesOrderDetail = () => {
                                     <TableHeader>
                                         <TableRow className="bg-gray-100">
                                             <TableHead className="w-16 text-center font-semibold">STT</TableHead>
+                                            <TableHead className="font-semibold">Mã hàng hóa</TableHead>
                                             <TableHead className="font-semibold">Tên hàng hóa</TableHead>
-                                            <TableHead className="font-semibold">Mã hàng</TableHead>
                                             <TableHead className="text-center font-semibold leading-tight">
                                                 <div className="flex flex-col items-center">
                                                     <span className="whitespace-nowrap">Đơn vị</span>
@@ -424,7 +424,7 @@ const SalesOrderDetail = () => {
                                                 </div>
                                             </TableHead>
                                             <TableHead className="text-center font-semibold">Số thùng</TableHead>
-                                            <TableHead className="text-center font-semibold">Tổng số đơn vị</TableHead>
+                                            <TableHead className="text-center font-semibold max-w-[100px]">Tổng số đơn vị</TableHead>
                                             <TableHead className="text-center font-semibold whitespace-nowrap">Đơn vị</TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -433,8 +433,8 @@ const SalesOrderDetail = () => {
                                             salesOrder.salesOrderItemDetails.map((item, index) => (
                                                 <TableRow key={item.salesOrderDetailId} className="border-b">
                                                     <TableCell className="text-center font-medium">{index + 1}</TableCell>
-                                                    <TableCell className="font-medium">{item.goods.goodsName}</TableCell>
-                                                    <TableCell className="text-gray-600">{item.goods.goodsCode}</TableCell>
+                                                    <TableCell className="font-medium">{item.goods.goodsCode}</TableCell>
+                                                    <TableCell className="text-left">{item.goods.goodsName}</TableCell>
                                                     <TableCell className="text-center font-semibold">{item.goodsPacking.unitPerPackage}</TableCell>
                                                     <TableCell className="text-center font-semibold">{item.packageQuantity}</TableCell>
                                                     <TableCell className="text-center font-semibold">{item.packageQuantity * item.goodsPacking.unitPerPackage}</TableCell>
@@ -488,7 +488,7 @@ const SalesOrderDetail = () => {
                                     <>
                                         <Button
                                             onClick={() => navigate(`/sales-orders/update/${salesOrder.salesOrderId}`)}
-                                            className="bg-amber-500 hover:bg-amber-600 text-white h-[38px] px-8"
+                                            className="bg-blue-500 hover:bg-blue-600 text-white h-[38px] px-8"
                                         >
                                             <Pencil className="h-4 w-4 mr-2" />
                                             Cập nhật

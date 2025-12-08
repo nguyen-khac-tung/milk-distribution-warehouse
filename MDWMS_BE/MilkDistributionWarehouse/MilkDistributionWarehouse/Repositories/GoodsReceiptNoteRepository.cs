@@ -35,7 +35,12 @@ namespace MilkDistributionWarehouse.Repositories
 
         public async Task<GoodsReceiptNote?> GetGRNByPurchaseOrderId(string purchaseOrderId)
         {
-            return await _context.GoodsReceiptNotes.FirstOrDefaultAsync(g => g.PurchaseOderId == purchaseOrderId);
+            return await _context.GoodsReceiptNotes
+                .Include(grn => grn.PurchaseOder)
+                    .ThenInclude(po => po.Supplier)
+                .Include(grn => grn.GoodsReceiptNoteDetails)
+                    .ThenInclude(grnd => grnd.Goods)
+                .FirstOrDefaultAsync(g => g.PurchaseOderId == purchaseOrderId);
         }
 
         public async Task<GoodsReceiptNote?> CreateGoodsReceiptNote(GoodsReceiptNote create)

@@ -78,7 +78,7 @@ const SalesOrderTable = ({
                         <TableHeader>
                             <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
                                 {/* STT */}
-                                <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-16">
+                                <TableHead className="font-semibold text-slate-900 px-2 py-2 text-center w-10">
                                     STT
                                 </TableHead>
 
@@ -87,7 +87,7 @@ const SalesOrderTable = ({
                                     className="font-semibold text-slate-900 px-6 py-3 text-left"
                                     onClick={() => handleSort("retailerName")}
                                 >
-                                    <div className="flex items-center space-x-2 cursor-pointer">
+                                    <div className="flex items-center space-x-2 cursor-pointer min-w-[100px]">
                                         <span>Nhà bán lẻ</span>
                                         {sortField === "retailerName" ? (
                                             sortAscending ? (
@@ -125,21 +125,63 @@ const SalesOrderTable = ({
                                 {/* Người duyệt */}
                                 {availableFields.hasApprovalByName && (
                                     <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                                        Người duyệt
+                                        <div
+                                            className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                            onClick={() => handleSort("approvalByName")}
+                                        >
+                                            <span>Người duyệt</span>
+                                            {sortField === "approvalByName" ? (
+                                                sortAscending ? (
+                                                    <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                ) : (
+                                                    <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                )
+                                            ) : (
+                                                <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                            )}
+                                        </div>
                                     </TableHead>
                                 )}
 
-                                {/* Người xác nhận */}
+                                {/* Người phân công */}
                                 {availableFields.hasAcknowledgedByName && (
-                                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                                        Người xác nhận
+                                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center min-w-[150px]">
+                                        <div
+                                            className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                            onClick={() => handleSort("acknowledgedByName")}
+                                        >
+                                            <span>Người phân công</span>
+                                            {sortField === "acknowledgedByName" ? (
+                                                sortAscending ? (
+                                                    <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                ) : (
+                                                    <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                )
+                                            ) : (
+                                                <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                            )}
+                                        </div>
                                     </TableHead>
                                 )}
 
                                 {/* Giao cho */}
                                 {availableFields.hasAssignToName && (
-                                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                                        Giao cho
+                                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center min-w-[100px]">
+                                        <div
+                                            className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                            onClick={() => handleSort("assignToName")}
+                                        >
+                                            <span>Giao cho</span>
+                                            {sortField === "assignToName" ? (
+                                                sortAscending ? (
+                                                    <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                ) : (
+                                                    <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                )
+                                            ) : (
+                                                <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                            )}
+                                        </div>
                                     </TableHead>
                                 )}
 
@@ -148,7 +190,7 @@ const SalesOrderTable = ({
                                     className="font-semibold text-slate-900 px-6 py-3 text-center"
                                     onClick={() => handleSort("estimatedTimeDeparture")}
                                 >
-                                    <div className="flex items-center justify-center space-x-2 cursor-pointer">
+                                    <div className="flex items-center justify-center space-x-2 cursor-pointer max-w-[100px]">
                                         <span>Thời gian xuất kho</span>
                                         {sortField === "estimatedTimeDeparture" ? (
                                             sortAscending ? (
@@ -182,7 +224,7 @@ const SalesOrderTable = ({
                                 </TableHead>
 
                                 {/* Trạng thái */}
-                                <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                                <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center min-w-[100px]">
                                     Trạng thái
                                 </TableHead>
 
@@ -206,8 +248,10 @@ const SalesOrderTable = ({
                                         </TableCell>
 
                                         {/* Nhà bán lẻ */}
-                                        <TableCell className="text-left px-6 py-4 max-w-[180px] break-words whitespace-normal">
-                                            {order?.retailerName || "-"}
+                                        <TableCell className="text-left text-slate-700 px-6 py-4 max-w-[180px] break-words whitespace-normal">
+                                            <span className="font-bold">
+                                                {order.retailerName || order.retailerId || '-'}
+                                            </span>
                                         </TableCell>
 
                                         {/* Người tạo */}
@@ -230,7 +274,7 @@ const SalesOrderTable = ({
                                             </TableCell>
                                         )}
 
-                                        {/* Người xác nhận */}
+                                        {/* Người phân công */}
                                         {availableFields.hasAcknowledgedByName && (
                                             <TableCell className="px-6 py-4 text-slate-700 text-center">
                                                 {order.acknowledgedByName || order.acknowledgedBy ? (
@@ -238,7 +282,7 @@ const SalesOrderTable = ({
                                                         {order.acknowledgedByName || order.acknowledgedBy}
                                                     </span>
                                                 ) : (
-                                                    <span className="text-gray-400 italic text-sm">Chưa xác nhận</span>
+                                                    <span className="text-gray-400 italic text-sm">Chưa phân công</span>
                                                 )}
                                             </TableCell>
                                         )}

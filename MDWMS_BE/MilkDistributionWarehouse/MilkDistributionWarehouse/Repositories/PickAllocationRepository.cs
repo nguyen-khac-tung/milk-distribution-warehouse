@@ -54,6 +54,10 @@ namespace MilkDistributionWarehouse.Repositories
         public async Task<PickAllocation?> GetPickAllocationDetailById(int? id)
         {
             return await _context.PickAllocations
+                .Include(p => p.GoodsIssueNoteDetail)
+                    .ThenInclude(g => g.GoodsIssueNote)
+                .Include(p => p.DisposalNoteDetail)
+                    .ThenInclude(d => d.DisposalNote)
                 .Include(p => p.Pallet)
                     .ThenInclude(p => p.GoodsPacking)
                 .Include(p => p.Pallet)

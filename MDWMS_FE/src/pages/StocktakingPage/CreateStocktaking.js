@@ -12,7 +12,7 @@ import { DatePicker, ConfigProvider } from 'antd';
 import dayjs from 'dayjs';
 import { createStocktaking } from '../../services/StocktakingService';
 import { extractErrorMessage } from '../../utils/Validation';
-import { getAreaDropdown } from '../../services/AreaServices';
+import { getAreaWithLocationsDropDown } from '../../services/AreaServices';
 import AssignAreaModal from '../../components/StocktakingComponents/AssignAreaModal';
 import AssignSingleAreaModalForCreate from '../../components/StocktakingComponents/AssignSingleAreaModalForCreate';
 import PermissionWrapper from '../../components/Common/PermissionWrapper';
@@ -61,7 +61,7 @@ const CreateStocktaking = () => {
         const fetchAreas = async () => {
             try {
                 setAreasLoading(true);
-                const response = await getAreaDropdown();
+                const response = await getAreaWithLocationsDropDown();
                 let areasList = [];
                 if (Array.isArray(response)) {
                     areasList = response;

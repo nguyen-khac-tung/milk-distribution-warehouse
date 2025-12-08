@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.VisualBasic;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.Entities;
@@ -13,7 +14,8 @@ namespace MilkDistributionWarehouse.Repositories
         IQueryable<SalesOrder> GetListSalesOrdersByStatus(int status);
         Task<SalesOrder?> GetSalesOrderById(string? id);
         Task<bool> HasActiveSalesOrder(int retailerId);
-        Task<bool> IsAllSalesOrderDraffOrEmpty(int retailerId);
+        Task<bool> IsAllSalesOrderDraftOrEmpty(int retailerId);
+        Task<List<SalesOrderDetail>> GetCommittedSaleOrderQuantities(List<int>? goodsIds);
         Task CreateSalesOrder(SalesOrder salesOrder);
         Task UpdateSalesOrder(SalesOrder salesOrder);
         Task DeleteSalesOrder(SalesOrder salesOrder);
@@ -74,10 +76,31 @@ namespace MilkDistributionWarehouse.Repositories
                 && so.Status != SalesOrderStatus.Completed);
         }
 
-        public async Task<bool> IsAllSalesOrderDraffOrEmpty(int retailerId)
+        public async Task<bool> IsAllSalesOrderDraftOrEmpty(int retailerId)
         {
-            var salesOrder = _context.SalesOrders.Where(so => so.RetailerId == retailerId);
-            return !await salesOrder.AnyAsync(so => so.Status != SalesOrderStatus.Draft);
+            var salesOrders = _context.SalesOrders.Where(so => so.RetailerId == retailerId);
+
+            bool hasAny = await salesOrders.AnyAsync();
+            if (!hasAny) return true; 
+
+            return !await salesOrders.AnyAsync(so => so.Status != SalesOrderStatus.Draft);
+        }
+
+        public async Task<List<SalesOrderDetail>> GetCommittedSaleOrderQuantities(List<int>? goodsIds)
+        {
+            int[] inProgressStatuses = {
+                SalesOrderStatus.PendingApproval,
+                SalesOrderStatus.Approved,
+                SalesOrderStatus.AssignedForPicking,
+                SalesOrderStatus.Picking
+            };
+
+            return await _context.SalesOrders
+                .Where(s => s.Status != null && inProgressStatuses.Contains((int)s.Status))
+                .SelectMany(s => s.SalesOrderDetails)
+                .Where(s => goodsIds == null || goodsIds.Contains(s.GoodsId ?? 0))
+                .AsNoTracking()
+                .ToListAsync();
         }
 
         public async Task CreateSalesOrder(SalesOrder salesOrder)
