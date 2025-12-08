@@ -587,11 +587,12 @@ export default function ScanPalletStocktakingModal({
 
     if (!isOpen) return null;
 
-    // Kiểm tra xem vị trí đã được quyết định chưa (có pallet Matched hoặc có pallet không mong đợi hoặc có pallet Mislocated)
+    // Kiểm tra xem vị trí đã được quyết định chưa (có pallet Matched hoặc có pallet không mong đợi hoặc có pallet Mislocated hoặc có pallet Missing)
     const isLocationDecided =
         expectedPallets.some(p => p.status === STOCK_PALLET_STATUS.Matched) ||
         unexpectedPallets.length > 0 ||
-        expectedPallets.some(p => p.status === STOCK_PALLET_STATUS.Mislocated);
+        expectedPallets.some(p => p.status === STOCK_PALLET_STATUS.Mislocated) ||
+        expectedPallets.some(p => p.status === STOCK_PALLET_STATUS.Missing);
 
     return createPortal(
         <div
