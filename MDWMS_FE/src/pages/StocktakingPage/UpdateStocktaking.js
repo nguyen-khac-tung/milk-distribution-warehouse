@@ -361,9 +361,9 @@ const UpdateStocktaking = () => {
 
             await updateStocktaking(submitData);
 
-            if (window.showToast) {
-                window.showToast('Cập nhật phiếu kiểm kê thành công!', 'success');
-            }
+            // if (window.showToast) {
+            //     window.showToast('Cập nhật phiếu kiểm kê thành công!', 'success');
+            // }
 
             // Navigate về danh sách sau khi cập nhật thành công
             navigate('/stocktakings');
@@ -417,9 +417,9 @@ const UpdateStocktaking = () => {
             // Gọi API update trước
             await updateStocktaking(submitData);
 
-            if (window.showToast) {
-                window.showToast('Cập nhật phiếu kiểm kê thành công!', 'success');
-            }
+            // if (window.showToast) {
+            //     window.showToast('Cập nhật phiếu kiểm kê thành công!', 'success');
+            // }
 
             // Sau khi update thành công, mở modal phân công
             await openAssignModalAfterUpdate();
@@ -964,6 +964,15 @@ const UpdateStocktaking = () => {
 
                         {/* Actions */}
                         <div className="flex justify-end gap-3 pt-6 border-t border-gray-200 mt-6">
+                            {/* Luôn hiển thị nút Cập nhật */}
+                            <Button
+                                type="button"
+                                onClick={handleUpdate}
+                                disabled={updateLoading}
+                                className="h-[38px] px-6 bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {updateLoading ? 'Đang cập nhật...' : 'Cập nhật'}
+                            </Button>
                             {hasNewAreas ? (
                                 // Nếu có khu vực mới được thêm vào → hiển thị nút "Cập nhật và Phân công"
                                 <Button
@@ -975,25 +984,15 @@ const UpdateStocktaking = () => {
                                     {updateLoading ? 'Đang xử lý...' : 'Cập nhật và Phân công'}
                                 </Button>
                             ) : (
-                                // Nếu không có khu vực mới → hiển thị 2 nút riêng
-                                <>
-                                    <Button
-                                        type="button"
-                                        onClick={handleUpdate}
-                                        disabled={updateLoading}
-                                        className="h-[38px] px-6 bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {updateLoading ? 'Đang cập nhật...' : 'Cập nhật'}
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        onClick={handleOpenAssignModal}
-                                        disabled={updateLoading}
-                                        className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {isAllAreasAssigned && selectedAreas.length > 0 ? 'Phân công lại' : 'Phân công'}
-                                    </Button>
-                                </>
+                                // Nếu không có khu vực mới → hiển thị nút "Phân công"
+                                <Button
+                                    type="button"
+                                    onClick={handleOpenAssignModal}
+                                    disabled={updateLoading}
+                                    className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isAllAreasAssigned && selectedAreas.length > 0 ? 'Phân công lại' : 'Phân công'}
+                                </Button>
                             )}
                         </div>
                     </div>

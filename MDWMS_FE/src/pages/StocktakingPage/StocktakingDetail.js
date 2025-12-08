@@ -693,31 +693,6 @@ const StocktakingDetail = () => {
                                                         </div>
                                                     )}
 
-                                                    {/* Nút Phân công - chỉ hiển thị khi khu vực chưa được phân công */}
-                                                    {area.status !== STOCK_AREA_STATUS.Assigned &&
-                                                        (stocktaking.status === STOCKTAKING_STATUS.Draft || stocktaking.status === STOCKTAKING_STATUS.Assigned) && (
-                                                            <div className="border-t border-slate-200 pt-4 flex justify-center">
-                                                                <PermissionWrapper requiredPermission={
-                                                                    stocktaking.status === STOCKTAKING_STATUS.Draft
-                                                                        ? PERMISSIONS.STOCKTAKING_VIEW_WM
-                                                                        : PERMISSIONS.STOCKTAKING_REASSIGN_AREA
-                                                                }>
-                                                                    <Button
-                                                                        onClick={() => {
-                                                                            const areaId = area.areaId;
-                                                                            if (areaId) {
-                                                                                setAreaIdFromCard(areaId);
-                                                                                setShowAssignSingleAreaFromCard(true);
-                                                                            }
-                                                                        }}
-                                                                        className="h-[38px] px-4 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
-                                                                    >
-                                                                        <Users className="mr-2 h-4 w-4" />
-                                                                        Phân công khu vực này
-                                                                    </Button>
-                                                                </PermissionWrapper>
-                                                            </div>
-                                                        )}
                                                     {/* Nút Phân công - chỉ hiển thị khi khu vực chưa được phân công (status là null, undefined, hoặc không phải các trạng thái đã định nghĩa) */}
                                                     {(() => {
                                                         // Kiểm tra xem status có phải là một trong các trạng thái đã được định nghĩa không
@@ -789,27 +764,11 @@ const StocktakingDetail = () => {
                         )}
 
                         {/* Assignment Button - Only visible for Warehouse Manager */}
-                        {/* Show "Bắt đầu phân công" button when status is Draft (1) */}
-                        {/* Ẩn nút nếu chỉ có 1 khu vực chưa phân công */}
-                        {stocktaking.status === STOCKTAKING_STATUS.Draft &&
-                            stocktaking.stocktakingAreas?.length !== 1 && (
-                                <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_VIEW_WM}>
-                                    <div className="flex justify-center">
-                                        <Button
-                                            onClick={handleStartAssignment}
-                                            className="h-[42px] px-8 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
-                                        >
-                                            <Users className="mr-2 h-5 w-5" />
-                                            Bắt đầu phân công theo khu vực
-                                        </Button>
-                                    </div>
-                                </PermissionWrapper>
-                            )}
-                        {/* Chỉ hiển thị khi có đúng 2 khu vực và TẤT CẢ đều chưa phân công */}
+                        {/* Show "Bắt đầu phân công" button when status is Draft */}
+                        {/* Ẩn nút nếu chỉ có 1 khu vực */}
                         {stocktaking.status === STOCKTAKING_STATUS.Draft &&
                             stocktaking.stocktakingAreas &&
-                            stocktaking.stocktakingAreas.length === 2 &&
-                            areAllAreasUnassigned() && (
+                            stocktaking.stocktakingAreas.length !== 1 && (
                                 <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_VIEW_WM}>
                                     <div className="flex justify-center">
                                         <Button
