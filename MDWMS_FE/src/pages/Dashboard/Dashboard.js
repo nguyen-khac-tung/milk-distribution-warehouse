@@ -50,17 +50,8 @@ import {
   Legend,
 } from "recharts"
 
-import { getLocationReport, getInventoryReport } from "../../services/DashboardService"
-import { 
-  getPurchaseOrderSaleManagers,
-  getPurchaseOrderWarehouseManagers
-} from "../../services/PurchaseOrderService"
-import { 
-  getSalesOrderListSaleManager,
-  getSalesOrderListWarehouseManager
-} from "../../services/SalesOrderService"
+import { getLocationReport, getGoodsReceiptReport, getGoodsIssueReport, getInventoryReport } from "../../services/DashboardService"
 import { getAreaDropdown } from "../../services/AreaServices"
-import { usePermissions } from "../../hooks/usePermissions"
 import WarehouseEventCalendar from "./WarehouseEventCalendar"
 import WarehousePerformance from "./WarehousePerformance"
 import ExpiringProducts from "./ExpiringProducts"
@@ -69,10 +60,6 @@ import dayjs from "dayjs"
 
 export default function Dashboard({ activeSection = "dashboard", onSectionChange }) {
   const navigate = useNavigate()
-  const { isBusinessOwner, isSaleManager, isWarehouseManager } = usePermissions()
-  
-  // Chỉ cho phép Business Owner, Sale Manager, Warehouse Manager xem dashboard
-  const canViewDashboard = isBusinessOwner || isSaleManager || isWarehouseManager
   const [locationReport, setLocationReport] = useState({
     totalLocations: 0,
     availableLocationCount: 0,
@@ -159,15 +146,6 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
   // Fetch purchase and sales orders data for charts and stats
   useEffect(() => {
     const fetchOrdersData = async () => {
-      // Chỉ fetch nếu user có quyền xem dashboard
-      if (!canViewDashboard) {
-        setChartLoading(false)
-        setOrdersChartData([])
-        setPurchaseOrdersStats({ current: 0, previous: 0, change: 0 })
-        setSalesOrdersStats({ current: 0, previous: 0, change: 0 })
-        return
-      }
-
       try {
         setChartLoading(true)
 
@@ -212,85 +190,36 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
         }
 
         // Fetch current period data - use large pageSize to get all data
-        // PurchaseOrder uses createdAt filter with format: "YYYY-MM-DDTHH:mm:ss~YYYY-MM-DDTHH:mm:ss"
-        // SalesOrder uses fromEstimatedDate/toEstimatedDate filter
-        
-        // Chỉ Business Owner, Sale Manager, Warehouse Manager mới xem được
-        // Chọn API dựa trên role:
-        // - Business Owner và Sale Manager → getPurchaseOrderSaleManagers, getSalesOrderListSaleManager
-        // - Warehouse Manager → getPurchaseOrderWarehouseManagers, getSalesOrderListWarehouseManager
-        let fetchPurchaseOrderAPI
-        let fetchSalesOrderAPI
-        
-        if (isBusinessOwner || isSaleManager) {
-          // Business Owner và Sale Manager dùng API của Sale Manager
-          fetchPurchaseOrderAPI = getPurchaseOrderSaleManagers
-          fetchSalesOrderAPI = getSalesOrderListSaleManager
-        } else if (isWarehouseManager) {
-          // Warehouse Manager dùng API của Warehouse Manager
-          fetchPurchaseOrderAPI = getPurchaseOrderWarehouseManagers
-          fetchSalesOrderAPI = getSalesOrderListWarehouseManager
-        } else {
-          // Nếu không có quyền, trả về empty data
-          fetchPurchaseOrderAPI = () => Promise.resolve({ data: { items: [] } })
-          fetchSalesOrderAPI = () => Promise.resolve({ data: { items: [] } })
-        }
-
-        const [currentPurchaseOrdersResponse, currentSalesOrdersResponse, previousPurchaseOrdersResponse, previousSalesOrdersResponse] = await Promise.all([
-          fetchPurchaseOrderAPI({ 
-            pageNumber: 1, 
-            pageSize: 1000, 
-            createdAt: `${fromDate}T00:00:00~${toDate}T23:59:59` 
-          }).catch(() => ({ data: { items: [] } })),
-          fetchSalesOrderAPI({ 
-            pageNumber: 1, 
-            pageSize: 1000, 
-            fromEstimatedDate: fromDate, 
-            toEstimatedDate: toDate 
-          }).catch(() => ({ data: { items: [] } })),
-          fetchPurchaseOrderAPI({ 
-            pageNumber: 1, 
-            pageSize: 1000, 
-            createdAt: `${prevFromDate}T00:00:00~${prevToDate}T23:59:59` 
-          }).catch(() => ({ data: { items: [] } })),
-          fetchSalesOrderAPI({ 
-            pageNumber: 1, 
-            pageSize: 1000, 
-            fromEstimatedDate: prevFromDate, 
-            toEstimatedDate: prevToDate 
-          }).catch(() => ({ data: { items: [] } }))
+        const [currentReceipts, currentIssues, previousReceipts, previousIssues] = await Promise.all([
+          getGoodsReceiptReport({ fromDate, toDate, pageNumber: 1, pageSize: 1000 }).catch(() => []),
+          getGoodsIssueReport({ fromDate, toDate, pageNumber: 1, pageSize: 1000 }).catch(() => []),
+          getGoodsReceiptReport({ fromDate: prevFromDate, toDate: prevToDate, pageNumber: 1, pageSize: 1000 }).catch(() => []),
+          getGoodsIssueReport({ fromDate: prevFromDate, toDate: prevToDate, pageNumber: 1, pageSize: 1000 }).catch(() => [])
         ])
 
-        // Handle response structure - API returns res.data which can be:
-        // { data: { items: [], totalCount: 0 } } or { items: [], totalCount: 0 }
+        // Handle response structure
         const normalizeData = (response) => {
-          if (!response) return []
           if (Array.isArray(response)) return response
-          // Check nested structure first: response.data.data.items
-          if (response?.data?.data?.items && Array.isArray(response.data.data.items)) return response.data.data.items
-          // Check direct structure: response.data.items
-          if (response?.data?.items && Array.isArray(response.data.items)) return response.data.items
-          // Check if response.items exists
           if (response?.items && Array.isArray(response.items)) return response.items
-          // Check if response.data is array
           if (response?.data && Array.isArray(response.data)) return response.data
+          if (response?.data?.items && Array.isArray(response.data.items)) return response.data.items
           return []
         }
 
-        const currentPurchaseOrdersList = normalizeData(currentPurchaseOrdersResponse)
-        const currentSalesOrdersList = normalizeData(currentSalesOrdersResponse)
-        const previousPurchaseOrdersList = normalizeData(previousPurchaseOrdersResponse)
-        const previousSalesOrdersList = normalizeData(previousSalesOrdersResponse)
+        const currentReceiptsList = normalizeData(currentReceipts)
+        const currentIssuesList = normalizeData(currentIssues)
+        const previousReceiptsList = normalizeData(previousReceipts)
+        const previousIssuesList = normalizeData(previousIssues)
 
-        // Calculate stats - count orders (each order is one)
-        const currentPurchaseCount = currentPurchaseOrdersList.length
-        const previousPurchaseCount = previousPurchaseOrdersList.length
+        // Calculate stats
+        const currentPurchaseCount = currentReceiptsList.length
+        const previousPurchaseCount = previousReceiptsList.length
         const purchaseChange = previousPurchaseCount > 0
           ? ((currentPurchaseCount - previousPurchaseCount) / previousPurchaseCount * 100).toFixed(0)
           : currentPurchaseCount > 0 ? 100 : 0
 
-        const currentSalesCount = currentSalesOrdersList.length
-        const previousSalesCount = previousSalesOrdersList.length
+        const currentSalesCount = currentIssuesList.length
+        const previousSalesCount = previousIssuesList.length
         const salesChange = previousSalesCount > 0
           ? ((currentSalesCount - previousSalesCount) / previousSalesCount * 100).toFixed(0)
           : currentSalesCount > 0 ? 100 : 0
@@ -318,24 +247,20 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
             salesDataByDay[day.dayOfWeek] = 0
           })
 
-          currentPurchaseOrdersList.forEach(order => {
-            // PurchaseOrder uses createdAt field
-            const orderDate = order.createdAt || order.CreatedAt
-            if (orderDate) {
-              const date = dayjs(orderDate)
-              const dayOfWeek = date.day()
+          currentReceiptsList.forEach(receipt => {
+            if (receipt.receiptDate) {
+              const receiptDate = dayjs(receipt.receiptDate)
+              const dayOfWeek = receiptDate.day()
               if (purchaseDataByDay.hasOwnProperty(dayOfWeek)) {
                 purchaseDataByDay[dayOfWeek]++
               }
             }
           })
 
-          currentSalesOrdersList.forEach(order => {
-            // SalesOrder uses estimatedTimeDeparture field
-            const orderDate = order.estimatedTimeDeparture || order.EstimatedTimeDeparture
-            if (orderDate) {
-              const date = dayjs(orderDate)
-              const dayOfWeek = date.day()
+          currentIssuesList.forEach(issue => {
+            if (issue.issueDate) {
+              const issueDate = dayjs(issue.issueDate)
+              const dayOfWeek = issueDate.day()
               if (salesDataByDay.hasOwnProperty(dayOfWeek)) {
                 salesDataByDay[dayOfWeek]++
               }
@@ -361,12 +286,10 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
           })
 
           // Group purchase orders by exact date
-          currentPurchaseOrdersList.forEach(order => {
-            // PurchaseOrder uses createdAt field
-            const orderDate = order.createdAt || order.CreatedAt
-            if (orderDate) {
-              const date = dayjs(orderDate)
-              const dateKey = date.format('YYYY-MM-DD')
+          currentReceiptsList.forEach(receipt => {
+            if (receipt.receiptDate) {
+              const receiptDate = dayjs(receipt.receiptDate)
+              const dateKey = receiptDate.format('YYYY-MM-DD')
               if (purchaseDataByDate.hasOwnProperty(dateKey)) {
                 purchaseDataByDate[dateKey]++
               }
@@ -374,12 +297,10 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
           })
 
           // Group sales orders by exact date
-          currentSalesOrdersList.forEach(order => {
-            // SalesOrder uses estimatedTimeDeparture field
-            const orderDate = order.estimatedTimeDeparture || order.EstimatedTimeDeparture
-            if (orderDate) {
-              const date = dayjs(orderDate)
-              const dateKey = date.format('YYYY-MM-DD')
+          currentIssuesList.forEach(issue => {
+            if (issue.issueDate) {
+              const issueDate = dayjs(issue.issueDate)
+              const dateKey = issueDate.format('YYYY-MM-DD')
               if (salesDataByDate.hasOwnProperty(dateKey)) {
                 salesDataByDate[dateKey]++
               }
@@ -426,7 +347,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
     if (activeSection === "dashboard") {
       fetchOrdersData()
     }
-  }, [activeSection, chartPeriod, canViewDashboard])
+  }, [activeSection, chartPeriod])
 
   // Fetch areas dropdown
   useEffect(() => {
@@ -652,11 +573,11 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold text-gray-600 mb-1 mt-5">
-                      Đơn mua hàng
+                      Phiếu mua hàng
                     </p>
                     <div className="flex items-baseline gap-2 mb-1">
                       <h3 className="text-2xl font-bold text-gray-900">{purchaseOrdersStats.current.toLocaleString("vi-VN")}</h3>
-                      <span className="text-sm font-semibold text-gray-600">đơn</span>
+                      <span className="text-sm font-semibold text-gray-600">phiếu</span>
                       {/* {purchaseOrdersStats.change !== 0 && (
                         <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${purchaseOrdersStats.change > 0
                           ? 'bg-green-100 text-green-700'
@@ -666,7 +587,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                         </span>
                       )} */}
                     </div>
-                    <p className="text-xs font-medium text-gray-500">Tổng số đơn mua hàng</p>
+                    <p className="text-xs font-medium text-gray-500">Tổng số phiếu mua hàng</p>
                   </div>
                 </div>
               </div>
@@ -696,11 +617,11 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold text-gray-600 mb-1 mt-5">
-                      Đơn bán hàng
+                      Phiếu bán hàng
                     </p>
                     <div className="flex items-baseline gap-2 mb-1">
                       <h3 className="text-2xl font-bold text-gray-900">{salesOrdersStats.current.toLocaleString("vi-VN")}</h3>
-                      <span className="text-sm font-semibold text-gray-600">đơn</span>
+                      <span className="text-sm font-semibold text-gray-600">phiếu</span>
                       {/* {salesOrdersStats.change !== 0 && (
                         <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${salesOrdersStats.change > 0
                           ? 'bg-green-100 text-green-700'
@@ -710,7 +631,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                         </span>
                       )} */}
                     </div>
-                    <p className="text-xs font-medium text-gray-500">Tổng số đơn bán hàng</p>
+                    <p className="text-xs font-medium text-gray-500">Tổng số phiếu bán hàng</p>
                   </div>
                 </div>
               </div>
@@ -817,7 +738,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-6">
           <Card className="lg:col-span-2">
             <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
-              <CardTitle className="text-base font-medium">Đơn mua & bán hàng</CardTitle>
+              <CardTitle className="text-base font-medium">Phiếu mua & bán hàng</CardTitle>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-8 text-xs">
@@ -861,7 +782,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                                 {payload.map(item => (
                                   <p key={item.dataKey} className="flex justify-between gap-4">
                                     <span>{item.name}</span>
-                                    <span>{item.value} đơn</span>
+                                    <span>{item.value} phiếu</span>
                                   </p>
                                 ))}
                               </div>
@@ -879,7 +800,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                       <Line
                         type="monotone"
                         dataKey="sales"
-                        name="Đơn bán hàng"
+                        name="Phiếu bán hàng"
                         stroke="#3B82F6"
                         strokeWidth={2}
                         dot={{ r: 4, fill: "white", stroke: "#3B82F6", strokeWidth: 2 }}
@@ -888,7 +809,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                       <Line
                         type="monotone"
                         dataKey="purchase"
-                        name="Đơn mua hàng"
+                        name="Phiếu mua hàng"
                         stroke="#EF4444"
                         strokeWidth={2}
                         dot={{ r: 4, fill: "white", stroke: "#EF4444", strokeWidth: 2 }}
@@ -1083,17 +1004,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
   return (
     <div className="min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
-        {activeSection === "dashboard" && !canViewDashboard && (
-          <Card className="w-full">
-            <CardHeader>
-              <CardTitle>Không có quyền truy cập</CardTitle>
-              <CardDescription>
-                Chỉ Chủ doanh nghiệp, Quản lý kinh doanh và Quản lý kho mới có quyền xem Dashboard.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        )}
-        {activeSection === "dashboard" && canViewDashboard && renderDashboard()}
+        {activeSection === "dashboard" && renderDashboard()}
         {activeSection !== "dashboard" && (
           <div className="flex items-center justify-center h-full">
             <Card className="w-full max-w-md">
