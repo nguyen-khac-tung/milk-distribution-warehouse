@@ -247,23 +247,17 @@ function CreateSaleOrder({
 
             return;
         } else if (field === "goodsName") {
-            // Cho phép chọn cùng hàng hóa (validation sẽ kiểm tra khi chọn quy cách đóng gói)
-            // GoodsPackings đã được load sẵn khi load goods, không cần load riêng nữa
 
-            // Reset quantity and packing when goods changes
             updatedItems = updatedItems.map((item) =>
                 item.id === id
                     ? { ...item, [field]: value, quantity: "", goodsPackingId: "" }
                     : item
             );
         } else if (field === "goodsPackingId") {
-            // Không cần kiểm tra duplicate vì đã ẩn các option trùng lặp
-            // Update normally
             updatedItems = updatedItems.map((item) =>
                 item.id === id ? { ...item, [field]: value } : item
             );
         } else {
-            // For other fields, just update normally
             updatedItems = updatedItems.map((item) =>
                 item.id === id ? { ...item, [field]: value } : item
             );
@@ -271,14 +265,12 @@ function CreateSaleOrder({
 
         setItems(updatedItems);
 
-        // Xóa lỗi validation khi người dùng sửa
         if (fieldErrors[`${id}-${field}`]) {
             const newErrors = { ...fieldErrors };
             delete newErrors[`${id}-${field}`];
             setFieldErrors(newErrors);
         }
 
-        // Xóa viền đỏ khi người dùng sửa item (nếu item đó đã từng vượt quá tồn kho)
         if (itemsExceedingStock[id]) {
             setItemsExceedingStock(prev => {
                 const newMap = { ...prev };
@@ -287,7 +279,6 @@ function CreateSaleOrder({
             });
         }
 
-        // Validate real-time cho số lượng (use updatedItems to avoid stale state)
         if (field === "quantity" || field === "goodsPackingId") {
             const updatedItem = updatedItems.find(item => item.id === id);
             if (updatedItem) {
@@ -309,7 +300,6 @@ function CreateSaleOrder({
                         });
                     }
                 } else if (tempItem.quantity) {
-                    // Nếu chưa có đủ thông tin nhưng đã nhập số lượng, validate cơ bản
                     const quantity = parseInt(tempItem.quantity);
                     if (isNaN(quantity) || quantity <= 0) {
                         setFieldErrors(prev => ({
@@ -317,7 +307,6 @@ function CreateSaleOrder({
                             [`${id}-quantity`]: "Vui lòng nhập số thùng lớn hơn 0"
                         }));
                     } else {
-                        // Xóa lỗi nếu số lượng hợp lệ nhưng chưa có đủ thông tin để validate tồn kho
                         setFieldErrors(prev => {
                             const newErrors = { ...prev };
                             delete newErrors[`${id}-quantity`];
@@ -325,7 +314,6 @@ function CreateSaleOrder({
                         });
                     }
                 } else {
-                    // Nếu không có số lượng, xóa lỗi
                     setFieldErrors(prev => {
                         const newErrors = { ...prev };
                         delete newErrors[`${id}-quantity`];
@@ -384,7 +372,7 @@ function CreateSaleOrder({
 
                 // Nếu chưa load goods cho nhà cung cấp này, vẫn hiển thị (có thể đang load hoặc chưa load)
                 if (!goods || goods.length === 0) {
-                    return true; // Hiển thị để người dùng có thể chọn và trigger load
+                    return true;
                 }
 
                 // Nếu đã có goods, kiểm tra xem nhà cung cấp này còn hàng hóa có quy cách đóng gói chưa được chọn không
@@ -804,8 +792,6 @@ function CreateSaleOrder({
             }
         });
 
-        // Tách riêng blocking errors (lỗi format/required) và warnings (tồn kho)
-        // Chỉ block validation nếu có blocking errors, warnings không block
         const blockingErrors = {};
         const warnings = {};
 
@@ -1221,12 +1207,12 @@ function CreateSaleOrder({
                     navigate("/sales-orders");
                 } else {
                     // Nếu không lấy được ID, vẫn báo thành công (đã tạo)
-                    window.showToast("Tạo đơn bán hàng thành công! Vui lòng gửi phê duyệt từ trang chi tiết.", "success");
+                    window.showToast("Đơn đã được tạo (Nháp). Không thể gửi phê duyệt vì bạn đang có đơn chờ duyệt.", "warning");
                     navigate("/sales-orders");
                 }
             } catch (fetchError) {
                 // Nếu không fetch được, vẫn báo thành công (đã tạo)
-                window.showToast("Tạo đơn bán hàng thành công! Vui lòng gửi phê duyệt từ trang chi tiết.", "success");
+                window.showToast("Đơn đã được tạo (Nháp). Không thể gửi phê duyệt vì bạn đang có đơn chờ duyệt.", "warning");
                 navigate("/sales-orders");
             }
         } catch (error) {

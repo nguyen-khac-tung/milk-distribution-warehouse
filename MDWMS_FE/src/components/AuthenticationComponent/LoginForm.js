@@ -34,7 +34,7 @@ export function LoginForm() {
                     navigate("/change-password");
                 } else {
                     // Đăng nhập bình thường
-                    window.showToast("Đăng nhập thành công!", "success");
+                    // window.showToast("Đăng nhập thành công!", "success");
                     navigate("/");
                 }
             } else {
