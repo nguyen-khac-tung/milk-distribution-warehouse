@@ -3,7 +3,7 @@ import { Card, CardContent } from "../../components/ui/card";
 import Pagination from "../../components/Common/Pagination";
 import { Table as CustomTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
 import { Button } from "../../components/ui/button";
-import { Plus, Edit, Trash2, Eye, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, Folder, Calendar, Clock } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, Folder } from "lucide-react";
 import SearchFilterToggle from "../../components/Common/SearchFilterToggle";
 import Loading from "../../components/Common/Loading";
 import StatsCards from "../../components/Common/StatsCards";
@@ -29,8 +29,6 @@ const BatchList = () => {
     const [statusSearchQuery, setStatusSearchQuery] = useState("");
 
     // Date filters
-    const [manufacturingDateFilter, setManufacturingDateFilter] = useState({ fromDate: '', toDate: '' });
-    const [showManufacturingDateFilter, setShowManufacturingDateFilter] = useState(false);
     const [expiryDateFilter, setExpiryDateFilter] = useState({ fromDate: '', toDate: '' });
     const [showExpiryDateFilter, setShowExpiryDateFilter] = useState(false);
 
@@ -52,18 +50,6 @@ const BatchList = () => {
             .replace(/\s+/g, " "); // gom nhiều space thành 1 space
     };
 
-    // Helper function to format date range for API
-    const formatDateRange = (fromDate, toDate) => {
-        if (fromDate && toDate) {
-            return `${fromDate}~${toDate}`;
-        } else if (fromDate) {
-            return `${fromDate}~`;
-        } else if (toDate) {
-            return `~${toDate}`;
-        }
-        return '';
-    };
-
     const fetchBatches = async (params = {}) => {
         try {
             setLoading(true);
@@ -77,8 +63,8 @@ const BatchList = () => {
                 sortField: params.sortField ?? sortField,
                 sortAscending: typeof params.sortAscending === 'boolean' ? params.sortAscending : sortAscending,
                 status: params.status ?? statusFilter,
-                manufacturingDate: params.manufacturingDate ?? formatDateRange(manufacturingDateFilter.fromDate, manufacturingDateFilter.toDate),
-                expiryDate: params.expiryDate ?? formatDateRange(expiryDateFilter.fromDate, expiryDateFilter.toDate),
+                fromExpiryDate: params.fromExpiryDate ?? expiryDateFilter.fromDate,
+                toExpiryDate: params.toExpiryDate ?? expiryDateFilter.toDate,
             });
 
             const payload = res ?? {};
@@ -95,7 +81,15 @@ const BatchList = () => {
             setPagination(prev => ({ ...prev, pageNumber: params.pageNumber ?? prev.pageNumber, pageSize: params.pageSize ?? prev.pageSize, totalCount: total }));
         } catch (error) {
             console.error("Không thể tải danh sách lô hàng:", error);
-            window.showToast("Không thể tải danh sách lô hàng", "error");
+            // Chỉ hiển thị toast cho lỗi thực sự, không phải khi filter không có kết quả
+            const errorMessage = error.message || "";
+            if (!errorMessage.toLowerCase().includes("danh sách") ||
+                (!errorMessage.toLowerCase().includes("trống") && !errorMessage.toLowerCase().includes("rỗng"))) {
+                window.showToast("Không thể tải danh sách lô hàng", "error");
+            }
+            // Set empty state để hiển thị table rỗng
+            setBatches([]);
+            setPagination(prev => ({ ...prev, totalCount: 0 }));
         } finally {
             setLoading(false);
             setSearchLoading(false);
@@ -129,17 +123,14 @@ const BatchList = () => {
             if (showPageSizeFilter && !event.target.closest('.page-size-filter-dropdown')) {
                 setShowPageSizeFilter(false);
             }
-            if (showManufacturingDateFilter && !event.target.closest('.manufacturing-date-filter-dropdown')) {
-                setShowManufacturingDateFilter(false);
-            }
-            if (showExpiryDateFilter && !event.target.closest('.expiry-date-filter-dropdown')) {
+            if (showExpiryDateFilter && !event.target.closest('.date-filter-dropdown')) {
                 setShowExpiryDateFilter(false);
             }
         }
 
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [showStatusFilter, showPageSizeFilter, showManufacturingDateFilter, showExpiryDateFilter]);
+    }, [showStatusFilter, showPageSizeFilter, showExpiryDateFilter]);
 
     // Debounced search
     useEffect(() => {
@@ -179,55 +170,17 @@ const BatchList = () => {
         fetchBatches({ pageNumber: 1, status: "" });
     };
 
-    // Manufacturing Date Filter handlers
-    const handleManufacturingDateFilter = (value) => {
-        setManufacturingDateFilter(value);
-    };
-
-    const applyManufacturingDateFilter = () => {
-        let manufacturingDateFilterValue = "";
-        if (manufacturingDateFilter.fromDate && manufacturingDateFilter.toDate) {
-            manufacturingDateFilterValue = `${manufacturingDateFilter.fromDate}~${manufacturingDateFilter.toDate}`;
-        } else if (manufacturingDateFilter.fromDate) {
-            manufacturingDateFilterValue = `${manufacturingDateFilter.fromDate}~`;
-        } else if (manufacturingDateFilter.toDate) {
-            manufacturingDateFilterValue = `~${manufacturingDateFilter.toDate}`;
-        }
-
-        setSearchLoading(true);
-        fetchBatches({
-            pageNumber: 1,
-            manufacturingDate: manufacturingDateFilterValue
-        });
-        setShowManufacturingDateFilter(false);
-    };
-
-    const clearManufacturingDateFilter = () => {
-        setManufacturingDateFilter({ fromDate: '', toDate: '' });
-        setSearchLoading(true);
-        fetchBatches({ pageNumber: 1, manufacturingDate: "" });
-        setShowManufacturingDateFilter(false);
-    };
-
     // Expiry Date Filter handlers
     const handleExpiryDateFilter = (value) => {
         setExpiryDateFilter(value);
     };
 
     const applyExpiryDateFilter = () => {
-        let expiryDateFilterValue = "";
-        if (expiryDateFilter.fromDate && expiryDateFilter.toDate) {
-            expiryDateFilterValue = `${expiryDateFilter.fromDate}~${expiryDateFilter.toDate}`;
-        } else if (expiryDateFilter.fromDate) {
-            expiryDateFilterValue = `${expiryDateFilter.fromDate}~`;
-        } else if (expiryDateFilter.toDate) {
-            expiryDateFilterValue = `~${expiryDateFilter.toDate}`;
-        }
-
         setSearchLoading(true);
         fetchBatches({
             pageNumber: 1,
-            expiryDate: expiryDateFilterValue
+            fromExpiryDate: expiryDateFilter.fromDate,
+            toExpiryDate: expiryDateFilter.toDate,
         });
         setShowExpiryDateFilter(false);
     };
@@ -235,7 +188,7 @@ const BatchList = () => {
     const clearExpiryDateFilter = () => {
         setExpiryDateFilter({ fromDate: '', toDate: '' });
         setSearchLoading(true);
-        fetchBatches({ pageNumber: 1, expiryDate: "" });
+        fetchBatches({ pageNumber: 1, fromExpiryDate: "", toExpiryDate: "" });
         setShowExpiryDateFilter(false);
     };
 
@@ -254,10 +207,10 @@ const BatchList = () => {
         setStatusFilter("")
         setStatusSearchQuery("")
         setShowStatusFilter(false)
-        setManufacturingDateFilter({ fromDate: '', toDate: '' })
         setExpiryDateFilter({ fromDate: '', toDate: '' })
-        setShowManufacturingDateFilter(false)
         setShowExpiryDateFilter(false)
+        setSearchLoading(true);
+        fetchBatches({ pageNumber: 1, search: "", status: "", fromExpiryDate: "", toExpiryDate: "" });
     }
 
     const clearAllFilters = handleClearAllFilters
@@ -267,12 +220,10 @@ const BatchList = () => {
         setStatusFilter("");
         setStatusSearchQuery("");
         setShowStatusFilter(false);
-        setManufacturingDateFilter({ fromDate: '', toDate: '' });
         setExpiryDateFilter({ fromDate: '', toDate: '' });
-        setShowManufacturingDateFilter(false);
         setShowExpiryDateFilter(false);
         setSearchLoading(true);
-        fetchBatches({ pageNumber: 1, search: "", status: "", manufacturingDate: "", expiryDate: "" });
+        fetchBatches({ pageNumber: 1, search: "", status: "", fromExpiryDate: "", toExpiryDate: "" });
     };
 
     const handleSort = (field) => {
@@ -393,143 +344,16 @@ const BatchList = () => {
                         filteredStatusOptions={filteredStatusOptions}
                         onClearAll={handleClearAll}
                         searchWidth="w-80"
-                        extraControls={(
-                            <>
-                                {/* Manufacturing Date Filter */}
-                                <div className="relative manufacturing-date-filter-dropdown min-w-[180px]">
-                                    <button
-                                        onClick={() => {
-                                            setShowManufacturingDateFilter(!showManufacturingDateFilter);
-                                            setShowExpiryDateFilter(false);
-                                        }}
-                                        className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors
-                                            focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
-                                            ${manufacturingDateFilter.fromDate || manufacturingDateFilter.toDate
-                                                ? 'bg-[#d97706] text-white hover:bg-[#d97706]'
-                                                : 'bg-white text-slate-700 hover:bg-slate-50'
-                                            }`}
-                                    >
-                                        <Calendar className="h-4 w-4 flex-shrink-0" />
-                                        <span className="text-sm font-medium truncate">
-                                            {manufacturingDateFilter.fromDate && manufacturingDateFilter.toDate
-                                                ? `${manufacturingDateFilter.fromDate} - ${manufacturingDateFilter.toDate}`
-                                                : manufacturingDateFilter.fromDate
-                                                    ? `Từ ${manufacturingDateFilter.fromDate}`
-                                                    : manufacturingDateFilter.toDate
-                                                        ? `Đến ${manufacturingDateFilter.toDate}`
-                                                        : "Ngày sản xuất"}
-                                        </span>
-                                        <ChevronDown className="h-4 w-4 flex-shrink-0" />
-                                    </button>
-
-                                    {showManufacturingDateFilter && (
-                                        <div className="absolute top-full left-0 mt-1 w-80 bg-white rounded-md shadow-lg border z-50 p-4">
-                                            <div className="space-y-3">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-slate-700 mb-1">Từ ngày sản xuất</label>
-                                                    <input
-                                                        type="date"
-                                                        value={manufacturingDateFilter.fromDate || ''}
-                                                        onChange={(e) => handleManufacturingDateFilter({ ...manufacturingDateFilter, fromDate: e.target.value })}
-                                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-slate-700 mb-1">Đến ngày sản xuất</label>
-                                                    <input
-                                                        type="date"
-                                                        value={manufacturingDateFilter.toDate || ''}
-                                                        onChange={(e) => handleManufacturingDateFilter({ ...manufacturingDateFilter, toDate: e.target.value })}
-                                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]"
-                                                    />
-                                                </div>
-                                                <div className="flex space-x-2">
-                                                    <button
-                                                        onClick={clearManufacturingDateFilter}
-                                                        className="flex-1 px-3 py-2 text-sm bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200"
-                                                    >
-                                                        Xóa
-                                                    </button>
-                                                    <button
-                                                        onClick={applyManufacturingDateFilter}
-                                                        className="flex-1 px-3 py-2 text-sm bg-[#d97706] text-white rounded-lg hover:bg-[#b8650f]"
-                                                    >
-                                                        Áp dụng
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Expiry Date Filter */}
-                                <div className="relative expiry-date-filter-dropdown min-w-[180px]">
-                                    <button
-                                        onClick={() => {
-                                            setShowExpiryDateFilter(!showExpiryDateFilter);
-                                            setShowManufacturingDateFilter(false);
-                                        }}
-                                        className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors
-                                            focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
-                                            ${expiryDateFilter.fromDate || expiryDateFilter.toDate
-                                                ? 'bg-[#d97706] text-white hover:bg-[#d97706]'
-                                                : 'bg-white text-slate-700 hover:bg-slate-50'
-                                            }`}
-                                    >
-                                        <Clock className="h-4 w-4 flex-shrink-0" />
-                                        <span className="text-sm font-medium truncate">
-                                            {expiryDateFilter.fromDate && expiryDateFilter.toDate
-                                                ? `${expiryDateFilter.fromDate} - ${expiryDateFilter.toDate}`
-                                                : expiryDateFilter.fromDate
-                                                    ? `Từ ${expiryDateFilter.fromDate}`
-                                                    : expiryDateFilter.toDate
-                                                        ? `Đến ${expiryDateFilter.toDate}`
-                                                        : "Ngày hết hạn"}
-                                        </span>
-                                        <ChevronDown className="h-4 w-4 flex-shrink-0" />
-                                    </button>
-
-                                    {showExpiryDateFilter && (
-                                        <div className="absolute top-full left-0 mt-1 w-80 bg-white rounded-md shadow-lg border z-50 p-4">
-                                            <div className="space-y-3">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-slate-700 mb-1">Từ ngày hết hạn</label>
-                                                    <input
-                                                        type="date"
-                                                        value={expiryDateFilter.fromDate || ''}
-                                                        onChange={(e) => handleExpiryDateFilter({ ...expiryDateFilter, fromDate: e.target.value })}
-                                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-slate-700 mb-1">Đến ngày hết hạn</label>
-                                                    <input
-                                                        type="date"
-                                                        value={expiryDateFilter.toDate || ''}
-                                                        onChange={(e) => handleExpiryDateFilter({ ...expiryDateFilter, toDate: e.target.value })}
-                                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]"
-                                                    />
-                                                </div>
-                                                <div className="flex space-x-2">
-                                                    <button
-                                                        onClick={clearExpiryDateFilter}
-                                                        className="flex-1 px-3 py-2 text-sm bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200"
-                                                    >
-                                                        Xóa
-                                                    </button>
-                                                    <button
-                                                        onClick={applyExpiryDateFilter}
-                                                        className="flex-1 px-3 py-2 text-sm bg-[#d97706] text-white rounded-lg hover:bg-[#b8650f]"
-                                                    >
-                                                        Áp dụng
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </>
-                        )}
+                        enableDateFilter={true}
+                        dateFilter={expiryDateFilter}
+                        setDateFilter={setExpiryDateFilter}
+                        showDateFilter={showExpiryDateFilter}
+                        setShowDateFilter={setShowExpiryDateFilter}
+                        dateFilterLabel="Ngày hết hạn"
+                        dateFilterFromLabel="Từ ngày hết hạn"
+                        dateFilterToLabel="Đến ngày hết hạn"
+                        onApplyDateFilter={applyExpiryDateFilter}
+                        onClearDateFilter={clearExpiryDateFilter}
                         showToggle={true}
                         defaultOpen={true}
                         showClearButton={true}
@@ -566,7 +390,38 @@ const BatchList = () => {
                                                 </div>
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-5 py-3 text-left w-[17%]">
-                                                Tên hàng hóa
+                                                <div
+                                                    className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                                    onClick={() => handleSort("goodsName")}
+                                                >
+                                                    <span>Tên hàng hóa</span>
+                                                    {sortField === "goodsName" ? (
+                                                        sortAscending ? (
+                                                            <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                        ) : (
+                                                            <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                        )
+                                                    ) : (
+                                                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                    )}
+                                                </div>
+                                            </TableHead>
+                                            <TableHead className="font-semibold text-slate-900 px-5 py-3 text-left w-[14%]">
+                                                <div
+                                                    className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                                    onClick={() => handleSort("supplierName")}
+                                                >
+                                                    <span>Nhà cung cấp</span>
+                                                    {sortField === "supplierName" ? (
+                                                        sortAscending ? (
+                                                            <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                        ) : (
+                                                            <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                        )
+                                                    ) : (
+                                                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                    )}
+                                                </div>
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-5 py-3 text-left">
                                                 Mô tả
@@ -620,7 +475,7 @@ const BatchList = () => {
                                         {Array.isArray(batches) && batches.length > 0 ? (
                                             batches.map((batch, index) => (
                                                 <TableRow key={batch.batchId} className="hover:bg-slate-50 border-b border-slate-200">
-                                                    <TableCell className="px-5 py-2 text-slate-600 font-medium">{index + 1}</TableCell>
+                                                    <TableCell className="px-5 py-2 text-slate-600 font-medium">{(pagination.pageNumber - 1) * pagination.pageSize + index + 1}</TableCell>
                                                     <TableCell className="font-medium text-slate-900 px-5 py-3 text-left">{batch?.batchCode || ''}</TableCell>
                                                     <TableCell
                                                         className="text-slate-700 px-5 py-3 text-left w-[17%]"
@@ -628,7 +483,7 @@ const BatchList = () => {
                                                     >
                                                         {batch?.goodsName || ""}
                                                     </TableCell>
-
+                                                    <TableCell className="text-slate-900 px-5 py-3 text-left  w-[14%]">{batch?.supplierName || ''}</TableCell>
                                                     <TableCell className="text-slate-700 px-5 py-3 text-left"
                                                         title={batch?.description || ""}>
                                                         {batch?.description
@@ -676,20 +531,20 @@ const BatchList = () => {
                                             ))
                                         ) : (
                                             <TableRow>
-                                                <TableCell colSpan={7} className="p-0">
-                                                    <div className="flex items-center justify-center text-center h-[300px] w-full">
+                                                <TableCell colSpan={10} className="p-0">
+                                                    <div className="flex flex-col items-center justify-center text-center h-[300px] w-full">
                                                         <EmptyState
                                                             icon={Folder}
-                                                            title="Không tìm lô hàng nào"
-                                                            description={
-                                                                searchQuery || statusFilter || manufacturingDateFilter.fromDate || manufacturingDateFilter.toDate || expiryDateFilter.fromDate || expiryDateFilter.toDate
-                                                                    ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
-                                                                    : "Chưa có lô hàng nào trong hệ thống"
-                                                            }
-                                                            actionText="Xóa bộ lọc"
-                                                            onAction={clearAllFilters}
-                                                            showAction={!!(searchQuery || statusFilter || manufacturingDateFilter.fromDate || manufacturingDateFilter.toDate || expiryDateFilter.fromDate || expiryDateFilter.toDate)}
+                                                            title="Không tìm thấy lô hàng nào"
+                                                            description="Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
                                                         />
+
+                                                        <button
+                                                            className="-mt-10 text-gray-700 hover:text-gray-900 font-medium"
+                                                            onClick={clearAllFilters}
+                                                        >
+                                                            Xóa bộ lọc
+                                                        </button>
                                                     </div>
                                                 </TableCell>
                                             </TableRow>

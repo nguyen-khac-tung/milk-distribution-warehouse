@@ -131,6 +131,7 @@ namespace MilkDistributionWarehouse.Services
 
             retailerExist.Email = update.Email;
             retailerExist.Phone = update.Phone;
+            retailerExist.Address = update.Address;
             retailerExist.UpdatedAt = DateTimeUtility.Now();
 
             var updateResult = await _retailerRepository.UpdateRetailer(retailerExist);

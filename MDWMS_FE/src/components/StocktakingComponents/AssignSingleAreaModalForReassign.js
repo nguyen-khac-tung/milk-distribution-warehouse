@@ -4,7 +4,7 @@ import { X, MapPin, Users, User, CheckCircle2, Thermometer, Droplets, Sun, Packa
 import { Button } from '../ui/button';
 import { getStocktakingArea } from '../../services/AreaServices';
 import { getUserDropDownByRoleName } from '../../services/AccountService';
-import { reAssignStocktakingArea } from '../../services/StocktakingService';
+import { reAssignStocktakingArea, getStocktakingAreaDetailForOtherRoleBySheetId } from '../../services/StocktakingService';
 import { extractErrorMessage } from '../../utils/Validation';
 
 const AssignSingleAreaModalForReassign = ({
@@ -13,7 +13,8 @@ const AssignSingleAreaModalForReassign = ({
     onSuccess,
     stocktakingSheetId,
     stocktaking = null,
-    areaId // areaId (int) của khu vực cần phân công lại
+    areaId, // areaId (int) của khu vực cần phân công lại
+    isFromUpdateAndAssign = false // Modal được gọi từ handleUpdateAndAssign
 }) => {
     const [area, setArea] = useState(null);
     const [employees, setEmployees] = useState([]);
@@ -46,14 +47,20 @@ const AssignSingleAreaModalForReassign = ({
             try {
                 const stocktakingAreas = JSON.parse(stocktakingAreasStr);
                 const currentAssignment = stocktakingAreas.find(
-                    sa => sa.areaId === areaId
+                    sa => (sa.areaId === areaId || sa.AreaId === areaId)
                 );
-                if (currentAssignment?.assignTo) {
-                    setSelectedEmployeeId(currentAssignment.assignTo);
+                if (currentAssignment) {
+                    const assignTo = currentAssignment.assignTo || currentAssignment.AssignTo;
+                    if (assignTo != null && assignTo !== 0) {
+                        setSelectedEmployeeId(assignTo);
+                    }
                 }
             } catch (error) {
                 console.error('Error parsing stocktaking areas:', error);
             }
+        } else if (isOpen && !stocktakingAreasStr) {
+            // Reset nếu không có dữ liệu
+            setSelectedEmployeeId(null);
         }
     }, [isOpen, stocktakingAreasStr, areaId]);
 
@@ -107,16 +114,44 @@ const AssignSingleAreaModalForReassign = ({
             throw new Error('Không tìm thấy ID phiếu kiểm kê');
         }
 
+        if (!areaId) {
+            throw new Error('Không tìm thấy ID khu vực');
+        }
+
         setSubmitting(true);
         try {
-            // Tìm stocktakingAreaId từ stocktaking data
-            const areaData = stocktaking?.stocktakingAreas?.find(
-                sa => sa.areaId === areaId
-            );
-            const stocktakingAreaId = areaData?.stocktakingAreaId || areaData?.id;
+            let stocktakingAreaId = null;
+
+            // Thử tìm stocktakingAreaId từ stocktaking data trước
+            if (stocktaking?.stocktakingAreas) {
+                const areaData = stocktaking.stocktakingAreas.find(
+                    sa => (sa.areaId === areaId || sa.AreaId === areaId)
+                );
+                stocktakingAreaId = areaData?.stocktakingAreaId || areaData?.id || areaData?.stocktakingAreaId;
+            }
+
+            // Nếu không tìm thấy từ stocktaking data, gọi API để lấy
+            if (!stocktakingAreaId) {
+                try {
+                    const detailResponse = await getStocktakingAreaDetailForOtherRoleBySheetId(stocktakingSheetId);
+                    const detailData = detailResponse?.data || detailResponse || [];
+                    const detailArray = Array.isArray(detailData) ? detailData : [];
+                    
+                    // Tìm stocktakingAreaId từ detail data
+                    const detailArea = detailArray.find(
+                        sa => (sa.areaDetail?.areaId === areaId || 
+                               sa.areaDetail?.AreaId === areaId ||
+                               sa.AreaDetail?.AreaId === areaId ||
+                               sa.AreaDetail?.areaId === areaId)
+                    );
+                    stocktakingAreaId = detailArea?.stocktakingAreaId || detailArea?.StocktakingAreaId;
+                } catch (apiError) {
+                    console.error('Error fetching stocktaking area detail:', apiError);
+                }
+            }
 
             if (!stocktakingAreaId) {
-                throw new Error('Không tìm thấy ID khu vực kiểm kê');
+                throw new Error('Không tìm thấy ID khu vực kiểm kê. Vui lòng thử lại.');
             }
 
             // Gọi API phân công lại
@@ -352,7 +387,7 @@ const AssignSingleAreaModalForReassign = ({
                             ) : (
                                 <>
                                     <CheckCircle2 className="mr-2 h-4 w-4" />
-                                    Xác nhận phân công lại
+                                    {isFromUpdateAndAssign ? 'Xác nhận' : 'Xác nhận phân công lại'}
                                 </>
                             )}
                         </Button>

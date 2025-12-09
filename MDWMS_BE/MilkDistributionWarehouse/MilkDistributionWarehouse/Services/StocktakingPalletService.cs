@@ -211,7 +211,7 @@ namespace MilkDistributionWarehouse.Services
             if (stocktakingPalletExist.StocktakingLocationId == Guid.Empty)
                 return ("Mã kiểm kê vị trí không hợp lệ.", default);
 
-            var msg = await _stocktakingStatusDomainService.UpdateLocationStatusAsync((Guid)stocktakingPalletExist.StocktakingLocationId, StockLocationStatus.Pending);
+            var msg = await _stocktakingStatusDomainService.UpdateLocationStatusAsync((Guid)stocktakingPalletExist.StocktakingLocationId, StockLocationStatus.Pending, null);
             if (!string.IsNullOrEmpty(msg))
                 return (msg, default);
 
@@ -235,7 +235,7 @@ namespace MilkDistributionWarehouse.Services
             if (stocktakingPalletExist.StocktakingLocationId == Guid.Empty)
                 return ("Mã kiểm kê vị trí không hợp lệ.", default);
 
-            var msg = await _stocktakingStatusDomainService.UpdateLocationStatusAsync((Guid)stocktakingPalletExist.StocktakingLocationId, StockLocationStatus.Pending);
+            var msg = await _stocktakingStatusDomainService.UpdateLocationStatusAsync((Guid)stocktakingPalletExist.StocktakingLocationId, StockLocationStatus.Pending, null);
             if (!string.IsNullOrEmpty(msg))
                 return (msg, default);
 
@@ -301,7 +301,7 @@ namespace MilkDistributionWarehouse.Services
 
             return await _stocktakingStatusDomainService.UpdateLocationStatusAsync(
                 (Guid)stocktakingPalletExist.StocktakingLocationId,
-                StockLocationStatus.Counted);
+                StockLocationStatus.Counted, StockLocationStatus.Pending);
         }
     }
 }

@@ -42,6 +42,9 @@ namespace MilkDistributionWarehouse.Repositories
                     .ThenInclude(d => d.Goods)
                         .ThenInclude(g => g.UnitMeasure)
                 .Include(dr => dr.DisposalRequestDetails)
+                    .ThenInclude(d => d.Goods)
+                        .ThenInclude(g => g.Supplier)
+                .Include(dr => dr.DisposalRequestDetails)
                     .ThenInclude(d => d.GoodsPacking)
                 .Where(dr => dr.DisposalRequestId == id).FirstOrDefaultAsync();
         }
@@ -49,6 +52,7 @@ namespace MilkDistributionWarehouse.Repositories
         public async Task<List<DisposalRequestDetail>> GetCommittedDisposalQuantities()
         {
             int[] inProgressStatuses = {
+                DisposalRequestStatus.PendingApproval,
                 DisposalRequestStatus.Approved,
                 DisposalRequestStatus.AssignedForPicking,
                 DisposalRequestStatus.Picking

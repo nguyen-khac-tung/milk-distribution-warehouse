@@ -10,6 +10,7 @@ namespace MilkDistributionWarehouse.Repositories
     {
         Task<GoodsPacking?> CreateGoodsPacking(GoodsPacking create);
         Task<List<GoodsPacking>?> GetGoodsPackingsByGoodsId(int goodsId);
+        Task<int> UpdateGoodsPacking(GoodsPacking goodsPacking);
         Task<List<GoodsPacking>?> DeleteGoodsPackingsBulk(List<GoodsPacking> goodsPackings);
         Task<GoodsPacking?> DeleteGoodsPacking(GoodsPacking goodsPacking);
         Task<bool> HasActivePurchaseOrder(int goodsPackingId);
@@ -19,6 +20,8 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> HasActiveGoodsIssueNote(int goodsPackingId);
         Task<bool> HasActiveDisposalNote(int goodsPackingId);
         Task<bool> HasActiveAndDeletedPallet(int goodsPackingId);
+        Task<bool> HasInventoryLedgers(int goodsPackingId);
+        Task<bool> HasBackOrder(int goodsPackingId);
         Task<bool> IsPurchaseOrderByGoodsPackingId(int goodsPackingId);
         Task<bool> IsSalesOrderByGoodsPackingId(int goodsPackingId);
         Task<bool> IsGoodsReceiptNoteByGoodsPackingId(int goodsPackingId);
@@ -26,6 +29,8 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> IsPalletByGoodsPackingId(int goodsPackingId);
         Task<bool> IsDisposalRequestByGoodsPackingId(int goodsPackingId);
         Task<bool> IsDisposalNoteByGoodsPackingId(int goodsPackingId);
+        Task<bool> IsInventoryLedgers(int goodsPackingId);
+        Task<bool> IsExistBackOrder(int goodsPackingId);
     }
 
     public class GoodsPackingRepository : IGoodsPackingRepository
@@ -55,6 +60,19 @@ namespace MilkDistributionWarehouse.Repositories
             return await _context.GoodsPackings
                 .Where(gp => gp.GoodsId == goodsId && gp.Status == CommonStatus.Active)
                 .ToListAsync();
+        }
+
+        public async Task<int> UpdateGoodsPacking(GoodsPacking goodsPacking)
+        {
+            try
+            {
+                _context.GoodsPackings.Update(goodsPacking);
+                await _context.SaveChangesAsync();
+                return 1;
+            }catch
+            {
+                return 0;
+            }
         }
 
         public async Task<List<GoodsPacking>?> DeleteGoodsPackingsBulk(List<GoodsPacking> goodsPackings)
@@ -133,6 +151,16 @@ namespace MilkDistributionWarehouse.Repositories
                 //.AnyAsync(p => p.Status != CommonStatus.Inactive && p.GoodsPackingId == goodsPackingId);
                 .AnyAsync(p => p.GoodsPackingId == goodsPackingId);
         }
+        public async Task<bool> HasInventoryLedgers(int goodsPackingId)
+        {
+            return await _context.InventoryLedgers
+                .AnyAsync(il => il.GoodPackingId == goodsPackingId);
+        }
+        public async Task<bool> HasBackOrder(int goodsPackingId)
+        {
+            return await _context.BackOrders
+                .AnyAsync(bo => bo.GoodsPackingId == goodsPackingId);
+        }
 
         public async Task<bool> IsPurchaseOrderByGoodsPackingId(int goodsPackingId)
         {
@@ -176,5 +204,15 @@ namespace MilkDistributionWarehouse.Repositories
                 .AnyAsync(p => p.GoodsPackingId == goodsPackingId);
         }
 
+        public async Task<bool> IsInventoryLedgers(int goodsPackingId)
+        {
+            return await _context.InventoryLedgers
+                .AnyAsync(il => il.GoodPackingId == goodsPackingId);
+        }
+        public async Task<bool> IsExistBackOrder(int goodsPackingId)
+        {
+            return await _context.BackOrders
+                .AnyAsync(bo => bo.GoodsPackingId == goodsPackingId);
+        }
     }
 }

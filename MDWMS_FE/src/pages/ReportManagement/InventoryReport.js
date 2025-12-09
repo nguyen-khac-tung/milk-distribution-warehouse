@@ -30,6 +30,7 @@ import { getInventoryReport, getInventoryLedgerReport } from "../../services/Das
 import { getSuppliersDropdown } from "../../services/SupplierService"
 import Loading from "../../components/Common/Loading"
 import Pagination from "../../components/Common/Pagination"
+import EmptyState from "../../components/Common/EmptyState"
 import { Badge } from "../../components/ui/badge"
 import InventorySearchFilter from "../../components/Common/InventorySearchFilter"
 import InventoryDetailModal from "../../components/InventoryComponents/InventoryDetailModal"
@@ -1406,11 +1407,12 @@ export default function InventoryReport({ onClose }) {
                   </TableHeader>
                   <TableBody>
                     {displayData.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={reportType === "current" ? 13 : 8} className="text-center text-gray-500 py-8">
-                          Không có dữ liệu tồn kho
-                        </TableCell>
-                      </TableRow>
+                      <EmptyState
+                        icon={Building2}
+                        title="Không tìm thấy dữ liệu tồn kho"
+                        description="Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
+                        colSpan={reportType === "current" ? 13 : 8}
+                      />
                     ) : (
                       displayData.map((item, index) => {
                         const rowNumber = (pagination.current - 1) * pagination.pageSize + index + 1

@@ -89,10 +89,16 @@ export const updateUserStatus = async (userId, status) => {
         return res.data;
     } catch (error) {
         console.error("Error updating user status:", error);
+        // Nếu có error response từ backend, trả về data từ backend để giữ nguyên message
+        if (error.response && error.response.data) {
+            return error.response.data;
+        }
+        // Nếu không có response từ backend (network error, etc.), mới dùng fallback
         return {
             status: 500,
             message: "Failed to update user status",
-            data: null
+            data: null,
+            success: false
         };
     }
 };

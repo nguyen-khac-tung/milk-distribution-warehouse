@@ -12,7 +12,7 @@ import { DatePicker, ConfigProvider } from 'antd';
 import dayjs from 'dayjs';
 import { createStocktaking } from '../../services/StocktakingService';
 import { extractErrorMessage } from '../../utils/Validation';
-import { getAreaDropdown } from '../../services/AreaServices';
+import { getAreaWithLocationsDropDown } from '../../services/AreaServices';
 import AssignAreaModal from '../../components/StocktakingComponents/AssignAreaModal';
 import AssignSingleAreaModalForCreate from '../../components/StocktakingComponents/AssignSingleAreaModalForCreate';
 import PermissionWrapper from '../../components/Common/PermissionWrapper';
@@ -42,10 +42,8 @@ const CreateStocktaking = () => {
 
     const [fieldErrors, setFieldErrors] = useState({});
     const [saveDraftLoading, setSaveDraftLoading] = useState(false);
-    const [assignLoading, setAssignLoading] = useState(false);
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [showSingleAreaModal, setShowSingleAreaModal] = useState(false);
-    const [stocktakingSheetId, setStocktakingSheetId] = useState(null);
 
     // Area dropdown states
     const [areas, setAreas] = useState([]);
@@ -61,7 +59,7 @@ const CreateStocktaking = () => {
         const fetchAreas = async () => {
             try {
                 setAreasLoading(true);
-                const response = await getAreaDropdown();
+                const response = await getAreaWithLocationsDropDown();
                 let areasList = [];
                 if (Array.isArray(response)) {
                     areasList = response;
@@ -192,7 +190,8 @@ const CreateStocktaking = () => {
         return isValid;
     };
 
-    const createStocktakingData = async () => {
+    // Đóng gói dữ liệu form để gửi lên modal
+    const prepareFormDataForModal = () => {
         // Format date giữ nguyên giờ local, không convert sang UTC
         let startTimeISO = null;
         if (formData.startTime) {
@@ -206,20 +205,12 @@ const CreateStocktaking = () => {
             areaId: areaId
         }));
 
-        const submitData = {
+        return {
             startTime: startTimeISO,
             note: formData.reason.trim(),
-            areaIds: areaIds
+            areaIds: areaIds,
+            selectedAreas: selectedAreas // Thêm selectedAreas để modal có thể sử dụng
         };
-
-        const response = await createStocktaking(submitData);
-
-        // Extract stocktakingSheetId from response
-        const stocktakingSheetId = response?.data?.stocktakingSheetId ||
-            response?.stocktakingSheetId ||
-            response?.data?.data?.stocktakingSheetId;
-
-        return stocktakingSheetId;
     };
 
     const handleSaveDraft = async (e) => {
@@ -232,7 +223,26 @@ const CreateStocktaking = () => {
 
         setSaveDraftLoading(true);
         try {
-            await createStocktakingData();
+            // Format date giữ nguyên giờ local, không convert sang UTC
+            let startTimeISO = null;
+            if (formData.startTime) {
+                const date = dayjs(formData.startTime);
+                // Format: YYYY-MM-DDTHH:mm:ss (giữ nguyên giờ local)
+                startTimeISO = date.format('YYYY-MM-DDTHH:mm:ss');
+            }
+
+            // Format areaIds theo API: array of { areaId: number }
+            const areaIds = selectedAreas.map(areaId => ({
+                areaId: areaId
+            }));
+
+            const submitData = {
+                startTime: startTimeISO,
+                note: formData.reason.trim(),
+                areaIds: areaIds
+            };
+
+            await createStocktaking(submitData);
 
             if (window.showToast) {
                 window.showToast('Lưu nháp thành công!', 'success');
@@ -251,7 +261,7 @@ const CreateStocktaking = () => {
         }
     };
 
-    const handleOpenAssignModal = async (e) => {
+    const handleOpenAssignModal = (e) => {
         e.preventDefault();
 
         // Validate form trước
@@ -266,35 +276,14 @@ const CreateStocktaking = () => {
             return;
         }
 
-        setAssignLoading(true);
-        try {
-            // Tạo stocktaking trước để lấy ID
-            const newStocktakingSheetId = await createStocktakingData();
-
-            if (!newStocktakingSheetId) {
-                window.showToast('Không thể lấy ID phiếu kiểm kê', 'error');
-                return;
-            }
-
-            // Lưu ID vào state
-            setStocktakingSheetId(newStocktakingSheetId);
-
-            // Kiểm tra số lượng khu vực để quyết định mở modal nào
-            if (selectedAreas.length === 1) {
-                // Nếu chỉ có 1 khu vực, mở modal phân công 1 khu vực
-                setShowSingleAreaModal(true);
-            } else {
-                // Nếu có 2+ khu vực, mở modal phân công nhiều khu vực
-                setShowAssignModal(true);
-            }
-        } catch (error) {
-            console.error('Error creating stocktaking:', error);
-            const errorMessage = extractErrorMessage(error);
-            if (window.showToast) {
-                window.showToast(errorMessage || 'Có lỗi xảy ra khi tạo phiếu kiểm kê', 'error');
-            }
-        } finally {
-            setAssignLoading(false);
+        // Đóng gói dữ liệu và mở modal (không gọi API tạo ở đây)
+        // Modal sẽ tự gọi API khi xác nhận
+        if (selectedAreas.length === 1) {
+            // Nếu chỉ có 1 khu vực, mở modal phân công 1 khu vực
+            setShowSingleAreaModal(true);
+        } else {
+            // Nếu có 2+ khu vực, mở modal phân công nhiều khu vực
+            setShowAssignModal(true);
         }
     };
 
@@ -566,10 +555,10 @@ const CreateStocktaking = () => {
                             <Button
                                 type="button"
                                 onClick={handleOpenAssignModal}
-                                disabled={saveDraftLoading || assignLoading}
+                                disabled={saveDraftLoading}
                                 className="h-[38px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {assignLoading ? 'Đang tạo...' : 'Phân công'}
+                                Phân công
                             </Button>
                         </div>
                     </div>
@@ -585,10 +574,11 @@ const CreateStocktaking = () => {
                         setShowAssignModal(false);
                     }}
                     onSuccess={handleAssignmentSuccess}
-                    stocktakingSheetId={stocktakingSheetId} // ID đã được tạo khi click "Phân công"
+                    stocktakingSheetId={null} // Không có ID vì chưa tạo, modal sẽ tự tạo khi xác nhận
                     isReassign={false}
                     stocktaking={null}
-                    formData={formData} // Truyền formData để modal có thể sử dụng nếu cần
+                    formData={prepareFormDataForModal()} // Truyền formData đã đóng gói để modal tạo và phân công
+                    selectedAreaIds={selectedAreas} // Truyền danh sách areaIds đã chọn
                 />
             </PermissionWrapper>
 
@@ -601,8 +591,8 @@ const CreateStocktaking = () => {
                         setShowSingleAreaModal(false);
                     }}
                     onSuccess={handleAssignmentSuccess}
-                    stocktakingSheetId={stocktakingSheetId} // ID đã được tạo khi click "Phân công"
-                    formData={formData} // Truyền formData để modal có thể sử dụng nếu cần
+                    stocktakingSheetId={null} // Không có ID vì chưa tạo, modal sẽ tự tạo khi xác nhận
+                    formData={prepareFormDataForModal()} // Truyền formData đã đóng gói để modal tạo và phân công
                     areaId={selectedAreas.length === 1 ? selectedAreas[0] : null} // areaId của khu vực duy nhất
                 />
             </PermissionWrapper>

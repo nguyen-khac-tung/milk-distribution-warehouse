@@ -30,6 +30,8 @@ namespace MilkDistributionWarehouse.Services
         private readonly ILocationRepository _locationRepository;
         private readonly IMapper _mapper;
         private readonly IStocktakingSheetRepository _stocktakingSheetRepository;
+        private readonly IBatchRepository _batchRepository;
+        private readonly IGoodsReceiptNoteRepository _goodsReceiptNoteRepository;
 
         public PalletService(IPalletRepository palletRepository, IMapper mapper, ILocationRepository locationRepository, IStocktakingSheetRepository stocktakingSheetRepository)
         {
@@ -37,6 +39,14 @@ namespace MilkDistributionWarehouse.Services
             _mapper = mapper;
             _locationRepository = locationRepository;
             _stocktakingSheetRepository = stocktakingSheetRepository;
+        }
+
+        // NOTE: keep existing constructor for compatibility, but provide an overload that accepts new repos for DI
+        public PalletService(IPalletRepository palletRepository, IMapper mapper, ILocationRepository locationRepository, IStocktakingSheetRepository stocktakingSheetRepository, IBatchRepository batchRepository, IGoodsReceiptNoteRepository goodsReceiptNoteRepository)
+            : this(palletRepository, mapper, locationRepository, stocktakingSheetRepository)
+        {
+            _batchRepository = batchRepository;
+            _goodsReceiptNoteRepository = goodsReceiptNoteRepository;
         }
 
         public async Task<(string, PageResult<PalletDto.PalletResponseDto>)> GetPallets(PagedRequest request)
@@ -120,7 +130,7 @@ namespace MilkDistributionWarehouse.Services
 
             if (userId == null)
                 return ("The user is not logged into the system.".ToMessageForUser(), result);
-
+             
             if (await _stocktakingSheetRepository.HasActiveStocktakingInProgressAsync())
                 return ("Không thể thêm mới pallet khi đang có phiếu kiểm kê đang thực hiện.".ToMessageForUser(), result);
 
@@ -177,6 +187,96 @@ namespace MilkDistributionWarehouse.Services
             // If any validation errors found, return immediately with details
             if (result.FailedItems.Any())
                 return ("", result);
+
+            // Additional validation: Compare grouped pallets with GoodsReceiptNoteDetails
+            // Group input pallets by GoodsReceiptNoteId so we validate per GRN
+            var palletsByGrn = create.Pallets
+                .GroupBy(p => p.GoodsReceiptNoteId ?? string.Empty)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            // Only validate GRNs that are provided (non-empty key)
+            foreach (var kv in palletsByGrn)
+            {
+                var grnId = kv.Key;
+                if (string.IsNullOrEmpty(grnId))
+                    continue;
+
+                if (_goodsReceiptNoteRepository == null || _batchRepository == null)
+                {
+                    // If repositories not injected, skip this strict validation
+                    continue;
+                }
+
+                var grn = await _goodsReceiptNoteRepository.GetGoodsReceiptNoteById(grnId);
+                if (grn == null)
+                {
+                    return ("Phiếu nhận hàng không tồn tại.".ToMessageForUser(), result);
+                }
+
+                var grnDetails = grn.GoodsReceiptNoteDetails?.ToList() ?? new List<GoodsReceiptNoteDetail>();
+
+                // Build pallet groups keyed by (goodsId, goodsPackingId)
+                var palletGroups = new Dictionary<(int goodsId, int goodsPackingId), int>();
+
+                // Cache batch lookups
+                var batchCache = new Dictionary<Guid, Batch>();
+
+                foreach (var dto in kv.Value)
+                {
+                    if (!batchCache.ContainsKey(dto.BatchId))
+                    {
+                        var batch = await _batchRepository.GetBatchById(dto.BatchId);
+                        batchCache[dto.BatchId] = batch;
+                    }
+
+                    var batchEntity = batchCache[dto.BatchId];
+                    if (batchEntity == null)
+                    {
+                        return ("Lô hàng không tồn tại.".ToMessageForUser(), result);
+                    }
+
+                    var goodsId = batchEntity.GoodsId ?? 0;
+                    var packingId = dto.GoodsPackingId;
+                    var key = (goodsId, packingId);
+
+                    if (!palletGroups.ContainsKey(key)) palletGroups[key] = 0;
+                    palletGroups[key] += dto.PackageQuantity;
+                }
+
+                // For each GRN detail, check matching pallet group sums
+                var grnDetailKeys = new HashSet<(int goodsId, int goodsPackingId)>();
+                foreach (var grnd in grnDetails)
+                {
+                    var gKey = (grnd.GoodsId, grnd.GoodsPackingId ?? 0);
+                    grnDetailKeys.Add(gKey);
+
+                    var expected = grnd.ActualPackageQuantity ?? 0;
+                    var hasGroup = palletGroups.TryGetValue(gKey, out var sumPackages);
+                    if (!hasGroup)
+                    {
+                        // If expected is zero and no pallets, it's fine; otherwise error
+                        if (expected > 0)
+                        {
+                            return ($"Thiếu hàng hóa ({grnd.Goods.GoodsName}) trong danh sách pallet so với phiếu nhận hàng (Mã GRN: {grnId}).".ToMessageForUser(), result);
+                        }
+                        continue;
+                    }
+
+                    if (sumPackages != expected)
+                    {
+                        return ($"Tổng số kiện pallet ({sumPackages}) không khớp với số thực nhập trên phiếu ({grnd.Goods.GoodsName}).".ToMessageForUser(), result);
+                    }
+
+                    // remove matched group so we can detect extra pallet groups later
+                    palletGroups.Remove(gKey);
+                }
+
+                // If there are any leftover pallet groups that don't match GRN details => error
+                if (palletGroups.Any())
+                {
+                    return ($"Các pallet gửi lên chứa hàng không tồn tại trong phiếu nhận hàng (Mã GRN: {grnId}).".ToMessageForUser(), result);
+                }
+            }
 
             // Phase 2: Creation (perform side effects)
             for (int i = 0; i < create.Pallets.Count; i++)
@@ -236,15 +336,24 @@ namespace MilkDistributionWarehouse.Services
 
             if (!string.IsNullOrEmpty(dto.GoodsReceiptNoteId) && !await _palletRepository.ExistsGoodRecieveNote(dto.GoodsReceiptNoteId))
                 return ("Phiếu nhận hàng không tồn tại.", new PalletDto.PalletResponseDto());
+
+            if (pallet.Location == null)
+            {
+                if (!await _palletRepository.CheckUserCreatePallet(dto.GoodsReceiptNoteId, userId))
+                    return ("Pallet đang trong quá trình kiểm nhập, chỉ có người được giao mới có quyền sắp xếp pallet.".ToMessageForUser(), new PalletDto.PalletResponseDto());
+            }
             
-            //if(pallet.Status == CommonStatus.Inactive)
-            //{
-            //    if (!await _palletRepository.CheckUserCreatePallet(dto.GoodsReceiptNoteId, userId))
-            //        return ("Người dùng không có quyền sắp xếp pallet cho phiếu nhận hàng này.".ToMessageForUser(), new PalletDto.PalletResponseDto());
-            //}
+            if(await _palletRepository.IsPalletInSalesPickingOrDisposalPicking(palletId))
+                return ("Không thể cập nhật pallet này do pallet đang trong quá trình lấy hàng.", new PalletDto.PalletResponseDto());
+
+            if (pallet.Status == CommonStatus.Inactive)
+            {
+                if (!await _palletRepository.CheckUserCreatePallet(dto.GoodsReceiptNoteId, userId))
+                    return ("Người dùng không có quyền sắp xếp pallet cho phiếu nhận hàng này.".ToMessageForUser(), new PalletDto.PalletResponseDto());
+            }
 
             if (!await _palletRepository.ExistsBatch(dto.BatchId))
-                return ("Lô hàng không tồn tại.", new PalletDto.PalletResponseDto());
+                return ("Lô hàng không hợp lệ.", new PalletDto.PalletResponseDto());
 
             var location = await _locationRepository.GetLocationById(dto.LocationId.Value);
             if (location == null)
@@ -359,6 +468,9 @@ namespace MilkDistributionWarehouse.Services
             {
                 return ("Pallet đã được xếp vào vị trí rồi không thể xếp ra.".ToMessageForUser(), new PalletDto.PalletUpdateStatusDto());
             }
+
+            if (await _palletRepository.IsPalletInSalesPickingOrDisposalPicking(update.PalletId))
+                return ("Không thể cập nhật pallet này do pallet đang trong quá trình lấy hàng.", new PalletDto.PalletUpdateStatusDto());
 
             if (update.Status == CommonStatus.Deleted && palletExist.LocationId.HasValue)
             {

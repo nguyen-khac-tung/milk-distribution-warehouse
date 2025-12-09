@@ -30,6 +30,17 @@ export const getSuppliersDropdown = async () => {
     }
 };
 
+export const getSupplierWithGoodsDropDown = async () => {
+    try {
+        const res = await api.get("/Supplier/GetSupplierWithGoodsDropDown");
+
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching supplier with goods dropdown:", error);
+        return { data: [], totalCount: 0 };
+    }
+};
+
 export const getSupplierDetail = async (supplierId) => {
     try {
         const res = await api.get(`/Supplier/GetSupplierBySupplierId/${supplierId}`);

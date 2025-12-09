@@ -20,10 +20,16 @@ const CreateDisposal = () => {
     const dateInputRef = useRef(null);
     const [loading, setLoading] = useState(true);
     const [expiredGoods, setExpiredGoods] = useState([]);
-    const [selectedItems, setSelectedItems] = useState(new Map()); // Map với key là `${goodsId}-${goodsPackingId}`
-    const [formData, setFormData] = useState({
-        estimatedTimeDeparture: '',
-        note: ''
+    const [selectedItems, setSelectedItems] = useState(new Map());
+    const [formData, setFormData] = useState(() => {
+        const d = new Date();
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return {
+            estimatedTimeDeparture: `${yyyy}-${mm}-${dd}`,
+            note: ''
+        };
     });
     const [fieldErrors, setFieldErrors] = useState({});
     const [saveDraftLoading, setSaveDraftLoading] = useState(false);
@@ -42,7 +48,6 @@ const CreateDisposal = () => {
     // Minimum selectable date: tomorrow (force future date)
     const minDate = (() => {
         const d = new Date();
-        d.setDate(d.getDate() + 1);
         const yyyy = d.getFullYear();
         const mm = String(d.getMonth() + 1).padStart(2, '0');
         const dd = String(d.getDate()).padStart(2, '0');
@@ -388,8 +393,8 @@ const CreateDisposal = () => {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
 
-            if (selectedDate <= today) {
-                errors.estimatedTimeDeparture = "Ngày xuất hủy phải là ngày trong tương lai";
+            if (selectedDate < today) {
+                errors.estimatedTimeDeparture = "Ngày xuất hủy không được là ngày trong quá khứ";
             }
         }
 
@@ -583,7 +588,7 @@ const CreateDisposal = () => {
                                             <Input
                                                 id="estimatedTimeDeparture"
                                                 type="date"
-                                                // min={minDate}
+                                                min={minDate}
                                                 value={formData.estimatedTimeDeparture}
                                                 onChange={(e) => {
                                                     setFormData(prev => ({ ...prev, estimatedTimeDeparture: e.target.value }));
@@ -763,11 +768,11 @@ const CreateDisposal = () => {
                                                         {/* 5. Mã Hàng*/}
                                                         <TableHead className="text-slate-600 font-semibold w-[12%]">Mã hàng hóa</TableHead>
 
-                                                        {/* 3. Tên nhà cung cấp*/}
-                                                        <TableHead className="text-slate-600 font-semibold w-[13%]">Tên nhà cung cấp</TableHead>
-
                                                         {/* 4. Tên hàng hóa */}
                                                         <TableHead className="text-slate-600 font-semibold w-[17%]">Tên hàng hóa</TableHead>
+
+                                                        {/* 3. Tên nhà cung cấp*/}
+                                                        <TableHead className="text-slate-600 font-semibold w-[13%]">Tên nhà cung cấp</TableHead>
 
                                                         {/* 6. Quy Cách Đóng Gói*/}
                                                         <TableHead className="text-slate-600 font-semibold w-[10%]">Quy cách đóng gói</TableHead>
@@ -815,16 +820,16 @@ const CreateDisposal = () => {
                                                                     {globalIndex}
                                                                 </TableCell>
                                                                 {/* 5. Mã Hàng*/}
-                                                                <TableCell className="text-slate-700 align-top pb-6 w-[12%]">
+                                                                <TableCell className="text-slate-700 font-medium align-top pb-6 w-[12%]">
                                                                     {item.goods?.goodsCode || '-'}
                                                                 </TableCell>
-                                                                {/* 3. Tên nhà cung cấp*/}
-                                                                <TableCell className="text-slate-700 font-medium align-top pb-6 w-[13%]">
-                                                                    {item.goods?.companyName || '-'}
-                                                                </TableCell>
                                                                 {/* 4. Tên hàng hóa*/}
-                                                                <TableCell className="text-slate-700 font-medium align-top pb-6 w-[17%]">
+                                                                <TableCell className="text-slate-700 align-top pb-6 w-[17%]">
                                                                     {item.goods?.goodsName || '-'}
+                                                                </TableCell>
+                                                                {/* 3. Tên nhà cung cấp*/}
+                                                                <TableCell className="text-slate-700 align-top pb-6 w-[13%]">
+                                                                    {item.goods?.companyName || '-'}
                                                                 </TableCell>
                                                                 {/* 6. Quy Cách Đóng Gói*/}
                                                                 <TableCell className="text-slate-700 align-top pb-6 w-[10%]">

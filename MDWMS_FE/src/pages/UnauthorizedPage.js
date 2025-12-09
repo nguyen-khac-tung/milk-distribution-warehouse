@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 
 const UnauthorizedPage = () => {
     const navigate = useNavigate();
-    
+
     return (
         <div style={{
             display: 'flex',
@@ -30,7 +30,7 @@ const UnauthorizedPage = () => {
             }}>
                 403
             </div>
-            
+
             <div style={{ position: 'relative', zIndex: 0, transform: 'translateY(-20px)' }}>
                 <Result
                     status="403"
@@ -51,21 +51,21 @@ const UnauthorizedPage = () => {
                                 Xin lỗi, bạn không có quyền truy cập trang này.
                             </p>
                             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-                                <Button 
-                                    type="primary" 
-                                    onClick={() => navigate('/dashboard')}
-                                    style={{ 
-                                        backgroundColor: '#f97316', 
+                                <Button
+                                    type="primary"
+                                    onClick={() => navigate('/')}
+                                    style={{
+                                        backgroundColor: '#f97316',
                                         borderColor: '#f97316',
                                         height: '38px'
                                     }}
                                 >
                                     Về trang chủ
                                 </Button>
-                                <Button 
+                                <Button
                                     onClick={() => navigate(-1)}
-                                    style={{ 
-                                        borderColor: '#f97316', 
+                                    style={{
+                                        borderColor: '#f97316',
                                         color: '#f97316',
                                         height: '38px'
                                     }}

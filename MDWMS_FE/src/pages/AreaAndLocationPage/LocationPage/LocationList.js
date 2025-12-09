@@ -327,7 +327,7 @@ const LocationList = () => {
         ]
         if (!statusSearchQuery) return statusOptions
         const query = statusSearchQuery.toLowerCase()
-        return statusOptions.filter(option => 
+        return statusOptions.filter(option =>
             option.label.toLowerCase().includes(query)
         )
     }, [statusSearchQuery])
@@ -340,7 +340,7 @@ const LocationList = () => {
         ]
         if (!conditionSearchQuery) return conditionOptions
         const query = conditionSearchQuery.toLowerCase()
-        return conditionOptions.filter(option => 
+        return conditionOptions.filter(option =>
             option.label.toLowerCase().includes(query)
         )
     }, [conditionSearchQuery])
@@ -766,7 +766,7 @@ const LocationList = () => {
                 />
 
                 {/* Search and Table Combined */}
-                <Card className="shadow-sm border border-slate-200 overflow-hidden bg-gray-50">
+                <Card className="shadow-sm border border-slate-200 overflow-visible bg-gray-50">
                     <SearchFilterToggle
                         searchQuery={searchQuery}
                         setSearchQuery={setSearchQuery}
@@ -886,7 +886,7 @@ const LocationList = () => {
                                                     )}
                                                 </div>
                                             </TableHead>
-                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                            {/* <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                                                 Kệ
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
@@ -894,6 +894,62 @@ const LocationList = () => {
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
                                                 Cột
+                                            </TableHead> */}
+                                            {/* Kệ */}
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                                <div
+                                                    className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                                    onClick={() => handleSort("rackName")}
+                                                >
+                                                    <span>Kệ</span>
+                                                    {sortField === "rackName" ? (
+                                                        sortAscending ? (
+                                                            <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                        ) : (
+                                                            <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                        )
+                                                    ) : (
+                                                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                    )}
+                                                </div>
+                                            </TableHead>
+
+                                            {/* Hàng */}
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                                <div
+                                                    className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                                    onClick={() => handleSort("row")}
+                                                >
+                                                    <span>Hàng</span>
+                                                    {sortField === "row" ? (
+                                                        sortAscending ? (
+                                                            <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                        ) : (
+                                                            <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                        )
+                                                    ) : (
+                                                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                    )}
+                                                </div>
+                                            </TableHead>
+
+                                            {/* Cột */}
+                                            <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                                                <div
+                                                    className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                                    onClick={() => handleSort("column")}
+                                                >
+                                                    <span>Cột</span>
+                                                    {sortField === "column" ? (
+                                                        sortAscending ? (
+                                                            <ArrowUp className="h-4 w-4 text-orange-500" />
+                                                        ) : (
+                                                            <ArrowDown className="h-4 w-4 text-orange-500" />
+                                                        )
+                                                    ) : (
+                                                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                                                    )}
+                                                </div>
                                             </TableHead>
                                             <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-48">
                                                 Tình trạng
@@ -926,7 +982,7 @@ const LocationList = () => {
                                                         </TableCell>
                                                     )}
                                                     <TableCell className="px-6 py-4 text-slate-600 font-medium">
-                                                        {index + 1}
+                                                        {(pagination.current - 1) * pagination.pageSize + index + 1}
                                                     </TableCell>
                                                     <TableCell className="px-6 py-4 text-slate-700 font-medium">{location?.locationCode || ''}</TableCell>
                                                     <TableCell className="px-6 py-4 text-slate-700">{location?.areaName || "—"}</TableCell>

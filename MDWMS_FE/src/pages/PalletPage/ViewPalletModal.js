@@ -6,11 +6,13 @@ import { X } from "lucide-react";
 import { ComponentIcon } from "../../components/IconComponent/Icon";
 import { getPalletDetail } from "../../services/PalletService";
 import Loading from "../../components/Common/Loading";
+import Barcode from "react-barcode";
 
 export function PalletDetail({ palletId, onClose }) {
     const [pallet, setPallet] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [isBarcodeHovered, setIsBarcodeHovered] = useState(false);
 
     useEffect(() => {
         const fetchPalletDetail = async () => {
@@ -53,7 +55,7 @@ export function PalletDetail({ palletId, onClose }) {
                 return (
                     <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-green-50 border border-green-200">
                         <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                        <span className="text-sm font-medium text-green-700">Còn sử dụng</span>
+                        <span className="text-sm font-medium text-green-700">Đã đưa vào vị trí</span>
                     </div>
                 );
             case 2:
@@ -61,7 +63,7 @@ export function PalletDetail({ palletId, onClose }) {
                 return (
                     <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-red-50 border border-red-200">
                         <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                        <span className="text-sm font-medium text-red-700">Không còn sử dụng</span>
+                        <span className="text-sm font-medium text-red-700">Chưa đưa vào vị trí</span>
                     </div>
                 );
             case 3:
@@ -201,7 +203,7 @@ export function PalletDetail({ palletId, onClose }) {
                                 <div className="flex items-center gap-3">
                                     <ComponentIcon name="shoppingCart" size={20} color="#f97316" />
                                     <div>
-                                        <p className="text-sm text-orange-600 font-medium">Tổng số {pallet.unitOfMeasure || "đơn vị"}/kiện</p>
+                                        <p className="text-sm text-orange-600 font-medium">Tổng số {pallet.unitOfMeasure || "đơn vị"}/pallet</p>
                                         <p className="text-lg text-orange-800 font-bold">
                                             {pallet.packageQuantity && pallet.unitPerPackage
                                                 ? `${(pallet.packageQuantity * pallet.unitPerPackage).toLocaleString()} ${pallet.unitOfMeasure || ""}`
@@ -215,6 +217,100 @@ export function PalletDetail({ palletId, onClose }) {
 
                     {/* Main Content Grid */}
                     <div className="grid gap-6 lg:grid-cols-2">
+                        {/* Mã vạch pallet */}
+                        <Card className="border-0 shadow-lg bg-gradient-to-br from-slate-50 to-gray-50">
+                            <CardHeader className="pb-4">
+                                <CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-3">
+                                    <div className="p-2 bg-slate-100 rounded-lg">
+                                        <ComponentIcon name="qrcode" size={20} color="#475569" />
+                                    </div>
+                                    Mã pallet
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div
+                                    className="bg-white p-4 rounded-lg border border-slate-200 relative"
+                                    onMouseEnter={() => setIsBarcodeHovered(true)}
+                                    onMouseLeave={() => setIsBarcodeHovered(false)}
+                                >
+                                    <div className="flex flex-col items-center justify-center">
+                                        <div className={`transition-all duration-300 ${isBarcodeHovered ? 'scale-110' : 'scale-100'}`}>
+                                            <Barcode
+                                                value={pallet.palletId || ""}
+                                                height={isBarcodeHovered ? 60 : 40}
+                                                width={isBarcodeHovered ? 1.2 : 0.8}
+                                                margin={5}
+                                                displayValue={false}
+                                                fontSize={isBarcodeHovered ? 14 : 12}
+                                                textMargin={6}
+                                                format="CODE128"
+                                            />
+                                        </div>
+                                        <p className={`font-mono text-slate-800 break-all text-center mt-3 transition-all duration-300 ${isBarcodeHovered ? 'text-base font-bold' : 'text-sm'}`}>
+                                            {pallet.palletId}
+                                        </p>
+                                    </div>
+
+                                    {/* Overlay popup khi hover */}
+                                    {isBarcodeHovered && (
+                                        <div
+                                            className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+                                            onMouseMove={(e) => {
+                                                // Đóng khi chuột di chuyển vào vùng nền đen (không phải content box)
+                                                if (e.target === e.currentTarget) {
+                                                    setIsBarcodeHovered(false);
+                                                }
+                                            }}
+                                        >
+                                            <div
+                                                className="bg-white rounded-xl shadow-2xl p-6 max-w-xl w-full mx-4 border-2 border-slate-300"
+                                                onMouseLeave={() => setIsBarcodeHovered(false)}
+                                            >
+                                                <h3 className="text-lg font-bold text-slate-800 mb-4 text-center">MÃ PALLET</h3>
+                                                <div className="flex flex-col items-center justify-center">
+                                                    <Barcode
+                                                        value={pallet.palletId || ""}
+                                                        height={70}
+                                                        width={1.2}
+                                                        margin={10}
+                                                        displayValue={false}
+                                                        fontSize={14}
+                                                        textMargin={8}
+                                                        format="CODE128"
+                                                    />
+                                                    <p className="text-base font-mono font-bold text-slate-800 break-all text-center mt-4">
+                                                        {pallet.palletId}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Thông tin người tạo */}
+                        <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-violet-50">
+                            <CardHeader className="pb-4">
+                                <CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-3">
+                                    <div className="p-2 bg-purple-100 rounded-lg">
+                                        <ComponentIcon name="user" size={20} color="#8b5cf6" />
+                                    </div>
+                                    Thông tin người tạo
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="bg-white p-4 rounded-lg border border-purple-200">
+                                    <InfoRow
+                                        icon="user"
+                                        label="Người tạo"
+                                        value={pallet.createByName || "N/A"}
+                                        iconColor="#8b5cf6"
+                                    />
+                                </div>
+                            </CardContent>
+                        </Card>
+
                         {/* Thông tin vị trí */}
                         <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-indigo-50">
                             <CardHeader className="pb-4">
@@ -278,50 +374,6 @@ export function PalletDetail({ palletId, onClose }) {
                                         label="Ngày hết hạn"
                                         value={pallet.expiryDate ? new Date(pallet.expiryDate).toLocaleDateString('vi-VN') : "N/A"}
                                         iconColor="#10b981"
-                                    />
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Thông tin đơn hàng */}
-                        <Card className="border-0 shadow-lg bg-gradient-to-br from-orange-50 to-amber-50">
-                            <CardHeader className="pb-4">
-                                <CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-3">
-                                    <div className="p-2 bg-orange-100 rounded-lg">
-                                        <ComponentIcon name="shoppingCart" size={20} color="#f97316" />
-                                    </div>
-                                    Thông tin phiếu nhập kho
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="bg-white p-4 rounded-lg border border-orange-200 space-y-3">
-                                    <InfoRow
-                                        icon="shoppingCart"
-                                        label="ID phiếu nhập kho"
-                                        value={pallet.goodsReceiptNoteId || "N/A"}
-                                        iconColor="#f97316"
-                                    />
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Thông tin người tạo */}
-                        <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-violet-50">
-                            <CardHeader className="pb-4">
-                                <CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-3">
-                                    <div className="p-2 bg-purple-100 rounded-lg">
-                                        <ComponentIcon name="user" size={20} color="#8b5cf6" />
-                                    </div>
-                                    Thông tin người tạo
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="bg-white p-4 rounded-lg border border-purple-200">
-                                    <InfoRow
-                                        icon="user"
-                                        label="Người tạo"
-                                        value={pallet.createByName || "N/A"}
-                                        iconColor="#8b5cf6"
                                     />
                                 </div>
                             </CardContent>

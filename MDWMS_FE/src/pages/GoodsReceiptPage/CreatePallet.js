@@ -7,6 +7,7 @@ import { getGoodRNDPallet } from "../../services/GoodsReceiptService";
 import { getBatchDropdown } from "../../services/BatchService";
 import FloatingDropdown from "../../components/Common/FloatingDropdown";
 import { createPalletsBulk } from "../../services/PalletService";
+import { cleanErrorMessage } from "../../utils/Validation";
 
 export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDetails = [], onRegisterSubmit, onPalletCreated, hasExistingPallets = false, onSubmittingChange, onBatchCreated, purchaseOrderStatus }) {
   const [showPalletTable, setShowPalletTable] = useState(false);
@@ -541,7 +542,15 @@ export default function PalletManager({ goodsReceiptNoteId, goodsReceiptNoteDeta
         const totalFailed = bulkData.totalFailed || bulkData.failedItems.length;
         window.showToast?.(`Có ${totalFailed} pallet bị lỗi. Vui lòng kiểm tra và sửa các lỗi trong bảng.`, "error");
       } else {
-        window.showToast?.("Tạo pallet thất bại, vui lòng thử lại", "error");
+        const rawMessage =
+          errorResponseData?.message ||
+          bulkData?.message ||
+          e?.message ||
+          "Tạo pallet thất bại, vui lòng thử lại";
+
+        const apiMessage = cleanErrorMessage(rawMessage);
+
+        window.showToast?.(apiMessage, "error");
       }
     } finally {
       setSubmitting(false);

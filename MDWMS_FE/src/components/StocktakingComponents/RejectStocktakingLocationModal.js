@@ -152,7 +152,7 @@ export default function RejectStocktakingLocationModal({
         if (!value.trim()) {
             setErrors(prev => ({
                 ...prev,
-                [locationId]: "Vui lòng nhập lý do từ chối"
+                [locationId]: "Vui lòng nhập lý do kiểm kê lại"
             }));
         } else {
             // Clear error when user enters valid text
@@ -171,7 +171,7 @@ export default function RejectStocktakingLocationModal({
         if (!reason.trim()) {
             setErrors(prev => ({
                 ...prev,
-                [locationId]: "Vui lòng nhập lý do từ chối"
+                [locationId]: "Vui lòng nhập lý do kiểm kê lại"
             }));
         }
     };
@@ -183,7 +183,7 @@ export default function RejectStocktakingLocationModal({
         locationDetails.forEach((location) => {
             const reason = rejectReasons[location.stocktakingLocationId] || "";
             if (!reason.trim()) {
-                newErrors[location.stocktakingLocationId] = "Vui lòng nhập lý do từ chối";
+                newErrors[location.stocktakingLocationId] = "Vui lòng nhập lý do kiểm kê lại";
                 isValid = false;
             }
         });
@@ -198,7 +198,7 @@ export default function RejectStocktakingLocationModal({
 
         if (!isValid) {
             if (window.showToast) {
-                window.showToast("Vui lòng nhập lý do từ chối cho tất cả các vị trí", "error");
+                window.showToast("Vui lòng nhập lý do kiểm kê lại cho tất cả các vị trí", "error");
             }
             // Scroll to first error field
             const firstErrorLocationId = Object.keys(validationErrors)[0];
@@ -235,10 +235,10 @@ export default function RejectStocktakingLocationModal({
                         </div>
                         <div>
                             <h2 className="text-xl font-bold text-gray-900">
-                                {isMultiple ? `Từ chối kiểm kê (${locationDetails.length} vị trí)` : "Từ chối kiểm kê"}
+                                {isMultiple ? `kiểm kê lại (${locationDetails.length} vị trí)` : "Kiểm kê lại"}
                             </h2>
                             <p className="text-sm text-gray-500 mt-1">
-                                Vui lòng nhập lý do từ chối cho {isMultiple ? "các vị trí" : "vị trí"} đã chọn
+                                Vui lòng nhập lý do kiểm kê lại cho {isMultiple ? "các vị trí" : "vị trí"} đã chọn
                             </p>
                         </div>
                     </div>
@@ -260,7 +260,7 @@ export default function RejectStocktakingLocationModal({
                                     <AlertCircle className="h-5 w-5 text-orange-500 mt-0.5 flex-shrink-0" />
                                     <div className="text-sm text-orange-800">
                                         <p className="font-medium mb-1">Lưu ý:</p>
-                                        <p>Bạn cần nhập lý do từ chối cho từng vị trí. Lý do đã được tự động điền từ cảnh báo/lỗi (nếu có), bạn có thể chỉnh sửa hoặc thêm vào. Sau khi từ chối, các vị trí này sẽ được chuyển về trạng thái "Chờ kiểm kê" và cần được kiểm kê lại.</p>
+                                        <p>Bạn cần nhập lý do kiểm kê lại cho từng vị trí. Lý do đã được tự động điền từ cảnh báo/lỗi (nếu có), bạn có thể chỉnh sửa hoặc thêm vào. Sau khi kiểm kê lại, các vị trí này sẽ được chuyển về trạng thái "Chờ kiểm kê" và cần được kiểm kê lại.</p>
                                     </div>
                                 </div>
                             </div>
@@ -271,7 +271,7 @@ export default function RejectStocktakingLocationModal({
                                             <TableHead className="font-semibold text-gray-700 text-center w-16">STT</TableHead>
                                             <TableHead className="font-semibold text-gray-700">Khu vực</TableHead>
                                             <TableHead className="font-semibold text-gray-700">Mã vị trí</TableHead>
-                                            <TableHead className="font-semibold text-gray-700 min-w-[300px]">Lý do từ chối <span className="text-red-500">*</span></TableHead>
+                                            <TableHead className="font-semibold text-gray-700 min-w-[300px]">Lý do kiểm kê lại <span className="text-red-500">*</span></TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -295,7 +295,7 @@ export default function RejectStocktakingLocationModal({
                                                                 data-location-id={locationId}
                                                                 className={`w-full h-32 px-3 py-2 border-2 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm resize-y ${hasError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300'
                                                                     }`}
-                                                                placeholder="Nhập lý do từ chối (bắt buộc). Bạn có thể chỉnh sửa hoặc thêm vào lý do đã được tự động điền."
+                                                                placeholder="Nhập lý do kiểm kê lại (bắt buộc). Bạn có thể chỉnh sửa hoặc thêm vào lý do đã được tự động điền."
                                                                 maxLength={500}
                                                                 value={rejectReasons[locationId] || ""}
                                                                 onChange={(e) => handleReasonChange(locationId, e.target.value)}
@@ -331,7 +331,7 @@ export default function RejectStocktakingLocationModal({
                                             <AlertCircle className="h-5 w-5 text-orange-500 mt-0.5 flex-shrink-0" />
                                             <div className="text-sm text-orange-800">
                                                 <p className="font-medium mb-1">Lưu ý:</p>
-                                                <p>Lý do đã được tự động điền từ cảnh báo/lỗi (nếu có), bạn có thể chỉnh sửa hoặc thêm vào. Sau khi từ chối, vị trí này sẽ được chuyển về trạng thái "Chờ kiểm kê" và cần được kiểm kê lại.</p>
+                                                <p>Lý do đã được tự động điền từ cảnh báo/lỗi (nếu có), bạn có thể chỉnh sửa hoặc thêm vào. Sau khi kiểm kê lại, vị trí này sẽ được chuyển về trạng thái "Chờ kiểm kê" và cần được kiểm kê lại.</p>
                                             </div>
                                         </div>
                                     </div>
@@ -354,13 +354,13 @@ export default function RejectStocktakingLocationModal({
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Lý do từ chối <span className="text-red-500">*</span>
+                                                Lý do kiểm kê lại <span className="text-red-500">*</span>
                                             </label>
                                             <textarea
                                                 data-location-id={locationDetails[0].stocktakingLocationId}
                                                 className={`w-full h-32 px-3 py-2 border-2 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-y ${errors[locationDetails[0].stocktakingLocationId] ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300'
                                                     }`}
-                                                placeholder="Nhập lý do từ chối (bắt buộc). Bạn có thể chỉnh sửa hoặc thêm vào lý do đã được tự động điền."
+                                                placeholder="Nhập lý do kiểm kê lại (bắt buộc). Bạn có thể chỉnh sửa hoặc thêm vào lý do đã được tự động điền."
                                                 maxLength={500}
                                                 value={rejectReasons[locationDetails[0].stocktakingLocationId] || ""}
                                                 onChange={(e) => handleReasonChange(locationDetails[0].stocktakingLocationId, e.target.value)}
@@ -409,7 +409,7 @@ export default function RejectStocktakingLocationModal({
                                 Đang xử lý...
                             </div>
                         ) : (
-                            "Xác nhận từ chối"
+                            "Xác nhận kiểm kê lại"
                         )}
                     </Button>
                 </div>

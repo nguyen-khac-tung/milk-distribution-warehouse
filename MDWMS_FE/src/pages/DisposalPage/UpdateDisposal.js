@@ -48,7 +48,6 @@ const UpdateDisposal = () => {
     // Minimum selectable date: tomorrow (force future date)
     const minDate = (() => {
         const d = new Date();
-        d.setDate(d.getDate() + 1);
         const yyyy = d.getFullYear();
         const mm = String(d.getMonth() + 1).padStart(2, '0');
         const dd = String(d.getDate()).padStart(2, '0');
@@ -494,8 +493,8 @@ const UpdateDisposal = () => {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
 
-            if (selectedDate <= today) {
-                errors.estimatedTimeDeparture = "Ngày xuất hủy phải là ngày trong tương lai";
+            if (selectedDate < today) {
+                errors.estimatedTimeDeparture = "Ngày xuất hủy không được là ngày trong quá khứ";
             }
         }
 
@@ -670,7 +669,7 @@ const UpdateDisposal = () => {
                                             <Input
                                                 id="estimatedTimeDeparture"
                                                 type="date"
-                                                // min={minDate}
+                                                min={minDate}
                                                 value={formData.estimatedTimeDeparture}
                                                 onChange={(e) => {
                                                     setFormData(prev => ({ ...prev, estimatedTimeDeparture: e.target.value }));

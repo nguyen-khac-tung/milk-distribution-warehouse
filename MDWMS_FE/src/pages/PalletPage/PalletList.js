@@ -657,7 +657,7 @@ export default function PalletList() {
                                                     </TableCell>
                                                 )}
                                                 <TableCell className="px-2 py-4 text-center text-slate-700">
-                                                    {index + 1}
+                                                    {(pagination.pageNumber - 1) * pagination.pageSize + index + 1}
                                                 </TableCell>
                                                 <TableCell className="px-6 py-4 text-slate-700 font-medium">
                                                     <div className="break-words whitespace-normal">
