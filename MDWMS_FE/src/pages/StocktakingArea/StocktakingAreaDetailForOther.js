@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, Calendar, User, MapPin, Clock, Thermometer, Droplets, Sun, RotateCcw, CheckCircle2, AlertTriangle, Edit2, Save, X, Search, Package, Printer, FileText } from 'lucide-react';
+import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, Calendar, User, MapPin, Clock, Thermometer, Droplets, Sun, RotateCcw, CheckCircle2, AlertTriangle, Edit2, Save, X, Search, Package, Printer, FileText, XCircle } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
-import { getStocktakingAreaDetailForOtherRoleBySheetId, getStocktakingDetail, getStocktakingPalletDetail, rejectStocktakingLocationRecords, approveStocktakingArea, completeStocktaking, updateStocktakingLocationRecords, exportStocktakingAreaWord } from '../../services/StocktakingService';
+import { getStocktakingAreaDetailForOtherRoleBySheetId, getStocktakingDetail, getStocktakingPalletDetail, rejectStocktakingLocationRecords, approveStocktakingArea, completeStocktaking, updateStocktakingLocationRecords, exportStocktakingAreaWord, cancelStocktaking } from '../../services/StocktakingService';
 import { usePermissions } from '../../hooks/usePermissions';
 import { extractErrorMessage } from '../../utils/Validation';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
@@ -14,6 +14,7 @@ import LocationStatusDisplay, { STOCK_LOCATION_STATUS } from './LocationStatusDi
 import AreaStatusDisplay, { STOCK_AREA_STATUS } from './AreaStatusDisplay';
 import PalletStatusDisplay from './PalletStatusDisplay';
 import RejectStocktakingLocationModal from '../../components/StocktakingComponents/RejectStocktakingLocationModal';
+import CancelStocktakingModal from '../../components/StocktakingComponents/CancelStocktakingModal';
 import dayjs from 'dayjs';
 
 const StocktakingAreaDetailForOther = () => {
@@ -39,6 +40,8 @@ const StocktakingAreaDetailForOther = () => {
     const { isWarehouseManager, isSaleManager } = usePermissions();
     const [completingStocktaking, setCompletingStocktaking] = useState(false);
     const [completeNote, setCompleteNote] = useState('');
+    const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+    const [cancellingStocktaking, setCancellingStocktaking] = useState(false);
     const [editingNotes, setEditingNotes] = useState({}); // Map locationId -> note value
     const [updatingNotes, setUpdatingNotes] = useState(new Set()); // Set of locationIds being updated
     const [searchTerms, setSearchTerms] = useState({}); // Lưu search term đang active (đã tìm) cho mỗi area
@@ -487,6 +490,53 @@ const StocktakingAreaDetailForOther = () => {
             }
         } finally {
             setCompletingStocktaking(false);
+        }
+    };
+
+    const handleOpenCancelModal = () => {
+        setIsCancelModalOpen(true);
+    };
+
+    const handleCancelModalClose = () => {
+        setIsCancelModalOpen(false);
+    };
+
+    const handleCancelStocktaking = async (note) => {
+        if (!id) {
+            if (window.showToast) {
+                window.showToast('Không tìm thấy mã phiếu kiểm kê', 'error');
+            }
+            return;
+        }
+
+        if (!note || !note.trim()) {
+            if (window.showToast) {
+                window.showToast('Vui lòng nhập lý do hủy bỏ', 'warning');
+            }
+            return;
+        }
+
+        try {
+            setCancellingStocktaking(true);
+            await cancelStocktaking(id, note);
+
+            if (window.showToast) {
+                window.showToast('Hủy bỏ kết quả kiểm kê thành công', 'success');
+            }
+
+            // Close modal
+            setIsCancelModalOpen(false);
+
+            // Refresh data
+            await handleRefresh();
+        } catch (error) {
+            console.error('Error cancelling stocktaking:', error);
+            const errorMessage = extractErrorMessage(error);
+            if (window.showToast) {
+                window.showToast(errorMessage || 'Không thể hủy bỏ kết quả kiểm kê', 'error');
+            }
+        } finally {
+            setCancellingStocktaking(false);
         }
     };
 
@@ -1537,11 +1587,11 @@ const StocktakingAreaDetailForOther = () => {
                                 );
                             })}
 
-                            {/* Nút Hoàn thành cho quản lý kinh doanh khi trạng thái là Đã duyệt */}
-                            {isSaleManager &&
-                                stocktakingDetail?.status === STOCKTAKING_STATUS.Approved && (
-                                    <div className="pt-6 mt-6 border-t border-gray-200">
-                                        <div className="flex flex-col gap-3">
+                            {/* Nút Hoàn thành và Hủy bỏ cho quản lý kinh doanh */}
+                            {isSaleManager && (
+                                <div className="pt-6 mt-6 border-t border-gray-200">
+                                    <div className="flex flex-col gap-3">
+                                        {stocktakingDetail?.status === STOCKTAKING_STATUS.Approved && (
                                             <textarea
                                                 value={completeNote}
                                                 onChange={(e) => setCompleteNote(e.target.value)}
@@ -1550,7 +1600,20 @@ const StocktakingAreaDetailForOther = () => {
                                                 rows={2}
                                                 disabled={completingStocktaking}
                                             />
-                                            <div className="flex justify-end">
+                                        )}
+                                        <div className="flex justify-end gap-2">
+                                            {stocktakingDetail?.status !== STOCKTAKING_STATUS.Cancelled && 
+                                             stocktakingDetail?.status !== STOCKTAKING_STATUS.Completed && (
+                                                <Button
+                                                    onClick={handleOpenCancelModal}
+                                                    disabled={cancellingStocktaking || completingStocktaking}
+                                                    className="flex items-center space-x-2 px-4 py-2 h-[38px] bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    <XCircle className="h-4 w-4" />
+                                                    <span className="text-sm font-medium">Hủy bỏ kết quả kiểm kê</span>
+                                                </Button>
+                                            )}
+                                            {stocktakingDetail?.status === STOCKTAKING_STATUS.Approved && (
                                                 <Button
                                                     onClick={handleCompleteStocktaking}
                                                     disabled={completingStocktaking}
@@ -1568,10 +1631,11 @@ const StocktakingAreaDetailForOther = () => {
                                                         </>
                                                     )}
                                                 </Button>
-                                            </div>
+                                            )}
                                         </div>
                                     </div>
-                                )}
+                                </div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
@@ -1586,6 +1650,14 @@ const StocktakingAreaDetailForOther = () => {
                 stocktakingAreas={stocktakingAreas}
                 locationWarnings={locationWarnings}
                 loading={isRejecting}
+            />
+
+            {/* Cancel Stocktaking Modal */}
+            <CancelStocktakingModal
+                isOpen={isCancelModalOpen}
+                onClose={handleCancelModalClose}
+                onConfirm={handleCancelStocktaking}
+                loading={cancellingStocktaking}
             />
         </div>
     );

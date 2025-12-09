@@ -87,10 +87,11 @@ export const createStocktaking = async (data) => {
 
 
 // Hủy phiếu kiểm kê
-export const cancelStocktaking = async (stocktakingSheetId) => {
+export const cancelStocktaking = async (stocktakingSheetId, note = "") => {
     try {
         const body = {
-            stocktakingSheetId: stocktakingSheetId
+            stocktakingSheetId: stocktakingSheetId,
+            note: note || ""
         };
         const res = await api.put("/StocktakingSheet/Cancel", body);
         return res.data;
