@@ -4,11 +4,11 @@ import Toast from './Toast'
 const ToastManager = () => {
   const [toasts, setToasts] = useState([])
 
-  const addToast = useCallback((message, type = 'success', duration = 3000) => {
+  const addToast = useCallback((message, type = 'success', duration = 8000) => {
     const id = Date.now() + Math.random()
     const newToast = { id, message, type, duration }
     setToasts(prevToasts => [...prevToasts, newToast])
-    
+
     return id
   }, [])
   const removeToast = useCallback((id) => {
