@@ -113,7 +113,7 @@ namespace MilkDistributionWarehouse.Controllers
         }
 
         [HttpPut("Cancel")]
-        [Authorize(Roles = RoleNames.WarehouseManager)]
+        [Authorize(Roles = RoleNames.WarehouseManager + "," + RoleNames.SalesManager)]
         public async Task<IActionResult> CancelStocktakingSheet([FromBody] StocktakingSheetCancelStatus update)
         {
             var (msg, stocktaking) = await _stocktakingSheetService.UpdateStocktakingSheetStatus(update, User.GetUserId());

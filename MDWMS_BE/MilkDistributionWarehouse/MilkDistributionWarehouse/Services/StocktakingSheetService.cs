@@ -41,6 +41,7 @@ namespace MilkDistributionWarehouse.Services
         private readonly IPalletRepository _palletRepository;
         private readonly ILocationRepository _locationRepository;
         private readonly INotificationService _notificationService;
+        private readonly IUserRepository _userRepository;
 
         public StocktakingSheetService(IMapper mapper, IStocktakingSheetRepository stocktakingSheetRepository,
             IStocktakingAreaRepository stocktakingAreaRepository,
@@ -48,7 +49,7 @@ namespace MilkDistributionWarehouse.Services
             IStocktakingAreaService stocktakingAreaService, IStocktakingLocationService stocktakingLocationService,
             IStocktakingLocationRepository stocktakingLocationRepository, IStocktakingStatusDomainService stocktakingStatusDomainService,
             IStocktakingPalletRepository stocktakingPalletRepository, IPalletRepository palletRepository, ILocationRepository locationRepository,
-            INotificationService notificationService)
+            INotificationService notificationService, IUserRepository userRepository)
         {
             _mapper = mapper;
             _stocktakingSheetRepository = stocktakingSheetRepository;
@@ -63,6 +64,7 @@ namespace MilkDistributionWarehouse.Services
             _palletRepository = palletRepository;
             _locationRepository = locationRepository;
             _notificationService = notificationService;
+            _userRepository = userRepository;
         }
 
         public async Task<(string, PageResult<StocktakingSheetDto>?)> GetStocktakingSheets(PagedRequest request, string roleName, int? userId)
@@ -78,7 +80,8 @@ namespace MilkDistributionWarehouse.Services
                     var status = new int[]
                     {
                         StocktakingStatus.Approved,
-                        StocktakingStatus.Completed
+                        StocktakingStatus.Completed,
+                        StocktakingStatus.Cancelled
                     };
                     stocktakingSheetQuery = stocktakingSheetQuery.Where(ss => status.Contains((int)ss.Status));
                     break;
@@ -351,8 +354,8 @@ namespace MilkDistributionWarehouse.Services
                         reAssignStatusPayload = reAssignStatus;
                         errorMessage = await HandleReAssignStatus(stocktakingSheetExist, reAssignStatus, userId);
                         break;
-                    case StocktakingSheetCancelStatus:
-                        errorMessage = await HandleCancelStatus(stocktakingSheetExist, userId);
+                    case StocktakingSheetCancelStatus cancelStatus:
+                        errorMessage = await HandleCancelStatus(stocktakingSheetExist, userId, cancelStatus.Note);
                         break;
                     case StocktakingSheetInProgressStatus inProgress:
                         errorMessage = await HandleInProgressStatus(stocktakingSheetExist, inProgress, userId);
@@ -372,7 +375,15 @@ namespace MilkDistributionWarehouse.Services
 
                 await _unitOfWork.CommitTransactionAsync();
 
-                await HandleNotificationStatusChange(stocktakingSheetExist, oldAssignToList, assignStatusPayload, reAssignStatusPayload);
+                bool? isSalesManagerCancel = null;
+                if (update is StocktakingSheetCancelStatus)
+                {
+                    bool isWarehouseManager = IsWarehouseManager(stocktakingSheetExist, userId);
+                    bool isSalesManager = await IsSalesManager(userId);
+                    isSalesManagerCancel = isSalesManager && !isWarehouseManager;
+                }
+
+                await HandleNotificationStatusChange(stocktakingSheetExist, oldAssignToList, assignStatusPayload, reAssignStatusPayload, userId, isSalesManagerCancel);
 
                 return ("", new StocktakingSheeteResponse { StocktakingSheetId = update.StocktakingSheetId });
             }
@@ -485,7 +496,15 @@ namespace MilkDistributionWarehouse.Services
         {
             return userId.HasValue && sheet.CreatedBy == userId;
         }
-
+        private async Task<bool> IsSalesManager(int? userId)
+        {
+            var users = await _userRepository.GetUsersByRoleId(RoleType.SaleManager);
+            var checkUser = users?.FirstOrDefault(u => u.UserId == userId);
+            
+            if (checkUser != null) return true;
+            
+            return false;
+        }
         private bool IsWarehouseStaff(StocktakingSheet sheet, int? userId)
         {
             return userId.HasValue && sheet.StocktakingAreas.Any(sa => sa.AssignTo == userId);
@@ -542,36 +561,43 @@ namespace MilkDistributionWarehouse.Services
             return string.Empty;
         }
 
-        private async Task<string> HandleCancelStatus(StocktakingSheet sheet, int? userId)
+        private async Task<string> HandleCancelStatus(StocktakingSheet sheet, int? userId, string note)
         {
-            if (!IsWarehouseManager(sheet, userId))
-                return "Bạn không có quyền thực hiện chức năng cập nhật trạng thái trong phiếu kiểm kê.".ToMessageForUser();
+            bool isWarehouseManager = IsWarehouseManager(sheet, userId);
+            bool isSalesManager = await IsSalesManager(userId);
 
-            //if (sheet.Status == StocktakingStatus.Approved)
-            //    return "Không thể Huỷ phiếu kiểm kê khi phiếu kiểm kê Đã được duyệt.".ToMessageForUser();
+            if (!isWarehouseManager && !isSalesManager)
+                return "Bạn không có quyền thực hiện chức năng huỷ phiếu kiểm kê.";
 
-            if (sheet.Status == StocktakingStatus.Completed)
-                return "Không thể Huỷ phiếu kiểm kê khi phiếu kiểm kê Đã hoàn thành.".ToMessageForUser();
+            if (isWarehouseManager)
+            {
+                if (sheet.Status == StocktakingStatus.Completed)
+                    return "Không thể huỷ đơn kiểm kê khi đơn kiểm kê đã hoàn thành.";
 
-            //if (!IsBeforeEditDeadline(sheet.StartTime))
-            //    return $"Chỉ được chuyển sang trạng thái Huỷ khi phiếu kiểm kê trước thời gian bắt đầu {_hoursBeforeStartTime} giờ".ToMessageForUser();
-
-            if (sheet.Status == StocktakingStatus.Completed)
-                return "Không thể huỷ đơn kiểm kê khi đơn kiểm kê đã hoàn thành".ToMessageForUser();
-
-            if (sheet.Status == StocktakingStatus.Approved)
-                return "Không thể huỷ đơn kiểm kê khi đơn kiểm kê đã duyệt".ToMessageForUser();
+                if (sheet.Status == StocktakingStatus.Approved)
+                    return "Không thể huỷ đơn kiểm kê khi đơn kiểm kê đã được duyệt.";
+            }
+            else if (isSalesManager)
+            {
+                if (sheet.Status != StocktakingStatus.Approved)
+                    return "Bạn chỉ có thể huỷ phiếu kiểm kê khi phiếu đang ở trạng thái Đã duyệt.";
+            }
 
             var cancelChildMessage = await CancelChildStocktakingEntities(sheet);
             if (!string.IsNullOrEmpty(cancelChildMessage))
                 return cancelChildMessage;
 
+            if(!string.IsNullOrEmpty(note))
+            {
+                sheet.Note = note;
+            }
             var updateMessage = await _stocktakingStatusDomainService.UpdateSheetStatusAsync(sheet, StocktakingStatus.Cancelled);
             if (!string.IsNullOrEmpty(updateMessage))
                 return updateMessage;
 
             return string.Empty;
         }
+
 
         private async Task<string> HandleInProgressStatus(StocktakingSheet sheet, StocktakingSheetInProgressStatus inProgressStatus, int? userId)
         {
@@ -685,7 +711,9 @@ namespace MilkDistributionWarehouse.Services
             StocktakingSheet sheet,
             List<int?> oldAssignToList,
             StocktakingSheetAssignStatus? assignStatus = null,
-            StocktakingSheetReAssignStatus? reAssignStatus = null)
+            StocktakingSheetReAssignStatus? reAssignStatus = null,
+            int? userId = null,
+            bool? isSalesManagerCancel = null)
         {
             var notificationToCreates = new List<NotificationCreateDto>();
             var staffIds = sheet.StocktakingAreas
@@ -707,11 +735,11 @@ namespace MilkDistributionWarehouse.Services
                             .Distinct()
                             .ToList();
 
-                        foreach (var userId in assignUserIds)
+                        foreach (var assignUserId in assignUserIds)
                         {
                             notificationToCreates.Add(new NotificationCreateDto
                             {
-                                UserId = userId,
+                                UserId = assignUserId,
                                 Title = "Phiếu kiểm kê được phân công",
                                 Content = $"Bạn đã được phân công kiểm kê trong phiếu kiểm kê '{sheet.StocktakingSheetId}'. Vui lòng kiểm tra và thực hiện đúng thời gian quy định.",
                                 EntityType = NotificationEntityType.StocktakingSheet,
@@ -726,11 +754,11 @@ namespace MilkDistributionWarehouse.Services
                             .Distinct()
                             .ToList();
 
-                        foreach (var userId in reAssignUserIds)
+                        foreach (var reAssignUserId in reAssignUserIds)
                         {
                             notificationToCreates.Add(new NotificationCreateDto
                             {
-                                UserId = userId,
+                                UserId = reAssignUserId,
                                 Title = "Phiếu kiểm kê được phân công",
                                 Content = $"Bạn đã được phân công kiểm kê trong phiếu kiểm kê '{sheet.StocktakingSheetId}'. Vui lòng kiểm tra và thực hiện đúng thời gian quy định.",
                                 EntityType = NotificationEntityType.StocktakingSheet,
@@ -748,11 +776,11 @@ namespace MilkDistributionWarehouse.Services
                             .Except(reAssignUserIds)
                             .ToList();
 
-                        foreach (var userId in removedUserIds)
+                        foreach (var removeUserId in removedUserIds)
                         {
                             notificationToCreates.Add(new NotificationCreateDto
                             {
-                                UserId = userId,
+                                UserId = removeUserId,
                                 Title = "Phiếu kiểm kê thay đổi phân công",
                                 Content = $"Bạn đã được gỡ khỏi phiếu kiểm kê '{sheet.StocktakingSheetId}'. Vui lòng liên hệ quản lý kho nếu cần thêm thông tin.",
                                 EntityType = NotificationEntityType.NoNavigation,
@@ -761,18 +789,46 @@ namespace MilkDistributionWarehouse.Services
                     }
                     break;
                 case StocktakingStatus.Cancelled:
-                    if (!staffIds.Any()) break;
-                    foreach (var staffId in staffIds)
+                    // Nếu Sales Manager hủy: thông báo cho Warehouse Manager và Warehouse Staff
+                    // Nếu Warehouse Manager hủy: chỉ thông báo cho Warehouse Staff
+                    if (isSalesManagerCancel == true)
                     {
-                        notificationToCreates.Add(new NotificationCreateDto
+                        // Lấy danh sách Warehouse Manager
+                        var warehouseManagers = await _userRepository.GetUsersByRoleId(RoleType.WarehouseManager);
+                        if (warehouseManagers != null && warehouseManagers.Any())
                         {
-                            UserId = staffId,
-                            Title = "Phiếu kiểm kê bị huỷ",
-                            Content = $"Phiếu kiểm kê '{sheet.StocktakingSheetId}' đã bị huỷ. Vui lòng liên hệ quản lý kho để biết thêm chi tiết.",
-                            EntityType = NotificationEntityType.StocktakingSheet,
-                            EntityId = sheet.StocktakingSheetId,
-                            Category = NotificationCategory.Important
-                        });
+                            foreach (var manager in warehouseManagers)
+                            {
+                                notificationToCreates.Add(new NotificationCreateDto
+                                {
+                                    UserId = manager.UserId,
+                                    Title = "Phiếu kiểm kê bị huỷ",
+                                    Content = $"Phiếu kiểm kê '{sheet.StocktakingSheetId}' đã bị huỷ bởi quản lý kinh doanh. Vui lòng kiểm tra và liên hệ để biết thêm chi tiết.",
+                                    EntityType = NotificationEntityType.StocktakingSheet,
+                                    EntityId = sheet.StocktakingSheetId,
+                                    Category = NotificationCategory.Important
+                                });
+                            }
+                        }
+                    }
+
+                    // Thông báo cho Warehouse Staff
+                    if (staffIds.Any())
+                    {
+                        foreach (var staffId in staffIds)
+                        {
+                            notificationToCreates.Add(new NotificationCreateDto
+                            {
+                                UserId = staffId,
+                                Title = "Phiếu kiểm kê bị huỷ",
+                                Content = isSalesManagerCancel == true
+                                    ? $"Phiếu kiểm kê '{sheet.StocktakingSheetId}' đã bị huỷ bởi quản lý kinh doanh. Vui lòng liên hệ quản lý kho để biết thêm chi tiết."
+                                    : $"Phiếu kiểm kê '{sheet.StocktakingSheetId}' đã bị huỷ. Vui lòng liên hệ quản lý kho để biết thêm chi tiết.",
+                                EntityType = NotificationEntityType.StocktakingSheet,
+                                EntityId = sheet.StocktakingSheetId,
+                                Category = NotificationCategory.Important
+                            });
+                        }
                     }
                     break;
                 case StocktakingStatus.Completed:
