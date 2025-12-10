@@ -66,8 +66,8 @@ namespace MilkDistributionWarehouse.Services
 
             if (disposalRequest.AssignTo != userId) return "Bạn không được phân công cho yêu cầu này.".ToMessageForUser();
 
-            //if (disposalRequest.EstimatedTimeDeparture > DateOnly.FromDateTime(DateTime.Now))
-            //    return "Không tạo được phiếu xuất hủy trước ngày dự kiến xuất.".ToMessageForUser();
+            if (disposalRequest.EstimatedTimeDeparture > DateOnly.FromDateTime(DateTimeUtility.Now()))
+                return "Không tạo được phiếu xuất hủy trước ngày dự kiến xuất.".ToMessageForUser();
 
             if (disposalRequest.Status != DisposalRequestStatus.AssignedForPicking)
                 return "Chỉ có thể tạo phiếu xuất hủy cho yêu cầu ở trạng thái 'Đã phân công'.".ToMessageForUser();
@@ -191,12 +191,12 @@ namespace MilkDistributionWarehouse.Services
                     {
                         noteDetail.Status = DisposalNoteItemStatus.PendingApproval;
                         noteDetail.RejectionReason = "";
-                        noteDetail.UpdatedAt = DateTime.Now;
+                        noteDetail.UpdatedAt = DateTimeUtility.Now();
                     }
                 }
 
                 disposalNote.Status = DisposalNoteStatus.PendingApproval;
-                disposalNote.UpdatedAt = DateTime.Now;
+                disposalNote.UpdatedAt = DateTimeUtility.Now();
 
                 await _disposalNoteRepository.UpdateDisposalNote(disposalNote);
                 await _unitOfWork.CommitTransactionAsync();
@@ -230,15 +230,15 @@ namespace MilkDistributionWarehouse.Services
 
                 disposalNote.Status = DisposalNoteStatus.Completed;
                 disposalNote.ApprovalBy = userId;
-                disposalNote.UpdatedAt = DateTime.Now;
+                disposalNote.UpdatedAt = DateTimeUtility.Now();
 
                 disposalNote.DisposalRequest.Status = DisposalRequestStatus.Completed;
-                disposalNote.DisposalRequest.UpdateAt = DateTime.Now;
+                disposalNote.DisposalRequest.UpdateAt = DateTimeUtility.Now();
 
                 foreach (var noteDetail in disposalNote.DisposalNoteDetails)
                 {
                     noteDetail.Status = DisposalNoteItemStatus.Completed;
-                    noteDetail.UpdatedAt = DateTime.Now;
+                    noteDetail.UpdatedAt = DateTimeUtility.Now();
                 }
 
                 var pickAllocationList = disposalNote.DisposalNoteDetails.SelectMany(d => d.PickAllocations).ToList();
@@ -252,7 +252,7 @@ namespace MilkDistributionWarehouse.Services
                         throw new Exception($"Thao tác thất bại: Kệ kê hàng '{pallet.PalletId}' không đủ số lượng để trừ kho (cần {pickPackageQuantity}, chỉ có {palletPackageQuantity}).".ToMessageForUser());
 
                     pallet.PackageQuantity = palletPackageQuantity - pickPackageQuantity;
-                    pallet.UpdateAt = DateTime.Now;
+                    pallet.UpdateAt = DateTimeUtility.Now();
                     if (pallet.PackageQuantity == 0)
                     {
                         pallet.Status = CommonStatus.Deleted;

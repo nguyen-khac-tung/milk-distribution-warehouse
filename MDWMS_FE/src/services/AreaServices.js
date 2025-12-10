@@ -168,3 +168,17 @@ export const getAvailableLocationQuantity = async () => {
         return [];
     }
 };
+
+// Lấy danh sách khu vực với locations dropdown
+export const getAreaWithLocationsDropDown = async () => {
+    try {
+        const res = await api.get("/Area/GetAreaWithLocationsDropDown");
+        return res?.data?.data ?? res?.data ?? [];
+    } catch (error) {
+        if (error.response) {
+            console.error("Error response data:", error.response.data);
+            console.error("Error response status:", error.response.status);
+        }
+        return [];
+    }
+};

@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.Entities;
+using MilkDistributionWarehouse.Utilities;
 
 namespace MilkDistributionWarehouse.Repositories
 {
@@ -12,6 +13,8 @@ namespace MilkDistributionWarehouse.Repositories
         Task<(string, bool)> IsBatchCodeDuplicate(Guid? batchId, int goodsId, string batchCode);
         Task<bool> IsBatchOnPalletActive(Guid batchId);
         Task<bool> IsBatchOnPallet(Guid batchId);
+        Task<bool> IsBatchInGoodReceiptNote(Guid batchId);
+        Task<bool> IsBatchInGoodIssueNote(Guid batchId);
         Task<List<Batch>> GetExpiringBatches(int daysThreshold);
         Task<string> CreateBatch(Batch batch);
         Task<string> UpdateBatch(Batch batch);
@@ -30,6 +33,7 @@ namespace MilkDistributionWarehouse.Repositories
         {
             return _context.Batchs
                 .Include(b => b.Goods)
+                    .ThenInclude(g => g.Supplier)
                 .Where(b => b.Status != CommonStatus.Deleted)
                 .OrderByDescending(b => b.CreateAt)
                 .AsNoTracking();
@@ -47,7 +51,7 @@ namespace MilkDistributionWarehouse.Repositories
         {
             return await _context.Batchs
                 .Where(b => b.GoodsId == goodsId 
-                    && b.ExpiryDate > DateOnly.FromDateTime(DateTime.Now) 
+                    && b.ExpiryDate > DateOnly.FromDateTime(DateTimeUtility.Now()) 
                     && b.Status == CommonStatus.Active)
                 .OrderByDescending(b => b.ExpiryDate)
                 .AsNoTracking()
@@ -83,12 +87,27 @@ namespace MilkDistributionWarehouse.Repositories
 
         public async Task<bool> IsBatchOnPallet(Guid batchId)
         {
-            return await _context.Pallets.AnyAsync(p => p.BatchId == batchId && p.Status != CommonStatus.Deleted);
+            return await _context.Pallets.AnyAsync(p => p.BatchId == batchId);
+        }
+
+        public async Task<bool> IsBatchInGoodReceiptNote(Guid batchId)
+        {
+            return await _context.GoodsReceiptNotes
+                .SelectMany(g => g.Pallets)
+                .AnyAsync(p => p.BatchId == batchId);
+        }
+        
+        public async Task<bool> IsBatchInGoodIssueNote(Guid batchId)
+        {
+            return await _context.GoodsIssueNotes
+                .SelectMany(g => g.GoodsIssueNoteDetails)
+                .SelectMany(g => g.PickAllocations)
+                .AnyAsync(pa => pa.Pallet.BatchId == batchId);
         }
 
         public async Task<List<Batch>> GetExpiringBatches(int daysThreshold)
         {
-            var today = DateOnly.FromDateTime(DateTime.Now);
+            var today = DateOnly.FromDateTime(DateTimeUtility.Now());
             var targetDate = today.AddDays(daysThreshold);
 
             return await _context.Batchs

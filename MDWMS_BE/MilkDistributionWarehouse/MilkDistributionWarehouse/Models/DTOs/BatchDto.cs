@@ -14,6 +14,8 @@ namespace MilkDistributionWarehouse.Models.DTOs
 
         public string GoodsName { get; set; }
 
+        public string SupplierName { get; set; }
+
         public DateOnly ManufacturingDate { get; set; }
 
         public DateOnly ExpiryDate { get; set; }

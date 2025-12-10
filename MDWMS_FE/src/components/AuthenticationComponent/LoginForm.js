@@ -34,7 +34,7 @@ export function LoginForm() {
                     navigate("/change-password");
                 } else {
                     // Đăng nhập bình thường
-                    window.showToast("Đăng nhập thành công!", "success");
+                    // window.showToast("Đăng nhập thành công!", "success");
                     navigate("/");
                 }
             } else {
@@ -67,7 +67,7 @@ export function LoginForm() {
                 </div>
 
                 <h2 className="text-4xl font-serif text-foreground leading-tight">
-                    Đăng nhập vào tài khoản của bạn
+                    Đăng nhập tài khoản
                 </h2>
                 <p className="text-muted-foreground leading-relaxed">
                     Nhập thông tin đăng nhập để truy cập vào không gian làm việc

@@ -23,7 +23,7 @@ const StocktakingTable = ({
     onStartStocktaking,
     loading
 }) => {
-    const { isWarehouseManager, isWarehouseStaff } = usePermissions();
+    const { isWarehouseManager, isWarehouseStaff, isSaleManager } = usePermissions();
     const navigate = useNavigate();
 
     // Detect available fields in data
@@ -144,11 +144,6 @@ const StocktakingTable = ({
                                         </div>
                                     </TableHead>
                                 )}
-                                {availableFields.hasStatus && (
-                                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
-                                        <span>Trạng thái</span>
-                                    </TableHead>
-                                )}
                                 <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
                                     <div className="flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("createdAt")}>
                                         <span>Ngày tạo</span>
@@ -163,6 +158,11 @@ const StocktakingTable = ({
                                         )}
                                     </div>
                                 </TableHead>
+                                {availableFields.hasStatus && (
+                                    <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center">
+                                        <span>Trạng thái</span>
+                                    </TableHead>
+                                )}
                                 <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-32">
                                     Thao tác
                                 </TableHead>
@@ -198,11 +198,6 @@ const StocktakingTable = ({
                                                 })() : '-'}
                                             </TableCell>
                                         )}
-                                        {availableFields.hasStatus && (
-                                            <TableCell className="px-6 py-4 text-center">
-                                                <StatusDisplay status={stocktaking.status} />
-                                            </TableCell>
-                                        )}
                                         <TableCell className="px-6 py-4 text-slate-700 text-center">
                                             {stocktaking.createdAt ? (() => {
                                                 const date = new Date(stocktaking.createdAt);
@@ -211,6 +206,11 @@ const StocktakingTable = ({
                                                 return `${time} ${dateStr}`;
                                             })() : '-'}
                                         </TableCell>
+                                        {availableFields.hasStatus && (
+                                            <TableCell className="px-6 py-4 text-center">
+                                                <StatusDisplay status={stocktaking.status} />
+                                            </TableCell>
+                                        )}
                                         <TableCell className="px-6 py-4 text-center">
                                             <div className="flex items-center justify-center space-x-1">
                                                 {/* Icon bắt đầu / xem lại kiểm kê dựa trên stockAreaStarted
@@ -269,7 +269,7 @@ const StocktakingTable = ({
                                                     </button>
                                                 </PermissionWrapper>
                                                 {/* Icon xem chi tiết đơn kiểm kê kho - hiển thị cho các trạng thái khác (có permission, trừ nhân viên kho ở các trạng thái đã xử lý riêng) */}
-                                                {/* Quản lý kho có thể xem chi tiết đơn kiểm kê kho ở trạng thái đã hủy */}
+                                                {/* Quản lý kho và quản lý kinh doanh có thể xem chi tiết đơn kiểm kê kho ở trạng thái đã hủy */}
                                                 {(() => {
                                                     const isCancelled = stocktaking.status === STOCKTAKING_STATUS.Cancelled || stocktaking.status === 3 || stocktaking.status === '3';
                                                     const isOtherStatus = stocktaking.status === STOCKTAKING_STATUS.InProgress ||
@@ -284,7 +284,7 @@ const StocktakingTable = ({
                                                         stocktaking.status === STOCKTAKING_STATUS.Completed ||
                                                         stocktaking.status === 7 ||
                                                         stocktaking.status === '7';
-                                                    
+
                                                     const canViewForOtherStatus = !isWarehouseStaff ||
                                                         (stocktaking.status !== STOCKTAKING_STATUS.PendingApproval &&
                                                             stocktaking.status !== 5 &&
@@ -295,9 +295,9 @@ const StocktakingTable = ({
                                                             stocktaking.status !== STOCKTAKING_STATUS.Completed &&
                                                             stocktaking.status !== 7 &&
                                                             stocktaking.status !== '7');
-                                                    
-                                                    const shouldShow = (isWarehouseManager && isCancelled) || (canViewForOtherStatus && isOtherStatus);
-                                                    
+
+                                                    const shouldShow = (isWarehouseManager && isCancelled) || (isSaleManager && isCancelled) || (canViewForOtherStatus && isOtherStatus);
+
                                                     return shouldShow && (
                                                         <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_AREA_VIEW_DETAILS_FOR_OTHER}>
                                                             <button
@@ -310,7 +310,10 @@ const StocktakingTable = ({
                                                         </PermissionWrapper>
                                                     );
                                                 })()}
-                                                {isWarehouseManager && (stocktaking.status === STOCKTAKING_STATUS.Draft || stocktaking.status === 1 || stocktaking.status === '1') && (
+                                                {isWarehouseManager && (
+                                                    (stocktaking.status === STOCKTAKING_STATUS.Draft || stocktaking.status === 1 || stocktaking.status === '1') ||
+                                                    (stocktaking.status === STOCKTAKING_STATUS.Assigned || stocktaking.status === 2 || stocktaking.status === '2')
+                                                ) && (
                                                     <PermissionWrapper requiredPermission={PERMISSIONS.STOCKTAKING_UPDATE}>
                                                         <button
                                                             className="p-1.5 hover:bg-slate-100 rounded transition-colors"

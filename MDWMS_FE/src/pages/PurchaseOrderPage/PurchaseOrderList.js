@@ -159,22 +159,34 @@ export default function PurchaseOrderList() {
     }
   };
 
+  // Normalize function: lowercase, trim, and collapse multiple spaces into one
+  const normalize = (str) => {
+    if (!str) return "";
+    return str
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, " "); // gom nhiều space thành 1 space
+  };
+
   // Helper function để tạo request params
   const createRequestParams = (overrides = {}) => {
     // Format createdAt từ dateRangeFilter
     let createdAtFilter = "";
     if (dateRangeFilter.fromDate && dateRangeFilter.toDate) {
-      createdAtFilter = `${dateRangeFilter.fromDate}~${dateRangeFilter.toDate}`;
+      createdAtFilter = `${dateRangeFilter.fromDate}T00:00:00~${dateRangeFilter.toDate}T23:59:59`;
     } else if (dateRangeFilter.fromDate) {
-      createdAtFilter = `${dateRangeFilter.fromDate}~`;
+      createdAtFilter = `${dateRangeFilter.fromDate}T00:00:00~`;
     } else if (dateRangeFilter.toDate) {
-      createdAtFilter = `~${dateRangeFilter.toDate}`;
+      createdAtFilter = `~${dateRangeFilter.toDate}T23:59:59`;
     }
+
+    // Normalize search query trước khi gọi API (nhưng vẫn giữ nguyên giá trị trong input khi đang gõ)
+    const normalizedSearch = normalize(searchQuery);
 
     return {
       pageNumber: pagination.current,
       pageSize: pagination.pageSize,
-      search: searchQuery,
+      search: normalizedSearch,
       sortField: sortField,
       sortAscending: sortAscending,
       status: statusFilter,
@@ -310,18 +322,20 @@ export default function PurchaseOrderList() {
     // Format createdAt từ dateRangeFilter
     let createdAtFilter = "";
     if (dateRangeFilter.fromDate && dateRangeFilter.toDate) {
-      createdAtFilter = `${dateRangeFilter.fromDate}~${dateRangeFilter.toDate}`;
+      createdAtFilter = `${dateRangeFilter.fromDate}T00:00:00~${dateRangeFilter.toDate}T23:59:59`;
     } else if (dateRangeFilter.fromDate) {
-      createdAtFilter = `${dateRangeFilter.fromDate}~`;
+      createdAtFilter = `${dateRangeFilter.fromDate}T00:00:00~`;
     } else if (dateRangeFilter.toDate) {
-      createdAtFilter = `~${dateRangeFilter.toDate}`;
+      createdAtFilter = `~${dateRangeFilter.toDate}T23:59:59`;
     }
 
     // Call fetchData with the new page number directly
+    // Normalize search query trước khi gọi API
+    const normalizedSearch = normalize(searchQuery);
     const requestParams = {
       pageNumber: newPage, // Use the new page directly
       pageSize: pagination.pageSize,
-      search: searchQuery,
+      search: normalizedSearch,
       sortField: sortField,
       sortAscending: sortAscending,
       status: statusFilter,
@@ -343,18 +357,20 @@ export default function PurchaseOrderList() {
     // Format createdAt từ dateRangeFilter
     let createdAtFilter = "";
     if (dateRangeFilter.fromDate && dateRangeFilter.toDate) {
-      createdAtFilter = `${dateRangeFilter.fromDate}~${dateRangeFilter.toDate}`;
+      createdAtFilter = `${dateRangeFilter.fromDate}T00:00:00~${dateRangeFilter.toDate}T23:59:59`;
     } else if (dateRangeFilter.fromDate) {
-      createdAtFilter = `${dateRangeFilter.fromDate}~`;
+      createdAtFilter = `${dateRangeFilter.fromDate}T00:00:00~`;
     } else if (dateRangeFilter.toDate) {
-      createdAtFilter = `~${dateRangeFilter.toDate}`;
+      createdAtFilter = `~${dateRangeFilter.toDate}T23:59:59`;
     }
 
     // Call fetchData with the new page size directly
+    // Normalize search query trước khi gọi API
+    const normalizedSearch = normalize(searchQuery);
     const requestParams = {
       pageNumber: 1, // Reset to page 1 when changing page size
       pageSize: newPageSize,
-      search: searchQuery,
+      search: normalizedSearch,
       sortField: sortField,
       sortAscending: sortAscending,
       status: statusFilter,
@@ -576,11 +592,11 @@ export default function PurchaseOrderList() {
     // Format createdAt từ dateRangeFilter hiện tại
     let createdAtFilter = "";
     if (dateRangeFilter.fromDate && dateRangeFilter.toDate) {
-      createdAtFilter = `${dateRangeFilter.fromDate}~${dateRangeFilter.toDate}`;
+      createdAtFilter = `${dateRangeFilter.fromDate}T00:00:00~${dateRangeFilter.toDate}T23:59:59`;
     } else if (dateRangeFilter.fromDate) {
-      createdAtFilter = `${dateRangeFilter.fromDate}~`;
+      createdAtFilter = `${dateRangeFilter.fromDate}T00:00:00~`;
     } else if (dateRangeFilter.toDate) {
-      createdAtFilter = `~${dateRangeFilter.toDate}`;
+      createdAtFilter = `~${dateRangeFilter.toDate}T23:59:59`;
     }
 
     const requestParams = createRequestParams({

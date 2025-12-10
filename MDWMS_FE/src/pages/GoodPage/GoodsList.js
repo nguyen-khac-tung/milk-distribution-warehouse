@@ -141,44 +141,29 @@ export default function GoodsPage() {
     }
   }
 
-  // Fetch isDisable status for all goods in current list
-  const fetchGoodsDisableStatus = async (goodsList) => {
-    if (!goodsList || goodsList.length === 0) return goodsList
 
-    try {
-      // Gọi API detail cho từng item để lấy isDisable (song song)
-      const enrichedData = await Promise.all(
-        goodsList.map(async (good) => {
-          try {
-            const detailResponse = await getGoodDetail(good.goodsId)
-            if (detailResponse && detailResponse.status === 200 && detailResponse.data) {
-              return {
-                ...good,
-                isDisable: detailResponse.data.isDisable
-              }
-            }
-          } catch (error) {
-            console.error(`Error fetching detail for ${good.goodsName}:`, error)
-          }
-          return good
-        })
-      )
-      return enrichedData
-    } catch (error) {
-      console.error("Error fetching goods disable status:", error)
-      return goodsList
-    }
-  }
+  // Normalize function: lowercase, trim, and collapse multiple spaces into one
+  const normalize = (str) => {
+    if (!str) return "";
+    return str
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, " "); // gom nhiều space thành 1 space
+  };
 
   // Fetch data from API
   const fetchData = async (searchParams = {}) => {
     try {
       setLoading(true)
 
+      // Normalize search query trước khi gọi API (nhưng vẫn giữ nguyên giá trị trong input khi đang gõ)
+      const searchValue = searchParams.search !== undefined ? searchParams.search : "";
+      const normalizedSearch = normalize(searchValue);
+
       const requestParams = {
         pageNumber: searchParams.pageNumber !== undefined ? searchParams.pageNumber : 1,
         pageSize: searchParams.pageSize !== undefined ? searchParams.pageSize : 10,
-        search: searchParams.search !== undefined ? searchParams.search : "",
+        search: normalizedSearch,
         sortField: searchParams.sortField || "",
         sortAscending: searchParams.sortAscending !== undefined ? searchParams.sortAscending : true,
         status: searchParams.status || "",
@@ -193,13 +178,10 @@ export default function GoodsPage() {
         // API returns response.data.items (array) and response.data.totalCount
         const dataArray = Array.isArray(response.data.items) ? response.data.items : []
 
-        // Load isDisable status cho tất cả items để ẩn/hiện nút edit đúng
-        const enrichedData = await fetchGoodsDisableStatus(dataArray)
-
-        setGoods(enrichedData)
+        setGoods(dataArray)
         setPagination(prev => ({
           ...prev,
-          totalCount: response.data.totalCount || enrichedData.length
+          totalCount: response.data.totalCount || dataArray.length
         }))
       } else {
         setGoods([])
@@ -362,15 +344,6 @@ export default function GoodsPage() {
       if (response && response.status === 200 && response.data) {
         const goodDetail = response.data
         setGoodDetail(goodDetail)
-
-        // Update isDisable status in the goods list để cache cho lần sau
-        setGoods(prevGoods =>
-          prevGoods.map(item =>
-            item.goodsId === good.goodsId
-              ? { ...item, isDisable: goodDetail.isDisable }
-              : item
-          )
-        )
       } else {
         window.showToast("Không thể tải chi tiết hàng hóa", "error")
         setShowViewModal(false)
@@ -689,7 +662,7 @@ export default function GoodsPage() {
         />
 
         {/* Search and Table Combined */}
-        <Card className="shadow-sm border border-slate-200 overflow-hidden bg-gray-50">
+        <Card className="shadow-sm border border-slate-200 overflow-visible bg-gray-50">
           <SearchFilterToggle
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
@@ -760,11 +733,11 @@ export default function GoodsPage() {
                 <Table className="w-full">
                   <TableHeader>
                     <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left w-16">
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left min-w-[30px]">
                         STT
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
-                        <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1" onClick={() => handleSort("goodsCode")}>
+                        <div className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1 min-w-[140px]" onClick={() => handleSort("goodsCode")}>
                           <span>Mã hàng hóa</span>
                           {sortField === "goodsCode" ? (
                             sortAscending ? (
@@ -791,7 +764,7 @@ export default function GoodsPage() {
                           )}
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left min-w-[120px]">
                         Danh mục
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
@@ -808,7 +781,7 @@ export default function GoodsPage() {
                           )}
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left">
+                      <TableHead className="font-semibold text-slate-900 px-6 py-3 text-left min-w-[120px]">
                         Đơn vị tính
                       </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-6 py-3 text-center w-48">

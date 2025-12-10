@@ -44,6 +44,15 @@ const SearchBar = () => {
   const searchRef = useRef(null);
   const inputRef = useRef(null);
 
+  // Normalize function: lowercase, trim, and collapse multiple spaces into one
+  const normalize = (str) => {
+    if (!str) return "";
+    return str
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, " "); // gom nhiều space thành 1 space
+  };
+
   // Danh sách các chức năng có thể tìm kiếm (dựa trên Sidebar)
   const searchItems = [
     // Dashboard
@@ -134,42 +143,6 @@ const SearchBar = () => {
       permissions: [PERMISSIONS.STOCKTAKING_CREATE]
     },
 
-    // Disposal Management
-    {
-      id: "disposal",
-      title: "Danh sách đơn xuất hủy",
-      description: "Xem và quản lý các đơn xuất hủy",
-      icon: Trash2,
-      path: "/disposal",
-      category: "QUẢN LÝ ĐƠN XUẤT HỦY",
-      permissions: [
-        PERMISSIONS.DISPOSAL_REQUEST_VIEW,
-        PERMISSIONS.DISPOSAL_REQUEST_VIEW_SM,
-        PERMISSIONS.DISPOSAL_REQUEST_VIEW_WM,
-        PERMISSIONS.DISPOSAL_REQUEST_VIEW_WS
-      ]
-    },
-    {
-      id: "disposal-create",
-      title: "Tạo đơn xuất hủy",
-      description: "Tạo đơn xuất hủy mới",
-      icon: PlusCircle,
-      path: "/disposal/create",
-      category: "QUẢN LÝ ĐƠN XUẤT HỦY",
-      permissions: [PERMISSIONS.DISPOSAL_REQUEST_CREATE]
-    },
-
-    // Backorder Management
-    {
-      id: "backorder",
-      title: "Quản lý đơn bổ sung",
-      description: "Quản lý các đơn bổ sung",
-      icon: RotateCcw,
-      path: "/backorder",
-      category: "QUẢN LÝ ĐƠN BỔ SUNG",
-      permissions: [PERMISSIONS.BACKORDER_VIEW]
-    },
-
     // User Management
     {
       id: "accounts",
@@ -226,6 +199,42 @@ const SearchBar = () => {
       path: "/pallets",
       category: "QUẢN LÝ HÀNG HÓA",
       permissions: [PERMISSIONS.PALLET_VIEW]
+    },
+
+    // Disposal Management
+    {
+      id: "disposal",
+      title: "Danh sách đơn xuất hủy",
+      description: "Xem và quản lý các đơn xuất hủy",
+      icon: Trash2,
+      path: "/disposal",
+      category: "QUẢN LÝ ĐƠN XUẤT HỦY",
+      permissions: [
+        PERMISSIONS.DISPOSAL_REQUEST_VIEW,
+        PERMISSIONS.DISPOSAL_REQUEST_VIEW_SM,
+        PERMISSIONS.DISPOSAL_REQUEST_VIEW_WM,
+        PERMISSIONS.DISPOSAL_REQUEST_VIEW_WS
+      ]
+    },
+    {
+      id: "disposal-create",
+      title: "Tạo đơn xuất hủy",
+      description: "Tạo đơn xuất hủy mới",
+      icon: PlusCircle,
+      path: "/disposal/create",
+      category: "QUẢN LÝ ĐƠN XUẤT HỦY",
+      permissions: [PERMISSIONS.DISPOSAL_REQUEST_CREATE]
+    },
+
+    // Backorder Management
+    {
+      id: "backorder",
+      title: "Quản lý đơn bổ sung",
+      description: "Quản lý các đơn bổ sung",
+      icon: RotateCcw,
+      path: "/backorder",
+      category: "QUẢN LÝ ĐƠN BỔ SUNG",
+      permissions: [PERMISSIONS.BACKORDER_VIEW]
     },
 
     // Business Partners
@@ -306,15 +315,18 @@ const SearchBar = () => {
       return hasAnyPermission(item.permissions);
     });
 
-    if (searchQuery.trim() === "") {
+    // Normalize search query để kiểm tra
+    const normalizedSearchQuery = normalize(searchQuery);
+
+    if (!normalizedSearchQuery) {
       setFilteredItems(visibleItems);
       return;
     }
 
     const filtered = visibleItems.filter(item =>
-      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.category.toLowerCase().includes(searchQuery.toLowerCase())
+      normalize(item.title).includes(normalizedSearchQuery) ||
+      normalize(item.description).includes(normalizedSearchQuery) ||
+      normalize(item.category).includes(normalizedSearchQuery)
     );
 
     setFilteredItems(filtered);

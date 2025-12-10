@@ -28,6 +28,15 @@ namespace MilkDistributionWarehouse.Controllers
             return ApiResponse<List<SupplierDropDown>>.ToResultOk(suppliersDropDown);
         }
 
+        [HttpGet("GetSupplierWithGoodsDropDown")]
+        public async Task<IActionResult> GetSupplierWithGoodsDropDown()
+        {
+            var (msg, suppliersDropDown) = await _supplierService.GetSupplierWithGoodsDropDown();
+            if (!string.IsNullOrEmpty(msg))
+                return ApiResponse<string>.ToResultError(msg);
+            return ApiResponse<List<SupplierDropDown>>.ToResultOk(suppliersDropDown);
+        }
+
         [HttpPost("Suppliers")]
         [Authorize(Roles = "Sale Manager, Sales Representative")]
         public async Task<IActionResult> GetSuppliers([FromBody]PagedRequest request)

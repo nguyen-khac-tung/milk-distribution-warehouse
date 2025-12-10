@@ -1,4 +1,5 @@
 import api from "./api";
+import { getFileNameFromHeader } from "../utils/Validation";
 
 // Lấy phiếu nhập kho theo Purchase Order ID
 export const getGoodsReceiptNoteByPurchaseOrderId = async (purchaseOrderId) => {
@@ -118,6 +119,35 @@ export const getLocationSuggest = async (palletId) => {
         throw error;
     }
 };
+
+// Xuất phiếu nhập kho ra file Word
+export const exportGoodsReceiptNoteWord = async (purchaseOrderId) => {
+    try {
+        const response = await api.get(
+            `/GoodsReceiptNote/ExportGoodsReceiptNoteWord/${purchaseOrderId}`,
+            { responseType: "blob" }
+        );
+
+        const cd = response.headers["content-disposition"];
+        const fileName = getFileNameFromHeader(cd) || `phieu-nhap-kho.docx`;
+
+        return { file: response.data, fileName };
+    } catch (error) {
+        // đọc lỗi từ blob (ApiResponse)
+        if (error.response?.data instanceof Blob) {
+            const text = await error.response.data.text();
+            try {
+                const parsed = JSON.parse(text);
+                if (parsed?.message) throw new Error(parsed.message);
+            } catch { }
+        }
+
+        console.error('Error exporting goods receipt note to Word:', error);
+        throw error;
+    }
+};
+
+
 
 
 

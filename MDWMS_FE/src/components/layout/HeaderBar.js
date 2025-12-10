@@ -209,6 +209,7 @@ const HeaderBar = memo(({ onToggleSidebar, sidebarCollapsed }) => {
                                     onRefresh={refreshNotifications}
                                     onMarkAllAsRead={handleMarkAllNotificationsAsRead}
                                     onNotificationClick={handleNotificationClick}
+                                    markNotificationsAsRead={markNotificationsAsRead}
                                 />
                             </>
                         )}

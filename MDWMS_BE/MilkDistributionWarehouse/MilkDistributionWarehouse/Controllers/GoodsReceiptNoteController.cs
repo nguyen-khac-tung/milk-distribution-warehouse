@@ -52,5 +52,13 @@ namespace MilkDistributionWarehouse.Controllers
 
             return ApiResponse<GoodsReceiptNoteCompletedDto>.ToResultOk(grnUpdate);
         }
+
+        [HttpGet("ExportGoodsReceiptNoteWord/{purchaseOrderId}")]
+        public async Task<IActionResult> ExportGoodsIssueNoteWord(string purchaseOrderId)
+        {
+            var (msg, fileBytes, fileName) = await _goodsReceiptNoteService.ExportGoodsReceiptNoteWord(purchaseOrderId);
+            if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
+            return File(fileBytes, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", fileName);
+        }
     }
 }

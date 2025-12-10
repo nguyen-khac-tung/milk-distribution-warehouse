@@ -23,6 +23,14 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public List<StocktakingAreaCreateDto> AreaIds { get; set; }
     }
 
+    public class StocktakingSheetCreateDto
+    {
+        [Required(ErrorMessage = "Thời gian bắt đầu kiểm kê là bắt buộc.")]
+        public DateTime StartTime { get; set; }
+        public string? Note { get; set; }
+        public List<StocktakingAreaCreate> StocktakingAreaCreates { get; set; }
+    }
+
     public class StocktakingSheeteResponse
     {
         public string StocktakingSheetId { get; set; }
@@ -42,6 +50,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
     {
         public string? Note { get; set; }
         public List<StocktakingAreaUpdateDto> StocktakingAreas { get; set; }
+        public bool IsDiableButtonInProgress { get; set; }
     }
 
     public class StocktakingSheetStatusUpdate
@@ -61,7 +70,10 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public List<StocktakingAreaUpdate> StocktakingAreaReAssign { get; set; }
     }
 
-    public class StocktakingSheetCancelStatus : StocktakingSheetStatusUpdate { }
+    public class StocktakingSheetCancelStatus : StocktakingSheetStatusUpdate
+    {
+        public string? Note { get; set; }
+    }
     public class StocktakingSheetInProgressStatus : StocktakingSheetStatusUpdate
     {
         public Guid? StocktakingAreaId { get; set; }

@@ -16,7 +16,7 @@ import {
 import { useReactToPrint } from "react-to-print";
 import { PrintablePalletLabel, PrintableMultiplePalletLabels } from "../../components/PalletComponents/PrintPalletLabel";
 import Loading from "../../components/Common/Loading";
-import { getGoodsReceiptNoteByPurchaseOrderId, verifyRecord, cancelGoodsReceiptNoteDetail, submitGoodsReceiptNote, approveGoodsReceiptNote, rejectGoodsReceiptNoteDetail, rejectGoodsReceiptNoteDetailList, getPalletByGRNID, getLocationSuggest } from "../../services/GoodsReceiptService";
+import { getGoodsReceiptNoteByPurchaseOrderId, verifyRecord, cancelGoodsReceiptNoteDetail, submitGoodsReceiptNote, approveGoodsReceiptNote, rejectGoodsReceiptNoteDetail, rejectGoodsReceiptNoteDetailList, getPalletByGRNID, getLocationSuggest, exportGoodsReceiptNoteWord } from "../../services/GoodsReceiptService";
 import { completePurchaseOrder, getPurchaseOrderDetail } from "../../services/PurchaseOrderService";
 import { PERMISSIONS, PURCHASE_ORDER_STATUS } from "../../utils/permissions";
 import { usePermissions } from "../../hooks/usePermissions";
@@ -458,9 +458,31 @@ export default function GoodsReceiptDetail() {
     }
   };
 
-  const handlePrintReceipt = () => {
-    // Implement print functionality
-    window.print();
+  const handlePrintReceipt = async () => {
+    if (!goodsReceiptNote?.purchaseOderId) {
+      window.showToast?.("Không tìm thấy mã đơn mua hàng", "error");
+      return;
+    }
+
+    try {
+      const { file, fileName } = await exportGoodsReceiptNoteWord(goodsReceiptNote.purchaseOderId);
+
+      // Tạo URL từ blob và tải xuống
+      const url = window.URL.createObjectURL(new Blob([file]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      window.showToast?.("Xuất phiếu thành công!", "success");
+    } catch (error) {
+      console.error("Error exporting goods receipt note:", error);
+      const msg = extractErrorMessage(error, "Xuất phiếu thất bại, vui lòng thử lại!");
+      window.showToast?.(msg, "error");
+    }
   };
 
   const openRejectModal = (detailId) => {
@@ -593,31 +615,33 @@ export default function GoodsReceiptDetail() {
     <div className="min-h-screen">
       {/* Header */}
       <div className="border-b border-gray-200 py-4 px-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate('/purchase-orders')}
-              className="flex items-center justify-center hover:opacity-80 transition-opacity p-0"
-            >
-              <ComponentIcon name="arrowBackCircleOutline" size={28} />
-            </button>
-            <h1 className="text-2xl font-bold text-gray-900 m-0">Chi tiết phiếu nhập kho</h1>
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${getGoodsReceiptNoteStatusMeta(goodsReceiptNote.status).color}`}>
-              {getGoodsReceiptNoteStatusMeta(goodsReceiptNote.status).label}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button onClick={handlePrintReceipt} className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 h-[38px] px-4 text-white">
-              <Printer className="w-4 h-4" />
-              In Phiếu
-            </Button>
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => navigate('/purchase-orders')}
+                className="flex items-center justify-center hover:opacity-80 transition-opacity p-0"
+              >
+                <ComponentIcon name="arrowBackCircleOutline" size={28} />
+              </button>
+              <h1 className="text-2xl font-bold text-gray-900 m-0">Chi tiết phiếu nhập kho</h1>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getGoodsReceiptNoteStatusMeta(goodsReceiptNote.status).color}`}>
+                {getGoodsReceiptNoteStatusMeta(goodsReceiptNote.status).label}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button onClick={handlePrintReceipt} className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 h-[38px] px-4 text-white">
+                <Printer className="w-4 h-4" />
+                Xuất Phiếu
+              </Button>
+            </div>
           </div>
         </div>
       </div>
-      {/* Main Content full width, no px-6 container, just vertical spacing */}
-      <div className="space-y-6 mt-4">
+      {/* Main Content with max-width container to prevent horizontal scroll */}
+      <div className="max-w-7xl mx-auto space-y-6 mt-4">
         {/* Chi tiết đơn hàng */}
-        <Card className="bg-gray-50 border border-slate-200 shadow-sm">
+        <Card className="bg-gray-50 border border-slate-200 shadow-sm w-full">
           <CardContent className="p-0">
             <div
               className="p-4 border-b border-gray-200 flex items-center justify-between hover:bg-gray-50 transition-colors"
@@ -669,14 +693,14 @@ export default function GoodsReceiptDetail() {
                   <h3 className="text-xs font-medium text-gray-500 mb-1">Danh sách hàng hóa</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                     {goodsReceiptNote.goodsReceiptNoteDetails?.map((detail, index) => (
-                      <div key={index} className="rounded border border-gray-200 bg-white p-2 flex flex-col gap-1">
-                        <div className="mb-1">
-                          <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                            <span className="font-semibold text-gray-900 text-sm">Mã: {detail.goodsCode || ''}</span>
+                      <div key={index} className="rounded border border-gray-200 bg-white p-2 flex flex-col gap-1 min-w-0">
+                        <div className="mb-1 min-w-0">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></span>
+                            <span className="font-semibold text-gray-900 text-sm break-words">{detail.goodsCode || ''}</span>
                           </div>
-                          <div className="mt-0.5">
-                            <span className="font-normal text-gray-800 text-xs">Tên: {detail.goodsName || ''}</span>
+                          <div className="mt-0.5 min-w-0">
+                            <span className="font-normal text-gray-800 text-xs break-words">{detail.goodsName || ''}</span>
                           </div>
                         </div>
                         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
@@ -695,7 +719,7 @@ export default function GoodsReceiptDetail() {
         </Card>
 
         {/* Kiểm nhập */}
-        <Card className="bg-gray-50 border border-slate-200 shadow-sm">
+        <Card className="bg-gray-50 border border-slate-200 shadow-sm w-full">
           <CardContent className="p-0">
             <div
               className="p-6 border-b border-gray-200 flex items-center justify-between hover:bg-gray-50 transition-colors"
@@ -734,17 +758,18 @@ export default function GoodsReceiptDetail() {
                   {!(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT)) && (
                     <>
                       <h2 className="text-lg font-semibold mb-3">Đang kiểm nhập</h2>
-                      <Table>
+                      <div className="overflow-x-auto w-full">
+                        <Table className="w-full" style={{ tableLayout: 'fixed' }}>
                         <TableHeader>
                           <TableRow className="bg-gray-100">
-                            <TableHead className="font-semibold text-gray-700 min-w-[120px]">Mã hàng hóa</TableHead>
-                            <TableHead className="font-semibold text-gray-700 min-w-[120px]">Tên hàng hóa</TableHead>
+                            <TableHead className="font-semibold text-gray-700 w-[120px] min-w-0">Mã hàng hóa</TableHead>
+                            <TableHead className="font-semibold text-gray-700 w-[120px] min-w-0">Tên hàng hóa</TableHead>
                             <TableHead className="font-semibold text-gray-700 text-center">Đơn vị tính</TableHead>
                             <TableHead className="font-semibold text-gray-700 text-center">Quy cách đóng gói</TableHead>
                             <TableHead className="font-semibold text-gray-700 text-center">SL thùng dự kiến</TableHead>
-                            <TableHead className="font-semibold text-gray-700 text-center">SL thùng giao đến</TableHead>
-                            <TableHead className="font-semibold text-gray-700 text-center">SL thùng trả lại</TableHead>
-                            <TableHead className="font-semibold text-gray-700 text-center">SL thùng thực nhận</TableHead>
+                            <TableHead className="font-semibold text-gray-700 text-center w-[100px] min-w-0">SL thùng giao đến</TableHead>
+                            <TableHead className="font-semibold text-gray-700 text-center w-[100px] min-w-0">SL thùng trả lại</TableHead>
+                            <TableHead className="font-semibold text-gray-700 text-center w-[100px] min-w-0">SL thùng thực nhận</TableHead>
                             <TableHead className="font-semibold text-gray-700">Ghi chú</TableHead>
                             <TableHead className="font-semibold text-gray-700 text-center">Trạng thái</TableHead>
                             <TableHead className="font-semibold text-gray-700 text-center">Hành động</TableHead>
@@ -809,14 +834,18 @@ export default function GoodsReceiptDetail() {
                             return (
                               <>
                                 <TableRow key={index} className="hover:bg-gray-50">
-                                  <TableCell className="font-medium text-gray-900 text-xs">{detail.goodsCode}</TableCell>
-                                  <TableCell className="text-xs text-gray-700">{detail.goodsName}</TableCell>
+                                  <TableCell className="font-medium text-gray-900 text-xs">
+                                    <div className="break-words whitespace-normal">{detail.goodsCode}</div>
+                                  </TableCell>
+                                  <TableCell className="text-xs text-gray-700">
+                                    <div className="break-words whitespace-normal">{detail.goodsName}</div>
+                                  </TableCell>
                                   <TableCell className="text-xs text-gray-700 text-center">{detail.unitMeasureName}</TableCell>
                                   <TableCell className="text-xs text-gray-700 text-center">{detail.unitPerPackage ? `${detail.unitPerPackage}${detail.unitMeasureName ? ' ' + detail.unitMeasureName : ''}/thùng` : '-'}</TableCell>
                                   {/* Số lượng thùng dự kiến */}
                                   <TableCell className="text-center text-xs">{detail.expectedPackageQuantity ?? 0}</TableCell>
                                   {/* Số lượng thùng giao đến */}
-                                  <TableCell className="text-center text-xs">
+                                  <TableCell className="text-center text-xs w-[80px] min-w-0">
                                     <div className="flex flex-col items-center">
                                       <input
                                         type="number"
@@ -885,7 +914,7 @@ export default function GoodsReceiptDetail() {
                                     </div>
                                   </TableCell>
                                   {/* Số lượng thùng trả lại */}
-                                  <TableCell className="text-center text-xs">
+                                  <TableCell className="text-center text-xs w-[80px] min-w-0">
                                     <div className="flex flex-col items-center">
                                       <input
                                         type="number"
@@ -950,7 +979,7 @@ export default function GoodsReceiptDetail() {
                                     </div>
                                   </TableCell>
                                   {/* Số lượng thùng thực nhận */}
-                                  <TableCell className="text-center text-xs">
+                                  <TableCell className="text-center text-xs w-[80px] min-w-0">
                                     <input
                                       type="number"
                                       className="w-20 h-8 px-2 rounded border border-gray-300 text-center text-xs focus:outline-none focus:border-blue-500 bg-gray-50 text-blue-700 font-semibold"
@@ -960,7 +989,7 @@ export default function GoodsReceiptDetail() {
                                     />
                                   </TableCell>
                                   <TableCell className="text-gray-600">
-                                    <input type="text" className="w-32 h-8 px-2 rounded border border-gray-300 text-xs focus:outline-none focus:border-blue-500"
+                                    <input type="text" className="w-full max-w-[200px] h-8 px-2 rounded border border-gray-300 text-xs focus:outline-none focus:border-blue-500"
                                       value={detail.note || ''}
                                       onChange={e => {
                                         const value = e.target.value;
@@ -977,7 +1006,7 @@ export default function GoodsReceiptDetail() {
                                   <TableCell className="text-center min-w-[110px]">
                                     {(() => {
                                       const meta = getReceiptItemStatusMeta(detail.status); return (
-                                        <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium break-words ${meta.color}`}>{meta.label}</span>
+                                        <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium break-words whitespace-normal ${meta.color}`}>{meta.label}</span>
                                       );
                                     })()}
                                   </TableCell>
@@ -1072,6 +1101,7 @@ export default function GoodsReceiptDetail() {
                           })}
                         </TableBody>
                       </Table>
+                      </div>
                     </>
                   )}
 
@@ -1105,9 +1135,10 @@ export default function GoodsReceiptDetail() {
                           </Button>
                         )}
                       </div>
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="bg-green-100">
+                      <div className="overflow-x-auto w-full">
+                        <Table className="w-full">
+                          <TableHeader>
+                            <TableRow className="bg-green-100">
                             {/* Checkbox cho quản lý kho */}
                             {hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && goodsReceiptNote.status !== GOODS_RECEIPT_NOTE_STATUS.Completed && (
                               <TableHead className="font-semibold text-green-900 text-center w-12">
@@ -1137,13 +1168,13 @@ export default function GoodsReceiptDetail() {
                                 })()}
                               </TableHead>
                             )}
-                            <TableHead className="font-semibold text-green-900 min-w-[120px]">Mã hàng hóa</TableHead>
-                            <TableHead className="font-semibold text-green-900 min-w-[120px]">Tên hàng hóa</TableHead>
+                            <TableHead className="font-semibold text-green-900 w-[120px] min-w-0">Mã hàng hóa</TableHead>
+                            <TableHead className="font-semibold text-green-900 w-[120px] min-w-0">Tên hàng hóa</TableHead>
                             <TableHead className="font-semibold text-green-900 text-center">Đơn vị tính</TableHead>
                             <TableHead className="font-semibold text-green-900 text-center">Quy cách đóng gói</TableHead>
-                            <TableHead className="font-semibold text-green-900 text-center">SL thùng dự kiến</TableHead>
-                            <TableHead className="font-semibold text-green-900 text-center">SL thùng giao đến</TableHead>
-                            <TableHead className="font-semibold text-green-900 text-center">SL thùng trả lại</TableHead>
+                            <TableHead className="font-semibold text-green-900 text-center w-[100px] min-w-0">SL thùng dự kiến</TableHead>
+                            <TableHead className="font-semibold text-green-900 text-center w-[100px] min-w-0">SL thùng giao đến</TableHead>
+                            <TableHead className="font-semibold text-green-900 text-center w-[100px] min-w-0">SL thùng trả lại</TableHead>
                             <TableHead className="font-semibold text-green-900 text-center">SL thùng thực nhận</TableHead>
                             <TableHead className="font-semibold text-green-900">Ghi chú</TableHead>
                             <TableHead className="font-semibold text-green-900 text-center">Trạng thái</TableHead>
@@ -1203,20 +1234,26 @@ export default function GoodsReceiptDetail() {
                                       ) : null}
                                     </TableCell>
                                   )}
-                                  <TableCell className="font-medium text-green-800 text-xs">{detail.goodsCode}</TableCell>
-                                  <TableCell className="text-xs text-green-700">{detail.goodsName}</TableCell>
+                                  <TableCell className="font-medium text-green-800 text-xs">
+                                    <div className="break-words whitespace-normal">{detail.goodsCode}</div>
+                                  </TableCell>
+                                  <TableCell className="text-xs text-green-700">
+                                    <div className="break-words whitespace-normal">{detail.goodsName}</div>
+                                  </TableCell>
                                   <TableCell className="text-xs text-green-700 text-center">{detail.unitMeasureName}</TableCell>
                                   <TableCell className="text-xs text-green-700 text-center">{detail.unitPerPackage ? `${detail.unitPerPackage}${detail.unitMeasureName ? ' ' + detail.unitMeasureName : ''}/thùng` : '-'}</TableCell>
                                   <TableCell className="text-center text-xs">{detail.expectedPackageQuantity}</TableCell>
                                   <TableCell className="text-center text-xs">{detail.deliveredPackageQuantity}</TableCell>
                                   <TableCell className="text-center text-xs">{detail.rejectPackageQuantity}</TableCell>
                                   <TableCell className="text-center text-xs">{Math.max(0, detail.actualPackageQuantity || 0)}</TableCell>
-                                  <TableCell className="text-green-700">{detail.note || ''}</TableCell>
+                                  <TableCell className="text-green-700">
+                                    <div className="break-words whitespace-normal max-w-[200px]">{detail.note || ''}</div>
+                                  </TableCell>
                                   {/* Cột trạng thái */}
                                   <TableCell className="text-center min-w-[110px]">
                                     {(() => {
                                       const meta = getReceiptItemStatusMeta(detail.status); return (
-                                        <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium break-words ${meta.color}`}>{meta.label}</span>
+                                        <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium break-words whitespace-normal ${meta.color}`}>{meta.label}</span>
                                       );
                                     })()}
                                   </TableCell>
@@ -1254,6 +1291,7 @@ export default function GoodsReceiptDetail() {
                           })()}
                         </TableBody>
                       </Table>
+                      </div>
                     </>
                   ) : null}
                 </div>
@@ -1299,7 +1337,7 @@ export default function GoodsReceiptDetail() {
 
         {/* Pallet - Ẩn cho quản lý kho */}
         {!(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) || hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT)) && (
-          <Card className="bg-gray-50 border border-slate-200 shadow-sm">
+          <Card className="bg-gray-50 border border-slate-200 shadow-sm w-full">
             <CardContent className="p-0">
               <div
                 className="p-6 border-b border-gray-200 cursor-pointer flex items-center justify-between hover:bg-gray-50 transition-colors"
@@ -1322,7 +1360,11 @@ export default function GoodsReceiptDetail() {
                 <div className="flex gap-3">
                   {/* Ẩn nút "Thêm Lô Mới" cho nhân viên kho khi đã tạo pallet */}
                   {!(hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_CHECK) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_APPROVE) && !hasPermission(PERMISSIONS.GOODS_RECEIPT_NOTE_DETAIL_REJECT) && palletCreated) && (
-                    <Button className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 h-[38px] flex items-center gap-2" onClick={() => setShowCreateBatchModal(true)}>
+                    <Button 
+                      className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 h-[38px] flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" 
+                      onClick={() => setShowCreateBatchModal(true)}
+                      disabled={goodsReceiptNote?.purchaseOrderStatus === 9}
+                    >
                       <Plus className="w-4 h-4 mr-3" />
                       Thêm Lô Mới
                     </Button>
@@ -1337,14 +1379,15 @@ export default function GoodsReceiptDetail() {
                   hasExistingPallets={pallets.length > 0}
                   onSubmittingChange={handleSubmittingChange}
                   onBatchCreated={handleBatchCreated}
+                  purchaseOrderStatus={goodsReceiptNote?.purchaseOrderStatus}
                 />
 
                 <div className="flex justify-end gap-2 pt-4 border-t border-gray-200">
                   {!palletCreated && (
                     <Button
-                      className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 h-[38px]"
+                      className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 h-[38px] disabled:opacity-50 disabled:cursor-not-allowed"
                       onClick={() => submitPalletsFn && submitPalletsFn()}
-                      disabled={!submitPalletsFn || isSubmittingPallet}
+                      disabled={!submitPalletsFn || isSubmittingPallet || goodsReceiptNote?.purchaseOrderStatus === 9}
                     >
                       {isSubmittingPallet ? (
                         <>
@@ -1386,7 +1429,7 @@ export default function GoodsReceiptDetail() {
 
           return hasPallets && isApproved;
         })() && (
-            <Card ref={arrangingSectionRef} className="bg-gray-50 border border-slate-200 shadow-sm">
+            <Card ref={arrangingSectionRef} className="bg-gray-50 border border-slate-200 shadow-sm w-full">
               <CardContent className="p-0">
                 <div
                   className="p-6 border-b border-gray-200 cursor-pointer flex items-center justify-between hover:bg-gray-50 transition-colors"
@@ -1398,7 +1441,7 @@ export default function GoodsReceiptDetail() {
                     </div>
                     <div>
                       <h2 className="text-lg font-semibold text-gray-900">Sắp xếp</h2>
-                      <p className="text-sm text-gray-500">Sắp xếp hàng hóa trong kho</p>
+                      <p className="text-sm text-gray-500">Sắp xếp hàng hóa vòa vị trí trong kho</p>
                     </div>
                   </div>
                   {expandedSections.arranging ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
@@ -1444,9 +1487,10 @@ export default function GoodsReceiptDetail() {
                             </div>
                           )}
                         </div>
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="bg-purple-100">
+                        <div className="overflow-x-auto w-full">
+                          <Table className="w-full">
+                            <TableHeader>
+                              <TableRow className="bg-purple-100">
                               {hasPermission(PERMISSIONS.PALLET_PRINT_BARCODE) && (
                                 <TableHead className="font-semibold text-purple-900 text-center w-12">
                                   <input
@@ -1458,7 +1502,7 @@ export default function GoodsReceiptDetail() {
                                 </TableHead>
                               )}
                               <TableHead className="font-semibold text-purple-900">Mã pallet</TableHead>
-                              <TableHead className="font-semibold text-purple-900">Tên hàng hóa</TableHead>
+                              <TableHead className="font-semibold text-purple-900 min-w-[140px]">Tên hàng hóa</TableHead>
                               <TableHead className="font-semibold text-purple-900 min-w-[120px]">Mã hàng hóa</TableHead>
                               <TableHead className="font-semibold text-purple-900 text-center">Số lô</TableHead>
                               <TableHead className="font-semibold text-purple-900 text-center">Số thùng</TableHead>
@@ -1509,22 +1553,22 @@ export default function GoodsReceiptDetail() {
                                     </TableCell>
                                   )}
                                   <TableCell className="font-medium text-gray-900 text-xs">
-                                    {pallet.palletCode || pallet.code || pallet.palletId || 'N/A'}
+                                    <div className="break-words whitespace-normal">{pallet.palletCode || pallet.code || pallet.palletId || 'N/A'}</div>
                                   </TableCell>
                                   <TableCell className="text-xs text-gray-700">
-                                    {pallet.goodName || 'N/A'}
+                                    <div className="break-words whitespace-normal">{pallet.goodName || 'N/A'}</div>
                                   </TableCell>
                                   <TableCell className="text-xs text-gray-700">
-                                    {pallet.goodCode || pallet.goodsCode || 'N/A'}
+                                    <div className="break-words whitespace-normal">{pallet.goodCode || pallet.goodsCode || 'N/A'}</div>
                                   </TableCell>
                                   <TableCell className="text-xs text-gray-700 text-center">
-                                    {pallet.batchCode || 'N/A'}
+                                    <div className="break-words whitespace-normal">{pallet.batchCode || 'N/A'}</div>
                                   </TableCell>
                                   <TableCell className="text-xs text-gray-700 text-center">
                                     {pallet.packageQuantity || pallet.numPackages || 0}
                                   </TableCell>
                                   <TableCell className="text-xs text-gray-700">
-                                    {locationCode || 'Chưa đưa vào vị trí'}
+                                    <div className="break-words whitespace-normal">{locationCode || 'Chưa đưa vào vị trí'}</div>
                                   </TableCell>
                                   <TableCell className="text-center">
                                     <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${statusDisplay.className}`}>
@@ -1576,6 +1620,7 @@ export default function GoodsReceiptDetail() {
                             })}
                           </TableBody>
                         </Table>
+                        </div>
                       </div>
                     )}
 

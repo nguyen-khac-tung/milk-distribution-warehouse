@@ -1,5 +1,5 @@
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Button } from "../../../components/ui/button"
 import { Input } from "../../../components/ui/input"
 import { Label } from "../../../components/ui/label"
@@ -19,21 +19,72 @@ export default function CreateStorageCondition({ isOpen, onClose, onSuccess }) {
     status: 1,
   })
   const [loading, setLoading] = useState(false)
+  const [validationErrors, setValidationErrors] = useState({})
+
+  // Reset form when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        temperatureMin: 0,
+        temperatureMax: 0,
+        humidityMin: 0,
+        humidityMax: 0,
+        lightLevel: "",
+        status: 1,
+      })
+      setValidationErrors({})
+    }
+  }, [isOpen])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    // Basic validation - only check if required fields are filled
-    if (!formData.lightLevel) {
-      window.showToast("Vui lòng chọn mức độ ánh sáng", "error")
+    // Validate all required fields
+    const errors = {}
+
+    if (!formData.temperatureMin || formData.temperatureMin === 0 || formData.temperatureMin === "") {
+      errors.temperatureMin = "Vui lòng nhập nhiệt độ tối thiểu"
+    }
+
+    if (!formData.temperatureMax || formData.temperatureMax === 0 || formData.temperatureMax === "") {
+      errors.temperatureMax = "Vui lòng nhập nhiệt độ tối đa"
+    }
+
+    if (!formData.humidityMin || formData.humidityMin === 0 || formData.humidityMin === "") {
+      errors.humidityMin = "Vui lòng nhập độ ẩm tối thiểu"
+    }
+
+    if (!formData.humidityMax || formData.humidityMax === 0 || formData.humidityMax === "") {
+      errors.humidityMax = "Vui lòng nhập độ ẩm tối đa"
+    }
+
+    if (!formData.lightLevel || formData.lightLevel === "") {
+      errors.lightLevel = "Vui lòng chọn mức độ ánh sáng"
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors)
       return
     }
+
+    // Clear validation errors if validation passes
+    setValidationErrors({})
 
     try {
       setLoading(true)
       const response = await createStorageCondition(formData)
       console.log("Storage condition created:", response)
       window.showToast("Thêm điều kiện bảo quản thành công!", "success")
+      // Reset form data after successful creation
+      setFormData({
+        temperatureMin: 0,
+        temperatureMax: 0,
+        humidityMin: 0,
+        humidityMax: 0,
+        lightLevel: "",
+        status: 1,
+      })
+      setValidationErrors({})
       onSuccess && onSuccess()
       onClose && onClose()
     } catch (error) {
@@ -54,6 +105,7 @@ export default function CreateStorageCondition({ isOpen, onClose, onSuccess }) {
       lightLevel: "",
       status: 1,
     })
+    setValidationErrors({})
     onClose && onClose()
   }
 
@@ -88,10 +140,17 @@ export default function CreateStorageCondition({ isOpen, onClose, onSuccess }) {
                   step="0.1"
                   placeholder="Nhập nhiệt độ tối thiểu..."
                   value={formData.temperatureMin === 0 ? "" : formData.temperatureMin}
-                  onChange={(e) => setFormData({ ...formData, temperatureMin: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, temperatureMin: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 })
+                    if (validationErrors.temperatureMin) {
+                      setValidationErrors({ ...validationErrors, temperatureMin: undefined })
+                    }
+                  }}
                   className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                  required
                 />
+                {validationErrors.temperatureMin && (
+                  <p className="text-sm text-red-500 font-medium">{validationErrors.temperatureMin}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -104,10 +163,17 @@ export default function CreateStorageCondition({ isOpen, onClose, onSuccess }) {
                   step="0.1"
                   placeholder="Nhập nhiệt độ tối đa..."
                   value={formData.temperatureMax === 0 ? "" : formData.temperatureMax}
-                  onChange={(e) => setFormData({ ...formData, temperatureMax: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, temperatureMax: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 })
+                    if (validationErrors.temperatureMax) {
+                      setValidationErrors({ ...validationErrors, temperatureMax: undefined })
+                    }
+                  }}
                   className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                  required
                 />
+                {validationErrors.temperatureMax && (
+                  <p className="text-sm text-red-500 font-medium">{validationErrors.temperatureMax}</p>
+                )}
               </div>
             </div>
 
@@ -123,10 +189,17 @@ export default function CreateStorageCondition({ isOpen, onClose, onSuccess }) {
                   step="0.1"
                   placeholder="Nhập độ ẩm tối thiểu..."
                   value={formData.humidityMin === 0 ? "" : formData.humidityMin}
-                  onChange={(e) => setFormData({ ...formData, humidityMin: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, humidityMin: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 })
+                    if (validationErrors.humidityMin) {
+                      setValidationErrors({ ...validationErrors, humidityMin: undefined })
+                    }
+                  }}
                   className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                  required
                 />
+                {validationErrors.humidityMin && (
+                  <p className="text-sm text-red-500 font-medium">{validationErrors.humidityMin}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -139,10 +212,17 @@ export default function CreateStorageCondition({ isOpen, onClose, onSuccess }) {
                   step="0.1"
                   placeholder="Nhập độ ẩm tối đa..."
                   value={formData.humidityMax === 0 ? "" : formData.humidityMax}
-                  onChange={(e) => setFormData({ ...formData, humidityMax: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, humidityMax: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 })
+                    if (validationErrors.humidityMax) {
+                      setValidationErrors({ ...validationErrors, humidityMax: undefined })
+                    }
+                  }}
                   className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                  required
                 />
+                {validationErrors.humidityMax && (
+                  <p className="text-sm text-red-500 font-medium">{validationErrors.humidityMax}</p>
+                )}
               </div>
             </div>
 
@@ -153,7 +233,12 @@ export default function CreateStorageCondition({ isOpen, onClose, onSuccess }) {
               </Label>
               <CustomDropdown
                 value={formData.lightLevel}
-                onChange={(value) => setFormData({ ...formData, lightLevel: value })}
+                onChange={(value) => {
+                  setFormData({ ...formData, lightLevel: value })
+                  if (validationErrors.lightLevel) {
+                    setValidationErrors({ ...validationErrors, lightLevel: undefined })
+                  }
+                }}
                 options={[
                   { value: "", label: "Chọn mức độ ánh sáng..." },
                   { value: "Normal", label: "Bình thường" },
@@ -162,6 +247,9 @@ export default function CreateStorageCondition({ isOpen, onClose, onSuccess }) {
                 ]}
                 placeholder="Chọn mức độ ánh sáng..."
               />
+              {validationErrors.lightLevel && (
+                <p className="text-sm text-red-500 font-medium">{validationErrors.lightLevel}</p>
+              )}
             </div>
 
             {/* Action Buttons */}

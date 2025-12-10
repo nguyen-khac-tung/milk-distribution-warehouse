@@ -1,5 +1,5 @@
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Button } from "../../../components/ui/button"
 import { Input } from "../../../components/ui/input"
 import { Label } from "../../../components/ui/label"
@@ -17,35 +17,75 @@ export default function CreateRetailer({ isOpen, onClose, onSuccess }) {
     phone: "",
   })
   const [loading, setLoading] = useState(false)
+  const [validationErrors, setValidationErrors] = useState({})
+
+  // Reset form when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        retailerName: "",
+        taxCode: "",
+        email: "",
+        address: "",
+        phone: "",
+      })
+      setValidationErrors({})
+    }
+  }, [isOpen])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    // Basic validation - check if required fields are filled
-    if (!formData.retailerName?.trim() || !formData.taxCode?.trim() ||
-      !formData.email?.trim() || !formData.address?.trim() || !formData.phone?.trim()) {
-      window.showToast("Vui lòng điền đầy đủ thông tin", "error")
-      return
-    }
-
-    // Email validation
+    // Validate all required fields
+    const errors = {}
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(formData.email)) {
-      window.showToast("Email không hợp lệ", "error")
+    const phoneRegex = /^[0-9+\-\s()]+$/
+
+    if (!formData.retailerName?.trim()) {
+      errors.retailerName = "Vui lòng nhập tên nhà bán lẻ"
+    }
+
+    if (!formData.taxCode?.trim()) {
+      errors.taxCode = "Vui lòng nhập mã số thuế"
+    }
+
+    if (!formData.email?.trim()) {
+      errors.email = "Vui lòng nhập email"
+    } else if (!emailRegex.test(formData.email)) {
+      errors.email = "Email không hợp lệ"
+    }
+
+    if (!formData.phone?.trim()) {
+      errors.phone = "Vui lòng nhập số điện thoại"
+    } else if (!phoneRegex.test(formData.phone)) {
+      errors.phone = "Số điện thoại không hợp lệ"
+    }
+
+    if (!formData.address?.trim()) {
+      errors.address = "Vui lòng nhập địa chỉ"
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors)
       return
     }
 
-    // Phone validation (basic)
-    const phoneRegex = /^[0-9+\-\s()]+$/
-    if (!phoneRegex.test(formData.phone)) {
-      window.showToast("Số điện thoại không hợp lệ", "error")
-      return
-    }
+    // Clear validation errors if validation passes
+    setValidationErrors({})
 
     try {
       setLoading(true)
       const response = await createRetailer(formData)
       window.showToast("Thêm nhà bán lẻ thành công!", "success")
+      // Reset form data after successful creation
+      setFormData({
+        retailerName: "",
+        taxCode: "",
+        email: "",
+        address: "",
+        phone: "",
+      })
+      setValidationErrors({})
       onSuccess && onSuccess()
       onClose && onClose()
     } catch (error) {
@@ -65,6 +105,7 @@ export default function CreateRetailer({ isOpen, onClose, onSuccess }) {
       address: "",
       phone: "",
     })
+    setValidationErrors({})
     onClose && onClose()
   }
 
@@ -99,10 +140,17 @@ export default function CreateRetailer({ isOpen, onClose, onSuccess }) {
                     id="retailerName"
                     placeholder="Nhập tên nhà bán lẻ..."
                     value={formData.retailerName}
-                    onChange={(e) => setFormData({ ...formData, retailerName: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, retailerName: e.target.value })
+                      if (validationErrors.retailerName) {
+                        setValidationErrors({ ...validationErrors, retailerName: undefined })
+                      }
+                    }}
                     className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                    required
                   />
+                  {validationErrors.retailerName && (
+                    <p className="text-sm text-red-500 font-medium">{validationErrors.retailerName}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -113,10 +161,17 @@ export default function CreateRetailer({ isOpen, onClose, onSuccess }) {
                     id="taxCode"
                     placeholder="Nhập mã số thuế..."
                     value={formData.taxCode}
-                    onChange={(e) => setFormData({ ...formData, taxCode: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, taxCode: e.target.value })
+                      if (validationErrors.taxCode) {
+                        setValidationErrors({ ...validationErrors, taxCode: undefined })
+                      }
+                    }}
                     className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                    required
                   />
+                  {validationErrors.taxCode && (
+                    <p className="text-sm text-red-500 font-medium">{validationErrors.taxCode}</p>
+                  )}
                 </div>
               </div>
 
@@ -131,10 +186,17 @@ export default function CreateRetailer({ isOpen, onClose, onSuccess }) {
                     type="email"
                     placeholder="Nhập email..."
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, email: e.target.value })
+                      if (validationErrors.email) {
+                        setValidationErrors({ ...validationErrors, email: undefined })
+                      }
+                    }}
                     className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                    required
                   />
+                  {validationErrors.email && (
+                    <p className="text-sm text-red-500 font-medium">{validationErrors.email}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -145,10 +207,17 @@ export default function CreateRetailer({ isOpen, onClose, onSuccess }) {
                     id="phone"
                     placeholder="Nhập số điện thoại..."
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, phone: e.target.value })
+                      if (validationErrors.phone) {
+                        setValidationErrors({ ...validationErrors, phone: undefined })
+                      }
+                    }}
                     className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                    required
                   />
+                  {validationErrors.phone && (
+                    <p className="text-sm text-red-500 font-medium">{validationErrors.phone}</p>
+                  )}
                 </div>
               </div>
 
@@ -161,10 +230,17 @@ export default function CreateRetailer({ isOpen, onClose, onSuccess }) {
                   id="address"
                   placeholder="Nhập địa chỉ..."
                   value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, address: e.target.value })
+                    if (validationErrors.address) {
+                      setValidationErrors({ ...validationErrors, address: undefined })
+                    }
+                  }}
                   className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                  required
                 />
+                {validationErrors.address && (
+                  <p className="text-sm text-red-500 font-medium">{validationErrors.address}</p>
+                )}
               </div>
             </div>
 

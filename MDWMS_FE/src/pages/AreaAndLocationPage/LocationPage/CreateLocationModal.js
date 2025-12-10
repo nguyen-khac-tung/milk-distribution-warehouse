@@ -6,7 +6,7 @@ import { ComponentIcon } from "../../../components/IconComponent/Icon";
 import { createLocation } from "../../../services/LocationServices";
 import { getAreaDropdown } from "../../../services/AreaServices";
 import { extractErrorMessage } from "../../../utils/Validation";
-import CustomDropdown from "../../../components/Common/CustomDropdown";
+import FloatingDropdown from "../../../components/Common/FloatingDropdown";
 
 export default function CreateLocationModal({ isOpen, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -40,6 +40,16 @@ export default function CreateLocationModal({ isOpen, onClose, onSuccess }) {
     }
   };
 
+  const resetForm = () => {
+    setFormData({
+      areaId: "",
+      rack: "",
+      row: "",
+      column: "",
+      isAvailable: true,
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -62,6 +72,7 @@ export default function CreateLocationModal({ isOpen, onClose, onSuccess }) {
       const response = await createLocation(payload);
       console.log("Location created:", response);
       window.showToast("Thêm vị trí thành công!", "success");
+      resetForm()
       onSuccess && onSuccess();
       onClose && onClose();
     } catch (error) {
@@ -103,11 +114,13 @@ export default function CreateLocationModal({ isOpen, onClose, onSuccess }) {
                 <Label htmlFor="areaId" className="text-sm font-medium text-slate-700">
                   Khu vực <span className="text-red-500">*</span>
                 </Label>
-                <CustomDropdown
-                  value={formData.areaId}
-                  onChange={(value) => setFormData({ ...formData, areaId: value })}
+                <FloatingDropdown
+                  value={formData.areaId ? formData.areaId.toString() : null}
+                  onChange={(value) => setFormData({
+                    ...formData,
+                    areaId: value ? parseInt(value) : null,
+                  })}
                   options={[
-                    { value: "", label: "Chọn khu vực..." },
                     ...areas.map((a) => ({
                       value: a.areaId.toString(),
                       label: a.areaName,

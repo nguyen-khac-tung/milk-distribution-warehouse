@@ -9,6 +9,7 @@ import CustomDropdown from "../../components/Common/CustomDropdown"
 import { updateUser, getUserDetail } from "../../services/AccountService"
 import { getRoleList } from "../../services/RoleService"
 import { validateAndShowError, extractErrorMessage } from "../../utils/Validation"
+import FloatingDropdown from "../../components/Common/FloatingDropdown"
 
 export default function UpdateAccount({ isOpen, onClose, onSuccess, userData }) {
   const [formData, setFormData] = useState({
@@ -24,6 +25,7 @@ export default function UpdateAccount({ isOpen, onClose, onSuccess, userData }) 
   const [loading, setLoading] = useState(false)
   const [roles, setRoles] = useState([])
   const [userDetail, setUserDetail] = useState(null)
+  const [validationErrors, setValidationErrors] = useState({})
 
   // Load user data from API when modal opens
   useEffect(() => {
@@ -62,6 +64,7 @@ export default function UpdateAccount({ isOpen, onClose, onSuccess, userData }) 
               roleId: roleId,
               userId: response.data.userId || response.data.id || userId,
             })
+            setValidationErrors({})
           } else {
             // Fallback to props data if API fails
             setFormData({
@@ -74,6 +77,7 @@ export default function UpdateAccount({ isOpen, onClose, onSuccess, userData }) 
               roleId: userData.roleId || 0,
               userId: userData.userId || userData.id || 0,
             })
+            setValidationErrors({})
           }
         } catch (error) {
           // Fallback to props data if API fails
@@ -87,6 +91,7 @@ export default function UpdateAccount({ isOpen, onClose, onSuccess, userData }) 
             roleId: userData.roleId || 0,
             userId: userData.userId || userData.id || 0,
           })
+          setValidationErrors({})
         } finally {
           setLoading(false)
         }
@@ -134,11 +139,41 @@ export default function UpdateAccount({ isOpen, onClose, onSuccess, userData }) 
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    // Basic validation
-    if (!formData.email || !formData.fullName || !formData.phone || !formData.roleId || !formData.userId) {
-      window.showToast("Vui lòng điền đầy đủ thông tin bắt buộc", "error")
+    if (!formData.userId) {
+      window.showToast("Không tìm thấy thông tin người dùng", "error")
       return
     }
+
+    // Validate all required fields
+    const errors = {}
+
+    if (!formData.email || formData.email.trim() === "") {
+      errors.email = "Vui lòng nhập email"
+    }
+
+    if (!formData.fullName || formData.fullName.trim() === "") {
+      errors.fullName = "Vui lòng nhập họ và tên"
+    }
+
+    if (!formData.phone || formData.phone.trim() === "") {
+      errors.phone = "Vui lòng nhập số điện thoại"
+    }
+
+    if (!formData.address || formData.address.trim() === "") {
+      errors.address = "Vui lòng nhập địa chỉ"
+    }
+
+    if (!formData.roleId || formData.roleId === 0) {
+      errors.roleId = "Vui lòng chọn chức vụ"
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors)
+      return
+    }
+
+    // Clear validation errors if validation passes
+    setValidationErrors({})
 
     try {
       setLoading(true)
@@ -197,6 +232,7 @@ export default function UpdateAccount({ isOpen, onClose, onSuccess, userData }) 
         userId: 0,
       })
     }
+    setValidationErrors({})
     onClose && onClose()
   }
 
@@ -238,10 +274,17 @@ export default function UpdateAccount({ isOpen, onClose, onSuccess, userData }) 
                     type="email"
                     placeholder="Nhập email..."
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, email: e.target.value })
+                      if (validationErrors.email) {
+                        setValidationErrors({ ...validationErrors, email: undefined })
+                      }
+                    }}
                     className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                    required
                   />
+                  {validationErrors.email && (
+                    <p className="text-sm text-red-500 font-medium">{validationErrors.email}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -253,10 +296,17 @@ export default function UpdateAccount({ isOpen, onClose, onSuccess, userData }) 
                     type="text"
                     placeholder="Nhập họ và tên..."
                     value={formData.fullName}
-                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, fullName: e.target.value })
+                      if (validationErrors.fullName) {
+                        setValidationErrors({ ...validationErrors, fullName: undefined })
+                      }
+                    }}
                     className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                    required
                   />
+                  {validationErrors.fullName && (
+                    <p className="text-sm text-red-500 font-medium">{validationErrors.fullName}</p>
+                  )}
                 </div>
               </div>
 
@@ -302,10 +352,17 @@ export default function UpdateAccount({ isOpen, onClose, onSuccess, userData }) 
                     type="tel"
                     placeholder="Nhập số điện thoại..."
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, phone: e.target.value })
+                      if (validationErrors.phone) {
+                        setValidationErrors({ ...validationErrors, phone: undefined })
+                      }
+                    }}
                     className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                    required
                   />
+                  {validationErrors.phone && (
+                    <p className="text-sm text-red-500 font-medium">{validationErrors.phone}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -317,9 +374,17 @@ export default function UpdateAccount({ isOpen, onClose, onSuccess, userData }) 
                     type="text"
                     placeholder="Nhập địa chỉ..."
                     value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, address: e.target.value })
+                      if (validationErrors.address) {
+                        setValidationErrors({ ...validationErrors, address: undefined })
+                      }
+                    }}
                     className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                   />
+                  {validationErrors.address && (
+                    <p className="text-sm text-red-500 font-medium">{validationErrors.address}</p>
+                  )}
                 </div>
               </div>
 
@@ -329,18 +394,25 @@ export default function UpdateAccount({ isOpen, onClose, onSuccess, userData }) 
                   <Label htmlFor="roleId" className="text-sm font-medium text-slate-700">
                     Chức vụ <span className="text-red-500">*</span>
                   </Label>
-                  <CustomDropdown
-                    value={formData.roleId}
-                    onChange={(value) => setFormData({ ...formData, roleId: parseInt(value) })}
+                  <FloatingDropdown
+                    value={formData.roleId !== 0 ? formData.roleId : null}
+                    onChange={(value) => {
+                      setFormData({ ...formData, roleId: value ? parseInt(value) : 0 });
+                      if (validationErrors.roleId) {
+                        setValidationErrors({ ...validationErrors, roleId: undefined });
+                      }
+                    }}
+                    placeholder="Chọn chức vụ..."
                     options={[
-                      { value: 0, label: "Chọn chức vụ..." },
                       ...roles.map(role => ({
                         value: role.roleId,
                         label: role.description
                       }))
                     ]}
-                    placeholder="Chọn chức vụ..."
                   />
+                  {validationErrors.roleId && (
+                    <p className="text-sm text-red-500 font-medium">{validationErrors.roleId}</p>
+                  )}
                 </div>
               </div>
 

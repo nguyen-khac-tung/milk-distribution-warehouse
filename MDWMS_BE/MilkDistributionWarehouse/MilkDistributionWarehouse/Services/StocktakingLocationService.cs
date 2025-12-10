@@ -95,7 +95,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Kiểm kê vị trí không tồn tại trong hệ thống.", default);
 
             stocktakingLocationExist.Note = update.Note;
-            stocktakingLocationExist.UpdateAt = DateTime.Now;
+            stocktakingLocationExist.UpdateAt = DateTimeUtility.Now();
 
             var updateResult = await _stocktakingLocationRepository.UpdateStocktakingLocation(stocktakingLocationExist);
             if (updateResult == 0)
@@ -175,7 +175,7 @@ namespace MilkDistributionWarehouse.Services
                 var updateStocktakingLocationBulksResult = await _stocktakingLocationRepository.UpdateStocktakingLocationBulk(stocktakingLocations);
 
                 if (updateStocktakingLocationBulksResult == 0)
-                    throw new Exception("Cập nhật trạng thái của kiểm kể vị trí thất bại.");
+                    throw new Exception("Cập nhật trạng thái của kiểm kê vị trí thất bại.");
 
                 var stocktakingAreaId = stocktakingLocations.FirstOrDefault().StocktakingAreaId;
 
@@ -279,7 +279,7 @@ namespace MilkDistributionWarehouse.Services
                     return ("Chỉ được kiểm kê lại vị trí khi kiểm kê vị trí ở trạng thái Đã kiểm.".ToMessageForUser(), default);
 
                 stocktakingLocation.Status = StockLocationStatus.Pending;
-                stocktakingLocation.UpdateAt = DateTime.Now;
+                stocktakingLocation.UpdateAt = DateTimeUtility.Now();
                 stocktakingLocations.Add(stocktakingLocation);
             }
             return ("", stocktakingLocations);
@@ -287,6 +287,11 @@ namespace MilkDistributionWarehouse.Services
 
         private async Task<string> HandleStocktakingLocationPendingApproval(StocktakingLocation update)
         {
+            if(update.Status != StockLocationStatus.Counted)
+            {
+                return "Chỉ được cập nhật trạng thái Chờ duyệt khi vị trí kiểm kê ở trạng thái Đã kiểm.".ToMessageForUser();
+            }
+
             update.Status = StockLocationStatus.PendingApproval;
             return "";
         }
@@ -299,6 +304,11 @@ namespace MilkDistributionWarehouse.Services
 
         private string HandleStocktakingLocationCounted(StocktakingLocation update)
         {
+            if(update.Status != StockLocationStatus.Pending)
+            {
+                return "Chỉ được cập nhật trạng thái Đã kiểm khi vị trí kiểm kê ở trạng thái Đang chờ.".ToMessageForUser();
+            }
+
             update.Status = StockLocationStatus.Counted;
             return "";
         }

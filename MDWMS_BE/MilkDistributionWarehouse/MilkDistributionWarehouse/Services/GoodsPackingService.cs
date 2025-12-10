@@ -68,13 +68,17 @@ namespace MilkDistributionWarehouse.Services
                         var existingGoodsPacking = goodsPackingsExist
                             .FirstOrDefault(gp => gp.GoodsPackingId == p.GoodsPackingId);
 
-                        if (existingGoodsPacking != null)
+                        if (existingGoodsPacking != null && p.UnitPerPackage != existingGoodsPacking.UnitPerPackage)
                         {
                             var hasRelatedTransaction = await HasRelatedTransaction(p.GoodsPackingId);
                             if (!string.IsNullOrEmpty(hasRelatedTransaction))
                                 throw new Exception("Cập nhật số lượng đóng gói hàng hoá thất bại." + hasRelatedTransaction);
 
                             existingGoodsPacking.UnitPerPackage = p.UnitPerPackage;
+
+                            var resultUpdate = await _goodPackingRepository.UpdateGoodsPacking(existingGoodsPacking);
+                            if (resultUpdate == 0)
+                                throw new Exception("Cập nhật quy cách đóng gói thất bại.");
                         }
                     }
                     else
@@ -97,7 +101,7 @@ namespace MilkDistributionWarehouse.Services
             }
             catch (Exception ex)
             {
-                return ($"{ex.Message}", default);
+                return ($"{ex.Message}".ToMessageForUser(), default);
             }
 
         }
@@ -110,11 +114,26 @@ namespace MilkDistributionWarehouse.Services
             var hasRelatedSO = await _goodPackingRepository.HasActiveSaleOrder(goodsPackingId);
             if (hasRelatedSO) return "Có đơn mua hàng đang sử dụng.";
 
+            var hasDisposalRequest = await _goodPackingRepository.HasActiveDisposalRequest(goodsPackingId);
+            if (hasDisposalRequest) return "Có đơn đề nghị xuất huỷ đang được sử dụng.";
+
             var hasRelatedGRN = await _goodPackingRepository.HasActiveGoodsReceiptNote(goodsPackingId);
             if (hasRelatedGRN) return "Có đơn nhập hàng đang được sử dụng.";
 
             var hasRelatedGIN = await _goodPackingRepository.HasActiveGoodsIssueNote(goodsPackingId);
             if (hasRelatedGIN) return "Có đơn xuất hàng đang được sử dụng.";
+
+            var hasRelatedDisposalNote = await _goodPackingRepository.HasActiveDisposalNote(goodsPackingId);
+            if (hasRelatedDisposalNote) return "Có phiếu xuất hủy đang được sử dụng.";
+
+            var hasRelatedPallet = await _goodPackingRepository.HasActiveAndDeletedPallet(goodsPackingId);
+            if (hasRelatedPallet) return "Có pallet đang được sử dụng.";
+
+            var hasInventoryLedger = await _goodPackingRepository.HasInventoryLedgers(goodsPackingId);
+            if (hasInventoryLedger) return "Có sổ cái tồn kho đang liên kết.";
+
+            var hasBackOrder = await _goodPackingRepository.HasBackOrder(goodsPackingId);
+            if (hasBackOrder) return "Có phiếu bổ sung đang liên kết.";
 
             return "";
         }
@@ -127,11 +146,26 @@ namespace MilkDistributionWarehouse.Services
             var isSO = await _goodPackingRepository.IsSalesOrderByGoodsPackingId(goodsPackingId);
             if (isSO) return "Có đơn mua hàng đang liên kết.";
 
+            var isDisposalRequest = await _goodPackingRepository.IsDisposalRequestByGoodsPackingId(goodsPackingId);
+            if (isDisposalRequest) return "Có đơn đề nghị xuất huỷ đang liên kết.";
+
             var isGRN = await _goodPackingRepository.IsGoodsReceiptNoteByGoodsPackingId(goodsPackingId);
             if (isGRN) return "Có đơn nhập hàng đang liên kết.";
 
             var isGIN = await _goodPackingRepository.IsGoodsIssueNoteByGoodsPackingId(goodsPackingId);
             if (isGIN) return "Có đơn xuất hàng liên kết.";
+
+            var isDisposalNote = await _goodPackingRepository.IsDisposalNoteByGoodsPackingId(goodsPackingId);
+            if (isDisposalNote) return "Có phiếu xuất hủy đang liên kết.";
+
+            var isPallet = await _goodPackingRepository.IsPalletByGoodsPackingId(goodsPackingId);
+            if (isPallet) return "Có pallet đang liên kết.";
+
+            var isInventoryLedger = await _goodPackingRepository.IsInventoryLedgers(goodsPackingId);
+            if (isInventoryLedger) return "Có sổ cái tồn kho đang liên kết.";
+
+            var isBackOrder = await _goodPackingRepository.IsExistBackOrder(goodsPackingId);
+            if (isBackOrder) return "Có phiếu bổ sung đang liên kết.";
 
             return "";
         }

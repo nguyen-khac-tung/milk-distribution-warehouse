@@ -20,8 +20,15 @@ const InventoryDetailModal = ({ isOpen, onClose, item }) => {
     const pallets = item.pallets || [];
     const locations = item.locations || [];
 
+    // Tính số hộp từ số thùng và quy cách đóng gói
+    const totalPackageQuantity = item.totalPackageQuantity || 0;
+    const unitPerPackage = item.unitPerPackage || 0;
+    const totalBoxQuantity = totalPackageQuantity * unitPerPackage;
+    // Lấy tên đơn vị từ UnitMeasure (có thể là unitMeasureName hoặc unitOfMeasure)
+    const unitMeasureName = item.unitMeasureName || item.unitOfMeasure || 'Hộp';
+
     return (
-        <div 
+        <div
             className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm"
             onClick={(e) => {
                 if (e.target === e.currentTarget) {
@@ -29,7 +36,7 @@ const InventoryDetailModal = ({ isOpen, onClose, item }) => {
                 }
             }}
         >
-            <div 
+            <div
                 className="bg-white rounded-lg shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col mx-4"
                 onClick={(e) => e.stopPropagation()}
             >
@@ -94,8 +101,13 @@ const InventoryDetailModal = ({ isOpen, onClose, item }) => {
                             <div>
                                 <div className="text-xs text-gray-500 mb-1">Tổng số lượng</div>
                                 <div className="text-sm font-semibold text-gray-900">
-                                    {item.totalPackageQuantity?.toLocaleString("vi-VN") || 0} {item.unitOfMeasure || 'thùng'}
+                                    {totalPackageQuantity.toLocaleString("vi-VN")} thùng
                                 </div>
+                                {unitPerPackage > 0 && (
+                                    <div className="text-xs text-gray-600 mt-1">
+                                        ({totalBoxQuantity.toLocaleString("vi-VN")} {unitMeasureName})
+                                    </div>
+                                )}
                             </div>
                             {item.companyName && (
                                 <div className="col-span-2 md:col-span-3">

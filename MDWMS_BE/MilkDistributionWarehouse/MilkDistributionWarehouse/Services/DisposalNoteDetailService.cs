@@ -58,7 +58,7 @@ namespace MilkDistributionWarehouse.Services
 
                 noteDetail.RejectionReason = rePickDto.RejectionReason ?? "";
                 noteDetail.Status = DisposalNoteItemStatus.Picking;
-                noteDetail.UpdatedAt = DateTime.Now;
+                noteDetail.UpdatedAt = DateTimeUtility.Now();
 
                 foreach (var pickAllocation in noteDetail.PickAllocations)
                 {
@@ -104,7 +104,7 @@ namespace MilkDistributionWarehouse.Services
                 {
                     noteDetail.RejectionReason = rePickList.First(r => r.DisposalNoteDetailId == noteDetail.DisposalNoteDetailId).RejectionReason ?? "";
                     noteDetail.Status = DisposalNoteItemStatus.Picking;
-                    noteDetail.UpdatedAt = DateTime.Now;
+                    noteDetail.UpdatedAt = DateTimeUtility.Now();
 
                     foreach (var pickAllocation in noteDetail.PickAllocations)
                     {
@@ -116,7 +116,7 @@ namespace MilkDistributionWarehouse.Services
                 if (disposalNote != null && disposalNote.Status == DisposalNoteStatus.PendingApproval)
                 {
                     disposalNote.Status = DisposalNoteStatus.Picking;
-                    disposalNote.UpdatedAt = DateTime.Now;
+                    disposalNote.UpdatedAt = DateTimeUtility.Now();
                 }
 
                 await _disposalNoteDetailRepository.UpdateDisposalNoteDetailList(noteDetails);

@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using DocumentFormat.OpenXml.Spreadsheet;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.Entities;
@@ -9,8 +10,9 @@ namespace MilkDistributionWarehouse.Repositories
     {
         IQueryable<User> GetUsers();
         Task<User?> GetUserById(int? userId);
-        Task<User?> GetUserByIdWithAssociations(int? userId);
+        Task<string> CheckUserDependencies(int userId);
         Task<User?> GetUserByEmail(string email);
+        Task<User?> GetUserByPhone(string phone);
         Task<List<User>?> GetUsersByRoleId(int? roleId);
         Task<User?> GetAssignToStockArea(string stocktakingSheetId, int areaId);
         Task<string> CreateUser(User user);
@@ -45,6 +47,13 @@ namespace MilkDistributionWarehouse.Repositories
                 .FirstOrDefaultAsync();
         }
 
+        public async Task<User?> GetUserByPhone(string phone)
+        {
+            if (phone.IsNullOrEmpty()) return null;
+            return await _context.Users
+                .Where(u => u.Phone == phone && u.Status != CommonStatus.Deleted)
+                .FirstOrDefaultAsync();
+        }
         public async Task<User?> GetUserById(int? userId)
         {
             return await _context.Users
@@ -53,22 +62,48 @@ namespace MilkDistributionWarehouse.Repositories
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<User?> GetUserByIdWithAssociations(int? userId)
+        public async Task<string> CheckUserDependencies(int userId)
         {
-            return await _context.Users
-                .Include(u => u.Batches)
-                .Include(u => u.Pallets)
-                .Include(u => u.GoodsIssueNoteCreatedByNavigations)
-                .Include(u => u.GoodsIssueNoteApprovalByNavigations)
-                .Include(u => u.GoodsReceiptNoteApprovalByNavigations)
-                .Include(u => u.PurchaseOrderCreatedByNavigations)
-                .Include(u => u.SalesOrderCreatedByNavigations)
-                .Include(u => u.SalesOrderAcknowledgedByNavigations)
-                .Include(u => u.SalesOrderApprovalByNavigations)
-                .Include(u => u.SalesOrderAssignToNavigations)
-                .Include(u => u.StocktakingSheets)
-                .Where(u => u.UserId == userId && u.Status != CommonStatus.Deleted)
-                .FirstOrDefaultAsync();
+            var hasPO = await _context.PurchaseOrders.AnyAsync(x =>
+                x.CreatedBy == userId ||
+                x.ApprovalBy == userId ||
+                x.ArrivalConfirmedBy == userId ||
+                x.AssignTo == userId);
+            if (hasPO) return "Không thể xóa do người dùng này có liên quan đến lịch sử đơn đặt hàng mua.";
+
+            var hasSO = await _context.SalesOrders.AnyAsync(x =>
+                x.CreatedBy == userId ||
+                x.AcknowledgedBy == userId ||
+                x.ApprovalBy == userId ||
+                x.AssignTo == userId);
+            if (hasSO) return "Không thể xóa do người dùng này có liên quan đến lịch sử đơn hàng bán.";
+
+            var hasDR = await _context.DisposalRequests.AnyAsync(x =>
+                x.CreatedBy == userId ||
+                x.ApprovalBy == userId ||
+                x.AssignTo == userId);
+            if (hasDR) return "Không thể xóa do người dùng này có liên quan đến lịch sử yêu cầu hủy hàng.";
+
+            var hasGIN = await _context.GoodsIssueNotes.AnyAsync(x => x.CreatedBy == userId || x.ApprovalBy == userId);
+            if (hasGIN) return "Không thể xóa do người dùng này có liên quan đến lịch sử phiếu xuất hàng.";
+
+            var hasGRN = await _context.GoodsReceiptNotes.AnyAsync(x => x.CreatedBy == userId || x.ApprovalBy == userId);
+            if (hasGRN) return "Không thể xóa do người dùng này có liên quan đến lịch sử phiếu nhập hàng.";
+
+            var hasDN = await _context.DisposalNotes.AnyAsync(x => x.CreatedBy == userId || x.ApprovalBy == userId);
+            if (hasDN) return "Không thể xóa do người dùng này có liên quan đến lịch sử phiếu hủy hàng.";
+
+            var hasSheet = await _context.StocktakingSheets.AnyAsync(s => s.CreatedBy == userId);
+            var hasArea = await _context.StocktakingAreas.AnyAsync(a => a.AssignTo == userId);
+            if (hasSheet || hasArea) return "Không thể xóa do người dùng này có liên quan đến lịch sử phiếu kiểm kê.";
+
+            var hasPallet = await _context.Pallets.AnyAsync(p => p.CreateBy == userId);
+            if (hasPallet) return "Không thể xóa do người dùng này có liên quan đến lịch sử các pallet.";
+
+            var hasBackOrder = await _context.BackOrders.AnyAsync(b => b.CreatedBy == userId);
+            if (hasBackOrder) return "Không thể xóa do người dùng này có liên quan đến lịch sử đơn trả hàng.";
+
+            return "";
         }
 
         public async Task<List<User>?> GetUsersByRoleId(int? roleId)

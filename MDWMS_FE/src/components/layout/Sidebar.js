@@ -134,24 +134,10 @@ const Sidebar = memo(({ collapsed, isMobile }) => {
                 ],
             },
             {
-                key: "partner-management",
-                icon: <ComponentIcon name="partner" size={16} collapsed={collapsed} />,
-                label: "Quản lý đối tác",
-                permission: [PERMISSIONS.SUPPLIER_VIEW, PERMISSIONS.RETAILER_VIEW],
-                children: [
-                    {
-                        key: "/suppliers",
-                        icon: <ComponentIcon name="supplier" size={14} collapsed={collapsed} />,
-                        label: "Quản lý nhà cung cấp",
-                        permission: PERMISSIONS.SUPPLIER_VIEW
-                    },
-                    {
-                        key: "/retailers",
-                        icon: <ComponentIcon name="retailer" size={14} collapsed={collapsed} />,
-                        label: "Quản lý nhà bán lẻ",
-                        permission: PERMISSIONS.RETAILER_VIEW
-                    },
-                ],
+                key: "/backorder",
+                icon: <ComponentIcon name="backorder" size={16} collapsed={collapsed} />,
+                label: "Quản lý đơn bổ sung",
+                permission: PERMISSIONS.BACKORDER_VIEW
             },
             {
                 key: "disposal-management",
@@ -179,10 +165,24 @@ const Sidebar = memo(({ collapsed, isMobile }) => {
                 ],
             },
             {
-                key: "/backorder",
-                icon: <ComponentIcon name="backorder" size={16} collapsed={collapsed} />,
-                label: "Quản lý đơn bổ sung",
-                permission: PERMISSIONS.BACKORDER_VIEW
+                key: "partner-management",
+                icon: <ComponentIcon name="partner" size={16} collapsed={collapsed} />,
+                label: "Quản lý đối tác",
+                permission: [PERMISSIONS.SUPPLIER_VIEW, PERMISSIONS.RETAILER_VIEW],
+                children: [
+                    {
+                        key: "/suppliers",
+                        icon: <ComponentIcon name="supplier" size={14} collapsed={collapsed} />,
+                        label: "Quản lý nhà cung cấp",
+                        permission: PERMISSIONS.SUPPLIER_VIEW
+                    },
+                    {
+                        key: "/retailers",
+                        icon: <ComponentIcon name="retailer" size={14} collapsed={collapsed} />,
+                        label: "Quản lý nhà bán lẻ",
+                        permission: PERMISSIONS.RETAILER_VIEW
+                    },
+                ],
             },
             {
                 key: "/goods",

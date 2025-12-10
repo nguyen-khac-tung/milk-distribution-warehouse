@@ -1,6 +1,7 @@
-import React, { memo, useMemo, useState } from "react";
+import React, { memo, useMemo, useState, useCallback } from "react";
 import { NotificationStatus, NotificationCategory } from "../../hooks/useNotifications";
 import { RefreshCw, AlertCircle } from "lucide-react";
+import { getNotificationDetail, NotificationEntityType } from "../../services/NotificationService";
 
 const CONNECTION_META = {
     connected: {
@@ -68,8 +69,10 @@ const NotificationDropdown = ({
     onRefresh,
     onMarkAllAsRead,
     onNotificationClick,
+    markNotificationsAsRead,
 }) => {
-    const [filterType, setFilterType] = useState("all"); // "all" or "important"
+    const [filterType, setFilterType] = useState("all");
+    const [expandedNotificationIds, setExpandedNotificationIds] = useState(new Set());
     const connectionBadge = CONNECTION_META[connectionState] || CONNECTION_META.idle;
 
     // Filter notifications based on filterType
@@ -88,6 +91,38 @@ const NotificationDropdown = ({
             (n) => n.status === NotificationStatus.UNREAD
         ).length;
     }, [filteredNotifications]);
+
+    const handleNotificationClick = useCallback(
+        async (notification) => {
+            if (!notification) return;
+
+            try {
+                const detail = await getNotificationDetail(notification.notificationId);
+
+                if (detail?.entityType === NotificationEntityType.NO_NAVIGATION) {
+                    setExpandedNotificationIds((prev) => {
+                        const newSet = new Set(prev);
+                        if (newSet.has(notification.notificationId)) {
+                            newSet.delete(notification.notificationId);
+                        } else {
+                            newSet.add(notification.notificationId);
+                        }
+                        return newSet;
+                    });
+
+                    if (notification.status === NotificationStatus.UNREAD && markNotificationsAsRead) {
+                        markNotificationsAsRead([notification.notificationId]);
+                    }
+                    return;
+                }
+            } catch (err) {
+                console.error("Error getting notification detail:", err);
+            }
+
+            onNotificationClick?.(notification);
+        },
+        [onNotificationClick, markNotificationsAsRead]
+    );
 
     return (
         <div className="fixed top-[75px] right-6 w-[430px] bg-white border border-gray-100 rounded-2xl shadow-2xl z-[9999] overflow-hidden">
@@ -109,8 +144,8 @@ const NotificationDropdown = ({
                         type="button"
                         onClick={() => setFilterType("all")}
                         className={`text-sm font-semibold transition-colors ${filterType === "all"
-                                ? "text-orange-600 border-b-2 border-orange-600 pb-1"
-                                : "text-slate-700 hover:text-slate-900"
+                            ? "text-orange-600 border-b-2 border-orange-600 pb-1"
+                            : "text-slate-700 hover:text-slate-900"
                             }`}
                     >
                         Tất cả
@@ -119,8 +154,8 @@ const NotificationDropdown = ({
                         type="button"
                         onClick={() => setFilterType("important")}
                         className={`text-sm font-semibold transition-colors ${filterType === "important"
-                                ? "text-rose-600 border-b-2 border-rose-600 pb-1"
-                                : "text-slate-700 hover:text-slate-900"
+                            ? "text-rose-600 border-b-2 border-rose-600 pb-1"
+                            : "text-slate-700 hover:text-slate-900"
                             }`}
                     >
                         Quan trọng
@@ -184,6 +219,7 @@ const NotificationDropdown = ({
                     <ul className="divide-y divide-gray-100">
                         {filteredNotifications.map((notification) => {
                             const isUnread = notification.status === NotificationStatus.UNREAD;
+                            const isExpanded = expandedNotificationIds.has(notification.notificationId);
                             const meta =
                                 CATEGORY_META[notification.category] || CATEGORY_META[NotificationCategory.NORMAL];
 
@@ -195,7 +231,7 @@ const NotificationDropdown = ({
                                             ? "bg-orange-100 hover:bg-orange-200"
                                             : "hover:bg-slate-50"
                                             }`}
-                                        onClick={() => onNotificationClick?.(notification)}
+                                        onClick={() => handleNotificationClick(notification)}
                                     >
                                         <div className="flex items-start gap-3">
 
@@ -218,7 +254,7 @@ const NotificationDropdown = ({
                                                 </div>
                                                 <p
                                                     className="text-sm text-slate-500 mt-1 leading-snug"
-                                                    style={{
+                                                    style={isExpanded ? {} : {
                                                         display: "-webkit-box",
                                                         WebkitLineClamp: 2,
                                                         WebkitBoxOrient: "vertical",

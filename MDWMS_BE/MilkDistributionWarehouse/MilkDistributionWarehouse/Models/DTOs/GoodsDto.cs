@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using MilkDistributionWarehouse.Models.Entities;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 namespace MilkDistributionWarehouse.Models.DTOs
@@ -175,5 +176,12 @@ namespace MilkDistributionWarehouse.Models.DTOs
         public int GoodsPackingId { get; set; }
         public int UnitPerPackage { get; set; }
         public int AvailablePackageQuantity { get; set; }
+    }
+
+    public class GoodsQuantityDto
+    {
+        public Good? Goods { get; set; }
+        public GoodsPacking? GoodsPacking { get; set; }
+        public int TotalPackageQuantity { get; set; }
     }
 }

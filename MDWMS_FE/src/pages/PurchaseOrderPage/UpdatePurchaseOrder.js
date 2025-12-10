@@ -120,15 +120,31 @@ export default function UpdatePurchaseOrder() {
             e.stopPropagation();
         }
 
-        // Kiểm tra xem còn hàng hóa nào để thêm không (so sánh bằng goodsId)
-        const selectedGoodsIds = items
-            .filter(item => item.goodsId && item.goodsId !== 0)
-            .map(item => item.goodsId);
+        // Kiểm tra xem còn hàng hóa nào có thể chọn không
+        const availableGoods = goods.filter(good => {
+            const goodsId = good.goodsId;
+            const goodsPackings = goodsPacking[goodsId] || [];
 
-        const availableGoods = goods.filter(good => !selectedGoodsIds.includes(good.goodsId));
+            // Nếu hàng hóa chưa có quy cách đóng gói nào, vẫn có thể chọn
+            if (goodsPackings.length === 0) {
+                return true;
+            }
 
-        if (availableGoods.length === 0 && goods.length > 0) {
-            window.showToast("Đã thêm hết tất cả hàng hóa từ nhà cung cấp này!", "error");
+            // Đếm số quy cách đóng gói đã được chọn cho hàng hóa này
+            const selectedPackingIds = items
+                .filter(item =>
+                    item.goodsName === good.goodsName &&
+                    item.goodsPackingId && item.goodsPackingId !== 0
+                )
+                .map(item => item.goodsPackingId.toString());
+
+            // Nếu số quy cách đã chọn < tổng số quy cách, vẫn có thể chọn
+            return selectedPackingIds.length < goodsPackings.length;
+        });
+
+        // Nếu không còn hàng hóa nào có thể chọn, hiển thị toast và không cho thêm
+        if (availableGoods.length === 0) {
+            window.showToast("Đã chọn hết tất cả hàng hóa và quy cách đóng gói!", "error");
             return;
         }
 
@@ -147,42 +163,81 @@ export default function UpdatePurchaseOrder() {
         setItems(items.filter((item) => item.id !== id))
     }
 
-    const updateItem = async (id, field, value) => {
+    const updateItem = (id, field, value) => {
         if (field === "goodsName") {
-            // Tìm goodsId từ goodsName được chọn
-            const selectedGood = goods.find(good => good.goodsName === value);
-            if (selectedGood) {
-                // Load goods packing cho hàng hóa mới
-                try {
-                    const packingResponse = await getGoodsPackingByGoodsId(selectedGood.goodsId);
-                    const packingData = packingResponse?.data || packingResponse?.items || packingResponse || [];
+            // Lấy thông tin hàng hóa cũ để so sánh
+            const currentItem = items.find(item => item.id === id);
+            const oldGoodsName = currentItem?.goodsName;
 
-                    setGoodsPacking(prev => ({
-                        ...prev,
-                        [selectedGood.goodsId]: packingData
-                    }));
+            // Nếu thay đổi hàng hóa (bao gồm cả khi xóa/chọn lại), reset goodsPackingId và quantity
+            if (value !== oldGoodsName) {
+                if (value) {
+                    // Chọn hàng hóa mới - Load goods packing cho hàng hóa mới
+                    const selectedGood = goods.find(good => good.goodsName === value);
+                    if (selectedGood) {
+                        // Load goods packing (load lại ngay cả khi đã có trong map để đảm bảo data mới nhất)
+                        loadGoodsPacking(selectedGood.goodsId);
 
-                    // Cập nhật item KHÔNG tự động chọn đóng gói
+                        // Reset goodsPackingId và quantity khi đổi hàng hóa
+                        setItems(items.map((item) =>
+                            item.id === id
+                                ? { ...item, goodsName: value, goodsPackingId: 0, quantity: "", goodsId: selectedGood.goodsId }
+                                : item
+                        ));
+
+                        // Xóa lỗi validation liên quan đến packing và quantity khi đổi hàng hóa
+                        setFieldErrors(prev => {
+                            const newErrors = { ...prev };
+                            delete newErrors[`${id}-goodsPackingId`];
+                            delete newErrors[`${id}-quantity`];
+                            return newErrors;
+                        });
+                        return;
+                    }
+                } else {
+                    // Xóa hàng hóa - Reset tất cả các trường liên quan
                     setItems(items.map((item) =>
                         item.id === id
-                            ? {
-                                ...item,
-                                [field]: value,
-                                goodsPackingId: 0, // Không tự động chọn, để người dùng chọn thủ công
-                                goodsId: selectedGood.goodsId
-                            }
+                            ? { ...item, goodsName: "", goodsPackingId: 0, quantity: "", goodsId: 0 }
                             : item
                     ));
-                } catch (error) {
-                    console.error("Error loading goods packing:", error);
-                    setItems(items.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
+
+                    // Xóa lỗi validation liên quan
+                    setFieldErrors(prev => {
+                        const newErrors = { ...prev };
+                        delete newErrors[`${id}-goodsPackingId`];
+                        delete newErrors[`${id}-quantity`];
+                        return newErrors;
+                    });
+                    return;
                 }
-            } else {
-                setItems(items.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
+            } else if (value) {
+                // Lần đầu chọn hàng hóa (chưa có oldGoodsName), chỉ load packing nếu chưa có trong map
+                const selectedGood = goods.find(good => good.goodsName === value);
+                if (selectedGood && !goodsPacking[selectedGood.goodsId]) {
+                    loadGoodsPacking(selectedGood.goodsId);
+                }
             }
-        } else {
-            setItems(items.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
         }
+
+        if (field === "goodsPackingId") {
+            // Kiểm tra xem quy cách đóng gói này đã được chọn cho cùng hàng hóa ở dòng khác chưa
+            const currentItem = items.find(item => item.id === id);
+            if (currentItem && currentItem.goodsName && value) {
+                const isDuplicate = items.some(item =>
+                    item.id !== id &&
+                    item.goodsName === currentItem.goodsName &&
+                    (item.goodsPackingId === value || item.goodsPackingId === parseInt(value)) &&
+                    value !== 0 && value !== ""
+                );
+                if (isDuplicate) {
+                    window.showToast("Quy cách đóng gói này đã được chọn cho hàng hóa này ở dòng khác!", "error");
+                    return;
+                }
+            }
+        }
+
+        setItems(items.map((item) => (item.id === id ? { ...item, [field]: value } : item)))
 
         // Xóa lỗi validation khi người dùng sửa
         if (fieldErrors[`${id}-${field}`]) {
@@ -240,6 +295,24 @@ export default function UpdatePurchaseOrder() {
         }
     };
 
+    const loadGoodsPacking = async (goodsId) => {
+        try {
+            const response = await getGoodsPackingByGoodsId(goodsId);
+            const packingData = response?.data || response?.items || response || [];
+            // Lưu vào map theo goodsId
+            setGoodsPacking(prev => ({
+                ...prev,
+                [goodsId]: packingData
+            }));
+        } catch (error) {
+            console.error("Error loading goods packing:", error);
+            // Lưu mảng rỗng vào map
+            setGoodsPacking(prev => ({
+                ...prev,
+                [goodsId]: []
+            }));
+        }
+    };
 
     // Tính tổng số đơn vị (số thùng × đơn vị đóng gói)
     const calculateTotalUnits = (item) => {
@@ -512,7 +585,7 @@ export default function UpdatePurchaseOrder() {
                                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                                     <div className="space-y-2">
                                         <Label htmlFor="supplier" className="text-slate-600 font-medium">
-                                            Nhà Cung Cấp *
+                                            Nhà Cung Cấp <span className="text-red-500">*</span>
                                         </Label>
                                         <FloatingDropdown
                                             value={formData.supplierName || undefined}
@@ -571,20 +644,36 @@ export default function UpdatePurchaseOrder() {
                                                                     return [];
                                                                 }
 
-                                                                // Lọc ra những hàng hóa đã được chọn ở các hàng khác (so sánh bằng goodsId)
-                                                                const selectedGoodsIds = items
-                                                                    .filter(otherItem => otherItem.id !== item.id && otherItem.goodsId && otherItem.goodsId !== 0)
-                                                                    .map(otherItem => otherItem.goodsId);
+                                                                const currentItem = items.find(i => i.id === item.id);
+                                                                const currentGoodsName = currentItem?.goodsName;
 
-                                                                const availableGoods = goods.filter(good => !selectedGoodsIds.includes(good.goodsId));
+                                                                // Filter hàng hóa dựa trên goodsName và goodsPackingId
+                                                                const availableGoods = goods.filter(good => {
+                                                                    const goodsId = good.goodsId;
+                                                                    const goodsPackings = goodsPacking[goodsId] || [];
 
-                                                                // Nếu không còn hàng hóa nào để chọn, hiển thị thông báo
-                                                                if (availableGoods.length === 0 && goods.length > 0) {
-                                                                    return [{
-                                                                        value: { undefined },
-                                                                        label: "Đã chọn hết hàng hóa"
-                                                                    }];
-                                                                }
+                                                                    // Nếu hàng hóa chưa có quy cách đóng gói nào, vẫn hiển thị
+                                                                    if (goodsPackings.length === 0) {
+                                                                        return true;
+                                                                    }
+
+                                                                    // Nếu dòng hiện tại đã chọn hàng hóa này, vẫn hiển thị
+                                                                    if (currentGoodsName === good.goodsName) {
+                                                                        return true;
+                                                                    }
+
+                                                                    // Đếm số quy cách đóng gói đã được chọn cho hàng hóa này
+                                                                    const selectedPackingIds = items
+                                                                        .filter(otherItem =>
+                                                                            otherItem.id !== item.id &&
+                                                                            otherItem.goodsName === good.goodsName &&
+                                                                            otherItem.goodsPackingId && otherItem.goodsPackingId !== 0
+                                                                        )
+                                                                        .map(otherItem => otherItem.goodsPackingId.toString());
+
+                                                                    // Nếu số quy cách đã chọn < tổng số quy cách, vẫn hiển thị
+                                                                    return selectedPackingIds.length < goodsPackings.length;
+                                                                });
 
                                                                 return availableGoods.map(good => ({
                                                                     value: good.goodsName,
@@ -592,19 +681,7 @@ export default function UpdatePurchaseOrder() {
                                                                 }));
                                                             })()}
                                                             placeholder={formData.supplierName ? "Chọn hàng hóa" : "Chọn nhà cung cấp trước"}
-                                                            disabled={(() => {
-                                                                // Kiểm tra goods đã load chưa
-                                                                if (!goods || goods.length === 0) {
-                                                                    return true;
-                                                                }
-
-                                                                const selectedGoodsIds = items
-                                                                    .filter(otherItem => otherItem.id !== item.id && otherItem.goodsId && otherItem.goodsId !== 0)
-                                                                    .map(otherItem => otherItem.goodsId);
-
-                                                                const availableGoods = goods.filter(good => !selectedGoodsIds.includes(good.goodsId));
-                                                                return availableGoods.length === 0 && goods.length > 0;
-                                                            })()}
+                                                            disabled={!formData.supplierName || (goods && goods.length === 0)}
                                                         />
                                                         {fieldErrors[`${item.id}-goodsName`] && (
                                                             <p className="text-red-500 text-xs mt-1">{fieldErrors[`${item.id}-goodsName`]}</p>
@@ -619,27 +696,53 @@ export default function UpdatePurchaseOrder() {
                                                             options={(() => {
                                                                 // Hiển thị đóng gói từ goodsPacking data để có thể edit
                                                                 if (!item.goodsName) {
-                                                                    return [];
+                                                                    return [{ value: "", label: "Chọn hàng hóa trước" }];
                                                                 }
 
-                                                                if (!item.goodsId) {
-                                                                    return [];
+                                                                // Tìm selectedGood để lấy unitMeasureName và goodsId
+                                                                const selectedGood = goods.find(good => good.goodsName === item.goodsName);
+                                                                if (!selectedGood) {
+                                                                    return [{ value: "", label: "Không tìm thấy hàng hóa" }];
                                                                 }
 
-                                                                if (!goodsPacking[item.goodsId]) {
-                                                                    return [];
-                                                                }
-
-                                                                // Tìm selectedGood để lấy unitMeasureName
-                                                                const selectedGood = goods.find(good => good.goodsId === item.goodsId);
                                                                 const unitMeasureName = selectedGood?.name || "đơn vị";
+                                                                const goodsId = selectedGood.goodsId;
 
-                                                                const options = goodsPacking[item.goodsId].map(packing => ({
-                                                                    value: packing.goodsPackingId.toString(),
-                                                                    label: `${packing.unitPerPackage} ${unitMeasureName}/thùng`
-                                                                }));
+                                                                // Lấy goodsPackings từ map theo goodsId
+                                                                const goodsPackings = goodsPacking[goodsId] || [];
 
-                                                                return options;
+                                                                // Lọc ra các quy cách đóng gói đã được chọn cho cùng hàng hóa ở các dòng khác
+                                                                const selectedPackingIds = items
+                                                                    .filter(otherItem =>
+                                                                        otherItem.id !== item.id &&
+                                                                        otherItem.goodsName === item.goodsName &&
+                                                                        otherItem.goodsPackingId && otherItem.goodsPackingId !== 0
+                                                                    )
+                                                                    .map(otherItem => otherItem.goodsPackingId.toString());
+
+                                                                // Filter các quy cách chưa được chọn
+                                                                const availablePackings = goodsPackings.filter(packing =>
+                                                                    !selectedPackingIds.includes(packing.goodsPackingId.toString())
+                                                                );
+
+                                                                // Nếu đã chọn quy cách ở dòng hiện tại, vẫn hiển thị nó trong danh sách
+                                                                const currentPackingId = item.goodsPackingId;
+                                                                if (currentPackingId && currentPackingId !== 0) {
+                                                                    const currentPacking = goodsPackings.find(p =>
+                                                                        p.goodsPackingId.toString() === currentPackingId.toString()
+                                                                    );
+                                                                    if (currentPacking && !availablePackings.find(p => p.goodsPackingId === currentPacking.goodsPackingId)) {
+                                                                        availablePackings.push(currentPacking);
+                                                                    }
+                                                                }
+
+                                                                return [
+                                                                    { value: "", label: "Chọn đóng gói..." },
+                                                                    ...availablePackings.map(packing => ({
+                                                                        value: packing.goodsPackingId.toString(),
+                                                                        label: `${packing.unitPerPackage} ${unitMeasureName}/thùng`
+                                                                    }))
+                                                                ];
                                                             })()}
                                                             placeholder="Chọn đóng gói"
                                                             disabled={false}

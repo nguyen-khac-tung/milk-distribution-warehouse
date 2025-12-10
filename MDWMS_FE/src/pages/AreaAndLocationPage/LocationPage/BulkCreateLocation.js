@@ -6,8 +6,8 @@ import { Card } from "../../../components/ui/card";
 import { ComponentIcon } from "../../../components/IconComponent/Icon";
 import { getAreaDropdown } from "../../../services/AreaServices";
 import { createMultipleLocations } from "../../../services/LocationServices";
-import CustomDropdown from "../../../components/Common/CustomDropdown";
 import { extractErrorMessage, cleanErrorMessage } from "../../../utils/Validation";
+import FloatingDropdown from "../../../components/Common/FloatingDropdown";
 
 export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess, formData, setFormData }) {
     const [areas, setAreas] = useState([]);
@@ -161,6 +161,18 @@ export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess, fo
 
             if (failedItems.length === 0) {
                 window.showToast(`Tạo thành công ${locations.length} vị trí mới!`, "success");
+
+                // RESET toàn bộ state tại đây
+                setFormData({
+                    areaId: "",
+                    rack: "",
+                    rows: [{ rowName: "", columns: [""] }],
+                });
+                setErrors({});
+                setHasBackendErrors(false);
+                setSuccessfulLocations(new Set());
+                setFailedLocations(new Map());
+
                 onSuccess?.();
                 onClose?.();
             } else {
@@ -269,16 +281,16 @@ export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess, fo
                             <Label className="text-sm font-medium text-slate-700">
                                 Khu vực <span className="text-red-500">*</span>
                             </Label>
-                            <CustomDropdown
-                                value={areaId}
-                                onChange={setAreaId}
+                            <FloatingDropdown
+                                value={areaId ? areaId.toString() : null}
+                                onChange={(value) => setAreaId(value ? parseInt(value) : null)}
                                 options={[
-                                    { value: "", label: "Chọn khu vực..." },
                                     ...areas.map((a) => ({
                                         value: a.areaId.toString(),
                                         label: a.areaName,
                                     })),
                                 ]}
+                                placeholder="Chọn khu vực..."
                                 loading={loadingData}
                             />
                         </div>
@@ -318,7 +330,7 @@ export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess, fo
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center space-x-2">
                                             <h3 className="font-medium text-slate-700">
-                                                Hàng {rowIndex + 1}
+                                                Hàng:
                                             </h3>
                                             {rowHasErrors && (
                                                 <span className="px-2 py-1 text-xs font-medium text-red-800 bg-red-100 rounded-full">
@@ -339,7 +351,9 @@ export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess, fo
 
                                     {/* Nhập tên hàng */}
                                     <Input
-                                        placeholder="Tên hàng (VD: 1, 2, 3...)"
+                                        type="number"
+                                        min="1"
+                                        placeholder="Nhập số hàng..."
                                         value={row.rowName}
                                         onChange={(e) =>
                                             handleRowNameChange(rowIndex, e.target.value)
@@ -364,7 +378,7 @@ export default function BulkCreateLocationModal({ isOpen, onClose, onSuccess, fo
                                                             <Input
                                                                 type="number"
                                                                 min="1"
-                                                                placeholder={`Cột ${colIndex + 1}`}
+                                                                placeholder="Nhập số cột..."
                                                                 value={col}
                                                                 onChange={(e) =>
                                                                     handleColumnChange(rowIndex, colIndex, e.target.value)
