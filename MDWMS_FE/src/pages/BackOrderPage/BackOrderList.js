@@ -84,6 +84,15 @@ export default function BackOrderList() {
         inactiveCount: 0
     })
 
+    // Normalize function: lowercase, trim, and collapse multiple spaces into one
+    const normalize = (str) => {
+        if (!str) return "";
+        return str
+            .toLowerCase()
+            .trim()
+            .replace(/\s+/g, " "); // gom nhiều space thành 1 space
+    };
+
     // Fetch tổng thống kê (không có search/filter)
     const fetchTotalStats = async () => {
         try {
@@ -95,7 +104,6 @@ export default function BackOrderList() {
                 sortAscending: true,
                 status: "" // Không filter theo status
             })
-            console.log("BackOrder: ", response)
 
             if (response) {
                 const payload = response.data ?? response
@@ -121,11 +129,14 @@ export default function BackOrderList() {
         try {
             setLoading(true)
 
+            // Normalize search query trước khi gọi API
+            const searchValue = searchParams.search !== undefined ? searchParams.search : "";
+            const normalizedSearch = normalize(searchValue);
 
             const response = await getBackOrders({
                 pageNumber: searchParams.pageNumber !== undefined ? searchParams.pageNumber : 1,
                 pageSize: searchParams.pageSize !== undefined ? searchParams.pageSize : 10,
-                search: searchParams.search !== undefined ? searchParams.search : "",
+                search: normalizedSearch,
                 sortField: searchParams.sortField || "",
                 sortAscending: searchParams.sortAscending !== undefined ? searchParams.sortAscending : true,
                 filters: {
@@ -134,13 +145,11 @@ export default function BackOrderList() {
                 }
             })
 
-            console.log("BackOrder response: ", response)
 
             if (response) {
                 // Support response either wrapped in .data or direct
                 const payload = response.data ?? response
                 const dataArray = Array.isArray(payload.items) ? payload.items : []
-                console.log("BackOrder items: ", dataArray)
                 setBackOrders(dataArray)
                 setPagination(prev => ({
                     ...prev,
@@ -253,10 +262,12 @@ export default function BackOrderList() {
 
         const timeoutId = setTimeout(() => {
             setSearchLoading(true)
+            // Normalize search query trước khi gọi API
+            const normalizedSearch = normalize(searchQuery);
             fetchData({
                 pageNumber: 1,
                 pageSize: pagination.pageSize,
-                search: searchQuery || "",
+                search: normalizedSearch,
                 sortField: sortField,
                 sortAscending: sortAscending,
                 status: statusFilter,
@@ -306,10 +317,11 @@ export default function BackOrderList() {
     const handleUpdateSuccess = () => {
         setShowUpdateModal(false)
         setUpdateBackOrderId(null)
+        const normalizedSearch = normalize(searchQuery);
         fetchData({
             pageNumber: pagination.pageNumber,
             pageSize: pagination.pageSize,
-            search: searchQuery || "",
+            search: normalizedSearch,
             sortField: sortField,
             sortAscending: sortAscending,
             status: statusFilter,
@@ -324,7 +336,6 @@ export default function BackOrderList() {
 
     const handleDeleteConfirm = async () => {
         try {
-            console.log("Deleting backOrder:", itemToDelete)
             const deletedBackOrderId = itemToDelete?.backOrderId
 
             await deleteBackOrder(deletedBackOrderId)
@@ -359,10 +370,11 @@ export default function BackOrderList() {
             fetchTotalStats()
 
             // Refresh data after deletion, keeping current page or going to previous page if needed
+            const normalizedSearch = normalize(searchQuery);
             await fetchData({
                 pageNumber: targetPage,
                 pageSize: pagination.pageSize,
-                search: searchQuery || "",
+                search: normalizedSearch,
                 sortField: sortField,
                 sortAscending: sortAscending,
                 status: statusFilter,
@@ -431,10 +443,10 @@ export default function BackOrderList() {
     // Filter retailers based on search query
     const filteredRetailers = useMemo(() => {
         if (!retailerSearchQuery) return retailers
-        const query = retailerSearchQuery.toLowerCase()
+        const normalizedQuery = normalize(retailerSearchQuery)
         return retailers.filter(retailer => {
-            const retailerName = (retailer.companyName || retailer.retailerName || "").toLowerCase()
-            return retailerName.includes(query)
+            const retailerName = normalize(retailer.companyName || retailer.retailerName || "")
+            return retailerName.includes(normalizedQuery)
         })
     }, [retailers, retailerSearchQuery])
 
@@ -446,9 +458,9 @@ export default function BackOrderList() {
             { value: "Unavailable", label: "Không có sẵn" }
         ]
         if (!statusSearchQuery) return statusOptions
-        const query = statusSearchQuery.toLowerCase()
+        const normalizedQuery = normalize(statusSearchQuery)
         return statusOptions.filter(option =>
-            option.label.toLowerCase().includes(query)
+            normalize(option.label).includes(normalizedQuery)
         )
     }, [statusSearchQuery])
 
@@ -469,10 +481,11 @@ export default function BackOrderList() {
         setShowPageSizeFilter(false)
 
         // Refresh data with new page size
+        const normalizedSearch = normalize(searchQuery);
         fetchData({
             pageNumber: 1,
             pageSize: newPageSize,
-            search: searchQuery || "",
+            search: normalizedSearch,
             sortField: sortField,
             sortAscending: sortAscending,
             status: statusFilter,
@@ -666,7 +679,7 @@ export default function BackOrderList() {
                 />
 
                 {/* Search and Table Combined */}
-                <Card className="shadow-sm border border-slate-200 overflow-hidden bg-gray-50">
+                <Card className="shadow-sm border border-slate-200 overflow-visible bg-gray-50">
                     <SearchFilterToggle
                         searchQuery={searchQuery}
                         setSearchQuery={setSearchQuery}
@@ -717,7 +730,7 @@ export default function BackOrderList() {
                                         <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
 
                                             {/* Checkbox - luôn hiển thị */}
-                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left w-12">
+                                            <TableHead className="font-semibold text-slate-900 px-2 py-2 text-left w-10">
                                                 <Checkbox
                                                     checked={allAvailableSelected}
                                                     onChange={(e) => handleSelectAll(e.target.checked)}
@@ -726,14 +739,14 @@ export default function BackOrderList() {
                                             </TableHead>
 
                                             {/* STT - luôn hiển thị */}
-                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left w-16">
+                                            <TableHead className="font-semibold text-slate-900 px-2 py-2 text-left w-10">
                                                 STT
                                             </TableHead>
 
                                             {/* Tên nhà bán lẻ - rất quan trọng */}
                                             <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left min-w-[220px]">
                                                 <div
-                                                    className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
+                                                    className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1 min-w-[140px]"
                                                     onClick={() => handleSort("retailerName")}
                                                 >
                                                     <span >Tên nhà bán lẻ</span>
@@ -770,12 +783,12 @@ export default function BackOrderList() {
                                             </TableHead>
 
                                             {/* Quy cách đóng gói */}
-                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left hidden md:table-cell min-w-[150px]">
-                                                Quy cách đóng gói
+                                            <TableHead className="font-semibold text-slate-900 px-2 py-2 text-left hidden md:table-cell w-[100px]">
+                                                <span className="break-words whitespace-normal">Quy cách đóng gói</span>
                                             </TableHead>
 
                                             {/* Số thùng */}
-                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left hidden md:table-cell w-[90px]">
+                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left hidden md:table-cell w-[120px]">
 
                                                 <div
                                                     className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
@@ -805,7 +818,7 @@ export default function BackOrderList() {
                                             </TableHead>
 
                                             {/* Người tạo - ẩn mobile */}
-                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left hidden lg:table-cell w-[120px]">
+                                            <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left hidden lg:table-cell w-[140px]">
                                                 <div
                                                     className="flex items-center space-x-2 cursor-pointer hover:bg-slate-100 rounded p-1 -m-1"
                                                     onClick={() => handleSort("createdByName")}
@@ -872,8 +885,8 @@ export default function BackOrderList() {
                                                     </TableCell>
 
                                                     {/* Quy cách đóng gói */}
-                                                    <TableCell className="px-4 py-4 text-slate-700 hidden md:table-cell">
-                                                        {backOrder?.unitPerPackage ?? ''}
+                                                    <TableCell className="px-2 py-4 text-slate-700 hidden md:table-cell w-[100px]">
+                                                        <span className="break-words whitespace-normal">{backOrder?.unitPerPackage ?? ''}</span>
                                                         {backOrder?.unitMeasureName ? ' ' + backOrder.unitMeasureName : ''}/thùng
                                                     </TableCell>
 
@@ -987,10 +1000,11 @@ export default function BackOrderList() {
                                             className="h-[38px]"
                                             onClick={() => {
                                                 if (pagination.pageNumber > 1) {
+                                                    const normalizedSearch = normalize(searchQuery);
                                                     fetchData({
                                                         pageNumber: pagination.pageNumber - 1,
                                                         pageSize: pagination.pageSize,
-                                                        search: searchQuery || "",
+                                                        search: normalizedSearch,
                                                         sortField: sortField,
                                                         sortAscending: sortAscending,
                                                         status: statusFilter,
@@ -1012,10 +1026,11 @@ export default function BackOrderList() {
                                             className="h-[38px]"
                                             onClick={() => {
                                                 if (pagination.pageNumber < Math.ceil(pagination.totalCount / pagination.pageSize)) {
+                                                    const normalizedSearch = normalize(searchQuery);
                                                     fetchData({
                                                         pageNumber: pagination.pageNumber + 1,
                                                         pageSize: pagination.pageSize,
-                                                        search: searchQuery || "",
+                                                        search: normalizedSearch,
                                                         sortField: sortField,
                                                         sortAscending: sortAscending,
                                                         status: statusFilter,

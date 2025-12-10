@@ -7,6 +7,7 @@ import { updateLocation, getLocationDetail } from "../../../services/LocationSer
 import { getAreaDropdown } from "../../../services/AreaServices";
 import { extractErrorMessage } from "../../../utils/Validation";
 import CustomDropdown from "../../../components/Common/CustomDropdown";
+import FloatingDropdown from "../../../components/Common/FloatingDropdown";
 
 export default function UpdateLocationModal({ isOpen, onClose, onSuccess, locationId, locationData }) {
   const [formData, setFormData] = useState({
@@ -98,10 +99,7 @@ export default function UpdateLocationModal({ isOpen, onClose, onSuccess, locati
         IsAvailable: formData.isAvailable,
       };
 
-      console.log("Payload gửi lên:", payload);
-
       const res = await updateLocation(payload);
-      console.log("Update response:", res);
       window.showToast("Cập nhật vị trí thành công!", "success");
 
       onSuccess && onSuccess();
@@ -136,7 +134,7 @@ export default function UpdateLocationModal({ isOpen, onClose, onSuccess, locati
 
         {/* Body */}
         <div className="p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6" noValidate>
             {/* Grid fields */}
             <div className="flex flex-col gap-4">
               {/* Nhóm 1: Area + Availability */}
@@ -146,13 +144,18 @@ export default function UpdateLocationModal({ isOpen, onClose, onSuccess, locati
                   <Label htmlFor="areaId" className="text-sm font-medium text-slate-700">
                     Khu vực <span className="text-red-500">*</span>
                   </Label>
-                  <CustomDropdown
-                    value={formData.areaId}
-                    onChange={(value) => setFormData({ ...formData, areaId: value })}
-                    options={[
-                      { value: "", label: "Chọn khu vực..." },
-                      ...areas.map((a) => ({ value: a.areaId.toString(), label: a.areaName })),
-                    ]}
+                  <FloatingDropdown
+                    value={formData.areaId ? formData.areaId.toString() : null}
+                    onChange={(value) =>
+                      setFormData({
+                        ...formData,
+                        areaId: value ? parseInt(value) : null,
+                      })
+                    }
+                    options={areas.map((a) => ({
+                      value: a.areaId.toString(),
+                      label: a.areaName,
+                    }))}
                     placeholder="Chọn khu vực..."
                     loading={loadingData}
                   />
@@ -192,7 +195,6 @@ export default function UpdateLocationModal({ isOpen, onClose, onSuccess, locati
                     value={formData.rack}
                     onChange={(e) => setFormData({ ...formData, rack: e.target.value })}
                     className="h-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg"
-                    required
                   />
                 </div>
 
@@ -209,7 +211,6 @@ export default function UpdateLocationModal({ isOpen, onClose, onSuccess, locati
                     value={formData.row}
                     onChange={(e) => setFormData({ ...formData, row: e.target.value })}
                     className="h-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg"
-                    required
                   />
                 </div>
 
@@ -226,7 +227,6 @@ export default function UpdateLocationModal({ isOpen, onClose, onSuccess, locati
                     value={formData.column}
                     onChange={(e) => setFormData({ ...formData, column: e.target.value })}
                     className="h-10 border-slate-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg"
-                    required
                   />
                 </div>
               </div>

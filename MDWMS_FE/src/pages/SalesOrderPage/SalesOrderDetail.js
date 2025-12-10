@@ -15,7 +15,7 @@ import RejectionConfirmationModal from '../../components/SaleOrderCompoents/Reje
 import AssignPickingModal from '../../components/SaleOrderCompoents/AssignPickingModal';
 import CreateDeliverySlipModal from '../../components/SaleOrderCompoents/CreateDeliverySlipModal';
 import { usePermissions } from '../../hooks/usePermissions';
-import { extractErrorMessage } from '../../utils/Validation';
+import { cleanErrorMessage, extractErrorMessage } from '../../utils/Validation';
 import { createGoodsIssueNote, getDetailGoodsIssueNote } from '../../services/GoodsIssueNoteService';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
 
@@ -269,18 +269,40 @@ const SalesOrderDetail = () => {
 
     if (error) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <Card className="w-full max-w-md">
-                    <CardContent className="p-6 text-center">
-                        <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Lỗi</h3>
-                        <p className="text-gray-600 mb-4">{error}</p>
-                        <div className="text-xs text-gray-500 mb-4">
-                            <p>ID: {id}</p>
-                            <p>URL: /SalesOrder/GetSalesOrderDetail/{id}</p>
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+                <Card className="w-full max-w-lg shadow-lg rounded-xl border border-gray-200 bg-white">
+                    <CardContent className="p-8 text-center">
+
+                        {/* Icon lỗi nổi bật */}
+                        <div className="flex justify-center mb-4 mt-5">
+                            <div className="bg-red-100 p-4 rounded-full shadow-inner">
+                                <XCircle className="h-14 w-14 text-red-600" />
+                            </div>
                         </div>
-                        <Button onClick={() => navigate('/sales-orders')} variant="outline">
-                            <ComponentIcon name="arrowBackCircleOutline" size={28} />
+
+                        {/* Tiêu đề */}
+                        <h3 className="text-xl font-bold text-gray-800 mb-2">
+                            Đã xảy ra lỗi
+                        </h3>
+
+                        {/* Mô tả lỗi */}
+                        <p className="text-gray-600 mb-6 leading-relaxed">
+                            {cleanErrorMessage(error, "Không thể tải dữ liệu. Vui lòng thử lại sau.")}
+                        </p>
+
+                        {/* Thông tin kỹ thuật – nhỏ, tinh tế */}
+                        <div className="text-xs text-gray-500 bg-gray-100 rounded-lg px-4 py-3 mb-6">
+                            <p><span className="font-semibold">ID:</span> {id}</p>
+                            <p><span className="font-semibold">URL:</span> /SalesOrder/GetSalesOrderDetail/{id}</p>
+                        </div>
+
+                        {/* Nút quay lại */}
+                        <Button
+                            onClick={() => navigate('/sales-orders')}
+                            className="w-full h-[42px] flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg transition-all"
+                        >
+                            <ComponentIcon name="arrowBackCircleOutline" size={22} color="#fff" />
+                            <span>Quay lại danh sách đơn bán hàng</span>
                         </Button>
                     </CardContent>
                 </Card>
@@ -332,9 +354,9 @@ const SalesOrderDetail = () => {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
+                <div className="grid grid-cols-1 lg:grid-cols-[2.2fr_0.8fr] gap-6 mt-4">
                     {/* Main Content - Left Side */}
-                    <div className="lg:col-span-2">
+                    <div>
                         <div className="bg-white border-2 border-gray-400 rounded-lg p-6 h-full flex flex-col">
                             {/* Title */}
                             <div className="text-center mb-6">
@@ -415,8 +437,8 @@ const SalesOrderDetail = () => {
                                     <TableHeader>
                                         <TableRow className="bg-gray-100">
                                             <TableHead className="w-16 text-center font-semibold">STT</TableHead>
+                                            <TableHead className="font-semibold">Mã hàng hóa</TableHead>
                                             <TableHead className="font-semibold">Tên hàng hóa</TableHead>
-                                            <TableHead className="font-semibold">Mã hàng</TableHead>
                                             <TableHead className="text-center font-semibold leading-tight">
                                                 <div className="flex flex-col items-center">
                                                     <span className="whitespace-nowrap">Đơn vị</span>
@@ -424,7 +446,7 @@ const SalesOrderDetail = () => {
                                                 </div>
                                             </TableHead>
                                             <TableHead className="text-center font-semibold">Số thùng</TableHead>
-                                            <TableHead className="text-center font-semibold">Tổng số đơn vị</TableHead>
+                                            <TableHead className="text-center font-semibold max-w-[100px]">Tổng số đơn vị</TableHead>
                                             <TableHead className="text-center font-semibold whitespace-nowrap">Đơn vị</TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -433,8 +455,8 @@ const SalesOrderDetail = () => {
                                             salesOrder.salesOrderItemDetails.map((item, index) => (
                                                 <TableRow key={item.salesOrderDetailId} className="border-b">
                                                     <TableCell className="text-center font-medium">{index + 1}</TableCell>
-                                                    <TableCell className="font-medium">{item.goods.goodsName}</TableCell>
-                                                    <TableCell className="text-gray-600">{item.goods.goodsCode}</TableCell>
+                                                    <TableCell className="font-medium">{item.goods.goodsCode}</TableCell>
+                                                    <TableCell className="text-left">{item.goods.goodsName}</TableCell>
                                                     <TableCell className="text-center font-semibold">{item.goodsPacking.unitPerPackage}</TableCell>
                                                     <TableCell className="text-center font-semibold">{item.packageQuantity}</TableCell>
                                                     <TableCell className="text-center font-semibold">{item.packageQuantity * item.goodsPacking.unitPerPackage}</TableCell>
@@ -488,7 +510,7 @@ const SalesOrderDetail = () => {
                                     <>
                                         <Button
                                             onClick={() => navigate(`/sales-orders/update/${salesOrder.salesOrderId}`)}
-                                            className="bg-amber-500 hover:bg-amber-600 text-white h-[38px] px-8"
+                                            className="bg-blue-500 hover:bg-blue-600 text-white h-[38px] px-8"
                                         >
                                             <Pencil className="h-4 w-4 mr-2" />
                                             Cập nhật

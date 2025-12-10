@@ -7,7 +7,7 @@ import { Card } from "../../components/ui/card"
 import { Textarea } from "../../components/ui/textarea"
 import { X } from "lucide-react"
 import { updateCategory } from "../../services/CategoryService/CategoryServices"
-import { validateAndShowError, extractErrorMessage } from "../../utils/Validation"
+import { extractErrorMessage } from "../../utils/Validation"
 
 export default function UpdateCategory({ isOpen, onClose, onSuccess, categoryData }) {
   const [formData, setFormData] = useState({
@@ -15,30 +15,41 @@ export default function UpdateCategory({ isOpen, onClose, onSuccess, categoryDat
     description: "",
   })
   const [loading, setLoading] = useState(false)
+  const [validationErrors, setValidationErrors] = useState({})
 
   // Load data when modal opens
   React.useEffect(() => {
     if (isOpen && categoryData) {
-      console.log("Loading category data for update:", categoryData)
       setFormData({
         categoryName: categoryData.categoryName || "",
         description: categoryData.description || "",
       })
+      setValidationErrors({})
     }
   }, [isOpen, categoryData])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    // Validate form data using utility function
-    if (!validateAndShowError(formData)) {
-      return
-    }
-
     if (!categoryData || !categoryData.categoryId) {
       window.showToast("Không tìm thấy thông tin danh mục", "error")
       return
     }
+
+    // Validate form data
+    const errors = {}
+
+    if (!formData.categoryName || formData.categoryName.trim() === "") {
+      errors.categoryName = "Vui lòng nhập tên danh mục"
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors)
+      return
+    }
+
+    // Clear validation errors if validation passes
+    setValidationErrors({})
 
     try {
       setLoading(true)
@@ -49,15 +60,7 @@ export default function UpdateCategory({ isOpen, onClose, onSuccess, categoryDat
         categoryId: parseInt(categoryData.categoryId),
       }
 
-      console.log("Update data:", updateData)
-      console.log("Data validation:", {
-        categoryName: updateData.categoryName.length > 0,
-        description: updateData.description.length > 0,
-        categoryId: !isNaN(updateData.categoryId),
-      })
-
       const response = await updateCategory(updateData)
-      console.log("Category updated:", response)
       window.showToast("Cập nhật danh mục thành công!", "success")
       onSuccess && onSuccess()
       onClose && onClose()
@@ -75,6 +78,7 @@ export default function UpdateCategory({ isOpen, onClose, onSuccess, categoryDat
       categoryName: "",
       description: "",
     })
+    setValidationErrors({})
     onClose && onClose()
   }
 
@@ -108,10 +112,15 @@ export default function UpdateCategory({ isOpen, onClose, onSuccess, categoryDat
                   id="categoryName"
                   placeholder="Nhập tên danh mục..."
                   value={formData.categoryName}
-                  onChange={(e) => setFormData({ ...formData, categoryName: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, categoryName: e.target.value })
+                    setValidationErrors(prev => ({ ...prev, categoryName: '' }))
+                  }}
                   className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                  required
                 />
+                {validationErrors.categoryName && (
+                  <p className="text-sm text-red-500 font-medium">{validationErrors.categoryName}</p>
+                )}
               </div>
 
               {/* Description */}

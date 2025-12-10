@@ -26,14 +26,26 @@ import { DatePicker, ConfigProvider } from 'antd'
 import locale from 'antd/locale/vi_VN'
 import Loading from "../../components/Common/Loading"
 import Pagination from "../../components/Common/Pagination"
+import EmptyState from "../../components/Common/EmptyState"
 import ExportPurchaseOrdersReport from "../../components/PurchaseOrderComponents/ExportPurchaseOrdersReport"
 import ExportSalesOrdersReport from "../../components/SaleOrderCompoents/ExportSalesOrdersReport"
+import PermissionWrapper from "../../components/Common/PermissionWrapper"
+import { PERMISSIONS } from "../../utils/permissions"
 
 export default function OrdersPage({ onClose }) {
   const navigate = useNavigate()
   const [activeOrderType, setActiveOrderType] = useState("purchase") // "purchase" or "sales"
   const [searchQuery, setSearchQuery] = useState("")
   const [loading, setLoading] = useState(false)
+
+  // Normalize function: lowercase, trim, and collapse multiple spaces into one
+  const normalize = (str) => {
+    if (!str) return "";
+    return str
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, " "); // gom nhiều space thành 1 space
+  };
   // Store all raw data from API (no filtering/sorting)
   const [allPurchaseOrders, setAllPurchaseOrders] = useState([])
   const [allSalesOrders, setAllSalesOrders] = useState([])
@@ -217,23 +229,23 @@ export default function OrdersPage({ onClose }) {
 
   // Filter suppliers based on search term
   const filteredSuppliers = useMemo(() => {
-    if (!supplierSearchTerm.trim()) {
+    const normalizedSearch = normalize(supplierSearchTerm);
+    if (!normalizedSearch) {
       return suppliers
     }
-    const query = supplierSearchTerm.toLowerCase().trim()
     return suppliers.filter(supplier =>
-      (supplier.companyName || '').toLowerCase().includes(query)
+      normalize(supplier.companyName || '').includes(normalizedSearch)
     )
   }, [suppliers, supplierSearchTerm])
 
   // Filter retailers based on search term
   const filteredRetailers = useMemo(() => {
-    if (!retailerSearchTerm.trim()) {
+    const normalizedSearch = normalize(retailerSearchTerm);
+    if (!normalizedSearch) {
       return retailers
     }
-    const query = retailerSearchTerm.toLowerCase().trim()
     return retailers.filter(retailer =>
-      (retailer.retailerName || '').toLowerCase().includes(query)
+      normalize(retailer.retailerName || '').includes(normalizedSearch)
     )
   }, [retailers, retailerSearchTerm])
 
@@ -285,17 +297,17 @@ export default function OrdersPage({ onClose }) {
     let filtered = [...sourceData]
 
     // Filter by search query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim()
+    const normalizedSearchQuery = normalize(searchQuery);
+    if (normalizedSearchQuery) {
       filtered = filtered.filter(order => {
-        const supplierName = (order.supplierName || "").toLowerCase()
-        const retailerName = (order.retailerName || "").toLowerCase()
-        const goodsCode = (order.goodsCode || "").toLowerCase()
-        const goodsName = (order.goodsName || "").toLowerCase()
-        return supplierName.includes(query) ||
-          retailerName.includes(query) ||
-          goodsCode.includes(query) ||
-          goodsName.includes(query)
+        const supplierName = normalize(order.supplierName || "")
+        const retailerName = normalize(order.retailerName || "")
+        const goodsCode = normalize(order.goodsCode || "")
+        const goodsName = normalize(order.goodsName || "")
+        return supplierName.includes(normalizedSearchQuery) ||
+          retailerName.includes(normalizedSearchQuery) ||
+          goodsCode.includes(normalizedSearchQuery) ||
+          goodsName.includes(normalizedSearchQuery)
       })
     }
 
@@ -514,19 +526,21 @@ export default function OrdersPage({ onClose }) {
                 sortAscending={sortAscending}
               />
             )}
-            <Button
-              className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
-              onClick={() => {
-                if (activeOrderType === "purchase") {
-                  navigate("/purchase-orders/create")
-                } else {
-                  navigate("/sales-orders/create")
-                }
-              }}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              {activeOrderType === "purchase" ? "Tạo đơn nhập kho" : "Tạo đơn xuất kho"}
-            </Button>
+            <PermissionWrapper requiredPermission={activeOrderType === "purchase" ? PERMISSIONS.PURCHASE_ORDER_CREATE : PERMISSIONS.SALES_ORDER_CREATE}>
+              <Button
+                className="bg-orange-500 hover:bg-orange-600 h-[38px] px-6 text-white"
+                onClick={() => {
+                  if (activeOrderType === "purchase") {
+                    navigate("/purchase-orders/create")
+                  } else {
+                    navigate("/sales-orders/create")
+                  }
+                }}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {activeOrderType === "purchase" ? "Tạo đơn nhập kho" : "Tạo đơn xuất kho"}
+              </Button>
+            </PermissionWrapper>
             {onClose && (
               <Button
                 variant="outline"
@@ -546,11 +560,11 @@ export default function OrdersPage({ onClose }) {
               <TabsList className="grid w-full max-w-md grid-cols-2">
                 <TabsTrigger value="purchase" className="flex items-center gap-2">
                   <Package className="h-4 w-4" />
-                  Đơn nhập kho
+                  Nhập kho
                 </TabsTrigger>
                 <TabsTrigger value="sales" className="flex items-center gap-2">
                   <ShoppingCart className="h-4 w-4" />
-                  Đơn xuất kho
+                  Xuất kho
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -818,6 +832,9 @@ export default function OrdersPage({ onClose }) {
                           )}
                         </div>
                       </TableHead>
+                      <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center min-w-[120px]">
+                        {activeOrderType === "purchase" ? "Ngày nhập" : "Ngày xuất"}
+                      </TableHead>
                       <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center min-w-[140px]">
                         Đơn vị/thùng
                       </TableHead>
@@ -841,18 +858,16 @@ export default function OrdersPage({ onClose }) {
                       <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center min-w-[110px]">
                         Đơn vị tính
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-900 px-2 py-3 text-center min-w-[120px]">
-                        {activeOrderType === "purchase" ? "Ngày nhập" : "Ngày xuất"}
-                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {displayOrders.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={10} className="text-center text-gray-500 py-8">
-                          Không có dữ liệu nào
-                        </TableCell>
-                      </TableRow>
+                      <EmptyState
+                        icon={Package}
+                        title="Không tìm thấy đơn hàng nào"
+                        description="Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
+                        colSpan={10}
+                      />
                     ) : (
                       displayOrders.map((order, index) => {
                         const stt = (pagination.current - 1) * pagination.pageSize + index + 1
@@ -878,6 +893,12 @@ export default function OrdersPage({ onClose }) {
                               </p>
                             </TableCell>
                             <TableCell className="px-6 py-4 text-center text-slate-700">
+                              {activeOrderType === "purchase"
+                                ? (order.receiptDate ? dayjs(order.receiptDate).format('DD/MM/YYYY') : '-')
+                                : (order.issueDate ? dayjs(order.issueDate).format('DD/MM/YYYY') : '-')
+                              }
+                            </TableCell>
+                            <TableCell className="px-6 py-4 text-center text-slate-700">
                               {order.unitPerPackage || '-'}
                             </TableCell>
                             <TableCell className="px-6 py-4 text-center text-slate-700">
@@ -888,12 +909,6 @@ export default function OrdersPage({ onClose }) {
                             </TableCell>
                             <TableCell className="px-6 py-4 text-center text-slate-700">
                               {order.unitOfMeasure || '-'}
-                            </TableCell>
-                            <TableCell className="px-6 py-4 text-center text-slate-700">
-                              {activeOrderType === "purchase"
-                                ? (order.receiptDate ? dayjs(order.receiptDate).format('DD/MM/YYYY') : '-')
-                                : (order.issueDate ? dayjs(order.issueDate).format('DD/MM/YYYY') : '-')
-                              }
                             </TableCell>
                           </TableRow>
                         )

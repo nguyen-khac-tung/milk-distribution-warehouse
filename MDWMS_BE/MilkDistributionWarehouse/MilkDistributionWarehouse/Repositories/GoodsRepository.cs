@@ -5,6 +5,7 @@ using Microsoft.VisualBasic;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
+using MilkDistributionWarehouse.Utilities;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -21,7 +22,8 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> IsDuplicationCode(int? goodIds, string goodsCode);
         Task<List<Good>?> GetActiveGoodsBySupplierId(int supplierId);
         Task<Category?> GetInactiveCategoryByGoodsIdAsync(int goodsId);
-        Task<IEnumerable<dynamic>> GetExpiredGoodsForDisposal();
+        Task<IEnumerable<GoodsQuantityDto>> GetExpiredGoodsForDisposal();
+        Task<IEnumerable<GoodsQuantityDto>> GetGoodsForSalesOrder(List<int>? goodsIds);
         Task<UnitMeasure?> GetInactiveUnitMeasureByGoodsIdAsync(int goodsId);
         Task<StorageCondition?> GetInactiveStorageConditionByGoodsIdAsync(int goodsId);
         Task<bool> IsGoodsUsedInBatch(int goodsId);
@@ -30,6 +32,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<bool> HasGoodsUsedInBatchNotExpiry(int goodsId);
         Task<bool> IsGoodsUsedInPurchaseOrderWithExcludedStatusesAsync(int goodsId, params int[] excludedStatuses);
         Task<bool> IsGoodsUsedInSalesOrderWithExcludedStatusesAsync(int goodsId, params int[] excludedStatuses);
+        Task<bool> IsGoodsUsedInDisposalRequestWithExcludedStatuses(int goodsId, params int[] excludedStatuses);
         Task<bool> VerifyStorageConditionUsage(int storageConditionId);
         Task<bool> HasActiveGoods(int supplierId);
         Task<bool> IsGoodsActiveOrInActive(int supplierId);
@@ -37,6 +40,7 @@ namespace MilkDistributionWarehouse.Repositories
         Task<List<string>> GetExistingGoodsCode(List<string> goodsCode);
         Task<int> CreateGoodsBulk(List<Good> goods);
         Task<bool> IsDuplicationNameAndSupplier(string goodsName, int supplierId);
+        Task<bool> AreInActiveGoods(List<PurchaseOrderDetailCreate> purchaseOrderDetails);
     }
     public class GoodsRepository : IGoodsRepository
     {
@@ -117,9 +121,32 @@ namespace MilkDistributionWarehouse.Repositories
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<dynamic>> GetExpiredGoodsForDisposal()
+        public async Task<IEnumerable<GoodsQuantityDto>> GetGoodsForSalesOrder(List<int>? goodsIds)
         {
-            var today = DateOnly.FromDateTime(DateTime.Now);
+            var today = DateOnly.FromDateTime(DateTimeUtility.Now());
+
+            var groupedPallets = await _warehouseContext.Pallets
+                .Include(p => p.Batch).ThenInclude(b => b.Goods)
+                .Include(p => p.GoodsPacking)
+                .Where(p => p.Status == CommonStatus.Active
+                         && p.PackageQuantity > 0
+                         && p.Batch.ExpiryDate >= today
+                         && (goodsIds == null || goodsIds.Contains(p.Batch.GoodsId ?? 0)))
+                .GroupBy(p => new { p.Batch.GoodsId, p.GoodsPackingId })
+                .AsNoTracking()
+                .ToListAsync();
+
+            return groupedPallets.Select(g => new GoodsQuantityDto
+            {
+                Goods = g.FirstOrDefault()?.Batch?.Goods,
+                GoodsPacking = g.FirstOrDefault()?.GoodsPacking,
+                TotalPackageQuantity = g.Sum(p => p.PackageQuantity ?? 0)
+            });
+        }
+
+        public async Task<IEnumerable<GoodsQuantityDto>> GetExpiredGoodsForDisposal()
+        {
+            var today = DateOnly.FromDateTime(DateTimeUtility.Now());
 
             var groupedPallets = await _warehouseContext.Pallets
                                 .Include(p => p.Batch)
@@ -130,37 +157,40 @@ namespace MilkDistributionWarehouse.Repositories
                                         .ThenInclude(g => g.Supplier)
                                 .Include(p => p.GoodsPacking)
                                 .Where(p => p.Batch.ExpiryDate <= today && p.PackageQuantity > 0 && p.Status == CommonStatus.Active)
-                                .GroupBy(p => new { p.Batch.Goods.GoodsId, p.GoodsPacking.GoodsPackingId })
+                                .GroupBy(p => new { p.Batch.GoodsId, p.GoodsPacking.GoodsPackingId })
                                 .AsNoTracking()
                                 .ToListAsync();
 
-            return groupedPallets.Select(g => new
+            return groupedPallets.Select(g => new GoodsQuantityDto
             {
                 Goods = g.FirstOrDefault()?.Batch?.Goods,
                 GoodsPacking = g.FirstOrDefault()?.GoodsPacking,
-                TotalExpiredPackageQuantity = g.Sum(p => p.PackageQuantity ?? 0)
+                TotalPackageQuantity = g.Sum(p => p.PackageQuantity ?? 0)
             });
         }
 
         public async Task<IEnumerable<LowStockGoodsDto>> GetLowStockGoods(int quantityThreshold)
         {
-            var groups = await _warehouseContext.Pallets
-                .Include(p => p.Batch).ThenInclude(b => b.Goods).ThenInclude(g => g.UnitMeasure)
-                .Include(p => p.GoodsPacking)
+            return await _warehouseContext.Pallets
                 .Where(p => p.Status == CommonStatus.Active && p.PackageQuantity > 0)
-                .GroupBy(p => new { p.Batch.GoodsId, p.GoodsPackingId })
-                .Where(g => g.Sum(p => p.PackageQuantity) < quantityThreshold)
+                .GroupBy(p => new
+                {
+                    p.Batch.Goods.GoodsCode,
+                    p.Batch.Goods.GoodsName,
+                    UnitMeasureName = p.Batch.Goods.UnitMeasure.Name,
+                    p.GoodsPacking.UnitPerPackage,
+                })
+                .Select(g => new LowStockGoodsDto
+                {
+                    GoodsCode = g.Key.GoodsCode,
+                    GoodsName = g.Key.GoodsName,
+                    UnitMeasureName = g.Key.UnitMeasureName,
+                    UnitPerPackage = g.Key.UnitPerPackage,
+                    TotalPackage = g.Sum(p => p.PackageQuantity ?? 0)
+                })
+                .Where(x => x.TotalPackage < quantityThreshold)
                 .AsNoTracking()
                 .ToListAsync();
-
-            return groups.Select(g => new LowStockGoodsDto
-            {
-                GoodsCode = g.FirstOrDefault()?.Batch.Goods.GoodsCode,
-                GoodsName = g.FirstOrDefault()?.Batch.Goods.GoodsName,
-                UnitMeasureName = g.FirstOrDefault()?.Batch.Goods.UnitMeasure.Name,
-                UnitPerPackage = g.FirstOrDefault()?.GoodsPacking.UnitPerPackage,
-                TotalPackage = g.Sum(p => p.PackageQuantity ?? 0)
-            });
         }
 
         public async Task<Category?> GetInactiveCategoryByGoodsIdAsync(int goodsId)
@@ -189,7 +219,7 @@ namespace MilkDistributionWarehouse.Repositories
 
         public async Task<bool> HasGoodsUsedInBatchNotExpiry(int goodsId)
         {
-            return await _warehouseContext.Batchs.AnyAsync(b => b.GoodsId == goodsId && b.ExpiryDate > DateOnly.FromDateTime(DateTime.Now));
+            return await _warehouseContext.Batchs.AnyAsync(b => b.GoodsId == goodsId && b.ExpiryDate > DateOnly.FromDateTime(DateTimeUtility.Now()));
         }
 
         public async Task<bool> IsGoodsUsedInPurchaseOrderWithExcludedStatusesAsync(int goodsId, params int[] excludedStatuses)
@@ -204,6 +234,13 @@ namespace MilkDistributionWarehouse.Repositories
             return await _warehouseContext.SalesOrderDetails
                  .AnyAsync(so => so.GoodsId == goodsId
                  && !excludedStatuses.Contains((int)so.SalesOrder.Status));
+        }
+
+        public async Task<bool> IsGoodsUsedInDisposalRequestWithExcludedStatuses(int goodsId, params int[] excludedStatuses)
+        {
+            return await _warehouseContext.DisposalRequestDetails
+                .AnyAsync(drd => drd.GoodsId == goodsId
+                && !excludedStatuses.Contains((int)drd.DisposalRequest.Status));
         }
 
         public async Task<bool> IsGoodUsedInPurchaseOrder(int goodsId)
@@ -257,6 +294,13 @@ namespace MilkDistributionWarehouse.Repositories
             {
                 return 0;
             }
+        }
+
+        public async Task<bool> AreInActiveGoods(List<PurchaseOrderDetailCreate> purchaseOrderDetails)
+        {
+            var goodsIds = purchaseOrderDetails.Select(pod => pod.GoodsId).Distinct().ToList();
+            return await _warehouseContext.Goods
+                .AnyAsync(g => goodsIds.Contains(g.GoodsId) && g.Status == CommonStatus.Inactive);
         }
     }
 }

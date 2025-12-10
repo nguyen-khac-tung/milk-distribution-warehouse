@@ -21,9 +21,7 @@ export function SupplierDetail({ supplier, onClose }) {
     try {
       setLoading(true);
       const response = await getSupplierDetail(supplier.supplierId);
-      console.log("API Response:", response);
       const supplierInfo = response.data || response;
-      console.log("Supplier Info:", supplierInfo);
       setSupplierData(supplierInfo);
     } catch (error) {
       console.error("Error loading supplier detail:", error);

@@ -83,16 +83,28 @@ export default function CategoriesPage() {
     }
   }
 
+  // Normalize function: lowercase, trim, and collapse multiple spaces into one
+  const normalize = (str) => {
+    if (!str) return "";
+    return str
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, " "); // gom nhiều space thành 1 space
+  };
+
   // Fetch data from API
   const fetchData = async (searchParams = {}) => {
     try {
       setLoading(true)
 
+      // Normalize search query trước khi gọi API (nhưng vẫn giữ nguyên giá trị trong input khi đang gõ)
+      const searchValue = searchParams.search !== undefined ? searchParams.search : "";
+      const normalizedSearch = normalize(searchValue);
 
       const response = await getCategory({
         pageNumber: searchParams.pageNumber !== undefined ? searchParams.pageNumber : 1,
         pageSize: searchParams.pageSize !== undefined ? searchParams.pageSize : 10,
-        search: searchParams.search !== undefined ? searchParams.search : "",
+        search: normalizedSearch,
         sortField: searchParams.sortField || "",
         sortAscending: searchParams.sortAscending !== undefined ? searchParams.sortAscending : true,
         status: searchParams.status
@@ -233,7 +245,6 @@ export default function CategoriesPage() {
 
   const handleDeleteConfirm = async () => {
     try {
-      console.log("Deleting category:", itemToDelete)
       await deleteCategory(itemToDelete?.categoryId)
       window.showToast(`Đã xóa danh mục: ${itemToDelete?.categoryName || ''}`, "success")
       setShowDeleteModal(false)
@@ -399,7 +410,7 @@ export default function CategoriesPage() {
         />
 
         {/* Search and Table Combined */}
-        <Card className="shadow-sm border border-slate-200 overflow-hidden bg-gray-50">
+        <Card className="shadow-sm border border-slate-200 overflow-visible bg-gray-50">
           <SearchFilterToggle
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}

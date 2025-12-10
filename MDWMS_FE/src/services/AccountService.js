@@ -11,13 +11,6 @@ export const getUserList = async (searchParams = {}) => {
             Filters: searchParams.filters || {} // Đổi thành Filters (uppercase)
         };
 
-        // Console log để debug dữ liệu filter và search
-        // console.log("Search params:", searchParams);
-        // console.log("Search term:", body.Search);
-        // console.log("Filters:", body.Filters);
-        // console.log("Request body:", body);
-        // console.log("Request body JSON:", JSON.stringify(body, null, 2));
-
         const res = await api.post("/User/GetUserList", body);
 
         return res.data;
@@ -25,14 +18,9 @@ export const getUserList = async (searchParams = {}) => {
         // Xử lý trường hợp backend trả về 400 khi danh sách trống
         if (error.response?.status === 400 &&
             error.response?.data?.message?.includes("Danh sách người dùng trống")) {
-            // console.log("Backend trả về danh sách trống - đây là bình thường");
             return { data: [], totalCount: 0 };
         }
 
-        // Chỉ log error thực sự
-        // console.error("Error fetching user list:", error);
-        // console.error("Error response:", error.response?.data);
-        // console.error("Error status:", error.response?.status);
         return { data: [], totalCount: 0 };
     }
 };
@@ -70,7 +58,6 @@ export const createUser = async (userData) => {
 // Get user detail
 export const getUserDetail = async (userId) => {
     try {
-        console.log("Get User Detail API - User ID:", userId);
 
         const res = await api.get(`/User/GetUserDetail/${userId}`);
         console.log("Get User Detail API - Response received:", res.data);
@@ -95,7 +82,6 @@ export const updateUserStatus = async (userId, status) => {
             status: status
         };
 
-        console.log("Update User Status API - Request body sent:", body);
 
         const res = await api.put("/User/UpdateUserStatus", body);
         console.log("Update User Status API - Response received:", res.data);
@@ -103,10 +89,16 @@ export const updateUserStatus = async (userId, status) => {
         return res.data;
     } catch (error) {
         console.error("Error updating user status:", error);
+        // Nếu có error response từ backend, trả về data từ backend để giữ nguyên message
+        if (error.response && error.response.data) {
+            return error.response.data;
+        }
+        // Nếu không có response từ backend (network error, etc.), mới dùng fallback
         return {
             status: 500,
             message: "Failed to update user status",
-            data: null
+            data: null,
+            success: false
         };
     }
 };
@@ -124,8 +116,6 @@ export const updateUser = async (userData) => {
             roleId: userData.roleId,
             userId: userData.userId
         };
-
-        console.log("Update User API - Request body sent:", body);
 
         const res = await api.put("/User/UpdateUser", body);
         console.log("Update User API - Response received:", res.data);
@@ -152,7 +142,6 @@ export const updatePassword = async (passwordData) => {
             confirmNewPassword: passwordData.confirmPassword
         };
 
-        console.log("Update Password API - Request body sent:", { ...body, oldPassword: "***", newPassword: "***", confirmNewPassword: "***" });
 
         const res = await api.put("/Authentication/ChangePassword", body);
         console.log("Update Password API - Response received:", res.data);
@@ -172,7 +161,6 @@ export const updatePassword = async (passwordData) => {
 // Delete user
 export const deleteUser = async (userId) => {
     try {
-        console.log("Delete User API - User ID:", userId);
 
         const res = await api.delete(`/User/DeleteUser/${userId}`);
         console.log("Delete User API - Response received:", res.data);
@@ -192,7 +180,6 @@ export const deleteUser = async (userId) => {
 // Get user profile
 export const getUserProfile = async () => {
     try {
-        console.log("Get User Profile API - Fetching current user profile");
 
         const res = await api.get("/User/GetUserProfile");
         console.log("Get User Profile API - Response received:", res.data);

@@ -27,6 +27,7 @@ namespace MilkDistributionWarehouse.Services
         private readonly ISalesOrderRepository _salesOrderRepository;
         private readonly ISalesOrderDetailRepository _salesOrderDetailRepository;
         private readonly IRetailerRepository _retailerRepository;
+        private readonly IGoodsRepository _goodsRepository;
         private readonly IUserRepository _userRepository;
         private readonly INotificationService _notificationService;
         private readonly IUnitOfWork _unitOfWork;
@@ -35,6 +36,7 @@ namespace MilkDistributionWarehouse.Services
         public SalesOrderService(ISalesOrderRepository salesOrderRepository,
                                  ISalesOrderDetailRepository salesOrderDetailRepository,
                                  IRetailerRepository retailerRepository,
+                                 IGoodsRepository goodsRepository,
                                  IUserRepository userRepository,
                                  INotificationService notificationService,
                                  IUnitOfWork unitOfWork,
@@ -43,6 +45,7 @@ namespace MilkDistributionWarehouse.Services
             _salesOrderRepository = salesOrderRepository;
             _salesOrderDetailRepository = salesOrderDetailRepository;
             _retailerRepository = retailerRepository;
+            _goodsRepository = goodsRepository;
             _userRepository = userRepository;
             _notificationService = notificationService;
             _unitOfWork = unitOfWork;
@@ -110,14 +113,19 @@ namespace MilkDistributionWarehouse.Services
         {
             if (salesOrderCreate == null) return ("Data sales order create is null.", null);
 
-            if (salesOrderCreate.RetailerId != null && (await _retailerRepository.GetRetailerByRetailerId((int)salesOrderCreate.RetailerId)) == null)
-                return ("Nhà bán lẻ không hợp lệ.".ToMessageForUser(), null);
+            var retailer = await _retailerRepository.GetRetailerByRetailerId(salesOrderCreate.RetailerId ?? 0);
+            if (retailer == null) return ("Nhà bán lẻ không hợp lệ.".ToMessageForUser(), null);
+            if (retailer.Status == CommonStatus.Inactive) return ("Nhà bán lẻ này không còn hoạt động.".ToMessageForUser(), null);
 
-            if (salesOrderCreate.EstimatedTimeDeparture <= DateOnly.FromDateTime(DateTime.Now))
-                return ("Ngày giao hàng không hợp lệ. Vui lòng chọn một ngày trong tương lai.".ToMessageForUser(), null);
+            if (salesOrderCreate.EstimatedTimeDeparture < DateOnly.FromDateTime(DateTimeUtility.Now()))
+                return ("Ngày giao hàng không thể trong quá khứ.".ToMessageForUser(), null);
 
             if (salesOrderCreate.SalesOrderItemDetailCreateDtos.IsNullOrEmpty())
                 return ("Danh sách hàng hóa không được bỏ trống.".ToMessageForUser(), null);
+
+            var itemsToCheck = _mapper.Map<List<SalesOrderDetail>>(salesOrderCreate.SalesOrderItemDetailCreateDtos);
+            var message = await ValidateSalesOrderItems(itemsToCheck);
+            if (message.Length > 0) return (message, null);
 
             try
             {
@@ -142,11 +150,12 @@ namespace MilkDistributionWarehouse.Services
         {
             if (salesOrderUpdate == null) return ("Data sales order update is null.", null);
 
-            if (salesOrderUpdate.RetailerId != null && (await _retailerRepository.GetRetailerByRetailerId((int)salesOrderUpdate.RetailerId)) == null)
-                return ("Nhà bán lẻ không hợp lệ.".ToMessageForUser(), null);
+            var retailer = await _retailerRepository.GetRetailerByRetailerId(salesOrderUpdate.RetailerId ?? 0);
+            if (retailer == null) return ("Nhà bán lẻ không hợp lệ.".ToMessageForUser(), null);
+            if (retailer.Status == CommonStatus.Inactive) return ("Nhà bán lẻ này không còn hoạt động.".ToMessageForUser(), null);
 
-            if (salesOrderUpdate.EstimatedTimeDeparture <= DateOnly.FromDateTime(DateTime.Now))
-                return ("Ngày giao hàng không hợp lệ. Vui lòng chọn một ngày trong tương lai.".ToMessageForUser(), null);
+            if (salesOrderUpdate.EstimatedTimeDeparture < DateOnly.FromDateTime(DateTimeUtility.Now()))
+                return ("Ngày giao hàng không thể trong quá khứ.".ToMessageForUser(), null);
 
             if (salesOrderUpdate.SalesOrderItemDetailUpdateDtos.IsNullOrEmpty())
                 return ("Danh sách hàng hóa không được bỏ trống.".ToMessageForUser(), null);
@@ -158,6 +167,10 @@ namespace MilkDistributionWarehouse.Services
                 return ("Chỉ được cập nhật khi đơn hàng ở trạng thái Nháp hoặc Bị từ chối.".ToMessageForUser(), null);
 
             if (salesOrderExist.CreatedBy != userId) return ("Current User has no permission to update.", null);
+
+            var itemsToCheck = _mapper.Map<List<SalesOrderDetail>>(salesOrderUpdate.SalesOrderItemDetailUpdateDtos);
+            var message = await ValidateSalesOrderItems(itemsToCheck);
+            if (message.Length > 0) return (message, null);
 
             try
             {
@@ -239,6 +252,7 @@ namespace MilkDistributionWarehouse.Services
             var salesOrder = await _salesOrderRepository.GetSalesOrderById(salesOrderUpdateStatus.SalesOrderId);
             if (salesOrder == null) return ("Sales order exist is null", null);
 
+            int? previousAssignee = null;
             try
             {
                 await _unitOfWork.BeginTransactionAsync();
@@ -248,8 +262,17 @@ namespace MilkDistributionWarehouse.Services
                     if (salesOrder.Status != SalesOrderStatus.Draft && salesOrder.Status != SalesOrderStatus.Rejected)
                         return ("Chỉ được nộp đơn khi đơn hàng ở trạng thái Nháp hoặc Bị từ chối.".ToMessageForUser(), null);
                     if (salesOrder.CreatedBy != userId) return ("Current User has no permission to update.", null);
-                    var msg = await CheckPendingSalesOrderValidation(salesOrder);
-                    if (msg.Length > 0) return (msg, null);
+
+                    if (salesOrder.EstimatedTimeDeparture < DateOnly.FromDateTime(DateTimeUtility.Now()))
+                        return ("Ngày giao hàng không thể trong quá khứ.".ToMessageForUser(), null);
+
+                    var message = await ValidateSalesOrderItems(salesOrder.SalesOrderDetails.ToList());
+                    if (message.Length > 0) return (message, null);
+
+                    message = await CheckPendingSalesOrderValidation(salesOrder);
+                    if (message.Length > 0) return (message, null);
+
+                    salesOrder.ApprovalBy = null;
                     salesOrder.Status = SalesOrderStatus.PendingApproval;
                 }
 
@@ -261,7 +284,7 @@ namespace MilkDistributionWarehouse.Services
                     salesOrder.Status = SalesOrderStatus.Rejected;
                     salesOrder.ApprovalBy = userId;
                     salesOrder.RejectionReason = rejectDto.RejectionReason;
-                    salesOrder.ApprovalAt = DateTime.Now;
+                    salesOrder.ApprovalAt = DateTimeUtility.Now();
                 }
 
                 if (salesOrderUpdateStatus is SalesOrderApprovalDto)
@@ -271,7 +294,7 @@ namespace MilkDistributionWarehouse.Services
                     salesOrder.Status = SalesOrderStatus.Approved;
                     salesOrder.ApprovalBy = userId;
                     salesOrder.RejectionReason = "";
-                    salesOrder.ApprovalAt = DateTime.Now;
+                    salesOrder.ApprovalAt = DateTimeUtility.Now();
                 }
 
                 if (salesOrderUpdateStatus is SalesOrderAssignedForPickingDto assignedForPickingDto)
@@ -280,15 +303,16 @@ namespace MilkDistributionWarehouse.Services
                         return ("Chỉ được phân công khi đơn hàng ở trạng thái Đã duyệt hoặc Đã phân công".ToMessageForUser(), null);
                     salesOrder.Status = SalesOrderStatus.AssignedForPicking;
                     salesOrder.AcknowledgedBy = userId;
+                    previousAssignee = salesOrder.AssignTo;
                     salesOrder.AssignTo = assignedForPickingDto.AssignTo;
-                    salesOrder.AcknowledgeAt = DateTime.Now;
+                    salesOrder.AcknowledgeAt = DateTimeUtility.Now();
                 }
 
-                salesOrder.UpdateAt = DateTime.Now;
+                salesOrder.UpdateAt = DateTimeUtility.Now();
                 await _salesOrderRepository.UpdateSalesOrder(salesOrder);
                 await _unitOfWork.CommitTransactionAsync();
 
-                await HandleStatusChangeNotification(salesOrder);
+                await HandleStatusChangeNotification(salesOrder, previousAssignee);
 
                 return ("", salesOrderUpdateStatus);
             }
@@ -297,6 +321,42 @@ namespace MilkDistributionWarehouse.Services
                 await _unitOfWork.RollbackTransactionAsync();
                 return ("Cập nhật trạng thái đơn hàng thất bại.".ToMessageForUser(), null);
             }
+        }
+
+        private async Task<string> ValidateSalesOrderItems(List<SalesOrderDetail> itemsToCheck)
+        {
+            if (itemsToCheck == null || !itemsToCheck.Any()) return "";
+
+            var goodsIds = itemsToCheck.Select(x => x.GoodsId ?? 0).Distinct().ToList();
+
+            var goodsList = await _goodsRepository.GetGoodsForSalesOrder(goodsIds);
+
+            var committedList = await _salesOrderRepository.GetCommittedSaleOrderQuantities(goodsIds);
+
+            foreach (var item in itemsToCheck)
+            {
+                var goods = goodsList.FirstOrDefault(s =>
+                    s.Goods?.GoodsId == item.GoodsId &&
+                    s.GoodsPacking?.GoodsPackingId == item.GoodsPackingId);
+
+                var totalOnHand = goods != null ? goods.TotalPackageQuantity : 0;
+
+                var totalCommitted = committedList
+                    .Where(c => c.GoodsId == item.GoodsId && c.GoodsPackingId == item.GoodsPackingId)
+                    .Sum(c => c.PackageQuantity ?? 0);
+
+                var availableQuantity = totalOnHand - totalCommitted;
+
+                if (item.PackageQuantity > availableQuantity)
+                {
+                    var goodsName = goods?.Goods?.GoodsName ?? $"ID {item.GoodsId}";
+                    return $"Sản phẩm '{goodsName}' không đủ số lượng." +
+                           $"Yêu cầu: {item.PackageQuantity}, Khả dụng: {availableQuantity} " +
+                           $"(Tồn kho: {totalOnHand}, Đang giữ chỗ: {totalCommitted})".ToMessageForUser();
+                }
+            }
+
+            return "";
         }
 
         private async Task<string> CheckPendingSalesOrderValidation(SalesOrder salesOrderUpdate)
@@ -338,7 +398,7 @@ namespace MilkDistributionWarehouse.Services
                 dictionary2.TryGetValue(kvp.Key, out var count) && count == kvp.Value);
         }
 
-        private async Task HandleStatusChangeNotification(SalesOrder salesOrder)
+        private async Task HandleStatusChangeNotification(SalesOrder salesOrder, int? previousAssignee)
         {
             var notificationsToCreate = new List<NotificationCreateDto>();
 
@@ -404,6 +464,19 @@ namespace MilkDistributionWarehouse.Services
                         EntityId = salesOrder.SalesOrderId,
                         Category = NotificationCategory.Important
                     });
+
+                    if (previousAssignee != null)
+                    {
+                        notificationsToCreate.Add(new NotificationCreateDto()
+                        {
+                            UserId = previousAssignee,
+                            Title = "Đơn bán hàng đã gỡ phân công",
+                            Content = $"Bạn không còn được phân công nhận đơn bán hàng '{salesOrder.SalesOrderId}'.",
+                            EntityType = NotificationEntityType.SaleOrder,
+                            EntityId = salesOrder.SalesOrderId,
+                            Category = NotificationCategory.Important
+                        });
+                    }
                     break;
 
                 default: break;

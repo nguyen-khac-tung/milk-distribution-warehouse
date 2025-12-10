@@ -46,22 +46,42 @@ public static class QueryableExtensions
                     // Xử lý Date Range: "2024-01-01~2024-12-31"
                     if (filterValue.Contains("~") && (underlyingType == typeof(DateTime) || underlyingType == typeof(DateTimeOffset)))
                     {
-                        var dates = filterValue.Split('~', StringSplitOptions.RemoveEmptyEntries);
-                        if (dates.Length == 2)
+                        var dates = filterValue.Split('~', StringSplitOptions.None);
+
+                        var hasStart = dates.Length > 0 && !string.IsNullOrWhiteSpace(dates[0]);
+                        var hasEnd = dates.Length > 1 && !string.IsNullOrWhiteSpace(dates[1]);
+
+                        Expression? expression = null;
+
+                        // FROM DATE
+                        if (hasStart)
                         {
                             var startDate = Convert.ChangeType(dates[0].Trim(), underlyingType);
-                            var endDate = Convert.ChangeType(dates[1].Trim(), underlyingType);
-
                             var startConstant = Expression.Constant(startDate, propertyType);
-                            var endConstant = Expression.Constant(endDate, propertyType);
 
                             var greaterThanOrEqual = Expression.GreaterThanOrEqual(member, startConstant);
-                            var lessThanOrEqual = Expression.LessThanOrEqual(member, endConstant);
-                            var andExpression = Expression.AndAlso(greaterThanOrEqual, lessThanOrEqual);
+                            expression = greaterThanOrEqual;
+                        }
 
-                            var lambda = Expression.Lambda<Func<T, bool>>(andExpression, parameter);
+                        // TO DATE
+                        if (hasEnd)
+                        {
+                            var endDate = Convert.ChangeType(dates[1].Trim(), underlyingType);
+                            var endConstant = Expression.Constant(endDate, propertyType);
+
+                            var lessThanOrEqual = Expression.LessThanOrEqual(member, endConstant);
+
+                            // Nếu có FROM thì AND thêm
+                            expression = expression == null ? lessThanOrEqual : Expression.AndAlso(expression, lessThanOrEqual);
+                        }
+
+                        if (expression != null)
+                        {
+                            var lambda = Expression.Lambda<Func<T, bool>>(expression, parameter);
                             query = query.Where(lambda);
                         }
+
+                        continue;
                     }
                     // Xử lý Multiple Values: "16,17,18"
                     else if (filterValue.Contains(","))

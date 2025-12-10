@@ -15,6 +15,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, DisposalNoteDetailDto?)> GetDetailDisposalNote(string? disposalRequestId);
         Task<string> SubmitDisposalNote(SubmitDisposalNoteDto submitDto, int? userId);
         Task<string> ApproveDisposalNote(ApproveDisposalNoteDto approveDto, int? userId);
+        Task<(string, byte[]?, string?)> ExportDisposalNoteWord(string disposalRequestId);
     }
 
     public class DisposalNoteService : IDisposalNoteService
@@ -25,9 +26,10 @@ namespace MilkDistributionWarehouse.Services
         private readonly IStocktakingSheetRepository _stocktakingSheetRepository;
         private readonly IPickAllocationRepository _pickAllocationRepository;
         private readonly INotificationService _notificationService;
+        private readonly IInventoryLedgerService _inventoryLedgerService;
+        private readonly IWebHostEnvironment _env;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
-        private readonly IInventoryLedgerService _inventoryLedgerService;
 
         public DisposalNoteService(IDisposalNoteRepository disposalNoteRepository,
                                    IDisposalRequestRepository disposalRequestRepository,
@@ -35,9 +37,10 @@ namespace MilkDistributionWarehouse.Services
                                    IStocktakingSheetRepository stocktakingSheetRepository,
                                    IPickAllocationRepository pickAllocationRepository,
                                    INotificationService notificationService,
+                                   IInventoryLedgerService inventoryLedgerService,
+                                   IWebHostEnvironment env,
                                    IUnitOfWork unitOfWork,
-                                   IMapper mapper,
-                                   IInventoryLedgerService inventoryLedgerService)
+                                   IMapper mapper)
         {
             _disposalNoteRepository = disposalNoteRepository;
             _disposalRequestRepository = disposalRequestRepository;
@@ -45,9 +48,10 @@ namespace MilkDistributionWarehouse.Services
             _stocktakingSheetRepository = stocktakingSheetRepository;
             _pickAllocationRepository = pickAllocationRepository;
             _notificationService = notificationService;
+            _inventoryLedgerService = inventoryLedgerService;
+            _env = env;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
-            _inventoryLedgerService = inventoryLedgerService;
         }
 
         public async Task<string> CreateDisposalNote(DisposalNoteCreateDto createDto, int? userId)
@@ -62,8 +66,8 @@ namespace MilkDistributionWarehouse.Services
 
             if (disposalRequest.AssignTo != userId) return "Bạn không được phân công cho yêu cầu này.".ToMessageForUser();
 
-            //if (disposalRequest.EstimatedTimeDeparture > DateOnly.FromDateTime(DateTime.Now))
-            //    return "Không tạo được phiếu xuất hủy trước ngày dự kiến xuất.".ToMessageForUser();
+            if (disposalRequest.EstimatedTimeDeparture > DateOnly.FromDateTime(DateTimeUtility.Now()))
+                return "Không tạo được phiếu xuất hủy trước ngày dự kiến xuất.".ToMessageForUser();
 
             if (disposalRequest.Status != DisposalRequestStatus.AssignedForPicking)
                 return "Chỉ có thể tạo phiếu xuất hủy cho yêu cầu ở trạng thái 'Đã phân công'.".ToMessageForUser();
@@ -187,12 +191,12 @@ namespace MilkDistributionWarehouse.Services
                     {
                         noteDetail.Status = DisposalNoteItemStatus.PendingApproval;
                         noteDetail.RejectionReason = "";
-                        noteDetail.UpdatedAt = DateTime.Now;
+                        noteDetail.UpdatedAt = DateTimeUtility.Now();
                     }
                 }
 
                 disposalNote.Status = DisposalNoteStatus.PendingApproval;
-                disposalNote.UpdatedAt = DateTime.Now;
+                disposalNote.UpdatedAt = DateTimeUtility.Now();
 
                 await _disposalNoteRepository.UpdateDisposalNote(disposalNote);
                 await _unitOfWork.CommitTransactionAsync();
@@ -226,15 +230,15 @@ namespace MilkDistributionWarehouse.Services
 
                 disposalNote.Status = DisposalNoteStatus.Completed;
                 disposalNote.ApprovalBy = userId;
-                disposalNote.UpdatedAt = DateTime.Now;
+                disposalNote.UpdatedAt = DateTimeUtility.Now();
 
                 disposalNote.DisposalRequest.Status = DisposalRequestStatus.Completed;
-                disposalNote.DisposalRequest.UpdateAt = DateTime.Now;
+                disposalNote.DisposalRequest.UpdateAt = DateTimeUtility.Now();
 
                 foreach (var noteDetail in disposalNote.DisposalNoteDetails)
                 {
                     noteDetail.Status = DisposalNoteItemStatus.Completed;
-                    noteDetail.UpdatedAt = DateTime.Now;
+                    noteDetail.UpdatedAt = DateTimeUtility.Now();
                 }
 
                 var pickAllocationList = disposalNote.DisposalNoteDetails.SelectMany(d => d.PickAllocations).ToList();
@@ -248,7 +252,7 @@ namespace MilkDistributionWarehouse.Services
                         throw new Exception($"Thao tác thất bại: Kệ kê hàng '{pallet.PalletId}' không đủ số lượng để trừ kho (cần {pickPackageQuantity}, chỉ có {palletPackageQuantity}).".ToMessageForUser());
 
                     pallet.PackageQuantity = palletPackageQuantity - pickPackageQuantity;
-                    pallet.UpdateAt = DateTime.Now;
+                    pallet.UpdateAt = DateTimeUtility.Now();
                     if (pallet.PackageQuantity == 0)
                     {
                         pallet.Status = CommonStatus.Deleted;
@@ -317,6 +321,53 @@ namespace MilkDistributionWarehouse.Services
 
             if (notificationsToCreate.Count > 0)
                 await _notificationService.CreateNotificationBulk(notificationsToCreate);
+        }
+
+        public async Task<(string, byte[]?, string?)> ExportDisposalNoteWord(string disposalRequestId)
+        {
+            var dnDetail = await _disposalNoteRepository.GetDNDetailByDisposalRequestId(disposalRequestId);
+
+            if (dnDetail == null) return ("Không tìm thấy phiếu xuất hủy.".ToMessageForUser(), null, null);
+
+            var simpleData = new Dictionary<string, string>
+            {
+                { "$Ngay", dnDetail.DisposalRequest.EstimatedTimeDeparture?.Day.ToString("00") ?? "..." },
+                { "$Thang", dnDetail.DisposalRequest.EstimatedTimeDeparture?.Month.ToString("00") ?? "..." },
+                { "$Nam", dnDetail.DisposalRequest.EstimatedTimeDeparture?.Year.ToString() ?? "..." },
+                { "$SoPhieu", dnDetail.DisposalNoteId ?? "..." },
+            };
+
+            var tableData = new List<Dictionary<string, string>>();
+            int stt = 1;
+            if (dnDetail.DisposalNoteDetails != null)
+            {
+                foreach (var disposalNote in dnDetail.DisposalNoteDetails)
+                {
+                    tableData.Add(new Dictionary<string, string>
+                    {
+                        { "$STT", stt++.ToString() },
+                        { "$TenHang", disposalNote.Goods.GoodsName ?? "" },
+                        { "$MaHang", disposalNote.Goods.GoodsCode ?? "" },
+                        { "$DVT", "Thùng"},
+                        { "$SoLuong", disposalNote.PackageQuantity?.ToString() ?? "0" },
+                        { "$HanSuDung", disposalNote.PickAllocations.FirstOrDefault()?.Pallet.Batch?.ExpiryDate.Value.ToString("dd/MM/yyyy") ?? "" },
+                    });
+                }
+            }
+
+            string templatePath = Path.Combine(_env.ContentRootPath, "Templates", "phieu-xuat-huy.docx");
+
+            try
+            {
+                var fileBytes = WordExportUtility.FillTemplate(templatePath, simpleData, tableData);
+                string fileName = $"Phieu_Xuat_Huy_{dnDetail.DisposalNoteId}.docx";
+
+                return ("", fileBytes, fileName);
+            }
+            catch (Exception ex)
+            {
+                return ($"Xảy ra lỗi khi xuất file.".ToMessageForUser(), null, null);
+            }
         }
 
         private async Task HandleDNStatusChangeNotification(DisposalNote disposalNote)

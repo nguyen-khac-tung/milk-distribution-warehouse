@@ -26,7 +26,6 @@ export function LoginForm() {
         setLoading(true);
         try {
             const res = await login({ email, password });
-            console.log("Login response:", res);
 
             if (res.success) {
                 if (res.isFirstLogin === true) {
@@ -35,7 +34,7 @@ export function LoginForm() {
                     navigate("/change-password");
                 } else {
                     // Đăng nhập bình thường
-                    window.showToast("Đăng nhập thành công!", "success");
+                    // window.showToast("Đăng nhập thành công!", "success");
                     navigate("/");
                 }
             } else {
@@ -68,7 +67,7 @@ export function LoginForm() {
                 </div>
 
                 <h2 className="text-4xl font-serif text-foreground leading-tight">
-                    Đăng nhập vào tài khoản của bạn
+                    Đăng nhập tài khoản
                 </h2>
                 <p className="text-muted-foreground leading-relaxed">
                     Nhập thông tin đăng nhập để truy cập vào không gian làm việc
@@ -76,7 +75,7 @@ export function LoginForm() {
             </div>
 
             {/* Form đăng nhập */}
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6" noValidate>
                 <div className="space-y-2">
                     <Label htmlFor="email" className="text-sm font-medium text-foreground">
                         Email <span style={{ color: "red" }}>*</span>

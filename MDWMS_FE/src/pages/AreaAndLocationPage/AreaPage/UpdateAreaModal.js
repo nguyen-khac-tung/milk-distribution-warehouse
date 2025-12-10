@@ -124,69 +124,66 @@ export default function UpdateAreaModal({ isOpen, onClose, onSuccess, areaId, ar
 
         {/* Content */}
         <div className="px-6 py-6">
-          <form className="space-y-8" onSubmit={handleSubmit}>
+          <form className="space-y-8" onSubmit={handleSubmit} noValidate>
 
             {/* 2-column grid layout */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {/* Left column */}
-              <div className="space-y-5">
-                {/* Area Name */}
-                <div className="space-y-2">
-                  <Label htmlFor="areaName" className="text-sm font-medium text-gray-700">
-                    Tên khu vực <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="areaName"
-                    placeholder="Nhập tên khu vực..."
-                    value={formData.areaName}
-                    onChange={(e) => setFormData({ ...formData, areaName: e.target.value })}
-                    className="h-9 border-gray-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg"
-                    required
-                  />
-                </div>
-
-
-                {/* Storage Condition */}
-                <div className="space-y-2">
-                  <Label htmlFor="storageConditionId" className="text-sm font-medium text-gray-700">
-                    Điều kiện bảo quản <span className="text-red-500">*</span>
-                  </Label>
-                  <CustomDropdown
-                    value={formData.storageConditionId?.toString() || ""}
-                    onChange={(value) =>
-                      setFormData({ ...formData, storageConditionId: value })
-                    }
-                    options={[
-                      { value: "", label: "Chọn điều kiện bảo quản..." },
-                      ...storageConditions.map((condition) => ({
-                        value: condition.storageConditionId.toString(),
-                        label: `- Nhiệt độ: ${condition.temperatureMin}°C đến ${condition.temperatureMax}°C - Độ ẩm: ${condition.humidityMin}% đến ${condition.humidityMax}%`,
-                      })),
-                    ]}
-                    placeholder="Chọn điều kiện bảo quản..."
-                    loading={loadingData}
-                  />
-                </div>
-
+              {/* <div className="space-y-5"> */}
+              {/* Area Name */}
+              <div className="space-y-2">
+                <Label htmlFor="areaName" className="text-sm font-medium text-gray-700">
+                  Tên khu vực <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="areaName"
+                  placeholder="Nhập tên khu vực..."
+                  value={formData.areaName}
+                  onChange={(e) => setFormData({ ...formData, areaName: e.target.value })}
+                  className="h-9 border-gray-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg"
+                />
               </div>
+              {/* </div> */}
 
               {/* Right column */}
-              <div className="space-y-5">
-                {/* Area Code */}
-                <div className="space-y-2">
-                  <Label htmlFor="areaCode" className="text-sm font-medium text-gray-700">
-                    Mã khu vực <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="areaCode"
-                    placeholder="Nhập mã khu vực..."
-                    value={formData.areaCode}
-                    onChange={(e) => setFormData({ ...formData, areaCode: e.target.value })}
-                    className="h-9 border-gray-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg"
-                    required
-                  />
-                </div>
+              {/* <div className="space-y-5"> */}
+              {/* Area Code */}
+              <div className="space-y-2">
+                <Label htmlFor="areaCode" className="text-sm font-medium text-gray-700">
+                  Mã khu vực <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="areaCode"
+                  placeholder="Nhập mã khu vực..."
+                  value={formData.areaCode}
+                  onChange={(e) => setFormData({ ...formData, areaCode: e.target.value })}
+                  className="h-9 border-gray-300 focus:border-orange-500 focus:ring-orange-500 rounded-lg"
+                />
               </div>
+              {/* </div> */}
+            </div>
+
+            {/* Storage Condition */}
+            <div className="space-y-2">
+              <Label htmlFor="storageConditionId" className="text-sm font-medium text-gray-700">
+                Điều kiện bảo quản <span className="text-red-500">*</span>
+              </Label>
+              <CustomDropdown
+                className="w-full"
+                value={formData.storageConditionId?.toString() || ""}
+                onChange={(value) =>
+                  setFormData({ ...formData, storageConditionId: value })
+                }
+                options={[
+                  { value: "", label: "Chọn điều kiện bảo quản..." },
+                  ...storageConditions.map((condition) => ({
+                    value: condition.storageConditionId.toString(),
+                    label: `- Nhiệt độ: ${condition.temperatureMin}°C đến ${condition.temperatureMax}°C - Độ ẩm: ${condition.humidityMin}% đến ${condition.humidityMax}%`,
+                  })),
+                ]}
+                placeholder="Chọn điều kiện bảo quản..."
+                loading={loadingData}
+              />
             </div>
 
             {/* Description */}

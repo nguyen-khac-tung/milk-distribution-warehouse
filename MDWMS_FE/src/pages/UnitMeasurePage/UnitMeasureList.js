@@ -97,21 +97,30 @@ export default function UnitMeasuresPage() {
     }
   }
 
+  // Normalize function: lowercase, trim, and collapse multiple spaces into one
+  const normalize = (str) => {
+    if (!str) return "";
+    return str
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, " "); // gom nhiều space thành 1 space
+  };
+
   // Fetch data from API
   const fetchData = async (searchParams = {}) => {
     try {
       setLoading(true)
+      // Normalize search query trước khi gọi API (nhưng vẫn giữ nguyên giá trị trong input khi đang gõ)
+      const searchValue = searchParams.search !== undefined ? searchParams.search : "";
+      const normalizedSearch = normalize(searchValue);
       const response = await getUnitMeasure({
         pageNumber: searchParams.pageNumber !== undefined ? searchParams.pageNumber : 1,
         pageSize: searchParams.pageSize !== undefined ? searchParams.pageSize : 10,
-        search: searchParams.search !== undefined ? searchParams.search : "",
+        search: normalizedSearch,
         sortField: searchParams.sortField || "",
         sortAscending: searchParams.sortAscending !== undefined ? searchParams.sortAscending : true,
         status: searchParams.status
       })
-
-      console.log("Full response from getUnitMeasure:", response);
-      console.log("Response.data:", response?.data);
 
       if (response && response.data) {
         // Check different possible response structures
@@ -132,16 +141,12 @@ export default function UnitMeasuresPage() {
           totalCount = response.data.totalCount || dataArray.length;
         }
 
-        console.log("Parsed dataArray:", dataArray);
-        console.log("Parsed totalCount:", totalCount);
-
         setUnitMeasures(dataArray)
         setPagination(prev => ({
           ...prev,
           totalCount: totalCount
         }))
       } else {
-        console.log("No response or response.data");
         setUnitMeasures([])
         setPagination(prev => ({ ...prev, totalCount: 0 }))
       }
@@ -267,7 +272,6 @@ export default function UnitMeasuresPage() {
 
   const handleDeleteConfirm = async () => {
     try {
-      console.log("Deleting unit measure:", itemToDelete)
       await deleteUnitMeasure(itemToDelete?.unitMeasureId)
       window.showToast(`Đã xóa đơn vị đo: ${itemToDelete?.name || ''}`, "success")
       setShowDeleteModal(false)
@@ -433,7 +437,7 @@ export default function UnitMeasuresPage() {
         />
 
         {/* Search and Table Combined */}
-        <Card className="shadow-sm border border-slate-200 overflow-hidden bg-gray-50">
+        <Card className="shadow-sm border border-slate-200 overflow-visible bg-gray-50">
           <SearchFilterToggle
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}

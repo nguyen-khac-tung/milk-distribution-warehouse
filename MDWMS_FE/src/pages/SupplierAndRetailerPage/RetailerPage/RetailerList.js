@@ -94,16 +94,28 @@ export default function RetailersPage() {
     }
   }
 
+  // Normalize function: lowercase, trim, and collapse multiple spaces into one
+  const normalize = (str) => {
+    if (!str) return "";
+    return str
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, " "); // gom nhiều space thành 1 space
+  };
+
   // Fetch data from API
   const fetchData = async (searchParams = {}) => {
     try {
       setLoading(true)
 
+      // Normalize search query trước khi gọi API (nhưng vẫn giữ nguyên giá trị trong input khi đang gõ)
+      const searchValue = searchParams.search !== undefined ? searchParams.search : "";
+      const normalizedSearch = normalize(searchValue);
 
       const response = await getRetailers({
         pageNumber: searchParams.pageNumber !== undefined ? searchParams.pageNumber : 1,
         pageSize: searchParams.pageSize !== undefined ? searchParams.pageSize : 10,
-        search: searchParams.search !== undefined ? searchParams.search : "",
+        search: normalizedSearch,
         sortField: searchParams.sortField || "",
         sortAscending: searchParams.sortAscending !== undefined ? searchParams.sortAscending : true,
         status: searchParams.status
@@ -233,20 +245,16 @@ export default function RetailersPage() {
 
   const handleViewClick = async (retailer) => {
     try {
-      console.log("Viewing retailer:", retailer)
       setItemToView(retailer)
       setLoadingDetail(true)
       setShowViewModal(true)
 
       const response = await getRetailerDetail(retailer.retailerId)
-      console.log("API Response:", response)
 
       // Handle API response structure: { status: 200, message: "Success", data: {...} }
       if (response && response.status === 200 && response.data) {
         setRetailerDetail(response.data)
-        console.log("Retailer detail set:", response.data)
       } else {
-        console.log("Invalid response structure:", response)
         window.showToast("Không thể tải chi tiết nhà bán lẻ", "error")
         setShowViewModal(false)
       }
@@ -272,7 +280,6 @@ export default function RetailersPage() {
 
   const handleDeleteConfirm = async () => {
     try {
-      console.log("Deleting retailer:", itemToDelete)
       await deleteRetailer(itemToDelete?.retailerId)
       window.showToast(`Đã xóa nhà bán lẻ: ${itemToDelete?.retailerName || ''}`, "success")
       setShowDeleteModal(false)
@@ -460,7 +467,7 @@ export default function RetailersPage() {
         />
 
         {/* Search and Table Combined */}
-        <Card className="shadow-sm border border-slate-200 overflow-hidden bg-gray-50">
+        <Card className="shadow-sm border border-slate-200 overflow-visible bg-gray-50">
           <SearchFilterToggle
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}

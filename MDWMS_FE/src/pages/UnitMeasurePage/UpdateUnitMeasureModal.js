@@ -7,7 +7,7 @@ import { Card } from "../../components/ui/card"
 import { Textarea } from "../../components/ui/textarea"
 import { X } from "lucide-react"
 import { updateUnitMeasure } from "../../services/UnitMeasureService"
-import { validateAndShowError, extractErrorMessage } from "../../utils/Validation"
+import { extractErrorMessage } from "../../utils/Validation"
 
 export default function UpdateUnitMeasure({ isOpen, onClose, onSuccess, unitMeasureData }) {
   const [formData, setFormData] = useState({
@@ -15,30 +15,41 @@ export default function UpdateUnitMeasure({ isOpen, onClose, onSuccess, unitMeas
     description: "",
   })
   const [loading, setLoading] = useState(false)
+  const [validationErrors, setValidationErrors] = useState({})
 
   // Load data when modal opens
   React.useEffect(() => {
     if (isOpen && unitMeasureData) {
-      console.log("Loading unit measure data for update:", unitMeasureData)
       setFormData({
         name: unitMeasureData.name || "",
         description: unitMeasureData.description || "",
       })
+      setValidationErrors({})
     }
   }, [isOpen, unitMeasureData])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    // Validate form data using utility function
-    if (!validateAndShowError(formData)) {
-      return
-    }
-
     if (!unitMeasureData || !unitMeasureData.unitMeasureId) {
       window.showToast("Không tìm thấy thông tin đơn vị đo", "error")
       return
     }
+
+    // Validate form data
+    const errors = {}
+
+    if (!formData.name || formData.name.trim() === "") {
+      errors.name = "Vui lòng nhập tên đơn vị đo"
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors)
+      return
+    }
+
+    // Clear validation errors if validation passes
+    setValidationErrors({})
 
     try {
       setLoading(true)
@@ -50,15 +61,7 @@ export default function UpdateUnitMeasure({ isOpen, onClose, onSuccess, unitMeas
         status: unitMeasureData.status // Keep original status
       }
 
-      console.log("Update data:", updateData)
-      console.log("Data validation:", {
-        name: updateData.name.length > 0,
-        description: updateData.description.length > 0,
-        unitMeasureId: !isNaN(updateData.unitMeasureId)
-      })
-
       const response = await updateUnitMeasure(updateData)
-      console.log("Unit measure updated:", response)
       window.showToast("Cập nhật đơn vị đo thành công!", "success")
       onSuccess && onSuccess()
       onClose && onClose()
@@ -76,6 +79,7 @@ export default function UpdateUnitMeasure({ isOpen, onClose, onSuccess, unitMeas
       name: "",
       description: "",
     })
+    setValidationErrors({})
     onClose && onClose()
   }
 
@@ -109,10 +113,15 @@ export default function UpdateUnitMeasure({ isOpen, onClose, onSuccess, unitMeas
                   id="name"
                   placeholder="Nhập tên đơn vị đo..."
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, name: e.target.value })
+                    setValidationErrors(prev => ({ ...prev, name: '' }))
+                  }}
                   className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                  required
                 />
+                {validationErrors.name && (
+                  <p className="text-sm text-red-500 font-medium">{validationErrors.name}</p>
+                )}
               </div>
 
               {/* Row 2: Description */}

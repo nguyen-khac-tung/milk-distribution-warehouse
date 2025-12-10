@@ -75,7 +75,7 @@ namespace MilkDistributionWarehouse.Services
                 await _notificationRepository.CreateNotification(notification);
                 var notificationDto = _mapper.Map<NotificationDto>(notification);
                 await _unitOfWork.CommitTransactionAsync();
-                
+
                 await _hubContext.Clients
                     .Group(notification.UserId.ToString() ?? "")
                     .SendAsync("ReceiveNotification", notificationDto);
@@ -160,7 +160,7 @@ namespace MilkDistributionWarehouse.Services
             }
 
             var message = await ValidationNotificationEntityId(notification);
-            if(message.Length > 0) return (message, null);
+            if (message.Length > 0) return (message, null);
 
             return ("", _mapper.Map<NotificationDetailDto>(notification));
         }
@@ -190,7 +190,7 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
-        public async Task<string> MarkAsRead(NotificationMarkAsReadDto dto,int? userId)
+        public async Task<string> MarkAsRead(NotificationMarkAsReadDto dto, int? userId)
         {
             if (userId == null) return "Current user id is null";
 
@@ -222,8 +222,7 @@ namespace MilkDistributionWarehouse.Services
         {
             var errorMessage = "Trang này hiện tại không tìm thấy.".ToMessageForUser();
 
-            if (notification.EntityId.IsNullOrEmpty() || notification.EntityType == null)
-                return errorMessage;
+            if (notification.EntityType == null) return errorMessage;
 
             switch (notification.EntityType)
             {
@@ -262,15 +261,20 @@ namespace MilkDistributionWarehouse.Services
                     if (stocktakingSheet == null) return errorMessage;
                     break;
 
-                case NotificationEntityType.InventoryReport: 
+                case NotificationEntityType.InventoryReport:
                     break;
 
-                case NotificationEntityType.NoNavigation: 
+                case NotificationEntityType.NoNavigation:
                     break;
 
-                case NotificationEntityType.StocktakingArea:
+                case NotificationEntityType.StocktakingAreaStaff:
                     var stocktakingAreas = await _stocktakingAreaRepository.GetStocktakingAreasByStocktakingSheetId(notification.EntityId);
                     if (!stocktakingAreas.Any()) return errorMessage;
+                    break;
+
+                case NotificationEntityType.StocktakingAreaManager:
+                    var stocktakingAreasManager = await _stocktakingAreaRepository.GetStocktakingAreasByStocktakingSheetId(notification.EntityId);
+                    if (!stocktakingAreasManager.Any()) return errorMessage;
                     break;
 
                 default: return errorMessage;

@@ -1,5 +1,5 @@
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
 import { Label } from "../../components/ui/label"
@@ -7,7 +7,7 @@ import { Card } from "../../components/ui/card"
 import { Textarea } from "../../components/ui/textarea"
 import { X } from "lucide-react"
 import { createUnitMeasure } from "../../services/UnitMeasureService"
-import { validateAndShowError, extractErrorMessage } from "../../utils/Validation"
+import { extractErrorMessage } from "../../utils/Validation"
 
 export default function CreateUnitMeasure({ isOpen, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -15,20 +15,47 @@ export default function CreateUnitMeasure({ isOpen, onClose, onSuccess }) {
     description: "",
   })
   const [loading, setLoading] = useState(false)
+  const [validationErrors, setValidationErrors] = useState({})
+
+  // Reset form when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        name: "",
+        description: "",
+      })
+      setValidationErrors({})
+    }
+  }, [isOpen])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    // Validate form data using utility function
-    if (!validateAndShowError(formData)) {
+    // Validate form data
+    const errors = {}
+
+    if (!formData.name || formData.name.trim() === "") {
+      errors.name = "Vui lòng nhập tên đơn vị đo"
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors)
       return
     }
+
+    // Clear validation errors if validation passes
+    setValidationErrors({})
 
     try {
       setLoading(true)
       const response = await createUnitMeasure(formData)
-      console.log("Unit measure created:", response)
       window.showToast("Thêm đơn vị đo thành công!", "success")
+      // Reset form data after successful creation
+      setFormData({
+        name: "",
+        description: "",
+      })
+      setValidationErrors({})
       onSuccess && onSuccess()
       onClose && onClose()
     } catch (error) {
@@ -45,6 +72,7 @@ export default function CreateUnitMeasure({ isOpen, onClose, onSuccess }) {
       name: "",
       description: "",
     })
+    setValidationErrors({})
     onClose && onClose()
   }
 
@@ -78,10 +106,15 @@ export default function CreateUnitMeasure({ isOpen, onClose, onSuccess }) {
                   id="name"
                   placeholder="Nhập tên đơn vị đo..."
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, name: e.target.value })
+                    setValidationErrors(prev => ({ ...prev, name: '' }))
+                  }}
                   className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                  required
                 />
+                {validationErrors.name && (
+                  <p className="text-sm text-red-500 font-medium">{validationErrors.name}</p>
+                )}
               </div>
 
               {/* Row 2: Description */}

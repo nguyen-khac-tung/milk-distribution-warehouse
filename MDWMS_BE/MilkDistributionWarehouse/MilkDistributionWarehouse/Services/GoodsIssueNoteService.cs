@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
@@ -15,6 +16,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, GoodsIssueNoteDetailDto?)> GetDetailGoodsIssueNote(string? salesOrderId);
         Task<string> SubmitGoodsIssueNote(SubmitGoodsIssueNoteDto submitGoodsIssueDto, int? userId);
         Task<string> ApproveGoodsIssueNote(ApproveGoodsIssueNoteDto approveGoodsIssueDto, int? userId);
+        Task<(string, byte[]?, string?)> ExportGoodsIssueNoteWord(string salesOrderId);
     }
 
     public class GoodsIssueNoteService : IGoodsIssueNoteService
@@ -25,9 +27,10 @@ namespace MilkDistributionWarehouse.Services
         private readonly IStocktakingSheetRepository _stocktakingSheetRepository;
         private readonly IPickAllocationRepository _pickAllocationRepository;
         private readonly INotificationService _notificationService;
+        private readonly IInventoryLedgerService _inventoryLedgerService;
+        private readonly IWebHostEnvironment _env;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
-        private readonly IInventoryLedgerService _inventoryLedgerService;
 
         public GoodsIssueNoteService(IGoodsIssueNoteRepository goodsIssueNoteRepository,
                                  ISalesOrderRepository salesOrderRepository,
@@ -35,9 +38,10 @@ namespace MilkDistributionWarehouse.Services
                                  IStocktakingSheetRepository stocktakingSheetRepository,
                                  IPickAllocationRepository pickAllocationRepository,
                                  INotificationService notificationService,
+                                 IInventoryLedgerService inventoryLedgerService,
+                                 IWebHostEnvironment env,
                                  IUnitOfWork unitOfWork,
-                                 IMapper mapper,
-                                 IInventoryLedgerService inventoryLedgerService)
+                                 IMapper mapper)
         {
             _goodsIssueNoteRepository = goodsIssueNoteRepository;
             _salesOrderRepository = salesOrderRepository;
@@ -45,9 +49,10 @@ namespace MilkDistributionWarehouse.Services
             _stocktakingSheetRepository = stocktakingSheetRepository;
             _pickAllocationRepository = pickAllocationRepository;
             _notificationService = notificationService;
+            _inventoryLedgerService = inventoryLedgerService;
+            _env = env;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
-            _inventoryLedgerService = inventoryLedgerService;
         }
 
         public async Task<string> CreateGoodsIssueNote(GoodsIssueNoteCreateDto goodsIssueNoteCreate, int? userId)
@@ -62,8 +67,8 @@ namespace MilkDistributionWarehouse.Services
 
             if (salesOrder.AssignTo != userId) return "Người dùng hiện tại không được phân công cho đơn hàng này.".ToMessageForUser();
 
-            //if (salesOrder.EstimatedTimeDeparture > DateOnly.FromDateTime(DateTime.Now))
-            //    return "Không tạo được phiếu xuất kho trước ngày dự kiến xuất kho.".ToMessageForUser();
+            if (salesOrder.EstimatedTimeDeparture > DateOnly.FromDateTime(DateTimeUtility.Now()))
+                return "Không tạo được phiếu xuất kho trước ngày dự kiến xuất kho.".ToMessageForUser();
 
             if (salesOrder.Status != SalesOrderStatus.AssignedForPicking)
                 return "Chỉ có thể tạo phiếu xuất kho cho đơn hàng ở trạng thái 'Đã phân công'.".ToMessageForUser();
@@ -128,7 +133,7 @@ namespace MilkDistributionWarehouse.Services
                 await _goodsIssueNoteRepository.CreateGoodsIssueNote(goodsIssueNote);
 
                 salesOrder.Status = SalesOrderStatus.Picking;
-                salesOrder.PickingAt = DateTime.Now;
+                salesOrder.PickingAt = DateTimeUtility.Now();
                 await _salesOrderRepository.UpdateSalesOrder(salesOrder);
 
                 await _unitOfWork.CommitTransactionAsync();
@@ -183,12 +188,12 @@ namespace MilkDistributionWarehouse.Services
                     {
                         issueNoteDetail.Status = IssueItemStatus.PendingApproval;
                         issueNoteDetail.RejectionReason = "";
-                        issueNoteDetail.UpdatedAt = DateTime.Now;
+                        issueNoteDetail.UpdatedAt = DateTimeUtility.Now();
                     }
                 }
 
                 goodsIssueNote.Status = GoodsIssueNoteStatus.PendingApproval;
-                goodsIssueNote.UpdatedAt = DateTime.Now;
+                goodsIssueNote.UpdatedAt = DateTimeUtility.Now();
 
                 await _goodsIssueNoteRepository.UpdateGoodsIssueNote(goodsIssueNote);
                 await _unitOfWork.CommitTransactionAsync();
@@ -222,15 +227,15 @@ namespace MilkDistributionWarehouse.Services
 
                 goodsIssueNote.Status = GoodsIssueNoteStatus.Completed;
                 goodsIssueNote.ApprovalBy = userId;
-                goodsIssueNote.UpdatedAt = DateTime.Now;
+                goodsIssueNote.UpdatedAt = DateTimeUtility.Now();
 
                 goodsIssueNote.SalesOder.Status = SalesOrderStatus.Completed;
-                goodsIssueNote.SalesOder.UpdateAt = DateTime.Now;
+                goodsIssueNote.SalesOder.UpdateAt = DateTimeUtility.Now();
 
                 foreach (var issueNoteDetail in goodsIssueNote.GoodsIssueNoteDetails)
                 {
                     issueNoteDetail.Status = IssueItemStatus.Completed;
-                    issueNoteDetail.UpdatedAt = DateTime.Now;
+                    issueNoteDetail.UpdatedAt = DateTimeUtility.Now();
                 }
 
                 var pickAllocationList = goodsIssueNote.GoodsIssueNoteDetails.SelectMany(g => g.PickAllocations).ToList();
@@ -243,7 +248,7 @@ namespace MilkDistributionWarehouse.Services
                         throw new Exception($"Thao tác thất bại: Kệ kê hàng '{pick.Pallet.PalletId}' không đủ số lượng để trừ kho (cần {pickPackageQuantity}, chỉ có {palletPackageQuantity}).".ToMessageForUser());
 
                     pick.Pallet.PackageQuantity = palletPackageQuantity - pickPackageQuantity;
-                    pick.Pallet.UpdateAt = DateTime.Now;
+                    pick.Pallet.UpdateAt = DateTimeUtility.Now();
                     if (pick.Pallet.PackageQuantity == 0)
                     {
                         pick.Pallet.Status = CommonStatus.Deleted;
@@ -268,6 +273,55 @@ namespace MilkDistributionWarehouse.Services
                 await _unitOfWork.RollbackTransactionAsync();
                 if (ex.Message.Contains("[User]")) return ex.Message;
                 return "Đã xảy ra lỗi hệ thống khi duyệt phiếu xuất kho.".ToMessageForUser();
+            }
+        }
+
+        public async Task<(string, byte[]?, string?)> ExportGoodsIssueNoteWord(string salesOrderId)
+        {
+            var ginDetail = await _goodsIssueNoteRepository.GetGINDetailBySalesOrderId(salesOrderId);
+
+            if (ginDetail == null) return ("Không tìm thấy phiếu xuất kho.".ToMessageForUser(), null, null);
+
+            var simpleData = new Dictionary<string, string>
+            {
+                { "$Ngay", ginDetail.SalesOder.EstimatedTimeDeparture?.Day.ToString("00") ?? "..." },
+                { "$Thang", ginDetail.SalesOder.EstimatedTimeDeparture?.Month.ToString("00") ?? "..." },
+                { "$Nam", ginDetail.SalesOder.EstimatedTimeDeparture?.Year.ToString() ?? "..." },
+                { "$SoPhieu", ginDetail.GoodsIssueNoteId ?? "..." },
+                { "$NguoiNhan", ginDetail.SalesOder.Retailer.RetailerName ?? "" },
+                { "$DiaChi", ginDetail.SalesOder.Retailer.Address ?? "" },
+            };
+
+            var tableData = new List<Dictionary<string, string>>();
+            int stt = 1;
+            if (ginDetail.GoodsIssueNoteDetails != null)
+            {
+                foreach (var issueNoteDetail in ginDetail.GoodsIssueNoteDetails)
+                {
+                    tableData.Add(new Dictionary<string, string>
+                    {
+                        { "$STT", stt++.ToString() },
+                        { "$TenHang", issueNoteDetail.Goods.GoodsName ?? "" },
+                        { "$MaHang", issueNoteDetail.Goods.GoodsCode ?? "" },
+                        { "$DVT", "Thùng"},
+                        { "$LuongYeuCau", issueNoteDetail.PackageQuantity?.ToString() ?? "0" },
+                        { "$LuongThucXuat", issueNoteDetail.PackageQuantity?.ToString() ?? "0" },
+                    });
+                }
+            }
+
+            string templatePath = Path.Combine(_env.ContentRootPath, "Templates", "phieu-xuat-kho.docx");
+
+            try
+            {
+                var fileBytes = WordExportUtility.FillTemplate(templatePath, simpleData, tableData);
+                string fileName = $"Phieu_Xuat_Kho_{ginDetail.GoodsIssueNoteId}.docx";
+
+                return ("", fileBytes, fileName);
+            }
+            catch (Exception ex)
+            {
+                return ($"Xảy ra lỗi khi xuất file.".ToMessageForUser(), null, null);
             }
         }
 
@@ -300,6 +354,14 @@ namespace MilkDistributionWarehouse.Services
                     notificationsToCreate.Add(new NotificationCreateDto()
                     {
                         UserId = salesOrder.ApprovalBy,
+                        Title = "Đơn bán hàng đã hoàn thành",
+                        Content = $"Đơn bán hàng '{salesOrder.SalesOrderId}' đã hoàn thành.",
+                        EntityType = NotificationEntityType.SaleOrder,
+                        EntityId = salesOrder.SalesOrderId
+                    });
+                    notificationsToCreate.Add(new NotificationCreateDto()
+                    {
+                        UserId = salesOrder.CreatedBy,
                         Title = "Đơn bán hàng đã hoàn thành",
                         Content = $"Đơn bán hàng '{salesOrder.SalesOrderId}' đã hoàn thành.",
                         EntityType = NotificationEntityType.SaleOrder,

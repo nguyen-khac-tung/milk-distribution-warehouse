@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { Search, Filter, ChevronDown, ChevronUp, Settings, X } from "lucide-react";
+import { Search, Filter, ChevronDown, ChevronUp, Settings, X, Clock } from "lucide-react";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import ClearFiltersButton from "./ClearFiltersButton";
@@ -138,7 +138,18 @@ export default function SearchFilterToggle({
   filteredRoles: externalFilteredRoles = null,
   filteredAreas: externalFilteredAreas = null,
   filteredCreators: externalFilteredCreators = null,
-  filteredConditionOptions: externalFilteredConditionOptions = null
+  filteredConditionOptions: externalFilteredConditionOptions = null,
+  // Date Filter
+  enableDateFilter = false,
+  dateFilter = { fromDate: '', toDate: '' },
+  setDateFilter = null,
+  showDateFilter = false,
+  setShowDateFilter = null,
+  dateFilterLabel = "Ngày",
+  dateFilterFromLabel = "Từ ngày",
+  dateFilterToLabel = "Đến ngày",
+  onApplyDateFilter = null,
+  onClearDateFilter = null,
 }) {
   const [showSearchFilter, setShowSearchFilter] = useState(defaultOpen);
   const [internalRetailerSearchQuery, setInternalRetailerSearchQuery] = useState("");
@@ -187,7 +198,7 @@ export default function SearchFilterToggle({
     if (externalFilteredStatusOptions) return externalFilteredStatusOptions;
     if (!enableStatusSearch || !statusSearchQuery) return statusOptions;
     const query = statusSearchQuery.toLowerCase();
-    return statusOptions.filter(option => 
+    return statusOptions.filter(option =>
       option.label.toLowerCase().includes(query)
     );
   }, [statusOptions, statusSearchQuery, enableStatusSearch, externalFilteredStatusOptions]);
@@ -263,7 +274,7 @@ export default function SearchFilterToggle({
     if (externalFilteredConditionOptions) return externalFilteredConditionOptions;
     if (!enableConditionSearch || !conditionSearchQuery) return conditionOptions;
     const query = conditionSearchQuery.toLowerCase();
-    return conditionOptions.filter(option => 
+    return conditionOptions.filter(option =>
       option.label.toLowerCase().includes(query)
     );
   }, [conditionOptions, conditionSearchQuery, enableConditionSearch, externalFilteredConditionOptions]);
@@ -302,10 +313,13 @@ export default function SearchFilterToggle({
       if (clearCreatorFilter) {
         clearCreatorFilter();
       }
+      if (onClearDateFilter && dateFilter) {
+        onClearDateFilter();
+      }
     }
   };
 
-  const hasActiveFilters = searchQuery || statusFilter || roleFilter || categoryFilter || supplierFilter || retailerFilter || unitMeasureFilter || areaFilter || creatorFilter;
+  const hasActiveFilters = searchQuery || statusFilter || roleFilter || categoryFilter || supplierFilter || retailerFilter || unitMeasureFilter || areaFilter || creatorFilter || (dateFilter?.fromDate || dateFilter?.toDate);
 
   return (
     <>
@@ -470,6 +484,82 @@ export default function SearchFilterToggle({
                   </div>
                 )}
               </div>
+
+              {/* Date Filter */}
+              {enableDateFilter && (
+                <div className="relative date-filter-dropdown min-w-[180px]">
+                  <button
+                    onClick={() => setShowDateFilter && setShowDateFilter(!showDateFilter)}
+                    className={`flex items-center space-x-2 px-4 py-2 h-[38px] border border-slate-300 rounded-lg transition-colors
+                      focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]
+                      ${dateFilter?.fromDate || dateFilter?.toDate
+                        ? 'bg-[#d97706] text-white hover:bg-[#d97706]'
+                        : 'bg-white text-slate-700 hover:bg-slate-50'
+                      }`}
+                  >
+                    <Clock className="h-4 w-4 flex-shrink-0" />
+                    <span className="text-sm font-medium truncate">
+                      {dateFilter?.fromDate && dateFilter?.toDate
+                        ? `${dateFilter.fromDate} - ${dateFilter.toDate}`
+                        : dateFilter?.fromDate
+                          ? `Từ ${dateFilter.fromDate}`
+                          : dateFilter?.toDate
+                            ? `Đến ${dateFilter.toDate}`
+                            : dateFilterLabel}
+                    </span>
+                    <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                  </button>
+
+                  {showDateFilter && (
+                    <div className="absolute top-full left-0 mt-1 w-80 bg-white rounded-md shadow-lg border z-50 p-4">
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-1">{dateFilterFromLabel}</label>
+                          <input
+                            type="date"
+                            value={dateFilter?.fromDate || ''}
+                            onChange={(e) => setDateFilter && setDateFilter({ ...dateFilter, fromDate: e.target.value })}
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-1">{dateFilterToLabel}</label>
+                          <input
+                            type="date"
+                            value={dateFilter?.toDate || ''}
+                            onChange={(e) => setDateFilter && setDateFilter({ ...dateFilter, toDate: e.target.value })}
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d97706] focus:border-[#d97706]"
+                          />
+                        </div>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => {
+                              if (onClearDateFilter) {
+                                onClearDateFilter();
+                              }
+                              setShowDateFilter && setShowDateFilter(false);
+                            }}
+                            className="flex-1 px-3 py-2 text-sm bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200"
+                          >
+                            Xóa
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (onApplyDateFilter) {
+                                onApplyDateFilter();
+                              }
+                              setShowDateFilter && setShowDateFilter(false);
+                            }}
+                            className="flex-1 px-3 py-2 text-sm bg-[#d97706] text-white rounded-lg hover:bg-[#b8650f]"
+                          >
+                            Áp dụng
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Condition Filter (Tình trạng) */}
               {enableConditionFilter && (

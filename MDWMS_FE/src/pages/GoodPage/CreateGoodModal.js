@@ -12,6 +12,7 @@ import { getSuppliersDropdown } from "../../services/SupplierService"
 import { getStorageConditionsDropdown } from "../../services/StorageConditionService"
 import { getUnitMeasuresDropdown } from "../../services/UnitMeasureService"
 import { validateAndShowError, extractErrorMessage } from "../../utils/Validation"
+import FloatingDropdown from "../../components/Common/FloatingDropdown"
 
 export default function CreateGood({ isOpen, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -31,6 +32,25 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
   const [storageConditions, setStorageConditions] = useState([])
   const [unitMeasures, setUnitMeasures] = useState([])
   const [loadingData, setLoadingData] = useState(false)
+  const [validationErrors, setValidationErrors] = useState({})
+  const [packingErrors, setPackingErrors] = useState({})
+
+  // Reset form when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        goodsCode: "",
+        goodsName: "",
+        categoryId: "",
+        supplierId: "",
+        storageConditionId: "",
+        unitMeasureId: "",
+      })
+      setGoodsPackingCreates([{ unitPerPackage: "" }])
+      setValidationErrors({})
+      setPackingErrors({})
+    }
+  }, [isOpen])
 
   // Load data for dropdowns
   useEffect(() => {
@@ -71,6 +91,15 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
   const removePackingItem = (index) => {
     if (goodsPackingCreates.length > 1) {
       setGoodsPackingCreates(goodsPackingCreates.filter((_, i) => i !== index))
+      // Remove error for this index and reindex remaining errors
+      const newPackingErrors = {}
+      goodsPackingCreates.forEach((_, i) => {
+        if (i !== index && packingErrors[i]) {
+          const newIndex = i > index ? i - 1 : i
+          newPackingErrors[newIndex] = packingErrors[i]
+        }
+      })
+      setPackingErrors(newPackingErrors)
     }
   }
 
@@ -79,37 +108,72 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
       i === index ? { ...item, unitPerPackage: value } : item
     )
     setGoodsPackingCreates(updatedPackings)
+    // Clear error for this packing item when user starts typing
+    if (packingErrors[index]) {
+      setPackingErrors({ ...packingErrors, [index]: undefined })
+    }
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    // Validate required fields
-    if (!formData.goodsCode || !formData.goodsName || !formData.categoryId ||
-      !formData.supplierId || !formData.storageConditionId || !formData.unitMeasureId) {
-      window.showToast("Vui lòng điền đầy đủ thông tin", "error")
-      return
+    // Validate all required fields
+    const errors = {}
+    const packingErrs = {}
+
+    if (!formData.goodsCode?.trim()) {
+      errors.goodsCode = "Vui lòng nhập mã hàng hóa"
+    }
+
+    if (!formData.goodsName?.trim()) {
+      errors.goodsName = "Vui lòng nhập tên hàng hóa"
+    }
+
+    if (!formData.categoryId || formData.categoryId === "") {
+      errors.categoryId = "Vui lòng chọn danh mục"
+    }
+
+    if (!formData.supplierId || formData.supplierId === "") {
+      errors.supplierId = "Vui lòng chọn nhà cung cấp"
+    }
+
+    if (!formData.storageConditionId || formData.storageConditionId === "") {
+      errors.storageConditionId = "Vui lòng chọn điều kiện bảo quản"
+    }
+
+    if (!formData.unitMeasureId || formData.unitMeasureId === "") {
+      errors.unitMeasureId = "Vui lòng chọn đơn vị đo"
     }
 
     // Validate goodsPackingCreates
+    let hasPackingError = false
+    goodsPackingCreates.forEach((packing, index) => {
+      if (!packing.unitPerPackage || packing.unitPerPackage === "" || isNaN(packing.unitPerPackage) || parseInt(packing.unitPerPackage) <= 0) {
+        packingErrs[index] = "Vui lòng nhập số lượng hợp lệ (> 0)"
+        hasPackingError = true
+      }
+    })
+
+    if (hasPackingError || goodsPackingCreates.length === 0) {
+      if (goodsPackingCreates.length === 0) {
+        errors.packing = "Vui lòng nhập ít nhất một thông tin đóng gói"
+      }
+      setPackingErrors(packingErrs)
+    }
+
+    if (Object.keys(errors).length > 0 || hasPackingError) {
+      setValidationErrors(errors)
+      return
+    }
+
+    // Clear validation errors if validation passes
+    setValidationErrors({})
+    setPackingErrors({})
+
+    // Filter valid packings for submission
     const validPackings = goodsPackingCreates.filter(packing =>
       packing.unitPerPackage && !isNaN(packing.unitPerPackage) && parseInt(packing.unitPerPackage) > 0
     )
-
-    if (validPackings.length === 0) {
-      window.showToast("Vui lòng nhập ít nhất một thông tin đóng gói hợp lệ", "error")
-      return
-    }
-
-    // Check if all packing items have valid unitPerPackage
-    const hasEmptyPacking = goodsPackingCreates.some(packing =>
-      !packing.unitPerPackage || packing.unitPerPackage === "" || isNaN(packing.unitPerPackage) || parseInt(packing.unitPerPackage) <= 0
-    )
-
-    if (hasEmptyPacking) {
-      window.showToast("Vui lòng nhập đầy đủ số lượng cho tất cả các thông tin đóng gói", "error")
-      return
-    }
 
     try {
       setLoading(true)
@@ -121,8 +185,19 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
       }
 
       const response = await createGood(submitData)
-      console.log("Good created:", response)
       window.showToast("Thêm hàng hóa thành công!", "success")
+      // Reset form data after successful creation
+      setFormData({
+        goodsCode: "",
+        goodsName: "",
+        categoryId: "",
+        supplierId: "",
+        storageConditionId: "",
+        unitMeasureId: "",
+      })
+      setGoodsPackingCreates([{ unitPerPackage: "" }])
+      setValidationErrors({})
+      setPackingErrors({})
       onSuccess && onSuccess()
       onClose && onClose()
     } catch (error) {
@@ -146,6 +221,8 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
       unitMeasureId: "",
     })
     setGoodsPackingCreates([{ unitPerPackage: "" }])
+    setValidationErrors({})
+    setPackingErrors({})
     onClose && onClose()
   }
 
@@ -179,10 +256,17 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
                   id="goodsCode"
                   placeholder="Nhập mã hàng hóa..."
                   value={formData.goodsCode}
-                  onChange={(e) => setFormData({ ...formData, goodsCode: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, goodsCode: e.target.value })
+                    if (validationErrors.goodsCode) {
+                      setValidationErrors({ ...validationErrors, goodsCode: undefined })
+                    }
+                  }}
                   className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                  required
                 />
+                {validationErrors.goodsCode && (
+                  <p className="text-sm text-red-500 font-medium">{validationErrors.goodsCode}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -193,10 +277,17 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
                   id="goodsName"
                   placeholder="Nhập tên hàng hóa..."
                   value={formData.goodsName}
-                  onChange={(e) => setFormData({ ...formData, goodsName: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, goodsName: e.target.value })
+                    if (validationErrors.goodsName) {
+                      setValidationErrors({ ...validationErrors, goodsName: undefined })
+                    }
+                  }}
                   className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                  required
                 />
+                {validationErrors.goodsName && (
+                  <p className="text-sm text-red-500 font-medium">{validationErrors.goodsName}</p>
+                )}
               </div>
             </div>
 
@@ -206,38 +297,48 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
                 <Label htmlFor="categoryId" className="text-sm font-medium text-slate-700">
                   Danh mục <span className="text-red-500">*</span>
                 </Label>
-                <CustomDropdown
-                  value={formData.categoryId}
-                  onChange={(value) => setFormData({ ...formData, categoryId: value })}
-                  options={[
-                    { value: "", label: "Chọn danh mục..." },
-                    ...categories.map((category) => ({
-                      value: category.categoryId.toString(),
-                      label: category.categoryName
-                    }))
-                  ]}
+                <FloatingDropdown
+                  value={formData.categoryId ? formData.categoryId.toString() : null}
+                  onChange={(value) => {
+                    setFormData({ ...formData, categoryId: value ? parseInt(value) : null });
+                    if (validationErrors.categoryId) {
+                      setValidationErrors({ ...validationErrors, categoryId: undefined });
+                    }
+                  }}
+                  options={categories.map((category) => ({
+                    value: category.categoryId.toString(),
+                    label: category.categoryName,
+                  }))}
                   placeholder="Chọn danh mục..."
                   loading={loadingData}
                 />
+                {validationErrors.categoryId && (
+                  <p className="text-sm text-red-500 font-medium">{validationErrors.categoryId}</p>
+                )}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="supplierId" className="text-sm font-medium text-slate-700">
                   Nhà cung cấp <span className="text-red-500">*</span>
                 </Label>
-                <CustomDropdown
-                  value={formData.supplierId}
-                  onChange={(value) => setFormData({ ...formData, supplierId: value })}
-                  options={[
-                    { value: "", label: "Chọn nhà cung cấp..." },
-                    ...suppliers.map((supplier) => ({
-                      value: supplier.supplierId.toString(),
-                      label: supplier.companyName
-                    }))
-                  ]}
+                <FloatingDropdown
+                  value={formData.supplierId ? formData.supplierId.toString() : null}
+                  onChange={(value) => {
+                    setFormData({ ...formData, supplierId: value ? parseInt(value) : null });
+                    if (validationErrors.supplierId) {
+                      setValidationErrors({ ...validationErrors, supplierId: undefined });
+                    }
+                  }}
+                  options={suppliers.map((supplier) => ({
+                    value: supplier.supplierId.toString(),
+                    label: supplier.companyName,
+                  }))}
                   placeholder="Chọn nhà cung cấp..."
                   loading={loadingData}
                 />
+                {validationErrors.supplierId && (
+                  <p className="text-sm text-red-500 font-medium">{validationErrors.supplierId}</p>
+                )}
               </div>
             </div>
 
@@ -249,7 +350,12 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
                 </Label>
                 <CustomDropdown
                   value={formData.storageConditionId}
-                  onChange={(value) => setFormData({ ...formData, storageConditionId: value })}
+                  onChange={(value) => {
+                    setFormData({ ...formData, storageConditionId: value })
+                    if (validationErrors.storageConditionId) {
+                      setValidationErrors({ ...validationErrors, storageConditionId: undefined })
+                    }
+                  }}
                   options={[
                     { value: "", label: "Chọn điều kiện bảo quản..." },
                     ...storageConditions.map((condition) => ({
@@ -260,25 +366,33 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
                   placeholder="Chọn điều kiện bảo quản..."
                   loading={loadingData}
                 />
+                {validationErrors.storageConditionId && (
+                  <p className="text-sm text-red-500 font-medium">{validationErrors.storageConditionId}</p>
+                )}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="unitMeasureId" className="text-sm font-medium text-slate-700">
                   Đơn vị đo <span className="text-red-500">*</span>
                 </Label>
-                <CustomDropdown
-                  value={formData.unitMeasureId}
-                  onChange={(value) => setFormData({ ...formData, unitMeasureId: value })}
-                  options={[
-                    { value: "", label: "Chọn đơn vị đo..." },
-                    ...unitMeasures.map((unit) => ({
-                      value: unit.unitMeasureId.toString(),
-                      label: unit.name
-                    }))
-                  ]}
+                <FloatingDropdown
+                  value={formData.unitMeasureId ? formData.unitMeasureId.toString() : null}
+                  onChange={(value) => {
+                    setFormData({ ...formData, unitMeasureId: value ? parseInt(value) : null });
+                    if (validationErrors.unitMeasureId) {
+                      setValidationErrors({ ...validationErrors, unitMeasureId: undefined });
+                    }
+                  }}
+                  options={unitMeasures.map((unit) => ({
+                    value: unit.unitMeasureId.toString(),
+                    label: unit.name,
+                  }))}
                   placeholder="Chọn đơn vị đo..."
                   loading={loadingData}
                 />
+                {validationErrors.unitMeasureId && (
+                  <p className="text-sm text-red-500 font-medium">{validationErrors.unitMeasureId}</p>
+                )}
               </div>
             </div>
 
@@ -302,7 +416,7 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {goodsPackingCreates.map((packing, index) => (
                     <div key={index} className="flex items-end gap-2">
-                      <div className="flex-1">
+                      <div className="flex-1 space-y-2">
                         <Label className="text-sm font-medium text-slate-600">
                           Số {unitMeasures.find(unit => unit.unitMeasureId.toString() === formData.unitMeasureId)?.name || 'đơn vị'} trên 1 thùng
                         </Label>
@@ -311,9 +425,12 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
                           placeholder="Nhập số lượng..."
                           value={packing.unitPerPackage}
                           onChange={(e) => updatePackingItem(index, e.target.value)}
-                          className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg mt-1"
+                          className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
                           min="1"
                         />
+                        {packingErrors[index] && (
+                          <p className="text-sm text-red-500 font-medium">{packingErrors[index]}</p>
+                        )}
                       </div>
                       {goodsPackingCreates.length > 1 && (
                         <Button
@@ -327,6 +444,10 @@ export default function CreateGood({ isOpen, onClose, onSuccess }) {
                     </div>
                   ))}
                 </div>
+
+                {validationErrors.packing && (
+                  <p className="text-sm text-red-500 font-medium mt-3">{validationErrors.packing}</p>
+                )}
 
                 <p className="text-xs text-slate-500 mt-3">
                   * Nhập số lượng {unitMeasures.find(unit => unit.unitMeasureId.toString() === formData.unitMeasureId)?.name || 'đơn vị'} có trong mỗi thùng đóng gói

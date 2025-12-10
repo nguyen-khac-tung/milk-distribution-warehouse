@@ -1,6 +1,7 @@
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
+using MilkDistributionWarehouse.Utilities;
 using System;
 using System.Threading.Tasks;
 
@@ -8,7 +9,7 @@ namespace MilkDistributionWarehouse.Services
 {
     public interface IStocktakingStatusDomainService
     {
-        Task<string> UpdateLocationStatusAsync(Guid stocktakingLocationId, int statusChange);
+        Task<string> UpdateLocationStatusAsync(Guid stocktakingLocationId, int statusChange, int? statusCheck);
         Task<string> UpdateAreaStatusAsync(Guid stocktakingAreaId, int statusChange);
         Task<string> UpdateAreaStatusAsync(StocktakingArea stocktakingArea, int statusChange);
         Task<string> UpdateSheetStatusAsync(StocktakingSheet stocktakingSheet, int statusChange, string? note = null);
@@ -29,7 +30,7 @@ namespace MilkDistributionWarehouse.Services
             _stocktakingSheetRepository = stocktakingSheetRepository;
         }
 
-        public async Task<string> UpdateLocationStatusAsync(Guid stocktakingLocationId, int statusChange)
+        public async Task<string> UpdateLocationStatusAsync(Guid stocktakingLocationId, int statusChange, int? statusCheck)
         {
             if (stocktakingLocationId == Guid.Empty)
                 return "Mã kiểm kê vị trí không hợp lệ.";
@@ -38,11 +39,14 @@ namespace MilkDistributionWarehouse.Services
             if (stocktakingLocationExist == null)
                 return "Kiểm kê vị trí không tồn tại trong hệ thống.";
 
+            if (statusCheck.HasValue && stocktakingLocationExist.Status != statusCheck.Value)
+                return "Không thể cập nhật trạng thái của kiểm kê vị trí.";
+
             if (stocktakingLocationExist.Status == statusChange)
                 return string.Empty;
 
             stocktakingLocationExist.Status = statusChange;
-            stocktakingLocationExist.UpdateAt = DateTime.Now;
+            stocktakingLocationExist.UpdateAt = DateTimeUtility.Now();
 
             var updateResult = await _stocktakingLocationRepository.UpdateStocktakingLocation(stocktakingLocationExist);
             if (updateResult == 0)
@@ -58,7 +62,7 @@ namespace MilkDistributionWarehouse.Services
                 return "Kiểm kê khu vực trống.";
 
             stocktakingArea.Status = statusChange;
-            stocktakingArea.UpdateAt = DateTime.Now;
+            stocktakingArea.UpdateAt = DateTimeUtility.Now();
 
             var updateResult = await _stocktakingAreaRepository.UpdateStocktakingArea(stocktakingArea);
             if (updateResult == 0)
@@ -77,7 +81,7 @@ namespace MilkDistributionWarehouse.Services
             if (stocktakingArea.Status != statusChange)
                 stocktakingArea.Status = statusChange;
 
-            stocktakingArea.UpdateAt = DateTime.Now;
+            stocktakingArea.UpdateAt = DateTimeUtility.Now();
 
             var updateResult = await _stocktakingAreaRepository.UpdateStocktakingArea(stocktakingArea);
             if (updateResult == 0)
@@ -98,7 +102,7 @@ namespace MilkDistributionWarehouse.Services
             if (!string.IsNullOrEmpty(note))
                 stocktakingSheet.Note = note;
 
-            stocktakingSheet.UpdateAt = DateTime.Now;
+            stocktakingSheet.UpdateAt = DateTimeUtility.Now();
 
             var updateResult = await _stocktakingSheetRepository.UpdateStockingtakingSheet(stocktakingSheet);
             if (updateResult == 0)
@@ -124,7 +128,7 @@ namespace MilkDistributionWarehouse.Services
                 return;
 
             stockSheet.Status = StocktakingStatus.InProgress;
-            stockSheet.UpdateAt = DateTime.Now;
+            stockSheet.UpdateAt = DateTimeUtility.Now();
 
             await _stocktakingSheetRepository.UpdateStockingtakingSheet(stockSheet);
         }

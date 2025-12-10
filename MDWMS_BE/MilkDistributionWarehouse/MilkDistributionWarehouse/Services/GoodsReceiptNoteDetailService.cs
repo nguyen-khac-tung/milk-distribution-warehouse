@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.AspNetCore.Mvc;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
@@ -16,7 +17,7 @@ namespace MilkDistributionWarehouse.Services
     {
         Task<(string, List<GoodsReceiptNoteDetailPalletDto>)> GetListGRNDByGRNId(string grnId);
         Task<(string, T?)> UpdateGRNDetail<T>(T update, int? userId) where T : GoodsReceiptNoteDetailUpdateStatus;
-        Task<(string, List<GoodsReceiptNoteDetailRejectDto>?)> UpdateGRNReject(List<GoodsReceiptNoteDetailRejectDto> updateRejects);
+        Task<(string, List<GoodsReceiptNoteDetailRejectDto>?)> UpdateGRNReject(List<GoodsReceiptNoteDetailRejectDto> updateRejects, int? userId);
     }
 
     public class GoodsReceiptNoteDetailService : IGoodsReceiptNoteDetailService
@@ -25,15 +26,17 @@ namespace MilkDistributionWarehouse.Services
         private readonly IMapper _mapper;
         private readonly IUnitOfWork _unitOfWork;
         private readonly INotificationService _notificationService;
+        private readonly IUserRepository _userRepository;
 
         public GoodsReceiptNoteDetailService(IGoodsReceiptNoteDetailRepository grndRepository, IMapper mapper,
             IUnitOfWork unitOfWork,
-            INotificationService notificationService)
+            INotificationService notificationService, IUserRepository userRepository)
         {
             _grndRepository = grndRepository;
             _mapper = mapper;
             _unitOfWork = unitOfWork;
             _notificationService = notificationService;
+            _userRepository = userRepository;
         }
 
         public async Task<(string, List<GoodsReceiptNoteDetailPalletDto>)> GetListGRNDByGRNId(string grnId)
@@ -74,7 +77,7 @@ namespace MilkDistributionWarehouse.Services
                     if (currentStatus != ReceiptItemStatus.Receiving)
                         throw new Exception("Chỉ được chuyển thạng thái đã kiểm tra khi mục nhập kho chi tiết ở trạng thái Đang tiếp nhận.".ToMessageForUser());
                     if (createdBy != userId)
-                        throw new Exception("Current User has no permission to update.");
+                        throw new Exception("Bạn không có quyền thực hiện chức năng này.".ToMessageForUser());
 
                     string msg = CheckGRNDetailUpdateValidation(inspectedDto, grnDetail);
                     if (!string.IsNullOrEmpty(msg))
@@ -88,7 +91,7 @@ namespace MilkDistributionWarehouse.Services
                     if (currentStatus != ReceiptItemStatus.Inspected)
                         throw new Exception("Chỉ được chuyển về trạng thái Đang tiếp nhận khi mục nhập kho chi tiết ở trạng thái Đã kiểm tra.".ToMessageForUser());
                     if (createdBy != userId)
-                        throw new Exception("Current User has no permission to update.");
+                        throw new Exception("Bạn không có quyền thực hiện chức năng này.".ToMessageForUser());
 
                     grnDetail = _mapper.Map(update, grnDetail);
                 }
@@ -98,15 +101,22 @@ namespace MilkDistributionWarehouse.Services
                     if (currentStatus != ReceiptItemStatus.Inspected)
                         throw new Exception("Chỉ được chuyển sang trạng thái Đã kiểm tra khi mục nhập kho chi tiết ở trạng thái Đã kiểm tra.".ToMessageForUser());
                     if (createdBy != userId)
-                        throw new Exception("Current User has no permission to update.");
+                        throw new Exception("Bạn không có quyền thực hiện chức năng này.".ToMessageForUser());
 
                     grnDetail = _mapper.Map(update, grnDetail);
                 }
 
+                //warehouse - manager
                 if (update is GoodsReceiptNoteDetailRejectDto rejectDto)
                 {
                     if (currentStatus != ReceiptItemStatus.PendingApproval)
                         throw new Exception("Chỉ được chuyển sang trạng thái Từ chối khi mục nhập kho chi tiết ở trạng thái Chờ duyệt.".ToMessageForUser());
+
+                    await EnsureRolePermission(
+                            RoleType.WarehouseManager,
+                            userId,
+                            "Tài khoản quản lý kho không tồn tại hoặc đã bị vô hiệu hoá.",
+                            "Bạn không có quyền thực hiện chức năng này");
 
                     if (string.IsNullOrEmpty(rejectDto.RejectionReason))
                         throw new Exception("Từ chối phải có lý do.".ToMessageForUser());
@@ -117,10 +127,17 @@ namespace MilkDistributionWarehouse.Services
                     flag = 1;
                 }
 
+                //warehouse - manager
                 if (update is GoodsReceiptNoteDetailCompletedDto)
                 {
                     if (currentStatus != ReceiptItemStatus.PendingApproval)
                         throw new Exception("Chỉ được chuyển sang trạng thái Đã hoàn thành khi mục nhập kho chi tiết ở trạng thái Chờ duyệt.".ToMessageForUser());
+
+                    await EnsureRolePermission(
+                            RoleType.WarehouseManager,
+                            userId,
+                            "Tài khoản quản lý kho không tồn tại hoặc đã bị vô hiệu hoá.",
+                            "Bạn không có quyền thực hiện chức năng này");
 
                     grnDetail = _mapper.Map(update, grnDetail);
                     grnDetail.RejectionReason = "";
@@ -143,7 +160,7 @@ namespace MilkDistributionWarehouse.Services
             }
         }
 
-        public async Task<(string, List<GoodsReceiptNoteDetailRejectDto>?)> UpdateGRNReject(List<GoodsReceiptNoteDetailRejectDto> updateRejects)
+        public async Task<(string, List<GoodsReceiptNoteDetailRejectDto>?)> UpdateGRNReject(List<GoodsReceiptNoteDetailRejectDto> updateRejects, int? userId)
         {
             if (updateRejects.Count == 0)
                 return ("Data list input is invalid.", default);
@@ -154,6 +171,12 @@ namespace MilkDistributionWarehouse.Services
                 foreach (var rejectDto in updateRejects)
                 {
                     var grnDetail = await _grndRepository.GetGRNDetailById(rejectDto.GoodsReceiptNoteDetailId);
+
+                    await EnsureRolePermission(
+                            RoleType.WarehouseManager,
+                            userId,
+                            "Tài khoản quản lý kho không tồn tại hoặc đã bị vô hiệu hoá.",
+                            "Bạn không có quyền thực hiện chức năng này");
 
                     if (grnDetail == null) throw new Exception("GRN detail is not exist.");
 
@@ -220,5 +243,15 @@ namespace MilkDistributionWarehouse.Services
             await _notificationService.CreateNotification(notificationToCreate);
         }
 
+        private async Task EnsureRolePermission(int roleType, int? userId, string missingRoleMessage, string noPermissionMessage)
+        {
+            var users = await _userRepository.GetUsersByRoleId(roleType);
+
+            if (!users.Any())
+                throw new Exception(missingRoleMessage.ToMessageForUser(), default);
+
+            if (userId == null || !users.Any(user => user.UserId == userId))
+                throw new Exception(noPermissionMessage.ToMessageForUser(), default);
+        }
     }
 }

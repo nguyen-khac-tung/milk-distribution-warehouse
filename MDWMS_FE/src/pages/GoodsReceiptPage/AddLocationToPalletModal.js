@@ -37,7 +37,7 @@ export default function AddLocationToPalletModal({ isOpen, onClose, onSuccess, p
       setLocationValidated(false);
       setValidatedLocationData(null);
       setError("");
-      
+
       // Nếu có suggestedLocationCode, tự động kiểm tra sau một chút delay
       if (suggestedCode) {
         setTimeout(() => {
@@ -57,7 +57,7 @@ export default function AddLocationToPalletModal({ isOpen, onClose, onSuccess, p
   const handleCheckLocationCode = async (locationCodeToCheck = null) => {
     // Sử dụng locationCodeToCheck nếu có (từ quét), nếu không thì dùng formData.locationCode
     const codeToCheck = locationCodeToCheck || formData.locationCode;
-    
+
     // Đảm bảo codeToCheck là string và không rỗng
     if (!codeToCheck || typeof codeToCheck !== 'string') {
       window.showToast?.("Vui lòng nhập mã vị trí", "error");
@@ -82,19 +82,19 @@ export default function AddLocationToPalletModal({ isOpen, onClose, onSuccess, p
       setCheckingLocation(true);
       setError("");
       const result = await validateLocationCode(trimmedCode, palletId);
-      
+
       // Lấy message từ result - chỉ hiển thị toast nếu là message từ API (không phải default "Mã vị trí hợp lệ")
       const message = result.message || "";
       const isDefaultMessage = message === "Mã vị trí hợp lệ";
       const processedMessage = message ? extractErrorMessage({ response: { data: { message } } }, message) : (result.success ? "Mã vị trí hợp lệ" : "Mã vị trí không tồn tại");
-      
+
       if (result.success && result.data) {
         setLocationValidated(true);
         setValidatedLocationData(result.data);
-        
+
         // Dữ liệu đã được lưu trong validatedLocationData để hiển thị
         // Không cần lưu vào formData vì các trường chỉ hiển thị (read-only)
-        
+
         // Chỉ hiển thị toast khi có message từ API (cảnh báo), không hiển thị default message "Mã vị trí hợp lệ"
         if (message && !isDefaultMessage) {
           window.showToast?.(processedMessage, "error");
@@ -123,7 +123,7 @@ export default function AddLocationToPalletModal({ isOpen, onClose, onSuccess, p
   const handleLocationCodeChange = (value) => {
     // Đảm bảo value là string (tránh lỗi khi nhận giá trị không hợp lệ)
     const stringValue = value != null ? String(value) : "";
-    
+
     setFormData({ ...formData, locationCode: stringValue });
     setLocationValidated(false);
     setValidatedLocationData(null);
@@ -166,7 +166,7 @@ export default function AddLocationToPalletModal({ isOpen, onClose, onSuccess, p
       console.error("Pallet data:", pallet);
       return;
     }
-    
+
     // Convert palletId thành string (theo yêu cầu của API)
     const palletId = String(palletIdRaw);
 
@@ -200,9 +200,8 @@ export default function AddLocationToPalletModal({ isOpen, onClose, onSuccess, p
         goodsReceiptNoteId: pallet.goodsReceiptNoteId || pallet.goodsReceiptNote?.goodsReceiptNoteId || "",
       };
 
-      console.log("Updating pallet with:", { palletId, payload });
       const response = await updatePallet(palletId, payload);
-      
+
       if (response?.success !== false) {
         window.showToast?.("Thêm vị trí cho pallet thành công!", "success");
         onSuccess && onSuccess();

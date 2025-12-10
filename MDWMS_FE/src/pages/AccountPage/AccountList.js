@@ -10,7 +10,7 @@ import EmptyState from "../../components/Common/EmptyState"
 import { StatusToggle } from "../../components/Common/SwitchToggle/StatusToggle"
 import { getUserList, updateUserStatus, deleteUser } from "../../services/AccountService"
 import { getRoleList } from "../../services/RoleService"
-import { extractErrorMessage } from "../../utils/Validation"
+import { extractErrorMessage, cleanErrorMessage } from "../../utils/Validation"
 import CreateAccountModal from "./CreateAccountModal"
 import UpdateAccountModal from "./UpdateAccountModal"
 import { AccountDetail } from "./ViewAccountModal"
@@ -94,6 +94,11 @@ export default function AdminPage() {
   const [statusSearchQuery, setStatusSearchQuery] = useState("")
   const [roleSearchQuery, setRoleSearchQuery] = useState("")
 
+  // Handler để xử lý search query
+  const handleSearchQueryChange = (value) => {
+    setSearchQuery(value)
+  }
+
   const [sortColumn, setSortColumn] = useState(null)
   const [sortDirection, setSortDirection] = useState("asc")
 
@@ -172,14 +177,12 @@ export default function AdminPage() {
   }
   const handleStatusChange = async (id, newStatus, name) => {
     try {
-      // console.log(`Updating user ${id} (${name}) status to ${newStatus}`)
       const response = await updateUserStatus(id, newStatus)
 
       // Kiểm tra response từ backend
       if (response && response.success === true) {
         const statusText = newStatus === 1 ? "kích hoạt" : "ngừng hoạt động"
         window.showToast(`Đã ${statusText} người dùng "${name}" thành công`, "success")
-        // console.log(`Successfully updated user ${name} status to ${newStatus}`)
 
         // Refresh all users for stats
         fetchAllUsersForStats()
@@ -196,17 +199,11 @@ export default function AdminPage() {
         })
       } else {
         // Hiển thị thông báo lỗi từ backend
-        let errorMessage = response?.message || response?.data?.message || "Có lỗi xảy ra khi cập nhật trạng thái người dùng"
-
-        // Kiểm tra nếu lỗi liên quan đến việc không thể vô hiệu hóa người dùng quan trọng
-        if (errorMessage.includes("Failed to update user status") ||
-          errorMessage.includes("không thể") ||
-          errorMessage.includes("quản lý") ||
-          errorMessage.includes("admin") ||
-          errorMessage.includes("business owner")) {
-          errorMessage = "Không thể cập nhật trạng thái người dùng khi đã có đủ các vai trò quan trọng (quản lý kho, quản lý kinh doanh, admin, business owner)"
-        }
-
+        // Response có cấu trúc: { status, message, data, success }
+        // Lấy message trực tiếp từ response và clean nó
+        const errorMessage = response?.message 
+          ? cleanErrorMessage(response.message)
+          : extractErrorMessage({ response: { data: response } }, "Có lỗi xảy ra khi cập nhật trạng thái người dùng")
         window.showToast(errorMessage, "error")
         // console.error(`Failed to update user ${name} status:`, response?.message)
       }
@@ -229,6 +226,15 @@ export default function AdminPage() {
     setShowDeleteModal(true)
   }
 
+  // Normalize function: lowercase, trim, and collapse multiple spaces into one
+  const normalize = (str) => {
+    if (!str) return "";
+    return str
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, " "); // gom nhiều space thành 1 space
+  };
+
   // Fetch data from API
   const fetchData = async (searchParams = {}) => {
     try {
@@ -244,10 +250,14 @@ export default function AdminPage() {
         filters.roleId = String(roleFilter)
       }
 
+      // Normalize search query trước khi gọi API (nhưng vẫn giữ nguyên giá trị trong input khi đang gõ)
+      const searchValue = searchParams.search !== undefined ? searchParams.search : searchQuery
+      const normalizedSearch = normalize(searchValue)
+
       const response = await getUserList({
         pageNumber: searchParams.pageNumber !== undefined ? searchParams.pageNumber : pagination.pageNumber,
         pageSize: searchParams.pageSize !== undefined ? searchParams.pageSize : pagination.pageSize,
-        search: searchParams.search !== undefined ? searchParams.search : searchQuery,
+        search: normalizedSearch,
         sortField: searchParams.sortField || sortColumn || "",
         sortAscending: searchParams.sortAscending !== undefined ? searchParams.sortAscending : sortDirection === "asc",
         filters,
@@ -317,12 +327,10 @@ export default function AdminPage() {
     if (!userToDelete) return
 
     try {
-      // console.log(`Deleting user ${userToDelete.userId || userToDelete.id} (${userToDelete.fullName})`)
       const response = await deleteUser(userToDelete.userId || userToDelete.id)
 
       if (response && response.success !== false) {
         window.showToast(`Đã xóa người dùng "${userToDelete.fullName}" thành công`, "success")
-        // console.log(`Successfully deleted user ${userToDelete.fullName}`)
 
         // Calculate if current page will be empty after deletion
         const currentPageItemCount = allEmployees.length
@@ -415,17 +423,20 @@ export default function AdminPage() {
   const filterAndSortEmployees = () => {
     if (!Array.isArray(allEmployees)) return []
 
+    // Normalize search query để filter chính xác (nhưng vẫn giữ nguyên giá trị trong input khi đang gõ)
+    const normalizedSearchQuery = normalize(searchQuery)
+
     return allEmployees
       .filter((employee) => {
         const roles = employee.roles || []
-        const rolesString = roles.join(" ").toLowerCase()
+        const rolesString = roles.join(" ")
         const fullName = employee.fullName || ""
         const email = employee.email || ""
 
         const matchesSearch =
-          fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          rolesString.includes(searchQuery.toLowerCase())
+          normalize(fullName).includes(normalizedSearchQuery) ||
+          normalize(email).includes(normalizedSearchQuery) ||
+          normalize(rolesString).includes(normalizedSearchQuery)
 
         let matchesStatus = true
         if (statusFilter) {
@@ -514,7 +525,7 @@ export default function AdminPage() {
       className="hover:bg-slate-50 border-b border-slate-200"
     >
       <TableCell className="px-6 py-4 text-slate-600 font-medium">
-        {index + 1}
+      {(pagination.pageNumber - 1) * pagination.pageSize + (index + 1)}
       </TableCell>
       <TableCell className="px-6 py-4 text-slate-700 font-medium">
         {employee.email || "N/A"}
@@ -622,7 +633,7 @@ export default function AdminPage() {
         <Card className="shadow-sm border border-slate-200 overflow-visible bg-gray-50">
           <SearchFilterToggle
             searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
+            setSearchQuery={handleSearchQueryChange}
             searchPlaceholder="Tìm kiếm theo tên, email"
             statusFilter={statusFilter}
             setStatusFilter={setStatusFilter}

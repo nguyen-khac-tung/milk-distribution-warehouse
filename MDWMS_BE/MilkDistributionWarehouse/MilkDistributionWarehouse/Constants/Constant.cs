@@ -254,7 +254,8 @@
         public const int StocktakingSheet = 7;
         public const int InventoryReport = 8;
         public const int NoNavigation = 9;
-        public const int StocktakingArea = 10;
+        public const int StocktakingAreaStaff = 10;
+        public const int StocktakingAreaManager = 11;
     }
 
     public static class StocktakingSettings
@@ -271,7 +272,9 @@
         public const int Issue = 2;
         public const int Disposal = 3;
     }
-
+    /// <summary>
+    /// Các cấu hình cho Scheduled Notifications
+    /// </summary>
     public static class InventoryConfig
     {
         public const int NotificationHour = 9; // Giờ chạy thông báo (0-23)
@@ -279,4 +282,12 @@
         public const int LowStockThreshold = 10;       // Cảnh báo dưới 10 thùng
     }
 
+    /// <summary>
+    /// Địa chỉ của kho phân phối sữa
+    /// </summary>
+    public static class WarehouseInformation
+    {
+        public const string Name = "Kho Phân Phối Sữa";
+        public const string Address = "Hà Nội";
+    }
 }

@@ -1,8 +1,10 @@
 ﻿using AutoMapper;
+using System.Linq;
 using MilkDistributionWarehouse.Constants;
 using MilkDistributionWarehouse.Models.DTOs;
 using MilkDistributionWarehouse.Models.Entities;
 using MilkDistributionWarehouse.Repositories;
+using MilkDistributionWarehouse.Utilities;
 
 namespace MilkDistributionWarehouse.Services
 {
@@ -30,11 +32,19 @@ namespace MilkDistributionWarehouse.Services
         {
             try
             {
+                // If there is already any ledger record for this goods + packing, skip creating an initial zero-entry ledger
+                var existing = await _inventoryLedgerRepository.GetLastInventoryLedgerAsync(dto.GoodsId, dto.GoodPackingId);
+                if (existing != null)
+                {
+                    // nothing to create, return success (no-op)
+                    return ("", dto);
+                }
+
                 var entity = new InventoryLedger
                 {
                     GoodsId = dto.GoodsId,
                     GoodPackingId = dto.GoodPackingId,
-                    EventDate = dto.EventDate ?? DateTime.Now,
+                    EventDate = dto.EventDate ?? DateTimeUtility.Now(),
                     InQty = dto.InQty ?? 0,
                     OutQty = dto.OutQty ?? 0,
                     BalanceAfter = dto.BalanceAfter ?? 0,
@@ -65,11 +75,19 @@ namespace MilkDistributionWarehouse.Services
                 {
                     try
                     {
+                        // Skip if ledger already exists for this goods+packing (avoid duplicate initial entries)
+                        var existing = await _inventoryLedgerRepository.GetLastInventoryLedgerAsync(dto.GoodsId, dto.GoodPackingId);
+                        if (existing != null)
+                        {
+                            // skip creation for this dto
+                            continue;
+                        }
+
                         var entity = new InventoryLedger
                         {
                             GoodsId = dto.GoodsId,
                             GoodPackingId = dto.GoodPackingId,
-                            EventDate = dto.EventDate ?? DateTime.Now,
+                            EventDate = dto.EventDate ?? DateTimeUtility.Now(),
                             InQty = dto.InQty ?? 0,
                             OutQty = dto.OutQty ?? 0,
                             BalanceAfter = dto.BalanceAfter ?? 0,
@@ -130,7 +148,7 @@ namespace MilkDistributionWarehouse.Services
                     {
                         GoodsId = d.GoodsId ?? 0,
                         GoodPackingId = d.GoodsPackingId ?? 0,
-                        EventDate = DateTime.Now,
+                        EventDate = DateTimeUtility.Now(),
                         InQty = 0,
                         OutQty = outQty,
                         BalanceAfter = balanceAfter,
@@ -174,7 +192,7 @@ namespace MilkDistributionWarehouse.Services
                     {
                         GoodsId = d.GoodsId ?? 0,
                         GoodPackingId = d.GoodsPackingId ?? 0,
-                        EventDate = DateTime.Now,
+                        EventDate = DateTimeUtility.Now(),
                         InQty = 0,
                         OutQty = outQty,
                         BalanceAfter = balanceAfter,
@@ -218,7 +236,7 @@ namespace MilkDistributionWarehouse.Services
                     {
                         GoodsId = d.GoodsId,
                         GoodPackingId = d.GoodsPackingId ?? 0,
-                        EventDate = DateTime.Now,
+                        EventDate = DateTimeUtility.Now(),
                         InQty = inQty,
                         OutQty = 0,
                         BalanceAfter = balanceAfter,

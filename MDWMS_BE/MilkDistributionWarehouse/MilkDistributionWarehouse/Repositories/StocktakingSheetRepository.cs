@@ -10,6 +10,7 @@ namespace MilkDistributionWarehouse.Repositories
     {
         IQueryable<StocktakingSheet> GetStocktakingSheet();
         Task<StocktakingSheet?> GetStocktakingSheetById(string stocktakingSheetId);
+        Task<StocktakingSheet?> GetStocktakingSheetForDeleteById(string stocktakingSheetId);
         Task<int> CreateStocktakingSheet(StocktakingSheet create);
         Task<int> UpdateStockingtakingSheet(StocktakingSheet update);
         Task<int> DeleteStocktakingSheet(StocktakingSheet delete);
@@ -51,6 +52,14 @@ namespace MilkDistributionWarehouse.Repositories
                 .FirstOrDefaultAsync(ss => ss.StocktakingSheetId.Equals(stocktakingSheetId));
         }
 
+        public async Task<StocktakingSheet?> GetStocktakingSheetForDeleteById(string stocktakingSheetId)
+        {
+            return await _context.StocktakingSheets
+                .Include(ss => ss.StocktakingAreas)
+                .AsNoTracking()
+                .AsSplitQuery()
+                .FirstOrDefaultAsync(ss => ss.StocktakingSheetId.Equals(stocktakingSheetId));
+        } 
 
         public async Task<int> CreateStocktakingSheet(StocktakingSheet create)
         {
@@ -126,10 +135,11 @@ namespace MilkDistributionWarehouse.Repositories
 
         public async Task<bool> HasActiveStocktakingInProgressAsync()
         {
-            return await _context.StocktakingSheets
-                .AnyAsync(ss => ss.Status == StocktakingStatus.InProgress 
-                    || ss.Status == StocktakingStatus.PendingApproval 
-                    || ss.Status == StocktakingStatus.Approved);
+            //return await _context.StocktakingSheets
+            //    .AnyAsync(ss => ss.Status == StocktakingStatus.InProgress 
+            //        || ss.Status == StocktakingStatus.PendingApproval 
+            //        || ss.Status == StocktakingStatus.Approved);
+            return false;
         }
     }
 }

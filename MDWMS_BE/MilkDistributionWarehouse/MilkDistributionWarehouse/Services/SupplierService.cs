@@ -22,6 +22,7 @@ namespace MilkDistributionWarehouse.Services
         Task<(string, SupplierDetail)> DeleteSupplier(int supplierId);
         Task<(string, SupplierUpdateStatusDto)> UpdateSupplierStatus(SupplierUpdateStatusDto update);
         Task<(string, List<SupplierDropDown>)> GetSupplierDropDown();
+        Task<(string, List<SupplierDropDown>)> GetSupplierWithGoodsDropDown();
     }
     public class SupplierService : ISupplierService
     {
@@ -56,6 +57,21 @@ namespace MilkDistributionWarehouse.Services
         {
             var query = await _supplierRepository.GetSuppliers()
                 .Where(s => s.Status == CommonStatus.Active)
+                .ToListAsync();
+
+            var supplierDropDown = _mapper.Map<List<SupplierDropDown>>(query);
+
+            if (!supplierDropDown.Any()) return ("Danh sách nhà cung cấp trống.".ToMessageForUser(), new List<SupplierDropDown>());
+            return ("", supplierDropDown);
+        }
+
+        public async Task<(string, List<SupplierDropDown>)> GetSupplierWithGoodsDropDown()
+        {
+            var query = await _supplierRepository.GetSuppliers()
+                .Where(s => 
+                    s.Status == CommonStatus.Active &&
+                    s.Goods.Any(g => g.Status == CommonStatus.Active)
+                        )
                 .ToListAsync();
 
             var supplierDropDown = _mapper.Map<List<SupplierDropDown>>(query);
@@ -138,7 +154,7 @@ namespace MilkDistributionWarehouse.Services
             supplierExist.ContactPersonName = update.ContactPersonName;
             supplierExist.ContactPersonPhone = update.ContactPersonPhone;
             supplierExist.ContactPersonEmail = update.ContactPersonEmail;
-            supplierExist.UpdatedAt = DateTime.Now;
+            supplierExist.UpdatedAt = DateTimeUtility.Now();
 
             var updateResult = await _supplierRepository.UpdateSupplier(supplierExist);
 
@@ -169,7 +185,7 @@ namespace MilkDistributionWarehouse.Services
             }
 
             supplierExist.Status = update.Status;
-            supplierExist.UpdatedAt = DateTime.Now;
+            supplierExist.UpdatedAt = DateTimeUtility.Now();
 
             var updateStatusResult = await _supplierRepository.UpdateSupplier(supplierExist);
             if (updateStatusResult == null)
@@ -195,7 +211,7 @@ namespace MilkDistributionWarehouse.Services
                 return ("Không thể xoá nhà cung cấp do đang có sản phẩm đang hoạt động hoặc vô hiệu hoá.".ToMessageForUser(), new SupplierDetail());
 
             supplierExist.Status = CommonStatus.Deleted;
-            supplierExist.UpdatedAt = DateTime.Now;
+            supplierExist.UpdatedAt = DateTimeUtility.Now();
 
             var deleteResult = await _supplierRepository.UpdateSupplier(supplierExist);
             if (deleteResult == null) return ("Xoá nhà cung cấp thất bại.".ToMessageForUser(), new SupplierDetail());

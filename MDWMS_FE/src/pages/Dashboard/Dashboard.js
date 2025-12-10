@@ -206,7 +206,6 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
           return []
         }
 
-
         const currentReceiptsList = normalizeData(currentReceipts)
         const currentIssuesList = normalizeData(currentIssues)
         const previousReceiptsList = normalizeData(previousReceipts)
@@ -549,10 +548,6 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
 
     return (
       <>
-        <div className="flex justify-end mb-4">
-          <p className="text-sm text-gray-600">{currentDateDisplay}</p>
-        </div>
-
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
           <Card>
@@ -578,21 +573,21 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold text-gray-600 mb-1 mt-5">
-                      Đơn mua hàng <span className="text-gray-500 font-normal">(Hiện tại)</span>
+                      Phiếu mua hàng
                     </p>
                     <div className="flex items-baseline gap-2 mb-1">
                       <h3 className="text-2xl font-bold text-gray-900">{purchaseOrdersStats.current.toLocaleString("vi-VN")}</h3>
-                      <span className="text-sm font-semibold text-gray-600">đơn</span>
-                      {purchaseOrdersStats.change !== 0 && (
+                      <span className="text-sm font-semibold text-gray-600">phiếu</span>
+                      {/* {purchaseOrdersStats.change !== 0 && (
                         <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${purchaseOrdersStats.change > 0
                           ? 'bg-green-100 text-green-700'
                           : 'bg-red-100 text-red-700'
                           }`}>
                           {purchaseOrdersStats.change > 0 ? '+' : ''}{purchaseOrdersStats.change}%
                         </span>
-                      )}
+                      )} */}
                     </div>
-                    <p className="text-xs font-medium text-gray-500">Tổng số đơn mua hàng</p>
+                    <p className="text-xs font-medium text-gray-500">Tổng số phiếu mua hàng</p>
                   </div>
                 </div>
               </div>
@@ -622,21 +617,21 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold text-gray-600 mb-1 mt-5">
-                      Đơn bán hàng <span className="text-gray-500 font-normal">(Hiện tại)</span>
+                      Phiếu bán hàng
                     </p>
                     <div className="flex items-baseline gap-2 mb-1">
                       <h3 className="text-2xl font-bold text-gray-900">{salesOrdersStats.current.toLocaleString("vi-VN")}</h3>
-                      <span className="text-sm font-semibold text-gray-600">đơn</span>
-                      {salesOrdersStats.change !== 0 && (
+                      <span className="text-sm font-semibold text-gray-600">phiếu</span>
+                      {/* {salesOrdersStats.change !== 0 && (
                         <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${salesOrdersStats.change > 0
                           ? 'bg-green-100 text-green-700'
                           : 'bg-red-100 text-red-700'
                           }`}>
                           {salesOrdersStats.change > 0 ? '+' : ''}{salesOrdersStats.change}%
                         </span>
-                      )}
+                      )} */}
                     </div>
-                    <p className="text-xs font-medium text-gray-500">Tổng số đơn bán hàng</p>
+                    <p className="text-xs font-medium text-gray-500">Tổng số phiếu bán hàng</p>
                   </div>
                 </div>
               </div>
@@ -743,7 +738,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-6">
           <Card className="lg:col-span-2">
             <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
-              <CardTitle className="text-base font-medium">Đơn mua & bán hàng</CardTitle>
+              <CardTitle className="text-base font-medium">Phiếu mua & bán hàng</CardTitle>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-8 text-xs">
@@ -787,7 +782,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                                 {payload.map(item => (
                                   <p key={item.dataKey} className="flex justify-between gap-4">
                                     <span>{item.name}</span>
-                                    <span>{item.value} đơn</span>
+                                    <span>{item.value} phiếu</span>
                                   </p>
                                 ))}
                               </div>
@@ -805,7 +800,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                       <Line
                         type="monotone"
                         dataKey="sales"
-                        name="Đơn bán hàng"
+                        name="Phiếu bán hàng"
                         stroke="#3B82F6"
                         strokeWidth={2}
                         dot={{ r: 4, fill: "white", stroke: "#3B82F6", strokeWidth: 2 }}
@@ -814,7 +809,7 @@ export default function Dashboard({ activeSection = "dashboard", onSectionChange
                       <Line
                         type="monotone"
                         dataKey="purchase"
-                        name="Đơn mua hàng"
+                        name="Phiếu mua hàng"
                         stroke="#EF4444"
                         strokeWidth={2}
                         dot={{ r: 4, fill: "white", stroke: "#EF4444", strokeWidth: 2 }}

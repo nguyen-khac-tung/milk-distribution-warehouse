@@ -7,6 +7,7 @@ import { ViewProfileModal } from "../../pages/AccountPage/ViewProfileModal";
 import NotificationDropdown from "../Common/NotificationDropdown";
 import NotificationDetailModal from "../Common/NotificationDetailModal";
 import useNotifications, { NotificationStatus } from "../../hooks/useNotifications";
+import { getNotificationDetail, NotificationEntityType } from "../../services/NotificationService";
 import { Bell } from "lucide-react";
 
 const HeaderBar = memo(({ onToggleSidebar, sidebarCollapsed }) => {
@@ -72,16 +73,26 @@ const HeaderBar = memo(({ onToggleSidebar, sidebarCollapsed }) => {
     }, [markAllAsRead]);
 
     const handleNotificationClick = useCallback(
-        (notification) => {
+        async (notification) => {
             if (!notification) return;
-
-            setShowNotifications(false);
-            setSelectedNotificationId(notification.notificationId);
-            setShowNotificationDetail(true);
 
             if (notification.status === NotificationStatus.UNREAD && notification.notificationId) {
                 markNotificationsAsRead([notification.notificationId]);
             }
+
+            try {
+                const detail = await getNotificationDetail(notification.notificationId);
+                
+                if (detail?.entityType === NotificationEntityType.NO_NAVIGATION) {
+                    return; 
+                }
+            } catch (err) {
+                console.error("Error getting notification detail:", err);
+            }
+
+            setShowNotifications(false);
+            setSelectedNotificationId(notification.notificationId);
+            setShowNotificationDetail(true);
         },
         [markNotificationsAsRead]
     );
@@ -198,6 +209,7 @@ const HeaderBar = memo(({ onToggleSidebar, sidebarCollapsed }) => {
                                     onRefresh={refreshNotifications}
                                     onMarkAllAsRead={handleMarkAllNotificationsAsRead}
                                     onNotificationClick={handleNotificationClick}
+                                    markNotificationsAsRead={markNotificationsAsRead}
                                 />
                             </>
                         )}

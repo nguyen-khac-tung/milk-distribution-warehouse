@@ -32,7 +32,7 @@ namespace MilkDistributionWarehouse.Controllers
         [HttpPut("ConfirmPickAllocation")]
         public async Task<IActionResult> ConfirmPickAllocation(ConfirmPickAllocationDto dto)
         {
-            var msg = await _pickAllocationService.ConfirmPickAllocation(dto);
+            var msg = await _pickAllocationService.ConfirmPickAllocation(dto, User.GetUserId());
             if (msg.Length > 0) return ApiResponse<string>.ToResultError(msg);
 
             return ApiResponse<string>.ToResultOkMessage();

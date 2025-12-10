@@ -6,7 +6,6 @@ import { Card } from "../../../components/ui/card"
 import { X } from "lucide-react"
 import { updateRetailer, getRetailerDetail } from "../../../services/RetailerService"
 import { validateAndShowError, extractErrorMessage } from "../../../utils/Validation"
-import { DisableFieldWrapper } from "../../../components/Common/DisableFieldWrapper"
 
 export default function UpdateRetailerModal({ isOpen, onClose, onSuccess, retailerId }) {
   const [formData, setFormData] = useState({
@@ -20,6 +19,7 @@ export default function UpdateRetailerModal({ isOpen, onClose, onSuccess, retail
   })
   const [loading, setLoading] = useState(false)
   const [loadingData, setLoadingData] = useState(false)
+  const [validationErrors, setValidationErrors] = useState({})
 
   // Load data when modal opens
   useEffect(() => {
@@ -32,11 +32,9 @@ export default function UpdateRetailerModal({ isOpen, onClose, onSuccess, retail
     try {
       setLoadingData(true)
       const response = await getRetailerDetail(retailerId)
-      console.log("API Response:", response);
 
       // API trả về { data: {...}, message: "", status: 200, success: true }
       const retailerInfo = response.data || response;
-      console.log("Retailer Info:", retailerInfo);
 
       if (retailerInfo) {
         setFormData({
@@ -48,6 +46,7 @@ export default function UpdateRetailerModal({ isOpen, onClose, onSuccess, retail
           phone: retailerInfo.phone || "",
           isDisable: retailerInfo.isDisable || false, // Sử dụng trực tiếp isDisable từ API
         })
+        setValidationErrors({})
       }
     } catch (error) {
       console.error("Error loading retailer data:", error)
@@ -60,33 +59,53 @@ export default function UpdateRetailerModal({ isOpen, onClose, onSuccess, retail
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
-    // Basic validation - check if required fields are filled
-    if (!formData.retailerName?.trim() || !formData.taxCode?.trim() || 
-        !formData.email?.trim() || !formData.address?.trim() || !formData.phone?.trim()) {
-      window.showToast("Vui lòng điền đầy đủ thông tin", "error")
+
+    if (!formData.retailerId) {
+      window.showToast("Không tìm thấy thông tin nhà bán lẻ", "error")
       return
     }
 
-    // Email validation
+    // Validate all required fields
+    const errors = {}
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(formData.email)) {
-      window.showToast("Email không hợp lệ", "error")
+    const phoneRegex = /^[0-9+\-\s()]+$/
+
+    if (!formData.retailerName?.trim()) {
+      errors.retailerName = "Vui lòng nhập tên nhà bán lẻ"
+    }
+
+    if (!formData.taxCode?.trim()) {
+      errors.taxCode = "Vui lòng nhập mã số thuế"
+    }
+
+    if (!formData.email?.trim()) {
+      errors.email = "Vui lòng nhập email"
+    } else if (!emailRegex.test(formData.email)) {
+      errors.email = "Email không hợp lệ"
+    }
+
+    if (!formData.phone?.trim()) {
+      errors.phone = "Vui lòng nhập số điện thoại"
+    } else if (!phoneRegex.test(formData.phone)) {
+      errors.phone = "Số điện thoại không hợp lệ"
+    }
+
+    if (!formData.address?.trim()) {
+      errors.address = "Vui lòng nhập địa chỉ"
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors)
       return
     }
 
-    // Phone validation (basic)
-    const phoneRegex = /^[0-9+\-\s()]+$/
-    if (!phoneRegex.test(formData.phone)) {
-      window.showToast("Số điện thoại không hợp lệ", "error")
-      return
-    }
+    // Clear validation errors if validation passes
+    setValidationErrors({})
 
 
     try {
       setLoading(true)
       const response = await updateRetailer(formData)
-      console.log("Retailer updated:", response)
       window.showToast("Cập nhật nhà bán lẻ thành công!", "success")
       onSuccess && onSuccess()
       onClose && onClose()
@@ -109,6 +128,7 @@ export default function UpdateRetailerModal({ isOpen, onClose, onSuccess, retail
       phone: "",
       isDisable: false,
     })
+    setValidationErrors({})
     onClose && onClose()
   }
 
@@ -127,7 +147,7 @@ export default function UpdateRetailerModal({ isOpen, onClose, onSuccess, retail
             <X className="h-5 w-5 text-gray-500" />
           </button>
         </div>
-        
+
         {/* Content */}
         <div className="p-6">
           <form className="space-y-6" onSubmit={handleSubmit}>
@@ -135,25 +155,55 @@ export default function UpdateRetailerModal({ isOpen, onClose, onSuccess, retail
             <div className="space-y-4">
               {/* Row 1: Retailer Name & Tax Code */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <DisableFieldWrapper
-                  isDisabled={formData.isDisable}
-                  label="Tên nhà bán lẻ"
-                  id="retailerName"
-                  placeholder="Nhập tên nhà bán lẻ..."
-                  value={formData.retailerName}
-                  onChange={(e) => setFormData({ ...formData, retailerName: e.target.value })}
-                  required
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="retailerName" className="text-sm font-medium text-slate-700">
+                    Tên nhà bán lẻ <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="retailerName"
+                    placeholder={formData.isDisable ? "Không thể chỉnh sửa" : "Nhập tên nhà bán lẻ..."}
+                    value={formData.retailerName}
+                    onChange={(e) => {
+                      setFormData({ ...formData, retailerName: e.target.value })
+                      if (validationErrors.retailerName) {
+                        setValidationErrors({ ...validationErrors, retailerName: undefined })
+                      }
+                    }}
+                    disabled={formData.isDisable}
+                    className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${formData.isDisable
+                        ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200"
+                        : ""
+                      }`}
+                  />
+                  {validationErrors.retailerName && (
+                    <p className="text-sm text-red-500 font-medium">{validationErrors.retailerName}</p>
+                  )}
+                </div>
 
-                <DisableFieldWrapper
-                  isDisabled={formData.isDisable}
-                  label="Mã số thuế"
-                  id="taxCode"
-                  placeholder="Nhập mã số thuế..."
-                  value={formData.taxCode}
-                  onChange={(e) => setFormData({ ...formData, taxCode: e.target.value })}
-                  required
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="taxCode" className="text-sm font-medium text-slate-700">
+                    Mã số thuế <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="taxCode"
+                    placeholder={formData.isDisable ? "Không thể chỉnh sửa" : "Nhập mã số thuế..."}
+                    value={formData.taxCode}
+                    onChange={(e) => {
+                      setFormData({ ...formData, taxCode: e.target.value })
+                      if (validationErrors.taxCode) {
+                        setValidationErrors({ ...validationErrors, taxCode: undefined })
+                      }
+                    }}
+                    disabled={formData.isDisable}
+                    className={`h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg ${formData.isDisable
+                        ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200"
+                        : ""
+                      }`}
+                  />
+                  {validationErrors.taxCode && (
+                    <p className="text-sm text-red-500 font-medium">{validationErrors.taxCode}</p>
+                  )}
+                </div>
               </div>
 
               {/* Row 2: Email & Phone */}
@@ -167,10 +217,17 @@ export default function UpdateRetailerModal({ isOpen, onClose, onSuccess, retail
                     type="email"
                     placeholder="Nhập email..."
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, email: e.target.value })
+                      if (validationErrors.email) {
+                        setValidationErrors({ ...validationErrors, email: undefined })
+                      }
+                    }}
                     className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                    required
                   />
+                  {validationErrors.email && (
+                    <p className="text-sm text-red-500 font-medium">{validationErrors.email}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -181,10 +238,17 @@ export default function UpdateRetailerModal({ isOpen, onClose, onSuccess, retail
                     id="phone"
                     placeholder="Nhập số điện thoại..."
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, phone: e.target.value })
+                      if (validationErrors.phone) {
+                        setValidationErrors({ ...validationErrors, phone: undefined })
+                      }
+                    }}
                     className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                    required
                   />
+                  {validationErrors.phone && (
+                    <p className="text-sm text-red-500 font-medium">{validationErrors.phone}</p>
+                  )}
                 </div>
               </div>
 
@@ -197,10 +261,17 @@ export default function UpdateRetailerModal({ isOpen, onClose, onSuccess, retail
                   id="address"
                   placeholder="Nhập địa chỉ..."
                   value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, address: e.target.value })
+                    if (validationErrors.address) {
+                      setValidationErrors({ ...validationErrors, address: undefined })
+                    }
+                  }}
                   className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                  required
                 />
+                {validationErrors.address && (
+                  <p className="text-sm text-red-500 font-medium">{validationErrors.address}</p>
+                )}
               </div>
             </div>
 

@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, MapPin, Clock, Calendar, User, Thermometer, Droplets, Sun, Check, RotateCcw, Search, Package } from 'lucide-react';
+import { ArrowLeft, ChevronUp, ChevronDown, RefreshCw, MapPin, Clock, Calendar, User, Thermometer, Droplets, Sun, Check, RotateCcw, Search, Package, Printer, FileText } from 'lucide-react';
 import Loading from '../../components/Common/Loading';
 import { ComponentIcon } from '../../components/IconComponent/Icon';
-import { getStocktakingAreaDetailBySheetId, getStocktakingDetail, confirmStocktakingLocationCounted, submitStocktakingArea, cancelStocktakingLocationRecord, getStocktakingPalletDetail } from '../../services/StocktakingService';
+import { getStocktakingAreaDetailBySheetId, getStocktakingDetail, confirmStocktakingLocationCounted, submitStocktakingArea, cancelStocktakingLocationRecord, getStocktakingPalletDetail, exportStocktakingAreaWord } from '../../services/StocktakingService';
 import { extractErrorMessage } from '../../utils/Validation';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
 import StatusDisplay from '../../components/StocktakingComponents/StatusDisplay';
@@ -665,6 +665,33 @@ const StocktakingArea = () => {
         }
     };
 
+    const handleExportReceipt = async (stocktakingAreaId) => {
+        if (!stocktakingAreaId) {
+            window.showToast?.("Không tìm thấy mã khu vực kiểm kê", "error");
+            return;
+        }
+
+        try {
+            const { file, fileName } = await exportStocktakingAreaWord(stocktakingAreaId);
+
+            // Tạo URL từ blob và tải xuống
+            const url = window.URL.createObjectURL(new Blob([file]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', fileName);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            window.showToast?.("Xuất phiếu thành công!", "success");
+        } catch (error) {
+            console.error("Error exporting stocktaking area:", error);
+            const errorMessage = extractErrorMessage(error, "Xuất phiếu thất bại, vui lòng thử lại!");
+            window.showToast?.(errorMessage, "error");
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen">
@@ -714,6 +741,17 @@ const StocktakingArea = () => {
                                     Chi Tiết Kiểm Kê Kho
                                 </h1>
                             </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {stocktakingAreas.length > 0 && stocktakingAreas[0]?.stocktakingAreaId && (
+                                <Button
+                                    onClick={() => handleExportReceipt(stocktakingAreas[0].stocktakingAreaId)}
+                                    className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 h-[38px] px-4 text-white"
+                                >
+                                    <Printer className="w-4 h-4" />
+                                    Xuất Phiếu
+                                </Button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -788,34 +826,7 @@ const StocktakingArea = () => {
                                         </div>
                                     </div>
 
-                                    {/* Số vị trí có sẵn */}
-                                    <div>
-                                        <div className="text-xs text-gray-500 mb-0.5 flex items-center gap-1.5">
-                                            <MapPin className="h-4 w-4 text-emerald-500" />
-                                            Vị trí chưa xếp pallet
-                                        </div>
-                                        <div className="text-base font-semibold text-gray-900">
-                                            {stocktakingAreas.reduce((sum, area) => sum + (area.areaDetail?.availableLocationCount || 0), 0)}
-                                        </div>
-                                    </div>
-
-                                    {/* Số vị trí không có sẵn */}
-                                    <div>
-                                        <div className="text-xs text-gray-500 mb-0.5 flex items-center gap-1.5">
-                                            <MapPin className="h-4 w-4 text-red-500" />
-                                            Vị trí đã xếp pallet
-                                        </div>
-                                        <div className="text-base font-semibold text-gray-900">
-                                            {stocktakingAreas.reduce((sum, area) => sum + (area.areaDetail?.unAvailableLocationCount || 0), 0)}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Thông tin người */}
-                            <div>
-                                <h3 className="text-xs font-medium text-gray-500 mb-3">Thông tin người</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {/* Người tạo */}
                                     <div>
                                         <div className="text-xs text-gray-500 mb-0.5 flex items-center gap-1.5">
                                             <User className="h-4 w-4 text-teal-500" />
@@ -825,6 +836,8 @@ const StocktakingArea = () => {
                                             {stocktakingDetail?.createByName || stocktakingDetail?.createdBy || '-'}
                                         </div>
                                     </div>
+
+                                    {/* Người tiếp nhận */}
                                     <div>
                                         <div className="text-xs text-gray-500 mb-0.5 flex items-center gap-1.5">
                                             <User className="h-4 w-4 text-indigo-500" />
@@ -836,6 +849,21 @@ const StocktakingArea = () => {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Ghi chú */}
+                            {stocktakingDetail?.note && (
+                                <div>
+                                    <h3 className="text-xs font-medium text-gray-500 mb-3">Ghi chú</h3>
+                                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                        <div className="flex items-start gap-2">
+                                            <FileText className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" />
+                                            <div className="text-sm text-gray-900 whitespace-pre-wrap">
+                                                {stocktakingDetail.note}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Điều kiện bảo quản */}
                             <div>
@@ -1064,7 +1092,7 @@ const StocktakingArea = () => {
                                                     <TableCell colSpan={6} className="px-0 py-0">
                                                         <div className="border-t border-gray-200 p-4 bg-gray-50">
                                                             <h4 className="text-sm font-semibold text-gray-700 mb-4">
-                                                                Kệ kê hàng tại vị trí này
+                                                                Pallet tại vị trí này
                                                             </h4>
                                                             {isLoading ? (
                                                                 <div className="flex justify-center items-center py-8">
@@ -1075,13 +1103,13 @@ const StocktakingArea = () => {
                                                                     <Table className="w-full">
                                                                         <TableHeader>
                                                                             <TableRow className="bg-gray-100 hover:bg-gray-100 border-b border-slate-200">
-                                                                                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
+                                                                                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left min-w-[140px]">
                                                                                     Mã pallet
                                                                                 </TableHead>
-                                                                                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
+                                                                                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left min-w-[140px]">
                                                                                     Mã hàng hóa
                                                                                 </TableHead>
-                                                                                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">
+                                                                                <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left min-w-[140px]">
                                                                                     Tên hàng hóa
                                                                                 </TableHead>
                                                                                 <TableHead className="font-semibold text-slate-900 px-4 py-3 text-left">

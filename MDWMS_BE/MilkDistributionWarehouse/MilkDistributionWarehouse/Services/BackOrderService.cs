@@ -259,15 +259,15 @@ namespace MilkDistributionWarehouse.Services
                 return ("The user is not logged into the system.".ToMessageForUser(), new BackOrderDto.BackOrderResponseCreateDto());
 
             if (!await _backOrderRepository.ExistsRetailer(dto.RetailerId))
-                return ("Retailer do not exist.", new BackOrderDto.BackOrderResponseCreateDto());
+                return ("Nhà bán lẻ không tồn tại.".ToMessageForUser(), new BackOrderDto.BackOrderResponseCreateDto());
 
             if (!await _backOrderRepository.ExistsGoods(dto.GoodsId))
-                return ("Goods do not exist.", new BackOrderDto.BackOrderResponseCreateDto());
+                return ("Hàng hóa không tồn tại.".ToMessageForUser(), new BackOrderDto.BackOrderResponseCreateDto());
 
             var entity = _mapper.Map<BackOrder>(dto);
             entity.BackOrderId = Guid.NewGuid();
             entity.CreatedBy = userId;
-            entity.CreatedAt = DateTime.Now;
+            entity.CreatedAt = DateTimeUtility.Now();
 
             var (createdBackOrder, isNew, previousQty) = await _backOrderRepository.CreateBackOrder(entity);
             if (createdBackOrder == null)
@@ -292,19 +292,19 @@ namespace MilkDistributionWarehouse.Services
         {
             var backOrder = await _backOrderRepository.GetBackOrderById(backOrderId);
             if (backOrder == null)
-                return ("Back order do not exist.", new BackOrderDto.BackOrderResponseDto());
+                return ("Đơn đặt hàng bổ sung không tồn tại.".ToMessageForUser(), new BackOrderDto.BackOrderResponseDto());
 
             if (!await _backOrderRepository.ExistsRetailer(dto.RetailerId))
-                return ("Retailer do not exist.", new BackOrderDto.BackOrderResponseDto());
+                return ("Nhà bán lẻ không tồn tại.".ToMessageForUser(), new BackOrderDto.BackOrderResponseDto());
 
             if (!await _backOrderRepository.ExistsGoods(dto.GoodsId))
-                return ("Goods do not exist.", new BackOrderDto.BackOrderResponseDto());
+                return ("Hàng hóa không tồn tại.".ToMessageForUser(), new BackOrderDto.BackOrderResponseDto());
 
             backOrder.RetailerId = dto.RetailerId;
             backOrder.GoodsId = dto.GoodsId;
             backOrder.GoodsPackingId = dto.GoodsPackingId;
             backOrder.PackageQuantity = dto.PackageQuantity;
-            backOrder.UpdateAt = DateTime.Now;
+            backOrder.UpdateAt = DateTimeUtility.Now();
 
             var updated = await _backOrderRepository.UpdateBackOrder(backOrder);
             var updateResponse = await _backOrderRepository.GetBackOrderById(updated.BackOrderId);
@@ -347,14 +347,14 @@ namespace MilkDistributionWarehouse.Services
 
                     if (!await _backOrderRepository.ExistsRetailer(dto.RetailerId))
                     {
-                        result.FailedItems.Add(new BackOrderDto.FailedItem { Index = i, Code = dto.RetailerId.ToString(), Error = "Retailer do not exist.".ToMessageForUser() });
+                        result.FailedItems.Add(new BackOrderDto.FailedItem { Index = i, Code = dto.RetailerId.ToString(), Error = "Nhà bán lẻ không tồn tại.".ToMessageForUser() });
                         result.TotalFailed++;
                         continue;
                     }
 
                     if (!await _backOrderRepository.ExistsGoods(dto.GoodsId))
                     {
-                        result.FailedItems.Add(new BackOrderDto.FailedItem { Index = i, Code = dto.GoodsId.ToString(), Error = "Goods do not exist.".ToMessageForUser() });
+                        result.FailedItems.Add(new BackOrderDto.FailedItem { Index = i, Code = dto.GoodsId.ToString(), Error = "Hàng hóa không tồn tại.".ToMessageForUser() });
                         result.TotalFailed++;
                         continue;
                     }
@@ -362,7 +362,7 @@ namespace MilkDistributionWarehouse.Services
                     var entity = _mapper.Map<BackOrder>(dto);
                     entity.BackOrderId = Guid.NewGuid();
                     entity.CreatedBy = userId;
-                    entity.CreatedAt = DateTime.Now;
+                    entity.CreatedAt = DateTimeUtility.Now();
 
                     var (createdBackOrder, isNew, previousQty) = await _backOrderRepository.CreateBackOrder(entity);
                     if (createdBackOrder == null)
@@ -389,11 +389,15 @@ namespace MilkDistributionWarehouse.Services
                         });
                     }
                 }
-
+                if (create.BackOrders.Count == 1 && result.TotalFailed == 1 && result.TotalInserted == 0 && result.TotalUpdated == 0)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ("Tạo backorder thất bại.".ToMessageForUser(), result);
+                }
                 await _unitOfWork.CommitTransactionAsync();
                 return ("", result);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 await _unitOfWork.RollbackTransactionAsync();
                 throw;

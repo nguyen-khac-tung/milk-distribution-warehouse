@@ -44,6 +44,16 @@ export default function CreateAreaModal({ isOpen, onClose, onSuccess }) {
     }
   }
 
+  const resetForm = () => {
+    setFormData({
+      areaName: "",
+      areaCode: "",
+      description: "",
+      storageConditionId: "",
+      status: 1,
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault()
 
@@ -56,8 +66,8 @@ export default function CreateAreaModal({ isOpen, onClose, onSuccess }) {
     try {
       setLoading(true)
       const response = await createArea(formData)
-      console.log("Area created:", response)
       window.showToast("Thêm khu vực thành công!", "success")
+      resetForm()
       onSuccess && onSuccess()
       onClose && onClose()
     } catch (error) {
@@ -100,7 +110,7 @@ export default function CreateAreaModal({ isOpen, onClose, onSuccess }) {
 
         {/* Content */}
         <div className="p-6">
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <form className="space-y-6" onSubmit={handleSubmit} noValidate>
             {/* Row 1: Area Name + Area Code */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Area Name */}
@@ -114,7 +124,6 @@ export default function CreateAreaModal({ isOpen, onClose, onSuccess }) {
                   value={formData.areaName}
                   onChange={(e) => setFormData({ ...formData, areaName: e.target.value })}
                   className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                  required
                 />
               </div>
 
@@ -129,7 +138,6 @@ export default function CreateAreaModal({ isOpen, onClose, onSuccess }) {
                   value={formData.areaCode}
                   onChange={(e) => setFormData({ ...formData, areaCode: e.target.value })}
                   className="h-[38px] border-slate-300 focus:border-orange-500 focus:ring-orange-500 focus-visible:ring-orange-500 rounded-lg"
-                  required
                 />
               </div>
             </div>
@@ -140,6 +148,7 @@ export default function CreateAreaModal({ isOpen, onClose, onSuccess }) {
                 Điều kiện bảo quản <span className="text-red-500">*</span>
               </Label>
               <CustomDropdown
+                className="w-full"
                 value={formData.storageConditionId?.toString() || ""}
                 onChange={(value) =>
                   setFormData({ ...formData, storageConditionId: value })

@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Plus, Trash2, Warehouse } from "lucide-react"
 import { createPurchaseOrder, getGoodsDropDownBySupplierId, getGoodsPackingByGoodsId, submitPurchaseOrder } from "../../services/PurchaseOrderService"
 import { extractErrorMessage } from '../../utils/Validation';
-import { getSuppliersDropdown } from "../../services/SupplierService"
+import { getSupplierWithGoodsDropDown } from "../../services/SupplierService"
 import { getAvailableLocationQuantity } from "../../services/AreaServices"
 import { ComponentIcon } from '../../components/IconComponent/Icon';
 import WarehouseLocationModal from "../../components/PurchaseOrderComponents/WarehouseLocationModal"
@@ -47,7 +47,7 @@ export default function CreatePurchaseOrder({
         const loadSuppliers = async () => {
             setSuppliersLoading(true);
             try {
-                const response = await getSuppliersDropdown();
+                const response = await getSupplierWithGoodsDropDown();
                 const suppliersData = response?.data || response?.items || response || [];
                 setSuppliers(suppliersData);
             } catch (error) {
@@ -68,16 +68,32 @@ export default function CreatePurchaseOrder({
             e.stopPropagation();
         }
 
-        // Chỉ kiểm tra khi đã có danh sách hàng hóa từ nhà cung cấp
-        if (goods.length > 0) {
-            // Đếm số hàng hóa đã được chọn
-            const selectedGoodsCount = items.filter(item => item.goodsName && item.goodsName !== "").length;
+        // Kiểm tra xem còn hàng hóa nào có thể chọn không
+        const availableGoods = goods.filter(good => {
+            const goodsId = good.goodsId;
+            const goodsPackings = goodsPackingsMap[goodsId] || [];
 
-            // Kiểm tra xem còn hàng hóa nào để thêm không
-            if (selectedGoodsCount >= goods.length) {
-                window.showToast("Đã thêm hết tất cả hàng hóa từ nhà cung cấp này!", "error");
-                return;
+            // Nếu hàng hóa chưa có quy cách đóng gói nào, vẫn có thể chọn
+            if (goodsPackings.length === 0) {
+                return true;
             }
+
+            // Đếm số quy cách đóng gói đã được chọn cho hàng hóa này
+            const selectedPackingIds = items
+                .filter(item =>
+                    item.goodsName === good.goodsName &&
+                    item.goodsPackingId
+                )
+                .map(item => item.goodsPackingId);
+
+            // Nếu số quy cách đã chọn < tổng số quy cách, vẫn có thể chọn
+            return selectedPackingIds.length < goodsPackings.length;
+        });
+
+        // Nếu không còn hàng hóa nào có thể chọn, hiển thị toast và không cho thêm
+        if (availableGoods.length === 0) {
+            window.showToast("Đã chọn hết tất cả hàng hóa và quy cách đóng gói!", "error");
+            return;
         }
 
         const newItem = {
@@ -94,13 +110,6 @@ export default function CreatePurchaseOrder({
     }
     const updateItem = (id, field, value) => {
         if (field === "goodsName") {
-            // Kiểm tra xem hàng hóa đã được chọn ở hàng khác chưa
-            const isDuplicate = items.some(item => item.id !== id && item.goodsName === value && value !== "");
-            if (isDuplicate) {
-                window.showToast("hàng hóa này đã được thêm vào danh sách!", "error");
-                return;
-            }
-
             // Lấy thông tin hàng hóa cũ để so sánh
             const currentItem = items.find(item => item.id === id);
             const oldGoodsName = currentItem?.goodsName;
@@ -152,6 +161,23 @@ export default function CreatePurchaseOrder({
                 const selectedGood = goods.find(good => good.goodsName === value);
                 if (selectedGood && !goodsPackingsMap[selectedGood.goodsId]) {
                     loadGoodsPacking(selectedGood.goodsId);
+                }
+            }
+        }
+
+        if (field === "goodsPackingId") {
+            // Kiểm tra xem quy cách đóng gói này đã được chọn cho cùng hàng hóa ở dòng khác chưa
+            const currentItem = items.find(item => item.id === id);
+            if (currentItem && currentItem.goodsName && value) {
+                const isDuplicate = items.some(item =>
+                    item.id !== id &&
+                    item.goodsName === currentItem.goodsName &&
+                    item.goodsPackingId === value &&
+                    value !== ""
+                );
+                if (isDuplicate) {
+                    window.showToast("Quy cách đóng gói này đã được chọn cho hàng hóa này ở dòng khác!", "error");
+                    return;
                 }
             }
         }
@@ -273,18 +299,40 @@ export default function CreatePurchaseOrder({
         label: supplier.companyName
     }));
 
-    // Lọc danh sách hàng hóa để không hiển thị những hàng hóa đã được chọn
+    // Hiển thị hàng hóa (ẩn hàng hóa nếu đã chọn hết tất cả quy cách đóng gói)
     const getAvailableGoodsOptions = (currentItemId) => {
-        const selectedGoodsNames = items
-            .filter(item => item.id !== currentItemId && item.goodsName)
-            .map(item => item.goodsName);
+        const currentItem = items.find(item => item.id === currentItemId);
+        const currentGoodsName = currentItem?.goodsName;
 
-        return goods
-            .filter(good => !selectedGoodsNames.includes(good.goodsName))
-            .map(good => ({
-                value: good.goodsName,
-                label: good.goodsName
-            }));
+        return goods.filter(good => {
+            const goodsId = good.goodsId;
+            const goodsPackings = goodsPackingsMap[goodsId] || [];
+
+            // Nếu hàng hóa chưa có quy cách đóng gói nào, vẫn hiển thị
+            if (goodsPackings.length === 0) {
+                return true;
+            }
+
+            // Nếu dòng hiện tại đã chọn hàng hóa này, vẫn hiển thị
+            if (currentGoodsName === good.goodsName) {
+                return true;
+            }
+
+            // Đếm số quy cách đóng gói đã được chọn cho hàng hóa này
+            const selectedPackingIds = items
+                .filter(item =>
+                    item.goodsName === good.goodsName &&
+                    item.goodsPackingId
+                )
+                .map(item => item.goodsPackingId);
+
+            // Nếu số quy cách đã chọn < tổng số quy cách, vẫn hiển thị
+            // Nếu đã chọn hết, ẩn hàng hóa
+            return selectedPackingIds.length < goodsPackings.length;
+        }).map(good => ({
+            value: good.goodsName,
+            label: good.goodsName
+        }));
     };
 
     const goodsOptions = goods.map(good => ({
@@ -292,7 +340,7 @@ export default function CreatePurchaseOrder({
         label: good.goodsName
     }));
 
-    // Tạo options cho goods packing dropdown
+    // Tạo options cho goods packing dropdown - Filter các quy cách đã được chọn cho cùng hàng hóa
     const getGoodsPackingOptions = (currentItemId) => {
         const currentItem = items.find(item => item.id === currentItemId);
         if (!currentItem || !currentItem.goodsName) {
@@ -311,9 +359,34 @@ export default function CreatePurchaseOrder({
         // Lấy goodsPackings từ map theo goodsId
         const goodsPackings = goodsPackingsMap[goodsId] || [];
 
+        // Lọc ra các quy cách đóng gói đã được chọn cho cùng hàng hóa ở các dòng khác
+        const selectedPackingIds = items
+            .filter(item =>
+                item.id !== currentItemId &&
+                item.goodsName === currentItem.goodsName &&
+                item.goodsPackingId
+            )
+            .map(item => item.goodsPackingId);
+
+        // Filter các quy cách chưa được chọn
+        const availablePackings = goodsPackings.filter(packing =>
+            !selectedPackingIds.includes(packing.goodsPackingId.toString())
+        );
+
+        // Nếu đã chọn quy cách ở dòng hiện tại, vẫn hiển thị nó trong danh sách
+        const currentPackingId = currentItem.goodsPackingId;
+        if (currentPackingId) {
+            const currentPacking = goodsPackings.find(p =>
+                p.goodsPackingId.toString() === currentPackingId
+            );
+            if (currentPacking && !availablePackings.find(p => p.goodsPackingId === currentPacking.goodsPackingId)) {
+                availablePackings.push(currentPacking);
+            }
+        }
+
         return [
             { value: "", label: "Chọn đóng gói..." },
-            ...goodsPackings.map(packing => ({
+            ...availablePackings.map(packing => ({
                 value: packing.goodsPackingId.toString(),
                 label: `${packing.unitPerPackage} ${unitMeasureName}/thùng`
             }))
@@ -419,7 +492,6 @@ export default function CreatePurchaseOrder({
             }).filter(item => item.goodsId);
 
             if (itemsWithIds.length === 0) {
-                console.log("Không tìm thấy hàng hóa hợp lệ");
                 window.showToast("Không tìm thấy hàng hóa hợp lệ!", "error");
                 return;
             }

@@ -27,10 +27,10 @@ import {
   TableRow,
 } from "../../components/ui/table"
 import { getInventoryReport, getInventoryLedgerReport } from "../../services/DashboardService"
-import { getAreaDropdown } from "../../services/AreaServices"
 import { getSuppliersDropdown } from "../../services/SupplierService"
 import Loading from "../../components/Common/Loading"
 import Pagination from "../../components/Common/Pagination"
+import EmptyState from "../../components/Common/EmptyState"
 import { Badge } from "../../components/ui/badge"
 import InventorySearchFilter from "../../components/Common/InventorySearchFilter"
 import InventoryDetailModal from "../../components/InventoryComponents/InventoryDetailModal"
@@ -398,6 +398,15 @@ export default function InventoryReport({ onClose }) {
   // Report type: "current" (tồn kho hiện tại) or "period" (tồn kho theo kỳ)
   const [reportType, setReportType] = useState("current")
 
+  // Normalize function: lowercase, trim, and collapse multiple spaces into one
+  const normalize = (str) => {
+    if (!str) return "";
+    return str
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, " "); // gom nhiều space thành 1 space
+  };
+
   // Data states - store all raw data from API
   const [allInventoryData, setAllInventoryData] = useState([])
   const [allLedgerData, setAllLedgerData] = useState([])
@@ -407,8 +416,6 @@ export default function InventoryReport({ onClose }) {
 
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const [areaId, setAreaId] = useState("")
-  const [areas, setAreas] = useState([])
   // Supplier filter
   const [supplierFilter, setSupplierFilter] = useState("")
   const [showSupplierFilter, setShowSupplierFilter] = useState(false)
@@ -432,27 +439,20 @@ export default function InventoryReport({ onClose }) {
     toDate: ""
   })
 
-  // Fetch areas for dropdown
-  useEffect(() => {
-    const fetchAreas = async () => {
-      try {
-        const response = await getAreaDropdown()
-        let areasList = []
-        if (Array.isArray(response)) {
-          areasList = response
-        } else if (response?.data) {
-          areasList = Array.isArray(response.data) ? response.data : (response.data?.data || [])
-        } else if (response?.items) {
-          areasList = response.items
-        }
-        setAreas(areasList)
-      } catch (error) {
-        console.error("Error fetching areas:", error)
-        setAreas([])
-      }
-    }
-    fetchAreas()
-  }, [])
+  // Filters for current inventory report
+  const [quantityRange, setQuantityRange] = useState({
+    value: "",
+    type: "", // "below" or "above"
+    min: "",
+    max: ""
+  })
+  const [remainingDaysRange, setRemainingDaysRange] = useState({
+    value: "",
+    type: "", // "below" or "above"
+    min: "",
+    max: ""
+  })
+  const [statusFilter, setStatusFilter] = useState("") // "expired", "expiringSoon", "valid", ""
 
   // Fetch suppliers for dropdown
   useEffect(() => {
@@ -476,8 +476,32 @@ export default function InventoryReport({ onClose }) {
     fetchSuppliers()
   }, [])
 
+  // Helper function to get default date range (first day of month to today)
+  const getDefaultDateRange = () => {
+    const today = new Date()
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+
+    // Format as YYYY-MM-DD
+    const formatDate = (date) => {
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
+    }
+
+    return {
+      fromDate: formatDate(firstDayOfMonth),
+      toDate: formatDate(today)
+    }
+  }
+
   // Initial load on component mount
   useEffect(() => {
+    // Set default date range for period report on mount
+    if (reportType === "period" && !dateRange.fromDate && !dateRange.toDate) {
+      setDateRange(getDefaultDateRange())
+    }
+
     if (reportType === "current") {
       fetchInventoryData()
     } else {
@@ -486,7 +510,7 @@ export default function InventoryReport({ onClose }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Fetch data when report type, timeRange, areaId, or date range changes (refetch from backend)
+  // Fetch data when report type, timeRange, or date range changes (refetch from backend)
   useEffect(() => {
     setPagination(prev => ({ ...prev, current: 1 }))
     if (reportType === "current") {
@@ -495,13 +519,13 @@ export default function InventoryReport({ onClose }) {
       fetchLedgerData()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reportType, timeRange, areaId, dateRange.fromDate, dateRange.toDate])
+  }, [reportType, timeRange, dateRange.fromDate, dateRange.toDate])
 
   const fetchInventoryData = async () => {
     try {
       setLoading(true)
 
-      // Build filters object - include timeRange (areaId is passed as query parameter, not in filters)
+      // Build filters object - include timeRange
       const filters = {}
       if (timeRange) {
         filters.timeRange = timeRange
@@ -515,7 +539,6 @@ export default function InventoryReport({ onClose }) {
 
       while (hasMore) {
         const requestParams = {
-          areaId: areaId ? parseInt(areaId) : undefined,
           pageNumber: page,
           pageSize: pageSize,
           filters
@@ -565,11 +588,8 @@ export default function InventoryReport({ onClose }) {
       const fromDate = dateRange.fromDate ? new Date(dateRange.fromDate).toISOString() : ""
       const toDate = dateRange.toDate ? new Date(dateRange.toDate + "T23:59:59").toISOString() : ""
 
-      // Build filters - areaId filter
+      // Build filters
       const filters = {}
-      if (areaId) {
-        filters.areaId = areaId.toString()
-      }
 
       // Fetch all data with pagination to get all pages
       let allItems = []
@@ -645,17 +665,52 @@ export default function InventoryReport({ onClose }) {
     if (!expiryDate) return false
     const expiry = new Date(expiryDate)
     const today = new Date()
-    return expiry < today
+    // Reset time to start of day for accurate comparison
+    today.setHours(0, 0, 0, 0)
+    expiry.setHours(0, 0, 0, 0)
+    // Hết hạn: ngày hết hạn <= ngày hôm nay (bao gồm cả hôm nay)
+    return expiry <= today
   }
 
   const isExpiringSoon = (expiryDate, daysThreshold = 30) => {
     if (!expiryDate) return false
     const expiry = new Date(expiryDate)
     const today = new Date()
+    // Reset time to start of day for accurate calculation
+    today.setHours(0, 0, 0, 0)
+    expiry.setHours(0, 0, 0, 0)
     const diffTime = expiry - today
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    // Sắp hết hạn: còn từ 0 đến daysThreshold ngày (và chưa hết hạn)
-    return diffDays >= 0 && diffDays <= daysThreshold
+    // Sắp hết hạn: còn từ 1 đến daysThreshold ngày (chưa hết hạn và chưa đến ngày hết hạn)
+    // Nếu hôm nay là ngày hết hạn (diffDays = 0) thì coi là hết hạn, không phải sắp hết hạn
+    return diffDays > 0 && diffDays <= daysThreshold
+  }
+
+  // Calculate remaining days until expiry
+  const getRemainingDays = (expiryDate) => {
+    if (!expiryDate) return null
+    const expiry = new Date(expiryDate)
+    const today = new Date()
+    // Reset time to start of day for accurate day calculation
+    today.setHours(0, 0, 0, 0)
+    expiry.setHours(0, 0, 0, 0)
+    const diffTime = expiry - today
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    return diffDays
+  }
+
+  // Get status tooltip text
+  const getStatusTooltip = (expiryDate) => {
+    if (!expiryDate) return "Không có thông tin ngày hết hạn"
+    const remainingDays = getRemainingDays(expiryDate)
+
+    if (remainingDays < 0) {
+      return `Sản phẩm đã hết hạn ${Math.abs(remainingDays)} ngày`
+    } else if (remainingDays === 0) {
+      return "Sản phẩm hết hạn hôm nay"
+    } else {
+      return `Sản phẩm còn ${remainingDays} ngày nữa sẽ hết hạn`
+    }
   }
 
   const handleViewClick = (item) => {
@@ -686,23 +741,16 @@ export default function InventoryReport({ onClose }) {
     let filtered = [...sourceData]
 
     // Filter by search query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim()
+    const normalizedSearchQuery = normalize(searchQuery);
+    if (normalizedSearchQuery) {
       filtered = filtered.filter(item => {
-        const goodsCode = (item.goodsCode || "").toLowerCase()
-        const goodsName = (item.goodName || item.goodsName || "").toLowerCase()
-        const batchCode = (item.batchCode || "").toLowerCase()
-        return goodsCode.includes(query) ||
-          goodsName.includes(query) ||
-          batchCode.includes(query)
+        const goodsCode = normalize(item.goodsCode || "")
+        const goodsName = normalize(item.goodName || item.goodsName || "")
+        const batchCode = normalize(item.batchCode || "")
+        return goodsCode.includes(normalizedSearchQuery) ||
+          goodsName.includes(normalizedSearchQuery) ||
+          batchCode.includes(normalizedSearchQuery)
       })
-    }
-
-    // Filter by area
-    if (areaId) {
-      filtered = filtered.filter(item =>
-        item.areaId && item.areaId.toString() === areaId.toString()
-      )
     }
 
     // Filter by supplier (if supplierId exists in data)
@@ -710,6 +758,73 @@ export default function InventoryReport({ onClose }) {
       filtered = filtered.filter(item =>
         item.supplierId && item.supplierId.toString() === supplierFilter.toString()
       )
+    }
+
+    // Additional filters for current inventory report only
+    if (reportType === "current") {
+      // Filter by quantity range (số lượng thùng)
+      if (quantityRange.value) {
+        filtered = filtered.filter(item => {
+          const quantity = item.totalPackageQuantity || 0
+          const value = parseFloat(quantityRange.value)
+          if (quantityRange.type === "below") {
+            // Filter từ 1 đến value (dưới hoặc bằng value)
+            return quantity >= 1 && quantity <= value
+          } else if (quantityRange.type === "above") {
+            // Filter từ value trở lên (trên hoặc bằng value)
+            return quantity >= value
+          }
+          return true
+        })
+      } else if (quantityRange.min || quantityRange.max) {
+        // Fallback cho trường hợp dùng min/max trực tiếp (tương thích ngược)
+        filtered = filtered.filter(item => {
+          const quantity = item.totalPackageQuantity || 0
+          const min = quantityRange.min ? parseFloat(quantityRange.min) : 0
+          const max = quantityRange.max ? parseFloat(quantityRange.max) : Infinity
+          return quantity >= min && quantity <= max
+        })
+      }
+
+      // Filter by remaining days range (hạn sử dụng còn bao nhiêu ngày)
+      if (remainingDaysRange.value !== undefined && remainingDaysRange.value !== "") {
+        filtered = filtered.filter(item => {
+          const remainingDays = getRemainingDays(item.expiryDate)
+          if (remainingDays === null) return false
+          const value = parseFloat(remainingDaysRange.value)
+          if (remainingDaysRange.type === "below") {
+            // Filter dưới hoặc bằng value (có thể là số âm nếu đã hết hạn)
+            return remainingDays <= value
+          } else if (remainingDaysRange.type === "above") {
+            // Filter trên hoặc bằng value
+            return remainingDays >= value
+          }
+          return true
+        })
+      } else if (remainingDaysRange.min !== "" || remainingDaysRange.max !== "") {
+        // Fallback cho trường hợp dùng min/max trực tiếp (tương thích ngược)
+        filtered = filtered.filter(item => {
+          const remainingDays = getRemainingDays(item.expiryDate)
+          if (remainingDays === null) return false
+          const min = remainingDaysRange.min !== "" ? parseFloat(remainingDaysRange.min) : -Infinity
+          const max = remainingDaysRange.max !== "" ? parseFloat(remainingDaysRange.max) : Infinity
+          return remainingDays >= min && remainingDays <= max
+        })
+      }
+
+      // Filter by status (trạng thái)
+      if (statusFilter) {
+        filtered = filtered.filter(item => {
+          if (statusFilter === "expired") {
+            return isExpired(item.expiryDate)
+          } else if (statusFilter === "expiringSoon") {
+            return isExpiringSoon(item.expiryDate, 30)
+          } else if (statusFilter === "valid") {
+            return !isExpired(item.expiryDate) && !isExpiringSoon(item.expiryDate, 30)
+          }
+          return true
+        })
+      }
     }
 
     // Sort data
@@ -779,8 +894,16 @@ export default function InventoryReport({ onClose }) {
     allInventoryData,
     allLedgerData,
     searchQuery,
-    areaId,
     supplierFilter,
+    quantityRange.value,
+    quantityRange.type,
+    quantityRange.min,
+    quantityRange.max,
+    remainingDaysRange.value,
+    remainingDaysRange.type,
+    remainingDaysRange.min,
+    remainingDaysRange.max,
+    statusFilter,
     sortField,
     sortAscending,
     pagination.current,
@@ -790,7 +913,7 @@ export default function InventoryReport({ onClose }) {
   // Reset pagination to page 1 when filters or sort change
   useEffect(() => {
     setPagination(prev => ({ ...prev, current: 1 }))
-  }, [searchQuery, areaId, supplierFilter, sortField])
+  }, [searchQuery, supplierFilter, quantityRange.value, quantityRange.type, quantityRange.min, quantityRange.max, remainingDaysRange.value, remainingDaysRange.type, remainingDaysRange.min, remainingDaysRange.max, statusFilter, sortField])
 
   // Close supplier filter dropdown when clicking outside
   useEffect(() => {
@@ -810,22 +933,23 @@ export default function InventoryReport({ onClose }) {
     }
   }, [showSupplierFilter])
 
-  // Filter suppliers based on search term
   const filteredSuppliers = useMemo(() => {
-    if (!supplierSearchTerm.trim()) {
+    const normalizedSearch = normalize(supplierSearchTerm);
+    if (!normalizedSearch) {
       return suppliers
     }
-    const query = supplierSearchTerm.toLowerCase().trim()
     return suppliers.filter(supplier =>
-      (supplier.companyName || '').toLowerCase().includes(query)
+      normalize(supplier.companyName || '').includes(normalizedSearch)
     )
   }, [suppliers, supplierSearchTerm])
 
   const handleClearAllFilters = () => {
     setSearchQuery("")
     setTimeRange("week")
-    setAreaId("")
     setSupplierFilter("")
+    setQuantityRange({ value: "", type: "", min: "", max: "" })
+    setRemainingDaysRange({ value: "", type: "", min: "", max: "" })
+    setStatusFilter("")
     setSortField("") // Reset to no sort
     setSortAscending(true)
     setDateRange({ fromDate: "", toDate: "" })
@@ -839,6 +963,8 @@ export default function InventoryReport({ onClose }) {
     if (type === "current") {
       setDateRange({ fromDate: "", toDate: "" })
     } else {
+      // Set default date range (first day of month to today) when switching to period report
+      setDateRange(getDefaultDateRange())
       // Clear ledger data when switching to period report to force fresh fetch
       setAllLedgerData([])
       setLedgerData([])
@@ -847,11 +973,15 @@ export default function InventoryReport({ onClose }) {
     setSortField("")
     setSortAscending(true)
     setSupplierFilter("")
+    setQuantityRange({ value: "", type: "", min: "", max: "" })
+    setRemainingDaysRange({ value: "", type: "", min: "", max: "" })
+    setStatusFilter("")
   }
 
-  // Calculate chart data from inventory data
+  // Calculate chart data from ORIGINAL data (not filtered) - charts are independent of filters
   const calculateChartData = () => {
-    const dataToUse = reportType === "current" ? inventoryData : ledgerData
+    // Use original data, not filtered data - charts show all data regardless of filters
+    const dataToUse = reportType === "current" ? allInventoryData : allLedgerData
     if (!dataToUse || dataToUse.length === 0) {
       return {
         statusData: { expired: 0, expiringSoon: 0, valid: 0 },
@@ -896,10 +1026,14 @@ export default function InventoryReport({ onClose }) {
 
     const totalQuantity = Array.from(productMap.values()).reduce((sum, qty) => sum + qty, 0)
 
+    // Count unique products (for total display)
+    const uniqueProductsCount = productMap.size
+
     return {
       statusData: { expired, expiringSoon, valid },
       topProducts,
-      totalQuantity
+      totalQuantity,
+      uniqueProductsCount
     }
   }
 
@@ -925,7 +1059,6 @@ export default function InventoryReport({ onClose }) {
             <ExportInventoryReport
               reportType={reportType}
               searchQuery={searchQuery}
-              areaId={areaId}
               timeRange={reportType === "current" ? timeRange : undefined}
               dateRange={reportType === "period" ? dateRange : undefined}
               sortField={sortField}
@@ -980,6 +1113,7 @@ export default function InventoryReport({ onClose }) {
                   type="date"
                   value={dateRange.fromDate}
                   onChange={(e) => setDateRange(prev => ({ ...prev, fromDate: e.target.value }))}
+                  max={new Date().toISOString().split('T')[0]}
                   className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 />
               </div>
@@ -990,6 +1124,7 @@ export default function InventoryReport({ onClose }) {
                   value={dateRange.toDate}
                   onChange={(e) => setDateRange(prev => ({ ...prev, toDate: e.target.value }))}
                   min={dateRange.fromDate}
+                  max={new Date().toISOString().split('T')[0]}
                   className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 />
               </div>
@@ -1010,8 +1145,8 @@ export default function InventoryReport({ onClose }) {
           )}
         </div>
 
-        {/* Charts Section */}
-        {!loading && displayData.length > 0 && reportType === "current" && (
+        {/* Charts Section - Always show when there's original data, regardless of filters */}
+        {!loading && reportType === "current" && allInventoryData.length > 0 && (
           <>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Status Distribution Pie Chart */}
@@ -1033,7 +1168,7 @@ export default function InventoryReport({ onClose }) {
                       Tổng số hàng hóa tồn kho hiện tại
                     </p>
                     <p className="text-3xl font-bold text-orange-500">
-                      {pagination.total.toLocaleString("vi-VN")}
+                      {chartData.uniqueProductsCount.toLocaleString("vi-VN")}
                     </p>
                     <p className="text-xs text-slate-500 mt-1">hàng hóa</p>
                   </div>
@@ -1080,9 +1215,6 @@ export default function InventoryReport({ onClose }) {
             searchPlaceholder={reportType === "current" ? "Tìm kiếm theo mã lô, tên hàng hóa..." : "Tìm kiếm theo mã hàng hóa, tên hàng hóa..."}
             timeRange={reportType === "current" ? timeRange : undefined}
             setTimeRange={reportType === "current" ? setTimeRange : undefined}
-            areaId={areaId}
-            setAreaId={setAreaId}
-            areas={areas}
             onClearAll={handleClearAllFilters}
             showClearButton={true}
             showToggle={true}
@@ -1097,6 +1229,12 @@ export default function InventoryReport({ onClose }) {
             suppliers={suppliers}
             filteredSuppliers={filteredSuppliers}
             reportType={reportType}
+            quantityRange={quantityRange}
+            setQuantityRange={setQuantityRange}
+            remainingDaysRange={remainingDaysRange}
+            setRemainingDaysRange={setRemainingDaysRange}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
           />
           <div className="w-full">
             {loading ? (
@@ -1269,11 +1407,12 @@ export default function InventoryReport({ onClose }) {
                   </TableHeader>
                   <TableBody>
                     {displayData.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={reportType === "current" ? 13 : 8} className="text-center text-gray-500 py-8">
-                          Không có dữ liệu tồn kho
-                        </TableCell>
-                      </TableRow>
+                      <EmptyState
+                        icon={Building2}
+                        title="Không tìm thấy dữ liệu tồn kho"
+                        description="Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
+                        colSpan={reportType === "current" ? 13 : 8}
+                      />
                     ) : (
                       displayData.map((item, index) => {
                         const rowNumber = (pagination.current - 1) * pagination.pageSize + index + 1
@@ -1328,15 +1467,27 @@ export default function InventoryReport({ onClose }) {
                               </TableCell>
                               <TableCell className="px-2 py-4 text-center">
                                 {expired ? (
-                                  <Badge variant="destructive" className="text-xs bg-red-500 text-white">
+                                  <Badge
+                                    variant="destructive"
+                                    className="text-xs bg-red-500 text-white cursor-help"
+                                    title={getStatusTooltip(item.expiryDate)}
+                                  >
                                     Hết hạn
                                   </Badge>
                                 ) : expiringSoon ? (
-                                  <Badge variant="outline" className="text-xs bg-orange-100 text-orange-700 border-orange-300">
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs bg-orange-100 text-orange-700 border-orange-300 cursor-help"
+                                    title={getStatusTooltip(item.expiryDate)}
+                                  >
                                     Sắp hết hạn
                                   </Badge>
                                 ) : (
-                                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs bg-green-50 text-green-700 cursor-help"
+                                    title={getStatusTooltip(item.expiryDate)}
+                                  >
                                     Còn hạn
                                   </Badge>
                                 )}

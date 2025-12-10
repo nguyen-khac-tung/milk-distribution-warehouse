@@ -8,7 +8,7 @@ import Loading from "../../components/Common/Loading";
 import EmptyState from "../../components/Common/EmptyState";
 import Pagination from "../../components/Common/Pagination";
 import PurchaseOrderFilterToggle from "../../components/PurchaseOrderComponents/PurchaseOrderFilterToggle";
-import PurchaseOrderStatsChart from "../../components/PurchaseOrderComponents/PurchaseOrderStatsChart";
+// import PurchaseOrderStatsChart from "../../components/PurchaseOrderComponents/PurchaseOrderStatsChart";
 import StatusDisplay, { STATUS_LABELS } from "../../components/PurchaseOrderComponents/StatusDisplay";
 import { PURCHASE_ORDER_STATUS } from "../../utils/permissions";
 import PurchaseOrderTable from "./PurchaseOrderTable";
@@ -115,9 +115,6 @@ export default function PurchaseOrderList() {
       // Đếm số lần gọi API
       setApiCallCount(prev => {
         const newCount = prev + 1;
-        console.log(`=== API CALL #${newCount} ===`);
-        console.log("API Call Count:", newCount);
-        console.log("Params:", params);
         return newCount;
       });
 
@@ -142,10 +139,6 @@ export default function PurchaseOrderList() {
       }
 
       if (response && response.data && response.data.items && Array.isArray(response.data.items)) {
-        console.log("=== PAGINATION UPDATE ===");
-        console.log("Total count:", response.data.totalCount);
-        console.log("Page number:", response.data.pageNumber);
-        console.log("Total pages:", response.data.totalPages);
 
         setPurchaseOrders(response.data.items);
         setPagination(prev => ({
@@ -154,7 +147,6 @@ export default function PurchaseOrderList() {
           current: response.data.pageNumber || 1
         }));
       } else {
-        console.log("No valid data found");
         setPurchaseOrders([]);
         setPagination(prev => ({ ...prev, total: 0, current: 1 }));
       }
@@ -167,22 +159,34 @@ export default function PurchaseOrderList() {
     }
   };
 
+  // Normalize function: lowercase, trim, and collapse multiple spaces into one
+  const normalize = (str) => {
+    if (!str) return "";
+    return str
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, " "); // gom nhiều space thành 1 space
+  };
+
   // Helper function để tạo request params
   const createRequestParams = (overrides = {}) => {
     // Format createdAt từ dateRangeFilter
     let createdAtFilter = "";
     if (dateRangeFilter.fromDate && dateRangeFilter.toDate) {
-      createdAtFilter = `${dateRangeFilter.fromDate}~${dateRangeFilter.toDate}`;
+      createdAtFilter = `${dateRangeFilter.fromDate}T00:00:00~${dateRangeFilter.toDate}T23:59:59`;
     } else if (dateRangeFilter.fromDate) {
-      createdAtFilter = `${dateRangeFilter.fromDate}~`;
+      createdAtFilter = `${dateRangeFilter.fromDate}T00:00:00~`;
     } else if (dateRangeFilter.toDate) {
-      createdAtFilter = `~${dateRangeFilter.toDate}`;
+      createdAtFilter = `~${dateRangeFilter.toDate}T23:59:59`;
     }
+
+    // Normalize search query trước khi gọi API (nhưng vẫn giữ nguyên giá trị trong input khi đang gõ)
+    const normalizedSearch = normalize(searchQuery);
 
     return {
       pageNumber: pagination.current,
       pageSize: pagination.pageSize,
-      search: searchQuery,
+      search: normalizedSearch,
       sortField: sortField,
       sortAscending: sortAscending,
       status: statusFilter,
@@ -199,22 +203,6 @@ export default function PurchaseOrderList() {
   const fetchData = async () => {
     const requestParams = createRequestParams();
 
-    // Log dữ liệu search được gửi từ frontend
-    console.log("=== FRONTEND SEARCH PARAMS ===");
-    console.log("Request Params:", requestParams);
-    console.log("Search Query:", searchQuery);
-    console.log("Status Filter:", statusFilter);
-    console.log("Supplier Filter:", supplierFilter);
-    console.log("Approver Filter:", approverFilter);
-    console.log("Creator Filter:", creatorFilter);
-    console.log("Confirmer Filter:", confirmerFilter);
-    console.log("Assignee Filter:", assigneeFilter);
-    console.log("Date Range Filter:", dateRangeFilter);
-    console.log("Created At Filter:", requestParams.createdAt);
-    console.log("Sort Field:", sortField);
-    console.log("Sort Ascending:", sortAscending);
-    console.log("===============================");
-
     return await fetchDataWithParams(requestParams);
   };
 
@@ -223,8 +211,6 @@ export default function PurchaseOrderList() {
     fetchSuppliers();
     fetchAllUsers();
     if (!hasInitialLoad) {
-      console.log("=== INITIAL LOAD START ===");
-      console.log("API Call Count before initial load:", apiCallCount);
       fetchData();
       setHasInitialLoad(true);
     }
@@ -237,8 +223,6 @@ export default function PurchaseOrderList() {
 
     // Chỉ gọi fetchData() khi có search query thực sự active
     if (searchQuery.trim()) {
-      console.log("=== SEARCH CHANGE DETECTED ===");
-      console.log("API Call Count before search:", apiCallCount);
       fetchData();
     }
   }, [hasInitialLoad, searchQuery]);
@@ -287,10 +271,6 @@ export default function PurchaseOrderList() {
 
   const handleDeleteConfirm = async () => {
     if (!selectedPurchaseOrder) return;
-
-    console.log("=== DELETE CONFIRM ===");
-    console.log("Selected purchase order:", selectedPurchaseOrder);
-    console.log("All keys:", Object.keys(selectedPurchaseOrder));
 
     setDeleteLoading(true);
     try {
@@ -342,18 +322,20 @@ export default function PurchaseOrderList() {
     // Format createdAt từ dateRangeFilter
     let createdAtFilter = "";
     if (dateRangeFilter.fromDate && dateRangeFilter.toDate) {
-      createdAtFilter = `${dateRangeFilter.fromDate}~${dateRangeFilter.toDate}`;
+      createdAtFilter = `${dateRangeFilter.fromDate}T00:00:00~${dateRangeFilter.toDate}T23:59:59`;
     } else if (dateRangeFilter.fromDate) {
-      createdAtFilter = `${dateRangeFilter.fromDate}~`;
+      createdAtFilter = `${dateRangeFilter.fromDate}T00:00:00~`;
     } else if (dateRangeFilter.toDate) {
-      createdAtFilter = `~${dateRangeFilter.toDate}`;
+      createdAtFilter = `~${dateRangeFilter.toDate}T23:59:59`;
     }
 
     // Call fetchData with the new page number directly
+    // Normalize search query trước khi gọi API
+    const normalizedSearch = normalize(searchQuery);
     const requestParams = {
       pageNumber: newPage, // Use the new page directly
       pageSize: pagination.pageSize,
-      search: searchQuery,
+      search: normalizedSearch,
       sortField: sortField,
       sortAscending: sortAscending,
       status: statusFilter,
@@ -375,18 +357,20 @@ export default function PurchaseOrderList() {
     // Format createdAt từ dateRangeFilter
     let createdAtFilter = "";
     if (dateRangeFilter.fromDate && dateRangeFilter.toDate) {
-      createdAtFilter = `${dateRangeFilter.fromDate}~${dateRangeFilter.toDate}`;
+      createdAtFilter = `${dateRangeFilter.fromDate}T00:00:00~${dateRangeFilter.toDate}T23:59:59`;
     } else if (dateRangeFilter.fromDate) {
-      createdAtFilter = `${dateRangeFilter.fromDate}~`;
+      createdAtFilter = `${dateRangeFilter.fromDate}T00:00:00~`;
     } else if (dateRangeFilter.toDate) {
-      createdAtFilter = `~${dateRangeFilter.toDate}`;
+      createdAtFilter = `~${dateRangeFilter.toDate}T23:59:59`;
     }
 
     // Call fetchData with the new page size directly
+    // Normalize search query trước khi gọi API
+    const normalizedSearch = normalize(searchQuery);
     const requestParams = {
       pageNumber: 1, // Reset to page 1 when changing page size
       pageSize: newPageSize,
-      search: searchQuery,
+      search: normalizedSearch,
       sortField: sortField,
       sortAscending: sortAscending,
       status: statusFilter,
@@ -429,8 +413,6 @@ export default function PurchaseOrderList() {
   };
 
   const clearAllFilters = () => {
-    console.log("=== CLEAR ALL FILTERS ===");
-    console.log("API Call Count before clear:", apiCallCount);
 
     // Reset tất cả filters về giá trị mặc định
     setSearchQuery("");
@@ -610,22 +592,12 @@ export default function PurchaseOrderList() {
     // Format createdAt từ dateRangeFilter hiện tại
     let createdAtFilter = "";
     if (dateRangeFilter.fromDate && dateRangeFilter.toDate) {
-      createdAtFilter = `${dateRangeFilter.fromDate}~${dateRangeFilter.toDate}`;
+      createdAtFilter = `${dateRangeFilter.fromDate}T00:00:00~${dateRangeFilter.toDate}T23:59:59`;
     } else if (dateRangeFilter.fromDate) {
-      createdAtFilter = `${dateRangeFilter.fromDate}~`;
+      createdAtFilter = `${dateRangeFilter.fromDate}T00:00:00~`;
     } else if (dateRangeFilter.toDate) {
-      createdAtFilter = `~${dateRangeFilter.toDate}`;
+      createdAtFilter = `~${dateRangeFilter.toDate}T23:59:59`;
     }
-
-    console.log("=== DATE RANGE FILTER DEBUG ===");
-    console.log("Original fromDate:", dateRangeFilter.fromDate);
-    console.log("Original toDate:", dateRangeFilter.toDate);
-    console.log("Formatted createdAtFilter:", createdAtFilter);
-    console.log("Full requestParams:", {
-      pageNumber: 1,
-      createdAt: createdAtFilter
-    });
-    console.log("=================================");
 
     const requestParams = createRequestParams({
       pageNumber: 1,
@@ -755,9 +727,9 @@ export default function PurchaseOrderList() {
         </div>
 
         {/* Stats Chart */}
-        <PurchaseOrderStatsChart
+        {/* <PurchaseOrderStatsChart
           purchaseOrderStats={purchaseOrderStats}
-        />
+        /> */}
 
         {/* Search and Table Combined */}
         <Card className="shadow-sm border border-slate-200 overflow-visible bg-gray-50">

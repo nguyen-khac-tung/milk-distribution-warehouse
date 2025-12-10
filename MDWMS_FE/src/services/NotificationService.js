@@ -21,6 +21,8 @@ export const NotificationEntityType = {
     STOCKTAKING_SHEET: 7,
     INVENTORY_REPORT: 8,
     NO_NAVIGATION: 9,
+    STOCKTAKING_AREA_STAFF: 10,
+    STOCKTAKING_AREA_MANAGER: 11
 };
 
 const unwrapResponse = (response, fallbackMessage = "Không thể xử lý yêu cầu thông báo.") => {
@@ -104,6 +106,10 @@ export const getEntityRoute = (entityType, entityId) => {
         case NotificationEntityType.NO_NAVIGATION:
             // Thông báo không có navigation - chỉ đánh dấu đã đọc, không điều hướng
             return null;
+        case NotificationEntityType.STOCKTAKING_AREA_STAFF:
+            return `/stocktaking-area/${entityId}`;
+        case NotificationEntityType.STOCKTAKING_AREA_MANAGER:
+            return `/stocktaking-area-detail-other/${entityId}`;
         default:
             return null;
     }
