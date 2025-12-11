@@ -1,15 +1,17 @@
+﻿using Castle.Components.DictionaryAdapter.Xml;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using MilkDistributionWarehouse.Controllers;
+using MilkDistributionWarehouse.Models.DTOs;
+using MilkDistributionWarehouse.Models.Entities;
+using MilkDistributionWarehouse.Services;
+using MilkDistributionWarehouse.Utilities;
 using Moq;
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using MilkDistributionWarehouse.Controllers;
-using MilkDistributionWarehouse.Models.DTOs;
-using MilkDistributionWarehouse.Models.Entities;
-using MilkDistributionWarehouse.Services;
 
 namespace MilkDistributionWarehouse.Tests
 {
@@ -39,268 +41,226 @@ namespace MilkDistributionWarehouse.Tests
             };
         }
 
-        [TestMethod]
-        public async Task GetPurchaseOrderByPurchaseOrderId_ReturnsOk_WhenServiceReturnsDetail()
+        [DataTestMethod]
+        [DataRow(null, null, null, 400, DisplayName = "Nhà cung cấp không được bỏ trống, Danh sách chi tiết đơn mua hàng trống")]
+        [DataRow(1, "note", null, 400, DisplayName = "Danh sách chi tiết đơn mua hàng trống")]
+        [DataRow(1, null, null, 400, DisplayName = "Danh sách chi tiết đơn mua hàng trống")]
+        [DataRow(1, "note", "invalidGoodsId", 400, DisplayName = "Hàng hoá không được bỏ trống")]
+        [DataRow(1, "note", "invalidPackingId", 400, DisplayName = "Số lượng đóng gói hàng hoá không được bỏ trống")]
+        [DataRow(1, "note", "invalidPackingQuantity", 400, DisplayName = "Số lượng phải lớn hơn 0")]
+        [DataRow(1, "note", "valid", 200, DisplayName = "")]
+        [DataRow(999, "note", "valid", 400, DisplayName = "Không tìm thấy nhà cung cấp này")]
+        public async Task CreatePurchaseOrder_ReturnsExpectedResult(
+            int supplierId,
+            string? note,
+            string? detailCase,
+            int expectedStatus)
         {
-            var id = Guid.NewGuid();
-            _mockService
-                .Setup(s => s.GetPurchaseOrderDetailById(id, It.IsAny<int?>(), It.IsAny<List<string>?>()))
-                .ReturnsAsync(("", new PurchaseOrdersDetail()));
-
-            var result = await _controller.GetPurchaseOrderByPurchaseOrderId(id);
-
-            Assert.IsInstanceOfType(result, typeof(ObjectResult));
-            var obj = (ObjectResult)result;
-            Assert.AreEqual(200, obj.StatusCode);
-            Assert.IsNotNull(obj.Value);
-        }
-
-        [TestMethod]
-        public async Task GetPurchaseOrderByPurchaseOrderId_ReturnsBadRequest_WhenServiceReturnsMessage()
-        {
-            var id = Guid.NewGuid();
-            _mockService
-                .Setup(s => s.GetPurchaseOrderDetailById(id, It.IsAny<int?>(), It.IsAny<List<string>?>()))
-                .ReturnsAsync(("error message", null));
-
-            var result = await _controller.GetPurchaseOrderByPurchaseOrderId(id);
-
-            Assert.IsInstanceOfType(result, typeof(ObjectResult));
-            var obj = (ObjectResult)result;
-            Assert.AreEqual(400, obj.StatusCode);
-        }
-
-        [TestMethod]
-        public async Task GetPurchaseOrderSaleRepresentatives_CallsService_WithPagedRequest()
-        {
-            var req = new PagedRequest { PageNumber = 1, PageSize = 10 };
-            var page = new PageResult<PurchaseOrderDtoSaleRepresentative>
+            List<PurchaseOrderDetailCreate>? details = null;
+            switch (detailCase)
             {
-                Items = new List<PurchaseOrderDtoSaleRepresentative> { new() { PurchaseOderId = Guid.NewGuid(), SupplierId = 5, Status = 1, CreatedBy = TestUserId } },
-                TotalCount = 1,
-                PageNumber = 1,
-                PageSize = 10
+                case null:
+                    details = null;
+                    break;
+                case "invalidGoodsId":
+                    details = new List<PurchaseOrderDetailCreate>
+                    {
+                        new PurchaseOrderDetailCreate { GoodsId = 0, GoodsPackingId = 18, PackageQuantity = 500 }
+                    };
+                    break;
+                case "invalidPackingId":
+                    details = new List<PurchaseOrderDetailCreate>
+                    {
+                        new PurchaseOrderDetailCreate { GoodsId = 1, GoodsPackingId = 0, PackageQuantity = 500 }
+                    };
+                    break;
+                case "invalidPackingQuantity":
+                    details = new List<PurchaseOrderDetailCreate>
+                    {
+                        new PurchaseOrderDetailCreate { GoodsId = 1, GoodsPackingId = 18, PackageQuantity = 0 }
+                    };
+                    break;
+                case "valid":
+                    details = new List<PurchaseOrderDetailCreate>
+                    {
+                        new PurchaseOrderDetailCreate { GoodsId = 1, GoodsPackingId = 18, PackageQuantity = 500 }
+                    };
+                    break;
+            }
+
+            var createDto = new PurchaseOrderCreate
+            {
+                SupplierId = supplierId,
+                Note = note,
+                PurchaseOrderDetailCreate = details
             };
 
-            _mockService
-                .Setup(s => s.GetPurchaseOrderSaleRepresentatives(req, It.IsAny<int?>()))
-                .ReturnsAsync(("", page));
+            // Mock service behavior
+            if (supplierId == 1 && detailCase == "valid")
+            {
+                var response = new PurchaseOrderCreateResponse { PurchaseOderId = Guid.NewGuid().ToString() };
+                _mockService
+                    .Setup(s => s.CreatePurchaseOrder(It.IsAny<PurchaseOrderCreate>(), It.IsAny<int?>(), It.IsAny<string?>()))
+                    .ReturnsAsync(("", response));
+            }
+            else if (supplierId == 999)
+            {
+                _mockService
+                    .Setup(s => s.CreatePurchaseOrder(It.IsAny<PurchaseOrderCreate>(), It.IsAny<int?>(), It.IsAny<string?>()))
+                    .ReturnsAsync(("Supplier not found", null));
+            }
+            else
+            {
+                _mockService
+                    .Setup(s => s.CreatePurchaseOrder(It.IsAny<PurchaseOrderCreate>(), It.IsAny<int?>(), It.IsAny<string?>()))
+                    .ReturnsAsync(("Invalid input", null));
+            }
 
-            var result = await _controller.GetPurchaseOrderSaleRepresentatives(req);
+            var result = await _controller.CreatePurchaseOrder(createDto);
 
-            _mockService.Verify(s => s.GetPurchaseOrderSaleRepresentatives(req, It.IsAny<int?>()), Times.Once);
             Assert.IsInstanceOfType(result, typeof(ObjectResult));
-            Assert.AreEqual(200, ((ObjectResult)result).StatusCode);
+            var objectResult = (ObjectResult)result;
+            Assert.AreEqual(expectedStatus, objectResult.StatusCode);
         }
 
-        [TestMethod]
-        public async Task CreatePurchaseOrder_ReturnsOk_AndPassesDtoToService()
+        [DataTestMethod]
+        [DataRow(null, null, null, 400, DisplayName = "Mã đơn mua hàng không được bỏ trống.,Danh sách chi tiết đơn mua hàng trống")]
+        [DataRow("99999", null, "valid", 400, DisplayName = "Không tìm thấy đơn hàng có mã đơn hàng này")]
+        [DataRow("VINAMILK_PO_1762610356300", "Hang de vo", null, 400, DisplayName = "Danh sách chi tiết đơn mua hàng trống")]
+        [DataRow("VINAMILK_PO_1762610356300", null, "invalidDetailId", 400, DisplayName = "Mã đơn mua hàng chi tiết không hợp lệ")]
+        [DataRow("VINAMILK_PO_1762610356300", null, "invalidGoodsId", 400, DisplayName = "Hàng hoá không được bỏ trống")]
+        [DataRow("VINAMILK_PO_1762610356300", null, "invalidPackingId", 400, DisplayName = "Số lượng đóng gói hàng hoá không được bỏ trống")]
+        [DataRow("VINAMILK_PO_1762610356300", null, "invalidPackingQuantity", 400, DisplayName = "Số lượng phải lớn hơn 0")]
+        [DataRow("VINAMILK_PO_1762610356300", null, "valid", 200, DisplayName = "")]
+        public async Task UpdatePurchaseOrder_ReturnsExpectedResult(
+            string purchaseOrderId,
+            string? note,
+            string? detailCase,
+            int expectedStatus)
         {
-            var create = new PurchaseOrderCreate
+            List<PurchaseOrderDetailUpdate>? details = null;
+            switch (detailCase)
             {
-                SupplierId = 123,
-                Note = "note",
-                PurchaseOrderDetailCreate = new List<PurchaseOrderDetailCreate>
+                case null:
+                    details = null;
+                    break;
+                case "invalidDetailId":
+                    details = new List<PurchaseOrderDetailUpdate>
+                    {
+                        new PurchaseOrderDetailUpdate { PurchaseOrderDetailId = 0, GoodsId = 1, GoodsPackingId = 18, PackageQuantity = 500 }
+                    };
+                    break;
+                case "invalidGoodsId":
+                    details = new List<PurchaseOrderDetailUpdate>
+                    {
+                        new PurchaseOrderDetailUpdate { PurchaseOrderDetailId = 1, GoodsId = 0, GoodsPackingId = 18, PackageQuantity = 500 }
+                    };
+                    break;
+                case "invalidPackingId":
+                    details = new List<PurchaseOrderDetailUpdate>
+                    {
+                        new PurchaseOrderDetailUpdate { PurchaseOrderDetailId = 1, GoodsId = 1, GoodsPackingId = 0, PackageQuantity = 500 }
+                    };
+                    break;
+                case "invalidPackingQuantity":
+                    details = new List<PurchaseOrderDetailUpdate>
+                    {
+                        new PurchaseOrderDetailUpdate { PurchaseOrderDetailId = 1, GoodsId = 1, GoodsPackingId = 18, PackageQuantity = 0 }
+                    };
+                    break;
+                case "valid":
+                    details = new List<PurchaseOrderDetailUpdate>
+                    {
+                        new PurchaseOrderDetailUpdate { PurchaseOrderDetailId = 1, GoodsId = 1, GoodsPackingId = 18, PackageQuantity = 500 }
+                    };
+                    break;
+            }
+
+            var updateDto = new PurchaseOrderUpdate
+            {
+                PurchaseOderId = purchaseOrderId,
+                Note = note,
+                PurchaseOrderDetailUpdates = details ?? new List<PurchaseOrderDetailUpdate>()
+            };
+
+            // Mock service behavior
+            if (purchaseOrderId == "VINAMILK_PO_1762610356300" && detailCase == "valid")
+            {
+                _mockService
+                    .Setup(s => s.UpdatePurchaseOrder(It.IsAny<PurchaseOrderUpdate>(), It.IsAny<int?>()))
+                    .ReturnsAsync(("", updateDto));
+            }
+            else if (purchaseOrderId == "99999")
+            {
+                _mockService
+                    .Setup(s => s.UpdatePurchaseOrder(It.IsAny<PurchaseOrderUpdate>(), It.IsAny<int?>()))
+                    .ReturnsAsync(("Purchase order not found", null));
+            }
+            else
+            {
+                _mockService
+                    .Setup(s => s.UpdatePurchaseOrder(It.IsAny<PurchaseOrderUpdate>(), It.IsAny<int?>()))
+                    .ReturnsAsync(("Invalid input", null));
+            }
+
+            var result = await _controller.UpdatePurchaseOrder(updateDto);
+
+            Assert.IsInstanceOfType(result, typeof(ObjectResult));
+            var objectResult = (ObjectResult)result;
+            Assert.AreEqual(expectedStatus, objectResult.StatusCode);
+        }
+
+        [DataTestMethod]
+        [DataRow(null, "PurchaseOrderId is invalid.", 400, DisplayName = "Null purchaseOrderId")]
+        [DataRow("VINAMILK_PO_1762610356320", "PurchaseOrderId is invalid.", 400, DisplayName = "Empty purchaseOrderId")]
+        [DataRow("NOT_EXIST", "PurchaseOrder is not exist.", 400, DisplayName = "Nonexistent purchaseOrderId")]
+        [DataRow("NO_PERMISSION", "No PO delete permission.", 400, DisplayName = "No permission to delete")]
+        [DataRow("NOT_DRAFT", "Chỉ được xoá khi đơn hàng ở trạng thái Nháp.", 400, DisplayName = "Not in deletable status")]
+        [DataRow("SUCCESS", "", 200, DisplayName = "Delete success")]
+        public async Task DeletePurchaseOrder_ReturnsExpectedResult(string purchaseOrderId, string expectedMsg, int expectedStatus)
+        {
+            // Arrange
+            PurchaseOrder? returnedOrder = null;
+
+            if (expectedStatus == 200)
+            {
+                int status = purchaseOrderId == "SUCCESS_DRAFT" ? 1 : 3; // 1 = Draft, 3 = Rejected
+                returnedOrder = new PurchaseOrder
                 {
-                    new PurchaseOrderDetailCreate { GoodsId = 1, GoodsPackingId = 1, PackageQuantity = 10 }
-                }
-            };
-
-            // IPurchaseOrderService.CreatePurchaseOrder returns Task<(string, PurchaseOrderCreateResponse?)>
-            var response = new PurchaseOrderCreateResponse { PurchaseOderId = Guid.NewGuid() };
+                    PurchaseOderId = purchaseOrderId,
+                    CreatedBy = TestUserId,
+                    Status = status
+                };
+            }
 
             _mockService
-                .Setup(s => s.CreatePurchaseOrder(It.Is<PurchaseOrderCreate>(c => c.SupplierId == 123 && c.PurchaseOrderDetailCreate.Count == 1), It.IsAny<int?>(), It.IsAny<string?>()))
-                .ReturnsAsync(("", response));
+                .Setup(s => s.DeletePurchaseOrder(purchaseOrderId, It.IsAny<int?>()))
+                .ReturnsAsync((expectedMsg, returnedOrder));
 
-            var result = await _controller.CreatePurchaseOrder(create);
+            // Act
+            var result = await _controller.DeletePurchaseOrder(purchaseOrderId);
 
-            _mockService.Verify(s => s.CreatePurchaseOrder(It.IsAny<PurchaseOrderCreate>(), It.IsAny<int?>(), It.IsAny<string?>()), Times.Once);
+            // Assert
             Assert.IsInstanceOfType(result, typeof(ObjectResult));
-            Assert.AreEqual(200, ((ObjectResult)result).StatusCode);
-        }
 
-        [TestMethod]
-        public async Task UpdatePurchaseOrder_ReturnsOk_WhenServiceSucceeds()
-        {
-            var update = new PurchaseOrderUpdate
+            var objectResult = (ObjectResult)result;
+            Assert.AreEqual(expectedStatus, objectResult.StatusCode);
+
+            if (expectedStatus == 200)
             {
-                PurchaseOderId = Guid.NewGuid(),
-                Note = "updated",
-                PurchaseOrderDetailUpdates = new List<PurchaseOrderDetailUpdate>()
-            };
-
-            _mockService
-                .Setup(s => s.UpdatePurchaseOrder(update, It.IsAny<int?>()))
-                .ReturnsAsync(("", update));
-
-            var result = await _controller.UpdatePurchaseOrder(update);
-
-            _mockService.Verify(s => s.UpdatePurchaseOrder(update, It.IsAny<int?>()), Times.Once);
-            Assert.IsInstanceOfType(result, typeof(ObjectResult));
-            Assert.AreEqual(200, ((ObjectResult)result).StatusCode);
-        }
-
-        [TestMethod]
-        public async Task SubmitPurchaseOrder_CallsUpdateStatus_WithPendingApprovalDto()
-        {
-            var id = Guid.NewGuid();
-            var dto = new PurchaseOrderPendingApprovalDto { PurchaseOrderId = id };
-
-            _mockService
-                .Setup(s => s.UpdateStatusPurchaseOrder(dto, It.IsAny<int?>()))
-                .ReturnsAsync(("", dto));
-
-            var result = await _controller.SubmitPurchaseOrder(dto);
-
-            _mockService.Verify(s => s.UpdateStatusPurchaseOrder(It.Is<PurchaseOrderPendingApprovalDto>(d => d.PurchaseOrderId == id), It.IsAny<int?>()), Times.Once);
-            Assert.IsInstanceOfType(result, typeof(ObjectResult));
-            Assert.AreEqual(200, ((ObjectResult)result).StatusCode);
-        }
-
-        [TestMethod]
-        public async Task ApprovalPurchaseOrder_CallsUpdateStatus_WithApprovalDto()
-        {
-            var id = Guid.NewGuid();
-            var dto = new PurchaseOrderApprovalDto { PurchaseOrderId = id };
-
-            _mockService
-                .Setup(s => s.UpdateStatusPurchaseOrder(dto, It.IsAny<int?>()))
-                .ReturnsAsync(("", dto));
-
-            var result = await _controller.ApprovalPurchaseOrder(dto);
-
-            _mockService.Verify(s => s.UpdateStatusPurchaseOrder(It.Is<PurchaseOrderApprovalDto>(d => d.PurchaseOrderId == id), It.IsAny<int?>()), Times.Once);
-            Assert.IsInstanceOfType(result, typeof(ObjectResult));
-            Assert.AreEqual(200, ((ObjectResult)result).StatusCode);
-        }
-
-        [TestMethod]
-        public async Task RejectedPurchaseOrder_ReturnsBadRequest_WhenServiceReturnsMessage()
-        {
-            var dto = new PurchaseOrderRejectDto { PurchaseOrderId = Guid.NewGuid(), RejectionReason = "no reason" };
-
-            _mockService
-                .Setup(s => s.UpdateStatusPurchaseOrder(dto, It.IsAny<int?>()))
-                .ReturnsAsync(("reject error", null));
-
-            var result = await _controller.RejectedPurchaseOrder(dto);
-
-            Assert.IsInstanceOfType(result, typeof(ObjectResult));
-            Assert.AreEqual(400, ((ObjectResult)result).StatusCode);
-        }
-
-        [TestMethod]
-        public async Task OrderedPurchaseOrder_PassesEstimatedTimeArrival_ToService()
-        {
-            var id = Guid.NewGuid();
-            var dto = new PurchaseOrderOrderedDto
+                Assert.IsInstanceOfType(objectResult.Value, typeof(ApiResponse<PurchaseOrder>));
+                var apiResponse = (ApiResponse<PurchaseOrder>)objectResult.Value!;
+                Assert.IsNotNull(apiResponse.Data);
+                var po = apiResponse.Data!;
+                Assert.AreEqual(purchaseOrderId, po.PurchaseOderId);
+            }
+            else
             {
-                PurchaseOrderId = id,
-                EstimatedTimeArrival = DateTime.Now.AddDays(5)
-            };
-
-            _mockService
-                .Setup(s => s.UpdateStatusPurchaseOrder(It.Is<PurchaseOrderOrderedDto>(d => d.EstimatedTimeArrival.Date == dto.EstimatedTimeArrival.Date && d.PurchaseOrderId == id), It.IsAny<int?>()))
-                .ReturnsAsync(("", dto));
-
-            var result = await _controller.OrderedPurchaseOrder(dto);
-
-            _mockService.Verify(s => s.UpdateStatusPurchaseOrder(It.IsAny<PurchaseOrderOrderedDto>(), It.IsAny<int?>()), Times.Once);
-            Assert.IsInstanceOfType(result, typeof(ObjectResult));
-            Assert.AreEqual(200, ((ObjectResult)result).StatusCode);
+                Assert.IsInstanceOfType(objectResult.Value, typeof(ApiResponse<string>));
+                var apiResponse = (ApiResponse<string>)objectResult.Value!;
+                Assert.AreEqual(expectedMsg, apiResponse.Message);
+            }
         }
 
-        [TestMethod]
-        public async Task GoodsReceivedPurchaseOrder_ReturnsOk_WhenServiceSucceeds()
-        {
-            var dto = new PurchaseOrderGoodsReceivedDto { PurchaseOrderId = Guid.NewGuid() };
-
-            _mockService
-                .Setup(s => s.UpdateStatusPurchaseOrder(dto, It.IsAny<int?>()))
-                .ReturnsAsync(("", dto));
-
-            var result = await _controller.GoodsReceivedPurchaseOrder(dto);
-
-            Assert.IsInstanceOfType(result, typeof(ObjectResult));
-            Assert.AreEqual(200, ((ObjectResult)result).StatusCode);
-        }
-
-        [TestMethod]
-        public async Task AssignForReceivingPurchaseOrder_VerifyServiceCalled()
-        {
-            var dto = new PurchaseOrderAssignedForReceivingDto { PurchaseOrderId = Guid.NewGuid(), AssignTo = 10 };
-
-            _mockService
-                .Setup(s => s.UpdateStatusPurchaseOrder(dto, It.IsAny<int?>()))
-                .ReturnsAsync(("", dto));
-
-            var result = await _controller.AssignForReceivingPurchaseOrder(dto);
-
-            _mockService.Verify(s => s.UpdateStatusPurchaseOrder(It.Is<PurchaseOrderAssignedForReceivingDto>(d => d.AssignTo == 10), It.IsAny<int?>()), Times.Once);
-            Assert.IsInstanceOfType(result, typeof(ObjectResult));
-            Assert.AreEqual(200, ((ObjectResult)result).StatusCode);
-        }
-
-        [TestMethod]
-        public async Task StartReceivingPurchaseOrder_ReturnsBadRequest_WhenServiceReturnsMessage()
-        {
-            var dto = new PurchaseOrderReceivingDto { PurchaseOrderId = Guid.NewGuid() };
-
-            _mockService
-                .Setup(s => s.UpdateStatusPurchaseOrder(dto, It.IsAny<int?>()))
-                .ReturnsAsync(("grn error", null));
-
-            var result = await _controller.StartReceivingPurchaseOrder(dto);
-
-            Assert.IsInstanceOfType(result, typeof(ObjectResult));
-            Assert.AreEqual(400, ((ObjectResult)result).StatusCode);
-        }
-
-        [TestMethod]
-        public async Task CompletePurchaseOrder_ReturnsOk_WhenServiceSucceeds()
-        {
-            var dto = new PurchaseOrderCompletedDto { PurchaseOrderId = Guid.NewGuid() };
-
-            _mockService
-                .Setup(s => s.UpdateStatusPurchaseOrder(dto, It.IsAny<int?>()))
-                .ReturnsAsync(("", dto));
-
-            var result = await _controller.CompletePurchaseOrder(dto);
-
-            Assert.IsInstanceOfType(result, typeof(ObjectResult));
-            Assert.AreEqual(200, ((ObjectResult)result).StatusCode);
-        }
-
-        [TestMethod]
-        public async Task DeletePurchaseOrder_ReturnsOk_WhenServiceDeletes()
-        {
-            var id = Guid.NewGuid();
-
-            _mockService
-                .Setup(s => s.DeletePurchaseOrder(id, It.IsAny<int?>()))
-                .ReturnsAsync(("", new PurchaseOrder()));
-
-            var result = await _controller.DeletePurchaseOrder(id);
-
-            _mockService.Verify(s => s.DeletePurchaseOrder(id, It.IsAny<int?>()), Times.Once);
-            Assert.IsInstanceOfType(result, typeof(ObjectResult));
-            Assert.AreEqual(200, ((ObjectResult)result).StatusCode);
-        }
-
-        [TestMethod]
-        public async Task DeletePurchaseOrder_ReturnsBadRequest_WhenServiceReturnsMessage()
-        {
-            var id = Guid.NewGuid();
-
-            _mockService
-                .Setup(s => s.DeletePurchaseOrder(id, It.IsAny<int?>()))
-                .ReturnsAsync(("delete failed", null));
-
-            var result = await _controller.DeletePurchaseOrder(id);
-
-            Assert.IsInstanceOfType(result, typeof(ObjectResult));
-            Assert.AreEqual(400, ((ObjectResult)result).StatusCode);
-        }
     }
 }

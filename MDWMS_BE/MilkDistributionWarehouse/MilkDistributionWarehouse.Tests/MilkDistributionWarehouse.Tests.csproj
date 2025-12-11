@@ -23,4 +23,9 @@
     <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Repositories.Test\" />
+    <Folder Include="Services.Test\" />
+  </ItemGroup>
+
 </Project>
