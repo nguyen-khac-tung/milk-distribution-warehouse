@@ -84,11 +84,14 @@ export const createStocktaking = async (data) => {
     }
 };
 
+
+
 // Hủy phiếu kiểm kê
-export const cancelStocktaking = async (stocktakingSheetId) => {
+export const cancelStocktaking = async (stocktakingSheetId, note = "") => {
     try {
         const body = {
-            stocktakingSheetId: stocktakingSheetId
+            stocktakingSheetId: stocktakingSheetId,
+            note: note || ""
         };
         const res = await api.put("/StocktakingSheet/Cancel", body);
         return res.data;
@@ -599,6 +602,63 @@ export const exportStocktakingAreaWord = async (stocktakingAreaId) => {
         }
 
         console.error("Error exporting stocktaking area to Word:", error);
+        throw error;
+    }
+};
+// Tạo phiếu kiểm kê với phân công khu vực
+export const createStocktakingWithAssignment = async (data) => {
+    try {
+        const body = {
+            startTime: data.startTime, // ISO string format
+            note: data.note || "",
+            stocktakingAreaCreates: data.stocktakingAreaCreates || [] // Array of { areaId: number, assignTo: number }
+        };
+
+        const res = await api.post("/StocktakingSheet/Create_1", body);
+        return res.data;
+    } catch (error) {
+        console.error("Error creating stocktaking with assignment:", error);
+        throw error;
+    }
+};
+
+// Lấy danh sách Area theo danh sách areaIds (dùng khi tạo mới hoặc khi đã có stocktakingSheetId)
+// areaIds: array[integer] - bắt buộc, danh sách ID khu vực
+// stocktakingSheetId: string - tùy chọn, chỉ cần khi đã có stocktaking sheet
+// API sử dụng POST method với request body (không có query parameters)
+export const getAreaByAreaIds = async (areaIds, stocktakingSheetId = null) => {
+    try {
+        if (!areaIds || !Array.isArray(areaIds) || areaIds.length === 0) {
+            throw new Error("areaIds is required and must be a non-empty array");
+        }
+
+        // Đảm bảo tất cả areaIds là số nguyên
+        const validAreaIds = areaIds
+            .map(id => typeof id === 'number' ? id : parseInt(id))
+            .filter(id => !isNaN(id) && id > 0);
+
+        if (validAreaIds.length === 0) {
+            throw new Error("No valid areaIds found in the provided array");
+        }
+
+        // Build request body theo API specification
+        const body = {
+            areaIds: validAreaIds
+        };
+        
+        // Add stocktakingSheetId if provided (optional - chỉ cần khi đã có stocktaking sheet)
+        if (stocktakingSheetId) {
+            body.stocktakingSheetId = stocktakingSheetId.toString();
+        }
+
+        const res = await api.post('/Area/GetAreaByAreaIds', body);
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching areas by areaIds:", error);
+        console.error("Requested areaIds:", areaIds);
+        if (error.response) {
+            console.error("API Error Response:", error.response.data);
+        }
         throw error;
     }
 };

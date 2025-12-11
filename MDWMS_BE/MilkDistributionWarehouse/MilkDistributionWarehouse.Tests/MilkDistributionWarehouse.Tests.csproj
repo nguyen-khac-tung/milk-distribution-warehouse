@@ -24,6 +24,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Controllers\Test\" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Folder Include="Repositories.Test\" />
     <Folder Include="Services.Test\" />
   </ItemGroup>

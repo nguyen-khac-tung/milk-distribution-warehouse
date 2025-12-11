@@ -44,6 +44,16 @@ export default function CreateAreaModal({ isOpen, onClose, onSuccess }) {
     }
   }
 
+  const resetForm = () => {
+    setFormData({
+      areaName: "",
+      areaCode: "",
+      description: "",
+      storageConditionId: "",
+      status: 1,
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault()
 
@@ -57,6 +67,7 @@ export default function CreateAreaModal({ isOpen, onClose, onSuccess }) {
       setLoading(true)
       const response = await createArea(formData)
       window.showToast("Thêm khu vực thành công!", "success")
+      resetForm()
       onSuccess && onSuccess()
       onClose && onClose()
     } catch (error) {

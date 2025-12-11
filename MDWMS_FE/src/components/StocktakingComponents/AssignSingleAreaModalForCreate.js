@@ -4,7 +4,7 @@ import { X, MapPin, Users, User, CheckCircle2, Thermometer, Droplets, Sun, Packa
 import { Button } from '../ui/button';
 import { getStocktakingArea } from '../../services/AreaServices';
 import { getUserDropDownByRoleName } from '../../services/AccountService';
-import { assignStocktakingAreas, createStocktaking } from '../../services/StocktakingService';
+import { assignStocktakingAreas, createStocktaking, getAreaByAreaIds } from '../../services/StocktakingService';
 import { extractErrorMessage } from '../../utils/Validation';
 import dayjs from 'dayjs';
 
@@ -46,6 +46,7 @@ const AssignSingleAreaModalForCreate = ({
         try {
             // Fetch stocktaking areas
             if (stocktakingSheetId) {
+                // Nếu đã có stocktakingSheetId, lấy từ stocktaking area
                 const areasResponse = await getStocktakingArea(stocktakingSheetId);
                 const areasData = areasResponse?.data || areasResponse || [];
                 const areasArray = Array.isArray(areasData) ? areasData : [];
@@ -53,6 +54,14 @@ const AssignSingleAreaModalForCreate = ({
                 // Tìm khu vực cần phân công
                 const targetArea = areasArray.find(a => (a.areaId || a.id) === areaId);
                 setArea(targetArea || null);
+            } else if (areaId) {
+                // Nếu đang tạo mới (không có stocktakingSheetId), gọi API getAreaByAreaIds với areaId
+                const areasResponse = await getAreaByAreaIds([areaId]);
+                const areasData = areasResponse?.data || areasResponse || [];
+                const areasArray = Array.isArray(areasData) ? areasData : [];
+                
+                // Lấy khu vực đầu tiên (vì chỉ có 1 areaId)
+                setArea(areasArray.length > 0 ? areasArray[0] : null);
             } else {
                 setArea(null);
             }
@@ -98,10 +107,28 @@ const AssignSingleAreaModalForCreate = ({
                         startTimeISO = date.format('YYYY-MM-DDTHH:mm:ss');
                     }
 
+                    // Lấy areaIds từ formData.areaIds hoặc từ areaId prop
+                    let areaIdsToCreate = [];
+                    if (formData.areaIds && formData.areaIds.length > 0) {
+                        // Nếu formData.areaIds đã có format đúng [{ areaId: number }]
+                        areaIdsToCreate = formData.areaIds;
+                    } else if (formData.selectedAreas && formData.selectedAreas.length > 0) {
+                        // Nếu có selectedAreas, chuyển đổi sang format [{ areaId: number }]
+                        areaIdsToCreate = formData.selectedAreas.map(areaId => ({ areaId: areaId }));
+                    } else if (areaId) {
+                        // Cuối cùng, dùng areaId từ props
+                        const validAreaId = typeof areaId === 'number' ? areaId : parseInt(areaId);
+                        if (!isNaN(validAreaId) && validAreaId > 0) {
+                            areaIdsToCreate = [{ areaId: validAreaId }];
+                        }
+                    }
+
+                    console.log('Creating stocktaking with areaIds:', areaIdsToCreate);
+
                     const submitData = {
                         startTime: startTimeISO,
-                        note: formData.reason?.trim() || '',
-                        areaIds: formData.areaIds || []
+                        note: formData.reason?.trim() || formData.note?.trim() || '',
+                        areaIds: areaIdsToCreate
                     };
 
                     const createResponse = await createStocktaking(submitData);

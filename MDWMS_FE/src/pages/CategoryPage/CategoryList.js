@@ -410,7 +410,7 @@ export default function CategoriesPage() {
         />
 
         {/* Search and Table Combined */}
-        <Card className="shadow-sm border border-slate-200 overflow-hidden bg-gray-50">
+        <Card className="shadow-sm border border-slate-200 overflow-visible bg-gray-50">
           <SearchFilterToggle
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
