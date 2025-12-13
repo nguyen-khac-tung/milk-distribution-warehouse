@@ -271,6 +271,7 @@
         public const int Receipt = 1;
         public const int Issue = 2;
         public const int Disposal = 3;
+        public const int Stocktaking = 4;
     }
     /// <summary>
     /// Các cấu hình cho Scheduled Notifications

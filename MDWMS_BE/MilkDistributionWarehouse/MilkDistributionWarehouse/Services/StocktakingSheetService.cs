@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using DocumentFormat.OpenXml.Drawing;
 using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
@@ -42,6 +43,7 @@ namespace MilkDistributionWarehouse.Services
         private readonly ILocationRepository _locationRepository;
         private readonly INotificationService _notificationService;
         private readonly IUserRepository _userRepository;
+        private readonly IInventoryLedgerService _inventoryLedgerService;
 
         public StocktakingSheetService(IMapper mapper, IStocktakingSheetRepository stocktakingSheetRepository,
             IStocktakingAreaRepository stocktakingAreaRepository,
@@ -49,7 +51,7 @@ namespace MilkDistributionWarehouse.Services
             IStocktakingAreaService stocktakingAreaService, IStocktakingLocationService stocktakingLocationService,
             IStocktakingLocationRepository stocktakingLocationRepository, IStocktakingStatusDomainService stocktakingStatusDomainService,
             IStocktakingPalletRepository stocktakingPalletRepository, IPalletRepository palletRepository, ILocationRepository locationRepository,
-            INotificationService notificationService, IUserRepository userRepository)
+            INotificationService notificationService, IUserRepository userRepository, IInventoryLedgerService inventoryLedgerService)
         {
             _mapper = mapper;
             _stocktakingSheetRepository = stocktakingSheetRepository;
@@ -65,6 +67,7 @@ namespace MilkDistributionWarehouse.Services
             _locationRepository = locationRepository;
             _notificationService = notificationService;
             _userRepository = userRepository;
+            _inventoryLedgerService = inventoryLedgerService;
         }
 
         public async Task<(string, PageResult<StocktakingSheetDto>?)> GetStocktakingSheets(PagedRequest request, string roleName, int? userId)
@@ -438,6 +441,8 @@ namespace MilkDistributionWarehouse.Services
                 if (pallet == null)
                     return $"Không tìm thấy pallet với mã {stocktakingPallet.PalletId} trong hệ thống.".ToMessageForUser();
 
+                var oldPalletQty = pallet.PackageQuantity;
+
                 if (stocktakingPallet.ActualPackageQuantity.HasValue)
                 {
                     pallet.PackageQuantity = stocktakingPallet.ActualPackageQuantity.Value;
@@ -458,6 +463,11 @@ namespace MilkDistributionWarehouse.Services
                     var updatedPallet = await _palletRepository.UpdatePallet(pallet);
                     if (updatedPallet == null)
                         return $"Cập nhật số lượng pallet {stocktakingPallet.PalletId} thất bại.".ToMessageForUser();
+
+                    var (invErr, _) = await _inventoryLedgerService.CreateInventoryLedgerStocktakingChange(pallet, oldPalletQty, stocktakingPallet.ActualPackageQuantity.Value);
+
+                    if (!string.IsNullOrEmpty(invErr))
+                        return invErr;
                 }
             }
 
