@@ -441,7 +441,8 @@ namespace MilkDistributionWarehouse.Services
                 if (pallet == null)
                     return $"Không tìm thấy pallet với mã {stocktakingPallet.PalletId} trong hệ thống.".ToMessageForUser();
 
-                var oldPalletQty = pallet.PackageQuantity;
+                // PackageQuantity là int? -> ép về int an toàn
+                var oldPalletQty = pallet.PackageQuantity ?? 0;
 
                 if (stocktakingPallet.ActualPackageQuantity.HasValue)
                 {
@@ -464,10 +465,16 @@ namespace MilkDistributionWarehouse.Services
                     if (updatedPallet == null)
                         return $"Cập nhật số lượng pallet {stocktakingPallet.PalletId} thất bại.".ToMessageForUser();
 
-                    var (invErr, _) = await _inventoryLedgerService.CreateInventoryLedgerStocktakingChange(pallet, oldPalletQty, stocktakingPallet.ActualPackageQuantity.Value);
+                    if(oldPalletQty != stocktakingPallet.ActualPackageQuantity.Value)
+                    {
+                        var (invErr, _) = await _inventoryLedgerService.CreateInventoryLedgerStocktakingChange(
+                        pallet,
+                        oldPalletQty,
+                        stocktakingPallet.ActualPackageQuantity.Value);
 
-                    if (!string.IsNullOrEmpty(invErr))
-                        return invErr;
+                        if (!string.IsNullOrEmpty(invErr))
+                            return invErr;
+                    }
                 }
             }
 

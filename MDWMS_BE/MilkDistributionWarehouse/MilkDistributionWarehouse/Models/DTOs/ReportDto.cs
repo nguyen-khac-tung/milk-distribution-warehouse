@@ -99,6 +99,7 @@ namespace MilkDistributionWarehouse.Models.DTOs
             public int BeginningInventoryPackages { get; set; }
             public int InQuantityPackages { get; set; }
             public int OutQuantityPackages { get; set; }
+            public int StocktakingChangesPackages { get; set; }
             public int EndingInventoryPackages { get; set; }
         }
     }
